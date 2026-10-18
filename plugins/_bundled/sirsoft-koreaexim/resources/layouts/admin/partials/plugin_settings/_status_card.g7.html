@@ -7,7 +7,7 @@
     <span class="badge bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{koreaeximStatus?.data?.auth_key_set ? $t('sirsoft-koreaexim.key_set') : $t('sirsoft-koreaexim.key_missing')}}</span>
     <span>$t:sirsoft-koreaexim.last_success {{koreaeximStatus?.data?.last_success_run?.finished_at ?? '-'}}</span>
     <span>$t:sirsoft-koreaexim.last_attempt {{koreaeximStatus?.data?.last_run?.finished_at ?? '-'}} · {{koreaeximStatus?.data?.last_run?.status_label ?? '-'}}</span>
-    <span><blur-until-loaded sources="koreaeximStatus"/>$t:sirsoft-koreaexim.calls {{koreaeximStatus?.data?.today_request_count ?? 0}}/{{koreaeximStatus?.data?.quota_limit ?? 1000}}</span>
+    <span>$t:sirsoft-koreaexim.calls {{koreaeximStatus?.data?.today_request_count ?? 0}}/{{koreaeximStatus?.data?.quota_limit ?? 1000}}</span>
     <span>$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at_kst ?? '-'}} / {{koreaeximStatus?.data?.next_run_at ?? '-'}}</span>
     <div class="ml-auto flex flex-wrap gap-2">
       <button type="button" data-ref="test_connection" disabled="{{_local.busy || _computed.isReadOnly}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed">

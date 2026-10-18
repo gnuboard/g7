@@ -17,14 +17,15 @@ use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
 class InicisIdentityLogQueryRepository implements InicisIdentityLogQueryRepositoryInterface
 {
     /**
-     * 아직 쓰지 않았고 만료되지 않은 verified IDV 로그를 token + purpose 로 조회한다.
+     * verified 상태의 IDV 로그를 token + purpose 로 조회한다 (consumed_at 무관).
      *
-     * 1.1.4 부터 소비·만료된 결과는 돌려주지 않는다(KVE 동형 B6) — 가입 경로 listener 는 코어
-     * `IdentityTokenAcceptanceService` 로 같은 요청에서 인정한 결과를 받는다.
+     * 코어 findVerifiedForToken 과 달리 consumed_at IS NULL 필터를 두지 않는다 —
+     * 코어 priority 10 listener 가 consume 한 후 본 plugin priority 20 listener 가
+     * 같은 토큰으로 metadata.di_hash/ci_hash 를 회수해야 하기 때문.
      *
      * @param  string  $token  verification_token
      * @param  string  $purpose  IDV purpose
-     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     * @return IdentityVerificationLog|null  매칭 로그 또는 null
      */
     public function findVerifiedLogForToken(string $token, string $purpose): ?IdentityVerificationLog
     {
@@ -36,9 +37,6 @@ class InicisIdentityLogQueryRepository implements InicisIdentityLogQueryReposito
             ->where('verification_token', $token)
             ->where('purpose', $purpose)
             ->where('status', IdentityVerificationStatus::Verified->value)
-            // 이미 쓴 결과·만료된 결과는 재사용 대상이 아니다(1.1.4, KVE 동형 B6)
-            ->whereNull('consumed_at')
-            ->where('expires_at', '>', now())
             ->first();
     }
 
@@ -51,7 +49,7 @@ class InicisIdentityLogQueryRepository implements InicisIdentityLogQueryReposito
      * (matched_field / duplicate_field_used 등) 는 보존한다.
      *
      * @param  int  $userId  탈퇴/삭제 사용자 id
-     * @return int 익명화된 row 수
+     * @return int  익명화된 row 수
      */
     public function anonymizeUserId(int $userId): int
     {
@@ -77,7 +75,7 @@ class InicisIdentityLogQueryRepository implements InicisIdentityLogQueryReposito
      *
      * @param  string  $logId  대상 로그 id
      * @param  array<string, mixed>  $patch  병합할 metadata 키
-     * @return bool 업데이트 성공 여부
+     * @return bool  업데이트 성공 여부
      */
     public function appendMetadata(string $logId, array $patch): bool
     {

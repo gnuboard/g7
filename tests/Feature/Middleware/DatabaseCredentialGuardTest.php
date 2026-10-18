@@ -29,7 +29,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * 훼손하지 않고(=RefreshDatabase 트랜잭션 유지) 판정만 바꿀 수 있습니다.
      *
      * @param  string|null  $username  주입할 사용자명
-     * @return void 반환값 없음
      */
     private function setDbUsername(?string $username): void
     {
@@ -48,8 +47,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=normal, enforcement_point=runtime_web, install_state=completed
      *
      * @effects runtime_passes_through_with_normal_account
-     *
-     * @return void 반환값 없음
      */
     public function test_passes_through_with_normal_account(): void
     {
@@ -67,8 +64,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=normal, enforcement_point=runtime_api, install_state=completed
      *
      * @effects runtime_passes_through_with_normal_account
-     *
-     * @return void 반환값 없음
      */
     public function test_passes_through_with_normal_account_for_api(): void
     {
@@ -86,9 +81,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=privileged, enforcement_point=runtime_web, install_state=completed
      *
      * @effects runtime_returns_503_error_page
-     *
-     * @param  string  $username  최고권한 계정 이름(표기 변형 포함)
-     * @return void 반환값 없음
      */
     #[DataProvider('privilegedUsernameProvider')]
     public function test_returns_error_page_for_privileged_account(string $username): void
@@ -108,9 +100,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=empty, enforcement_point=runtime_web, install_state=completed
      *
      * @effects runtime_returns_503_error_page
-     *
-     * @param  string|null  $username  빈 계정 이름(빈 문자열 또는 null)
-     * @return void 반환값 없음
      */
     #[DataProvider('emptyUsernameProvider')]
     public function test_returns_error_page_for_empty_account(?string $username): void
@@ -125,9 +114,7 @@ class DatabaseCredentialGuardTest extends TestCase
     }
 
     /**
-     * 최고권한 계정 이름과 그 표기 변형(대문자·앞뒤 공백).
-     *
-     * @return array<string, array{0: string}> 케이스 이름 => [계정 이름]
+     * @return array<string, array{0: string}>
      */
     public static function privilegedUsernameProvider(): array
     {
@@ -140,9 +127,7 @@ class DatabaseCredentialGuardTest extends TestCase
     }
 
     /**
-     * 설정이 빠진 계정 이름(빈 문자열·null).
-     *
-     * @return array<string, array{0: string|null}> 케이스 이름 => [계정 이름]
+     * @return array<string, array{0: string|null}>
      */
     public static function emptyUsernameProvider(): array
     {
@@ -158,8 +143,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=privileged, enforcement_point=runtime_api, install_state=completed
      *
      * @effects runtime_returns_503_json_for_api
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_json_for_api_requests(): void
     {
@@ -178,8 +161,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=empty, enforcement_point=runtime_api, install_state=completed
      *
      * @effects runtime_returns_503_json_for_api
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_json_for_api_path_requests(): void
     {
@@ -201,8 +182,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=privileged, enforcement_point=runtime_web, install_state=not_completed
      *
      * @effects runtime_passes_through_when_not_installed
-     *
-     * @return void 반환값 없음
      */
     public function test_passes_through_when_not_installed(): void
     {
@@ -220,8 +199,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * @scenario account_kind=empty, enforcement_point=runtime_web, install_state=not_completed
      *
      * @effects runtime_passes_through_when_not_installed
-     *
-     * @return void 반환값 없음
      */
     public function test_passes_through_when_not_installed_with_empty_username(): void
     {
@@ -237,8 +214,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * 에러 페이지는 미인증 공개 페이지이므로 실제 DB 계정명을 노출하면 안 된다.
      *
      * @effects error_page_does_not_leak_account_name
-     *
-     * @return void 반환값 없음
      */
     public function test_error_page_does_not_leak_account_name(): void
     {
@@ -257,8 +232,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * 외부 에셋(JS/CSS)에 의존하지 않고 자체 완결이어야 한다.
      *
      * @effects error_page_is_self_contained_without_external_assets
-     *
-     * @return void 반환값 없음
      */
     public function test_error_page_has_no_external_dependencies(): void
     {
@@ -270,22 +243,14 @@ class DatabaseCredentialGuardTest extends TestCase
 
         $response->assertStatus(503);
         $this->assertStringNotContainsString('<script src=', $content);
-        // 스타일은 같은 출처의 정적 파일 하나뿐이다 — 문서 안 style 요소·style 속성은 엄격한 스타일 정책에서 막힌다
-        $this->assertStringContainsString('data-g7-core-css="standalone"', $content);
-        $this->assertSame(1, substr_count($content, '<link rel="stylesheet"'));
-        $this->assertStringContainsString('<link rel="stylesheet" href="'.rtrim(url('/'), '/').'/assets/core/css/g7-standalone.css', $content);
-        $this->assertStringNotContainsString('<style', $content);
-        $this->assertDoesNotMatchRegularExpression('/\sstyle=/', $content);
+        $this->assertStringNotContainsString('<link rel="stylesheet" href=', $content);
+        $this->assertStringContainsString('<style>', $content);
     }
 
     /**
      * SetLocale 미들웨어가 실행되지 않는 지점이므로 자체 로케일 감지가 동작해야 한다.
      *
      * @effects error_page_detects_locale_without_setlocale_middleware
-     *
-     * @param  string  $acceptLanguage  요청의 Accept-Language 헤더 값
-     * @param  string  $locale  화면이 따라야 하는 로케일
-     * @return void 반환값 없음
      */
     #[DataProvider('localeProvider')]
     public function test_error_page_is_localized(string $acceptLanguage, string $locale): void
@@ -300,9 +265,7 @@ class DatabaseCredentialGuardTest extends TestCase
     }
 
     /**
-     * Accept-Language 헤더와 그때 화면이 따라야 하는 로케일.
-     *
-     * @return array<string, array{0: string, 1: string}> 케이스 이름 => [헤더 값, 로케일]
+     * @return array<string, array{0: string, 1: string}>
      */
     public static function localeProvider(): array
     {
@@ -316,8 +279,6 @@ class DatabaseCredentialGuardTest extends TestCase
      * 메인터넌스 모드가 우선해야 한다 — 점검 중에는 점검 페이지가 맞다.
      *
      * @effects maintenance_mode_takes_precedence_over_credential_guard
-     *
-     * @return void 반환값 없음
      */
     public function test_maintenance_mode_takes_precedence(): void
     {

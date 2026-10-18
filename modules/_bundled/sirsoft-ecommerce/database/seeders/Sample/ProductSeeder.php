@@ -72,11 +72,6 @@ class ProductSeeder extends Seeder
     private array $usedHashes = [];
 
     /**
-     * gd 부재 경고를 이미 냈는지 여부 (상품마다 반복하지 않는다)
-     */
-    private bool $gdWarningShown = false;
-
-    /**
      * 상품 템플릿 데이터 정의 (이 데이터를 기반으로 100개 생성)
      *
      * 가격 분포: 50000원 이하 80%, 최대 200000원, 1000원 단위
@@ -240,28 +235,6 @@ class ProductSeeder extends Seeder
             'description' => ['ko' => '<p>당도 높은 국산 사과 3kg 박스입니다.</p>', 'en' => '<p>A 3kg box of sweet Korean apples.</p>'],
             'has_options' => false,
             'option_groups' => null,
-            'category_slug' => 'fruits',
-            'brand_slug' => null,
-        ],
-        // 옵션별 과세 종류 시연 (#612) — 상품 기본값은 과세, 「수출용」 옵션만 영세(세율 0%)
-        [
-            'name' => ['ko' => '배 1박스 (5kg)', 'en' => 'Pear Box (5kg)'],
-            'product_code' => 'FR-003',
-            'sku' => 'FR-003-5KG',
-            'list_price' => 35000,
-            'selling_price' => 30000,
-            'stock_quantity' => 40,
-            'safe_stock_quantity' => 5,
-            'sales_status' => 'on_sale',
-            'display_status' => 'visible',
-            'tax_status' => 'taxable',
-            'description' => ['ko' => '<p>국산 배 5kg 박스입니다. 수출용 옵션은 영세율(0%)로 판매됩니다.</p>', 'en' => '<p>A 5kg box of Korean pears. The export option is sold zero-rated (0%).</p>'],
-            'has_options' => true,
-            'option_groups' => [
-                ['name' => ['ko' => '구분', 'en' => 'Type'], 'values' => [['ko' => '국내용', 'en' => 'Domestic'], ['ko' => '수출용', 'en' => 'Export']]],
-            ],
-            // 옵션 조합 순서대로의 과세 종류 (null = 상품 기본값 따름)
-            'option_tax_statuses' => [null, 'zero_rated'],
             'category_slug' => 'fruits',
             'brand_slug' => null,
         ],
@@ -522,7 +495,7 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product.start'));
+        $this->command->info('상품 더미 데이터 생성을 시작합니다.');
 
         // 스토리지 드라이버 초기화
         $this->storage = app(ModuleManager::class)
@@ -533,7 +506,7 @@ class ProductSeeder extends Seeder
         $this->createProducts();
 
         $count = Product::count();
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product.done', ['count' => $count]));
+        $this->command->info("상품 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
     }
 
     /**
@@ -553,13 +526,13 @@ class ProductSeeder extends Seeder
             // 주문 하위 문서(클레임·환불·취소·첨부 파일)까지 OrderSeeder 와 같은 순서로 지운다.
             $purged = $this->purgeSampleOrderGraph();
             if ($purged['orders'] > 0) {
-                $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.product.purged_orders', ['count' => $purged['orders']]));
+                $this->command->warn("  - 기존 주문 {$purged['orders']}건과 하위 문서를 삭제했습니다.");
             }
 
             // 상품 문의는 상품 삭제 cascade 로 피벗만 사라지고 게시판 글이 고아로 남는다 — 먼저 스레드째 정리한다.
             $inquiries = $this->purgeProductInquiryThreads();
             if ($inquiries > 0) {
-                $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.product.purged_inquiries', ['count' => $inquiries]));
+                $this->command->warn("  - 기존 상품 문의 {$inquiries}건과 그 게시판 문의 글·답변을 삭제했습니다.");
             }
 
             // 관련 데이터 삭제
@@ -570,7 +543,7 @@ class ProductSeeder extends Seeder
             DB::table('ecommerce_product_categories')->delete();
             Product::withTrashed()->forceDelete();
 
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product.purged', ['count' => $deletedCount]));
+            $this->command->warn("기존 상품 관련 데이터 {$deletedCount}건을 삭제했습니다.");
         }
     }
 
@@ -585,7 +558,7 @@ class ProductSeeder extends Seeder
         // 경로: modules/sirsoft-ecommerce/images/products/
         if ($this->storage->exists('images', 'products')) {
             $this->storage->deleteDirectory('images', 'products');
-            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product.images_dir_deleted'));
+            $this->command->line('  - 스토리지에서 상품 이미지 폴더를 삭제했습니다.');
         }
     }
 
@@ -601,7 +574,7 @@ class ProductSeeder extends Seeder
         $categoryCount = $categories->count();
 
         if ($categoryCount === 0) {
-            $this->command->error(__('sirsoft-ecommerce::messages.seeders.product.no_categories'));
+            $this->command->error('카테고리가 없습니다. CategorySeeder를 먼저 실행해주세요.');
 
             return;
         }
@@ -610,7 +583,7 @@ class ProductSeeder extends Seeder
         $brands = Brand::all()->keyBy('slug');
 
         if ($brands->isEmpty()) {
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product.no_brands'));
+            $this->command->warn('브랜드가 없습니다. BrandSeeder를 먼저 실행하는 것을 권장합니다.');
         }
 
         // 배송정책 조회 (활성 + 국내(KR) 설정이 있는 것만 — 해외 전용 정책을 국내 샘플 상품에 붙이지 않는다)
@@ -620,7 +593,7 @@ class ProductSeeder extends Seeder
         $defaultShippingPolicy = $shippingPolicies->firstWhere('is_default', true) ?? $shippingPolicies->first();
 
         if ($shippingPolicies->isEmpty()) {
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product.no_shipping_policies'));
+            $this->command->warn('배송정책이 없습니다. ShippingPolicySeeder를 먼저 실행하는 것을 권장합니다.');
         }
 
         // 공통정보 조회 (활성 상태인 것만)
@@ -628,7 +601,7 @@ class ProductSeeder extends Seeder
         $defaultCommonInfo = $commonInfos->firstWhere('is_default', true) ?? $commonInfos->first();
 
         if ($commonInfos->isEmpty()) {
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product.no_common_infos'));
+            $this->command->warn('공통정보가 없습니다. ProductCommonInfoSeeder를 먼저 실행하는 것을 권장합니다.');
         }
 
         // 상품정보제공고시 템플릿 조회 (법정 품목만 — 테스트용 템플릿(test-N)은 배정하지 않는다)
@@ -637,14 +610,14 @@ class ProductSeeder extends Seeder
             ->get();
 
         if ($noticeTemplates->isEmpty()) {
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product.no_notice_templates'));
+            $this->command->warn('상품정보제공고시 템플릿이 없습니다. ProductNoticeTemplateSeeder를 먼저 실행하는 것을 권장합니다.');
         }
 
         // 라벨 조회 (활성 상태인 것만)
         $labels = ProductLabel::where('is_active', true)->get();
 
         if ($labels->isEmpty()) {
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product.no_labels'));
+            $this->command->warn('라벨이 없습니다. ProductLabelSeeder를 먼저 실행하는 것을 권장합니다.');
         }
 
         // leaf 카테고리 미리 필터링 (in-memory, DB 쿼리 없음)
@@ -655,17 +628,17 @@ class ProductSeeder extends Seeder
         $useBulkMode = $count >= 100;
 
         if ($useBulkMode) {
-            $this->command->info(__('sirsoft-ecommerce::messages.seeders.product.bulk_mode'));
+            $this->command->info('벌크 모드 활성화: GD 색상 필터 제거, hash 메모리 생성 적용');
         }
 
         // Phase 1: 이미지 풀 병렬 다운로드
         $poolSize = min(self::IMAGE_POOL_SIZE, $count);
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product.image_pool_start', ['count' => $poolSize]));
+        $this->command->info("이미지 풀 다운로드 시작 ({$poolSize}개 상품분)...");
         $imagePool = $this->downloadImagePool($poolSize);
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product.image_pool_done', ['count' => count($imagePool)]));
+        $this->command->info('이미지 풀 다운로드 완료: '.count($imagePool).'개 상품분');
 
         // Phase 2-3: 상품 생성 + 이미지 할당
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product.creating', ['count' => $count]));
+        $this->command->info("상품 {$count}개 생성 시작...");
         $progressBar = $this->command->getOutput()->createProgressBar($count);
         $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s%');
 
@@ -767,7 +740,7 @@ class ProductSeeder extends Seeder
             $this->attachCategory($product, $category->slug);
 
             // 옵션 생성 (모든 상품에 필수) — 무게(g)·부피(cm³)는 무게·부피 배송정책 시연에 쓰인다
-            $this->createOptions($product, $optionGroups, $sku, rand(1, 30) * 100, rand(1, 40) * 500, $template['option_tax_statuses'] ?? []);
+            $this->createOptions($product, $optionGroups, $sku, rand(1, 30) * 100, rand(1, 40) * 500);
 
             // 추가옵션 그룹·선택지 생성 (40% 확률) — 추가옵션 시스템 데모 데이터
             if (rand(1, 100) <= 40) {
@@ -1073,10 +1046,9 @@ class ProductSeeder extends Seeder
      * @param  string  $productSku  상품 SKU (옵션 SKU 생성 기준)
      * @param  int  $weightGram  옵션 무게 (g)
      * @param  int  $volumeCubicCm  옵션 부피 (cm³)
-     * @param  array<int, string|null>  $optionTaxStatuses  조합 순서대로의 옵션 과세 종류 (없거나 null = 상품 따름, #612)
      * @return void 반환값 없음
      */
-    private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000, array $optionTaxStatuses = []): void
+    private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000): void
     {
         // 옵션 조합 생성
         $combinations = $this->generateOptionCombinations($optionGroups);
@@ -1110,7 +1082,6 @@ class ProductSeeder extends Seeder
                 'volume' => $volumeCubicCm,
                 'is_default' => $sortOrder === 0,
                 'is_active' => true,
-                'tax_status' => isset($optionTaxStatuses[$sortOrder]) ? ProductTaxStatus::from($optionTaxStatuses[$sortOrder]) : null,
                 'sort_order' => $sortOrder++,
             ]);
         }
@@ -1406,16 +1377,6 @@ class ProductSeeder extends Seeder
     }
 
     /**
-     * PHP gd 확장(이미지 함수)을 쓸 수 있는지 반환합니다. (테스트가 부재를 흉내 내도록 protected)
-     *
-     * @return bool imagecreatefromstring 이 있으면 true
-     */
-    protected function gdAvailable(): bool
-    {
-        return function_exists('imagecreatefromstring');
-    }
-
-    /**
      * GD 색상 필터를 적용하여 이미지를 변형합니다.
      *
      * 5가지 필터 중 랜덤 적용: 색상 시프트, 따뜻한 톤, 차가운 톤, 밝기/대비, 세피아
@@ -1425,16 +1386,6 @@ class ProductSeeder extends Seeder
      */
     public function applyColorFilter(string $imageContent): string
     {
-        // gd 는 코어 기준 「선택」 확장이다 — 없으면 필터 없이 원본을 쓴다(#151). 경고는 한 번만 낸다.
-        if (! $this->gdAvailable()) {
-            if (! $this->gdWarningShown) {
-                $this->gdWarningShown = true;
-                $this->command?->warn('  - '.__('sirsoft-ecommerce::messages.seeders.product.color_filter_skipped_no_gd'));
-            }
-
-            return $imageContent;
-        }
-
         $image = @imagecreatefromstring($imageContent);
         if ($image === false) {
             return $imageContent;

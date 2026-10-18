@@ -47,7 +47,6 @@
       "price_details": {
         "taxable": "課税",
         "vat": "付加価値税",
-        "zero_rated": "ゼロ税率",
         "mileage": "マイレージ",
         "deposit": "デポジット"
       },
@@ -123,8 +122,7 @@
         "title": "キャンセル理由",
         "reason": "理由",
         "detail": "詳細理由"
-      },
-      "quantity_value": "{{count}}個"
+      }
     },
     "tabs": {
       "order_info": "注文情報",
@@ -210,9 +208,6 @@
       "final_amount": "最終決済金額",
       "taxable_amount": "課税金額",
       "vat": "付加価値税（VAT）",
-      "tax_free_amount": "非課税金額",
-      "zero_rated_amount": "ゼロ税率金額",
-      "cancelled_vat": "取消付加価値税",
       "expected_points": "積立予定ポイント",
       "method": {
         "credit_card": "クレジットカード",
@@ -362,7 +357,6 @@
         "points_used": "ポイント使用",
         "taxable_amount": "課税金額",
         "vat_amount": "消費税",
-        "zero_rated_amount": "ゼロ税率金額",
         "total_paid": "実際の決済金額",
         "earned_points": "ポイント積立予定",
         "product_subtotal": "小計",
@@ -886,8 +880,7 @@
     "error": "受け取ることができませんでした。",
     "reason_required": "理由を選択してください。",
     "preview_error": "請求額を計算できませんでした。",
-    "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。",
-    "exchange_option_label": "交換するオプション"
+    "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。"
   },
   "manual_paid": {
     "title": "決済処理項目",

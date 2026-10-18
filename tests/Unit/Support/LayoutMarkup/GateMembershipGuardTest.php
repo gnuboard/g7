@@ -99,14 +99,13 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         //    "여기서도 빼라" 가 red 이므로, 이 목록은 늘지 않게만 잠그는 자리다.
         //    #745 가 게시판 매니페스트(`board-comment-on-post-state`·`board-upgrade-steps`)에 등재해
         //    `CommentPostStateTest`·`PlaintextPostPasswordRehashTest`·`PostListViewCountIndexUpgradeTest` 3행을 해소했다.
-        //    #860 이 긴 검색어 500 수정 회귀를 게시판 매니페스트에 등재해 `PostSearchKeywordSanitizationTest` 1행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Feature/NoticeResultCapTest.php' => '게시판 트랙 소유 (공지 조회의 결과 상한 준수).',
         'modules/_bundled/sirsoft-board/tests/Feature/PostNumberBoundedTotalRegressionTest.php' => '게시판 트랙 소유 (총 건수 절사 시 글번호 표기).',
+        'modules/_bundled/sirsoft-board/tests/Feature/PostSearchKeywordSanitizationTest.php' => '게시판 트랙 소유 (전문검색 연산자 입력의 500 방지).',
         // ── develop 8차 병합 유입분(7.0.10 · KVE-2026 보안 6묶음). 같은 형태 — develop 라인이 마킹은 달고
         //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b`(#645) 도입, 이 트랙 변경 0.
         //    #789 가 게시판 매니페스트(`board-secret-thread-visibility`·`board-secret-content-bypass-paths`)에 등재해
         //    `SecretPostChildWriteGateTest`·`PostSecretVerifyPasswordTest` 2행을 해소했다.
-        //    #862 가 코어 매니페스트(`has-row-number-bounded-total`)에 등재해 `HasRowNumberBoundedTotalTest` 1행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'modules/_bundled/sirsoft-board/tests/Unit/Repositories/UserCommentedActivityDeferredJoinTest.php' => '목록 지연 조인 트랙 소유 (그룹 쿼리 총 건수·컬럼 프루닝).',
         'modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListPayloadSizeBenchmarkTest.php' => '목록 응답 축소 트랙 소유 (페이로드 바이트·쿼리 수).',
@@ -126,6 +125,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/PluginCacheContextualBindingTest.php' => '확장 캐시 바인딩 트랙 소유 (플러그인 컨텍스추얼 바인딩).',
         'plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
         'tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
+        'tests/Unit/Installer/InstallerStep3EnvValueGuardTest.php' => '설치 마법사 트랙 소유 (3단계 입력의 줄바꿈 주입으로 .env 항목이 끼워지는 것 방지, KVE-2026-2042 — develop 8차 유입).',
+        'tests/Unit/Http/Resources/HasRowNumberBoundedTotalTest.php' => '대용량 목록 상한 트랙 소유 (총 건수 절사 시 행번호 표기).',
         'tests/Unit/Search/KeywordSearchTest.php' => '검색 트랙 소유 (키워드 술어의 활성 엔진 위임).',
         'tests/Unit/Services/LanguagePackServiceUpdateCheckScopeTest.php' => '언어팩 트랙 소유 (업데이트 확인 범위).',
         'tests/Unit/Services/UserServiceWithdrawTest.php' => '회원 트랙 소유 (탈퇴 처리의 멱등성·컬럼 한계).',
@@ -518,7 +519,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * *파일* 등재만 잠근다(`test_every_gate_resident_test_is_declared_in_manifest`). 그래서
      * **파일은 등재됐는데 그 파일이 새로 선언한 effect 는 미등재** 인 상태가 통과했다.
      *
-     * 실측 14건 중 하나가 37차 산출물이다(`fragment_helper_read_cache_is_keyed_by_path_mtime_size`
+     * 38차 실측 14건 중 하나가 37차 산출물이다(`fragment_helper_read_cache_is_keyed_by_path_mtime_size`
      * — 37차 ⓕ 가 "조각 캐시 무관측" 을 고치며 신설). 즉 **직전 회차가 자기 산출물을 등재하지
      * 못한 채 종료**했고 아무도 알리지 않았다. 30차가 게이트 소속을 양방향으로 잠근 것과 같은
      * 처치를 effect 축에 적용한다.
@@ -578,7 +579,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * 잡아도, **파일 자체가 어느 매니페스트에도 없는** 경우는 구조적으로 보지 못한다 —
      * 그 파일의 마킹은 수집조차 되지 않으므로 차집합에 나타날 수 없다.
      *
-     * 실측이 그 여집합에 실물 3건을 찾았다(`PluginPartialResolutionParityTest` ·
+     * 39차 실측이 그 여집합에 실물 3건을 찾았다(`PluginPartialResolutionParityTest` ·
      * `LayoutPartialBaseDirectoryTest` · `GeneratesComponentManifestTest`). 셋 다 이 트랙의
      * 축(조각 경로 규약 · 컴포넌트 레지스트리)을 단언하면서 `@scenario`/`@effects` 까지 달아
      * 놓았는데, **커버리지 산정에는 한 번도 들어간 적이 없다.** 마킹은 "이 테스트가 어떤 축을

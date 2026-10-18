@@ -2,7 +2,7 @@
  * 관리자 페이지 작성 화면 — 등록 권한이 없을 때 읽기 전용
  *
  * 목록의 [페이지 추가]는 등록 권한이 없으면 비활성인데, 주소로 `/admin/pages/create` 에 바로
- * 들어오면 입력 가능한 폼이 열렸다(7.1.0 전수 실측). 서버가 중복 확인·저장을 403 으로
+ * 들어오면 입력 가능한 폼이 열렸다(7.1.0 전수 실측 영역 L, O-L6). 서버가 중복 확인·저장을 403 으로
  * 막아 데이터 영향은 없지만, 입력을 다 하고 나서야 거절을 받는다. 수정 화면처럼 안내 문구를 띄우고
  * 입력·저장·첨부를 잠그는지 고정한다.
  *
@@ -54,7 +54,7 @@ function readOnly(ctx: { route?: AnyNode; pageData?: AnyNode; createAbility?: An
     return Boolean(evaluate(isReadOnlyExpr, { route: {}, pageData: undefined, createAbility: undefined, ...ctx }));
 }
 
-describe('관리자 페이지 작성 화면 — 등록 권한 없을 때 읽기 전용', () => {
+describe('관리자 페이지 작성 화면 — 등록 권한 없을 때 읽기 전용 (O-L6)', () => {
     /**
      * @scenario mode=create,permission=denied
      * @effects create_form_read_only_without_create_permission
@@ -128,16 +128,12 @@ describe('관리자 페이지 작성 화면 — 등록 권한 없을 때 읽기 
     it('본문 편집기는 등록 모드에서 권한 확인이 끝난 뒤, 수정 모드에서 기존 값이 온 뒤에 그려진다', () => {
         const editor = findById(form, 'content_editor');
         const mounted = (ctx: Record<string, unknown>) =>
-            Boolean(evaluate(editor?.if ?? '', { route: {}, _local: {}, createAbility: undefined, contentMediaTarget: { data: null }, ...ctx }));
+            Boolean(evaluate(editor?.if ?? '', { route: {}, _local: {}, createAbility: undefined, ...ctx }));
         expect(mounted({})).toBe(false);
         expect(mounted({ createAbility: { data: { abilities: { can_create: true } } } })).toBe(true);
         expect(mounted({ createAbility: null })).toBe(true);
         expect(mounted({ route: { id: '13' }, _local: { form: {} } })).toBe(false);
         expect(mounted({ route: { id: '13' }, _local: { form: { content: { ko: '' } } } })).toBe(true);
-        // 업로드 계약을 받기(실패 포함) 전에는 세우지 않는다 — 처음 세워질 때의 계약만 쓴다(#883).
-        // 계약 출처는 표준 계약 엔드포인트 데이터 소스 contentMediaTarget 이다(#887 — 종전 attachmentSettings.content_media)
-        expect(mounted({ createAbility: { data: { abilities: { can_create: true } } }, contentMediaTarget: undefined })).toBe(false);
-        expect(mounted({ createAbility: { data: { abilities: { can_create: true } } }, contentMediaTarget: null })).toBe(true);
     });
 
     /**

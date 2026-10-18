@@ -20,7 +20,6 @@ use App\Services\SettingsService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 use Mockery;
 use Mockery\MockInterface;
@@ -67,7 +66,6 @@ class SeoRendererTest extends TestCase
         $this->layoutService = Mockery::mock(LayoutService::class);
         $this->templateService = Mockery::mock(TemplateService::class);
         $this->dataSourceResolver = Mockery::mock(DataSourceResolver::class);
-        $this->dataSourceResolver->shouldReceive('degradedDataSources')->andReturn([])->byDefault();
         $this->metaResolver = Mockery::mock(SeoMetaResolver::class);
         $this->htmlMapper = Mockery::mock(ComponentHtmlMapper::class);
         $this->evaluator = Mockery::mock(ExpressionEvaluator::class);
@@ -170,7 +168,6 @@ class SeoRendererTest extends TestCase
         $this->setupRouteResolver('/products/123', [
             'templateIdentifier' => 'sirsoft-user_basic',
             'layoutName' => 'shop/show',
-            'storedLayoutName' => 'sirsoft-ecommerce.shop/show',
             'routeParams' => ['id' => '123'],
             'moduleIdentifier' => 'sirsoft-ecommerce',
             'routeMeta' => [],
@@ -183,10 +180,9 @@ class SeoRendererTest extends TestCase
             toggleSetting: '$module_settings:seo.seo_product_detail',
         );
 
-        // 모듈 레이아웃은 DB 에 접두사가 붙은 전체 이름으로 저장된다 — 뗀 이름으로 찾으면 없다 (공개#154)
         $this->layoutService
             ->shouldReceive('getLayout')
-            ->with('sirsoft-user_basic', 'sirsoft-ecommerce.shop/show')
+            ->with('sirsoft-user_basic', 'shop/show')
             ->once()
             ->andReturn($mergedLayout);
 
@@ -229,53 +225,6 @@ class SeoRendererTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertStringContainsString('에어맥스', $result);
-        $this->assertSame([], $request->attributes->get('seo_render_degraded'));
-    }
-
-    /**
-     * 데이터 소스가 시간 초과·서버 오류로 대체값을 쓴 렌더는 그 id 를 요청 속성에 싣습니다 — 저장 경로가 캐시에 넣지 않는다.
-     *
-     * @scenario entry=render_request
-     *
-     * @effects renderer_marks_degraded_render
-     *
-     * @return void 반환값 없음
-     */
-    public function test_render_marks_degraded_data_sources_on_request(): void
-    {
-        $request = Request::create('/products/17');
-
-        $this->setupRouteResolver('/products/17', [
-            'templateIdentifier' => 'sirsoft-user_basic',
-            'layoutName' => 'shop/show',
-            'storedLayoutName' => 'sirsoft-ecommerce.shop/show',
-            'routeParams' => ['id' => '17'],
-            'moduleIdentifier' => 'sirsoft-ecommerce',
-            'routeMeta' => [],
-        ]);
-
-        $this->layoutService
-            ->shouldReceive('getLayout')
-            ->once()
-            ->andReturn($this->buildMergedLayout(
-                seoEnabled: true,
-                seoDataSources: ['product'],
-                components: [['component' => 'Div', 'props' => ['text' => '상품 상세']]],
-                toggleSetting: '$module_settings:seo.seo_product_detail',
-            ));
-        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product_detail', true);
-
-        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn(['product' => []]);
-        $this->dataSourceResolver->shouldReceive('degradedDataSources')->once()->andReturn(['product']);
-        $this->metaResolver->shouldReceive('resolve')->once()->andReturn($this->buildMetaResult(title: '상품 상세', description: ''));
-        $this->htmlMapper->shouldReceive('render')->once()->andReturn('<div>상품 상세</div>');
-
-        $viewMock = Mockery::mock(\Illuminate\View\View::class);
-        $viewMock->shouldReceive('render')->once()->andReturn('<html><title>상품 상세</title></html>');
-        View::shouldReceive('make')->once()->andReturn($viewMock);
-
-        $this->assertNotNull($this->renderer->render($request));
-        $this->assertSame(['product'], $request->attributes->get('seo_render_degraded'));
     }
 
     /**
@@ -425,28 +374,6 @@ class SeoRendererTest extends TestCase
         $result = $this->renderer->render($request);
 
         $this->assertNull($result);
-    }
-
-    /**
-     * 끝 슬래시 요청 경로는 정규형으로 레이아웃을 찾는다 (공개#156).
-     *
-     * @scenario path_shape=trailing_slash, bot=bot
-     *
-     * @effects seo_render_and_cache_key_use_canonical_path
-     *
-     * @return void 반환값 없음
-     */
-    public function test_render_resolves_normalized_path_for_trailing_slash(): void
-    {
-        $request = Request::create('/products/123/');
-
-        $this->routeResolver
-            ->shouldReceive('resolve')
-            ->with('/products/123')
-            ->once()
-            ->andReturn(null);
-
-        $this->assertNull($this->renderer->render($request));
     }
 
     /**
@@ -4215,89 +4142,6 @@ class SeoRendererTest extends TestCase
     }
 
     /**
-     * 필수(required) 변수가 비면 확장 제목 틀을 쓰지 않습니다 — 틀의 고정 글자만 남은 제목(「특가」)을 내지 않고,
-     * 필수 변수와 무관한 설명 틀은 그대로 씁니다. 화면 탭 제목(`DocumentTitle`)과 같은 규칙입니다.
-     *
-     * @scenario case=required_vars_server
-     *
-     * @effects required_var_empty_template_skipped
-     *
-     * @return void 반환값 없음
-     */
-    public function test_seo_context_skips_title_template_when_required_variable_empty(): void
-    {
-        $request = Request::create('/shop/products/1');
-        $this->setupRouteResolver('/shop/products/1', [
-            'templateIdentifier' => 'sirsoft-basic',
-            'layoutName' => 'shop/show',
-            'routeParams' => ['id' => '1'],
-            'moduleIdentifier' => null,
-            'routeMeta' => [],
-        ]);
-
-        $mergedLayout = $this->buildMergedLayout(
-            seoEnabled: true,
-            seoDataSources: ['product'],
-            pageType: 'product',
-            extensions: [['type' => 'module', 'id' => 'sirsoft-ecommerce']],
-            vars: [
-                'product_name' => '{{product.data.name}}',
-                'product_description' => '{{product.data.description}}',
-            ],
-        );
-        $this->layoutService->shouldReceive('getLayout')->once()->andReturn($mergedLayout);
-
-        $moduleMock = Mockery::mock(AbstractModule::class)->makePartial();
-        $moduleMock->shouldReceive('seoVariables')->andReturn([
-            '_common' => [
-                'commerce_name' => ['source' => 'setting', 'key' => 'basic_info.shop_name'],
-            ],
-            'product' => [
-                'product_name' => ['source' => 'data', 'required' => true],
-                'product_description' => ['source' => 'data'],
-            ],
-        ]);
-        $this->moduleManager->shouldReceive('getModule')
-            ->with('sirsoft-ecommerce')
-            ->andReturn($moduleMock);
-
-        config()->set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '');
-        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '{commerce_name} | {product_name} 특가');
-        config()->set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_description', '{product_description}');
-
-        $this->dataSourceResolver->shouldReceive('resolve')->once()->andReturn([
-            'product' => ['data' => ['name' => '', 'description' => '산지 직송']],
-        ]);
-
-        $this->evaluator->shouldReceive('evaluate')
-            ->with('{{product.data.name}}', Mockery::any())
-            ->andReturn('');
-        $this->evaluator->shouldReceive('evaluate')
-            ->with('{{product.data.description}}', Mockery::any())
-            ->andReturn('산지 직송');
-
-        $capturedContext = null;
-        $this->metaResolver->shouldReceive('resolve')
-            ->once()
-            ->withArgs(function ($seoConfig, $context) use (&$capturedContext) {
-                $capturedContext = $context;
-
-                return true;
-            })
-            ->andReturn($this->buildMetaResult(title: '상품 상세'));
-
-        $viewMock = Mockery::mock(\Illuminate\View\View::class);
-        $viewMock->shouldReceive('render')->andReturn('<html></html>');
-        View::shouldReceive('make')->once()->andReturn($viewMock);
-
-        $this->renderer->render($request);
-
-        $this->assertNotNull($capturedContext);
-        $this->assertSame('', $capturedContext['_seo']['product']['title']);
-        $this->assertSame('산지 직송', $capturedContext['_seo']['product']['description']);
-    }
-
-    /**
      * extensions 미선언 시 _seo context가 주입되지 않습니다 (하위호환).
      *
      * @effects renderer_seo_context_not_injected_without_extensions
@@ -4543,179 +4387,5 @@ class SeoRendererTest extends TestCase
         $this->assertNotNull($this->renderer->render(Request::create($url)));
 
         return $captured;
-    }
-
-    // =========================================================================
-    // 모듈 소유 화면의 레이아웃 이름 (공개#154)
-    // =========================================================================
-
-    /**
-     * 모듈 레이아웃의 뗀 이름이 템플릿 레이아웃 이름과 같아도 전체 이름으로만 조회합니다.
-     * 뗀 이름으로 찾으면 오류도 없이 템플릿의 같은 이름 화면이 그 주소로 렌더·캐시됩니다.
-     *
-     * @scenario surface=render_module_route
-     *
-     * @effects renderer_module_layout_loaded_by_stored_name_not_template_namesake
-     *
-     * @return void 반환값 없음
-     */
-    public function test_module_layout_with_template_namesake_is_loaded_by_stored_name(): void
-    {
-        $request = Request::create('/vendor-x');
-
-        $this->setupRouteResolver('/vendor-x', [
-            'templateIdentifier' => 'sirsoft-user_basic',
-            'layoutName' => 'home',
-            'storedLayoutName' => 'vendor-x.home',
-            'routeParams' => [],
-            'moduleIdentifier' => 'vendor-x',
-            'pluginIdentifier' => null,
-            'routeMeta' => [],
-        ]);
-
-        $this->layoutService->shouldReceive('getLayout')
-            ->with('sirsoft-user_basic', 'home')
-            ->never();
-        $this->layoutService->shouldReceive('getLayout')
-            ->with('sirsoft-user_basic', 'vendor-x.home')
-            ->once()
-            ->andReturn($this->buildMergedLayout(seoEnabled: false));
-
-        $this->assertNull($this->renderer->render($request));
-    }
-
-    /**
-     * 캐시·통계용 요청 속성에 전체 레이아웃 이름과 모듈 식별자를 싣습니다.
-     *
-     * @scenario surface=render_module_route
-     *
-     * @effects renderer_sets_stored_layout_name_and_module_attributes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_render_sets_stored_layout_name_and_module_identifier_attributes(): void
-    {
-        $request = Request::create('/memos');
-
-        $this->setupModuleRouteRender('/memos');
-
-        $this->assertNotNull($this->renderer->render($request));
-        $this->assertSame('gnuboard7-hello_module.user_memo_list', $request->attributes->get('seo_layout_name'));
-        $this->assertSame('gnuboard7-hello_module', $request->attributes->get('seo_module_identifier'));
-    }
-
-    /**
-     * 레이아웃 조회 실패는 error 로그 1회(전체 이름·모듈·URL·템플릿 포함)로 남기고 null 을 돌려줍니다.
-     *
-     * @scenario surface=render_module_route
-     *
-     * @effects renderer_layout_load_failure_logs_error_with_stored_name
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_load_failure_logs_error_with_stored_name_and_module(): void
-    {
-        Log::spy();
-
-        $request = Request::create('/memos');
-
-        $this->setupRouteResolver('/memos', [
-            'templateIdentifier' => 'sirsoft-user_basic',
-            'layoutName' => 'user_memo_list',
-            'storedLayoutName' => 'gnuboard7-hello_module.user_memo_list',
-            'routeParams' => [],
-            'moduleIdentifier' => 'gnuboard7-hello_module',
-            'pluginIdentifier' => null,
-            'routeMeta' => [],
-        ]);
-
-        $this->layoutService->shouldReceive('getLayout')
-            ->once()
-            ->andThrow(new \RuntimeException('Layout not found'));
-
-        $this->assertNull($this->renderer->render($request));
-
-        Log::shouldHaveReceived('error')
-            ->once()
-            ->with('[SEO] Layout load failed', Mockery::on(function (array $ctx) {
-                return ($ctx['layout'] ?? null) === 'gnuboard7-hello_module.user_memo_list'
-                    && ($ctx['route_layout_name'] ?? null) === 'user_memo_list'
-                    && ($ctx['module'] ?? null) === 'gnuboard7-hello_module'
-                    && array_key_exists('plugin', $ctx) && $ctx['plugin'] === null
-                    && ($ctx['url'] ?? null) === '/memos'
-                    && ($ctx['template'] ?? null) === 'sirsoft-user_basic'
-                    && ($ctx['error'] ?? null) === 'Layout not found';
-            }));
-        Log::shouldNotHaveReceived('warning', ['[SEO] Layout load failed', Mockery::any()]);
-    }
-
-    /**
-     * 공개 훅 컨텍스트는 기존 layoutName(뗀 이름)을 그대로 두고 storedLayoutName 을 더합니다.
-     *
-     * @scenario surface=render_module_route
-     *
-     * @effects renderer_hook_contexts_carry_stored_layout_name
-     *
-     * @return void 반환값 없음
-     */
-    public function test_hook_contexts_keep_layout_name_and_add_stored_layout_name(): void
-    {
-        $hooks = ['core.seo.filter_context', 'core.seo.filter_meta', 'core.seo.filter_view_data'];
-        $received = [];
-        foreach ($hooks as $hook) {
-            HookManager::clearFilter($hook);
-            HookManager::addFilter($hook, function (array $value, array $hookMeta) use (&$received, $hook) {
-                $received[$hook] = $hookMeta;
-
-                return $value;
-            });
-        }
-
-        try {
-            $this->setupModuleRouteRender('/memos');
-            $this->assertNotNull($this->renderer->render(Request::create('/memos')));
-        } finally {
-            foreach ($hooks as $hook) {
-                HookManager::clearFilter($hook);
-            }
-        }
-
-        foreach ($hooks as $hook) {
-            $this->assertArrayHasKey($hook, $received, $hook.' 미발화');
-            $this->assertSame('user_memo_list', $received[$hook]['layoutName'], $hook);
-            $this->assertSame('gnuboard7-hello_module.user_memo_list', $received[$hook]['storedLayoutName'] ?? null, $hook);
-        }
-    }
-
-    /**
-     * 모듈 소유 화면 렌더에 필요한 라우트·레이아웃·메타·뷰 목(Mock)을 준비합니다.
-     *
-     * @param  string  $url  요청 URL
-     * @return void 반환값 없음
-     */
-    private function setupModuleRouteRender(string $url): void
-    {
-        $this->setupRouteResolver($url, [
-            'templateIdentifier' => 'sirsoft-user_basic',
-            'layoutName' => 'user_memo_list',
-            'storedLayoutName' => 'gnuboard7-hello_module.user_memo_list',
-            'routeParams' => [],
-            'moduleIdentifier' => 'gnuboard7-hello_module',
-            'pluginIdentifier' => null,
-            'routeMeta' => [],
-        ]);
-
-        $this->layoutService->shouldReceive('getLayout')
-            ->with('sirsoft-user_basic', 'gnuboard7-hello_module.user_memo_list')
-            ->once()
-            ->andReturn($this->buildMergedLayout(seoEnabled: true, components: []));
-        $this->dataSourceResolver->shouldReceive('resolve')->never();
-        $this->metaResolver->shouldReceive('resolve')->once()
-            ->andReturn($this->buildMetaResult(title: '메모 목록'));
-        $this->htmlMapper->shouldReceive('render')->andReturn('');
-
-        $viewMock = Mockery::mock(\Illuminate\View\View::class);
-        $viewMock->shouldReceive('render')->once()->andReturn('<html><title>메모 목록</title></html>');
-        View::shouldReceive('make')->with('seo', Mockery::type('array'))->once()->andReturn($viewMock);
     }
 }

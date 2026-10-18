@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Models;
 use App\Casts\AsUnicodeJson;
 use App\Models\Permission;
 use App\Models\User;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -119,7 +118,6 @@ class Board extends Model
         'name',
         'slug',
         'is_active',
-        'display_order',
         'description',
 
         // 게시글 설정
@@ -161,9 +159,6 @@ class Board extends Model
         'max_file_count',
         'allowed_extensions',
 
-        // 본문 미디어 정책 (null: 첨부 정책을 따름, #883)
-        'content_media_policy',
-
         // 댓글 설정
         'comment_order',
         'max_comment_depth',
@@ -197,10 +192,8 @@ class Board extends Model
             'categories' => 'array',
             // 빈 배열을 NULL 로 정규화해 "확장자 미지정" 표현을 하나로 유지합니다.
             'allowed_extensions' => AsAllowedExtensions::class,
-            'content_media_policy' => 'array',
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
-            'display_order' => 'integer',
             'show_view_count' => 'boolean',
             'use_comment' => 'boolean',
             'use_reply' => 'boolean',
@@ -303,8 +296,10 @@ class Board extends Model
             return (string) $this->name;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->name, $locale) ?? '';
+        return $this->name[$locale]
+            ?? $this->name[config('app.fallback_locale')]
+            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+            ?? '';
     }
 
     /**
@@ -333,8 +328,10 @@ class Board extends Model
             return (string) $this->description;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->description, $locale) ?? '';
+        return $this->description[$locale]
+            ?? $this->description[config('app.fallback_locale')]
+            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
+            ?? '';
     }
 
     /**

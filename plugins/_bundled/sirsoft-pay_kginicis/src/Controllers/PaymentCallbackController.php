@@ -6,7 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +29,6 @@ use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
-use Plugins\Sirsoft\PayKginicis\Concerns\SplitsInicisTax;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\AuthCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileVbankNotifyRequest;
@@ -53,7 +52,6 @@ class PaymentCallbackController
     use ResolvesEasyPaySelection;
     use SanitizesPgResponse;
     use SerializesPaymentCallbacks;
-    use SplitsInicisTax;
     use ValidatesCbtOrderContext;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
@@ -441,8 +439,7 @@ class PaymentCallbackController
                     'is_test_mode' => $this->apiService->isTestMode(),
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($pgResponse, self::PC_AUTH_RESPONSE_KEYS),
-                    // 결제창이 과세 구분(tax·taxfree)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거(#820)
-                ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod), $this->buildTaxSplitApprovalMeta($order, $totPrice)),
+                ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod)),
                 'payment_device' => DeviceDetector::detect($request),
             ], $totPrice);
 
@@ -900,7 +897,7 @@ class PaymentCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -912,7 +909,7 @@ class PaymentCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;
@@ -984,7 +981,6 @@ class PaymentCallbackController
             'tid' => $tid,
             'vbank_name' => $pgResponse['vactBankName'] ?? null,
             'vbank_number' => $pgResponse['VACT_Num'] ?? null,
-            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             'vbank_due_at' => $vbankDueAt?->toDateTimeString(),
         ]);
     }

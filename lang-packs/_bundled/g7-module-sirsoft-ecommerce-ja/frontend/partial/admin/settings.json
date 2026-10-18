@@ -15,7 +15,6 @@
     "claim": "クレーム",
     "shipping": "配送設定",
     "review_settings": "レビュー設定",
-    "product_display": "商品陳列",
     "notification_definitions": "通知設定",
     "identity_policies": "本人認証ポリシー",
     "mileage": "マイレージ",
@@ -65,11 +64,7 @@
       "mail_order_number_placeholder": "第2024-ソウル江南-12345号",
       "telecom_number": "付加通信事業者番号",
       "telecom_number_placeholder": "付加通信事業者番号",
-      "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。",
-      "hosting_provider": "ホスティングサービス提供者",
-      "hosting_provider_placeholder": "例: ホスティング会社名",
-      "show_business_footer": "ユーザー画面の下部に事業者情報を表示",
-      "show_business_footer_hint": "オンにすると、商号・代表者・事業所住所・電話・メール・事業者登録番号・通信販売業申告番号・ホスティングサービス提供者のうち値がある項目をユーザー画面の下部に表示します。オフにすると、これらの値をユーザー画面に送信しません。"
+      "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。"
     },
     "public_asset_storage": {
       "title": "公開アセットストレージ",
@@ -241,9 +236,7 @@
       "days_suffix": "日後に自動キャンセルされます。",
       "pending_minutes_prefix": "決済画面まで進んだものの決済が完了しなかった注文は",
       "pending_minutes_suffix": "分後に自動キャンセルされます。",
-      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。",
-      "days_label": "入金待ち注文の自動キャンセル日数",
-      "pending_minutes_label": "決済未完了注文の自動キャンセル時間（分）"
+      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。"
     },
     "cart_expiry": {
       "title": "カート有効期間",
@@ -269,7 +262,7 @@
       "shipping_fee_tax_proportional": "按分 (デフォルト)",
       "shipping_fee_tax_taxable": "全額課税",
       "shipping_fee_tax_follow_main_item": "主要な財貨基準",
-      "shipping_fee_tax_help": "按分は、課税·ゼロ税率·非課税商品の金額比率で配送料を分割します。主たる商品は最も大きい区分（同額なら課税 > ゼロ税率 > 非課税）に従います。",
+      "shipping_fee_tax_help": "按分は、課税·非課税商品の金額比率で配送料を分割します。",
       "self_issue_label": "自進発行の使用",
       "self_issue_help": "購入者が申請していない無通帳入金建も自動で発行します (所得控除用専用)。",
       "self_issue_mandatory_help": "現金領収証の義務発行業種は、購入者が申請しなくても発行義務があります。該当業種であればオンにしてください。",
@@ -572,7 +565,7 @@
   "seo": {
     "meta_settings": {
       "title": "メタタグ設定",
-      "description": "各ページのメタタグを設定します。変数を使用して動的に設定できます。Title は検索エンジンのタイトルと訪問者のブラウザタブのタイトルの両方に使われ、サイト名はコアSEO設定の「タイトル接尾辞」(空の場合は ' - サイト名')で後ろに付くため、テンプレートに含める必要はありません。",
+      "description": "各ページのメタタグを設定します。変数を使用して動的に設定できます。",
       "main_page": "メインページ",
       "category_page": "カテゴリー",
       "search_page": "検索結果",
@@ -620,24 +613,7 @@
     "max_images_hint": "レビュー1件あたりの添付可能な画像数（0=画像不可）",
     "images_unit": "枚",
     "max_image_size_mb_label": "画像最大容量",
-    "max_image_size_mb_hint": "アップロード可能な画像ファイルの最大容量",
-    "author_name_masking_label": "投稿者名のマスク",
-    "author_name_masking_middle": "中央をマスク（山*郎）",
-    "author_name_masking_none": "マスクしない",
-    "author_name_masking_hint": "商品詳細のレビュータブとレビュー一覧に表示される投稿者名に適用されます。管理画面と投稿者本人の画面には実名が表示されます。"
-  },
-  "product_display": {
-    "title": "関連商品",
-    "description": "商品詳細の下に表示する「この商品はいかがですか？」リストを設定します。代表カテゴリーの商品を先に、足りない場合はその上位カテゴリーの商品で補います（最大8件）。",
-    "order_label": "同じ段階内の並び順",
-    "order_hint": "代表カテゴリー・上位カテゴリーなど、同じ段階の中で商品を並べる順序です。",
-    "order_random": "ランダム",
-    "order_sales": "販売数の多い順",
-    "order_reviews": "レビューの多い順",
-    "order_latest": "新着順",
-    "cache_hours_label": "リスト保持時間",
-    "hours_unit": "時間",
-    "cache_hours_hint": "一度選んだリストをこの時間そのまま表示します（ランダムでもこの間は同じリスト）。0にすると表示のたびに選び直します。保存すると、これまでに選んだリストは消去されます。"
+    "max_image_size_mb_hint": "アップロード可能な画像ファイルの最大容量"
   },
   "notification_definitions": {
     "title": "通知設定",

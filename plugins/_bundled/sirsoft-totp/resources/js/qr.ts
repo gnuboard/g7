@@ -18,9 +18,6 @@ const ERROR_CORRECTION = 'M' as const;
 /** 코드 주위 여백(모듈 수). QR 규격 권장치는 4다 — 좁히면 인식률이 떨어진다. */
 const QUIET_ZONE = 4;
 
-/** QR SVG 의 크기·가운데 배치 규칙을 거는 클래스 — 규칙은 `resources/css/main.css` 에 있다. */
-export const QR_SVG_CLASS = 'totp-qr-svg';
-
 /**
  * otpauth URI 로 QR SVG 문자열을 만든다.
  *
@@ -53,8 +50,7 @@ export function renderQrSvg(uri: string, label: string): string {
     return [
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}"`,
         ` role="img" aria-label="${escapeAttribute(label)}"`,
-        // 크기는 클래스(플러그인 CSS)로 건다 — 스타일 보안 정책은 HTML 문자열의 style 속성을 막는다.
-        ` class="${QR_SVG_CLASS}">`,
+        ' style="width:100%;max-width:220px;height:auto;display:block;margin:0 auto">',
         `<rect width="${size}" height="${size}" fill="#ffffff"/>`,
         `<path d="${path}" fill="#000000"/>`,
         '</svg>',

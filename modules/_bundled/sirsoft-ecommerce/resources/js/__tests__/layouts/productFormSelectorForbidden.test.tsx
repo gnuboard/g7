@@ -132,11 +132,7 @@ function defineSelectorSuite(c: SelectorCase): void {
     const ds = ((shell as Node).data_sources ?? []).find((d: Node) => d.id === c.source);
 
     expect(ds?.errorHandling?.['403']?.handler).toBe('suppress');
-    // 처음 받기 실패 갈래(조건 없는 갈래)가 오류 화면이다 — 다시 받기 실패(`error.refetch`)는 토스트 (engine-v1.82.0 문맥)
-    const firstFetch = ds?.errorHandling?.default?.handler === 'conditions'
-      ? ds.errorHandling.default.conditions.find((b: Node) => b.if === undefined)?.then
-      : ds?.errorHandling?.default;
-    expect(firstFetch?.handler).toBe('showErrorPage');
+    expect(ds?.errorHandling?.default?.handler).toBe('showErrorPage');
   });
 
   /**

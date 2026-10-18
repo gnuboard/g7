@@ -103,7 +103,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 hidden sm:inline"
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.order_info_description"
                                 },
@@ -397,7 +397,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 hidden sm:inline"
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_description"
                                 }
@@ -570,65 +570,115 @@
                                                 }
                                             ],
                                             "props": {
-                                                "aria-label": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_label",
                                                 "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100",
-                                                "value": "{{_local._ked_deli_corp ?? ''}}",
-                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}",
-                                                "options": [
-                                                    {
-                                                        "value": "",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder"
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": ""
                                                     },
-                                                    {
-                                                        "value": "04",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.cj"
+                                                    "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "04"
                                                     },
-                                                    {
-                                                        "value": "05",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hanjin"
+                                                    "text": "CJ대한통운"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "05"
                                                     },
-                                                    {
-                                                        "value": "06",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.logen"
+                                                    "text": "한진택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "06"
                                                     },
-                                                    {
-                                                        "value": "08",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.lotte_parcel"
+                                                    "text": "로젠택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "08"
                                                     },
-                                                    {
-                                                        "value": "09",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.epost"
+                                                    "text": "롯데택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "09"
                                                     },
-                                                    {
-                                                        "value": "11",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kyungdong"
+                                                    "text": "우체국택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "11"
                                                     },
-                                                    {
-                                                        "value": "13",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.ilyang"
+                                                    "text": "경동택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "13"
                                                     },
-                                                    {
-                                                        "value": "14",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hapdong"
+                                                    "text": "일양로지스"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "14"
                                                     },
-                                                    {
-                                                        "value": "20",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.dream"
+                                                    "text": "합동택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "20"
                                                     },
-                                                    {
-                                                        "value": "23",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.chunil"
+                                                    "text": "드림택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "23"
                                                     },
-                                                    {
-                                                        "value": "26",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kunyoung"
+                                                    "text": "천일택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "26"
                                                     },
-                                                    {
-                                                        "value": "40",
-                                                        "label": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc"
-                                                    }
-                                                ]
-                                            }
+                                                    "text": "건영택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "40"
+                                                    },
+                                                    "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc"
+                                                }
+                                            ]
                                         }
                                     ]
                                 },
@@ -702,7 +752,6 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === '')}}",
                                                 "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
@@ -743,7 +792,7 @@
                                     "name": "Div",
                                     "if": "{{_local._ked_error}}",
                                     "props": {
-                                        "className": "text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
+                                        "className": "text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
                                     },
                                     "text": "{{_local._ked_error}}"
                                 }

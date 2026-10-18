@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Services\Analytics\AnonymizeService;
 use Illuminate\Console\Command;
@@ -20,7 +19,6 @@ use Illuminate\Console\Command;
 class AnonymizeCommand extends Command
 {
     use HasUnifiedConfirm;
-    use LocalizesDescription;
 
     /**
      * 커맨드 이름 및 시그니처
@@ -35,6 +33,13 @@ class AnonymizeCommand extends Command
                             {--force : 확인 없이 진행}';
 
     /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '이미 쌓인 방문 기록에 마스킹·해시를 소급 적용합니다.';
+
+    /**
      * 커맨드 실행
      *
      * @param  AnonymizeService  $service  익명화 서비스
@@ -46,22 +51,22 @@ class AnonymizeCommand extends Command
         $hash = (bool) $this->option('hash');
 
         if ($maskOctets < 0 || $maskOctets > 3) {
-            $this->error(__('analytics.console.anonymize.invalid_octets'));
+            $this->error('가릴 옥텟 수는 0 에서 3 사이여야 합니다.');
 
             return self::FAILURE;
         }
 
         if ($maskOctets === 0 && ! $hash) {
-            $this->error(__('analytics.console.anonymize.option_required'));
+            $this->error('--mask-octets 또는 --hash 중 하나는 지정해야 합니다.');
 
             return self::FAILURE;
         }
 
         if (! $this->option('force')
-            && ! $this->unifiedConfirm(__('analytics.console.anonymize.confirm'))) {
-            $this->info(__('analytics.console.anonymize.cancelled'));
+            && ! $this->unifiedConfirm('이미 쌓인 방문 기록을 되돌릴 수 없게 바꿉니다. 진행할까요?')) {
+            $this->info('취소했습니다.');
 
-            return $this->confirmAbortExitCode();
+            return self::SUCCESS;
         }
 
         $run = $service->anonymize([
@@ -75,12 +80,12 @@ class AnonymizeCommand extends Command
         $status = $run->status instanceof ArchiveRunStatus ? $run->status->value : (string) $run->status;
 
         if ($status === ArchiveRunStatus::Failed->value) {
-            $this->error(__('analytics.console.anonymize.failed', ['error' => $run->error]));
+            $this->error('소급 익명화 실패: '.$run->error);
 
             return self::FAILURE;
         }
 
-        $this->info(__('analytics.console.anonymize.done', ['count' => (int) $run->processed_visits]));
+        $this->info(sprintf('방문 %d건을 익명화했습니다.', $run->processed_visits));
 
         return self::SUCCESS;
     }

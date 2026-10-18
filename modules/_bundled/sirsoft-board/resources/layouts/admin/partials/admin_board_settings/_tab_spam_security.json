@@ -8,6 +8,13 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'spam_security'}}",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
     "children": [
         {
             "type": "basic",
@@ -226,7 +233,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs board-tone-info"
+                                                "className": "text-info-soft"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.fields.spam_security_identifier_info"
                                         }

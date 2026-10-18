@@ -165,6 +165,45 @@ class CoreUpdateControllerTest extends TestCase
     }
 
     /**
+     * 직전 업데이트가 custom 사전 검사로 멈춘 기록은 같은 새 버전일 때만 확인 결과에 실립니다 (#792).
+     *
+     * @scenario area=core_update.check
+     *
+     * @effects check_for_updates_includes_custom_preflight
+     *
+     * @return void 반환값 없음
+     */
+    public function test_check_for_updates_includes_custom_preflight_record_for_same_version(): void
+    {
+        $this->mock(CoreUpdateService::class, function ($mock) {
+            $mock->shouldReceive('checkForUpdates')->twice()->andReturn([
+                'update_available' => true,
+                'current_version' => '7.1.1',
+                'latest_version' => '7.2.0',
+                'github_url' => 'https://github.com/gnuboard/g7',
+            ]);
+        });
+
+        $conflict = ['package' => 'acme/cli-kit', 'installed' => '2.0.0', 'type' => 'constraint', 'requires' => 'symfony/console', 'constraint' => '^6.4', 'core_package' => 'symfony/console', 'core_version' => 'v7.1.0'];
+        \App\Extension\Custom\CustomUpdatePreflight::record('7.2.0', ['reserved_files' => [], 'conflicts' => [$conflict]]);
+
+        try {
+            $this->authRequest()->postJson('/api/admin/core-update/check')
+                ->assertOk()
+                ->assertJsonPath('data.custom_preflight.to_version', '7.2.0')
+                ->assertJsonPath('data.custom_preflight.conflicts.0.package', 'acme/cli-kit');
+
+            // 다른 버전을 시도한 기록은 싣지 않는다
+            \App\Extension\Custom\CustomUpdatePreflight::record('7.1.9', ['reserved_files' => [], 'conflicts' => [$conflict]]);
+            $this->authRequest()->postJson('/api/admin/core-update/check')
+                ->assertOk()
+                ->assertJsonPath('data.custom_preflight', null);
+        } finally {
+            \App\Extension\Custom\CustomUpdatePreflight::clearRecord();
+        }
+    }
+
+    /**
      * GitHub API 호출 실패 시 422 에러와 구체적인 에러 원인을 반환합니다.
      *
      * @scenario area=core_update.check

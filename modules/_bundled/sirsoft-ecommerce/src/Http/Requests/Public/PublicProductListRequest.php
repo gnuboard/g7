@@ -34,28 +34,14 @@ class PublicProductListRequest extends FormRequest
             'category_slug' => ['nullable', 'string', 'max:100'],
             'brand_id' => ['nullable', 'integer'],
             'search' => ['nullable', 'string', 'max:200'],
-            'sort' => ['nullable', 'string', 'in:latest,sales,reviews,price_asc,price_desc'],
+            'sort' => ['nullable', 'string', 'in:latest,sales,price_asc,price_desc'],
             'min_price' => ['nullable', 'integer', 'min:0'],
             'max_price' => ['nullable', 'integer', 'min:0'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            // 품절 제외 (1 이면 판매상태 품절·활성 옵션 재고 전부 0 인 상품을 뺀다)
-            'exclude_sold_out' => ['nullable', 'in:0,1'],
         ];
 
         // 훅을 통한 validation rules 확장
         return HookManager::applyFilters('sirsoft-ecommerce.product.public_list_validation_rules', $rules, $this);
-    }
-
-    /**
-     * 검증 필드 라벨
-     *
-     * @return array<string, string> 필드 라벨
-     */
-    public function attributes(): array
-    {
-        return [
-            'exclude_sold_out' => __('sirsoft-ecommerce::validation.public_list_attributes.exclude_sold_out'),
-        ];
     }
 
     /**

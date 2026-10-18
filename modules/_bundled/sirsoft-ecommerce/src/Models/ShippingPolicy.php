@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -160,7 +159,7 @@ class ShippingPolicy extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return LocalizedValue::pick($name, $locale) ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -176,11 +175,6 @@ class ShippingPolicy extends Model
 
         if ($settings->isEmpty()) {
             return '';
-        }
-
-        // 배송 국가가 하나뿐이면 국가 코드를 붙이지 않는다 — 국내만 배송하는 쇼핑몰에 「KR: 」은 쓸모없는 표기다
-        if ($settings->count() === 1) {
-            return $settings->first()->getFeeSummary();
         }
 
         $summaries = $settings->map(function (ShippingPolicyCountrySetting $setting) {

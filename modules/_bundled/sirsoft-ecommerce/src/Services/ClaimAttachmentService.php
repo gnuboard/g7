@@ -6,7 +6,6 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
-use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -23,6 +22,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderExchangeRepositoryInte
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -52,6 +52,7 @@ use Throwable;
 class ClaimAttachmentService
 {
     use ResolvesRowStorage;
+    use ResolvesStoredExtension;
 
     /**
      * 허용 확장자의 SSoT.
@@ -666,8 +667,8 @@ class ClaimAttachmentService
         $file = HookManager::applyFilters('sirsoft-ecommerce.claim-image.filter_upload_file', $file);
 
         // 확장자는 클라이언트가 준 값이 아니라 검증이 실제로 본 값(내용)에서 정한다 — 상세는
-        // 코어 `StoredFileExtension` 주석 참조.
-        $storedFilename = Str::uuid().'.'.StoredFileExtension::resolve($file, 'jpg');
+        // `ResolvesStoredExtension` 주석 참조.
+        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
         $path = "claims/{$claimableType}/{$claimableId}/{$storedFilename}";
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)

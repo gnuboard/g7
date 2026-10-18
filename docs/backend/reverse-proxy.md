@@ -219,5 +219,6 @@ curl -s -H 'X-Forwarded-Proto: https' http://127.0.0.1/ | grep 'template-engine'
 ## 관련 문서
 
 - [routing.md](routing.md) — 자산 URL 생성 규칙
+- [../custom-development.md](../custom-development.md#6-외부-화면nextjs-등) — 외부 화면(SSR) 서버를 신뢰 프록시로 두고 방문자 IP 를 넘기는 구성
 - [../requirements.md](../requirements.md) — SSL/TLS 요구사항
 - [../../INSTALL.md](../../INSTALL.md) — 설치·프로덕션 설정

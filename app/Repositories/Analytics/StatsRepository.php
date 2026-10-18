@@ -292,7 +292,6 @@ class StatsRepository implements StatsRepositoryInterface
 
         do {
             $count = AnalyticsStatsHourly::query()
-                // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
                 ->where('hour_start', '<', $before->format('Y-m-d H:i:s'))
                 ->limit($chunkSize)
                 ->delete();
@@ -375,7 +374,6 @@ class StatsRepository implements StatsRepositoryInterface
     public function countHourlyOlderThan(Carbon $before): int
     {
         return AnalyticsStatsHourly::query()
-            // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
             ->where('hour_start', '<', $before->format('Y-m-d H:i:s'))
             ->count();
     }

@@ -15,31 +15,19 @@ import {
     ckeditorTranslationUrl,
 } from './ckeditorAssets';
 import { ensureCkeditorGlobal } from './ckeditorGlobal';
-import { EditingViewCssomStyle } from './editingViewStyle';
-import { buildLocaleTabContent } from './localeLabel';
 import { notifyEditorAssetFailure } from './editorFailureNotice';
 import { attachReadOnlySync, readOnlyFromContainer } from './readOnlySync';
 import { createG7UploadAdapterPlugin, UPLOAD_IMAGE_TYPES } from './uploadAdapter';
-import { createMediaUploadButtonsPlugin, enabledMediaButtons, MEDIA_BUTTON_NAMES } from './mediaUploadButtons';
 import {
     getTextareaFallbackValues,
     removeTextareaFallback,
     renderTextareaFallback,
 } from './textareaFallback';
 
-/**
- * 편집기 최소 높이를 거는 컨테이너 속성·CSS 변수 — 규칙은 `resources/css/main.css` 에 있다.
- *
- * 다국어 탭·다크 모드·본문 보정·미리보기 규칙도 모두 그 파일(빌드 산출물 `dist/css/plugin.css`)에 있다. 여기서
- * `<style>` 요소나 `style="…"` 문자열을 만들지 않는다 — 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)
- * 에서 둘 다 막힌다. 실행 중에 정해지는 값은 `el.style.x = …`·`el.style.setProperty()` 로 싣는다.
- */
-export const MIN_HEIGHT_ATTR = 'data-ckeditor5-min-height';
-export const MIN_HEIGHT_VAR = '--ckeditor5-min-height';
-
-/** 미디어 미리보기 상자·플레이어 클래스 — 규칙은 `resources/css/main.css` */
-export const EMBED_PREVIEW_CLASS = 'g7-ck-embed-preview';
-export const EMBED_PREVIEW_FRAME_CLASS = 'g7-ck-embed-preview__frame';
+/** CKEditor5 다크 모드 CSS 엘리먼트 ID */
+const CKEDITOR5_DARK_CSS_ID = 'ckeditor5-dark-override';
+/** CKEditor5 다국어 탭 기본 CSS 엘리먼트 ID */
+const CKEDITOR5_TAB_CSS_ID = 'ckeditor5-tab-style';
 
 /** CKEditor 전역 객체 타입 (CDN UMD 빌드 — window.CKEDITOR) */
 interface CKEditorGlobal {
@@ -86,12 +74,6 @@ interface InitEditorParams {
     placeholder?: string;
     readOnly?: boolean | string;
     imageUpload?: boolean | string;
-    /**
-     * 본문 미디어 업로드 계약 (코어 `ContentMediaUploadTarget`, #883). 화면(확장 레이아웃)이 자기 업로드 주소·정책을 넘긴다.
-     * 있으면 이 계약으로 올리고 업로드 단추도 계약 정책으로 정한다. 없으면(null·복제 템플릿) 종전 규칙 — 관리자만 이 플러그인
-     * 자체 업로드다. 객체 또는 JSON 문자열.
-     */
-    mediaUpload?: unknown;
     height?: number | string;
     toolbar?: string;
     /**
@@ -326,6 +308,437 @@ function t(key: string, fallback: string): string {
 }
 
 /**
+ * 다국어 탭 버튼 기본 스타일(라이트/다크 공통 베이스)을 주입합니다.
+ * 이미 주입된 경우 중복 삽입하지 않습니다.
+ */
+function loadTabCss(): void {
+    if (document.getElementById(CKEDITOR5_TAB_CSS_ID)) {
+        return;
+    }
+    const style = document.createElement('style');
+    style.id = CKEDITOR5_TAB_CSS_ID;
+    style.textContent = `
+        /* 다국어 탭 컨테이너 */
+        .ckeditor5-locale-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        /* 다국어 탭 버튼 - HtmlEditor 언어탭 스타일 */
+        .ckeditor5-locale-tabs button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1;
+            transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+        }
+        /* 비활성 - 기본언어 (blue) */
+        .ckeditor5-locale-tabs button.is-default {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+        .ckeditor5-locale-tabs button.is-default:hover {
+            background: #dbeafe;
+        }
+        /* 비활성 - 비기본언어 (gray) */
+        .ckeditor5-locale-tabs button:not(.is-default) {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        .ckeditor5-locale-tabs button:not(.is-default):hover {
+            background: #e5e7eb;
+        }
+        /* 활성 - 기본언어 */
+        .ckeditor5-locale-tabs button.is-active.is-default {
+            background: #3b82f6;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transform: scale(1.05);
+        }
+        /* 활성 - 비기본언어 */
+        .ckeditor5-locale-tabs button.is-active:not(.is-default) {
+            background: #6b7280;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transform: scale(1.05);
+        }
+        .ckeditor5-locale-tabs button .ck5-lang-icon {
+            font-size: 0.75rem;
+            line-height: 1;
+        }
+        .ckeditor5-locale-tabs button .ck5-required {
+            color: #ef4444;
+        }
+        .ckeditor5-locale-tabs button.is-active .ck5-required {
+            color: #fca5a5;
+        }
+        .ckeditor5-locale-tabs button .ck5-check {
+            color: #22c55e;
+        }
+        /* 다크 모드 - 비활성 기본언어 */
+        html.dark .ckeditor5-locale-tabs button.is-default {
+            background: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+        }
+        html.dark .ckeditor5-locale-tabs button.is-default:hover {
+            background: rgba(59, 130, 246, 0.25);
+        }
+        /* 다크 모드 - 비활성 비기본언어 */
+        html.dark .ckeditor5-locale-tabs button:not(.is-default) {
+            background: #374151;
+            color: #d1d5db;
+        }
+        html.dark .ckeditor5-locale-tabs button:not(.is-default):hover {
+            background: #4b5563;
+        }
+        /* 다크 모드 - 활성 기본언어 */
+        html.dark .ckeditor5-locale-tabs button.is-active.is-default {
+            background: #2563eb;
+            color: #ffffff;
+        }
+        /* 다크 모드 - 활성 비기본언어 */
+        html.dark .ckeditor5-locale-tabs button.is-active:not(.is-default) {
+            background: #4b5563;
+            color: #ffffff;
+        }
+        html.dark .ckeditor5-locale-tabs button .ck5-check {
+            color: #4ade80;
+        }
+        /* 표 너비 인라인 스타일 무력화 - 컨테이너에 맞게 100% */
+        .ck-content figure.table { width: 100%; }
+        .ck-content figure.table table { width: 100%; }
+        /* 표 tr 배경색 초기화 */
+        .ck-content table tr { background-color: unset; }
+        /* 표 col 절대 px 너비 무력화 - 컨테이너에 맞게 비율로 */
+        .ck-content table col { width: auto !important; }
+        /* 표 정렬 보정: CKEditor5 기본 CSS의 margin-left:auto를 float으로 덮어씀 */
+        .ck-content figure.table[style*="float:left"],
+        .ck-content figure.table[style*="float: left"] {
+            margin-left: 0 !important;
+            margin-right: 1em !important;
+        }
+        .ck-content figure.table[style*="float:right"],
+        .ck-content figure.table[style*="float: right"] {
+            margin-left: 1em !important;
+            margin-right: 0 !important;
+        }
+        /* 이미지 캡션 - 라이트 모드 */
+        .ck-content .image > figcaption {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-size: 0.875em;
+            padding: 4px 8px;
+            text-align: center;
+        }
+        /* 에디터 편집 영역 - 목록 마커 복원 (Tailwind preflight reset 대응) */
+        .ck.ck-editor__editable ul,
+        .ck-content ul {
+            list-style-type: disc;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ol,
+        .ck-content ol {
+            list-style-type: decimal;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ul ul,
+        .ck-content ul ul {
+            list-style-type: circle;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ul ul ul,
+        .ck-content ul ul ul {
+            list-style-type: square;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ol ol,
+        .ck-content ol ol {
+            list-style-type: lower-alpha;
+            padding-left: 2em;
+        }
+        .ck.ck-editor__editable ol ol ol,
+        .ck-content ol ol ol {
+            list-style-type: lower-roman;
+            padding-left: 2em;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+/**
+ * 현재 다크 모드 여부를 반환합니다.
+ */
+function isDarkMode(): boolean {
+    return document.documentElement.classList.contains('dark');
+}
+
+/**
+ * CKEditor5 다크 모드 CSS 변수를 동적으로 주입하거나 제거합니다.
+ * document.documentElement의 'dark' 클래스를 기준으로 판단합니다.
+ */
+function applyDarkModeOverride(): void {
+    const existing = document.getElementById(CKEDITOR5_DARK_CSS_ID);
+
+    if (!isDarkMode()) {
+        // 라이트 모드: 다크 오버라이드 제거
+        if (existing) {
+            existing.remove();
+        }
+        return;
+    }
+
+    if (existing) {
+        return;
+    }
+
+    const style = document.createElement('style');
+    style.id = CKEDITOR5_DARK_CSS_ID;
+    style.textContent = `
+        /* CKEditor5 다크 모드 오버라이드 - CSS 변수 전역 적용 */
+        :root {
+            --ck-color-base-foreground: #1f2937;
+            --ck-color-base-background: #1f2937;
+            --ck-color-base-border: #374151;
+            --ck-color-text: #f3f4f6;
+            --ck-color-toolbar-background: #111827;
+            --ck-color-toolbar-border: #374151;
+            --ck-color-button-default-background: transparent;
+            --ck-color-button-default-hover-background: #374151;
+            --ck-color-button-default-active-background: #4b5563;
+            --ck-color-button-on-background: #374151;
+            --ck-color-button-on-hover-background: #4b5563;
+            --ck-color-focus-border: #3b82f6;
+            --ck-color-input-background: #1f2937;
+            --ck-color-input-text: #f3f4f6;
+            --ck-color-input-border: #374151;
+            --ck-color-panel-background: #1f2937;
+            --ck-color-panel-border: #374151;
+            --ck-color-list-button-hover-background: #374151;
+            --ck-color-list-button-on-background: #3b82f6;
+            --ck-color-list-button-on-color: #f3f4f6;
+            --ck-color-list-button-on-hover-background: #4b5563;
+            --ck-color-labeled-field-label-background: #1f2937;
+            --ck-color-link-default: #60a5fa;
+            --ck-color-link-selected-background: rgba(96, 165, 250, 0.1);
+            --ck-color-table-focused-cell-background: rgba(59, 130, 246, 0.1);
+        }
+        /* 에디터 본문 */
+        .ck.ck-editor__editable_inline {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+        /* 메인 툴바 */
+        .ck.ck-toolbar {
+            background-color: #111827 !important;
+            border-color: #374151 !important;
+        }
+        /* 모든 버튼 텍스트 */
+        .ck.ck-button,
+        .ck.ck-button .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        /* 모든 SVG 아이콘 (툴바, 드롭다운 화살표 포함) */
+        .ck.ck-icon,
+        .ck .ck-icon,
+        .ck.ck-button .ck-icon,
+        .ck.ck-dropdown__arrow {
+            color: #f3f4f6 !important;
+        }
+        .ck.ck-button:hover,
+        .ck.ck-button.ck-on {
+            background-color: #374151 !important;
+        }
+        /* 툴팁 (호버 시 버튼 설명) */
+        .ck.ck-tooltip .ck-tooltip__text {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+        }
+        /* 드롭다운 패널 / 리스트 / balloon 팝업 공통 */
+        .ck.ck-dropdown__panel,
+        .ck.ck-list,
+        .ck.ck-balloon-panel {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        /* 리스트 아이템 */
+        .ck.ck-list__item .ck-button,
+        .ck.ck-list__item .ck-button .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        .ck.ck-list__item .ck-button:hover {
+            background-color: #374151 !important;
+        }
+        .ck.ck-list__item .ck-button.ck-disabled .ck-button__label {
+            color: #6b7280 !important;
+        }
+        /* 링크 팝업 / form */
+        .ck.ck-link-form,
+        .ck.ck-link-actions {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        .ck.ck-input-text {
+            background-color: #111827 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+        .ck.ck-labeled-field-view__label {
+            background-color: #1f2937 !important;
+            color: #9ca3af !important;
+        }
+        /* 테이블 속성/셀 속성 폼 */
+        .ck.ck-table-form,
+        .ck.ck-table-cell-properties-form,
+        .ck.ck-table-properties-form {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+        .ck.ck-table-form .ck-label,
+        .ck.ck-table-cell-properties-form .ck-label,
+        .ck.ck-table-properties-form .ck-label {
+            color: #d1d5db !important;
+        }
+        /* 색상 선택 패널 */
+        .ck.ck-color-table,
+        .ck.ck-color-grid {
+            background-color: #1f2937 !important;
+        }
+        .ck.ck-color-table .ck-color-table__remove-color,
+        .ck.ck-color-table .ck-color-table__remove-color .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        /* 헤딩/폰트 드롭다운 라벨 */
+        .ck.ck-heading_paragraph,
+        .ck.ck-heading_heading1,
+        .ck.ck-heading_heading2,
+        .ck.ck-heading_heading3 {
+            color: #f3f4f6 !important;
+        }
+        /* 이미지 캡션 */
+        .ck-content .image > figcaption {
+            background-color: #374151 !important;
+            color: #d1d5db !important;
+        }
+        /* 이미지 리사이즈 핸들 */
+        .ck-content .image.ck-widget_selected .ck-widget__resizer__handle {
+            background-color: #3b82f6 !important;
+            border-color: #1d4ed8 !important;
+        }
+        /* 이미지 정렬 툴바 아이콘 */
+        .ck.ck-toolbar .ck-button .ck-icon {
+            color: #f3f4f6 !important;
+        }
+        /* 이미지 선택 시 balloon toolbar (floating) */
+        .ck.ck-toolbar_floating {
+            background-color: #111827 !important;
+            border-color: #374151 !important;
+        }
+        /* 이미지 리사이즈 드롭다운 버튼 라벨 (25%, 50% 등) */
+        .ck.ck-dropdown .ck-button__label {
+            color: #f3f4f6 !important;
+        }
+        /* 이미지 리사이즈 드롭다운 내 선택 리스트 */
+        .ck.ck-resize-image-form,
+        .ck.ck-image-resize-form {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: #f3f4f6 !important;
+        }
+        .ck.ck-resize-image-form .ck-label,
+        .ck.ck-image-resize-form .ck-label {
+            color: #d1d5db !important;
+        }
+        .ck.ck-resize-image-form .ck-input-text,
+        .ck.ck-image-resize-form .ck-input-text {
+            background-color: #111827 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+        /* 표 안 에디터 내용 (다크 배경) */
+        .ck-content table tr {
+            background-color: unset;
+        }
+        .ck-content table td,
+        .ck-content table th {
+            border-color: #4b5563;
+            color: #f3f4f6 !important;
+        }
+        /* 표 col 절대 px 너비 무력화 */
+        .ck-content table col {
+            width: auto !important;
+        }
+        /* 목록 마커 색상 - 다크모드 */
+        .ck.ck-editor__editable ul,
+        .ck.ck-editor__editable ol {
+            color: #f3f4f6;
+        }
+        .ck.ck-editor__editable li::marker {
+            color: #d1d5db;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+/** 다크 모드 MutationObserver 인스턴스 (cleanup용) */
+let darkModeObserver: MutationObserver | null = null;
+
+/**
+ * <html> 클래스 변경을 감지하여 다크 모드 전환 시 즉시 반영합니다.
+ * 최초 1회만 등록합니다.
+ */
+function watchDarkMode(): void {
+    if (darkModeObserver) {
+        return;
+    }
+
+    darkModeObserver = new MutationObserver(() => {
+        applyDarkModeOverride();
+    });
+
+    darkModeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+}
+
+/**
+ * 다크 모드 MutationObserver를 해제합니다.
+ */
+export function disconnectDarkModeObserver(): void {
+    if (darkModeObserver) {
+        darkModeObserver.disconnect();
+        darkModeObserver = null;
+    }
+}
+
+/** locale 코드 → 표시 이름 매핑 */
+const LOCALE_LABELS: Record<string, string> = {
+    ko: '한국어',
+    en: 'English',
+    ja: '日本語',
+    zh: '中文',
+    fr: 'Français',
+    de: 'Deutsch',
+    es: 'Español',
+};
+
+/**
+ * locale 코드를 표시 이름으로 변환합니다.
+ * 매핑에 없는 경우 대문자 코드를 반환합니다.
+ */
+function getLocaleLabel(locale: string): string {
+    return LOCALE_LABELS[locale] ?? locale.toUpperCase();
+}
+
+/**
  * 지원 locale 목록을 반환합니다.
  * localStorage의 g7_locale 값과 서버 설정을 활용합니다.
  */
@@ -351,7 +764,7 @@ function getCurrentLocale(): string {
 /**
  * CKEditor 플러그인 목록을 toolbar 타입에 따라 반환합니다.
  */
-function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUpload: boolean, withMediaEmbed = false): any[] {
+function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUpload: boolean): any[] {
     const base = [
         CKEDITOR.Essentials,
         CKEDITOR.Bold,
@@ -392,11 +805,6 @@ function getPlugins(CKEDITOR: CKEditorGlobal, toolbarType: string, withImageUplo
         );
     }
 
-    // 코어 「본문 콘텐츠」가 외부 영상 삽입을 켜면 표준 툴바에도 미디어 삽입을 싣는다 (#883)
-    if (withMediaEmbed && toolbarType !== 'full') {
-        base.push(CKEDITOR.MediaEmbed);
-    }
-
     if (withImageUpload) {
         // 업로드 어댑터는 CDN 의 SimpleUploadAdapter 가 아니라 이 플러그인의 어댑터(코어 API 클라이언트 경유)다 —
         // createEditorInstance 의 extraPlugins 로 붙인다.
@@ -415,171 +823,6 @@ function buildUploadUrl(): string {
 }
 
 /**
- * 코어 「본문 콘텐츠」 규칙의 편집기 제약 — 서비스 목록·금지 태그·업로드 동영상/오디오 허용. 규칙이 없으면(옛 코어) null.
- *
- * @return 제약 또는 null
- */
-export function contentEditorConstraints(): any | null {
-    try {
-        return (window as any)?.G7Core?.contentPolicy?.editorConstraints?.() ?? null;
-    } catch {
-        return null;
-    }
-}
-
-/**
- * 외부 영상 서비스를 CKEditor `mediaEmbed.extraProviders` 로 바꿉니다 — 서버가 컴파일한 정규식·플레이어 주소만 쓴다.
- *
- * CKEditor 기본 제공자는 쓰지 않는다(표시 허용 목록과 어긋나지 않게). 맞지 않는 주소는 CKEditor 가 「지원하지 않는 주소」로 알린다.
- *
- * @param providers 규칙의 서비스 목록
- * @return CKEditor 제공자 정의
- */
-export function mediaEmbedProviders(providers: any[]): Array<{ name: string; url: RegExp[]; html: (match: RegExpMatchArray) => string }> {
-    return (providers ?? []).map((provider: any) => ({
-        name: String(provider.id),
-        url: (provider.patterns ?? []).map((p: string) => {
-            try {
-                return new RegExp(p, 'i');
-            } catch {
-                return null;
-            }
-        }).filter((re: RegExp | null): re is RegExp => re !== null),
-        html: (match: RegExpMatchArray) => {
-            const id = match?.groups?.id ?? '';
-            const src = String(provider.player_url ?? '').replace('{id}', encodeURIComponent(id)).replace(/"/g, '&quot;');
-
-            // 미리보기는 편집 화면에만 그려진다(저장 내용에는 `<oembed url>` 하나). 모양은 클래스로 건다 —
-            // CKEditor 는 편집 화면에 그릴 때 `on*`·`srcdoc`·`javascript:` 만 걸러 내고 class 는 그대로 둔다.
-            return `<div class="${EMBED_PREVIEW_CLASS}">`
-                + `<iframe src="${src}" class="${EMBED_PREVIEW_FRAME_CLASS}" allowfullscreen></iframe></div>`;
-        },
-    })).filter((p) => p.url.length > 0);
-}
-
-/**
- * 화면이 넘긴 본문 미디어 계약을 코어 런타임으로 정규화합니다 — 형식이 틀리거나 다른 출처면 null.
- *
- * @param raw `mediaUpload` 값 (객체 또는 JSON 문자열)
- * @return 정규화한 계약 또는 null
- */
-export function resolveMediaUploadTarget(raw: unknown): any | null {
-    let value = raw;
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined' || trimmed.startsWith('{{')) {
-            return null;
-        }
-        try {
-            value = JSON.parse(trimmed);
-        } catch {
-            return null;
-        }
-    }
-    if (value === null || value === undefined || typeof value !== 'object') {
-        return null;
-    }
-
-    const normalize = (window as any)?.G7Core?.contentMedia?.normalizeTarget;
-
-    return typeof normalize === 'function' ? (normalize(value) ?? null) : null;
-}
-
-/**
- * 계약 이미지 확장자를 CKEditor `image.upload.types`(MIME 하위 형식)로 바꿉니다.
- *
- * @param extensions 확장자 목록
- * @return 형식 목록
- */
-export function uploadTypesFromExtensions(extensions: readonly string[]): string[] {
-    const map: Record<string, string> = { jpg: 'jpeg', jpeg: 'jpeg', png: 'png', gif: 'gif', webp: 'webp', avif: 'avif' };
-    const types = extensions.map((e) => map[String(e).toLowerCase()]).filter((t): t is string => !!t);
-
-    return Array.from(new Set(types));
-}
-
-/**
- * 만드는 사이 화면을 떠나 컨테이너가 문서에서 떨어진 편집기를 해제합니다 — 해제 실패는 무시한다(이미 화면 밖이다).
- *
- * @param editor 방금 만든 편집기
- */
-async function discardDetachedEditor(editor: unknown): Promise<void> {
-    try {
-        await (editor as any)?.destroy?.();
-    } catch {
-        // 떨어져 나간 편집기 — 해제 실패가 새 화면에 영향을 주지 않는다
-    }
-}
-
-/**
- * 떠난 화면 편집기의 등록을 거둡니다 — 등록부 키(`ckeditor5-{name}`)는 화면이 달라도 같으므로, 그 사이 같은 이름으로
- * 선 다음 화면 편집기가 등록을 바꿔 놓았으면 건드리지 않는다(지우면 해제·읽기 전용 전환이 그 편집기에 닿지 않는다).
- *
- * @param containerId 등록부 키
- * @param instanceMap 떠난 화면이 등록한 편집기 묶음
- */
-function releaseDetachedRegistration(containerId: string, instanceMap: Map<string, unknown>): void {
-    if (editorInstances.get(containerId) === instanceMap) {
-        editorInstances.delete(containerId);
-    }
-}
-
-/**
- * 지금 보는 사람이 관리자인지 판정합니다 — 이 플러그인의 업로드 주소(관리자 전용)를 쓸 수 있는지.
- *
- * 부팅 때 받아 둔 인증 사용자(`AuthManager.getUser()`, 사용자·관리자 템플릿 공통)를 먼저 보고, 없으면 사용자 템플릿의
- * `_global.currentUser` 를 본다. 둘 다 없으면(비회원·옛 코어) 관리자가 아니다.
- *
- * @param globalState `G7Core.state.get()` 결과
- * @return 관리자면 true
- */
-export function viewerIsAdmin(globalState: Record<string, any>): boolean {
-    let authUser: any = null;
-    try {
-        authUser = (window as any)?.G7Core?.AuthManager?.getInstance?.()?.getUser?.() ?? null;
-    } catch {
-        authUser = null;
-    }
-
-    const user = authUser ?? globalState?._global?.currentUser ?? globalState?.currentUser;
-
-    return user?.is_admin === true;
-}
-
-/**
- * 편집기 경고 알림(업로드 실패 등)을 코어 토스트로 보냅니다.
- *
- * CKEditor 의 Notification 플러그인은 경고를 네이티브 `alert` 로 띄운다 — 탭 전체가 멈추고, 자동화 도구도
- * 대화상자에 걸려 진행하지 못했다(#883 검수 실측). 듣는 쪽이 `evt.stop()` 하면 기본 alert 가 뜨지 않는다.
- * 코어 토스트가 없으면(옛 코어) 손대지 않아 종전 alert 가 그대로 뜬다.
- *
- * @param editor 방금 만든 편집기
- */
-function routeWarningsToToast(editor: any): void {
-    const toastError = (window as any)?.G7Core?.toast?.error;
-    if (typeof toastError !== 'function') {
-        return;
-    }
-
-    let notification: any;
-    try {
-        notification = editor?.plugins?.get?.('Notification');
-    } catch {
-        return;
-    }
-
-    notification?.on?.('show:warning', (evt: any, data: { message?: unknown; title?: unknown }) => {
-        const message = typeof data?.message === 'string' && data.message !== ''
-            ? data.message
-            : (typeof data?.title === 'string' ? data.title : '');
-        if (message !== '') {
-            toastError(message);
-        }
-        evt.stop();
-    }, { priority: 'high' });
-}
-
-/**
  * 단일 CKEditor 인스턴스를 생성합니다.
  */
 async function createEditorInstance(
@@ -592,7 +835,6 @@ async function createEditorInstance(
         height: number;
         toolbar: string;
         containerId: string;
-        mediaTarget?: any | null;
     }
 ): Promise<unknown> {
     const CKEDITOR = (window as any).CKEDITOR as CKEditorGlobal;
@@ -603,31 +845,13 @@ async function createEditorInstance(
     const toolbarItems = TOOLBAR_PRESETS[options.toolbar] || TOOLBAR_PRESETS.standard;
 
     // 이미지 업로드 비활성화 시 uploadImage 버튼 제거
-    const constraints = contentEditorConstraints();
-    const withMediaEmbed = constraints?.allowExternalEmbed === true;
-    let baseToolbar = options.imageUpload
+    const finalToolbar = options.imageUpload
         ? toolbarItems
         : toolbarItems.filter(item => item !== 'uploadImage');
-    if (withMediaEmbed && !baseToolbar.includes('mediaEmbed')) {
-        const at = baseToolbar.indexOf('insertTable');
-        baseToolbar = [...baseToolbar.slice(0, at + 1), 'mediaEmbed', ...baseToolbar.slice(at + 1)];
-    }
-    if (constraints && !withMediaEmbed) {
-        // 외부 영상 삽입이 꺼져 있으면 넣어도 표시에서 사라진다 — 단추를 주지 않는다
-        baseToolbar = baseToolbar.filter(item => item !== 'mediaEmbed');
-    }
-
-    // 계약 정책이 동영상·오디오를 켰으면 이미지 업로드 단추 옆에 단추를 더한다 (#883)
-    const mediaButtons = enabledMediaButtons(options.mediaTarget ?? null);
-    const mediaItems = mediaButtons.map((kind) => MEDIA_BUTTON_NAMES[kind]);
-    const anchorIndex = baseToolbar.indexOf('uploadImage') >= 0 ? baseToolbar.indexOf('uploadImage') : baseToolbar.indexOf('insertTable');
-    const finalToolbar = mediaItems.length > 0
-        ? [...baseToolbar.slice(0, anchorIndex + 1), ...mediaItems, ...baseToolbar.slice(anchorIndex + 1)]
-        : baseToolbar;
 
     const editorConfig: Record<string, any> = {
         initialData: options.initialContent,
-        plugins: getPlugins(CKEDITOR, options.toolbar, options.imageUpload, withMediaEmbed),
+        plugins: getPlugins(CKEDITOR, options.toolbar, options.imageUpload),
         toolbar: { items: finalToolbar },
         table: {
             contentToolbar: [
@@ -670,12 +894,7 @@ async function createEditorInstance(
             ],
             resizeUnit: '%' as const,
             // 파일 선택 창 accept·끌어 놓기 필터를 서버가 받는 형식으로 좁힌다(기본값은 bmp·tiff 포함)
-            // 계약이 있으면 그 정책의 이미지 형식, 없으면 이 플러그인 업로드가 받는 형식 (#883)
-            upload: {
-                types: options.mediaTarget
-                    ? uploadTypesFromExtensions(options.mediaTarget.policy?.image?.extensions ?? [])
-                    : [...UPLOAD_IMAGE_TYPES],
-            },
+            upload: { types: [...UPLOAD_IMAGE_TYPES] },
         },
         indentBlock: {
             offset: 40,
@@ -698,50 +917,29 @@ async function createEditorInstance(
             allow: [
                 { name: /.*/, attributes: true, classes: true, styles: true },
             ],
-            // 표시 규칙이 지울 태그는 편집기도 받지 않는다 — 저장 뒤 사라지는 내용을 남기지 않게 (#883)
-            ...(constraints && (constraints.forbidTags ?? []).length > 0
-                ? { disallow: [{ name: new RegExp(`^(${(constraints.forbidTags as string[]).map((t) => t.replace(/[^a-z0-9-]/gi, '')).join('|')})$`) }] }
-                : {}),
         },
         placeholder: options.placeholder,
         language: getCurrentLocale(),
     };
 
-    if (constraints) {
-        // 미디어 삽입 저장 형식은 지금과 같은 `<figure class="media"><oembed url>` — 표시기가 정해진 플레이어로 바꾼다 (#883)
-        editorConfig.mediaEmbed = {
-            previewsInData: false,
-            providers: [],
-            extraProviders: mediaEmbedProviders(constraints.providers ?? []),
-        };
-    }
-
-    // 편집 화면의 서식(style)을 CSSOM 으로 입힌다 — 스타일 정책이 속성 쓰기를 막아도 정렬·색·표·이미지 크기가 보인다.
-    // 정책을 켰는지와 무관하게 항상 싣는다(같은 화면이 두 갈래로 그려지지 않게).
-    const extraPlugins: any[] = [EditingViewCssomStyle];
     if (options.imageUpload) {
         // Bearer 부착·401 처리는 G7Core.api 가 맡는다 — 로그인 토큰을 여기서 읽지 않는다.
-        // 계약이 있으면 계약 경로(화면이 정한 주소·정책), 없으면 종전 경로 (#883)
-        extraPlugins.push(options.mediaTarget
-            ? createG7UploadAdapterPlugin({ target: options.mediaTarget, legacyUrl: buildUploadUrl() })
-            : createG7UploadAdapterPlugin(buildUploadUrl()));
+        editorConfig.extraPlugins = [createG7UploadAdapterPlugin(buildUploadUrl())];
     }
-    if (mediaButtons.length > 0) {
-        extraPlugins.push(createMediaUploadButtonsPlugin(options.mediaTarget, mediaButtons));
-    }
-    editorConfig.extraPlugins = extraPlugins;
 
     const editor = await CKEDITOR.ClassicEditor.create(element, editorConfig);
 
-    routeWarningsToToast(editor);
-
-    // 높이 설정: 편집 영역의 인라인 스타일은 포커스 시 CKEditor 내부에서 초기화될 수 있으므로 CSS 규칙으로 강제한다.
-    // 규칙(`[data-ckeditor5-min-height] .ck-editor__editable`)은 플러그인 CSS 파일에 있고, 여기서는 컨테이너에
-    // 속성과 값(CSS 변수)만 단다 — remount 시 같은 컨테이너에 덮어쓴다.
-    const heightHost = document.getElementById(options.containerId);
-    if (heightHost) {
-        heightHost.setAttribute(MIN_HEIGHT_ATTR, '');
-        heightHost.style.setProperty(MIN_HEIGHT_VAR, `${options.height}px`);
+    // 높이 설정: 인라인 스타일은 포커스 시 CKEditor 내부에서 초기화될 수 있으므로
+    // containerId 기반 CSS 규칙으로 강제 적용 (remount 시 동일 ID로 덮어씀)
+    const heightStyleId = `ckeditor5-height-style-${options.containerId}`;
+    const existingHeightStyle = document.getElementById(heightStyleId);
+    if (existingHeightStyle) {
+        existingHeightStyle.textContent = `#${options.containerId} .ck-editor__editable { min-height: ${options.height}px !important; }`;
+    } else {
+        const heightStyle = document.createElement('style');
+        heightStyle.id = heightStyleId;
+        heightStyle.textContent = `#${options.containerId} .ck-editor__editable { min-height: ${options.height}px !important; }`;
+        document.head.appendChild(heightStyle);
     }
 
     if (options.readOnly) {
@@ -817,8 +1015,7 @@ function createMultilingualTabs(
         tab.type = 'button';
         tab.dataset.locale = locale;
         tab.className = [isActive ? 'is-active' : '', isDefault ? 'is-default' : ''].filter(Boolean).join(' ');
-        // 언어 이름(언어팩 문자열)은 textContent 로만 넣는다 — innerHTML 금지 (#148 F5x)
-        buildLocaleTabContent(tab, locale, isDefault);
+        tab.innerHTML = `<i class="fas fa-globe ck5-lang-icon"></i><span>${getLocaleLabel(locale)}</span>${isDefault ? '<span class="ck5-required">*</span>' : ''}`;
         tab.addEventListener('click', async () => {
             // 탭 활성화 전환 (에디터 생성 전에 먼저 실행)
             tabsEl.querySelectorAll('button').forEach(btn => {
@@ -1045,13 +1242,6 @@ export async function initEditorHandler(
     const editorName = (params.name as string) ?? 'content';
     const containerId = `ckeditor5-${editorName}`;
 
-    // 마운트한 화면의 경로와 그 화면의 본문 — 아래 await(이전 인스턴스 정리·번역·본체 확보·생성) 동안 같은 레이아웃의
-    // 다른 경로로 옮기면, 편집기(평문 입력칸)는 앞 화면 값으로 서면 안 된다. {@link planSeed} 참조.
-    const seedPath = location.pathname;
-    const mountMultilingual = params.multilingual === true || params.multilingual === 'true';
-    const mountSingle = mountMultilingual ? '' : resolveSingleContent(params, editorName);
-    const mountMap = mountMultilingual ? resolveContentMap(params, editorName) : {};
-
     // 기존 인스턴스가 있으면 먼저 정리 (외부 재동기화 타이머도 함께 멈춘다)
     stopExternalSyncs(containerId);
     const existing = editorInstances.get(containerId);
@@ -1073,8 +1263,11 @@ export async function initEditorHandler(
         return;
     }
 
-    // CKEditor CSS 동적 로드 — 다국어 탭·다크 모드 규칙은 플러그인 CSS 파일(`html.dark` 스코프)이 맡는다
+    // CKEditor CSS 동적 로드 및 다크 모드 오버라이드 적용
     loadCkeditorCss();
+    loadTabCss();
+    applyDarkModeOverride();
+    watchDarkMode();
 
     // 번역 파일 로드 (에디터 생성 전 완료되어야 함)
     await loadCkeditorTranslations(getCurrentLocale());
@@ -1095,19 +1288,9 @@ export async function initEditorHandler(
     // 초기화 값은 마운트 시점 한 번의 평가다. 권한 확인처럼 로드 뒤에 바뀌는 값은 조각 컨테이너의
     // 상태 표식(`data-readonly="true|false"`)으로 따라간다 — 편집기를 만드는 순간에도 그 값을 쓴다.
     const readOnlyNow = (): boolean => readOnlyFromContainer(container, isReadOnly);
-    const requestedImageUpload = params.imageUpload !== undefined
+    const withImageUpload = params.imageUpload !== undefined
         ? (params.imageUpload === true || params.imageUpload === 'true')
         : (pluginSettings.imageUpload === true || pluginSettings.imageUpload === 'true');
-    // 이 플러그인의 업로드 주소는 관리자 전용이다(서버 auth:sanctum + admin). 관리자가 아닌 사람에게 단추를 주면
-    // 누르는 순간 401·403 으로 실패한다(비회원은 종전에 로그인 화면으로 옮겨져 쓰던 글이 사라졌다 — #883).
-    // 판정은 부팅 때 받아 둔 인증 사용자(AuthManager — 두 템플릿 공통)로 한다. `_global.currentUser` 는 사용자 템플릿에만
-    // 있고 그마저 화면이 그려진 뒤에 도착할 수 있어, 그것만 보면 관리자 화면의 업로드 단추까지 사라진다.
-    // 화면이 본문 미디어 계약을 넘기면(#883) 업로드 여부는 계약 정책(이미지 허용)이 정한다 — 비회원·일반 회원도 그 화면의
-    // 업로드 주소로 올린다. 계약이 없으면 종전 규칙(관리자만 이 플러그인 자체 업로드).
-    const mediaTarget = resolveMediaUploadTarget(params.mediaUpload);
-    const withImageUpload = mediaTarget
-        ? mediaTarget.policy?.image?.enabled === true
-        : requestedImageUpload && viewerIsAdmin(globalState);
     const placeholder = params.placeholder ?? '';
     const height = params.height !== undefined ? (Number(params.height) || 400) : (Number(pluginSettings.editorHeight) || 400);
     const toolbarType = (params.toolbar !== undefined ? (params.toolbar as string) : (pluginSettings.toolbar as string)) ?? 'standard';
@@ -1147,53 +1330,6 @@ export async function initEditorHandler(
         return typeof value === 'string' ? value : undefined;
     };
 
-    /**
-     * 지금 폼(또는 쓰기 대상)에 있는 이 칸의 값을 읽습니다.
-     *
-     * @param locale 로케일
-     * @param multilingual 다국어 여부
-     * @return 값 (없으면 undefined)
-     */
-    const readCurrent = (locale: string, multilingual: boolean): string | undefined => {
-        if (writeTarget) return readFromTarget(locale, multilingual);
-        const form = (window as any).G7Core?.state?.getLocal?.()?.form;
-        const value = multilingual ? form?.[name]?.[locale] : form?.[name];
-
-        return typeof value === 'string' ? value : undefined;
-    };
-
-    /**
-     * 편집기(평문 입력칸)에 넣을 초기값과 그 값이 속한 화면 경로를 정합니다.
-     *
-     * 마운트 뒤 기다리는 사이 주소가 그대로면 종전대로 지금 해석한 값(수정 화면은 그 사이 도착한 본문)을 쓴다.
-     * 주소가 바뀌었으면 마운트 때 받은 값(`params.content`)은 **앞 화면** 것이다 — 그 값으로 세우고 재동기화를 지금 경로에
-     * 붙이면 새 화면 값으로 영영 다시 서지 않는다(편집기 본체 404 로 평문 입력칸이 몇 초 뒤에 서는 동안 글 수정 → 새 글
-     * 쓰기: 새 글 입력칸·폼에 앞 글 본문). 그래서 지금 폼 값을 쓰되, 그 값이 아직 마운트 때 값과 같으면(새 폼을 받는 중)
-     * 앞 화면 경로에 속한 값으로 표시해 재동기화가 새 값을 기다리게 한다.
-     *
-     * @param locale 로케일
-     * @param multilingual 다국어 여부
-     * @param resolveNow 주소가 그대로일 때 쓸 값
-     * @param mountValue 마운트 때 그 화면의 값
-     * @return 초기값과 그 값이 속한 경로
-     */
-    const planSeed = (
-        locale: string,
-        multilingual: boolean,
-        resolveNow: () => string,
-        mountValue: string
-    ): { value: string; path: string } => {
-        if (location.pathname === seedPath) {
-            return { value: resolveNow(), path: seedPath };
-        }
-
-        const current = readCurrent(locale, multilingual) ?? '';
-
-        return current !== mountValue
-            ? { value: current, path: location.pathname }
-            : { value: current, path: seedPath };
-    };
-
     // content 파싱: 다국어 시 객체, 단일 시 문자열
     // extensionPointProps를 통해 전달되는 경우 표현식이 평가되지 않고 raw 문자열로 전달될 수 있음
     // 이 경우 G7Core.state.getLocal().form[name] 폴백 사용
@@ -1221,14 +1357,6 @@ export async function initEditorHandler(
         // 자산 확보 시도(await) 동안 폼 데이터가 도착했을 수 있으므로 **여기서 다시** 해석한다.
         // await 이전에 캡처된 값을 그대로 쓰면 수정 화면에서 폴백이 빈 채로 서고, 폴백이
         // `form.{name}` 에 빈 문자열을 써 넣어 저장된 본문이 조용히 지워진다.
-        const fallbackLocales = isMultilingual ? getSupportedLocales() : [];
-        const fallbackPlans = isMultilingual
-            ? fallbackLocales.map((locale) => {
-                const latest = resolveContentMap(params, name);
-
-                return { locale, ...planSeed(locale, true, () => latest[locale] ?? '', mountMap[locale] ?? '') };
-            })
-            : [{ locale: '', ...planSeed(getCurrentLocale(), false, () => resolveSingleContent(params, name), mountSingle) }];
         const fallbackOptions = {
             container,
             name,
@@ -1237,14 +1365,10 @@ export async function initEditorHandler(
             placeholder,
             trackChanges: tracksChanges,
             multilingual: isMultilingual,
-            locales: isMultilingual ? fallbackLocales : undefined,
+            locales: isMultilingual ? getSupportedLocales() : undefined,
             activeLocale: getCurrentLocale(),
-            contentMap: isMultilingual
-                ? Object.fromEntries(fallbackPlans.map((plan) => [plan.locale, plan.value]))
-                : undefined,
-            initialContent: isMultilingual ? undefined : fallbackPlans[0].value,
-            // 한 칸이라도 앞 화면 값이면 앞 화면 경로로 붙인다(다국어 입력칸은 칸을 묶어 보낸다)
-            seedPath: fallbackPlans.find((plan) => plan.path !== location.pathname)?.path,
+            contentMap: isMultilingual ? resolveContentMap(params, name) : undefined,
+            initialContent: isMultilingual ? undefined : resolveSingleContent(params, name),
         };
 
         renderTextareaFallback(fallbackOptions);
@@ -1271,7 +1395,6 @@ export async function initEditorHandler(
         height,
         toolbar: toolbarType,
         containerId,
-        mediaTarget,
     };
 
     if (isMultilingual) {
@@ -1288,21 +1411,13 @@ export async function initEditorHandler(
             const contentEl = contentElsRef.current.get(locale);
             if (!contentEl) return;
 
-            const seed = planSeed(locale, true, () => contentMap[locale] ?? '', mountMap[locale] ?? '');
-            const initialContent = seed.value;
+            const initialContent = contentMap[locale] ?? '';
 
             try {
                 const editor = await createEditorInstance(contentEl, {
                     ...editorOptions,
                     initialContent,
                 });
-
-                // 만드는 사이 화면을 떠났으면(컨테이너가 문서에서 떨어짐) 편집기를 해제하고 폼에 쓰지 않는다 — 그때의 _local 은
-                // 새 화면 것이라 `form.{name}_mode` 가 목록 화면 상태에 남았다
-                if (!container.isConnected) {
-                    await discardDetachedEditor(editor);
-                    return;
-                }
 
                 instanceMap.set(locale, editor);
 
@@ -1316,8 +1431,6 @@ export async function initEditorHandler(
                     locale,
                     multilingual: true,
                     readExternal: writeTarget ? () => readFromTarget(locale, true) : undefined,
-                    seedPath: seed.path,
-                    seedValue: initialContent,
                 });
                 registerExternalSync(containerId, externalSync);
 
@@ -1362,12 +1475,6 @@ export async function initEditorHandler(
         // 활성 locale 에디터 먼저 생성
         await createLocaleEditor(activeLocale);
 
-        // 만드는 사이 화면을 떠났으면 평문 폴백도 세우지 않는다 — 폴백이 `form.{name}_mode` 를 새 화면 _local 에 쓴다
-        if (!container.isConnected) {
-            releaseDetachedRegistration(containerId, instanceMap);
-            return;
-        }
-
         // 활성 locale 조차 세우지 못했으면 자산은 있어도 편집기를 쓸 수 없는 상태다.
         // 나머지 locale 을 계속 시도해봐야 같은 이유로 실패하므로 평문 입력으로 내려앉는다.
         if (!instanceMap.has(activeLocale)) {
@@ -1407,8 +1514,7 @@ export async function initEditorHandler(
         // params.content가 빈 문자열이거나 미평가 표현식({{...}})인 경우
         // onMount 타이밍 문제로 _local.form이 아직 미적용된 것일 수 있음
         // G7Core.state.getLocal()로 현재 상태를 직접 읽어 폴백
-        const seed = planSeed(getCurrentLocale(), false, () => resolveSingleContent(params, name), mountSingle);
-        const initialContent = seed.value;
+        const initialContent = resolveSingleContent(params, name);
         const editorEl = document.createElement('div');
         container.appendChild(editorEl);
 
@@ -1417,13 +1523,6 @@ export async function initEditorHandler(
                 ...editorOptions,
                 initialContent,
             });
-
-            // 다국어 갈래와 같은 이유 — 만드는 사이 화면을 떠났으면 해제하고 폼에 쓰지 않는다
-            if (!container.isConnected) {
-                await discardDetachedEditor(editor);
-                releaseDetachedRegistration(containerId, instanceMap);
-                return;
-            }
 
             const singleLocale = getCurrentLocale();
             instanceMap.set(singleLocale, editor);
@@ -1440,8 +1539,6 @@ export async function initEditorHandler(
                 locale: singleLocale,
                 multilingual: false,
                 readExternal: writeTarget ? () => readFromTarget(singleLocale, false) : undefined,
-                seedPath: seed.path,
-                seedValue: initialContent,
             });
             registerExternalSync(containerId, externalSync);
 
@@ -1473,7 +1570,8 @@ export async function initEditorHandler(
                 }
             }
 
-            // 같은 레이아웃 경로 이동(글 수정 → 새 글 쓰기 등)의 폼 교체는 위 externalSync 가 따라간다
+            // 단일 에디터는 페이지 이동 없이 form이 교체되는 패턴이 없으므로
+            // 외부 상태 변경 polling 불필요
         } catch (err) {
             console.error('[sirsoft-ckeditor5] 에디터 초기화 오류:', err);
             editorInstances.delete(containerId);
@@ -1489,7 +1587,6 @@ export async function initEditorHandler(
                 activeLocale: getCurrentLocale(),
                 initialContent,
                 trackChanges: tracksChanges,
-                seedPath: seed.path,
             });
             notifyEditorAssetFailure(
                 `ckeditor5-editor:${containerId}`,

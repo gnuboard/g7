@@ -571,12 +571,12 @@ describe('클레임 신청서 상세 — 렌더', () => {
     const text = container.textContent ?? '';
 
     expect(text).toContain('미수납 금액');
-    // 형제 케이스와 **같은 토큰**으로 잰다 — 시험 도구가 실제 앱처럼 표현식 안의 `$t(...)` 를 번역하므로(7.1.3)
-    // 번역된 문구('결제하기')가 결제 단추 라벨이다(형제 케이스가 같은 문구로 단추가 선 것을 확인한다).
-    expect(text).not.toContain('결제하기');
+    // 형제 케이스와 **같은 토큰**으로 잰다 — 이 하네스는 표현식 안의 `$t(...)` 를 해석하지
+    // 않으므로 해석된 문구('결제하기')로 재면 게이트를 지워도 통과하는 공허한 단언이 된다.
+    expect(text).not.toContain('claim.detail.pay_action');
     expect(
       Array.from(container.querySelectorAll('button')).filter((b) =>
-        (b.textContent ?? '').includes('결제하기')
+        (b.textContent ?? '').includes('claim.detail.pay_action')
       )
     ).toHaveLength(0);
   });
@@ -592,7 +592,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
         outstanding_amount: 6000,
         outstanding_amount_formatted: '6,000원',
         charge_method_label: '승인 시점 결제',
-        // 결제 권한(7.1.0 abilities 게이트) — 신청서 응답은 `can_pay` 를 늘 싣고 [결제하기]는 `can_pay !== true` 면 잠긴다.
+        // 결제 권한(7.1.0 G31) — 신청서 응답은 `can_pay` 를 늘 싣고 [결제하기]는 `can_pay !== true` 면 잠긴다.
         can_pay: true,
         pending_payment: {
           payment_number: 'CP20260901-0002',
@@ -609,10 +609,12 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('결제 수단');
     expect(text).toContain('신용카드');
 
-    // 라벨은 표현식 안의 `$t(...)` 형태다(진행 중 표시와 한 노드를 쓴다). 시험 도구가 실제 앱처럼 $locale·$templateId 를
-    // 실으면서(7.1.3) 번역된 라벨이 보인다 — 결제 버튼 노드가 그 자리에 서고 결제 라벨(진행 중 라벨 아님)을 고르는가를 잰다.
+    // 라벨은 표현식 안의 `$t(...)` 형태다(진행 중 표시와 한 노드를 쓴다). 이 하네스는 그
+    // 형태를 해석하지 않아 키가 그대로 남는다 — 형제 항목(`compare_charge`)도 같다.
+    // 그래서 잰다: 결제 버튼 노드가 그 자리에 서고 라벨 자리가 결제 라벨 키를 가리키는가.
+    // 문구가 실제로 해석되는지는 i18n 대칭 게이트와 브라우저 실측이 맡는다.
     const button = Array.from(container.querySelectorAll('button')).find(
-      (b) => (b.textContent ?? '').includes('결제하기')
+      (b) => (b.textContent ?? '').includes('claim.detail.pay_action')
     );
 
     expect(button).toBeTruthy();
@@ -625,7 +627,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
    * 서버가 거절하는데 화면에 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서
    * 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다.
    *
-   * 회귀 배경 (#599 실측, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
+   * 회귀 배경 (#599 3차 실측 F-1·F-2, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
    * 만들어진 대기 건이 계속 「포인트결제」를 안내하며 422 만 돌려줬다.
    *
    * @scenario claim_type=exchange, screen=detail, entry=none
@@ -1201,7 +1203,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
    */
   it('교환 대상 — 이 교환에 얹은 추가옵션이 이름으로 나온다', async () => {
     // 신청 시점에 이름과 추가금이 동결된다. 예전에는 선택 ID 만 남아 이 자리에 아무것도
-    // 그릴 수 없었고, 구매자는 자기가 무엇을 골랐는지 확인할 수 없었다(2026-09-01 실측).
+    // 그릴 수 없었고, 구매자는 자기가 무엇을 골랐는지 확인할 수 없었다(2026-09-01 4차 실측).
     const claim = exchangeDetail();
     claim.items[0].new_additional_options = [
       { name: '선물 포장', price_adjustment: 3000, price_adjustment_formatted: '3,000원', custom_text: '' },
@@ -1303,8 +1305,8 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('$24.65');
     expect(text).toContain('블랙 / L');
     expect(text).toContain('29,000원 → 32,000원');
-    // 열 라벨은 유형 분기 식(`$t(...)`) — 번역된 교환 라벨이 골라졌는지를 잰다(7.1.3 시험 도구).
-    expect(text).toContain('교환 전');
+    // 열 라벨은 유형 분기 식이라 하네스에서는 키가 난다 — 교환 키가 골라졌는지를 잰다.
+    expect(text).toContain('claim.detail.comparison.col_before_exchange');
     expect(container.querySelector('[data-testid="claim-detail-comparison-empty"]')).toBeNull();
     // 기존 3행 대비표(원 주문 ↔ 이 클레임)는 그대로 남는다.
     expect(text).toContain('원 주문');

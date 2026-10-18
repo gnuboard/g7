@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
-use Plugins\Sirsoft\PayKginicis\Support\BridgeScript;
 use Plugins\Sirsoft\PayKginicis\Support\EscrowConfirmNonce;
 
 /**
@@ -136,8 +136,10 @@ class UserEscrowConfirmController extends Controller
             ]);
         }
 
-        // 팝업 닫기 + 부모 창 새로고침 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, #158)
-        return $this->htmlResponse(BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'pc-return']));
+        // 팝업 닫기 + 부모 창 새로고침
+        return $this->htmlResponse(
+            '<script>try{window.opener&&window.opener.location.reload();}catch(e){}window.close();</script>'
+        );
     }
 
     /**
@@ -147,7 +149,7 @@ class UserEscrowConfirmController extends Controller
      */
     public function close(): Response
     {
-        return $this->htmlResponse(BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'close']));
+        return $this->htmlResponse('<script>window.close();</script>');
     }
 
     /**
@@ -181,8 +183,11 @@ class UserEscrowConfirmController extends Controller
             ]);
         }
 
-        // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 사이트 주소로 만든다.
-        return redirect(SiteUrl::absolute($orderNumber ? '/mypage/orders/'.$orderNumber : '/mypage/orders'));
+        // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 설정 주소로 만든다.
+        // 사람이 돌아가는 마이페이지 화면이라 이커머스 화면 주소 래퍼(「사용자 화면 URL」·주소 필터)를 쓴다(#792 F1-16).
+        return redirect($orderNumber
+            ? EcommerceScreenUrl::mypageOrderDetail((string) $orderNumber, absolute: true)
+            : EcommerceScreenUrl::mypageOrders(absolute: true));
     }
 
     // ──────────────────────────── Private ────────────────────────────
@@ -239,10 +244,6 @@ class UserEscrowConfirmController extends Controller
         $lang = e(app()->getLocale());
         $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
         $preparing = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_preparing'));
-        // 문서가 다 뜨면 구매결정 창을 띄운다 — 이니시스 스크립트 다음에 싣는다(#158 strict CSP)
-        $bridgeScript = BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'pc-open', 'data-form' => 'escrow_confirm_form']);
-        // 안내 문구 배치는 같은 출처 CSS 파일로 건다 — 스타일 보안 정책이 인라인 `<style>` 을 막는다
-        $stylesheet = BridgeScript::stylesheetTag('escrow-confirm.css');
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -252,8 +253,12 @@ class UserEscrowConfirmController extends Controller
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
             <title>{$title}</title>
             <script src="{$jsUrl}" charset="UTF-8"></script>
-            {$bridgeScript}
-            {$stylesheet}
+            <script>window.onload = function() { INIStdPay.pay('escrow_confirm_form'); };</script>
+            <style>
+                body { font-family: sans-serif; display: flex; align-items: center;
+                       justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; }
+                p { color: #666; font-size: 14px; }
+            </style>
         </head>
         <body>
             <p>{$preparing}</p>
@@ -291,10 +296,6 @@ class UserEscrowConfirmController extends Controller
         $lang = e(app()->getLocale());
         $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
         $redirecting = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_redirecting'));
-        // 폼 자동 제출 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, #158)
-        $bridgeScript = BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'mobile-submit', 'data-form' => 'mobile_confirm_form']);
-        // 안내 문구 배치는 같은 출처 CSS 파일로 건다 — 스타일 보안 정책이 인라인 `<style>` 을 막는다
-        $stylesheet = BridgeScript::stylesheetTag('escrow-confirm.css');
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -303,7 +304,11 @@ class UserEscrowConfirmController extends Controller
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
             <title>{$title}</title>
-            {$stylesheet}
+            <style>
+                body { font-family: sans-serif; display: flex; align-items: center;
+                       justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; }
+                p { color: #666; font-size: 14px; }
+            </style>
         </head>
         <body>
             <p>{$redirecting}</p>
@@ -315,7 +320,7 @@ class UserEscrowConfirmController extends Controller
                 <input type="hidden" name="P_NEXT_URL"    value="{$nextUrl}">
                 <input type="hidden" name="P_RESERVED"    value="">
             </form>
-            {$bridgeScript}
+            <script>document.getElementById('mobile_confirm_form').submit();</script>
         </body>
         </html>
         HTML;
@@ -365,7 +370,6 @@ class UserEscrowConfirmController extends Controller
 
         $meta = $row->payment_meta ? json_decode($row->payment_meta, true) : [];
         $meta['escrow_confirm'] = array_merge(
-            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             ['confirmed_at' => now()->toDateTimeString()],
             $data,
         );

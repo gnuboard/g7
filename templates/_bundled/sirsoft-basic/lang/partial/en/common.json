@@ -64,14 +64,6 @@
   "page_n": "Page {{n}}",
   "currency_unit": "",
   "select_all": "Select all",
-  "select_item": "Select {{name}}",
-  "select_row_n": "Select row {{n}}",
-  "row_cell": "{{row}} {{column}}",
-  "row_n": "Row {{n}}",
-  "sort_order": "Sort by",
-  "per_page": "Items per page",
-  "search_field": "Search field",
-  "field_in_language": "{{label}} ({{language}})",
   "file_input": {
     "clear": "Clear file",
     "browse": "Browse",
@@ -87,24 +79,5 @@
   "quantity_increase": "Increase quantity",
   "close_menu": "Close menu",
   "page_transitioning": "Changing page",
-  "page_loading": "Loading page",
-  "lightbox": {
-    "dialog": "Image viewer",
-    "carousel": "Carousel",
-    "photo_gallery": "Photo gallery",
-    "slide": "Photo",
-    "slide_position": "{index} of {total}",
-    "previous": "Previous photo",
-    "next": "Next photo",
-    "close": "Close",
-    "zoom_in": "Zoom in",
-    "zoom_out": "Zoom out",
-    "enter_fullscreen": "Enter full screen",
-    "exit_fullscreen": "Exit full screen",
-    "play": "Start slideshow",
-    "pause": "Pause slideshow",
-    "thumbnails": "Thumbnails",
-    "show_thumbnails": "Show thumbnails",
-    "hide_thumbnails": "Hide thumbnails"
-  }
+  "page_loading": "Loading page"
 }

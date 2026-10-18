@@ -78,7 +78,7 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "responsive": {
-                                        "0-767": {
+                                        "mobile": {
                                             "props": {
                                                 "className": "{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-full' : 'input w-full'}}"
                                             }
@@ -126,7 +126,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{settings !== undefined && (!_local.form?.basic_info?.no_route)}}",
+                                            "if": "{{!_local.form?.basic_info?.no_route}}",
                                             "props": {
                                                 "className": "text-required"
                                             },
@@ -466,7 +466,7 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "responsive": {
-                                        "0-767": {
+                                        "mobile": {
                                             "props": {
                                                 "className": "{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-full' : 'input w-full'}}"
                                             }
@@ -1055,94 +1055,6 @@
                                             "text": "{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}"
                                         }
                                     ]
-                                },
-                                {
-                                    "id": "field_hosting_provider",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "form-group"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Label",
-                                            "props": {
-                                                "className": "form-label"
-                                            },
-                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Input",
-                                            "props": {
-                                                "type": "text",
-                                                "name": "basic_info.hosting_provider",
-                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider_placeholder",
-                                                "className": "{{_local.errors?.['basic_info.hosting_provider'] ? 'input input-error' : 'input'}}",
-                                                "disabled": "{{_computed.isReadOnly}}"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{_local.errors?.['basic_info.hosting_provider']}}",
-                                            "props": {
-                                                "className": "form-error"
-                                            },
-                                            "text": "{{_local.errors?.['basic_info.hosting_provider']?.[0] ?? ''}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "id": "field_show_business_footer",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "form-group"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "flex-between"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Label",
-                                                            "props": {
-                                                                "className": "form-label"
-                                                            },
-                                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "P",
-                                                            "props": {
-                                                                "className": "form-hint"
-                                                            },
-                                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer_hint"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "composite",
-                                                    "name": "Toggle",
-                                                    "props": {
-                                                        "name": "basic_info.show_business_footer",
-                                                        "value": "{{_local.form?.basic_info?.show_business_footer ?? true}}",
-                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
                                 }
                             ]
                         }
@@ -1226,7 +1138,7 @@
                                     "if": "{{!!_local.form?.basic_info?.public_asset_disk_unavailable}}",
                                     "props": {
                                         "role": "status",
-                                        "className": "ecommerce-tone-warning-soft mt-2 text-xs"
+                                        "className": "text-warning-soft mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.unavailable|disk={{_local.form?.basic_info?.public_asset_disk_unavailable}}"
                                 },
@@ -1301,7 +1213,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "ecommerce-tone-info-soft text-xs"
+                                                "className": "text-info-soft"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.module_not_installed"
                                         }

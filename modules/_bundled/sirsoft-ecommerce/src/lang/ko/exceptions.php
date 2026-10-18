@@ -23,7 +23,6 @@ return [
         'use_exceeds_balance' => '보유 마일리지(:amount점)를 초과하여 사용할 수 없습니다.',
         'deduct_exceeds_balance' => '차감하려는 마일리지가 잔액을 초과합니다.',
         'below_min_use_amount' => '최소 사용 금액은 :amount점입니다.',
-        'below_min_product_total' => '상품 합계 :amount 이상 구매 시 마일리지를 사용할 수 있습니다.',
         'invalid_use_unit' => '마일리지는 :unit점 단위로 사용할 수 있습니다.',
         'exceeds_max_use' => '최대 사용 한도를 초과했습니다. (사용 가능 최대 :amount점)',
         'base_currency_rule_missing' => '기본 통화에 대한 마일리지 사용 단위가 설정되지 않아 마일리지를 사용할 수 없습니다.',
@@ -209,7 +208,4 @@ return [
     // 택배사 관련
     'shipping_carrier_not_found' => '택배사를 찾을 수 없습니다.',
     'shipping_carrier_in_use' => '주문에서 사용 중인 택배사는 삭제할 수 없습니다. (사용 횟수: :count건)',
-
-    // 회원·주문 없이 등록하는 후기(다른 쇼핑몰 이관) 입력 오류
-    'imported_review_invalid_field' => '이관 후기 입력값이 올바르지 않습니다: :field',
 ];

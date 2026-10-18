@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Models\User;
-use Carbon\Carbon;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
@@ -114,7 +113,7 @@ class BlindReasonExposureTest extends BoardTestCase
      *
      * @scenario concern=blind_reason, condition=viewer_with_access
      *
-     * @effects manager_sees_blind_reason_in_post_action_logs, action_log_time_uses_viewer_timezone
+     * @effects manager_sees_blind_reason_in_post_action_logs
      *
      * @return void 반환값 없음
      */
@@ -122,15 +121,12 @@ class BlindReasonExposureTest extends BoardTestCase
     {
         $postId = $this->createTestPost(['status' => 'published']);
 
-        // 처리 시각은 UTC 로 저장된다 — UTC 16:00 은 서울 다음 날 01:00
-        Carbon::setTestNow(Carbon::parse('2026-11-03 16:00:00', 'UTC'));
-        $this->actingAs($this->adminWithManage)->withHeader('X-Timezone', 'Asia/Seoul')->patchJson(
+        $this->actingAs($this->adminWithManage)->patchJson(
             $this->postUrl("/{$postId}/blind"),
             ['reason' => '운영 정책 위반으로 블라인드 처리']
         )->assertStatus(200);
-        Carbon::setTestNow();
 
-        $response = $this->actingAs($this->adminWithManage)->withHeader('X-Timezone', 'Asia/Seoul')->getJson($this->postUrl("/{$postId}"));
+        $response = $this->actingAs($this->adminWithManage)->getJson($this->postUrl("/{$postId}"));
 
         $response->assertStatus(200);
         $logs = $response->json('data.action_logs');
@@ -140,7 +136,6 @@ class BlindReasonExposureTest extends BoardTestCase
         $blind = collect($logs)->firstWhere('action', 'blind');
         $this->assertNotNull($blind, 'blind 액션 로그가 있어야 합니다.');
         $this->assertSame('운영 정책 위반으로 블라인드 처리', $blind['reason']);
-        $this->assertSame('2026-11-04 01:00:00', $blind['created_at'], '처리일은 보는 사람 시간대여야 합니다.');
 
         // 민감 필드는 노출되지 않아야 한다.
         $this->assertArrayNotHasKey('admin_id', $blind, 'admin_id 는 노출되면 안 됩니다.');
@@ -185,7 +180,7 @@ class BlindReasonExposureTest extends BoardTestCase
      *
      * @scenario concern=blind_reason, condition=viewer_with_access
      *
-     * @effects manager_sees_blind_reason_in_comment_action_logs, action_log_time_uses_viewer_timezone
+     * @effects manager_sees_blind_reason_in_comment_action_logs
      *
      * @return void 반환값 없음
      */
@@ -194,12 +189,10 @@ class BlindReasonExposureTest extends BoardTestCase
         $postId = $this->createTestPost(['status' => 'published']);
         $commentId = $this->createTestComment($postId);
 
-        Carbon::setTestNow(Carbon::parse('2026-11-03 16:00:00', 'UTC'));
-        $response = $this->actingAs($this->adminWithManage)->withHeader('X-Timezone', 'Asia/Seoul')->patchJson(
+        $response = $this->actingAs($this->adminWithManage)->patchJson(
             $this->postUrl("/{$postId}/comments/{$commentId}/blind"),
             ['reason' => '댓글 운영 정책 위반으로 블라인드']
         );
-        Carbon::setTestNow();
 
         $response->assertStatus(200);
         $logs = $response->json('data.action_logs');
@@ -209,7 +202,6 @@ class BlindReasonExposureTest extends BoardTestCase
         $blind = collect($logs)->firstWhere('action', 'blind');
         $this->assertNotNull($blind, 'blind 액션 로그가 있어야 합니다.');
         $this->assertSame('댓글 운영 정책 위반으로 블라인드', $blind['reason']);
-        $this->assertSame('2026-11-04 01:00:00', $blind['created_at'], '처리일은 보는 사람 시간대여야 합니다.');
 
         // 민감 필드는 노출되지 않아야 한다.
         $this->assertArrayNotHasKey('admin_id', $blind, 'admin_id 는 노출되면 안 됩니다.');

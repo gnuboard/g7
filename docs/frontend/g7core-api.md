@@ -41,7 +41,6 @@
 9. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
 10. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
 11. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
-12. [최근 검색어 (G7Core.searchHistory)](#최근-검색어-g7coresearchhistory)
 
 ---
 
@@ -57,8 +56,7 @@
 | UI 알림 | `G7Core.toast` | 토스트 알림 표시 | 현재 문서 |
 | 모달 | `G7Core.modal` | 모달 열기/닫기 | 현재 문서 |
 | 네비게이션 | `G7Core.navigation` | 페이지 전환 상태 | 현재 문서 |
-| 스타일 | `G7Core.style` | Tailwind 클래스 병합, 런타임 CSS 규칙(`setRules`·`remove`·`has`, engine-v1.91.0) | 현재 문서 |
-| 본문 서식 지연 | `G7Core.inlineStyle` | 본문 HTML 의 `style` 속성을 화면에 붙인 뒤 입히는 장치 — 엄격한 스타일 정책 대응 (engine-v1.91.0) | [확장 자산 — 인라인 스타일](../extension/module-assets.md) |
+| 스타일 | `G7Core.style` | Tailwind 클래스 병합 | 현재 문서 |
 | 플러그인 | `G7Core.plugin` | 플러그인 설정 조회 | 현재 문서 |
 | 모듈 | `G7Core.module` | 모듈 설정 조회 | 현재 문서 |
 | 다국어 | `G7Core.locale`, `G7Core.t` | 로케일 관리, 번역 | [고급 API](g7core-api-advanced.md) |
@@ -73,9 +71,6 @@
 | 자산 실패 안내 | `G7Core.assets` | 자산 로드 실패 표면화 및 재시도 | 현재 문서 |
 | 방문자 동의 | `G7Core.consent` | 동의 스냅샷 조회/재조회/구독 | 현재 문서 |
 | 상태 계약 | `G7Core.stateContracts` | 공개 전역 상태의 소유자와 모양 조회 | 현재 문서 |
-| 최근 검색어 | `G7Core.searchHistory`, `G7Core.useSearchHistory` | 검색 범위별 최근 검색어 읽기·기록·삭제·자동 저장 | 현재 문서 |
-| 본문 미디어 업로드 | `G7Core.contentMedia` | 편집기 본문 미디어 업로드 계약 판정(형식·크기·문서당 개수)·업로드·어댑터 교체 (engine-v1.89.0+) | [본문 미디어 계약](../extension/content-media.md#클라이언트-런타임-g7corecontentmedia) |
-| 본문 콘텐츠 규칙 | `G7Core.contentPolicy` | 코어 「본문 콘텐츠」 설정의 허용 태그·속성·미디어 출처·외부 영상 서비스 규칙 조회와 본문 정화 (engine-v1.90.0+) | [본문 미디어 계약](../extension/content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy) · [`render_policy` 필드 표](../extension/content-media.md#render_policy-필드) |
 | React Hooks | `G7Core.useControllableState` | 상태 패턴 훅 | [고급 API](g7core-api-advanced.md) |
 
 ### 사용 컨텍스트
@@ -94,7 +89,7 @@ const toast = (window as any).G7Core?.toast;
 
 전역 상태를 관리하는 API입니다.
 
-> 상세 내용: [state-management-advanced.md](state-management-advanced.md#g7corestate-javascript-api)
+> 상세 내용: [state-management.md](state-management.md#g7corestate-javascript-api)
 
 ### API 목록
 
@@ -333,9 +328,6 @@ useEffect(() => {
 ---
 
 ## 데이터소스 관리 (G7Core.dataSource)
-
-> `G7Core.dataSource.updateData(id, path, items, 'append' | 'prepend')` 로 늘린 데이터소스는 뒤로/앞으로 가기 스크롤 복원의
-> 더보기 스냅샷 대상이 된다(engine-v1.85.0+) — [scroll-restoration.md](scroll-restoration.md#더보기-목록-스냅샷-snapshot).
 
 데이터소스의 조회, 설정, refetch를 관리하는 API입니다.
 
@@ -598,14 +590,6 @@ G7Core.modal.close();
 |--------|------|--------|
 | `isPending()` | 전환 진행 중 여부 | `boolean` |
 | `onComplete(callback)` | 전환 완료 시 콜백 실행 | 구독 해제 함수 |
-| `isPlainLeftClick(event)` | 「보통 클릭」(왼쪽 단추·수정키 없음·링크면 `target` 없음/`_self`·`download` 없음)인지 — 링크를 그리는 합성 컴포넌트가 참일 때만 기본 동작을 막는다 (engine-v1.80.1) | `boolean` |
-| `mergeQueryIntoHref(href)` | 현재 주소의 쿼리를 링크 주소에 합친다(링크 쪽 키가 이김). 같은 출처가 아니면 그대로 (engine-v1.80.1) | `string` |
-| `subscribeLocationSearch(callback)` | 현재 주소의 쿼리가 바뀔 수 있는 순간(뒤로/앞으로, 같은 화면에서 쿼리만 바꾸는 `navigate` `replace`)에 `callback` 을 부른다. 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 컴포넌트가 `useSyncExternalStore(subscribe, () => window.location.search)` 로 구독해 주소만 바뀌어도 링크를 다시 그린다 (engine-v1.82.1). 링크 컴포넌트는 이 함수를 직접 감싸지 말고 아래 `useLocationSearch` 훅을 쓴다(코어 7.1.3) | 구독 해제 함수 |
-| `useLocationSearch(enabled)` | **React 훅.** 주소 검색부를 구독해 쿼리가 바뀌면(뒤로/앞으로, 같은 화면 `navigate` `replace`·`replaceUrl`) 컴포넌트를 다시 그린다. 렌더할 때 현재 쿼리를 href 에 합치는 링크 컴포넌트가 `enabled` 를 참으로 부른다. 거짓이면 구독하지 않는다. 컴포넌트 렌더 중에만 부른다 (engine-v1.83.0) | `string` — 현재 검색부(`?a=1`), 구독하지 않으면 `''` |
-| `resolveInternalHref(href)` | 링크 href 가 이 사이트 안 주소면 「경로?쿼리#해시」. 빈 값·`#…`·실행 스킴·다른 출처·`//host`·백슬래시 변형(`/\host`)·경로가 `//` 로 시작하는 같은 출처 주소는 `null`. 엔진 `navigate` 와 같은 판정이다 — 링크 컴포넌트는 판정을 다시 만들지 않는다 (engine-v1.83.0) | `string \| null` |
-| `mergeRelForTarget(rel, target)` | 새 창 링크의 rel. `target` 이 `_blank` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다(대소문자 무시). 새 창이 아니면 받은 값 그대로 (engine-v1.83.0) | `string \| undefined` |
-| `getRouteGeneration()` | 지금 경로 전환 세대 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다). 진행 중인 이동 뒤에 새 이동이 대기열에 들어와 진행 중인 화면 처리가 밀릴 때도 는다(engine-v1.82.0 — 값은 늘 같은 방향으로만 바뀐다). 엔진이 없으면 `0` (engine-v1.81.1) | `number` |
-| `isLeaveGuarded()` | 지금 화면을 떠나면 이탈 확인 창이 뜨는지 — 레이아웃 `meta.leave_guard` 식을 읽기 전용으로 평가한다. 선언이 없거나 이미 떠나기로 승인된 이동 중이면 `false` (engine-v1.82.0) | `boolean` |
 
 ### 사용 예시
 
@@ -624,48 +608,6 @@ const unsubscribe = G7Core.navigation.onComplete(() => {
 // 구독 해제
 unsubscribe();
 ```
-
-### 비동기 응답 뒤 화면을 바꾸는 핸들러 — getRouteGeneration
-
-자기 API 를 기다린 뒤 오류 화면·상태 쓰기·이동을 하는 확장 핸들러는 시작할 때 세대를 잡아 두고, 응답 뒤 값이 다르면 아무것도 하지 않는다. 사용자가 그사이 다른 화면으로 옮겼다가 **같은 주소로 돌아온 경우**(A → B → A)도 세대가 달라 지난 응답을 새 화면에 쓰지 않는다 — 주소 비교만으로는 가를 수 없다. 엔진의 `showErrorPage` 가 늦은 오류 화면을 거르는 것과 같은 값이다.
-
-```typescript
-export async function loadClaimForEdit(action: any, context: any) {
-  const G7Core = (window as any).G7Core;
-  const generation = G7Core?.navigation?.getRouteGeneration?.() ?? null; // 옛 엔진이면 null
-
-  const response = await fetchClaim(action.params.id);
-
-  if (generation !== null && G7Core.navigation.getRouteGeneration() !== generation) {
-    return; // 이미 다른 화면(같은 주소의 새 진입 포함) — 오류 화면도 상태 쓰기도 하지 않는다
-  }
-  if (!response.ok) {
-    G7Core.dispatch({ handler: 'showErrorPage', params: { errorCode: response.status } });
-    return;
-  }
-  G7Core.state.setLocal({ form: response.data });
-}
-```
-
-- `window.__templateApp` 같은 코어 내부를 읽지 않는다 — 이 API 가 공개 통로다.
-- 쿼리만 바뀌는 같은 화면 안 이동(검색·쪽 번호)은 세대가 바뀌지 않을 수 있다. 쿼리까지 출처로 보려면 주소 비교를 함께 쓴다.
-
-### 저장하지 않은 변경 확인 — isLeaveGuarded
-
-레이아웃이 `meta.leave_guard` 로 이탈 확인을 선언하면([layout-json.md](layout-json.md#metaleave_guard-저장하지-않은-변경-이탈-확인)) 엔진이 SPA 이동·뒤로/앞으로·새로고침·탭 닫기에서 묻는다. 확장 핸들러는 다음처럼 쓴다.
-
-```typescript
-// SPA 밖으로 직접 나가기 전에(예: 외부 결제·인증 창으로 같은 탭 이동) 물을지 판단한다
-if (G7Core.navigation.isLeaveGuarded?.() && !window.confirm(G7Core.t('core.navigation.leave_confirm'))) {
-  return;
-}
-
-// 저장에 성공한 뒤 이동은 확인을 건너뛴다 — 액션의 bypassLeaveGuard 를 쓴다
-G7Core.dispatch({ handler: 'navigate', params: { path: '/board/free', bypassLeaveGuard: true } });
-```
-
-- 핸들러 문맥의 `context.navigate(path)` 는 확인을 거친다(사용자가 머무르면 이동하지 않는다). 확인을 건너뛰어야 하면 위처럼 `navigate` 액션에 `bypassLeaveGuard: true` 를 준다.
-- 저장 성공 뒤에는 상태의 변경 표시(`hasChanges` 등)도 내린다. 내리지 않고 머무르면 다음 이탈에서 다시 묻는다.
 
 ### onComplete 동작 방식
 
@@ -696,23 +638,9 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 
 | 메서드 | 설명 | 반환값 |
 |--------|------|--------|
-| `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 — 엔진 충돌 그룹 표에 든 클래스만 판정([한계](#지원-범위와-한계)) | `string` |
+| `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 | `string` |
 | `conditionalClass(conditions)` | 조건부 클래스 적용 | `string` |
 | `joinClasses(...classes)` | 여러 클래스 문자열 결합 | `string` |
-| `setRules(key, css, opts?)` | 런타임 CSS 규칙 묶음을 문서에 붙인다(같은 `key` 는 교체). `<style>` 요소를 만들지 않아 엄격한 스타일 정책에서도 적용된다 (engine-v1.91.0) | `{ key, mode, remove() }` |
-| `remove(key)` | 규칙 묶음 제거 (engine-v1.91.0) | `void` |
-| `has(key)` | 규칙 묶음이 붙어 있는지 (engine-v1.91.0) | `boolean` |
-
-런타임 규칙 3종은 화면이 뜬 뒤에 정해지는 CSS 규칙(대상 id 가 실행 중에 정해지는 덮개 등)에만 씁니다. 고정된 규칙은 확장의 CSS
-자산(`assets.css`)에, 요소 하나의 값은 `el.style.x = …`·CSS 변수에 둡니다. 규칙은 생성형 스타일시트
-(`document.adoptedStyleSheets`)로 붙고 `<head>` 에 같은 id 의 표식 요소(`<meta id="{key}" data-g7-runtime-style>`)가 남습니다.
-생성형 스타일시트가 없는 구형 브라우저에서는 `<style id="{key}">` 로 붙습니다(이 경우 스타일 정책을 강제하면 적용되지 않습니다).
-`key` 는 확장 식별자로 시작하게 지어 다른 확장·코어(`g7-` 로 시작)와 겹치지 않게 합니다.
-
-```typescript
-const handle = G7Core.style.setRules('my-plugin-overlay', '#my-target::after{content:"";position:absolute;inset:0}');
-handle.remove();
-```
 
 ### mergeClasses
 
@@ -732,46 +660,19 @@ G7Core.style.mergeClasses('dark:text-white dark:bg-gray-800', 'dark:text-gray-10
 // 결과: 'dark:bg-gray-800 dark:text-gray-100'
 ```
 
-### 충돌 판정 규칙 (engine-v1.83.0)
+### 지원하는 클래스 그룹
 
-`mergeClasses` 는 Tailwind 전체를 이해하는 병합기가 아니다. 엔진이 가진 **충돌 그룹 표**에 든 클래스만 판정하고, 표에 없는 클래스는 그대로 둔다. 판정은 다음 세 규칙이 전부다.
-
-1. **같은 충돌 그룹 + 같은 변형 접두사**면 base 쪽을 지우고 override 를 남긴다(`justify-center` ↔ `justify-start`). 변형 접두사는 글자 그대로 같아야 같은 것으로 본다(`dark:` 와 접두사 없음은 서로 다르다).
-2. **상위 유틸리티는 하위 축을 함께 지운다** — override 가 `p-0` 이면 base 의 `px-4`·`pt-2` 도 지운다.
-3. **하위 축은 상위를 지우지 않는다** — override `px-2` 는 base `p-4` 를 남긴다(세로 여백 유지). Tailwind 가 축 유틸리티를 전체 유틸리티 뒤에 출력하므로 둘이 함께 있어야 의도대로 그려진다. tailwind-merge 의 「상위가 하위를 덮음」 규칙과 같다.
-
-| 상위 그룹 (override 로 오면 하위도 지움) | 함께 지우는 하위 그룹 |
-|------|------|
-| `p-*` | `px` `py` `ps` `pe` `pt` `pr` `pb` `pl` (`px` 는 `pr`·`pl`, `py` 는 `pt`·`pb`) |
-| `m-*` | `mx` `my` `ms` `me` `mt` `mr` `mb` `ml` (`mx` 는 `mr`·`ml`, `my` 는 `mt`·`mb`) |
-| `inset-*` | `inset-x` `inset-y` `top` `right` `bottom` `left` (`inset-x` 는 `right`·`left`, `inset-y` 는 `top`·`bottom`) |
-| `gap-*` | `gap-x` `gap-y` |
-| `border`(폭) | `border-x` `border-y` `border-s` `border-e` `border-t` `border-r` `border-b` `border-l` |
-| `rounded` | `rounded-s/e/t/r/b/l` 와 모서리(`rounded-tl` 등). 변(`rounded-t`)은 그 변의 두 모서리를 지운다 |
-| `overflow-*` | `overflow-x` `overflow-y` |
-| `overscroll-*` | `overscroll-x` `overscroll-y` |
-| `scale-*` | `scale-x` `scale-y` |
-
-그 밖에 서로 **다른 그룹**이라 지우지 않는 짝:
-
-| 짝 | 이유 |
-|------|------|
-| `flex-row`/`flex-col` ↔ `flex-wrap` ↔ `flex-1`/`flex-auto` ↔ `flex`(display) | 방향·줄바꿈·크기·디스플레이는 각각 다른 속성 |
-| `space-x-4` ↔ `space-x-reverse` | 간격과 방향 반전은 다른 그룹 |
-| `break-after-*`·`break-before-*`·`break-inside-*` ↔ `break-words`·`break-all` | 단 나누기와 단어 줄바꿈(word-break)은 다른 그룹 |
-| `top-4` ↔ `left-0`, `border-t` ↔ `border`(base 쪽), `overflow-x-auto` ↔ `overflow-hidden`(base 쪽) | 축·변이 다르면 다른 그룹(위 규칙 3) |
-
-### 지원 범위와 한계
-
-| 판정함 | 판정하지 않음(그대로 둘 다 남음) |
-|------|------|
-| Tailwind v3 기본 유틸리티 중 표에 든 것 — 정렬(`justify`·`items`·`content`·`self`), flex/grid, display, position·inset, 크기(`w`·`h`·`min-*`·`max-*`), 여백, 글자(크기·굵기·정렬·색·행간·자간 등), 배경, 테두리·둥글기·ring, 그림자·불투명도·필터·변형·전환, 커서·overflow 등 | **커스텀 클래스**(`btn`·`card-header` 같은 템플릿 고유 클래스) — 그룹이 없으므로 충돌로 보지 않는다 |
-| 값 접두사로 판정하는 그룹의 임의값(`w-[320px]`·`p-[3px]`·`gap-[6px]`) | 값 목록으로 판정하는 그룹의 임의값 — 색(`text-[#333]`·`bg-[var(--x)]`·`border-[#ddd]`), 글자 크기(`text-[13px]`), 그림자·둥글기 임의값 |
-| 변형 접두사 `dark:` `hover:` `focus:` `active:` `disabled:` `group-hover:` `sm:` `md:` `lg:` `xl:` `2xl:` 과 그 조합 | 그 밖의 변형 접두사(`focus-visible:`·`aria-*:`·`data-*:`·`peer-*:`·`group-*`(hover 외)·`max-*:` 등) — 접두사를 떼지 못해 그룹을 찾지 못한다 |
-| | **Tailwind v4 신규 유틸리티**(`size-*`·`bg-linear-*`·`shadow-xs`·`rounded-xs`·`inset-shadow-*`·`text-shadow-*` 등)와 v4 에서 바뀐 이름 |
-| | 색 이름 목록 밖의 색 토큰(테마에 추가한 `bg-primary-500` 등) |
-
-판정하지 않는 클래스는 base 와 override 가 **둘 다 남는다**. 그때 어느 쪽이 이기는지는 클래스 순서가 아니라 CSS 출력 순서(레이어·소스 순서)가 정한다 — 원하는 결과가 나오지 않으면 override 를 표에 든 표준 유틸리티로 쓰거나, 템플릿 CSS 에서 우선순위를 정한다([템플릿 고유 CSS 와 기본 컴포넌트 클래스](template-development.md#템플릿-고유-css-와-기본-컴포넌트-클래스)).
+| 그룹 | 설명 | 예시 |
+|------|------|------|
+| justify | Flexbox justify-content | `justify-center`, `justify-between` |
+| items | Flexbox align-items | `items-center`, `items-start` |
+| textAlign | 텍스트 정렬 | `text-left`, `text-center` |
+| display | 디스플레이 속성 | `flex`, `block`, `hidden` |
+| bgColor | 배경색 | `bg-white`, `bg-gray-100` |
+| textColor | 텍스트색 | `text-gray-900`, `text-blue-500` |
+| width/height | 크기 | `w-full`, `h-10` |
+| padding/margin | 여백 | `p-4`, `m-2` |
+| ... | 대부분의 Tailwind 클래스 지원 | - |
 
 ### conditionalClass
 
@@ -1139,95 +1040,6 @@ useEffect(() => {
 
 ---
 
-## 최근 검색어 (G7Core.searchHistory)
-
-> **engine-v1.87.0+** 추가 (코어 7.1.5)
-
-검색창에 제출한 검색어를 **검색 범위(scope)** 별로 보관하는 API입니다. 범위는 코어 통합검색 `core.site` 와 활성 확장이 manifest
-`search_scopes` 로 선언한 `{확장 식별자}.{이름}` 입니다([최근 검색어 범위](../extension/plugin-development.md#최근-검색어-범위-search_scopes)).
-같은 범위를 쓰는 검색창끼리 목록을 공유합니다. 서버가 셸에 실은 `G7Config.searchScopes`(범위 → `{max_count}`)에 없는 범위
-(선언 안 됨·확장 꺼짐·운영자가 기능을 끔)는 조용히 건너뜁니다.
-
-- **회원**: 서버(`/api/me/search-history`)에 둡니다. 보관 개수·자동 저장은 서버가 판정합니다.
-- **비회원**: 브라우저 localStorage `g7_search_history` 한 칸(`{v:1, autoSave, items:{범위:[{k, t}]}}`, 최신순)에 둡니다.
-  코어 필수 저장 키라 쿠키 동의 전에도 유지됩니다.
-- **로그인**: 비회원 → 회원이 되면(부팅 때 이미 회원이어도) 브라우저 목록을 회원 목록에 시간순으로 합치고(같은 검색어는 하나)
-  성공하면 브라우저 칸을 지웁니다. 실패하면 남겨 다음 로그인 때 다시 보냅니다.
-- **자동 저장 끄기**: 기록을 멈추고 목록을 감춥니다. 저장된 검색어는 남습니다. 범위별이 아니라 사람 단위 하나입니다.
-- **기록 시점**: 검색창 제출 때만 기록합니다. 주소에 검색어를 직접 넣은 검색(`?q=`)은 기록하지 않습니다.
-- 검색어는 연속 공백을 하나로 줄이고 앞뒤 공백을 떼며 100자까지 씁니다. 대소문자만 다른 검색어는 하나로 봅니다.
-
-런타임은 **사용자 템플릿에서만** 동작합니다. 관리자 화면에서는 모든 범위가 `enabled: false` 이고 동작은 `false` 를 돌려줍니다.
-레이아웃 편집기 미리보기(`/preview/{token}`)에서는 읽기만 하고 쓰기(record·remove·clear·setAutoSave·로그인 병합)는 서버·브라우저에 손대지 않고 `false` 를 돌려줍니다.
-
-### API 목록
-
-`G7Core.searchHistory` 는 동결된 객체입니다.
-
-| 메서드 | 설명 | 반환값 |
-|--------|------|--------|
-| `isEnabled(scope)` | 지금 쓸 수 있는 범위인지 | `boolean` |
-| `getSnapshot(scope)` | 지금 상태의 사본(회원 목록을 아직 받지 않았으면 `loading: true`) | `SearchHistoryState` |
-| `list(scope, { force? })` | 목록 읽기(회원은 서버에서 받아 캐시, `force` 면 다시 받음) | `Promise<SearchHistoryState>` |
-| `record(scope, keyword)` | 검색어 기록 | `Promise<boolean>` (기록했으면 `true`) |
-| `remove(scope, target)` | 한 건 삭제 — 항목·id(회원)·검색어 | `Promise<boolean>` |
-| `clear(scope?)` | 범위 전체 삭제(생략하면 전 범위) | `Promise<boolean>` |
-| `getAutoSave()` | 자동 저장 여부 | `boolean` |
-| `setAutoSave(on)` | 자동 저장 켜기/끄기 | `Promise<boolean>` |
-| `subscribe(listener)` | 컴포넌트 이벤트 `searchHistory:changed` 구독 | 구독 해제 함수 |
-
-`SearchHistoryState` 모양:
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `scope` | `string` | 범위 id |
-| `enabled` | `boolean` | 쓸 수 있는 범위인지 |
-| `autoSave` | `boolean` | 자동 저장 여부 |
-| `items` | `Array<{ id: number \| null, keyword: string, searchedAt: number }>` | 최신순. `id` 는 회원 서버 행 id(비회원은 `null`), `searchedAt` 은 밀리초. 자동 저장을 끄면 `[]` |
-| `maxCount` | `number` | 보관 개수 |
-| `loading` | `boolean` | 회원 목록을 받는 중 |
-| `source` | `'member' \| 'guest' \| 'none'` | 저장 위치 |
-
-`searchHistory:changed` 이벤트 값은 `{ scope: string \| null, reason }` 입니다. `scope` 가 `null` 이면 여러 범위가 함께 바뀌었고(로그인·병합·
-자동 저장·전체 삭제), `reason` 은 `record`·`remove`·`clear`·`autoSave`·`auth`·`merge`·`load` 중 하나입니다.
-
-### React 훅 — G7Core.useSearchHistory(scope)
-
-```tsx
-const history = G7Core.useSearchHistory('core.site');
-// history: { items, autoSave, enabled, loading, maxCount, record, remove, clear, setAutoSave, refresh }
-
-if (!history.enabled) return null;           // 범위가 없거나 관리자 화면
-if (!history.autoSave) {
-  // 「검색어 저장 기능이 꺼져 있습니다 · 켜기」 → history.setAutoSave(true)
-}
-history.items.map((item) => /* item.keyword, item.searchedAt */ null);
-
-await history.record(keyword);                // 제출 때
-await history.remove(item);                   // 항목 ×
-await history.clear();                        // 이 범위 전체 삭제
-```
-
-- 같은 범위를 쓰는 다른 검색창(헤더·모바일 서랍 등)의 변경이 바로 반영됩니다.
-- 늦게 끝난 조회는 그 사이 바뀐 상태(기록·자동 저장 끄기)를 덮지 않습니다.
-- 다른 훅과 같이 조건 밖 최상위에서 부릅니다. `items` 는 바뀔 때마다 새 배열이므로 effect 의존성에 넣고 그 안에서 상태를 바꾸지 않습니다.
-
-### 레이아웃에서 쓰기
-
-내장 핸들러 `recordSearchKeyword` 를 검색 이동 앞에 둡니다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면·레이아웃 편집기
-미리보기에서는 아무것도 하지 않고, 실패해도 던지지 않아 다음 이동을 막지 않습니다. 회원은 서버 응답을 기다린 뒤 다음 동작으로 넘어갑니다.
-
-```html
-<sequence>
-  <record-search-keyword scope="core.site" keyword="{{_local.searchQuery}}"/>
-  <navigate path="/search">
-    <query q="{{_local.searchQuery}}"/>
-  </navigate>
-</sequence>
-```
-
----
-
 ## 전역 상태 계약 (G7Core.stateContracts)
 
 > **engine-v1.78.0+** 추가
@@ -1236,7 +1048,7 @@ await history.clear();                        // 이 범위 전체 삭제
 
 계약은 두 가지에서 모입니다.
 
-- **코어 예약 계약**: `consent`, `identityChallenge`, `currentUser`, `settings`, `plugins`, `modules`, `appConfig`, `activeModules`·`activePlugins`(코어 7.1.4+)
+- **코어 예약 계약**: `consent`, `identityChallenge`, `currentUser`, `settings`, `plugins`, `modules`, `appConfig`
 - **활성 확장의 선언**: 모듈, 플러그인, 템플릿 manifest 의 `state_contracts`
 
 ### API 목록

@@ -1,14 +1,13 @@
 import type { TranslationContext } from './TranslationEngine';
 import { TemplateEngineError } from './TemplateEngineError';
 import { createLogger } from '../utils/Logger';
-import { primaryLanguage } from '../support/localeTag';
 
 const logger = createLogger('ErrorDisplay');
 
 /**
  * 오류 화면 기본 문구 — 번역 파일을 받지 못한 경우(그것이 오류 원인일 수도 있다)에도 화면 언어를 따르도록
  * 엔진에 내장한다. 번역 키가 풀리면(`G7Core.t`) 그 값을 먼저 쓴다(engine-v1.78.5).
- * 종전에는 제목 「페이지 로딩 실패」·버튼 「새로고침」 이 영어 화면에서도 한국어로 박혀 있었다(7.1.0 실측).
+ * 종전에는 제목 「페이지 로딩 실패」·버튼 「새로고침」 이 영어 화면에서도 한국어로 박혀 있었다(7.1.0 J O-D 관측).
  */
 const BUILTIN_TEXT: Record<string, Record<'ko' | 'en' | 'ja', string>> = {
     'core.errors.page_load_failed': { ko: '페이지 로딩 실패', en: 'Page failed to load', ja: 'ページの読み込みに失敗しました' },
@@ -25,7 +24,7 @@ const BUILTIN_TEXT: Record<string, Record<'ko' | 'en' | 'ja', string>> = {
         ja: '要求された画面が見つかりません。',
     },
     // 레이아웃 편집기 번들(layout-editor.min.js) 실패 화면 — 편집기 화면 자체가 뜨지 않은 상태라
-    // 번역 파일보다 내장 문구가 먼저 필요하다(engine-v1.78.6, 7.1.0 실측).
+    // 번역 파일보다 내장 문구가 먼저 필요하다(engine-v1.78.6, 7.1.0 J O-J4).
     'core.errors.layout_editor_load_failed': {
         ko: '레이아웃 편집기 로드 실패',
         en: 'Layout editor failed to load',
@@ -68,10 +67,9 @@ export interface ErrorDisplayOptions {
 /**
  * 에러 화면 렌더링 컴포넌트
  *
- * 주의: 이 컴포넌트는 템플릿 엔진 초기화 실패 시에도 사용되므로 템플릿 CSS(Tailwind 클래스)에 기대지 않는다.
- * 모양은 셸이 항상 싣는 코어 정적 CSS(`public/assets/core/css/g7-core.css`)의 `g7-error*` 클래스로 준다.
- * HTML 문자열의 style 속성은 엄격한 스타일 정책에서 막혀 무스타일 화면이 된다(#163, engine-v1.91.0).
- * 다크 모드는 CSS 미디어 쿼리(`prefers-color-scheme`)가 맡는다.
+ * 주의: 이 컴포넌트는 템플릿 엔진 초기화 실패 시에도 사용되므로
+ * Tailwind CSS 클래스 대신 인라인 스타일을 사용합니다.
+ * 초기화 실패 시점에는 CSS가 아직 로드되지 않았을 수 있기 때문입니다.
  */
 export class ErrorDisplay {
     /**
@@ -93,8 +91,7 @@ export class ErrorDisplay {
         } catch {
             // 번역 엔진이 아직 준비되지 않았으면 내장 문구로 내려간다
         }
-        // 앞 두 글자가 아니라 주 언어 하위 태그로 비교한다 — kok(콘칸어)가 ko 로 잡히지 않게 (engine-v1.81.0)
-        const lang = primaryLanguage(locale || document.documentElement.lang || 'ko') as 'ko' | 'en' | 'ja';
+        const lang = (locale || document.documentElement.lang || 'ko').slice(0, 2) as 'ko' | 'en' | 'ja';
         const builtin = BUILTIN_TEXT[key];
         if (!builtin) return key;
 
@@ -118,21 +115,111 @@ export class ErrorDisplay {
         const shouldShowStack =
             options.debug && options.showStack && options.stackTrace;
 
+        // 다크 모드 감지
+        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        // 인라인 스타일 정의 (CSS 의존성 없이 동작)
+        const styles = {
+            container: `
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                background-color: ${isDarkMode ? '#111827' : '#f9fafb'};
+                padding: 1rem;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            `,
+            card: `
+                max-width: 28rem;
+                width: 100%;
+                background-color: ${isDarkMode ? '#1f2937' : '#ffffff'};
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                padding: 2rem;
+                text-align: center;
+            `,
+            iconContainer: `
+                margin-bottom: 1.5rem;
+            `,
+            icon: `
+                font-size: 4rem;
+                color: #ef4444;
+            `,
+            title: `
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: ${isDarkMode ? '#ffffff' : '#111827'};
+                margin-bottom: 1rem;
+            `,
+            message: `
+                color: ${isDarkMode ? '#d1d5db' : '#4b5563'};
+                margin-bottom: 0.5rem;
+                line-height: 1.625;
+            `,
+            detailMessage: `
+                font-size: 0.875rem;
+                color: ${isDarkMode ? '#9ca3af' : '#6b7280'};
+                margin-bottom: 1.5rem;
+                background-color: ${isDarkMode ? '#374151' : '#f3f4f6'};
+                padding: 0.5rem 0.75rem;
+                border-radius: 0.25rem;
+            `,
+            spacer: `
+                margin-bottom: 1.5rem;
+            `,
+            stackContainer: `
+                margin-top: 1.5rem;
+                padding: 1rem;
+                background-color: ${isDarkMode ? '#374151' : '#f3f4f6'};
+                border-radius: 0.375rem;
+                text-align: left;
+            `,
+            stackTitle: `
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: ${isDarkMode ? '#e5e7eb' : '#374151'};
+                margin-bottom: 0.5rem;
+            `,
+            stackTrace: `
+                font-size: 0.75rem;
+                color: ${isDarkMode ? '#d1d5db' : '#4b5563'};
+                overflow-x: auto;
+                white-space: pre-wrap;
+                word-break: break-word;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            `,
+            buttonContainer: `
+                margin-top: 1.5rem;
+            `,
+            button: `
+                display: inline-flex;
+                align-items: center;
+                padding: 0.75rem 1.5rem;
+                background-color: #2563eb;
+                color: #ffffff;
+                font-weight: 500;
+                border-radius: 0.375rem;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            `,
+        };
+
         container.innerHTML = `
-            <div class="g7-error">
-                <div class="g7-error__card">
+            <div style="${styles.container}">
+                <div style="${styles.card}">
                     <!-- 아이콘 -->
-                    <div class="g7-error__icon-wrap">
-                        <i class="fa-solid ${options.icon} g7-error__icon" aria-hidden="true"></i>
+                    <div style="${styles.iconContainer}">
+                        <i class="fa-solid ${options.icon}" style="${styles.icon}" aria-hidden="true"></i>
                     </div>
 
                     <!-- 제목 -->
-                    <h1 class="g7-error__title">
+                    <h1 style="${styles.title}">
                         ${this.escapeHtml(options.title)}
                     </h1>
 
                     <!-- 사용자 메시지 -->
-                    <p class="g7-error__message">
+                    <p style="${styles.message}">
                         ${this.escapeHtml(options.message)}
                     </p>
 
@@ -140,22 +227,22 @@ export class ErrorDisplay {
                     ${
                         options.detailMessage
                             ? `
-                        <p class="g7-error__detail">
+                        <p style="${styles.detailMessage}">
                             ${this.escapeHtml(options.detailMessage)}
                         </p>
                     `
-                            : `<div class="g7-error__spacer"></div>`
+                            : `<div style="${styles.spacer}"></div>`
                     }
 
                     <!-- Stack Trace (디버그 모드일 때만) -->
                     ${
                         shouldShowStack
                             ? `
-                        <div class="g7-error__stack">
-                            <p class="g7-error__stack-title">
+                        <div style="${styles.stackContainer}">
+                            <p style="${styles.stackTitle}">
                                 Stack Trace:
                             </p>
-                            <pre class="g7-error__stack-trace">${this.escapeHtml(
+                            <pre style="${styles.stackTrace}">${this.escapeHtml(
                                 options.stackTrace
                             )}</pre>
                         </div>
@@ -167,13 +254,14 @@ export class ErrorDisplay {
                     ${
                         options.showReloadButton
                             ? `
-                        <div class="g7-error__actions">
+                        <div style="${styles.buttonContainer}">
                             <button
-                                type="button"
-                                data-g7-error-reload="1"
-                                class="g7-error__button"
+                                onclick="window.location.reload()"
+                                style="${styles.button}"
+                                onmouseover="this.style.backgroundColor='#1d4ed8'"
+                                onmouseout="this.style.backgroundColor='#2563eb'"
                             >
-                                <i class="fa-solid fa-rotate-right g7-error__button-icon" aria-hidden="true"></i>
+                                <i class="fa-solid fa-rotate-right" style="margin-right: 0.5rem;" aria-hidden="true"></i>
                                 ${this.escapeHtml(this.text('core.errors.reload'))}
                             </button>
                         </div>
@@ -183,19 +271,6 @@ export class ErrorDisplay {
                 </div>
             </div>
         `;
-
-        // 새로고침 버튼은 인라인 on* 속성 없이 리스너로 묶는다 — strict CSP(`script-src 'self'`)
-        // 에서는 인라인 핸들러가 실행되지 않아 오류 화면의 유일한 탈출구가 무반응이 된다(#158).
-        const reloadButton = container.querySelector<HTMLButtonElement>('[data-g7-error-reload]');
-        if (reloadButton) {
-            reloadButton.addEventListener('click', () => window.location.reload());
-            reloadButton.addEventListener('mouseenter', () => {
-                reloadButton.style.backgroundColor = '#1d4ed8';
-            });
-            reloadButton.addEventListener('mouseleave', () => {
-                reloadButton.style.backgroundColor = '#2563eb';
-            });
-        }
     }
 
     /**

@@ -16,7 +16,6 @@
  */
 
 import React from 'react';
-import { applyDeferredStyles, sanitizeDeferred } from '../support/inlineStyleDeferral';
 
 /** 코어 WidgetProps 와 호환되는 최소 형태 — 코어 타입 import 회피(IIFE 번들 분리 안전) */
 interface IconCatalogEntry {
@@ -62,26 +61,11 @@ function matchesQuery(entry: IconCatalogEntry, label: string, q: string): boolea
 /** FA 프리뷰 — preview.html → preview.className → `fas fa-{value}` (FA 직접 렌더) → 텍스트 */
 function IconPreview({ entry }: { entry: IconCatalogEntry }): React.ReactElement {
   const preview = entry.preview;
-  const rawHtml = typeof preview?.html === 'string' ? preview.html : '';
-  // 미리보기 HTML 에 style 속성이 있으면 엄격한 스타일 정책(`style-src-attr 'none'`)에서 막힌다. 코어 본문 서식 지연 장치
-  // (G7Core.inlineStyle)가 있으면 그 장치로 정화해 style 을 지연 속성으로 받고 붙인 뒤 입힌다. 없으면(옛 코어) 종전 그대로 (공개 #163).
-  const previewHtml = React.useMemo(
-    () => (rawHtml === '' ? '' : (sanitizeDeferred(rawHtml) ?? rawHtml)),
-    [rawHtml],
-  );
-  // `dangerouslySetInnerHTML` 객체를 문자열 기준으로 고정한다 — React 19 는 객체가 바뀌면 innerHTML 을 다시 써서 입혀 둔 서식이 사라진다.
-  const previewInnerHtml = React.useMemo(() => ({ __html: previewHtml }), [previewHtml]);
-  const htmlRef = React.useRef<HTMLSpanElement>(null);
-  React.useLayoutEffect(() => {
-    applyDeferredStyles(htmlRef.current);
-  });
-
-  if (rawHtml !== '') {
+  if (preview?.html) {
     return (
       <span
-        ref={htmlRef}
         className="g7le-icon-preview"
-        dangerouslySetInnerHTML={previewInnerHtml}
+        dangerouslySetInnerHTML={{ __html: preview.html }}
         style={previewBox}
       />
     );

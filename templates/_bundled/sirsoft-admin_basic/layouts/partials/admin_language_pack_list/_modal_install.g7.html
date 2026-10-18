@@ -51,7 +51,7 @@
           <icon name="info-circle" class="text-blue-500 mt-0.5" size="sm"/>
           <div>
             <p class="text-info-soft">$t:admin.language_packs.install_modal.file_requirements</p>
-            <p class="mt-1 text-sm font-mono text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">language-pack.json</p>
+            <p class="mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">language-pack.json</p>
           </div>
         </div>
       </div>
@@ -74,7 +74,7 @@
           <icon name="info-circle" class="text-blue-500 mt-0.5" size="sm"/>
           <div>
             <p class="text-info-soft">$t:admin.language_packs.install_modal.github_requirements</p>
-            <p class="mt-1 text-sm font-mono text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">language-pack.json</p>
+            <p class="mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">language-pack.json</p>
           </div>
         </div>
       </div>
@@ -102,9 +102,6 @@
                 <refetch-data-source dataSourceId="language_packs"/>
                 <reload-extensions/>
                 <close-modal/>
-                <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
-                <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
-                <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
                 <set-state target="global" :isLanguagePackInstalling="false" languagePackInstallError="{{error.message}}" languagePackInstallErrors="{{error.errors}}"/>

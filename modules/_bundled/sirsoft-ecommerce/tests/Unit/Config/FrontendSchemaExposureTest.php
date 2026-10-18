@@ -2,8 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Config;
 
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Group;
-use Tests\PureTestCase;
 
 /**
  * 프론트엔드 노출 스키마 계약 테스트 (이슈 #524 §4.3)
@@ -21,7 +21,7 @@ use Tests\PureTestCase;
  */
 #[Group('ecommerce')]
 #[Group('settings')]
-class FrontendSchemaExposureTest extends PureTestCase
+class FrontendSchemaExposureTest extends ModuleTestCase
 {
     /**
      * frontend_schema 가 mileage.enabled 를 노출한다.
@@ -70,43 +70,6 @@ class FrontendSchemaExposureTest extends PureTestCase
 
         $this->assertArrayHasKey('mileage', $defaults);
         $this->assertFalse((bool) ($defaults['mileage']['enabled'] ?? true));
-    }
-
-    /**
-     * 주문서의 적립금 안내에 쓰는 「최소 상품 합계」 두 칸만 더 내려보낸다 — 가입 적립금·적립 제외 정책은 화면이 읽지 않으므로 내려보내지 않는다.
-     *
-     * @effects ecommerce_exposes_mileage_min_product_total_to_frontend
-     *
-     * @return void 반환값 없음
-     */
-    public function test_frontend_schema_exposes_only_the_mileage_fields_the_screens_read(): void
-    {
-        $fields = $this->loadFrontendSchema()['mileage']['fields'] ?? [];
-
-        $exposed = array_keys(array_filter($fields, static fn (array $field): bool => (bool) ($field['expose'] ?? false)));
-        sort($exposed);
-
-        $this->assertSame(['enabled', 'min_product_total_for_use', 'min_product_total_for_use_enabled'], $exposed);
-    }
-
-    /**
-     * 사업자 정보는 푸터에 쓰는 법정 표시 항목과 표시 여부만 내려보낸다 — 팩스·개인정보 책임자 같은 칸은 내려보내지 않는다.
-     *
-     * @effects ecommerce_exposes_business_footer_fields_to_frontend
-     *
-     * @return void 반환값 없음
-     */
-    public function test_frontend_schema_exposes_business_footer_fields_only(): void
-    {
-        $fields = $this->loadFrontendSchema()['basic_info']['fields'] ?? [];
-        $isExposed = static fn (string $key): bool => (bool) ($fields[$key]['expose'] ?? false);
-
-        foreach (['company_name', 'business_number', 'ceo_name', 'zipcode', 'base_address', 'detail_address', 'phone', 'email', 'mail_order_number', 'hosting_provider', 'show_business_footer'] as $key) {
-            $this->assertTrue($isExposed($key), "basic_info.{$key} 는 푸터 사업자 정보에 쓰이므로 내려보내야 한다");
-        }
-        foreach (['fax', 'privacy_officer', 'privacy_officer_email', 'telecom_number', 'business_type', 'business_category', 'public_asset_disk'] as $key) {
-            $this->assertFalse($isExposed($key), "basic_info.{$key} 는 사용자 화면에 내려보내지 않는다");
-        }
     }
 
     /**

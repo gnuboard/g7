@@ -82,7 +82,6 @@
                                             ],
                                             "props": {
                                                 "name": "batchOrderStatus",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.change_status",
                                                 "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "value": "{{_local.batchOrderStatus || ''}}",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}",
@@ -161,7 +160,6 @@
                                             ],
                                             "props": {
                                                 "name": "batchCarrierId",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier",
                                                 "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "value": "{{_local.batchCarrierId || ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier",
@@ -295,7 +293,7 @@
                                             "name": "Span",
                                             "if": "{{(_local.selectedProducts ?? []).length > 0 && claimRequestContext?.data?.unavailable !== true && (_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true)}}",
                                             "props": {
-                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.gate_hint"
                                         },
@@ -306,7 +304,7 @@
                                             "name": "Span",
                                             "if": "{{claimRequestContext?.data?.unavailable === true && _local.claimRequestContextError !== 'failed'}}",
                                             "props": {
-                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.no_permission"
                                         },
@@ -317,7 +315,7 @@
                                             "name": "Span",
                                             "if": "{{claimRequestContext?.data?.unavailable === true && _local.claimRequestContextError === 'failed'}}",
                                             "props": {
-                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.context_load_failed"
                                         }
@@ -365,7 +363,6 @@
                                 }
                             ],
                             "props": {
-                                "rowLabelField": "product_name",
                                 "data": "{{order.data?.options ?? []}}",
                                 "idField": "id",
                                 "selectable": true,
@@ -423,7 +420,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "image",
-                                                                            "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
                                                                         }
                                                                     }
                                                                 ]
@@ -460,18 +457,6 @@
                                                                     "className": "text-sm text-gray-600 dark:text-gray-300 block"
                                                                 },
                                                                 "text": "{{row.option_name}}"
-                                                            },
-                                                            {
-                                                                "comment": "품목 과세 종류 — 주문 시점에 확정한 값(옵션 지정 ?? 상품 기본값). 과세 회색·면세 파랑·영세 초록 (#612)",
-                                                                "type": "composite",
-                                                                "name": "Badge",
-                                                                "if": "{{row.tax_status}}",
-                                                                "props": {
-                                                                    "size": "sm",
-                                                                    "color": "{{row.tax_status === 'zero_rated' ? 'green' : (row.tax_status === 'tax_free' ? 'blue' : 'gray')}}",
-                                                                    "className": "mt-1"
-                                                                },
-                                                                "text": "{{row.tax_status_label}}"
                                                             },
                                                             {
                                                                 "comment": "선택된 추가옵션 (스냅샷 — 옵션명 아래 별행, D14)",
@@ -520,7 +505,7 @@
                                                         "name": "Span",
                                                         "if": "{{row.list_price_formatted && Number(row.list_price) !== Number(row.unit_price)}}",
                                                         "props": {
-                                                            "className": "text-sm text-gray-500 dark:text-gray-400 line-through block"
+                                                            "className": "text-sm text-gray-400 dark:text-gray-500 line-through block"
                                                         },
                                                         "text": "{{row.list_price_formatted}}"
                                                     },
@@ -577,7 +562,7 @@
                                                         "props": {
                                                             "className": "text-sm text-gray-900 dark:text-gray-100"
                                                         },
-                                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.detail.order_info.quantity_value|count={{row.quantity}}"
+                                                        "text": "{{row.quantity}} 개"
                                                     },
                                                     {
                                                         "comment": "재고 적용 여부 배지",
@@ -622,7 +607,7 @@
                                                         "name": "Span",
                                                         "if": "{{row.subtotal_discount_amount > 0}}",
                                                         "props": {
-                                                            "className": "text-sm text-red-700 dark:text-red-400 font-medium block"
+                                                            "className": "text-sm text-red-600 dark:text-red-400 font-medium block"
                                                         },
                                                         "text": "-{{row.subtotal_discount_amount_formatted}}"
                                                     },
@@ -648,7 +633,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "ticket",
-                                                                            "className": "text-xs text-red-500 dark:text-red-500"
+                                                                            "className": "text-xs text-red-400 dark:text-red-500"
                                                                         }
                                                                     },
                                                                     {
@@ -685,7 +670,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "tag",
-                                                                            "className": "text-xs text-orange-600 dark:text-orange-500"
+                                                                            "className": "text-xs text-orange-400 dark:text-orange-500"
                                                                         }
                                                                     },
                                                                     {
@@ -722,7 +707,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "gift",
-                                                                            "className": "text-xs text-purple-500 dark:text-purple-500"
+                                                                            "className": "text-xs text-purple-400 dark:text-purple-500"
                                                                         }
                                                                     },
                                                                     {
@@ -772,10 +757,9 @@
                                                         "text": "{{row.final_amount_formatted}}"
                                                     },
                                                     {
-                                                        "comment": "품목별 과세 구분 — 과세 행은 과세 금액·부가세, 영세 행은 영세 금액(부가세 0)을 보인다 (#612 S7: 종전엔 리소스 미노출로 늘 숨었다)",
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{row.tax_status === 'taxable' && row.subtotal_tax_amount > 0}}",
+                                                        "if": "{{row.subtotal_tax_amount > 0}}",
                                                         "props": {
                                                             "className": "text-tertiary block"
                                                         },
@@ -793,18 +777,9 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{row.subtotal_zero_rated_amount > 0}}",
-                                                        "props": {
-                                                            "className": "text-tertiary block"
-                                                        },
-                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.zero_rated: {{row.subtotal_zero_rated_amount_formatted}}"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
                                                         "if": "{{row.subtotal_points_used_amount > 0}}",
                                                         "props": {
-                                                            "className": "text-xs text-red-700 dark:text-red-400 block"
+                                                            "className": "text-xs text-red-600 dark:text-red-400 block"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{row.subtotal_points_used_amount_formatted}}"
                                                     },
@@ -813,7 +788,7 @@
                                                         "name": "Span",
                                                         "if": "{{row.subtotal_deposit_used_amount > 0}}",
                                                         "props": {
-                                                            "className": "text-xs text-red-700 dark:text-red-400 block"
+                                                            "className": "text-xs text-red-600 dark:text-red-400 block"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{row.subtotal_deposit_used_amount_formatted}}"
                                                     }
@@ -1106,7 +1081,7 @@
                                     },
                                     {
                                         "field": "quantity",
-                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.quantity_value|count={{order.data?.total_quantity ?? 0}}",
+                                        "text": "{{order.data?.total_quantity ?? 0}}개",
                                         "className": "text-center text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
                                     },
                                     {
@@ -1185,16 +1160,6 @@
                                                             "className": "text-tertiary block"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{order.data?.total_vat_amount_formatted}}"
-                                                    },
-                                                    {
-                                                        "comment": "합계 줄 영세 금액 — 과세 금액에 포함된 몫(부가세 0) (#612)",
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "if": "{{order.data?.total_zero_rated_amount > 0}}",
-                                                        "props": {
-                                                            "className": "text-tertiary block"
-                                                        },
-                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.zero_rated: {{order.data?.total_zero_rated_amount_formatted}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1399,6 +1364,12 @@
                                                             "event": "onItemClick",
                                                             "handler": "switch",
                                                             "cases": {
+                                                                "view_member": {
+                                                                    "handler": "openWindow",
+                                                                    "params": {
+                                                                        "path": "/admin/users/{{order.data?.user_id}}"
+                                                                    }
+                                                                },
                                                                 "search_by_orderer": {
                                                                     "comment": "주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
                                                                     "handler": "navigate",
@@ -1423,8 +1394,6 @@
                                                         "items": [
                                                             {
                                                                 "id": "view_member",
-                                                                "href": "/admin/users/{{order.data?.user_id}}",
-                                                                "target": "_blank",
                                                                 "label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member",
                                                                 "iconName": "user"
                                                             },
@@ -1440,7 +1409,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
                                                             },
                                                             "children": [
                                                                 {
@@ -1448,7 +1417,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "fa-regular fa-user",
-                                                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                        "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
                                                                     }
                                                                 },
                                                                 {
@@ -1486,7 +1455,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "fa-regular fa-user",
-                                                                "className": "text-gray-500 dark:text-gray-500 flex-shrink-0"
+                                                                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -1501,7 +1470,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                "className": "text-sm text-gray-400 dark:text-gray-500"
                                                             },
                                                             "text": "($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)"
                                                         },
@@ -1519,7 +1488,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             },
                                                             "children": [
@@ -1722,7 +1691,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "ecommerce-tone-error-strong block mb-1 text-sm font-medium"
+                                                        "className": "text-error-strong block mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.validation_error_title"
                                                 },
@@ -1734,7 +1703,7 @@
                                                         "item_var": "errorMsg"
                                                     },
                                                     "props": {
-                                                        "className": "ecommerce-tone-error-soft text-sm"
+                                                        "className": "text-error-soft"
                                                     },
                                                     "text": "{{errorMsg}}"
                                                 }
@@ -1788,7 +1757,6 @@
                                                     ],
                                                     "props": {
                                                         "name": "recipient_country_code",
-                                                        "aria-label": "$t:sirsoft-ecommerce.common.shipping_country_label",
                                                         "value": "{{_local.form.recipient_country_code ?? order?.data?.shipping_address?.recipient_country_code ?? 'KR'}}",
                                                         "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}",
                                                         "className": "w-full",
@@ -1829,7 +1797,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400"
+                                                                "className": "text-red-500 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -1843,7 +1811,6 @@
                                                         "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_name ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                         "value": "{{_local.form.recipient_name}}",
                                                         "name": "recipient_name",
-                                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.name",
                                                         "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                     }
                                                 },
@@ -1881,7 +1848,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400"
+                                                                "className": "text-red-500 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -1902,7 +1869,6 @@
                                                                 "className": "input flex-1 disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_phone ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                                 "value": "{{_local.form.recipient_phone}}",
                                                                 "name": "recipient_phone",
-                                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
                                                         }
@@ -1951,7 +1917,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400"
+                                                                "className": "text-red-500 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -1965,7 +1931,6 @@
                                                         "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_tel ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                         "value": "{{_local.form.recipient_tel}}",
                                                         "name": "recipient_tel",
-                                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel",
                                                         "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                     }
                                                 },
@@ -2013,7 +1978,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400"
+                                                                "className": "text-red-500 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -2034,7 +1999,6 @@
                                                                 "className": "{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}",
                                                                 "value": "{{_local.form.recipient_zipcode}}",
                                                                 "name": "recipient_zipcode",
-                                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.zipcode",
                                                                 "readOnly": true,
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
@@ -2098,7 +2062,6 @@
                                                 "className": "input-readonly w-full",
                                                 "value": "{{_local.form.recipient_address ?? ''}}",
                                                 "name": "recipient_address",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address",
                                                 "readOnly": true,
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
@@ -2130,7 +2093,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400"
+                                                        "className": "text-red-500 dark:text-red-400"
                                                     },
                                                     "text": "*"
                                                 }
@@ -2144,7 +2107,6 @@
                                                 "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_detail_address ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                 "value": "{{_local.form.recipient_detail_address}}",
                                                 "name": "recipient_detail_address",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address_detail",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
                                         },
@@ -2187,7 +2149,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400"
+                                                        "className": "text-red-500 dark:text-red-400"
                                                     },
                                                     "text": "*"
                                                 }
@@ -2201,7 +2163,6 @@
                                                 "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.address_line_1 ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                 "value": "{{_local.form.address_line_1 ?? ''}}",
                                                 "name": "address_line_1",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address1_placeholder",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
@@ -2312,7 +2273,6 @@
                                                 "className": "input w-full textarea-sm disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.delivery_memo ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                 "value": "{{_local.form.delivery_memo}}",
                                                 "name": "delivery_memo",
-                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.delivery_message",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
                                         },
@@ -2560,7 +2520,7 @@
                                                     "name": "Span",
                                                     "if": "{{cancel.cancelled_at_formatted}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-300 shrink-0"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0"
                                                     },
                                                     "text": "{{cancel.cancelled_at_formatted ?? ''}}"
                                                 }

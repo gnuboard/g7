@@ -1,52 +1,9 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
 import { suffixed } from '../support/assetUrl';
-import { notifyLocationReplaced } from '../template-engine/navigationLinks';
-import { normalizePathname } from './normalizePathname';
-import {
-  consumeArmedLeaveGuardBypass,
-  endLeaveApproval,
-  installLeaveGuardUnloadListener,
-  requestLeave,
-} from './LeaveGuard';
-import {
-  captureBeforeLeave,
-  consumePendingReturnScroll,
-  installScrollMemory,
-  markScrollNavigation,
-  syncCommittedScrollEntry,
-} from './ScrollMemory';
+import { isCustomRoutePath } from './CustomRouteMatcher';
 
 const logger = createLogger('Router');
-
-/**
- * Router.navigate 옵션
- */
-export interface RouterNavigateOptions {
-  /** 레이아웃 이탈 가드(`meta.leave_guard`) 확인을 이번 이동에 한해 생략 (저장 성공 뒤 이동 등) @since engine-v1.82.0 */
-  bypassLeaveGuard?: boolean;
-  /** 호출 측 호환용 — Router 는 언제나 pushState 한다(교체는 navigate 액션의 replace 가 맡는다) */
-  replace?: boolean;
-  [key: string]: unknown;
-}
-
-/**
- * 지금 히스토리 항목의 위치 — Navigation API(`navigation.currentEntry.index`)가 있을 때만 안다.
- *
- * @returns 위치, 모르면 null
- */
-function currentHistoryEntryIndex(): number | null {
-  const index = (window as any).navigation?.currentEntry?.index;
-
-  return typeof index === 'number' && index >= 0 ? index : null;
-}
-
-/**
- * 지금 주소(경로+쿼리+해시)
- */
-function currentUrl(): string {
-  return window.location.pathname + window.location.search + window.location.hash;
-}
 
 /**
  * 라우트 메타 정보
@@ -75,12 +32,6 @@ export interface Route {
   auth_required?: boolean;
   auth_type?: AuthType;
   meta?: RouteMeta;
-  /**
-   * 이 라우트에 필요한 활성 모듈·플러그인 식별자. 서버가 routes 응답을 만들 때 모두 활성인 라우트만 싣는다.
-   * 클라이언트는 이 값을 읽지 않는다(타입 정합용).
-   * @since engine-v1.84.0
-   */
-  requires?: { modules?: string[]; plugins?: string[] };
 }
 
 /**
@@ -107,19 +58,10 @@ export class Router {
   private eventHandlers: Map<string, EventHandler[]> = new Map();
   private pendingNavigation: string | null = null;
   private isNavigating: boolean = false;
-  /** 마지막으로 확정한 화면의 주소 — 이탈 가드가 popstate 를 되돌릴 때 쓴다 @since engine-v1.82.0 */
-  private committedUrl: string;
-  /** 마지막으로 확정한 히스토리 항목 위치(Navigation API), 모르면 null @since engine-v1.82.0 */
-  private committedHistoryIndex: number | null;
 
   constructor(templateIdentifier: string) {
     this.templateIdentifier = templateIdentifier;
-    this.committedUrl = currentUrl();
-    this.committedHistoryIndex = currentHistoryEntryIndex();
     this.initPopstateListener();
-    installLeaveGuardUnloadListener();
-    // 뒤로/앞으로 가기·새로고침 스크롤 복원 — 브라우저 기본 복원을 끄고 항목별 위치를 기억한다 (engine-v1.85.0)
-    installScrollMemory();
   }
 
   /**
@@ -132,67 +74,18 @@ export class Router {
   /**
    * popstate 이벤트 핸들러 (화살표 함수로 this 바인딩 유지)
    *
-   * popstate 는 주소가 이미 바뀐 뒤에 온다. 레이아웃 이탈 가드가 참이고 사용자가 머무르기를 고르면
-   * 확정 화면의 주소를 같은 자리에서 곧바로 다시 쌓는다(`pushState`). 화면은 다시 그리지 않는다 (engine-v1.82.0)
+   * 뒤로·앞으로 가기로 서버의 개발자 화면(routes/custom.php) 주소에 오면 엔진이 그리지 않고 페이지를 다시
+   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.81.0). 패턴이 없으면 종전과 같다.
    */
   private handlePopState = (): void => {
-    const targetIndex = currentHistoryEntryIndex();
-    // 떠나는 화면의 내부 스크롤 영역 위치를 남긴다 — 창 위치는 scroll 이벤트가 이미 남겼다 (engine-v1.85.0)
-    captureBeforeLeave(undefined, true);
-    const bypass = consumeArmedLeaveGuardBypass();
-    if (!requestLeave(currentUrl(), { bypass, fromPath: this.getCommittedUrl() })) {
-      this.restoreBlockedPopState(targetIndex);
-
+    if (isCustomRoutePath(window.location.pathname)) {
+      logger.log(`popstate to custom route — reloading: ${window.location.pathname}`);
+      window.location.reload();
       return;
     }
 
-    this.committedUrl = currentUrl();
-    this.committedHistoryIndex = targetIndex;
-    // 돌아온 항목 — 화면을 다시 그린 뒤 TemplateApp 이 기억한 위치로 되돌린다 (engine-v1.85.0)
-    markScrollNavigation('pop');
     this.navigateToCurrentPath();
   };
-
-  /**
-   * 이탈 가드가 막은 popstate 를 되돌립니다 — 확정 주소를 **동기로** 다시 쌓는다.
-   *
-   * `history.go(차이)` 로 원래 항목에 돌아가는 방식은 쓰지 않는다. 되돌림이 비동기라 그 사이 주소가 목적지에
-   * 머물고, 대기 중인 디바운스 입력의 경로 검사(`window.location.pathname`)가 머무른 화면의 입력을 「다른 경로」로
-   * 보고 버린다(입력 손실 — 이 가드가 막으려는 바로 그것). 뒤로 가기를 막은 경우 기록은 [.., 목적지, 확정 화면] 이
-   * 되어 다시 뒤로 가면 또 묻는다. 앞으로 가기를 막은 경우 그 뒤의 앞으로 기록은 잃는다.
-   *
-   * @param _targetIndex popstate 가 내려앉은 항목 위치 (진단용)
-   */
-  private restoreBlockedPopState(_targetIndex: number | null): void {
-    window.history.pushState({}, '', this.getCommittedUrl());
-    this.committedHistoryIndex = currentHistoryEntryIndex();
-    // 다시 쌓은 항목이 지금 화면이다 — 스크롤 기억도 그 항목에 이어 쓴다 (engine-v1.85.0)
-    syncCommittedScrollEntry();
-  }
-
-  /**
-   * 확정 화면의 주소 — Navigation API 가 있으면 그 항목의 지금 주소(그 뒤 replaceState 로 바뀐 쿼리 포함)를 쓴다.
-   *
-   * @returns 경로+쿼리+해시
-   */
-  private getCommittedUrl(): string {
-    const index = this.committedHistoryIndex;
-    if (index !== null) {
-      try {
-        const entry = (window as any).navigation?.entries?.()?.[index];
-        if (typeof entry?.url === 'string') {
-          const url = new URL(entry.url);
-          if (url.origin === window.location.origin) {
-            return url.pathname + url.search + url.hash;
-          }
-        }
-      } catch {
-        // 아래 기록값으로
-      }
-    }
-
-    return this.committedUrl;
-  }
 
   /**
    * 이벤트 핸들러 등록
@@ -287,7 +180,7 @@ export class Router {
   }
 
   /**
-   * URL 경로의 끝·연속 슬래시를 정규화합니다.
+   * URL 경로의 끝 슬래시를 정규화합니다.
    *
    * 브라우저가 `/admin/` 처럼 끝 슬래시가 붙은 경로로 진입해도 끝 슬래시 없는
    * 라우트 패턴(언어 prefix 형태 포함)에 매칭되도록, 루트(`/`)를 제외한 나머지
@@ -295,15 +188,16 @@ export class Router {
    * (routes.json 규약), 미정규화 시 `/admin/` 이 어떤 라우트에도 매칭되지 않아
    * 404 로 떨어지고 — 미인증 진입 시 로그인 리다이렉트 대신 404 가 노출된다.
    *
-   * engine-v1.84.0 부터 중간의 연속 슬래시(`/board//free`)도 하나로 줄인다 — 규칙은
-   * {@link normalizePathname}(서버 `RequestPath::normalize()` 와 같음, 공개#156).
-   *
    * @param pathname 원본 URL 경로
-   * @returns 끝·연속 슬래시가 정규화된 경로 (루트는 `/` 유지)
+   * @returns 끝 슬래시가 정규화된 경로 (루트는 `/` 유지)
    * @since engine-v1.54.1
    */
   private normalizePathname(pathname: string): string {
-    return normalizePathname(pathname);
+    if (pathname.length > 1 && pathname.endsWith('/')) {
+      return pathname.replace(/\/+$/, '') || '/';
+    }
+
+    return pathname;
   }
 
   /**
@@ -386,27 +280,14 @@ export class Router {
 
   /**
    * 현재 URL 경로를 처리하여 매칭되는 라우트를 찾고 이벤트를 발생시킵니다.
-   *
-   * 첫 진입·뒤로/앞으로·`navigate()` 가 모두 지나가는 단일 지점이다. 끝·연속 슬래시 주소면 먼저 주소창을
-   * 정규형으로 바꾸고(`replaceState` — 히스토리 항목 수는 그대로, 쿼리·해시 보존) 이후 매칭·로그인 복귀 주소·
-   * `routeChange.path` 에 정규형만 쓴다. 원본(`/x/`)이 남으면 화면 동일성 판정이 `/x` 와 다른 화면으로 본다 (engine-v1.84.0, 공개#156)
    */
   async navigateToCurrentPath(): Promise<void> {
-    const rawPathname = window.location.pathname;
-    const pathname = this.normalizePathname(rawPathname);
-    if (pathname !== rawPathname) {
-      // 정규형은 늘 `/` 하나로 시작하므로 교차 출처 주소(`//host`)가 될 수 없다
-      window.history.replaceState(window.history.state, '', pathname + window.location.search + window.location.hash);
-      notifyLocationReplaced();
-      this.committedUrl = currentUrl();
-    }
+    const pathname = window.location.pathname;
     const search = window.location.search;
     const matchResult = this.match(pathname);
 
     if (!matchResult) {
       logger.warn(`No route matched for path: ${pathname}`);
-      // 새 화면(오류 화면)으로 넘어간다 — 이탈 승인은 여기까지 (engine-v1.82.0)
-      endLeaveApproval();
       this.emit('routeNotFound', pathname);
       return;
     }
@@ -429,12 +310,6 @@ export class Router {
       // 인증 상태가 없거나 타입이 다른 경우에만 API 호출
       if (!isAuthenticated) {
         isAuthenticated = await authManager.checkAuth(authType);
-      }
-
-      // 인증 확인을 기다리는 동안 더 새 이동이 대기열에 들어왔으면 이 경로는 그리지 않는다 (engine-v1.82.0)
-      if (this.isNavigating && this.pendingNavigation !== null) {
-        logger.log(`Route ${pathname} superseded while checking auth`);
-        return;
       }
 
       if (!isAuthenticated) {
@@ -469,85 +344,58 @@ export class Router {
     }
 
     // 라우트 변경 이벤트 발생 (핸들러가 완료될 때까지 대기)
-    try {
-      await this.emit('routeChange', {
-        path: pathname,
-        layout: matchResult.route.layout,
-        endpoint: matchResult.route.endpoint,
-        params: { ...(matchResult.route.params || {}), ...matchResult.params },
-        query,
-        auth_required: matchResult.route.auth_required,
-        auth_type: matchResult.route.auth_type,
-        meta: matchResult.route.meta,
-      });
-    } finally {
-      // 새 화면이 그려졌다 — 다음 이탈부터 그 화면의 가드로 다시 묻는다 (engine-v1.82.0)
-      endLeaveApproval();
-    }
+    await this.emit('routeChange', {
+      path: pathname,
+      layout: matchResult.route.layout,
+      endpoint: matchResult.route.endpoint,
+      params: { ...(matchResult.route.params || {}), ...matchResult.params },
+      query,
+      auth_required: matchResult.route.auth_required,
+      auth_type: matchResult.route.auth_type,
+      meta: matchResult.route.meta,
+    });
   }
 
   /**
    * 지정된 경로로 이동합니다.
    *
    * 동시에 여러 navigate 호출이 발생할 경우, 마지막 요청만 처리합니다.
-   * 이전 navigate가 진행 중이면 `navigationSuperseded` 를 알려 그 화면 처리를 멈추게 하고(engine-v1.82.0),
-   * 그 처리가 물러나는 대로 최신 경로로 이동합니다.
-   *
-   * 지금 화면 레이아웃이 `meta.leave_guard` 를 선언했고 그 식이 참이면 주소를 바꾸기 **전에** 확인을 묻고,
-   * 머무르기를 고르면 아무것도 하지 않는다(pushState·routeChange 0). 같은 경로(쿼리·해시만 다름)는 묻지 않는다.
+   * 이전 navigate가 진행 중이면 대기했다가 최신 경로로 이동합니다.
    *
    * @param path - 이동할 경로 (예: '/admin/dashboard')
-   * @param options - `bypassLeaveGuard: true` 면 이탈 확인 생략 (engine-v1.82.0)
-   * @returns 이동을 시작(또는 대기열에 넣음)했으면 true, 이탈 가드에서 머무르기를 골랐으면 false (engine-v1.82.0 — 종전 void)
    */
-  navigate(path: string, options?: RouterNavigateOptions): boolean {
-    // 이탈 가드 — 대기열에 넣기 전에도 판정한다 (engine-v1.82.0)
-    if (!requestLeave(path, { bypass: options?.bypassLeaveGuard === true })) {
-      logger.log(`Navigation to ${path} cancelled by leave guard`);
-      return false;
-    }
-
-    // 떠나는 화면의 위치와, 이동 액션이 맡긴 돌아올 때 동작(`returnScroll`)을 그 항목에 남긴다 (engine-v1.85.0)
-    captureBeforeLeave(consumePendingReturnScroll());
-
+  navigate(path: string): void {
     // 이미 navigate가 진행 중이면 대기열에 추가
     if (this.isNavigating) {
       this.pendingNavigation = path;
-      // 진행 중인 이동은 이제 낡았다 — 구독자(TemplateApp)가 그 화면 처리를 멈추게 알린다 (engine-v1.82.0).
-      // 종전에는 앞 이동을 끝까지(앞 화면 데이터 응답·렌더·progressive 받기까지) 마친 뒤에야 이 이동을 시작해,
-      // 사용자가 이미 떠난 화면(글 수정)이 그려지고 늦은 응답이 들어간 뒤 새 화면(새 글)으로 넘어갔다.
-      void this.emit('navigationSuperseded', path);
-      return true;
+      return;
     }
 
     this.executeNavigation(path);
-
-    return true;
   }
 
   /**
    * 실제 navigate 실행
    */
   private async executeNavigation(path: string): Promise<void> {
+    // 서버의 개발자 화면(routes/custom.php) 주소는 엔진이 그리지 않는다 — 전체 페이지 이동으로 서버에 넘긴다
+    // (#792 W6, engine-v1.81.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
+    if (isCustomRoutePath(path)) {
+      logger.log(`navigate to custom route — full page load: ${path}`);
+      this.pendingNavigation = null;
+      window.location.assign(path);
+      return;
+    }
+
     this.isNavigating = true;
     this.pendingNavigation = null;
 
     try {
       // URL 변경 (브라우저 히스토리에 추가)
       window.history.pushState({}, '', path);
-      // 새 항목 — 복원하지 않는다(도착 위치는 navigate 액션의 `scroll` 이 정한다) (engine-v1.85.0)
-      markScrollNavigation('push');
-      // 같은 레이아웃으로 쿼리만 바뀌는 이동에서도 `:mergeQuery` 링크가 새 주소로 다시 그려지게 알린다 (engine-v1.82.1)
-      notifyLocationReplaced();
-      this.committedUrl = currentUrl();
-      this.committedHistoryIndex = currentHistoryEntryIndex();
 
       // 라우트 매칭 및 렌더링 (완료까지 대기)
       await this.navigateToCurrentPath();
-    } catch (error) {
-      // 화면을 바꾸지 못했다 — 이탈 승인을 남겨 두면 지금 화면의 가드가 꺼진 채 남는다 (engine-v1.82.0)
-      endLeaveApproval();
-      throw error;
     } finally {
       this.isNavigating = false;
 

@@ -268,7 +268,6 @@ return [
             'option_selling_price' => '옵션 판매가',
             'option_price_adjustment' => '옵션 가격 조정액',
             'option_stock_quantity' => '옵션 재고 수량',
-            'option_tax_status' => '옵션 과세 종류',
             'option_name' => '옵션명',
             'option_code' => '옵션코드',
             // 다국어 필수 칸 이름 (옵션그룹·추가옵션·상품정보제공고시)
@@ -294,11 +293,11 @@ return [
         ],
         'list_price' => [
             'required' => '정가를 입력해주세요.',
-            'min' => '정가는 0 이상이어야 합니다.',
+            'min' => '정가는 1 이상이어야 합니다.',
         ],
         'selling_price' => [
             'required' => '판매가를 입력해주세요.',
-            'min' => '판매가는 0 이상이어야 합니다.',
+            'min' => '판매가는 1 이상이어야 합니다.',
             'lte' => '판매가는 정가 이하여야 합니다.',
         ],
         'stock_quantity' => [
@@ -341,9 +340,6 @@ return [
             ],
             'stock_quantity' => [
                 'required_with' => '옵션 재고 수량은 필수입니다.',
-            ],
-            'tax_status' => [
-                'in' => '옵션 과세 종류는 과세·면세·영세 중에서 고르거나 비워 두어야 합니다.',
             ],
         ],
         'additional_options' => [
@@ -522,7 +518,7 @@ return [
             'required' => '이미지 파일을 선택해주세요.',
             'file' => '유효한 파일이 아닙니다.',
             'image' => '이미지 파일만 업로드 가능합니다.',
-            'mimes' => '지원하는 이미지 형식: jpeg, png, jpg, gif, webp',
+            'mimes' => '지원하는 이미지 형식: jpeg, png, jpg, gif, svg, webp',
             'max' => '이미지 파일 크기는 10MB 이하여야 합니다.',
         ],
         'temp_key' => [
@@ -667,7 +663,6 @@ return [
         'user_ids_required' => '발급할 회원을 선택해주세요.',
         'user_ids_min' => '최소 1명 이상의 회원을 선택해주세요.',
         'user_ids_invalid' => '존재하지 않는 회원이 포함되어 있습니다.',
-        'user_withdrawn' => '탈퇴한 회원에게는 쿠폰을 발급할 수 없습니다.',
     ],
 
     // 주문 검증 메시지 (orders.* 형식 - FormRequest와 통일)
@@ -1373,26 +1368,6 @@ return [
     ],
 
     // 사용자 쿠폰 조회 검증 메시지
-    'settings_attributes' => [
-        'hosting_provider' => '호스팅 서비스 제공자',
-        'show_business_footer' => '사업자 정보 표시',
-        'author_name_masking' => '공개 후기 작성자 이름 가림',
-        'signup_earn_enabled' => '가입 적립금 사용',
-        'signup_earn_amount' => '가입 적립금',
-        'no_earn_when_points_used' => '마일리지 사용 주문 적립 제외',
-        'min_product_total_for_use_enabled' => '사용 가능 최소 상품 합계 사용',
-        'min_product_total_for_use' => '사용 가능 최소 상품 합계',
-        'product_total' => '상품 합계',
-    ],
-    'user_coupon_attributes' => [
-        'coupon_ids' => '쿠폰 번호 목록',
-    ],
-    'public_list_attributes' => [
-        'sort' => '정렬 기준',
-        'photo_only' => '사진 후기만 보기',
-        'rating' => '별점',
-        'exclude_sold_out' => '품절 제외',
-    ],
     'user_coupon' => [
         'status' => [
             'in' => '올바른 쿠폰 상태를 선택해주세요.',
@@ -1424,12 +1399,6 @@ return [
 
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
-        'content_media' => [
-            'owner_type' => '본문 미디어 소유 종류',
-            'file' => '본문 미디어 파일',
-            'temp_key' => '임시 키',
-        ],
-        'content_media_temp_key' => '본문 미디어 임시 키',
         // 수동 결제 처리·재활성 확인 창 세 항목 (Q13·Q14)
         'apply_stock_deduction' => '재고 차감',
         'apply_mileage_deduction' => '사용 마일리지 차감',
@@ -1470,11 +1439,6 @@ return [
         'review_settings.write_deadline_days' => '리뷰 작성 기한(일)',
         'review_settings.max_images' => '리뷰 이미지 최대 개수',
         'review_settings.max_image_size_mb' => '리뷰 이미지 최대 용량(MB)',
-        'review_settings.author_name_masking' => '공개 후기 작성자 이름 가림',
-
-        // 상품 진열 설정
-        'product_display.related_order' => '관련 상품 순서',
-        'product_display.related_cache_hours' => '관련 상품 목록 유지 시간',
 
         // 클레임 설정
         'claim.exchange_reasons' => '교환 사유',
@@ -1546,14 +1510,6 @@ return [
         'mileage.currency_rules.*.earn_rounding_method' => '적립 절사 방식',
         'mileage.expiry_days' => '유효기간',
         'mileage.expiry_notification_days_before' => '소멸 예정 알림일',
-        'basic_info.hosting_provider' => '호스팅 서비스 제공자',
-        'basic_info.show_business_footer' => '사업자 정보 표시',
-        'mileage.signup_earn_enabled' => '가입 적립금 사용',
-        'mileage.signup_earn_amount' => '가입 적립금',
-        'mileage.no_earn_when_points_used' => '마일리지 사용 주문 적립 제외',
-        'mileage.min_product_total_for_use_enabled' => '사용 가능 최소 상품 합계 사용',
-        'mileage.min_product_total_for_use' => '사용 가능 최소 상품 합계',
-        'product_total' => '상품 합계',
 
         // SEO 설정
         'seo' => 'SEO 설정',
@@ -2300,7 +2256,6 @@ return [
         'user_required' => '대상 회원을 선택해주세요.',
         'amount_min' => '금액은 1점 이상이어야 합니다.',
         'action_invalid' => '지급 또는 차감만 가능합니다.',
-        'user_withdrawn' => '탈퇴한 회원에게는 마일리지를 지급할 수 없습니다.',
         'expires_at_invalid' => '유효기간은 올바른 날짜여야 합니다.',
         'duplicate_currency' => '통화 코드가 중복되었습니다.',
         'first_must_be_default' => '첫 번째 통화는 기본 통화(:currency)여야 합니다.',

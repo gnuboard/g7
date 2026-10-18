@@ -25,10 +25,9 @@
 | [claim-image.md](claim-image.md) | `claim-image` | 1 |
 | [claim-payments.md](claim-payments.md) | `claim-payments` | 2 |
 | [checkout.md](checkout.md) | `checkout` | 5 |
-| [content-media.md](content-media.md) | `content-media` | 3 |
 | [claim-reasons.md](claim-reasons.md) | `claim-reasons` | 8 |
 | [claims.md](claims.md) | `claims` | 5 |
-| [coupons.md](coupons.md) | `coupons` | 5 |
+| [coupons.md](coupons.md) | `coupons` | 4 |
 | [currency.md](currency.md) | `currency` | 2 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
 | [extra-fee-templates.md](extra-fee-templates.md) | `extra-fee-templates` | 10 |
@@ -48,7 +47,7 @@
 | [products.md](products.md) | `products` | 31 |
 | [promotion-coupons.md](promotion-coupons.md) | `promotion-coupons` | 9 |
 | [review-image.md](review-image.md) | `review-image` | 1 |
-| [reviews.md](reviews.md) | `reviews` | 13 |
+| [reviews.md](reviews.md) | `reviews` | 12 |
 | [settings.md](settings.md) | `settings` | 10 |
 | [shipping-carriers.md](shipping-carriers.md) | `shipping-carriers` | 7 |
 | [shipping-country.md](shipping-country.md) | `shipping-country` | 2 |
@@ -72,6 +71,4 @@
 
 공통 규약: [코어 API 레퍼런스 진입점](../../../../../docs/backend/api/README.md#회원-이메일-노출-범위)
 
-## 다국어 값 필드
 
-상품·카테고리·브랜드·배송방법·페이지 제목처럼 `{"ko": …, "en": …}` 원본에서 한 언어를 골라 주는 필드는 코어 규약을 따릅니다 — 요청 언어 → 사이트 기본 언어 → 영어 순으로 비어 있지 않은 값, 셋 다 없으면 저장된 첫 값(`App\Support\LocalizedValue::pick`, 7.1.1). 자세한 내용은 코어 [API 레퍼런스 공통 규약 「로케일」](../../../../../docs/backend/api/README.md#로케일)을 보세요.

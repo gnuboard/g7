@@ -9,7 +9,6 @@
  */
 
 import type { ActionContext } from '../types';
-import { localizedText } from '../utils/localizedText';
 import { formatAmountInCurrency } from './calculateCurrencyPrices';
 import { reloadExpandedOptions } from './expandedOptionsHandlers';
 
@@ -184,7 +183,7 @@ function handleBulkUpdateError(G7Core: G7CoreInterface, error: any, fallbackKey:
 function localizeValue(value: any): string {
     if (typeof value === 'string') return value;
     if (value && typeof value === 'object') {
-        return localizedText(value) || JSON.stringify(value);
+        return value.ko || value.en || JSON.stringify(value);
     }
     return String(value ?? '');
 }

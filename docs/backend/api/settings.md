@@ -20,66 +20,6 @@
 
 상한을 넘긴 목록의 응답 형태는 [pagination.md](../pagination.md) 를 참고하세요.
 
-## 본문 콘텐츠 (`content` 탭, 7.1.5)
-
-게시글·페이지·상품 설명 본문에 남길 수 있는 것을 정합니다. 저장 경로는 `content` 탭(`_tab=content`)입니다. 템플릿 표시기·검색엔진(봇)
-정화기·쇼핑몰 상품 설명 저장 정화기·편집기가 같은 규칙을 읽습니다([본문 미디어 업로드 계약 — 본문 콘텐츠 규칙](../../extension/content-media.md)).
-
-| 필드 | 타입 | 범위 | 의미 |
-| --- | --- | --- | --- |
-| `content.allow_figure_caption` | boolean | 기본 `true` | 그림 설명(`figcaption`) |
-| `content.allow_uploaded_video` · `content.allow_uploaded_audio` | boolean | 기본 `false` | 동영상·오디오 업로드 허용(화면 이름 「동영상 업로드 허용」·「오디오 업로드 허용」). 꺼져 있으면 확장의 본문 미디어 규칙과 관계없이 그 종류의 업로드를 받지 않는다(`ContentMediaPolicy`). 켜면 업로드한 동영상·오디오의 재생 태그를 남기되, 서빙 주소 패턴에 맞는 `src`·`poster` 만 남는다 |
-| `content.allow_external_embed` | boolean | 기본 `true` | 외부 영상(`oembed`) — 켜진 서비스면 플레이어, 아니면 링크 |
-| `content.embed_presets` | object | 키: 프리셋 3종(`youtube`·`vimeo`·`tiktok`) 또는 `ext:{확장}:{id}` | 서비스별 켜기(불리언). 모르는 키는 422(`validation.settings.embed_preset_unknown`) |
-| `content.embed_custom_providers` | array | 최대 30 | 운영자 추가 서비스 `{id, name, enabled, url_patterns[], player_url, id_rule, aspect, allow[]}`(`enabled` 는 불리언만). 항목 번호·필드별 422 |
-| `content.custom_tags` | array | 태그 이름 | 추가 허용 태그. 스크립트·스타일·문서 구조·외부 삽입·폼 계열은 422(이유 포함) |
-| `content.media_url_ttl_minutes` | integer | 5 ~ 1440, 기본 240 | 비공개 본문 미디어 서명 주소 유효 시간 |
-
-공개 설정(`frontend_schema`)으로는 원본 값을 내보내지 않고 계산 값 `content.render_policy`(켜진 후보 태그·속성 규칙·미디어 출처 패턴·
-켜진 서비스의 컴파일 정규식과 플레이어 주소 틀)만 내려갑니다. 관리자 설정 응답의 `_meta.embed_extension_providers`
-(`[{key, extension, id, name}]`)는 확장이 `core.content.filter_embed_providers` 로 더한 서비스 목록으로, 화면이 켜기 칸을 그립니다.
-
-`render_policy.media_src_patterns`(미디어 출처 패턴)는 설정 값이 아니라 **확장이 등록한 실제 본문 미디어 서빙 라우트**에서 만들어집니다
-(7.1.5). 확장(모듈·플러그인)이 서빙 라우트 이름을 등록하면 그 라우트의 주소와 파라미터 제약(해시 12자 등)이 같은 출처 상대 주소 정규식
-(`^/api/…$`, 서명 쿼리 허용)이 되고, 꺼진 확장의 라우트는 빠집니다. 경로 모양만 흉내 낸 주소는 통과하지 못합니다. 등록 라우트 밖의 출처가
-필요한 확장은 필터 `core.content.filter_media_source_patterns` 로 정규식을 더합니다([미디어 출처 허용 패턴](../../extension/content-media.md#미디어-출처-허용-패턴)).
-
-화면 표시·봇 화면은 위 스위치를 따르지만 **저장 정화는 스위치와 무관합니다**(7.1.5). 저장 정화를 하는 확장은 `ContentHtmlPolicy::forStorage()`
-(후보·외부 영상 서비스를 모두 켠 규칙)와 `finalize($html, 'store')` 를 씁니다 — 끈 동안 저장해도 캡션·동영상·외부 영상이 원문에 남아 다시
-켜면 돌아옵니다. 저장 마무리는 모르는 서비스의 외부 영상(`<oembed url>`)도 링크로 바꾸지 않고 원문 그대로 두며(`url` 외 속성만 정리), 출처
-패턴에 맞지 않는 미디어 요소와 이벤트 속성·`javascript:` 주소는 지웁니다.
-
-관리자 설정 조회·저장 응답(`GET`·`POST /api/admin/settings`)에도 공개 설정의 계산 값(`frontend_schema` 의 `computed: true` — `general.site_logo_url`·`upload.allowed_extensions_formatted`·`seo.og_image_default_url`·`content.render_policy`)이 공개 설정과 같은 계산으로 실립니다. 저장 응답은 저장 뒤 값으로 계산하므로 화면이 새로고침 없이 전역 설정을 갱신할 수 있고, 저장 요청에 계산 값이 되돌아와도 서버가 버립니다.
-
-### POST /api/admin/settings/content/embed-preview
-
-외부 영상 서비스 추가 창의 예시 주소 확인입니다. 저장하지 않고, 저장 때와 같은 컴파일 규칙으로 예시 주소에서 꺼낸 id 와 만들어질
-플레이어 주소를 돌려줍니다. 권한: `core.settings.read`.
-
-| 파라미터 | 위치 | 타입 | 필수 | 규칙 | 설명 |
-| --- | --- | --- | --- | --- | --- |
-| provider | body | object | 예 | | 저장 전 서비스 입력값 |
-| provider.url_patterns | body | array | 예 | 1~5개, 각 255자 이내 | 주소 형식(`*`·`{id}`) |
-| provider.player_url | body | string | 예 | 255자 이내 | 플레이어 주소(`https://`, `{id}` 1개) |
-| provider.id_rule | body | string | 아니오 | `alnum`·`alnum_dash`·`digits` | id 글자 규칙 |
-| sample_url | body | string | 예 | 500자 이내 | 확인할 예시 주소 |
-
-```json
-{
-    "success": true,
-    "message": "성공적으로 처리되었습니다.",
-    "data": {
-        "matched": true,
-        "id": "aB3-cd_9",
-        "player_url": "https://chzzk.naver.com/embed/clip/aB3-cd_9",
-        "errors": {}
-    }
-}
-```
-
-형식이 틀린 입력(http 플레이어 주소, `{id}` 없음 등)은 `matched: false` 와 함께 `errors` 에 필드별 문구를 담아 200 으로 돌려줍니다 —
-창이 저장 전에 알려 주는 용도입니다. 필수 값이 비면 422 입니다.
-
 ## IP 접근 제한 (`security` 탭)
 
 허용한 IP 에서만 관리자 영역·지정 경로에 접근하게 합니다. 저장 경로는 `security` 탭이며, 키는
@@ -152,12 +92,12 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
-| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, #158)와 스타일 정책 3키(`csp_style_mode` 기본 `off`·`csp_style_level` 기본 `basic`·`csp_extra_style_hosts` 기본 `[]`, 7.1.6)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행 |
+| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/g7_2.dev","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
+| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
-| advanced | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 고급 탭 설정 그룹 (캐시·디버그·코어 업데이트·GeoIP 설정을 한 탭으로 합친 병합 뷰). cache/debug 카테고리 값이 함께 노출됨. `geoip_last_updated_at`(저장된 ISO8601) 옆에 화면 표시용 `geoip_last_updated_at_formatted`(보는 사람 시간대 `Y-m-d H:i:s`)가 함께 실린다 — 저장 요청에 실려 와도 서버가 버린다 |
+| advanced | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 고급 탭 설정 그룹 (캐시·디버그·코어 업데이트·GeoIP 설정을 한 탭으로 합친 병합 뷰). cache/debug 카테고리 값이 함께 노출됨 |
 | cache | object | `{"cache_enabled":true,"cache_default_ttl":86400,"layout_c…` | 캐시 원본 카테고리 (전역 캐시 사용·기본 TTL·레이아웃/통계/SEO 캐시 사용 및 TTL). advanced 탭에 병합되면서 개별 접근용으로 별도 노출된 파생 뷰 |
 | debug | object | `{"debug_mode":false,"sql_query_log":false,"log_level":"er…` | 디버그 원본 카테고리 (디버그 모드·SQL 쿼리 로그·로그 레벨). advanced 탭에 병합되면서 개별 접근용으로 별도 노출된 파생 뷰 |
 | drivers | object | `{"storage_driver":"local","s3_bucket":null,"s3_region":"a…` | 드라이버 탭 설정 그룹 (스토리지/캐시/세션/큐/로그 드라이버 선택 + S3·Redis·Memcached·WebSocket·검색엔진 접속 파라미터) |
@@ -167,16 +107,13 @@ _단건 응답: `data` 객체의 필드._
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 아홉 필드로 구성 |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 여섯 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
 | _meta.consent_providers | array | `[{"id":"sirsoft-gdpr","label":"쿠키 동의 배너 (sirsoft-gdpr)"}]` | 등록된 동의 관리 제공자 `{id, label}` 목록 — 개인정보 탭 「동의 관리 제공자」 선택 상자의 항목. 동의 수집을 꺼 둔 제공자도 실린다(고를 수 있다) |
 | _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
 | _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
-| _meta.public_disk_hardening | object\|null | `{"ok":true,"nosniff":true,"disposition":true,"status":200,"checked_at":"2026-11-10T21:00:00+09:00","rules_written":true}` | 드라이버 탭 「공개 자산 스토리지」 카드의 경고 판정 메타(7.1.6). 공개 자산 디스크를 로컬 공개 디스크(`public`)로 두고 드라이버 탭을 저장하면 서버가 `/storage` 직접 주소의 응답 헤더를 점검해 남긴 결과다. `ok` 는 nosniff 와 내려받기 지시가 모두 있으면 true, 응답은 받았는데 하나라도 없으면 false(화면이 경고), 서버가 자기 주소에 닿지 못해 판정할 수 없으면 null. 점검한 적이 없거나 다른 디스크를 쓰면 필드 값이 null `ok` 는 점검 파일이 내려왔는데(200) 헤더가 없거나 접근이 막혔을 때(403) `false`, 리다이렉트·404·서버 오류처럼 확인할 수 없는 응답이면 `null`(경고 없음). `rules_written` 은 저장 때 웹서버 규칙 파일(`storage/app/public/.htaccess`)을 지금 설정으로 썼는지다 — `false` 면 헤더가 붙어 있어도 규칙은 옛 내용이라 화면이 따로 경고한다. 규칙 파일을 못 쓰면 다른 디스크를 써도 `{ok: null, rules_written: false}` 가 남는다 |
-| _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.kakaocdn.net","t1.daumcdn.net"],"style_override":null,"style_preview":"style-src-elem 'self'; report-uri /api/csp-report","style_auto_hosts":[]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트. 스타일 정책 3키(7.1.6) — `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 스타일 모드 선택을 잠근다. `G7_CSP_MODE` 와 독립) · `style_preview`: **저장된 값** 기준으로 붙을 스타일 정책 문자열(강도 `basic` 은 `style-src-elem 'self' …; report-uri …`, `strict` 는 `style-src 'self' …; style-src-attr 'none'; report-uri …`. 모드가 끔이어도 미리 보여 준다) · `style_auto_hosts`: 켜진 모듈·플러그인의 `trusted_style_hosts` 선언(+ 필터 훅 `core.csp.trusted_style_hosts`)과 활성 관리자·사용자 템플릿 externals 의 외부 스타일시트(`style`·`webfont`·`as` 가 `style` 인 `preload`)에서 자동 합산된 호스트 |
-| _meta.search_scopes | array | `[{"scope":"core.site","owner":"core","owner_label":"코어","label":"통합 검색","default_max_count":10,"default_retention_days":0}]` | 개인정보 탭 「최근 검색어」 카드의 범위 메타(7.1.5) — 코어 `core.site` + 활성 모듈·플러그인이 manifest `search_scopes` 로 선언한 범위, 선언 순서. `owner` 는 `core`·`module:{id}`·`plugin:{id}`, `label`·`owner_label` 은 요청 언어 글자, `default_*` 는 선언값(없으면 10개·0=기한 없음) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -196,7 +133,7 @@ HTTP/1.1 200
             "site_name": "그누보드7",
             "site_url": "https://api.example.com",
             "site_description": null,
-            "admin_email": "admin@example.com",
+            "admin_email": "heuristing@gmail.com",
             "timezone": "Asia/Seoul",
             "...": "(5개 키 생략, 총 10개)"
         },
@@ -281,6 +218,7 @@ HTTP/1.1 200
 | notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 각 원소는 `id`(채널 식별자, 필수·최대 50자)·`is_active`(활성 여부, 필수 boolean)·`sort_order`(표시 순서, 0 이상 정수) 로 구성 |
 | general.site_name | body | string | 예 | max 100 | general.site 이름 (식별자) |
 | general.site_url | body | string | 예 | max 255 | 사이트 기본 URL |
+| general.user_screen_url | body | string | 아니오 | url:http,https · max 255 | 사용자 화면 URL (7.2.0). 회원 화면을 외부 사이트(Next.js 등)가 그릴 때 그 주소. 비우면 사이트 주소를 쓴다. 앞뒤 공백·끝 슬래시는 저장 전에 지운다. 알림 메일·비밀번호 재설정·결제 복귀 링크가 이 주소로 바뀐다 |
 | general.site_description | body | string | 아니오 | max 500 | 사이트 설명 |
 | general.admin_email | body | email | 예 | max 255 | 관리자 이메일 주소 |
 | general.timezone | body | string | 예 | — | 타임존 식별자 |
@@ -289,14 +227,14 @@ HTTP/1.1 200
 | general.maintenance_mode | body | boolean | 아니오 | — | 점검 모드 사용 여부 (사이트 접근 차단) |
 | general.site_logo | body | array | 아니오 | — | 사이트 로고 이미지 |
 | mail.mailer | body | string | 아니오 | — | 메일 발송 드라이버 (smtp/mailgun/ses) |
-| mail.host | body | string | 아니오 | max 255 | 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
+| mail.host | body | string | 아니오 | max 255 | 호스트 주소 |
 | mail.port | body | integer | 아니오 | min 1, max 65535 | 포트 번호 |
 | mail.username | body | string | 아니오 | max 255 | 사용자명 (로그인/인증 아이디) |
 | mail.password | body | string | 아니오 | max 255 | 비밀번호 |
 | mail.encryption | body | string | 아니오 | — | 전송 암호화 방식 (tls/ssl) |
 | mail.mailgun_domain | body | string | 아니오 | max 255 | Mailgun 도메인 |
 | mail.mailgun_secret | body | string | 아니오 | max 255 | Mailgun 시크릿 키 |
-| mail.mailgun_endpoint | body | string | 아니오 | max 255 | Mailgun 엔드포인트 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
+| mail.mailgun_endpoint | body | string | 아니오 | max 255 | Mailgun 엔드포인트 |
 | mail.ses_key | body | string | 아니오 | max 255 | SES 액세스 키 |
 | mail.ses_secret | body | string | 아니오 | max 255 | SES 시크릿 키 |
 | mail.ses_region | body | string | 아니오 | max 255 | SES 리전 |
@@ -304,7 +242,6 @@ HTTP/1.1 200
 | mail.from_name | body | string | 아니오 | max 255 | mail.from 이름 (식별자) |
 | upload.max_file_size | body | integer | 아니오 | min 1, max 1024 | 업로드 허용 최대 파일 크기 |
 | upload.allowed_extensions | body | string | 아니오 | — | 업로드 허용 확장자 목록 |
-| upload.layout_attachment_extensions | body | string | 아니오 | 500자 이하 | 레이아웃 첨부 허용 확장자 (콤마 문자열 또는 배열, 기본 `jpg,jpeg,png,gif,webp`). 소문자 배열로 저장한다. 빈 목록은 422 — 비우면 "제한 없음" 이 아니다 |
 | upload.image_max_width | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 너비 (px) |
 | upload.image_max_height | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 높이 (px) |
 | upload.image_quality | body | integer | 아니오 | min 1, max 100 | 이미지 리사이즈 시 압축 품질 (1~100) |
@@ -338,8 +275,6 @@ HTTP/1.1 200
 | security.auth_token_lifetime | body | integer | 아니오 | min 0, max 3600 | 인증 토큰 유효 시간 (분) |
 | security.max_login_attempts | body | integer | 아니오 | min 0, max 100 | 로그인 실패 허용 횟수 (초과 시 잠금) |
 | security.login_lockout_time | body | integer | 아니오 | min 0, max 1440 | 로그인 잠금 지속 시간 (분) |
-| security.password_reset_rate_limit_per_minute | body | integer | 아니오 | min 1, max 1000 | 비밀번호 찾기·재설정의 같은 IP 분당 허용 횟수 (기본 10). 찾기와 재설정·토큰 확인은 이 값을 함께 쓰되 따로 센다. 0(끄기)은 받지 않는다 |
-| security.register_rate_limit_per_minute | body | integer | 아니오 | min 1, max 1000 | 회원가입의 같은 IP 분당 허용 횟수 (기본 10) |
 | security.ip_restriction_enabled | body | boolean | 아니오 | — | IP 접근 제한 마스터 토글 (기본 false). 끄면 아래 목록·규칙은 저장만 되고 적용되지 않는다 |
 | security.admin_allowed_ips | body | array | 아니오 | max 100 | 관리자 영역(관리자 화면·코어/확장 관리자 API·관리자 로그인 API)에 접근을 허용할 IP·CIDR 목록. **빈 목록 = 이 축 미적용**. 앞뒤 공백·빈 항목·중복은 저장 전에 정리된다 |
 | security.admin_allowed_ips.* | body | string | 아니오 | IPv4·IPv6·CIDR (`203.0.113.0/24`, `2001:db8::/32`) | 허용 항목. 호스트명·범위 표기(`a-b`)·와일드카드(`192.168.*`)는 422 |
@@ -349,13 +284,6 @@ HTTP/1.1 200
 | security.ip_restriction_rules.*.ips.* | body | string | 아니오 | IPv4·IPv6·CIDR | 허용 항목 |
 | security.ip_restriction_rules.*.memo | body | string | 아니오 | max 255 | 운영자 메모 |
 | security.ip_restriction_rules.*.enabled | body | boolean | 아니오 | — | 규칙 사용 여부 (미지정 = 사용). 삭제하지 않고 잠시 끌 때 쓴다 |
-| security.csp_mode | body | string | 아니오 | `off`·`report_only`·`enforce` | 콘텐츠 보안 정책 헤더 모드 (#158, 기본 `off`). `report_only` 는 `Content-Security-Policy-Report-Only`, `enforce` 는 `Content-Security-Policy` 를 사이트 HTML 응답에 붙인다. `.env G7_CSP_MODE` 가 있으면 저장값과 무관하게 그 값이 적용된다 |
-| security.csp_extra_script_hosts | body | array | 아니오 | max 50 | `script-src` 에 더할 운영자 추가 호스트. 활성 확장이 선언한 호스트는 자동으로 들어가므로 그 밖의 호스트만 넣는다. 앞뒤 공백 제거·소문자화·빈 항목·중복은 저장 전에 정리된다 |
-| security.csp_extra_script_hosts.* | body | string | 아니오 | 호스트 소스 (`cdn.example.com`·`*.example.com`·`https://cdn.example.com`·`cdn.example.com:8443`) | 따옴표·세미콜론·공백·`'unsafe-*'` 같은 키워드·`data:`·`*` 단독·`http://` 는 422 (정책 문자열에 그대로 이어 붙이므로) |
-| security.csp_style_mode | body | string | 아니오 | `off`·`report_only`·`enforce` | 스타일 정책 헤더 모드 (7.1.6, 기본 `off`). 스크립트 정책(`csp_mode`)과 따로 정한다 — 두 모드가 같으면 한 헤더에 함께 실리고, 다르면 `Content-Security-Policy` 와 `Content-Security-Policy-Report-Only` 가 하나씩 나간다. `.env G7_CSP_STYLE_MODE` 가 있으면 저장값과 무관하게 그 값이 적용된다 |
-| security.csp_style_level | body | string | 아니오 | `basic`·`strict` | 스타일 정책 강도 (7.1.6, 기본 `basic`). `basic` 은 `style-src-elem` 으로 `<style>` 요소와 허용 밖 CSS 파일만 막고, `strict` 는 `style-src` + `style-src-attr 'none'` 으로 태그의 `style` 속성까지 막는다 |
-| security.csp_extra_style_hosts | body | array | 아니오 | max 50 | 스타일 지시어에 더할 운영자 추가 호스트 (7.1.6). 활성 템플릿이 선언한 외부 스타일시트 호스트는 자동으로 들어가므로 그 밖의 호스트만 넣는다. 앞뒤 공백 제거·소문자화·빈 항목·중복은 저장 전에 정리된다 |
-| security.csp_extra_style_hosts.* | body | string | 아니오 | 호스트 소스 (`fonts.example.com`·`*.example.com`·`https://fonts.example.com`·`fonts.example.com:8443`) | 형식 규칙은 `security.csp_extra_script_hosts.*` 와 같다 — 어긋나면 422 |
 | security.password_require_char_types | body | boolean | 아니오 | — | 비밀번호 조합 규칙 — 켜면 영문·숫자·특수문자 중 2종류 이상 (기본 false). 가입·변경·재설정·관리자 지정 전 경로에 적용 |
 | security.password_block_identifier | body | boolean | 아니오 | — | 이메일 `@` 앞부분(3자 이상, 대소문자 무시)이 들어간 비밀번호 거부 (기본 false) |
 | security.password_block_repeated_chars | body | boolean | 아니오 | — | 같은 문자가 연속으로 반복되는 비밀번호 거부 (기본 false) |
@@ -391,20 +319,19 @@ HTTP/1.1 200
 | advanced.geoip_auto_update_enabled | body | boolean | 아니오 | — | GeoIP DB 자동 업데이트 사용 여부 (주 1회 자동 재다운로드) |
 | drivers.storage_driver | body | string | 아니오 | — | 스토리지 드라이버 (local/s3) |
 | drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
-| drivers.public_asset_extensions | body | string | 아니오 | 500자 이하 | 공개 디스크로 내보낼 확장자 (콤마 문자열 또는 배열, 기본 `jpg,jpeg,png,gif,webp,avif`). 이 목록 밖의 파일은 공개 디스크에 저장하지 않는다. 빈 목록은 422 |
 | drivers.s3_bucket | body | string | 아니오 | max 255 | S3 버킷명 |
 | drivers.s3_region | body | string | 아니오 | max 64, 소문자 영숫자·하이픈 (`^[a-z0-9-]+$`) | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`, MinIO 관례는 `us-east-1`) |
 | drivers.s3_access_key | body | string | 아니오 | max 255 | S3 액세스 키 |
 | drivers.s3_secret_key | body | string | 아니오 | max 255 | S3 시크릿 키 |
-| drivers.s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님). 계정 정보(`user:pass@`)·링크로컬·메타데이터 호스트는 422 |
-| drivers.s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`). 스킴·호스트·포트까지만(경로·쿼리·계정 정보 불가), 링크로컬·메타데이터 호스트는 422 |
+| drivers.s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님) |
+| drivers.s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`) |
 | drivers.s3_use_path_style | body | boolean | 아니오 | — | S3 path-style 주소 사용 여부 — MinIO 등 path-style 전용 스토리지에서 true |
 | drivers.cache_driver | body | string | 아니오 | — | 캐시 드라이버 (file/redis/memcached) |
-| drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422. `/` 로 시작하는 유닉스 소켓 절대 경로, `tls://`·`rediss://` 접두, 대괄호 없는 IPv6(`::1`)는 허용 |
+| drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 |
 | drivers.redis_port | body | integer | 아니오 | min 1, max 65535 | Redis 포트 번호 |
 | drivers.redis_password | body | string | 아니오 | max 255 | Redis 비밀번호 |
 | drivers.redis_database | body | integer | 아니오 | min 0, max 15 | Redis 데이터베이스 번호 |
-| drivers.memcached_host | body | string | 아니오 | max 255 | Memcached 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422. `/` 로 시작하는 유닉스 소켓 절대 경로, `tls://`·`rediss://` 접두, 대괄호 없는 IPv6(`::1`)는 허용 |
+| drivers.memcached_host | body | string | 아니오 | max 255 | Memcached 호스트 주소 |
 | drivers.memcached_port | body | integer | 아니오 | min 1, max 65535 | Memcached 포트 번호 |
 | drivers.session_driver | body | string | 아니오 | — | 세션 드라이버 (file/database/redis) |
 | drivers.session_lifetime | body | integer | 아니오 | min 1, max 43200 | 세션 유효 시간 (분) |
@@ -415,11 +342,11 @@ HTTP/1.1 200
 | drivers.websocket_app_id | body | string | 아니오 | max 255 | drivers.websocket app 식별자 |
 | drivers.websocket_app_key | body | string | 아니오 | max 255 | WebSocket 앱 키 |
 | drivers.websocket_app_secret | body | string | 아니오 | max 255 | WebSocket 앱 시크릿 |
-| drivers.websocket_host | body | string | 아니오 | max 255 | WebSocket 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
+| drivers.websocket_host | body | string | 아니오 | max 255 | WebSocket 호스트 주소 |
 | drivers.websocket_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 포트 번호 |
 | drivers.websocket_scheme | body | string | 아니오 | — | WebSocket 스킴 (http/https) |
 | drivers.websocket_verify_ssl | body | boolean | 아니오 | — | WebSocket 서버 SSL 인증서 검증 여부 |
-| drivers.websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버 호스트 주소 (서버측 발행 대상) — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
+| drivers.websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버 호스트 주소 (서버측 발행 대상) |
 | drivers.websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 (서버측 발행 대상) |
 | drivers.websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https — 서버측 발행 대상) |
 | drivers.search_engine_driver | body | string | 아니오 | — | 검색 엔진 드라이버 (Scout 엔진 선택) |
@@ -438,11 +365,6 @@ HTTP/1.1 200
 | privacy.dormant_notice_days | body | integer | 아니오 | min 1, max 365 | 휴면 전환 사전 통지를 며칠 전에 보낼지 (기본 30). **`privacy.dormant_days` 보다 작아야 하며**, 같거나 크면 422 (`validation.settings.privacy_dormant_notice_days_lt_dormant_days`). 통지 후 이 일수가 지나야 실제 전환된다 |
 | privacy.dormant_withdraw_enabled | body | boolean | 아니오 | — | 휴면이 오래 이어진 계정의 자동 탈퇴 사용 여부 (기본 false). 관리자 역할 보유자와 슈퍼 관리자는 예고·탈퇴 대상에서 모두 제외된다 |
 | privacy.dormant_withdraw_days | body | integer | 아니오 | min 1, max 3650 | 휴면 전환 시점부터 자동 탈퇴까지의 일수 (기본 365). 이때도 `privacy.dormant_notice_days` 만큼 앞서 탈퇴 예고를 보낸다 |
-| privacy.search_history_enabled | body | boolean | 아니오 | — | 최근 검색어 사용 여부 (기본 true, 7.1.5). 끄면 검색창이 기록하지 않고 목록도 보이지 않는다(셸 `G7Config.searchScopes` 가 빈 객체). 이미 저장된 검색어는 보관 기한대로 지워진다 |
-| privacy.search_history_scopes | body | array | 아니오 | 원소 `{scope, max_count, retention_days}` | 검색 범위별 보관 설정(7.1.5). 범위 id 에 점이 있어 맵이 아니라 목록이다. 응답은 지금 선언된 범위마다 한 행(선언 순서, 저장값 → 선언값 → 기본값)으로 다듬어 내고, 저장은 화면에 없던 범위(끈 확장)의 기존 행을 보존한다 |
-| privacy.search_history_scopes.*.scope | body | string | 예 | 지금 선언된 범위 id, 목록 안 중복 불가 | 범위 id (`core.site` · `{확장 식별자}.{이름}`). 선언되지 않은 범위는 422 (`validation.settings.privacy_search_history_scope_unknown`) |
-| privacy.search_history_scopes.*.max_count | body | integer | 예 | min 1, max 50 (`settings_limits.search_history_max_count_*`) | 범위별 보관 개수 — 넘치는 옛 검색어는 기록 때 지운다. 숫자 문자열도 정수로 정규화 |
-| privacy.search_history_scopes.*.retention_days | body | integer | 예 | min 0, max 3650 | 범위별 보관 기한(일). 0 = 기한 없음. 1 이상이면 보유기간 핸들러 `search-history` 가 지난 검색어를 지운다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
 
@@ -976,7 +898,6 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 서버에 PHP `zip` 확장이 없어 백업을 만들 수 없는 경우 (`settings.errors.zip_extension_required`, 7.1.4) |
 | 500 | Internal Server Error | 백업 파일 생성에 실패한 경우 (`settings.backup_failed`) |
 
 <!-- @generated:end -->
@@ -1113,8 +1034,6 @@ _단건 응답: `data` 객체의 필드 (GeoIpDatabaseService::updateDatabase() 
 | database_path | string | `storage/app/geoip/GeoLite2-City.mmdb` | 갱신된 GeoLite2 DB 파일의 절대 경로 (`config('geoip.database_path')`) |
 | file_size_bytes | integer | `60000000` | 다운로드·전개 후 최종 DB 파일 크기 (바이트) |
 | elapsed_seconds | number | `12.34` | 다운로드부터 교체 완료까지 소요 시간 (초) |
-| last_updated_at | string | `2026-11-03T16:00:00+00:00` | DB 파일 갱신 시각 (ISO 8601 기계값) |
-| last_updated_at_formatted | string | `2026-11-04 01:00:00` | DB 파일 갱신 시각 — 보는 사람 시간대 (`Y-m-d H:i:s`, 고급 탭 「최근 갱신」 표시용) |
 
 **응답 예시**
 
@@ -1315,7 +1234,6 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 422 | Unprocessable Entity | 서버에 PHP `zip` 확장이 없어 백업을 풀 수 없는 경우 (`settings.errors.zip_extension_required`, 7.1.4) |
 | 500 | Internal Server Error | 백업 파일을 읽을 수 없는 등 복원 중 예외 발생 (`settings.restore_error`) |
 
 <!-- @generated:end -->
@@ -1365,11 +1283,11 @@ _단건 응답: `data` 객체의 필드._
 | max_execution_time | string | `36000초` | PHP `max_execution_time` ini 값 (초 단위 접미사 부착) |
 | upload_max_filesize | string | `2G` | PHP `upload_max_filesize` ini 값 |
 | opcache | object | `{"loaded":true,"enabled":true}` | OPcache 상태 (`OpcacheStatus::probe()`). `loaded` 는 확장 적재 여부, `enabled` 는 `opcache.enable` 지시자 값이며 `ini_get` 이 차단·미정의인 환경에서는 **확인 불가를 뜻하는 `null`** 이 된다 (false 와 구분된다) |
-| install_path | string | `/var/www/g7` | 애플리케이션 설치 루트 경로 (`base_path()`) |
-| config_path | string | `/var/www/g7/storage/…` | 설정 파일 저장 경로 (`storage/app/settings`) |
-| log_path | string | `/var/www/g7/storage/…` | 로그 파일 저장 경로 (`storage/logs`) |
-| upload_path | string | `/var/www/g7/storage/…` | 공개 업로드 파일 저장 경로 (`storage/app/public`) |
-| php_extensions | object | `{"required":{"ctype":true,"curl":true,…},"optional":{"bcmath":true,…},"requested":{"soap":true},"requested_by":{"soap":[{"type":"plugin",…}]}}` | PHP 확장 로드 상태. `required`(필수 16)·`optional`(선택)은 코어 SSoT(`app/Support/Requirements/php-extensions.json`)의 목록이며 각 확장명→로드 여부(bool). `requested_by` 는 설치된 모듈·플러그인이 composer.json 으로 요구한 확장 → 요구한 확장 목록(`type`·`identifier`·`name`·`level`: require\|suggest), `requested` 는 그중 코어 목록 밖 확장(soap 등)의 로드 여부 (7.1.4) |
+| install_path | string | `C:\Users\HeuJung\htdocs\g7_2` | 애플리케이션 설치 루트 경로 (`base_path()`) |
+| config_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 설정 파일 저장 경로 (`storage/app/settings`) |
+| log_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 로그 파일 저장 경로 (`storage/logs`) |
+| upload_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 공개 업로드 파일 저장 경로 (`storage/app/public`) |
+| php_extensions | object | `{"required":{"openssl":true,"pdo":true,"mbstring":true,"t…` | PHP 확장 로드 상태. required(필수)·optional(선택) 두 그룹으로 나뉘며 각 확장명→로드 여부(bool) 매핑 |
 | database_config | object | `{"has_read_write_split":false,"write":{"host":"localhost"…` | DB 연결 구성 요약. has_read_write_split(읽기/쓰기 분리 여부)·write(쓰기 연결 정보)·read(읽기 replica 목록, write 와 동일하면 제외) |
 | timezone | string | `UTC` | 애플리케이션 기본 타임존 (`config('app.timezone')`) |
 | server_time | string | `2026-08-04 12:53:55` | 서버 현재 시각 (Y-m-d H:i:s) |
@@ -1415,10 +1333,10 @@ HTTP/1.1 200
             "loaded": true,
             "enabled": true
         },
-        "install_path": "/var/www/g7",
-        "config_path": "/var/www/g7/storage/app/settings",
-        "log_path": "/var/www/g7/storage/logs",
-        "upload_path": "/var/www/g7/storage/app/public",
+        "install_path": "C:\\Users\\HeuJung\\htdocs\\g7",
+        "config_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\app/settings",
+        "log_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\logs",
+        "upload_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\app/public",
         "php_extensions": {
             "required": {
                 "openssl": true,
@@ -1664,7 +1582,7 @@ HTTP/1.1 200
 
 **설명**
 
-환경설정 → 드라이버 탭 「큐 워커」 구역이 읽는 상태입니다(#139). 판정은 **운영자가 등록한 연결·큐 목록**으로 하고, 워커 생존 신호(하트비트)는 큐별로 표시만 합니다. 신호는 워커 루프(`Illuminate\Queue\Events\Looping`)와 잡 시작(`JobProcessing` — `--once` 워커용)마다 프로세스당 30초에 한 번 캐시(`queue:heartbeat:{connection}:{queue}`)에 남습니다. 코어 잡 전용 큐(사이트맵 생성 `sitemap`)는 운영자가 등록하지 않아도 큐 드라이버 연결에 잡이 쌓이므로, 등록 목록에 없으면 `rows` 와 `commands` 에 `dedicated: true` 항목으로 함께 싣습니다(워커 1개 전용 명령, `--timeout=1800`). 등록 큐 항목은 `dedicated: false` 입니다. 읽기 전용이며 입력이 없습니다. 등록 규칙은 위 `POST /api/admin/settings` 의 「큐 워커 등록 검증」, 리스너가 큐를 고르는 방법은 [hooks.md](../../extension/hooks.md) 「큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프」 를 보세요.
+환경설정 → 드라이버 탭 「큐 워커」 구역이 읽는 상태입니다(#139). 판정은 **운영자가 등록한 연결·큐 목록**으로 하고, 워커 생존 신호(하트비트)는 큐별로 표시만 합니다. 신호는 워커 루프(`Illuminate\Queue\Events\Looping`)와 잡 시작(`JobProcessing` — `--once` 워커용)마다 프로세스당 30초에 한 번 캐시(`queue:heartbeat:{connection}:{queue}`)에 남습니다. 읽기 전용이며 입력이 없습니다. 등록 규칙은 위 `POST /api/admin/settings` 의 「큐 워커 등록 검증」, 리스너가 큐를 고르는 방법은 [hooks.md](../../extension/hooks.md) 「큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프」 를 보세요.
 
 
 ### POST /api/admin/settings/static-cache/republish
@@ -1953,8 +1871,6 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 
 폼에 입력한 드라이버 접속 정보(S3·Redis·Memcached·Websocket 등)로 실제 연결을 시도해 결과를 반환합니다. 설정을 저장하기 전에 접속 정보가 유효한지 확인하는 용도입니다. 모든 테스트 통과 시 성공 메시지, 일부 실패 시에도 HTTP 성공 응답으로 항목별 결과(`all_passed=false` 포함)를 함께 반환합니다.
 
-연결 대상 주소는 저장(`POST /api/admin/settings`)과 같은 규칙으로 검증합니다(7.1.6). 호스트 칸은 호스트명·IP 만 받고(경로·쿼리·계정 정보·포트·공백은 422), 링크로컬·클라우드 메타데이터 주소(`169.254.0.0/16`·`fe80::/10`·`100.100.100.200`·`metadata.google.internal` 등)는 「허용되지 않는 주소입니다」 로 422 입니다. localhost·사내 IP 는 정상 구성이라 그대로 허용합니다. 연결 테스트는 응답의 리다이렉트를 따라가지 않습니다(3xx 응답은 "서버가 응답했다" 로 봅니다). 연결을 시도한 뒤의 실패 사유(연결 거부·시간 초과 등)는 `error` 에 원문 그대로 실립니다.
-
 
 ### POST /api/admin/settings/test-outbound-proxy
 <!-- @generated:start:api.admin.settings.test-outbound-proxy -->
@@ -2016,7 +1932,7 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우, 프록시 호스트가 링크로컬·클라우드 메타데이터 주소인 경우(「허용되지 않는 주소입니다」) |
+| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우 |
 
 <!-- @generated:end -->
 
@@ -2120,7 +2036,7 @@ _단건 응답: `data` 객체의 필드 (발송 성공 시에만 반환)._
 
 **설명**
 
-폼에 입력한 메일 설정으로 지정한 주소에 테스트 메일을 발송합니다. 요청에서 전달한 값(호스트·포트·인증 정보 등)을 저장된 메일 설정 위에 임시로 덮어써 그 값으로만 발송을 시도하므로, 설정을 저장하기 전에 실제 발송 가능 여부를 검증할 수 있습니다. 성공 시 발송한 제목/본문을 응답에 포함하고, 실패 시 오류 사유와 함께 500 을 반환합니다. 메일 서버 호스트(`host`)와 Mailgun 엔드포인트(`mailgun_endpoint`)는 저장과 같은 규칙으로 검증합니다(7.1.6) — 호스트명·IP 만 받고, 링크로컬·클라우드 메타데이터 주소는 422 입니다.
+폼에 입력한 메일 설정으로 지정한 주소에 테스트 메일을 발송합니다. 요청에서 전달한 값(호스트·포트·인증 정보 등)을 저장된 메일 설정 위에 임시로 덮어써 그 값으로만 발송을 시도하므로, 설정을 저장하기 전에 실제 발송 가능 여부를 검증할 수 있습니다. 성공 시 발송한 제목/본문을 응답에 포함하고, 실패 시 오류 사유와 함께 500 을 반환합니다.
 
 
 ### GET /api/admin/settings/{key}
@@ -2241,7 +2157,5 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 **설명**
 
 단일 설정 키의 값을 업데이트합니다. 경로의 `key` 로 대상 설정을, 본문의 `value` 로 새 값을 지정합니다. 탭 단위 일괄 저장(`POST /api/admin/settings`)과 달리 개별 키 하나만 변경할 때 사용합니다. 검증 실패 시 422, 그 외 오류 시 500 을 반환합니다.
-
-`.env` 가 값을 정하는 키(`env-priority` 가 켜져 있고 그 키의 환경변수가 명시된 경우 — 예: `MAIL_HOST` → `mail.host`)는 값과 관계없이 422 입니다(`validation.setting.value.env_locked`, 7.1.4). 탭 일괄 저장은 그런 키를 조용히 버리지만, 단건 저장은 그 키 하나를 지목한 요청이라 거부합니다. 터미널의 `php artisan settings:set` 도 같은 키를 같은 사유로 거부합니다.
 
 

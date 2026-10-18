@@ -44,7 +44,6 @@
         "supply_amount": "Supply Amount",
         "vat_amount": "VAT",
         "tax_free_amount": "Tax-Free Amount",
-        "zero_rated_amount": "Zero-rated Amount",
         "escrow_badge": "Escrow",
         "loading": "Loading...",
         "vbank_amount": "Deposit Amount",
@@ -97,20 +96,7 @@
         "escrow_delivery_change_button": "Update",
         "escrow_delivery_registering": "Registering...",
         "escrow_delivery_success": "Delivery info registered with KCP.",
-        "escrow_delivery_error": "Failed to register delivery info.",
-        "escrow_couriers": {
-            "kyungdong": "Kyungdong Express",
-            "ilyang": "Ilyang Logis",
-            "hapdong": "Hapdong Express",
-            "dream": "Dream Express",
-            "chunil": "Chunil Express",
-            "kunyoung": "Kunyoung Express",
-            "cj": "CJ Logistics",
-            "hanjin": "Hanjin Express",
-            "logen": "Logen",
-            "lotte_parcel": "Lotte Parcel",
-            "epost": "Korea Post Parcel"
-        }
+        "escrow_delivery_error": "Failed to register delivery info."
     },
     "settings": {
         "title": "NHN KCP Settings",
@@ -207,7 +193,6 @@
             "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator.",
             "krw_only": "NHN KCP supports KRW payments only. ({{currency}})",
             "mobile_approval_key_failed": "Failed to get the KCP mobile approval key",
-            "mobile_guest_auth_failed": "Your order verification has expired. Please open the order lookup and try the payment again.",
             "pg_error": "KCP error [{{code}}]: {{message}}",
             "applepay_ios_only": "Apple Pay is available only for mobile payments on iOS devices.",
             "method_missing": "The payment method is missing, so the payment cannot continue. Please reopen the order form."

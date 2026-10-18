@@ -11,7 +11,6 @@ use PHPUnit\Framework\Attributes\Group;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 use Plugins\Sirsoft\PayKginicis\Upgrades\Upgrade_1_2_0;
 use RuntimeException;
-use Tests\Support\UpgradeFiles;
 
 /**
  * 이커머스 1.3.0 미만에서 이 버전으로의 갱신을 멈추는 가드 (PU-2).
@@ -49,7 +48,7 @@ class RequireEcommerce130Test extends PluginTestCase
         parent::setUp();
 
         // DataMigration 은 AbstractUpgradeStep 이 동적으로 require 하므로 일반 autoload 대상이 아니다.
-        UpgradeFiles::requireOnce(base_path('plugins/_bundled/'.self::SELF.'/upgrades/data/'.self::STEP.'/migrations/00_RequireEcommerce130.php'));
+        require_once base_path('plugins/_bundled/'.self::SELF.'/upgrades/data/'.self::STEP.'/migrations/00_RequireEcommerce130.php');
     }
 
     /**

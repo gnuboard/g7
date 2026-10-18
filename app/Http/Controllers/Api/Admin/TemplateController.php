@@ -3,17 +3,14 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
-use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\TemplateOperationException;
-use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Layout\LayoutInstallSourceScope;
 use App\Extension\Layout\LayoutSyncSummary;
-use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
-use App\Http\Controllers\Concerns\RespondsWithIntegrationNotices;
 use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Requests\Template\ActivateTemplateRequest;
 use App\Http\Requests\Template\DeactivateTemplateRequest;
@@ -46,7 +43,6 @@ class TemplateController extends AdminBaseController
 {
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
-    use RespondsWithIntegrationNotices;
 
     /**
      * 템플릿 관리 API 컨트롤러를 생성합니다.
@@ -172,9 +168,8 @@ class TemplateController extends AdminBaseController
             $templateName = $validated['template_name'];
 
             // 동반 설치 항목마다 그 종류의 설치·활성화 권한을 먼저 확인한다 (설치 창 can_select 와 같은 판정)
-            // 함께 고른 선택 연동 확장(7.1.4)도 같은 판정을 거친다 — 설치 창 연동 목록의 can_select 와 같다
             $denied = $this->findUnauthorizedCascadeSelection(
-                array_merge($validated['dependencies'] ?? [], $validated['integrations'] ?? []),
+                $validated['dependencies'] ?? [],
                 $validated['language_packs'] ?? []
             );
             if ($denied !== null) {
@@ -186,11 +181,8 @@ class TemplateController extends AdminBaseController
 
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
-            $template = LayoutInstallSourceScope::run($request->validated('layout_source'), function () use ($validated, $templateName, &$integrationFailures) {
-                $this->installSelectedDependencies($validated['dependencies'] ?? [], VendorMode::Auto, 'template', $templateName);
-
-                // cascade 1.5단계: 고른 선택 연동 확장을 의존 다음·본체 이전에 설치·활성화 (실패해도 본체는 계속, 7.1.4 D9)
-                $integrationFailures = $this->installSelectedIntegrations($validated['integrations'] ?? []);
+            $template = LayoutInstallSourceScope::run($request->validated('layout_source'), function () use ($validated, $templateName) {
+                $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
                 return $this->templateService->installTemplate($templateName);
             });
@@ -204,29 +196,22 @@ class TemplateController extends AdminBaseController
                 // 꺼진 채 설치돼 이 확장을 켤 때 함께 켜질 언어팩 — 화면이 안내 토스트로 알린다.
                 $payload['language_packs_awaiting_host'] = $lpAwaitingHost;
 
-                return $this->withIntegrationNotices(
-                    $this->success('templates.install_success', $payload, 201),
-                    $this->buildIntegrationNotices('template', $templateName, $integrationFailures ?? []),
-                );
+                return $this->success('templates.install_success', $payload, 201);
             } else {
                 return $this->error('templates.install_failed', 400, null, [
-                    'error' => $this->withKeptDependencies(__('templates.errors.unknown_error')),
+                    'error' => __('templates.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('templates.install_failed', ['error' => SafeExceptionMessage::for($e)]);
 
-            // 의존 버전 미달처럼 검증 예외로 끝나도 앞서 설치·활성화해 남긴 의존 확장을 함께 알린다 (D14)
-            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $this->withKeptDependencies($firstError)]);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('templates.errors.installation_failed', 500, $e->getMessage(), [
-                'error' => $this->withKeptDependencies(SafeExceptionMessage::for($e)),
+                'error' => SafeExceptionMessage::for($e),
             ]);
         }
     }
@@ -248,15 +233,12 @@ class TemplateController extends AdminBaseController
 
             $result = $this->templateService->activateTemplate($templateName, $force);
 
-            // 경고 응답인 경우 (필요 의존성 미충족 — 미설치·꺼짐·버전 미달) - 활성화 실패로 처리
-            // template_type·current_active_identifier 는 강제 활성화 창이 타입별 503 경고(관리자면 복구 명령)를 그리는 데 쓴다(#152)
+            // 경고 응답인 경우 (필요 의존성 미충족) - 활성화 실패로 처리
             if (isset($result['warning']) && $result['warning'] === true) {
                 return $this->error('templates.activate_warning', 409, [
                     'warning' => true,
                     'missing_modules' => $result['missing_modules'] ?? [],
                     'missing_plugins' => $result['missing_plugins'] ?? [],
-                    'template_type' => $result['template_type'] ?? null,
-                    'current_active_identifier' => $result['current_active_identifier'] ?? null,
                     'message' => $result['message'],
                 ]);
             }
@@ -269,23 +251,20 @@ class TemplateController extends AdminBaseController
                     ->getPendingForReactivation('template', $templateName);
 
                 if ($templateInfo) {
-                    return $this->withIntegrationNotices($this->success('templates.activate_success', [
+                    return $this->success('templates.activate_success', [
                         'template' => (new TemplateResource($templateInfo))->resolve(),
                         'pending_language_packs' => $pendingLanguagePacks,
-                    ]), IntegrationNotices::forExtension('template', $templateName));
+                    ]);
                 }
 
-                return $this->withIntegrationNotices($this->success('templates.activate_success', array_merge($result, [
+                return $this->success('templates.activate_success', array_merge($result, [
                     'pending_language_packs' => $pendingLanguagePacks,
-                ])), IntegrationNotices::forExtension('template', $templateName));
+                ]));
             } else {
                 return $this->error('templates.activate_failed', 400, null, [
                     'error' => $result['reason'] ?? __('templates.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
             return $this->validationError(
@@ -310,18 +289,15 @@ class TemplateController extends AdminBaseController
             $template = $this->templateService->deactivateTemplate($templateName, $deactivateFailureReason);
 
             if ($template) {
-                return $this->withIntegratedBy($this->successWithResource(
+                return $this->successWithResource(
                     'templates.deactivate_success',
                     new TemplateResource($template)
-                ), 'template', $templateName);
+                );
             } else {
                 return $this->error('templates.deactivate_failed', 400, null, [
                     'error' => $deactivateFailureReason ?? __('templates.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // 서비스가 이미 번역·포장한 문구를 그대로 쓴다 (이중 래핑 방지)
             return $this->validationError(
@@ -351,17 +327,14 @@ class TemplateController extends AdminBaseController
             if ($result) {
                 // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 응답에 실어
                 // 알리지 않으면 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
-                return $this->withIntegratedBy($this->success('templates.uninstall_success', [
+                return $this->success('templates.uninstall_success', [
                     'preserved_backups' => $preservedBackups ?? [],
-                ]), 'template', $templateName);
+                ]);
             } else {
                 return $this->error('templates.uninstall_failed', 400, null, [
                     'error' => __('templates.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service 가 이미 「템플릿 제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
             // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, 모듈·플러그인과 같은 처리)
@@ -424,14 +397,11 @@ class TemplateController extends AdminBaseController
             $file = $request->file('file');
             $template = $this->templateService->installFromZipFile($file);
 
-            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
-            return $this->withIntegrationNotices(
-                $this->successWithResource('templates.install_success', new TemplateResource($template), 201),
-                $this->buildIntegrationNotices('template', (string) data_get($template, 'identifier', ''))
+            return $this->successWithResource(
+                'templates.install_success',
+                new TemplateResource($template),
+                201
             );
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (TemplateOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
@@ -453,14 +423,11 @@ class TemplateController extends AdminBaseController
             $githubUrl = $request->validated()['github_url'];
             $template = $this->templateService->installFromGithub($githubUrl);
 
-            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
-            return $this->withIntegrationNotices(
-                $this->successWithResource('templates.install_success', new TemplateResource($template), 201),
-                $this->buildIntegrationNotices('template', (string) data_get($template, 'identifier', ''))
+            return $this->successWithResource(
+                'templates.install_success',
+                new TemplateResource($template),
+                201
             );
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (TemplateOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
@@ -608,22 +575,18 @@ class TemplateController extends AdminBaseController
                 // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
                 $data['layout_warnings'] = $result['layout_warnings'] ?? [];
 
-                // 새 판 manifest 기준 연동 안내도 싣는다 — 매니저 결과에만 있고 화면에 닿지 않았다 (#822 D10)
-                return $this->withIntegrationNotices($this->successWithResource(
+                return $this->successWithResource(
                     $messageKey,
                     new JsonResource($data),
                     200,
                     $messageParams
-                ), $result['integration_notices'] ?? []);
+                );
             }
 
-            return $this->withIntegrationNotices(
-                $this->success($messageKey, $result, 200, $messageParams),
-                $result['integration_notices'] ?? []
-            );
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
+            return $this->success($messageKey, $result, 200, $messageParams);
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 두 번째 요청(버튼 더블클릭 등)을 409 로 거절한다(#138 실측 ②)
+            return $this->error($e->getMessageKey(), 409, null, $e->getMessageParams());
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)

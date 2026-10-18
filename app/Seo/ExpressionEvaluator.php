@@ -2,7 +2,6 @@
 
 namespace App\Seo;
 
-use App\Support\LocalizedValue;
 use Illuminate\Support\Arr;
 
 class ExpressionEvaluator
@@ -132,8 +131,7 @@ class ExpressionEvaluator
 
             // 연산자/함수 호출/리터럴이 포함된 표현식은 resolveToValue로 처리
             if (str_contains($expr, '??') || str_contains($expr, '?') || preg_match('/[\w$]+\s*\(/', $expr)
-                || str_starts_with($expr, '{') || str_contains($expr, '...')
-                || count($this->splitTopLevelPlus($expr)) > 1 || $this->hasTopLevelArithmetic($expr)) {
+                || str_starts_with($expr, '{') || str_contains($expr, '...')) {
                 return $this->resolveToValue($expr, $context);
             }
 
@@ -293,10 +291,9 @@ class ExpressionEvaluator
      *
      * @param  string  $expression  평가 대상 표현식 (예: `'$t:seo.title'`, `'{{post.title | upper}}'`)
      * @param  array<string, mixed>  $context  바인딩 컨텍스트 (route/post/locale 등)
-     * @param  bool  $dropOrphanOperators  빈 바인딩 치환 뒤 남은 부호(`+`·`-`·`/`·`*`, 2글자 이하)를 지울지 — URL 자리(href·이동 경로)는 false
      * @return string 평가 결과 문자열 (해석 실패 시 원본 표현식 또는 빈 문자열)
      */
-    public function evaluate(string $expression, array $context, bool $dropOrphanOperators = true): string
+    public function evaluate(string $expression, array $context): string
     {
         // $t: 번역 키 처리 (전체가 $t:로 시작하는 경우)
         if (str_starts_with($expression, '$t:')) {
@@ -308,10 +305,9 @@ class ExpressionEvaluator
         // 번역하지 않는다(rawMarkers). 여기서 접두사를 그대로 두면 콜론이 식의
         // 일부로 파싱되어 평가가 실패하고, 봇 화면에서만 값이 사라진다.
         $rawExempt = false;
-        $hasEmptyBinding = false;
 
         // {{binding | pipe}} 패턴 치환 (파이프 표현식 지원)
-        $result = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($matches) use ($context, &$rawExempt, &$hasEmptyBinding) {
+        $result = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($matches) use ($context, &$rawExempt) {
             $expr = trim($matches[1]);
 
             if (str_starts_with($expr, self::RAW_PREFIX)) {
@@ -319,12 +315,22 @@ class ExpressionEvaluator
                 $expr = trim(substr($expr, strlen(self::RAW_PREFIX)));
             }
 
-            $value = $this->evaluateBinding($expr, $context);
-            if ($value === '') {
-                $hasEmptyBinding = true;
+            // 파이프 분리: expr | pipe1 | pipe2(arg)
+            if (PipeRegistry::hasPipes($expr)) {
+                [$baseExpr, $pipes] = PipeRegistry::splitPipes($expr);
+                $value = $this->resolveToValue($baseExpr, $context);
+
+                foreach ($pipes as $pipeExpr) {
+                    $parsed = PipeRegistry::parsePipeExpression($pipeExpr);
+                    if ($this->pipeRegistry->has($parsed['name'])) {
+                        $value = $this->pipeRegistry->execute($parsed['name'], $value, $parsed['args']);
+                    }
+                }
+
+                return $this->valueToString($value);
             }
 
-            return $value;
+            return $this->evaluateExpression($expr, $context);
         }, $expression);
 
         // 인라인 $t:key 토큰 해석 ({{}} 외부 텍스트 내 $t:key|param=value 패턴)
@@ -335,11 +341,9 @@ class ExpressionEvaluator
             }, $result);
         }
 
-        // 후처리: 빈 {{}} 치환으로 남은 고립된 연산자/부호 정리 (예: "+{{미지원식()}}" → "")
-        // 빈 바인딩이 있었을 때만 한다 — 정적 `/`(홈 링크 href)·`-`(빈 칸 표시)와 `/` 로 풀린 바인딩은 사람 화면처럼
-        // 값 그대로다(7.1.1). URL 자리(호출자가 false)는 `/{{빈값}}` 의 `/` 도 남긴다.
+        // 후처리: 빈 {{}} 치환으로 남은 고립된 연산자/부호 정리 (예: "+", "-")
         $cleaned = trim($result);
-        if ($dropOrphanOperators && $hasEmptyBinding && $cleaned !== '' && strlen($cleaned) <= 2 && preg_match('/^[+\-\/*]+$/', $cleaned)) {
+        if ($cleaned !== '' && strlen($cleaned) <= 2 && preg_match('/^[+\-\/*]+$/', $cleaned)) {
             return '';
         }
 
@@ -366,40 +370,19 @@ class ExpressionEvaluator
         }
 
         // 파라미터 분리: $t:key|param1=value1|param2=value2
-        // `{{…}}` 식 구간을 자리 표식으로 바꾼 뒤 나눈다 — 식 안의 파이프(`{{v | date}}`)·`||`·`=` 가 인자
-        // 구분자로 읽히지 않는다. 값은 나눈 뒤에 풀어서 값에 든 `&`·`|`·`=` 도 그대로 남는다(브라우저 렌더러
-        // engine-v1.80.1 과 같은 결과).
         $params = [];
         if (str_contains($key, '|')) {
-            $bindings = [];
-            $protectedKey = (string) preg_replace_callback('/\{\{(?:[^}]|\}(?!\}))*\}\}/', function ($m) use (&$bindings) {
-                $bindings[] = $m[0];
-
-                return "\u{FDD3}".(count($bindings) - 1)."\u{FDD4}";
-            }, $key);
-            $restore = static fn (string $text): string => (string) preg_replace_callback(
-                '/\x{FDD3}(\d+)\x{FDD4}/u',
-                fn ($m) => $bindings[(int) $m[1]] ?? $m[0],
-                $text,
-            );
-
-            $parts = explode('|', $protectedKey);
+            $parts = explode('|', $key);
             $key = $parts[0];
             foreach (array_slice($parts, 1) as $param) {
                 if (str_contains($param, '=')) {
                     [$paramKey, $paramValue] = explode('=', $param, 2);
-                    $paramValue = trim($restore($paramValue));
+                    $paramValue = trim($paramValue);
 
-                    // {{}} 표현식이 포함된 파라미터 값을 해석 (파이프 포함 — evaluate() 와 같은 바인딩 규칙)
+                    // {{}} 표현식이 포함된 파라미터 값을 해석
                     if (str_contains($paramValue, '{{') && ! empty($context)) {
-                        $paramValue = (string) preg_replace_callback('/\{\{(?:[^}]|\}(?!\}))*\}\}/', function ($m) use ($context) {
-                            $expr = trim(substr($m[0], 2, -2));
-
-                            if (str_starts_with($expr, self::RAW_PREFIX)) {
-                                $expr = trim(substr($expr, strlen(self::RAW_PREFIX)));
-                            }
-
-                            return $this->evaluateBinding($expr, $context);
+                        $paramValue = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($m) use ($context) {
+                            return $this->evaluateExpression(trim($m[1]), $context);
                         }, $paramValue);
                     }
 
@@ -408,48 +391,6 @@ class ExpressionEvaluator
             }
         }
 
-        return $this->translateKey($key, $params);
-    }
-
-    /**
-     * `{{…}}` 바인딩 식 하나(중괄호·`raw:` 접두사를 뗀 식)를 문자열로 평가합니다 — 파이프 체인 포함.
-     *
-     * @param  string  $expr  바인딩 식 (예: `post.created_at | date`)
-     * @param  array<string, mixed>  $context  데이터 컨텍스트
-     * @return string 평가 결과 문자열
-     */
-    private function evaluateBinding(string $expr, array $context): string
-    {
-        // 파이프 분리: expr | pipe1 | pipe2(arg)
-        if (PipeRegistry::hasPipes($expr)) {
-            [$baseExpr, $pipes] = PipeRegistry::splitPipes($expr);
-            $value = $this->resolveToValue($baseExpr, $context);
-
-            foreach ($pipes as $pipeExpr) {
-                $parsed = PipeRegistry::parsePipeExpression($pipeExpr);
-                if ($this->pipeRegistry->has($parsed['name'])) {
-                    $value = $this->pipeRegistry->execute($parsed['name'], $value, $parsed['args']);
-                }
-            }
-
-            return $this->valueToString($value);
-        }
-
-        return $this->evaluateExpression($expr, $context);
-    }
-
-    /**
-     * 번역 키를 해석된 인자로 번역합니다 — `$t:키|…` 문자열과 `$t(키, 인자)` 함수가 함께 씁니다.
-     *
-     * 인자 치환은 한 번에 한다(strtr). 값을 넣은 뒤 다시 훑지 않으므로 앞 인자 값에 든 뒤 인자 자리표시자
-     * (`{{column}}`)가 다시 치환되지 않는다 — 브라우저 번역 엔진 engine-v1.80.1 과 같은 규칙.
-     *
-     * @param  string  $key  번역 키
-     * @param  array<string, string>  $params  해석된 번역 인자
-     * @return string 번역된 문자열 (없으면 빈 문자열)
-     */
-    private function translateKey(string $key, array $params): string
-    {
         // 1. 템플릿 번역 사전에서 먼저 조회
         if (! empty($this->translations)) {
             $translated = Arr::get($this->translations, $key);
@@ -457,13 +398,15 @@ class ExpressionEvaluator
                 $translated = $this->pluralVariant($key, $translated, $params);
                 // 파라미터 치환: :param 또는 {{param}} → value
                 // 템플릿 번역은 {{param}} 형식, Laravel 번역은 :param 형식
-                $replacements = [];
                 foreach ($params as $paramKey => $paramValue) {
-                    $replacements['{{'.$paramKey.'}}'] = $paramValue;
-                    $replacements[':'.$paramKey] = $paramValue;
+                    $translated = str_replace(
+                        ['{{'.$paramKey.'}}', ':'.$paramKey],
+                        [$paramValue, $paramValue],
+                        $translated
+                    );
                 }
 
-                return $replacements === [] ? $translated : strtr($translated, $replacements);
+                return $translated;
             }
         }
 
@@ -638,17 +581,11 @@ class ExpressionEvaluator
                     return $value;
                 }
 
-                // 문자열로는 빈 값과 없는 값이 같아 보인다 — 원본 값이 빈 문자열이면 JS `??` 처럼 그대로 둔다.
-                // 종전에는 상점을 루트에 붙인 사이트의 `{{_global.shopBase ?? '/shop'}}/products` 가 `/shop/products` 였다(engine-v1.84.0).
-                if ($this->resolveToValue(trim($parts[0]), $context) === '') {
-                    return '';
-                }
-
                 $fallback = trim($parts[1]);
 
-                // 따옴표 감싸인 문자열 리터럴 (하나의 리터럴만 — `'a' + 'b'` 는 아래 재귀 평가)
-                if (preg_match('/^(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")\s*$/s', $fallback, $m)) {
-                    return isset($m[2]) ? $m[2] : $m[1];
+                // 따옴표 감싸인 문자열 리터럴
+                if (preg_match('/^[\'"](.*)[\'"]\s*$/', $fallback, $m)) {
+                    return $m[1];
                 }
 
                 // 빈 배열 리터럴 []
@@ -693,21 +630,6 @@ class ExpressionEvaluator
         // 4. 비교 연산자: a > b, a === 'value', 등
         if ($this->isSimpleComparison($expr)) {
             return $this->evaluateComparison($expr, $context);
-        }
-
-        // 4.4. 더하기·문자열 잇기: a + b (+ c …) — JS `+` 와 같게, 한쪽이 문자열이면 잇고 둘 다 수면 더한다.
-        //      `'/' + (route_path ?? 'shop')` 같은 경로 조립이 종전에는 빈 값이 돼 봇 화면 링크가 기본 경로로 남았다(engine-v1.84.0).
-        $plusOperands = $this->hasTopLevelComparison($expr) ? [$expr] : $this->splitTopLevelPlus($expr);
-        if (count($plusOperands) > 1) {
-            return $this->valueToString($this->addOperands($plusOperands, $context));
-        }
-
-        // 4.45. 산술 `- * / %` — 양변이 경로·식이어도 JS 우선순위대로 계산한다(`{{n * m}}`). 수가 아니면 아래 종전 규칙으로.
-        if ($this->hasTopLevelArithmetic($expr)) {
-            $arithmetic = $this->evaluateArithmeticRaw($expr, $context);
-            if ($arithmetic !== null) {
-                return $this->valueToString($arithmetic);
-            }
         }
 
         // 4.5. 산술 연산: expr +-*/% N (우변이 숫자 리터럴인 경우)
@@ -802,506 +724,6 @@ class ExpressionEvaluator
         $value = $this->resolvePath($expr, $context);
 
         return $value !== null ? $this->valueToString($value) : '';
-    }
-
-    /**
-     * 최상위(따옴표·괄호 밖)의 이항 `+` 로 식을 나눕니다.
-     *
-     * 단항 `+`(앞이 비었거나 연산자)·지수 표기(`1e+5`)·`++` 가 있으면 나누지 않고 원식 하나를 돌려준다.
-     *
-     * @param  string  $expr  표현식
-     * @return array<int, string> 피연산자 목록 (나눌 수 없으면 원식 하나)
-     */
-    private function splitTopLevelPlus(string $expr): array
-    {
-        if (! str_contains($expr, '+')) {
-            return [$expr];
-        }
-
-        $parts = [];
-        $current = '';
-        $depth = 0;
-        $quote = null;
-        $len = strlen($expr);
-
-        for ($i = 0; $i < $len; $i++) {
-            $char = $expr[$i];
-
-            if ($quote !== null) {
-                $current .= $char;
-                if ($char === '\\' && $i + 1 < $len) {
-                    $current .= $expr[++$i];
-                } elseif ($char === $quote) {
-                    $quote = null;
-                }
-
-                continue;
-            }
-
-            if ($char === "'" || $char === '"' || $char === '`') {
-                $quote = $char;
-                $current .= $char;
-
-                continue;
-            }
-
-            if ($char === '(' || $char === '[' || $char === '{') {
-                $depth++;
-            } elseif ($char === ')' || $char === ']' || $char === '}') {
-                $depth--;
-            }
-
-            if ($char === '+' && $depth === 0) {
-                $before = rtrim($current);
-                $next = $expr[$i + 1] ?? '';
-                if ($next === '+' || $before === '' || preg_match('/[-+*\/%!=<>&|?:,(]$/', $before) === 1
-                    || (preg_match('/\d[eE]$/', $before) === 1 && ctype_digit($next))) {
-                    return [$expr];
-                }
-                $parts[] = trim($current);
-                $current = '';
-
-                continue;
-            }
-
-            $current .= $char;
-        }
-
-        if ($quote !== null || $depth !== 0 || trim($current) === '') {
-            return [$expr];
-        }
-
-        $parts[] = trim($current);
-
-        return $parts;
-    }
-
-    /**
-     * 피연산자를 왼쪽부터 JS `+` 규칙으로 더합니다.
-     *
-     * 한쪽이 문자열(또는 배열·객체)이면 문자열로 잇고, 아니면 수로 더한다. 없는 값(null)은 JS 의 undefined 처럼
-     * 문자열 자리에서 `undefined` 가 된다(브라우저와 같은 결과).
-     *
-     * @param  array<int, string>  $operands  피연산자 식
-     * @param  array  $context  데이터 컨텍스트
-     * @return mixed 결과 (문자열 또는 수)
-     */
-    private function addOperands(array $operands, array $context): mixed
-    {
-        $values = [];
-        foreach ($operands as $operand) {
-            $value = $this->plusOperandValue($operand, $context);
-
-            // 경로가 아닌 식이 값을 못 내면(이 평가기가 모르는 문법 — 즉시 실행 함수 등) 잇지 않고 종전처럼 빈 값으로 둔다.
-            // 그대로 이으면 `width: undefined%` 같은 조각이 봇 화면에 나간다. 없는 경로는 JS 처럼 undefined 로 잇는다.
-            if ($value === null && ! $this->isPlainPath($operand)) {
-                return null;
-            }
-
-            $values[] = $value;
-        }
-
-        $result = array_shift($values);
-        foreach ($values as $value) {
-            if (is_string($result) || is_string($value) || is_array($result) || is_array($value)) {
-                $result = $this->jsString($result).$this->jsString($value);
-
-                continue;
-            }
-
-            // 없는 값(undefined)이 낀 수 더하기는 JS 에서 NaN
-            if ($result === null || $value === null) {
-                $result = NAN;
-
-                continue;
-            }
-
-            $sum = (float) $result + (float) $value;
-            $result = is_nan($sum) || $sum != (int) $sum || abs($sum) >= PHP_INT_MAX ? $sum : (int) $sum;
-        }
-
-        return is_float($result) && is_nan($result) ? 'NaN' : $result;
-    }
-
-    /**
-     * 식이 단순 경로(`a.b?.c`·`a[0]`·`a['k']`)이거나 `null`·`undefined` 인지 판정합니다.
-     *
-     * @param  string  $expr  표현식
-     * @return bool 단순 경로면 true
-     */
-    private function isPlainPath(string $expr): bool
-    {
-        $expr = trim($expr);
-
-        return $expr === 'null' || $expr === 'undefined'
-            || preg_match('/^[A-Za-z_$][\w$]*(?:\??\.[A-Za-z_$][\w$]*|(?:\?\.)?\[(?:\d+|\'[^\']*\'|"[^"]*")\])*$/', $expr) === 1;
-    }
-
-    /**
-     * `+` 피연산자 하나의 값을 구합니다.
-     *
-     * 곱셈·나눗셈·나머지·뺄셈은 `+` 보다 먼저 묶이므로(JS 우선순위) 피연산자 안에 최상위 `* / % -` 가 있으면 산술로
-     * 먼저 계산한다 — 종전에는 경로로 읽어 null 이 돼 `{{a * 2 + 1}}` 이 1 이 됐다.
-     *
-     * @param  string  $operand  피연산자 식
-     * @param  array  $context  데이터 컨텍스트
-     * @return mixed 값 (산술 결과는 수)
-     */
-    private function plusOperandValue(string $operand, array $context): mixed
-    {
-        return $this->resolveToValue($operand, $context);
-    }
-
-    /**
-     * 원본 값 자리(resolveToValue)에서 최상위 연산자를 JS 우선순위로 풉니다.
-     *
-     * `||` → `&&` → 비교 → `+` → `* / % -` → 앞 `!` 순(낮은 우선순위부터)으로 나눈다. 화살표 함수(`=>`)가 최상위에
-     * 있으면 다루지 않는다. 종전에는 이 자리에서 연산자를 몰라 null 이 돼, `'a' + (x || 'b')` 가 `aundefined`,
-     * `n * m + 1` 이 1 이 됐다(engine-v1.84.0).
-     *
-     * @param  string  $expr  표현식 (앞뒤 공백 제거됨)
-     * @param  array  $context  데이터 컨텍스트
-     * @return array{0: mixed}|null 연산자로 푼 값([값]) 또는 해당 연산자가 없으면 null
-     */
-    private function evaluateOperatorsRaw(string $expr, array $context): ?array
-    {
-        if ($this->topLevelIndexOf($expr, '=>') !== null) {
-            return null;
-        }
-
-        foreach (['||', '&&'] as $operator) {
-            $at = $this->topLevelIndexOf($expr, $operator);
-            if ($at === null) {
-                continue;
-            }
-
-            $left = $this->resolveToValue(substr($expr, 0, $at), $context);
-            $isOr = $operator === '||';
-            if ($this->isJsTruthy($left) === $isOr) {
-                return [$left];
-            }
-
-            return [$this->resolveToValue(substr($expr, $at + 2), $context)];
-        }
-
-        if ($this->hasTopLevelComparison($expr)) {
-            return [$this->coerceBooleanString($this->evaluateExpression($expr, $context))];
-        }
-
-        $plusOperands = $this->splitTopLevelPlus($expr);
-        if (count($plusOperands) > 1) {
-            return [$this->addOperands($plusOperands, $context)];
-        }
-
-        if ($this->hasTopLevelArithmetic($expr)) {
-            return [$this->evaluateArithmeticRaw($expr, $context)];
-        }
-
-        if (str_starts_with($expr, '!') && ! str_starts_with($expr, '!=')) {
-            return [! $this->isJsTruthy($this->resolveToValue(substr($expr, 1), $context))];
-        }
-
-        return null;
-    }
-
-    /**
-     * JS 참거짓 판정 — null·false·빈 문자열·0·NaN 만 거짓이다(문자열 '0'·'false' 는 참).
-     *
-     * @param  mixed  $value  값
-     * @return bool 참이면 true
-     */
-    private function isJsTruthy(mixed $value): bool
-    {
-        return ! ($value === null || $value === false || $value === '' || $value === 0 || $value === 0.0
-            || (is_float($value) && is_nan($value)));
-    }
-
-    /**
-     * 따옴표·괄호 밖에서 연산자가 처음 나오는 위치를 찾습니다.
-     *
-     * @param  string  $expr  표현식
-     * @param  string  $operator  찾을 연산자 (예: `||`, `=>`)
-     * @return int|null 위치 또는 없으면 null
-     */
-    private function topLevelIndexOf(string $expr, string $operator): ?int
-    {
-        $depth = 0;
-        $quote = null;
-        $len = strlen($expr);
-        $opLen = strlen($operator);
-
-        for ($i = 0; $i < $len; $i++) {
-            $char = $expr[$i];
-
-            if ($quote !== null) {
-                if ($char === '\\') {
-                    $i++;
-                } elseif ($char === $quote) {
-                    $quote = null;
-                }
-
-                continue;
-            }
-
-            if ($char === "'" || $char === '"' || $char === '`') {
-                $quote = $char;
-
-                continue;
-            }
-
-            if ($char === '(' || $char === '[' || $char === '{') {
-                $depth++;
-            } elseif ($char === ')' || $char === ']' || $char === '}') {
-                $depth--;
-            } elseif ($depth === 0 && substr($expr, $i, $opLen) === $operator) {
-                return $i;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * 따옴표·괄호 밖에 비교 연산자(`=== !== == != >= <= > <`)가 있는지 판정합니다 (`=>` 는 제외).
-     *
-     * @param  string  $expr  표현식
-     * @return bool 있으면 true
-     */
-    private function hasTopLevelComparison(string $expr): bool
-    {
-        $depth = 0;
-        $quote = null;
-        $len = strlen($expr);
-
-        for ($i = 0; $i < $len; $i++) {
-            $char = $expr[$i];
-
-            if ($quote !== null) {
-                if ($char === '\\') {
-                    $i++;
-                } elseif ($char === $quote) {
-                    $quote = null;
-                }
-
-                continue;
-            }
-
-            if ($char === "'" || $char === '"' || $char === '`') {
-                $quote = $char;
-
-                continue;
-            }
-
-            if ($char === '(' || $char === '[' || $char === '{') {
-                $depth++;
-
-                continue;
-            }
-
-            if ($char === ')' || $char === ']' || $char === '}') {
-                $depth--;
-
-                continue;
-            }
-
-            if ($depth !== 0) {
-                continue;
-            }
-
-            $next = $expr[$i + 1] ?? '';
-            if ($char === '<' || ($char === '>' && ($expr[$i - 1] ?? '') !== '=')) {
-                return true;
-            }
-            if ($char === '=' && $next === '=') {
-                return true;
-            }
-            if ($char === '!' && $next === '=') {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 최상위 이항 `-` 또는 `* / %` 로 식을 계산합니다 (왼쪽 결합 — 마지막 연산자에서 나눈다).
-     *
-     * 수(또는 수 문자열·참거짓)가 아닌 피연산자가 있으면 null — 봇 화면은 NaN 대신 빈 값으로 그린다(종전 규칙).
-     *
-     * @param  string  $expr  표현식
-     * @param  array  $context  데이터 컨텍스트
-     * @return int|float|null 계산 결과 또는 계산할 수 없으면 null
-     */
-    private function evaluateArithmeticRaw(string $expr, array $context): int|float|null
-    {
-        $at = $this->lastTopLevelArithmeticOperator($expr, ['-']) ?? $this->lastTopLevelArithmeticOperator($expr, ['*', '/', '%']);
-        if ($at === null) {
-            return null;
-        }
-
-        $operator = $expr[$at];
-        $left = $this->toNumber($this->resolveToValue(substr($expr, 0, $at), $context));
-        $right = $this->toNumber($this->resolveToValue(substr($expr, $at + 1), $context));
-        if ($left === null || $right === null) {
-            return null;
-        }
-
-        $result = match ($operator) {
-            '-' => $left - $right,
-            '*' => $left * $right,
-            '/' => $right == 0 ? null : $left / $right,
-            '%' => $right == 0 ? null : fmod((float) $left, (float) $right),
-        };
-
-        if ($result === null) {
-            return null;
-        }
-
-        return is_float($result) && $result == (int) $result && abs($result) < PHP_INT_MAX ? (int) $result : $result;
-    }
-
-    /**
-     * 따옴표·괄호 밖의 마지막 이항 산술 연산자 위치를 찾습니다 (단항 `-`·지수 표기는 제외).
-     *
-     * @param  string  $expr  표현식
-     * @param  array<int, string>  $operators  찾을 연산자 글자
-     * @return int|null 위치 또는 없으면 null
-     */
-    private function lastTopLevelArithmeticOperator(string $expr, array $operators): ?int
-    {
-        $depth = 0;
-        $quote = null;
-        $len = strlen($expr);
-        $previous = '';
-        $found = null;
-
-        for ($i = 0; $i < $len; $i++) {
-            $char = $expr[$i];
-
-            if ($quote !== null) {
-                if ($char === '\\') {
-                    $i++;
-                } elseif ($char === $quote) {
-                    $quote = null;
-                    $previous = $char;
-                }
-
-                continue;
-            }
-
-            if ($char === "'" || $char === '"' || $char === '`') {
-                $quote = $char;
-
-                continue;
-            }
-
-            if ($char === '(' || $char === '[' || $char === '{') {
-                $depth++;
-            } elseif ($char === ')' || $char === ']' || $char === '}') {
-                $depth--;
-            } elseif ($depth === 0 && in_array($char, $operators, true)
-                && preg_match('/[\w)\]\'"`]/', $previous) === 1
-                && ! ($char === '-' && preg_match('/\d[eE]$/', rtrim(substr($expr, 0, $i))) === 1)) {
-                $found = $i;
-            }
-
-            if (! ctype_space($char)) {
-                $previous = $char;
-            }
-        }
-
-        return $found;
-    }
-
-    /**
-     * JS 수 변환과 같게 값을 수로 바꿉니다 (수로 못 바꾸면 null).
-     *
-     * @param  mixed  $value  값
-     * @return int|float|null 수
-     */
-    private function toNumber(mixed $value): int|float|null
-    {
-        if (is_int($value) || is_float($value)) {
-            return is_nan((float) $value) ? null : $value;
-        }
-        if (is_bool($value)) {
-            return $value ? 1 : 0;
-        }
-        if (is_string($value) && is_numeric(trim($value))) {
-            return trim($value) + 0;
-        }
-
-        return null;
-    }
-
-    /**
-     * 식에 따옴표·괄호 밖의 이항 `* / % -` 가 있는지 판정합니다.
-     *
-     * @param  string  $expr  표현식
-     * @return bool 있으면 true
-     */
-    private function hasTopLevelArithmetic(string $expr): bool
-    {
-        $depth = 0;
-        $quote = null;
-        $len = strlen($expr);
-        $previous = '';
-
-        for ($i = 0; $i < $len; $i++) {
-            $char = $expr[$i];
-
-            if ($quote !== null) {
-                if ($char === '\\') {
-                    $i++;
-                } elseif ($char === $quote) {
-                    $quote = null;
-                    $previous = $char;
-                }
-
-                continue;
-            }
-
-            if ($char === "'" || $char === '"' || $char === '`') {
-                $quote = $char;
-
-                continue;
-            }
-
-            if ($char === '(' || $char === '[' || $char === '{') {
-                $depth++;
-            } elseif ($char === ')' || $char === ']' || $char === '}') {
-                $depth--;
-            } elseif ($depth === 0 && ($char === '*' || $char === '/' || $char === '%')) {
-                return true;
-            } elseif ($depth === 0 && $char === '-' && preg_match('/[\w)\]\'"`]/', $previous) === 1) {
-                return true;
-            }
-
-            if (! ctype_space($char)) {
-                $previous = $char;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * JS 문자열 변환(`String(x)`)과 같은 결과를 돌려줍니다.
-     *
-     * @param  mixed  $value  값
-     * @return string 문자열
-     */
-    private function jsString(mixed $value): string
-    {
-        return match (true) {
-            $value === null => 'undefined',
-            is_float($value) && is_nan($value) => 'NaN',
-            is_bool($value) => $value ? 'true' : 'false',
-            is_array($value) => array_is_list($value)
-                ? implode(',', array_map(fn ($item) => $item === null ? '' : $this->jsString($item), $value))
-                : '[object Object]',
-            default => $this->valueToString($value),
-        };
     }
 
     /**
@@ -2034,10 +1456,9 @@ class ExpressionEvaluator
             return null;
         }
 
-        // 문자열 리터럴 — 따옴표 한 쌍으로 된 리터럴 하나만. `'/' + 'shop'` 처럼 따옴표로 시작·끝나는 식을
-        // 리터럴 하나(`/' + 'shop`)로 읽지 않게 한다(engine-v1.84.0).
-        if (preg_match('/^(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")\s*$/s', $expr, $m)) {
-            return isset($m[2]) ? $m[2] : $m[1];
+        // 문자열 리터럴
+        if (preg_match('/^[\'"](.*)[\'"]\s*$/', $expr, $m)) {
+            return $m[1];
         }
 
         // 숫자 리터럴
@@ -2096,34 +1517,6 @@ class ExpressionEvaluator
             }
         }
 
-        // 삼항·null 병합·더하기는 메서드 호출 판정보다 먼저 본다 — 식이 `)` 로 끝나도 최상위가 이 연산이면
-        // 통째로 메서드 호출로 읽어 엉뚱한 값을 냈다(`c ? '' : '/'.concat(x)` 가 c 참일 때 'x' 값, engine-v1.84.0).
-        // 삼항 연산자: condition ? trueExpr : falseExpr
-        $ternaryResult = $this->evaluateTernaryRaw($expr, $context);
-        if ($ternaryResult !== null) {
-            return $ternaryResult[0]; // 배열로 래핑하여 null 결과도 구분
-        }
-
-        // null coalescing — JS 와 같이 null(undefined)일 때만 오른쪽으로 넘긴다. 빈 문자열은 값이다:
-        // `{{_global.shopBase ?? '/shop'}}` 에서 상점을 루트에 붙인 사이트의 `''` 가 '/shop' 으로 바뀌었다(engine-v1.84.0).
-        if (str_contains($expr, '??')) {
-            $parts = $this->splitOutsideBrackets($expr, '??');
-            if (count($parts) === 2) {
-                $value = $this->resolveToValue(trim($parts[0]), $context);
-                if ($value !== null) {
-                    return $value;
-                }
-
-                return $this->resolveToValue(trim($parts[1]), $context);
-            }
-        }
-
-        // 논리·비교·더하기·산술·부정 (JS 우선순위 — 낮은 것부터)
-        $operatorResult = $this->evaluateOperatorsRaw($expr, $context);
-        if ($operatorResult !== null) {
-            return $operatorResult[0];
-        }
-
         // 메서드/함수 호출 ($t, $localized 등 $ 접두사 함수 포함)
         if (preg_match('/[\w$]+\s*\(/', $expr)) {
             if (str_ends_with($expr, ')')) {
@@ -2134,14 +1527,10 @@ class ExpressionEvaluator
             }
 
             // 메서드 호출 + 후속 프로퍼티: expr().prop
-            // 뒤따르는 것이 프로퍼티 경로(`.a.b`·`?.a`)일 때만 — `list?.includes('x') ?? true` 처럼 연산자가
-            // 이어지면 아래 `??`·삼항 해석으로 넘긴다. 종전에는 ` ?? true` 를 프로퍼티 이름으로 읽어 null 을
-            // 돌려줘, 목록에 있어도 거짓이 됐다(engine-v1.84.0).
             $lastParen = strrpos($expr, ')');
-            if ($lastParen !== false && $lastParen < strlen($expr) - 1
-                && preg_match('/^\??\.[\w.?]+$/', substr($expr, $lastParen + 1)) === 1) {
+            if ($lastParen !== false && $lastParen < strlen($expr) - 1) {
                 $methodPart = substr($expr, 0, $lastParen + 1);
-                $propPart = ltrim(substr($expr, $lastParen + 1), '?.');
+                $propPart = ltrim(substr($expr, $lastParen + 1), '.');
 
                 $methodResult = $this->evaluateCallExpression($methodPart, $context);
                 if ($methodResult !== null && $propPart !== '') {
@@ -2167,6 +1556,25 @@ class ExpressionEvaluator
 
                     return $current;
                 }
+            }
+        }
+
+        // 삼항 연산자: condition ? trueExpr : falseExpr
+        $ternaryResult = $this->evaluateTernaryRaw($expr, $context);
+        if ($ternaryResult !== null) {
+            return $ternaryResult[0]; // 배열로 래핑하여 null 결과도 구분
+        }
+
+        // null coalescing
+        if (str_contains($expr, '??')) {
+            $parts = $this->splitOutsideBrackets($expr, '??');
+            if (count($parts) === 2) {
+                $value = $this->resolveToValue(trim($parts[0]), $context);
+                if ($value !== null && $value !== '') {
+                    return $value;
+                }
+
+                return $this->resolveToValue(trim($parts[1]), $context);
             }
         }
 
@@ -2568,11 +1976,9 @@ class ExpressionEvaluator
             return ['type' => 'global', 'function' => $beforeParen, 'args' => $argsStr];
         }
 
-        // 인스턴스 메서드: expr.method() · 옵셔널 체이닝 expr?.method()
-        // `?.` 의 `?` 를 객체 식에 남기면 경로 해석이 실패해 null 이 된다 — 그러면 `list?.includes('x') ?? true` 가
-        // 목록에 없어도 true 로 평가돼 브라우저(false)와 갈렸다(engine-v1.84.0). 객체가 null 이면 호출 결과도 null 이다.
-        if (preg_match('/^(.+?)(\?)?\.([\w]+)$/', $beforeParen, $m)) {
-            return ['type' => 'instance', 'object' => $m[1], 'method' => $m[3], 'args' => $argsStr];
+        // 인스턴스 메서드: expr.method()
+        if (preg_match('/^(.+)\.([\w]+)$/', $beforeParen, $m)) {
+            return ['type' => 'instance', 'object' => $m[1], 'method' => $m[2], 'args' => $argsStr];
         }
 
         return null;
@@ -2666,10 +2072,8 @@ class ExpressionEvaluator
                 default => null,
             },
             'Math' => match ($method) {
-                // JS Math.min(a)·Math.max(a) 는 a, 인자 없음은 ±Infinity — PHP min()/max() 는 인자 하나(배열 아님)·0개에서 오류
-                // 수가 아닌 인자가 하나라도 있으면 JS 는 NaN — 값 없음(null)으로 돌려준다
-                'min' => ($numbers = array_values(array_filter($resolvedArgs, 'is_numeric'))) === [] || count($numbers) !== count($resolvedArgs) ? null : (count($numbers) === 1 ? $numbers[0] + 0 : min(...$numbers)),
-                'max' => ($numbers = array_values(array_filter($resolvedArgs, 'is_numeric'))) === [] || count($numbers) !== count($resolvedArgs) ? null : (count($numbers) === 1 ? $numbers[0] + 0 : max(...$numbers)),
+                'min' => min(...array_filter($resolvedArgs, 'is_numeric')),
+                'max' => max(...array_filter($resolvedArgs, 'is_numeric')),
                 'floor' => is_numeric($resolvedArgs[0] ?? null) ? (int) floor((float) $resolvedArgs[0]) : null,
                 'ceil' => is_numeric($resolvedArgs[0] ?? null) ? (int) ceil((float) $resolvedArgs[0]) : null,
                 'round' => is_numeric($resolvedArgs[0] ?? null) ? round((float) $resolvedArgs[0], (int) ($resolvedArgs[1] ?? 0)) : null,
@@ -2752,11 +2156,10 @@ class ExpressionEvaluator
     /**
      * $t() 함수 호출을 평가합니다.
      *
-     * 프론트엔드의 `$t('key')`·`$t('key', {n: 1})` 구문과 호환됩니다. 두 번째 인수가 객체(객체 리터럴 또는
-     * 객체로 평가되는 식)면 그 값을 번역 인자로 치환하고, 객체가 아니면 인자 없는 호출과 같습니다
-     * (브라우저 엔진 engine-v1.80.1). 비어 있는 값(null)은 빈 글자입니다.
+     * 프론트엔드의 `$t('key')` 구문과 호환됩니다.
+     * 내부적으로 기존 resolveTranslation()을 재활용합니다.
      *
-     * @param  string  $argsStr  인수 문자열 (예: "'shop.product.sold_out'", "'common.row_n', {n: i + 1}")
+     * @param  string  $argsStr  인수 문자열 (예: "'shop.product.sold_out'")
      * @param  array  $context  데이터 컨텍스트
      * @return string 번역된 문자열
      */
@@ -2780,77 +2183,14 @@ class ExpressionEvaluator
             return '';
         }
 
-        $params = [];
-        if (isset($args[1])) {
-            $paramArg = trim($args[1]);
-            if (str_starts_with($paramArg, '{') && str_ends_with($paramArg, '}')) {
-                $params = $this->translationParamsFromObjectLiteral($paramArg, $context);
-            } else {
-                // 객체로 평가되는 식(컨텍스트 변수 등). 자바스크립트 배열(list)·스칼라는 객체가 아니다
-                $paramValue = $this->resolveToValue($paramArg, $context);
-                if (is_array($paramValue) && ($paramValue === [] || ! array_is_list($paramValue))) {
-                    foreach ($paramValue as $name => $value) {
-                        $params[(string) $name] = $value === null ? '' : $this->valueToString($value);
-                    }
-                }
-            }
-        }
-
-        return $this->translateKey($key, $params);
-    }
-
-    /**
-     * `$t()` 두 번째 인수의 객체 리터럴을 번역 인자로 풉니다.
-     *
-     * 값은 식 평가기(evaluateExpression)로 문자열로 푼다 — `{n: i + 1}` 같은 산술·`||`·삼항을 브라우저와 같이
-     * 평가하기 위해서다(일반 객체 리터럴 해석 resolveObjectPropertyValue 는 산술을 풀지 않는다). 스프레드·동적 키
-     * 항목은 일반 객체 리터럴 해석에 맡긴다.
-     *
-     * @param  string  $literal  객체 리터럴 문자열 (예: "{n: i + 1, name: row.name}")
-     * @param  array  $context  데이터 컨텍스트
-     * @return array<string, string> 번역 인자
-     */
-    private function translationParamsFromObjectLiteral(string $literal, array $context): array
-    {
-        $params = [];
-
-        foreach ($this->splitArgs(trim(substr($literal, 1, -1))) as $entry) {
-            $entry = trim($entry);
-            if ($entry === '') {
-                continue;
-            }
-
-            if (str_starts_with($entry, '...') || str_starts_with($entry, '[')) {
-                foreach ($this->parseObjectLiteral('{'.$entry.'}', $context) ?? [] as $name => $value) {
-                    $params[(string) $name] = $value === null ? '' : $this->valueToString($value);
-                }
-
-                continue;
-            }
-
-            $colonPos = $this->findColonInEntry($entry);
-            if ($colonPos === false) {
-                // shorthand: { name } → name: name
-                $params[$entry] = $this->evaluateExpression($entry, $context);
-
-                continue;
-            }
-
-            $name = trim(substr($entry, 0, $colonPos));
-            if (preg_match('/^[\'"](.+)[\'"]$/', $name, $m)) {
-                $name = $m[1];
-            }
-            $params[$name] = $this->evaluateExpression(trim(substr($entry, $colonPos + 1)), $context);
-        }
-
-        return $params;
+        return $this->resolveTranslation('$t:'.$key, $context);
     }
 
     /**
      * $localized() 함수 호출을 평가합니다.
      *
      * 다국어 객체 {ko: "한국어", en: "English"} 에서 현재 로케일에 해당하는 값을 반환합니다.
-     * fallback 순서: 현재 로케일 → 사이트 기본 언어 → 'en' → 첫 번째 값 (#148 — 화면 `$localized` 와 같은 SSoT)
+     * fallback 순서: 현재 로케일 → 'ko' → 첫 번째 값
      *
      * @param  mixed  $value  다국어 객체 (배열)
      * @param  array  $context  데이터 컨텍스트
@@ -2862,7 +2202,9 @@ class ExpressionEvaluator
             return $value;
         }
 
-        return LocalizedValue::pick($value) ?? '';
+        $locale = app()->getLocale();
+
+        return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? ($value ? reset($value) : '');
     }
 
     /**
@@ -3172,11 +2514,6 @@ class ExpressionEvaluator
         // reduce의 초기값
         $initialValue = isset($allArgs[1]) ? $this->resolveToValue($allArgs[1], $context) : null;
 
-        // filter(Boolean) — JS 관용구: 거짓 값(빈 문자열·null·0·false)을 뺀다 (engine-v1.84.0)
-        if ($callback === null && $method === 'filter' && trim($callbackStr) === 'Boolean') {
-            return array_values(array_filter($value, fn ($item) => ! ($item === null || $item === false || $item === '' || $item === 0 || $item === 0.0)));
-        }
-
         // 콜백 파싱 실패 시
         if ($callback === null) {
             // sort()는 콜백 없이도 동작
@@ -3439,10 +2776,15 @@ class ExpressionEvaluator
         }
 
         if (is_array($value)) {
-            // 다국어 객체 자동 해석: {"ko": "값", "en": "value"} → 현재 로케일 → 사이트 기본 언어 → 영어 (#148)
-            $localized = LocalizedValue::pick($value, anyAsLast: false);
-            if ($localized !== null) {
-                return $localized;
+            // 다국어 객체 자동 해석: {"ko": "값", "en": "value"} → 현재 로케일 값
+            $locale = app()->getLocale();
+            if (isset($value[$locale])) {
+                return (string) $value[$locale];
+            }
+            // fallback 로케일
+            $fallbackLocale = config('app.fallback_locale', 'en');
+            if (isset($value[$fallbackLocale])) {
+                return (string) $value[$fallbackLocale];
             }
 
             return json_encode($value, JSON_UNESCAPED_UNICODE) ?: '';

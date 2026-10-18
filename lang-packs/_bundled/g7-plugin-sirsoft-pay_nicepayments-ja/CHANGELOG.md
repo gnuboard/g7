@@ -4,18 +4,6 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.0.7] - 2026-11-01
-
-### Added
-
-- 결제 정보 부가세 내역의 「영세금액」(ゼロ税率金額) 일본어 번역을 추가했습니다.
-
-## [1.0.6] - 2026-10-21
-
-### Added
-
-- 나이스페이먼츠 1.1.1 의 관리자 주문 상세 가상계좌 입금 통보 횟수 표시(`admin.vbank_noti_count_value` — 「{{count}}回」)의 일본어 번역을 추가했습니다. 종전에는 일본어 화면에서도 「3회」처럼 한국어 단위가 붙었습니다.
-
 ## [1.0.5] - 2026-10-10
 
 ### Added

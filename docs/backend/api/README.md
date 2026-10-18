@@ -44,13 +44,6 @@ Authorization: Bearer {YOUR_TOKEN}
 (예: `The tags field must have at least 1 item.` / `… at least 2 items.`, 설정값인 첨부 개수 상한 포함).
 메시지 문구는 표시용이므로 클라이언트 로직은 `message` 대신 `data` 의 값(예: `deleted_count`)을 읽으세요.
 
-언어 코드는 언어팩 설치 규칙과 같은 BCP 47 형식(`ko`·`fil`·`fil-PH`·`zh-Hant`·`es-419`, 최대 20자)을 받습니다(7.1.1).
-`Accept-Language` 는 정확일치 → 주 언어(`fil-PH` → `fil`) → 같은 주 언어의 다른 지역 순으로 지원 언어와 맞춥니다.
-
-다국어 값 필드(`name`·`localized_name` 등 `{"ko": …, "en": …}` 원본에서 한 언어를 골라 주는 필드)는
-요청 언어 → 사이트 기본 언어(환경설정 「기본 언어」) → 영어 순으로 비어 있지 않은 값을 고르고, 셋 다 없으면
-저장된 첫 값을 줍니다(`App\Support\LocalizedValue::pick`). 7.1.0 까지는 요청 언어 다음이 한국어로 고정이었습니다.
-
 ### 응답 봉투
 
 성공·실패 모두 동일한 최상위 구조를 씁니다. 실제 페이로드는 항상 `data` 안에 들어갑니다.
@@ -74,32 +67,6 @@ Authorization: Bearer {YOUR_TOKEN}
     }
 }
 ```
-
-#### 부분 실패 경고 (`data.warnings`, 7.1.3+)
-
-확장·언어팩의 설치·활성화·업데이트·레이아웃 갱신은 항목 하나(레이아웃 파일·시더 재실행·정리 단계 등)가 실패해도 작업을 성공으로 끝냅니다. 그런 부분 실패가 있었으면 성공 응답의 `data` 객체에 `warnings` 배열이 붙습니다. 경고가 없으면 키 자체가 없으므로(기존 응답 모양 유지) 소비처는 키 존재 여부로 판정합니다. `data` 가 목록인 응답에는 붙지 않습니다.
-
-```json
-{
-    "success": true,
-    "message": "모듈이 성공적으로 활성화되었습니다.",
-    "data": {
-        "module": { "identifier": "vendor-sample" },
-        "warnings": [
-            { "step": "layout_register", "target": "admin_index.g7.html", "message": "...", "level": "warning" }
-        ]
-    }
-}
-```
-
-| 키 | 설명 |
-| --- | --- |
-| `step` | 실패한 단계 (예: `layout_register`, `seeder`, `cleanup`, `hook_cache`) |
-| `target` | 실패한 대상 (파일명·확장 식별자·시더 클래스 등) |
-| `target_name` | (선택, 7.1.4+) 대상의 사람이 읽는 이름(현재 로케일). 지금은 `dependents` 단계(강제 비활성화·강제 재설치 등으로 의존 조건이 깨진 의존 확장 안내)만 싣는다 — `target` 은 그대로 식별자다. 이름을 찾지 못해 식별자와 같으면 키가 없다. 관리자 결과 창은 이 값이 있으면 대상 칸에 식별자 대신 이름을 보인다 |
-| `message` | 실패 사유 (현재 로케일). DB 예외면 접속 정보·SQL 문장을 뗀 사유만 담는다(원문은 서버 로그) |
-| `level` | `warning`(반영되지 않은 실패) 또는 `notice`(실패는 아닌 안내 — 예: 압축 경로 정규화). 안내만 있으면 관리자 결과 창은 「실패」 대신 안내 제목을 쓰고, artisan 명령은 종료코드·표지를 바꾸지 않는다 |
-| `cause` | (선택, 7.1.5+) `declaration` — 확장 manifest 선언(`search_scopes`·`necessary_storage`)의 형식이 틀려 그 부분을 버린 실패. 작업을 다시 실행해도 같으므로 확장 개발자가 선언을 고쳐야 한다. 관리자 결과 창은 이 항목에 「확장 개발자가 고칠 선언」 안내를 붙이고, 실패가 모두 이 항목이면 「다시 실행하세요」 대신 확장 개발자에게 알리라고 안내한다. artisan 경고 표는 사유 뒤에 같은 안내를 붙인다. 다른 항목에는 키가 없다 |
 
 ### 페이지네이션
 
@@ -280,7 +247,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 41 · **엔드포인트 수**: 364
+- **문서 수**: 40 · **엔드포인트 수**: 359
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -294,9 +261,9 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [changelog.md](changelog.md) | `changelog` | 1 |
 | [consent.md](consent.md) | `consent` | 1 |
 | [core-update.md](core-update.md) | `core-update` | 2 |
-| [csp-report.md](csp-report.md) | `csp-report` | 1 |
 | [dashboard.md](dashboard.md) | `dashboard` | 5 |
 | [extensions.md](extensions.md) | `extensions` | 8 |
+| [frontend-config.md](frontend-config.md) | `frontend-config` | 2 |
 | [identity.md](identity.md) | `identity` | 27 |
 | [language-packs.md](language-packs.md) | `language-packs` | 15 |
 | [layouts.md](layouts.md) | `layouts` | 2 |
@@ -318,7 +285,6 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [roles.md](roles.md) | `roles` | 7 |
 | [schedules.md](schedules.md) | `schedules` | 12 |
 | [search.md](search.md) | `search` | 1 |
-| [search-history.md](search-history.md) | `search-history` | 6 |
 | [seo.md](seo.md) | `seo` | 5 |
 | [settings.md](settings.md) | `settings` | 18 |
 | [system.md](system.md) | `system` | 2 |

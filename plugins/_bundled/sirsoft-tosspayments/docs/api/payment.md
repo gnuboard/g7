@@ -54,7 +54,7 @@ Location: https://example.com/shop/checkout?error=PAY_PROCESS_CANCELED&orderId=2
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 302 | Found (검증 실패) | 파라미터 형식이 맞지 않는 경우(예: 배열 주입) — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 |
+| 302 | Found (검증 실패) | 파라미터 형식이 맞지 않는 경우(예: 배열 주입) — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 |
 
 <!-- @generated:end -->
 
@@ -228,6 +228,6 @@ JSON 을 반환하지 않고 브라우저를 **302 리다이렉트**한다. 에�
 주의사항:
 
 - **금액 대조가 위변조 방어의 핵심**이다. query 의 `amount` 는 브라우저가 보낸 값이라 승인 요청 금액으로도, 결제완료 대조 금액으로도 쓰지 않는다 — 승인 요청과 대조의 기준은 주문 청구액이고, 결제 성립 여부는 토스 응답의 `totalAmount` 로 판정한다.
-- 리다이렉트 대상 URL 은 플러그인 설정(`redirect_success_url` / `redirect_fail_url`)으로 바꿀 수 있다 (기본 `/shop/orders/{orderId}/complete`, `/shop/checkout`). 상대 경로 설정값은 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 바꿔 리다이렉트한다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않는다.
+- 리다이렉트 대상 URL 은 플러그인 설정(`redirect_success_url` / `redirect_fail_url`)으로 바꿀 수 있다 (기본 `/shop/orders/{orderId}/complete`, `/shop/checkout`). 상대 경로 설정값은 요청 Host 가 아니라 사용자 화면 주소(환경설정 「사용자 화면 URL」, 비어 있으면 사이트 주소 `APP_URL`) 기준 절대 URL 로 바꿔 리다이렉트한다(7.2.0 — 그 전에는 사이트 주소) — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않는다.
 
 

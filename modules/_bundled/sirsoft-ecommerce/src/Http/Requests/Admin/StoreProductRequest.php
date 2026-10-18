@@ -78,10 +78,9 @@ class StoreProductRequest extends FormRequest
             // 브랜드
             'brand_id' => ['nullable', 'integer', Rule::exists(Brand::class, 'id')],
 
-            // 가격 (기본통화 기준 — 소수 통화는 소수 입력 허용). 0원 상품(증정·무료 체험)을 허용한다 —
-            // 0원 주문은 무료 결제수단으로 곧바로 결제완료가 된다
-            'list_price' => ['required', 'numeric', $priceRule, 'min:0'],
-            'selling_price' => ['required', 'numeric', $priceRule, 'min:0', 'lte:list_price'],
+            // 가격 (기본통화 기준 — 소수 통화는 소수 입력 허용)
+            'list_price' => ['required', 'numeric', $priceRule, 'min:0.01'],
+            'selling_price' => ['required', 'numeric', $priceRule, 'min:0.01', 'lte:list_price'],
 
             // 재고
             'stock_quantity' => ['required', 'integer', 'min:0'],
@@ -106,8 +105,6 @@ class StoreProductRequest extends FormRequest
             // 이미지 (별도 테이블)
             'thumbnail_hash' => ['nullable', 'string', 'max:64'],
             'image_temp_key' => $this->tempKeyRules(),
-            // 본문 미디어 임시 키 — 설명 편집기가 올린 미디어를 저장 때 잇는다 (#883)
-            'content_media_temp_key' => ['nullable', 'string', 'uuid'],
             'images' => ['nullable', 'array', 'max:'.ProductImageCollection::MAX_IMAGES_PER_COLLECTION],
             'images.*.id' => ['nullable', 'integer'],
             'images.*.hash' => ['nullable', 'string'],
@@ -148,8 +145,6 @@ class StoreProductRequest extends FormRequest
             'options.*.volume' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_value' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_type' => ['nullable', 'string', 'in:fixed,percent'],
-            // 옵션별 과세 종류 — 비우면(null) 상품 기본값을 따른다 (#612)
-            'options.*.tax_status' => ['nullable', Rule::enum(ProductTaxStatus::class)],
             'options.*.is_default' => ['nullable', 'boolean'],
             'options.*.is_active' => ['nullable', 'boolean'],
 
@@ -243,7 +238,6 @@ class StoreProductRequest extends FormRequest
             'options.*.list_price.required_with' => __('sirsoft-ecommerce::validation.product.options.list_price.required_with'),
             'options.*.selling_price.required_with' => __('sirsoft-ecommerce::validation.product.options.selling_price.required_with'),
             'options.*.stock_quantity.required_with' => __('sirsoft-ecommerce::validation.product.options.stock_quantity.required_with'),
-            'options.*.tax_status.enum' => __('sirsoft-ecommerce::validation.product.options.tax_status.in'),
 
             // 추가옵션 (선택지 누락/그룹명/추가금 — 영문 키 노출 방지)
             'additional_options.max' => __('sirsoft-ecommerce::validation.product.additional_options.max'),
@@ -331,7 +325,6 @@ class StoreProductRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'content_media_temp_key' => __('sirsoft-ecommerce::validation.attributes.content_media_temp_key'),
             'name' => __('sirsoft-ecommerce::validation.product.attributes.name'),
             'product_code' => __('sirsoft-ecommerce::validation.product.attributes.product_code'),
             'list_price' => __('sirsoft-ecommerce::validation.product.attributes.list_price'),
@@ -342,7 +335,6 @@ class StoreProductRequest extends FormRequest
             'options.*.selling_price' => __('sirsoft-ecommerce::validation.product.attributes.option_selling_price'),
             'options.*.price_adjustment' => __('sirsoft-ecommerce::validation.product.attributes.option_price_adjustment'),
             'options.*.stock_quantity' => __('sirsoft-ecommerce::validation.product.attributes.option_stock_quantity'),
-            'options.*.tax_status' => __('sirsoft-ecommerce::validation.product.attributes.option_tax_status'),
             'options.*.option_name' => __('sirsoft-ecommerce::validation.product.attributes.option_name'),
             'options.*.option_code' => __('sirsoft-ecommerce::validation.product.attributes.option_code'),
             'option_groups.*.name' => __('sirsoft-ecommerce::validation.product.attributes.option_group_name'),

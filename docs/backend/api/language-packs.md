@@ -269,7 +269,6 @@ _단건 응답: `data` 객체의 필드 (`LanguagePackService::bulkActivate()` �
 | failed | array | `[{"id": 7, "reason": "not_found"}]` | 활성화에 실패한 항목 목록 (요소: `id`, `reason`) |
 | failed[].id | integer\|string | `7` | 실패한 항목의 요청 ID (요청 `ids` 원본 값) |
 | failed[].reason | string | `not_found` | 실패 사유. 대상 미존재 시 `not_found`, 그 외에는 발생한 예외 메시지 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -460,7 +459,6 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -520,9 +518,6 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -603,7 +598,6 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -665,9 +659,6 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -742,7 +733,6 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -802,9 +792,6 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -883,7 +870,6 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -945,9 +931,6 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1158,9 +1141,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1309,7 +1289,6 @@ _단건 응답: `data` 객체의 필드 (활성화된 언어팩 = `LanguagePackR
 | updated_at | string\|null | `2026-07-08 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1385,9 +1364,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1587,9 +1563,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 
@@ -1657,7 +1630,6 @@ _단건 응답: `data` 객체의 필드 (업데이트된 언어팩 = `LanguagePa
 | updated_at | string\|null | `2026-07-09 09:12:00` | 최종 수정 일시 (업데이트 시각으로 갱신) |
 | has_update | boolean | `false` | `latest_version > version` 여부 (업데이트 직후 false) |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1720,9 +1692,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.language_packs.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 언어팩에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 422 | Unprocessable Entity | 이미 최신·업데이트 출처 없음·보호된 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 사유 문구(`language_packs.errors.*`)를 `message` 로 싣는다. 7.1.4 까지는 500 이었다 (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 
 <!-- @generated:end -->
 

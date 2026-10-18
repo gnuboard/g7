@@ -66,8 +66,7 @@ class AttachmentResource extends BaseApiResource
                 ? $this->resource->previewUrlForSlug($this->signedPreviewSlug, signed: true)
                 : $this->preview_url,
             'is_image' => $this->is_image,
-            // 코어 첨부와 같이 비어 있으면 `{}`, 없으면 null 이다
-            'meta' => $this->meta === [] ? new \stdClass : $this->meta,
+            'meta' => $this->meta,
         ];
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -37,8 +36,6 @@ use Illuminate\Support\Str;
  */
 class PlaywrightSeedDormant extends Command
 {
-    use LocalizesDescription;
-
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -49,6 +46,13 @@ class PlaywrightSeedDormant extends Command
         {--password= : 생성 계정의 비밀번호 (기본값 Passw0rd!dorm)}
         {--count=1 : 같은 단계 계정을 몇 개 만들지 (대상 목록 창의 무한 스크롤 실측용, 최대 200)}
         {--purge-users : 이 커맨드가 만든 테스트 계정을 전부 제거 (실측 종료 직후 호출)}';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = 'Playwright·Chrome MCP 실측용 휴면 계정 픽스처를 만듭니다.';
 
     /** 테스트 전용 계정 이메일 접두사 — 정리 대상 판정에도 쓴다 */
     private const TEST_EMAIL_PREFIX = 'playwright_dormant_';
@@ -80,7 +84,7 @@ class PlaywrightSeedDormant extends Command
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
         if (php_sapi_name() !== 'cli') {
-            $this->error(__('common.console.playwright_guard.cli_only', ['sapi' => php_sapi_name()]));
+            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
 
             return self::FAILURE;
         }
@@ -88,7 +92,7 @@ class PlaywrightSeedDormant extends Command
         // ② 명시 옵트인 — 환경변수 없이는 production 호출 실수 차단.
         // 여기의 `env()` 는 호출자가 그 자리에서 넘기는 프로세스 환경변수라 config:cache 무관.
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error(__('common.console.playwright_guard.bypass_required'));
+            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
 
             return self::FAILURE;
         }
@@ -105,7 +109,7 @@ class PlaywrightSeedDormant extends Command
         $stage = (string) $this->option('stage');
 
         if (! in_array($stage, self::STAGES, true)) {
-            $this->error(__('common.console.playwright_seed_dormant.unknown_stage', ['stage' => $stage, 'stages' => implode('|', self::STAGES)]));
+            $this->error("알 수 없는 단계입니다: {$stage} (".implode('|', self::STAGES).')');
 
             return self::FAILURE;
         }
@@ -216,6 +220,6 @@ class PlaywrightSeedDormant extends Command
             ->orWhere('admin_memo', self::TEST_MEMO_MARKER)
             ->delete();
 
-        $this->info(__('common.console.playwright_seed_dormant.users_purged', ['count' => $deleted]));
+        $this->info("휴면 실측 테스트 계정 {$deleted}건을 제거했습니다.");
     }
 }

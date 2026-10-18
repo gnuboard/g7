@@ -1058,61 +1058,6 @@ class OrderOptionBulkStatusTest extends ModuleTestCase
         $this->assertEquals($splitOption->id, $review->order_option_id);
     }
 
-    /**
-     * 두 행에 모두 활성 후기가 있으면 합치지 않고 두 행으로 둔다 — 「옵션당 활성 후기 1개」 유니크에 걸려
-     * 상태 변경이 500 으로 실패하지 않게 하고, 회원이 쓴 후기 둘을 모두 남긴다 (KVE 후속)
-     *
-     * @effects merge_skipped_when_both_rows_have_active_reviews
-     *
-     * @return void 반환값 없음
-     */
-    public function test_merge_is_skipped_when_both_rows_have_active_reviews(): void
-    {
-        // Given: 분할된 두 행에 후기가 하나씩 있음
-        $order = OrderFactory::new()->create();
-        $option = OrderOptionFactory::new()->forOrder($order)->create([
-            'quantity' => 3,
-            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
-        ]);
-
-        $this->actingAs($this->adminUser)
-            ->patchJson($this->bulkStatusUrl($order->order_number), [
-                'items' => [['option_id' => $option->id, 'quantity' => 2]],
-                'status' => 'preparing',
-            ])
-            ->assertOk();
-
-        $splitOption = OrderOption::where('parent_option_id', $option->id)->firstOrFail();
-
-        $reviews = [];
-        foreach ([$option, $splitOption] as $row) {
-            $reviews[] = ProductReview::create([
-                'product_id' => $row->product_id,
-                'order_option_id' => $row->id,
-                'user_id' => $this->adminUser->id,
-                'rating' => 5,
-                'content' => json_encode(['ko' => '좋습니다']),
-                'content_mode' => 'text',
-                'status' => 'visible',
-            ]);
-        }
-
-        // When: 남은 1개도 같은 상태로 → 원래는 병합 대상
-        $this->actingAs($this->adminUser)
-            ->patchJson($this->bulkStatusUrl($order->order_number), [
-                'items' => [['option_id' => $option->id, 'quantity' => 1]],
-                'status' => 'preparing',
-            ])
-            ->assertOk();
-
-        // Then: 두 행이 그대로 남고 후기도 각자 행에 남음
-        $this->assertNotNull(OrderOption::find($option->id), '피흡수 행이 삭제되면 안 됩니다.');
-        $this->assertSame(OrderStatusEnum::PREPARING, OrderOption::find($option->id)->option_status);
-        $this->assertSame(2, (int) OrderOption::find($splitOption->id)->quantity);
-        $this->assertSame($option->id, $reviews[0]->fresh()->order_option_id);
-        $this->assertSame($splitOption->id, $reviews[1]->fresh()->order_option_id);
-    }
-
     // ========== 연속 분할 / 일괄 변경 ==========
 
     /**

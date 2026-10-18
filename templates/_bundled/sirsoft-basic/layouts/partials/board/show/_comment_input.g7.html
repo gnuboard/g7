@@ -6,7 +6,7 @@
       <avatar data-type="composite" name="{{_global.currentUser?.name ?? _local.guest_comment_author_name ?? ''}}" avatar="{{_global.currentUser?.avatar}}" size="sm"/>
       <div class="flex-1 flex flex-col gap-3">
         <!-- 비회원 작성자 정보 입력 (이름/비밀번호) -->
-        <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="flex flex-col sm:flex-row gap-3">
+        <div data-if="{{!_global.currentUser?.uuid}}" class="flex flex-col sm:flex-row gap-3">
           <input type="text" name="guest_author_name" value="{{_local.guest_comment_author_name ?? ''}}" placeholder="$t:board.guest_author_name" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <on type="input">
               <!-- 비회원 이름 — 폼 자동바인딩이 아니라 손으로 담는다(이 조각은 form 안이 아니라서 이름만으로는 모이지 않는다). 위 아바타의 표시 이름도 이 값을 본다. -->
@@ -28,7 +28,7 @@
         </textarea>
         <!-- 등록 버튼 (우측 정렬) -->
         <div class="flex justify-end">
-          <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.commentSubmitting === true}}">
+          <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.commentSubmitting === true}}">
             <on type="click">
               <!-- 댓글 등록 — 보내는 중이면 통째로 건너뛰어 연타로 같은 댓글이 두 번 달리는 것을 막는다(버튼 비활성화만으로는 이미 눌린 클릭을 못 막는다). 성공하면 입력칸과 답글 대상까지 비우고 글을 다시 받는다 — 댓글 목록이 글 응답에 실려 오기 때문이다. -->
               <sequence if="{{_local.commentSubmitting !== true}}">

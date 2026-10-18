@@ -7,6 +7,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Helpers\TimezoneHelper;
 use App\Services\NotificationRecipientCapability;
+use App\Support\ScreenUrl;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
@@ -18,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimTrackingGroups;
 use Modules\Sirsoft\Ecommerce\Support\ClaimUrl;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Modules\Sirsoft\Ecommerce\Support\RefundBreakdown;
 
 /**
@@ -241,8 +243,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
         }
 
         $claimNumber = (string) ($context['claim_number'] ?? '');
-        $data['claim_url'] = (string) config('app.url')
-            .($claimNumber === '' ? ClaimUrl::ADMIN_LIST : ClaimUrl::adminDetail($claimNumber));
+        $data['claim_url'] = $claimNumber === ''
+            ? EcommerceScreenUrl::admin('ecommerce.admin.claims', ClaimUrl::ADMIN_LIST, [], absolute: true)
+            : ScreenUrl::toAbsolute(ClaimUrl::adminDetail($claimNumber), ScreenUrl::SCOPE_ADMIN);
 
         return $data;
     }
@@ -293,7 +296,6 @@ class ClaimNotificationDataListener implements HookListenerInterface
         $claim->loadMissing(['order']);
 
         $order = $claim->order;
-        $baseUrl = (string) config('app.url');
         $type = $this->claimTypeOf($claim);
         $claimNumber = (string) ($this->claimNumberOf($claim) ?? '');
         $isGuest = $claim->isGuestRequest();
@@ -316,8 +318,8 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'requester_name' => $this->resolveRequesterName($claim, $order),
             // 기본값은 **가장 안전한 쪽**(고객 링크)이다. 운영자에게 보낼 관리자 주소는
             // 수신자가 정해진 뒤 personalize 가 올린다.
-            'claim_url' => $baseUrl.$this->resolveClaimPath($claimNumber, $isGuest),
-            'site_url' => $baseUrl,
+            'claim_url' => ScreenUrl::toAbsolute($this->resolveClaimPath($claimNumber, $isGuest)),
+            'site_url' => ScreenUrl::userBase(),
         ], $this->buildAmountData($claim, $order, $snapshot), $this->buildShippingData($claim));
     }
 
@@ -331,7 +333,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
     private function resolveClaimPath(string $claimNumber, bool $isGuest): string
     {
         if ($claimNumber === '') {
-            return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::MEMBER_LIST;
+            return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::memberList();
         }
 
         return $isGuest ? ClaimUrl::guestLookup() : ClaimUrl::memberDetail($claimNumber);
@@ -427,10 +429,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'request_origin_notice' => $claim->isAdminRequested()
                 ? __('sirsoft-ecommerce::messages.claims.notifications.request_origin_admin')
                 : '',
-            // 반송 기한 날짜는 사이트 날짜다 — UTC 날짜면 저녁 기한이 하루 당겨지고, 요청자 시간대면
-            // 처리한 관리자의 시간대가 고객 알림에 섞인다.
+            // 반송 기한 날짜는 사용자 타임존 날짜다(화면·배너와 같은 날) — UTC 날짜면 저녁 기한이 하루 당겨진다.
             'collection_due_date' => $claim instanceof OrderExchange && $claim->collection_due_at !== null
-                ? (string) TimezoneHelper::toSiteDateString($claim->collection_due_at)
+                ? (string) TimezoneHelper::toUserDateString($claim->collection_due_at)
                 : '',
         ] + $empty;
     }

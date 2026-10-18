@@ -1,0 +1,79 @@
+{{-- 관리자 화면 견본 (custom:example board) — 화면 전체(메뉴 포함)를 이 Blade 가 그린다 --}}
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ __('custom::board.admin_title') }} | {{ $siteName }}</title>
+    <link rel="stylesheet" href="{{ asset('custom/example.css') }}">
+</head>
+<body class="cx-body cx-admin">
+<aside class="cx-sidebar">
+    <div class="cx-sidebar-brand">{{ __('custom::board.admin_brand', ['site' => $siteName]) }}</div>
+    <nav class="cx-sidebar-nav" aria-label="{{ __('custom::board.admin_menu') }}">
+        <a href="/admin">{{ __('custom::board.admin_dashboard') }}</a>
+        <a href="/admin/settings">{{ __('custom::board.admin_settings') }}</a>
+        <a href="/admin/custom-example" aria-current="page">{{ __('custom::board.admin_title') }}</a>
+    </nav>
+    <p class="cx-sidebar-note">{{ __('custom::board.admin_sidebar_note') }}</p>
+</aside>
+<div class="cx-admin-body">
+    <header class="cx-admin-header">
+        <span class="cx-badge">{{ __('custom::board.sample_badge') }}</span>
+        <span class="cx-push" data-testid="cx-admin-name">{{ $admin?->nickname ?: $admin?->name }}</span>
+    </header>
+    <main class="cx-admin-main cx-stack">
+        <div class="cx-stack-tight">
+            <h1 class="cx-h1">{{ __('custom::board.admin_title') }}</h1>
+            <p class="cx-muted">{{ __('custom::board.admin_intro') }}</p>
+        </div>
+        <div class="cx-grid-2">
+            <section class="cx-card cx-stat" aria-labelledby="cx-s1">
+                <h2 id="cx-s1" class="cx-h2">{{ __('custom::board.admin_site_name') }}</h2>
+                <span class="cx-stat-value" data-testid="cx-site-name">{{ $siteName }}</span>
+                <span class="cx-muted">{{ __('custom::board.admin_site_name_source') }}</span>
+            </section>
+            <section class="cx-card cx-stat" aria-labelledby="cx-s2">
+                <h2 id="cx-s2" class="cx-h2">{{ __('custom::board.admin_current') }}</h2>
+                <span class="cx-stat-value">{{ $admin?->nickname ?: $admin?->name }}</span>
+                <span class="cx-muted">{{ __('custom::board.admin_current_source') }}</span>
+            </section>
+        </div>
+        <section class="cx-card cx-table" aria-labelledby="cx-s3">
+            <h2 id="cx-s3" class="cx-h2 cx-pad">{{ __('custom::board.admin_routes') }}</h2>
+            <div role="table" aria-labelledby="cx-s3">
+                <div class="cx-row cx-row-head cx-row-4" role="row"><span role="columnheader">{{ __('custom::board.admin_col_methods') }}</span><span role="columnheader">{{ __('custom::board.admin_col_uri') }}</span><span role="columnheader">{{ __('custom::board.admin_col_action') }}</span><span role="columnheader">{{ __('custom::board.admin_col_state') }}</span></div>
+                @foreach($status['routes']['registered'] as $route)
+                    <div class="cx-row cx-row-4" role="row"><span role="cell">{{ $route['methods'] }}</span><code role="cell">{{ $route['uri'] }}</code><code role="cell">{{ $route['action'] }}</code><span role="cell" class="cx-ok">{{ __('custom::board.admin_state_registered') }}</span></div>
+                @endforeach
+                @foreach($status['routes']['rejected'] as $route)
+                    <div class="cx-row cx-row-4" role="row"><span role="cell">{{ $route['methods'] }}</span><code role="cell">{{ $route['uri'] }}</code><span role="cell">-</span><span role="cell" class="cx-bad">{{ __('custom::board.admin_state_rejected', ['reason' => $route['reason']]) }}</span></div>
+                @endforeach
+            </div>
+        </section>
+        @php($conflicts = collect($status['conflicts'])->keyBy('package'))
+        <section class="cx-card cx-table" aria-labelledby="cx-s4">
+            <h2 id="cx-s4" class="cx-h2 cx-pad">{{ __('custom::board.admin_packages') }}</h2>
+            @if($status['packages'] === [])
+                <div class="cx-row cx-empty">{{ __('custom::board.admin_no_packages') }}</div>
+            @else
+                <div role="table" aria-labelledby="cx-s4">
+                    @foreach($status['packages'] as $name => $version)
+                        @php($conflict = $conflicts->get($name))
+                        <div class="cx-row cx-row-3" role="row">
+                            <code role="cell">{{ $name }}</code>
+                            <span role="cell">{{ $version }}</span>
+                            @if($conflict)
+                                <span role="cell" class="cx-bad">{{ __('custom::board.admin_conflict', ['package' => $conflict['core_package'], 'version' => $conflict['core_version']]) }}</span>
+                            @else
+                                <span role="cell" class="cx-ok">{{ __('custom::board.admin_no_conflict') }}</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </section>
+    </main>
+</div>
+</body>
+</html>

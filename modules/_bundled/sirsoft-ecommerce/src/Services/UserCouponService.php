@@ -2,14 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Contracts\Repositories\UserRepositoryInterface;
-use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
@@ -28,22 +24,10 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
  */
 class UserCouponService
 {
-    /** 한 번에 받을 수 있는 쿠폰 수 상한 (쿠폰 일괄 받기) */
-    public const BULK_DOWNLOAD_MAX = 50;
-
-    /**
-     * 회원 쿠폰 서비스를 생성합니다.
-     *
-     * @param  CouponIssueRepositoryInterface  $couponIssueRepository  쿠폰 발급 내역 저장소
-     * @param  CouponRepositoryInterface  $couponRepository  쿠폰 저장소
-     * @param  CurrencyConversionService  $currencyConverter  통화 환산 서비스(선택 통화 표시값)
-     * @param  UserRepositoryInterface  $userRepository  회원 저장소(직접 발급 대상 탈퇴 판정)
-     */
     public function __construct(
         protected CouponIssueRepositoryInterface $couponIssueRepository,
         protected CouponRepositoryInterface $couponRepository,
-        protected CurrencyConversionService $currencyConverter,
-        protected UserRepositoryInterface $userRepository
+        protected CurrencyConversionService $currencyConverter
     ) {}
 
     /**
@@ -206,8 +190,6 @@ class UserCouponService
                     'coupon_id' => $coupon->id,
                     'localized_name' => $coupon->getLocalizedName(),
                     'benefit_formatted' => $coupon->benefit_formatted,
-                    // 선택 통화별 혜택 문구 맵 — 주문서 상품 쿠폰 선택칸이 선택 통화로 보이게 한다(7.1.1)
-                    'multi_currency_benefit_formatted' => $coupon->buildMultiCurrencyBenefitFormatted($this->currencyConverter),
                     'target_type' => $coupon->target_type?->value,
                     'target_type_short_label' => $coupon->target_type?->shortLabel(),
                     'min_order_amount' => $coupon->min_order_amount,
@@ -308,18 +290,6 @@ class UserCouponService
             $coupon->target_type_short_label = $coupon->target_type?->shortLabel();
             $coupon->valid_period_formatted = $coupon->valid_period_formatted;
             $coupon->min_order_amount_formatted = ecommerce_format_price($coupon->min_order_amount ?? 0);
-            // 선택 통화 표시값 — 상품 상세 목록·CouponResource 와 같은 모양({통화: {price, formatted, is_default}}).
-            // 주문서 쿠폰 받기 창이 읽는다(없으면 다른 통화로 보는 회원에게도 기본 통화 숫자 + 「원」, 7.1.1).
-            $coupon->multi_currency_benefit_formatted = $coupon->buildMultiCurrencyBenefitFormatted($this->currencyConverter);
-            $coupon->multi_currency_discount_value = $coupon->discount_type === CouponDiscountType::FIXED
-                ? $this->currencyConverter->convertToMultiCurrency((int) ($coupon->discount_value ?? 0))
-                : null;
-            $coupon->multi_currency_min_order_amount = ($coupon->min_order_amount ?? 0) > 0
-                ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->min_order_amount)
-                : null;
-            $coupon->multi_currency_discount_max_amount = ($coupon->discount_max_amount ?? 0) > 0
-                ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->discount_max_amount)
-                : null;
             $coupon->remaining_quantity = $coupon->total_quantity !== null
                 ? max(0, $coupon->total_quantity - $coupon->issued_count)
                 : null;
@@ -372,71 +342,6 @@ class UserCouponService
     }
 
     /**
-     * 쿠폰을 한 번에 여러 장 받습니다. (쿠폰 일괄 받기)
-     *
-     * 쿠폰마다 단건 받기(`downloadCoupon`)를 그대로 거친다 — 쿠폰별 트랜잭션·잠금·발급 검사·훅이
-     * 같다. 한 장이 실패해도 나머지를 막지 않는다. 이미 한 장 이상 받은 쿠폰은 회원당 한도가 남아
-     * 있어도 더 받지 않는다(화면의 「받음」 표시가 받은 수 > 0 기준이다).
-     *
-     * @param  int  $userId  사용자 ID
-     * @param  array<int, int>|null  $couponIds  받을 쿠폰 ID 목록 (null 이면 받을 수 있는 쿠폰 전체, 최대 50장)
-     * @return array{results: array<int, array{coupon_id: int, status: string, reason_code: string|null}>, issued_count: int, skipped_count: int} 쿠폰별 결과와 합계
-     */
-    public function bulkDownloadCoupons(int $userId, ?array $couponIds = null): array
-    {
-        $takeAll = $couponIds === null;
-        if ($takeAll) {
-            $couponIds = $this->couponRepository->getDownloadableCoupons()->pluck('id')->all();
-        }
-
-        $couponIds = array_values(array_unique(array_map('intval', $couponIds)));
-
-        // 「이미 받은 수」는 쿠폰 수와 무관하게 한 번에 센다
-        $issuedCounts = $this->couponIssueRepository->getUserIssuedCountsForCoupons($userId, $couponIds);
-
-        if ($takeAll && count($couponIds) > self::BULK_DOWNLOAD_MAX) {
-            // 한 번에 다루는 장수는 아직 받지 않은 쿠폰부터 채운다 — 최신순으로 먼저 자르면 최신 쿠폰을 이미 받은
-            // 회원은 그 뒤의 쿠폰을 몇 번을 불러도 받지 못한다
-            $pending = array_filter($couponIds, static fn (int $id): bool => ($issuedCounts[$id] ?? 0) === 0);
-            $received = array_diff($couponIds, $pending);
-            $couponIds = array_slice(array_merge($pending, $received), 0, self::BULK_DOWNLOAD_MAX);
-        }
-
-        $results = [];
-        $issued = 0;
-
-        foreach ($couponIds as $couponId) {
-            if (($issuedCounts[$couponId] ?? 0) > 0) {
-                $results[] = ['coupon_id' => $couponId, 'status' => 'skipped', 'reason_code' => 'already_downloaded'];
-
-                continue;
-            }
-
-            try {
-                $this->downloadCoupon($userId, $couponId);
-                $results[] = ['coupon_id' => $couponId, 'status' => 'issued', 'reason_code' => null];
-                $issued++;
-            } catch (CouponNotIssuableException $e) {
-                $results[] = ['coupon_id' => $couponId, 'status' => 'skipped', 'reason_code' => $e->getReason()];
-            } catch (\Throwable $e) {
-                Log::error('쿠폰 일괄 받기 중 한 장 실패', [
-                    'coupon_id' => $couponId,
-                    'user_id' => $userId,
-                    'exception' => $e::class,
-                    'error' => $e->getMessage(),
-                ]);
-                $results[] = ['coupon_id' => $couponId, 'status' => 'skipped', 'reason_code' => 'operation_failed'];
-            }
-        }
-
-        return [
-            'results' => $results,
-            'issued_count' => $issued,
-            'skipped_count' => count($results) - $issued,
-        ];
-    }
-
-    /**
      * 쿠폰이 사용자 다운로드 경로로 발급 가능한지 검증합니다. 위반 시 사유별 예외를 던집니다.
      *
      * 발급 방법(다운로드)·발급 조건(수동)·유효기간(valid_to) 만료 여부를 검사하며,
@@ -444,7 +349,6 @@ class UserCouponService
      * 없으면 자동/관리자 발급 전용 쿠폰이나 만료 쿠폰의 id 를 직접 지정해 다운로드할 수 있습니다.
      *
      * @param  Coupon  $coupon  다운로드 대상 쿠폰
-     * @return void 반환값 없음
      *
      * @throws CouponNotIssuableException 다운로드 불가(발급 방법/조건 불일치) 또는 만료 시
      */
@@ -467,7 +371,6 @@ class UserCouponService
      * 쿠폰의 발급 가능 상태(발급중/재고/기간)를 검증합니다. 위반 시 사유별 예외를 던집니다.
      *
      * @param  Coupon  $coupon  발급 대상 쿠폰
-     * @return void 반환값 없음
      *
      * @throws CouponNotIssuableException 발급 불가 시(상태/재고/유효기간 미설정/기간)
      */
@@ -494,7 +397,6 @@ class UserCouponService
      *
      * @param  Coupon  $coupon  발급 대상 쿠폰
      * @param  int  $userId  발급 대상 회원 ID
-     * @return void 반환값 없음
      *
      * @throws CouponNotIssuableException 한도 초과 시
      */
@@ -515,17 +417,10 @@ class UserCouponService
      * @param  int  $userId  발급 대상 회원 ID
      * @return CouponIssue 생성된 발급 레코드
      *
-     * @throws CouponNotIssuableException 탈퇴 회원(user_withdrawn)·per_user_limit 초과 시
+     * @throws CouponNotIssuableException per_user_limit 초과 시
      */
     public function issueDirectlyToUser(Coupon $coupon, int $userId): CouponIssue
     {
-        // 탈퇴 회원은 로그인할 수 없어 받은 쿠폰을 쓰지 못한다 — 요청 검증이 먼저 막지만, 서비스를 바로 부르는
-        // 확장·훅 경로도 같은 판정을 받게 여기서도 막는다(7.1.1).
-        $user = $this->userRepository->findById($userId);
-        if ($user !== null && $user->status === UserStatus::Withdrawn->value) {
-            throw new CouponNotIssuableException('user_withdrawn');
-        }
-
         $this->assertWithinUserLimit($coupon, $userId);
 
         return $this->createIssueRecord($coupon, $userId, 'DR');

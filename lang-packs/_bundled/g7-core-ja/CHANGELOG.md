@@ -4,122 +4,26 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.5] - 2026-11-15
+## [1.2.0] - 2026-10-17
 
 ### Added
 
-- 코어 7.1.6 환경설정 > 보안 「콘텐츠 보안 정책」의 스타일 정책 저장 검증 문구(`validation.settings.csp_style_mode_in`·`csp_style_level_in`·`csp_extra_style_hosts_array`·`csp_extra_style_hosts_max`)와 항목명(`validation.attributes.csp_style_mode` 「スタイルポリシーのモード」·`csp_style_level` 「スタイルポリシーの強度」·`csp_extra_style_hosts` 「追加スタイル許可ホスト」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 이 문구가 키 그대로 보입니다.
-- 코어 7.1.6 의 새 문구 일본어 번역을 추가했습니다 — 본인인증 메일 재요청 대기 안내(`identity.errors.challenge_cooldown`), 연결 대상 주소 거부 안내(`settings.connection_target_blocked`, `validation.settings.host_format_invalid`·`host_blocked`·`endpoint_path_not_allowed`), 레이아웃 첨부 형식 안내(`templates.layout_attachments.validation.file_extensions`), 환경설정 새 항목의 검증 문구·항목 이름(`validation.settings.layout_attachment_extensions_required`·`public_asset_extensions_required`·`rate_limit_per_minute_range`, `validation.attributes.layout_attachment_extensions`·`public_asset_extensions`·`password_reset_rate_limit_per_minute`·`register_rate_limit_per_minute`).
-- 코어 7.1.6 의 공용 오류 화면 문구(`errors.4xx` 「リクエストを処理できません」·`errors.5xx` 「サーバーエラーが発生しました」 — 요청 한도 초과·세션 만료처럼 전용 화면이 없는 오류)의 일본어 번역을 추가했습니다.
-- 코어 7.1.6 의 새 문구 일본어 번역을 추가했습니다 — 확인 질문을 하는 명령을 터미널 없이 `--yes` 없이 실행했을 때의 안내(`common.console.confirm_requires_yes`), `core:update` 가 새 버전 적용 뒤 마무리 단계에서 실패했을 때의 안내와 단계 이름(`settings.core_update.console.post_commit_*`), 복원할 백업이 없을 때의 안내(`restore_skipped_no_backup`).
-- 코어 7.1.6 의 본인인증·로그인 보안 강화 문구 일본어 번역을 추가했습니다 — 정책이 지정한 인증 수단만 인정할 때의 안내(`identity.errors.provider_policy_mismatch`·`policy_provider_unavailable`·`purpose_unknown`), 관리자 정책 저장 검증(`validation.identity_policy.purpose_unknown`·`provider_id_unknown`·`provider_purpose_unsupported`), 로그인 2단계 재발송 거부·대기(`auth.two_factor_resend_not_supported`·`two_factor_resend_cooldown`), 비밀번호 재확인 시도 제한(`auth.password_reconfirm_throttled`), 활동 로그 「2段階認証失敗」(`activity_log.description.auth_two_factor_failed`).
+- 코어 업데이트가 개발자 custom 패키지 충돌이나 배포본의 예약 자리 파일 때문에 시작 전에 멈출 때의 안내(`settings.core_update.reserved_paths_in_release`·`custom_preflight_blocked`·`custom_conflict_*`)와 `custom:check`·`custom:example`·`custom:vendor-*` 명령 출력, 내부 API 도구 오류(`settings.custom_reserved.*`)의 일본어 번역을 추가했습니다.
+- 환경설정 「사용자 화면 URL」 검증 문구(`validation.settings.user_screen_url_*`·속성 이름)의 일본어 번역을 추가했습니다.
 
-### Changed
-
-- 비밀번호 찾기 성공 안내(`auth.password_reset_email_sent`)를 코어 7.1.6 의 새 문구에 맞췄습니다(「登録済みのメールアドレスであれば、パスワード再設定リンクを送信しました。…」).
-
-### Removed
-
-- 코어 7.1.6 에서 쓰이지 않게 된 키(`auth.email_not_registered`, `validation.auth.email.exists`, `templates.layout_attachments.validation.file_image`·`file_mimes`)를 지웠습니다.
-
-## [1.1.4] - 2026-11-10
+## [1.1.1] - 2026-10-11
 
 ### Added
-
-- 코어 7.1.5 의 작업 잠금 문구(`extensions.errors.operation_already_running`·`operation_lock_unavailable`, `extensions.commands.bundled_update.lock_unavailable_aborted`, `settings.core_update.console.already_running`·`lock_unavailable`, `seo.console.generate_sitemap.already_running`·`lock_unavailable`, `schedule.already_running`·`run_lock_unavailable`, `privacy.console.lock_unavailable`)의 일본어 번역을 추가했습니다.
-- 코어 7.1.5 의 로그인 필요 공용 안내(`core.errors.login_required_for_action` 「この機能を使うにはログインが必要です。…」)의 일본어 번역을 추가했습니다.
-- 코어 7.1.5 의 레이아웃 편집기 페이지 설정 [스크롤] 탭(뒤로/앞으로 가기·새로고침 스크롤 복원 — `layout_editor.page_settings.tab.scroll`·`layout_editor.scroll_restoration.*`)과 「다른 페이지로 이동」 동작의 「뒤로 가기로 이 화면에 돌아올 때 스크롤」·「스크롤 애니메이션」·「이탈 확인 묻지 않기」 칸(`layout_editor.action_recipe.navigate.*`) 문구의 일본어 번역을 추가했습니다. 없으면 일본어 편집기에서 이 문구가 키 그대로 보입니다.
-- 코어 7.1.5 의 레이아웃 저장 검증에서 스크롤 복원 설정(`meta.scroll_restoration`)의 항목명(`validation.attributes.layout_meta_scroll_restoration*`) 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 항목명이 키 그대로 보입니다.
-- 코어 7.1.5 의 최근 검색어 문구(`search.history.*` — 범위 이름·API 응답·요청 항목명, 개인정보 보유기간 핸들러 `privacy.handlers.search_history`·대상 목록 열, 설정 저장 검증 `validation.settings.privacy_search_history_*`·`validation.attributes.privacy_search_history_*`, 레이아웃 편집기 동작 레시피 `layout_editor.action_recipe.record_search_keyword.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 키 그대로 보입니다.
-- 코어 7.1.5 의 관리자 브라우저 탭 제목 접미사(`seo.admin_title_suffix` 「 - {site_name} 管理画面」)의 일본어 번역을 추가했습니다.
-- 코어 7.1.5 의 확장 설치·활성화 결과 경고에서 최근 검색어 범위 선언·필수 브라우저 저장 항목을 버린 이유(`extensions.warnings.search_scopes_*`·`necessary_storage_*`)와 확장이 고칠 선언이라는 안내(`extensions.warnings.declaration_hint`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면과 명령 출력에서 이 문구가 키 그대로 보입니다.
-- 코어 7.1.5 의 본문 미디어 업로드 계약 문구(서버 `attachment.content_media.*` — 종류 이름·파일 검증·문서당 개수 초과·규칙 입력 범위, 화면 `core.content_media.client.*`·`core.content_media.policy.*` — 편집기 사전 판정 안내·「動画を挿入」「音声を挿入」 단추·확장 설정 화면의 「本文メディア」 규칙 칸)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 키 그대로 보입니다.
-- 코어 7.1.5 환경설정 「본문 콘텐츠」 저장 검증 문구(`validation.settings.embed_provider_*`·`embed_preset_unknown`·`content_custom_tag_*`·`content_custom_tag_reasons.*`)와 외부 영상 서비스 예시 주소 확인·동영상/오디오 업로드 허용 스위치의 항목명(`validation.attributes.embed_provider*`·`content_allow_uploaded_video`·`content_allow_uploaded_audio` 「動画アップロードの許可」「音声アップロードの許可」)의 일본어 번역을 추가했습니다. 확장 설정 화면 「本文メディア」 안내(`core.content_media.policy.follows_attachment`·`core_disabled_hint`)는 켜야 할 환경설정 스위치 이름까지 알려 줍니다.
-
-### Changed
-
-- 코어 7.1.5 에서 본문 미디어 화면 문구(`core.content_media.*`)가 별도 파일로 분리되어, 일본어 번역도 `frontend/partial/content_media.json` 으로 옮겼습니다. 키는 그대로입니다(안내 두 줄의 문구 변경은 위 Added 항목).
-- 코어 7.1.5 에서 레이아웃 편집기 「검색 제목」이 검색엔진 제목·방문자 탭 제목으로 쓰이게 되어, 페이지 설정 [검색엔진] 탭 소셜 공유 안내(`layout_editor.page_settings.seo.og_intro`) 일본어 번역을 새 순서에 맞게 고쳤습니다.
-- 코어 7.1.5 에서 방문자 브라우저 탭 제목이 검색엔진 제목과 같은 규칙을 쓰게 되어, 레이아웃 편집기 페이지 설정 [검색엔진] 탭 안내(`layout_editor.page_settings.seo.og_intro`·`disabled_note`)의 일본어 문구를 「OG 제목이 탭 제목에도 쓰인다·SEO 를 끈 화면은 라우트 제목 + 사이트 이름」으로 고쳤습니다.
-
-## [1.1.3] - 2026-11-01
-
-### Added
-
-- 코어 7.1.4 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 저장 검증 문구(`validation.settings.csp_source_host_invalid`·`csp_mode_in`·`csp_extra_script_hosts_array`·`csp_extra_script_hosts_max`)와 항목명(`validation.attributes.csp_mode`·`csp_extra_script_hosts`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 이 문구가 키 그대로 보입니다.
-- 코어 7.1.4 의 의존 확장 미충족 사유 문구(미설치·무효·버전 미달 설치 → 요구), 호환성 복구 실패 안내, 의존 대상이 내려가거나 꺼졌을 때 의존 확장에 알리는 안내, `template:activate`·`module:activate`·`plugin:activate` 의 「버전 미달」 라벨과 템플릿 강제 활성화 시 503 안내의 일본어 번역을 추가했습니다.
-- 코어 7.1.4 의 선택 연동(`integrations`) 안내 문구의 일본어 번역을 추가했습니다. 확장을 설치·활성화·업데이트했을 때 함께 쓰면 연동되는 확장이 미설치·비활성·버전 미달이라는 안내, 함께 설치하다 실패한 연동 확장 안내, 확장을 끄거나 지울 때 그 확장과 연동 중인 확장을 알리는 명령 출력(표 제목·열 이름·상태 이름)입니다. 없으면 일본어 화면과 명령 출력에서 이 문구가 키 그대로 보입니다.
-- 코어 7.1.4 의 `core:bundled-sources prune` 이 켜져 있는 확장의 연동 대상이라 번들을 남길 때 출력하는 안내 문구의 일본어 번역을 추가했습니다.
-- 코어 7.1.4 의 확장 설치 요청에서 함께 설치할 의존 확장·연동 확장·언어팩 항목의 검증 오류에 쓰는 필드 이름 일본어 번역을 추가했습니다.
-- 코어 7.1.4 의 `layout:check-installed` 가 routes.json 라우트의 `requires` 형식 오류를 알릴 때 쓰는 문구(절 제목·열 이름·문제 설명·안내)의 일본어 번역을 추가했습니다.
-- 코어 7.1.4 에서 추가된 터미널 운영 명령(비밀번호 재설정·설정 값 조회·지정·확장 의존 연쇄 설치·`core:install`)의 출력과 오류 문구, 의존 확장 버전 미달 안내, 시스템(CLI) 비밀번호 재설정 활동 로그, `.env` 고정 설정의 단건 저장 거부 문구의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 문구가 키 그대로 보입니다.
-- `php artisan list`·`--help` 에 보이는 코어 artisan 명령 설명 129개와, 확장을 함께 설치한 뒤 본 확장 설치가 실패했을 때 남겨 둔 의존 확장 안내의 일본어 번역을 추가했습니다.
-- 코어 7.1.4 의 PHP 확장 요구 안내의 일본어 번역을 추가했습니다 — 확장 설치·활성화가 필요한 PHP 확장이 없어 막힐 때의 안내(`extensions.errors.php_extension_missing`)와 업데이트 경고(`extensions.warnings.php_extension_missing`), 코어 업데이트 사전점검 안내(`settings.core_update.console.php_extension_core_missing`·`php_extension_extension_warning`), 설정 백업·복원의 zip 안내(`settings.errors.zip_extension_required`), 사이트맵 gzip 저장 검증(`validation.settings.sitemap_gzip_requires_zlib`), 압축 해제의 zlib·phar 안내(`common.errors.archive_php_extension_missing`)입니다.
-- 코어 7.1.4 의 의존 확장 종류 이름(`extensions.dependency_types` — モジュール・プラグイン・テンプレート), 번들 일괄 업데이트의 종류를 넘는 순환 경고(`extensions.commands.bundled_update.dependency_cycle`), 설치 창의 연동 확장 필수 의존 권한 안내(`extensions.integrations.requires_no_permission`) 일본어 번역을 추가했습니다.
-- 코어 7.1.4 의 환경설정 > 고급 > GeoIP [갱신] 결과 문구(`settings.geoip.*` — 갱신 완료·라이선스 키 없음·라이선스 키 오류·연결 실패·갱신 실패)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 키 그대로 보입니다.
-- 코어 7.1.4 의 사이트맵 「지금 생성」 거절 문구(`seo.sitemap_regenerate_in_progress` — 이미 생성 중, `seo.sitemap_regenerate_locked` — 다른 생성 대기 중이거나 이전 작업의 잠금이 남음)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 키 그대로 보입니다.
-- 코어 7.1.4 의 `module:install`·`plugin:install`·`template:install` `--with-language-packs=all` 이 같은 언어의 코어 언어팩이 꺼져 있어 설치할 수 없는 언어팩을 건너뛸 때 출력하는 안내(`extensions.commands.cascade.language_pack_skipped`)의 일본어 번역을 추가했습니다.
-
-### Changed
-
-- 압축을 풀 수 없을 때의 안내(`settings.core_update.no_extract_method_available`) 번역을 코어 7.1.4 문구에 맞춰 「--source 로 수동 업데이트할 수 있다」에서 「서버에 zip 확장을 설치한 뒤 다시 시도」로 바꿨습니다.
-- 의존 확장 미충족 문구(`modules.dependency_not_active`·`plugins.dependency_not_active`)가 의존 대상의 실제 종류를 부르도록 바꿨습니다 — 「依存する:type ":dependency" がインストールされていないか無効です。」(종전에는 플러그인도 「モジュール」로 표기).
-
-## [1.1.2] - 2026-10-23
-
-### Added
-
-- 코어 7.1.3 의 새 문구(확장 설치 시더 실패·업그레이드 단계 클래스 누락·새 버전 확장 클래스 누락으로 인한 업데이트 중단·안전하지 않은 압축 항목 오류, 압축 경로 정정·경고와 함께 완료 안내, 훅 캐시 경고, 레이아웃 마크업의 `setState` `_global` 대상 경고, 안내만 있는 완료 문구, 확장 제거 때 저장 폴더를 다 지우지 못했다는 경고)의 일본어 번역을 추가했습니다. 없으면 일본어 화면과 명령 출력에서 이 문구가 한국어로 보입니다.
-
-### Changed
-
-- PHP zip 확장이 없을 때의 압축 해제 오류 문구를 코어 7.1.3 문구에 맞춰 「zip 확장이 필요하다」로 바꾸고(종전에는 `unzip` 명령으로도 된다고 안내), 쓰이지 않게 된 `unzip` 실행 실패 문구를 지웠습니다.
-
-## [1.1.1] - 2026-10-21
-
-### Added
-
-#### 레이아웃 편집기·마크업 검사
 
 - 코어 7.1.1 의 레이아웃 편집기 「오류 처리」 칸에서 칸이 다루지 않는 동작을 코드 편집기로 안내하는 문구와, 레이아웃 마크업 저장 검사의 「화면에서 바로 누르는 동작에만 적용되는 키」 경고 문구의 일본어 번역을 추가했습니다
-- 레이아웃 편집기의 「다른 페이지로 이동」 동작에 새로 생긴 「주소가 안전하지 않거나 비었을 때 갈 페이지」 입력 칸 이름의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 칸 이름이 키 그대로 보입니다.
-
-#### 확장 설치·활성화·업데이트
-
 - 코어 7.1.1 의 새 문구 일본어 번역을 추가했습니다. 확장 자동 비활성화를 건너뛰거나 끄지 못했을 때의 기록 문구 2건과, 모듈·플러그인·템플릿 활성화 명령이 함께 꺼진 언어팩을 다시 켤 때 출력하는 문구와 `--without-language-packs` 옵션 설명 4건(명령마다)입니다. 없으면 일본어 로케일에서 이 문구가 키 그대로 보입니다.
 - 코어 7.1.1 에서 늘어난 문구의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 자리에 키가 그대로 노출됩니다.
   - 확장 설치·업데이트·레이아웃 갱신 요청의 레이아웃 설치 소스가 잘못됐을 때의 검증 오류와 그 항목 이름
   - `core:update` 가 번들 확장 일괄 업데이트 실패로 종료 코드 1 을 돌려줄 때의 안내
   - 레이아웃의 굳은 빈 객체를 찾아 되돌리는 `layout:repair-empty-objects` 명령의 출력 문구(표 머리글·합계·미리보기 안내·적용 결과)
-- 코어 7.1.1 의 「업데이트 중」에 멈춘 확장 정리 안내 2건(`extensions.errors.operation_stuck`·`extensions.stuck_update_recovered`)과 `core:bundled-sources prune` 의 「배포본에 없는 파일만 다름」 안내 2건의 일본어 번역을 추가했습니다.
-- 멈춘 업데이트를 정리한 뒤 다시 켜는 방법 안내(`extensions.stuck_update_activate_hint`)의 일본어 번역을 추가했습니다.
-- 코어 7.1.1 에서 언어팩 설치·업데이트가 설치 폴더를 새 파일로 바꾸지 못했을 때 돌려주는 오류 문구(`language_packs.errors.install_directory_replace_failed`)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 오류가 키 그대로 보입니다.
-- 끝나지 않은 확장 업데이트를 이어서 마치는 방법 안내(`extensions.stuck_update_unfinished_hint`)의 일본어 번역을 추가하고, 멈춘 업데이트 안내(`extensions.errors.operation_stuck`)를 원문 변경에 맞췄습니다.
-
-#### 공식 번들 배치·업데이트 안내
-
 - 코어 업데이트가 설치하지 않은 공식 번들을 배치할지 묻는 질문·완료 요약과 `core:bundled-sources` 명령 출력, 관리자 목록 안내 API 응답 문구의 일본어 번역을 추가했습니다(63건 + 2건).
-- 코어 7.1.1 의 업데이트 안내 문구 3건의 일본어 번역을 추가했습니다 — GitHub 에 코어·확장 배포본이 아직 없을 때의 안내 2건과, `core:bundled-sources prune` 이 배포본 없이 정리 대상을 판정하지 못할 때의 안내입니다. 없으면 일본어 로케일에서 이 안내가 키 그대로 보입니다.
-- `core:bundled-sources list` 가 배포본 대신 기록 파일로 표를 만들 때 알리는 「기록 파일 기준 미배치 N개」 안내(`settings.bundled_sources.record_unplaced_count`)의 일본어 번역을 추가했습니다.
-
-#### 명령 출력
-
-- 코어 7.1.1 의 정리·통계 명령 문구의 일본어 번역을 추가했습니다 — 잘못된 보관 일수(`--days`)를 거부할 때 출력하는 오류 문구(`common.console.invalid_days_option`), 정리 명령 완료 문구 6건(`common.console.prune_done.*` — 용어를 「保管」 으로 통일), 정리 명령이 `--days=0` 을 최소 보관 1일로 적용했다는 안내(`common.console.retention_floor_applied` — 요청값이 함께 보임)입니다.
-- 코어 7.1.1 에서 번역 문구로 바뀐 명령 출력·운영 로그의 일본어 번역을 추가했습니다 — 레이아웃 갱신 명령 3종의 진행·완료·요약 문구(`{modules,plugins,templates}.commands.refresh_layout.*`), 레이아웃 컴파일·역변환·설치본 점검 명령의 안내·요약·표 머리글(`layouts.console.*`), 진행 표시줄 첫 문구(`extensions.progress.starting`), 훅 캐시 읽기·생성 로그 6건(`hooks.cache_*`). 없으면 일본어 로케일에서 이 문구가 한국어로 나옵니다.
-- 코어 7.1.1 에서 번역 문구로 바뀐 Artisan 명령·시더 콘솔 출력(코어 업데이트·빌드·확장 빌드·시드·Composer 설치·활성화/비활성화·언어팩·방문 통계·정적 게시 점검·IP 접근 제한·신뢰 프록시·개인정보 보관·휴면 처리 등 805건 — `*.console.*`·`*.commands.*`)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 출력이 키 그대로 보입니다.
-
-#### 저장·검색 검증 문구
-
 - 비회원 역할에 권한 범위(본인·소유역할)를 지정해 저장할 때의 검증 오류 문구의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 저장 오류가 키 그대로 보입니다.
-- 환경설정 → 드라이버 탭 「큐 워커」 등록의 검증 오류 문구(연결·큐 이름 10건)와 항목 이름 3건, 큐 워커 상태 조회 응답 문구의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 저장 오류가 키 그대로 보입니다. (#139 @glitter-gim 님께서 건의해주셨습니다.)
-- 코어 7.1.1 의 관리자 회원 검색에 생긴 「탈퇴 회원 제외」 옵션(`exclude_withdrawn`)의 검증 항목명 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 옵션의 검증 오류에 내부 키가 그대로 보입니다.
-- 코어 7.1.1 의 관리자 회원 검색 요청에서 회원 칸의 표시 이름(`validation.user_search.attributes.uuid` — 「会員」)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 칸의 검증 오류에 칸 이름 대신 내부 이름이 보입니다.
-- 레이아웃 저장 검증의 항목 이름 8건(`validation.attributes.layout_meta_*`·`layout_seo_*` — 「メニューアイコン」「エディター表示名」「離脱確認条件」「Twitterカード」 등)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 레이아웃 편집기 저장 오류에 칸 이름 대신 내부 이름이 보입니다.
-
-#### 화면 이동
-
-- 코어 7.1.1 에서 저장하지 않은 변경이 있는 화면을 떠날 때 띄우는 기본 확인 문구(`core.navigation.leave_confirm`)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 확인 창에 키가 그대로 보입니다.
-- 코어 7.1.1 에서 화면 안에서 다시 불러오다 실패했을 때 띄우는 안내(`core.errors.refresh_failed`)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 안내가 키 그대로 보입니다.
+- 환경설정 → 드라이버 탭 「큐 워커」 등록의 검증 오류 문구(연결·큐 이름 10건)와 항목 이름 3건, 큐 워커 상태 조회 응답 문구의 일본어 번역을 추가했습니다(#139). 없으면 일본어 로케일에서 저장 오류가 키 그대로 보입니다.
 
 ### Changed
 

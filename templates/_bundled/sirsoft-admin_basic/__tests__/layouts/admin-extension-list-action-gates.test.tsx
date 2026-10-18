@@ -145,31 +145,9 @@ describe('확장 목록 — 의존 충돌(409) 후 스위치', () => {
     for (const [tree, source] of [[moduleList, 'modules'], [pluginList, 'plugins'], [languagePackList, 'language_packs']] as const) {
       expect(gridProp(tree, 'resyncKey'), `${source} 격자에 resyncKey 바인딩이 없습니다.`).toContain('_global.extensionToggleResync');
       expect(hasResyncBump(conflictActionsOf(tree)), `${source} 409 처리에 재동기 신호가 없습니다.`).toBe(true);
-      expect(hasResyncBump(toggleCallOf(tree).onError), `${source} 토글 실패 처리에 재동기 신호가 없습니다.`).toBe(true);
+      expect(hasResyncBump(toggleActionOf(tree).onError), `${source} 토글 실패 처리에 재동기 신호가 없습니다.`).toBe(true);
+      expect(hasResyncBump(toggleActionOf(tree).onSuccess), `${source} 성공 처리는 서버 값이 바뀌므로 신호가 필요 없습니다.`).toBe(false);
     }
-  });
-
-  /**
-   * 모듈·플러그인은 켜기 뒤 화면 파일(JS·CSS)을 몇 초 더 받는다 — 목록이 바뀌자마자 잠금을 풀면 그 사이 다시 끌 수 있어
-   * 받던 파일이 404 가 됐다(#882 결정: 파일까지 받은 뒤 해제). 그래서 격자는 holdUntilResync 로 서버 값 변경에 풀지 않고,
-   * 성공 처리는 후속 작업 묶음(parallel — reloadExtensions 포함)이 끝난 **뒤에** 재동기 신호를 올린다. 언어팩은 화면 파일을
-   * 받지 않아 종전대로 서버 값이 바뀌면 푼다(성공 신호 없음 — 있으면 hold 없이도 일찍 풀 뿐 해는 없지만 계약을 하나로 둔다).
-   *
-   * @scenario case=card_toggle_pending
-   * @effects card_toggle_holds_until_post_success_work_done
-   */
-  it('모듈·플러그인: 성공 처리가 후속 작업 묶음 뒤에 재동기 신호를 올리고 격자가 그때까지 잠금을 둔다 — 언어팩은 종전대로', () => {
-    for (const [tree, source] of [[moduleList, 'modules'], [pluginList, 'plugins']] as const) {
-      expect(gridProp(tree, 'holdUntilResync'), `${source} 격자에 holdUntilResync 가 없습니다.`).toBe('true');
-      const success = asArray(toggleCallOf(tree).onSuccess);
-      const parallel = success.findIndex((a: Json) => a.handler === 'parallel');
-      const bump = success.findIndex((a: Json) => hasResyncBump(a));
-      expect(parallel, `${source} 성공 처리에 후속 작업 묶음(parallel)이 없습니다.`).toBeGreaterThanOrEqual(0);
-      expect(JSON.stringify(success[parallel]), `${source} 후속 작업 묶음에 reloadExtensions 가 없습니다.`).toContain('reloadExtensions');
-      expect(bump, `${source} 성공 처리에 재동기 신호가 없습니다.`).toBeGreaterThan(parallel);
-    }
-    expect(gridProp(languagePackList, 'holdUntilResync')).toBe('');
-    expect(hasResyncBump(toggleCallOf(languagePackList).onSuccess), '언어팩 성공 처리는 서버 값이 바뀌므로 신호가 필요 없습니다.').toBe(false);
   });
 
   /**
@@ -228,23 +206,6 @@ function toggleActionOf(tree: unknown): Json {
   walk(tree);
   expect(found, 'onToggle 액션이 없습니다.').toBeDefined();
   return found!;
-}
-
-/**
- * 스위치가 곧바로 부르는 활성/비활성 apiCall 을 찾는다.
- *
- * 모듈·플러그인 스위치는 끄려는 확장을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4)
- * 안내 창을 먼저 여는 `switch` 로 갈린다 — 곧바로 부르는 갈래는 `call` 이다. 갈래가 없는 화면(언어팩)은
- * onToggle 액션 자체가 apiCall 이다.
- */
-function toggleCallOf(tree: unknown): Json {
-  const action = toggleActionOf(tree);
-  if (action.handler !== 'switch') return action;
-  const call = action.cases?.call;
-  expect(call?.handler, '스위치의 곧바로 부르는 갈래(call)가 apiCall 이어야 합니다.').toBe('apiCall');
-  // 안내 창 갈래도 누르는 즉시 재동기 신호를 올린다(창을 닫으면 요청이 없어 스위치만 뒤집힌 채 남는다).
-  expect(hasResyncBump(action.cases?.confirm), '연동 안내 창 갈래에 재동기 신호가 없습니다.').toBe(true);
-  return call;
 }
 
 /** 액션 트리 안에 재동기 신호를 올리는 setState 가 있는지 본다. */

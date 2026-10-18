@@ -2,7 +2,6 @@
 // 라이브 E2E(편집기 추가→선택→속성 편집→저장→실사용자화면)는 1-c-verify 세션의
 // Playwright spec(property-edit-propcontrols.spec.ts)이 cover. 데이터/컴포넌트 회귀는
 // ImageGallery.test.tsx(4) + adminPropControlCoverage.test.ts 가 가드.
-// 확대 창 라벨 다국어(labels)는 ImageGallery.labels.test.tsx + 확대 창 접근성 이름 브라우저 실측.
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Lightbox, { Slide } from 'yet-another-react-lightbox';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
@@ -34,30 +33,6 @@ const G7Core = (window as any).G7Core;
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
   G7Core?.t?.(key, params) ?? key;
-
-/**
- * 확대 창 라벨 — 넘기지 않으면 라이브러리가 창 이름(「Lightbox」)·단추 이름을 영어로 붙인다.
- * 슬라이드 위치 문구의 `{index}`·`{total}` 은 라이브러리가 채우므로 인자 없이 번역한다.
- */
-const lightboxLabels = () => ({
-  Lightbox: t('common.lightbox.dialog'),
-  Carousel: t('common.lightbox.carousel'),
-  'Photo gallery': t('common.lightbox.photo_gallery'),
-  Slide: t('common.lightbox.slide'),
-  '{index} of {total}': t('common.lightbox.slide_position'),
-  Previous: t('common.lightbox.previous'),
-  Next: t('common.lightbox.next'),
-  Close: t('common.lightbox.close'),
-  'Zoom in': t('common.lightbox.zoom_in'),
-  'Zoom out': t('common.lightbox.zoom_out'),
-  'Enter Fullscreen': t('common.lightbox.enter_fullscreen'),
-  'Exit Fullscreen': t('common.lightbox.exit_fullscreen'),
-  Play: t('common.lightbox.play'),
-  Pause: t('common.lightbox.pause'),
-  Thumbnails: t('common.lightbox.thumbnails'),
-  'Show thumbnails': t('common.lightbox.show_thumbnails'),
-  'Hide thumbnails': t('common.lightbox.hide_thumbnails'),
-});
 
 // ========== Types ==========
 
@@ -239,17 +214,6 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   // 최신 인덱스를 ref로 추적 (클로저 문제 방지)
   const currentIndexRef = useRef(startIndex);
 
-  // 닫힌 채 마운트된 뒤 열리면 startIndex 만 바뀐다(useState 초기값은 재평가되지 않음).
-  // Lightbox 는 열리는 렌더의 index 만 읽으므로 effect 가 아니라 열림 전환 렌더 중에 맞춘다(#821).
-  const [wasOpen, setWasOpen] = useState(isOpen);
-  if (isOpen !== wasOpen) {
-    setWasOpen(isOpen);
-    if (isOpen) {
-      currentIndexRef.current = startIndex;
-      setCurrentIndex(startIndex);
-    }
-  }
-
   // 이미지를 라이트박스 슬라이드 형식으로 변환 (썸네일 포함)
   const slides: Slide[] = images.map((image) => ({
     src: image.src,
@@ -295,7 +259,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             />
           ))
         ) : (
-          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
+          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-400 dark:text-gray-500">
             <I className="fa-regular fa-images mr-2" />
             {t('editor.component.image_gallery')}
           </Div>
@@ -308,7 +272,6 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     <Lightbox
       open={isOpen}
       close={onClose}
-      labels={lightboxLabels()}
       slides={slides}
       index={currentIndex}
       plugins={plugins}

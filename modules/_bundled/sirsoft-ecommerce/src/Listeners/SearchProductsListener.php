@@ -8,11 +8,10 @@ use App\Helpers\PermissionHelper;
 use App\Search\SearchCategoryPayload;
 use App\Search\SearchHighlighter;
 use App\Support\Query\BoundedCount;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * 통합 검색에 상품 검색 결과를 제공하는 리스너
@@ -26,9 +25,9 @@ class SearchProductsListener implements HookListenerInterface
     use HasMultiCurrencyPrices;
 
     /**
-     * 상품 서비스를 주입받습니다.
+     * 리스너를 생성합니다.
      *
-     * @param  ProductService  $productService  상품 서비스
+     * @param  ProductService  $productService  상품 검색을 수행하는 상품 서비스
      */
     public function __construct(
         private readonly ProductService $productService,
@@ -84,8 +83,6 @@ class SearchProductsListener implements HookListenerInterface
         $sortValues = 'relevance,latest,oldest,views,popular,price_asc,price_desc';
         $rules['sort'] = ['nullable', 'string', "in:{$sortValues}"];
         $rules['category_id'] = ['nullable', 'integer'];
-        // 품절 제외 — 공개 상품 목록(PublicProductListRequest)과 같은 규칙. 배열·다른 값은 422
-        $rules['exclude_sold_out'] = ['nullable', 'in:0,1'];
 
         return $rules;
     }
@@ -115,8 +112,6 @@ class SearchProductsListener implements HookListenerInterface
 
         $request = $context['request'] ?? null;
         $categoryId = $request?->input('category_id') ? (int) $request->input('category_id') : null;
-        // 품절 제외 — 공개 상품 목록과 같은 키. '1' 만 조건으로 읽는다
-        $filters = ['exclude_sold_out' => (string) ($request?->input('exclude_sold_out') ?? '') === '1'];
         $sort = $context['sort'] ?? 'relevance';
         $page = $context['page'] ?? 1;
         $perPage = $context['per_page'] ?? 10;
@@ -136,7 +131,7 @@ class SearchProductsListener implements HookListenerInterface
                 }
 
                 $results['products'] = SearchCategoryPayload::fromCountOnly(
-                    $this->productService->countByKeyword($q, $categoryId, $filters)
+                    $this->productService->countByKeyword($q, $categoryId)
                 );
 
                 return $results;
@@ -148,15 +143,10 @@ class SearchProductsListener implements HookListenerInterface
             $fetchPerPage = $isAllTab ? (int) ($context['all_tab_limit'] ?? 5) : (int) $perPage;
             $offset = $isAllTab ? 0 : (((int) $page - 1) * (int) $perPage);
 
-            /** 조회 결과 항목을 화면 형태로 가공한다. 카드 단추용 값(찜·옵션 수·추가옵션)은 결과당 한 번씩 붙인다. */
-            $format = function (iterable $items) use ($q): array {
-                $collection = new EloquentCollection(is_array($items) ? $items : iterator_to_array($items));
-                $this->productService->attachPublicListViewerContext($collection);
-
-                return $collection
-                    ->map(fn ($product) => $this->formatProductResult($product, $q))
-                    ->toArray();
-            };
+            /** 조회 결과 항목을 화면 형태로 가공한다. */
+            $format = fn (iterable $items): array => collect($items)
+                ->map(fn ($product) => $this->formatProductResult($product, $q))
+                ->toArray();
 
             // 그 정렬을 커서로 처리할 수 있으면 키셋으로 응답한다. 페이지 번호를 함께 넘기는
             // 이유는 커서 없이 깊은 페이지를 직접 지목한 딥링크를 코어가 가려내야 하기
@@ -170,21 +160,20 @@ class SearchProductsListener implements HookListenerInterface
                     $categoryId,
                     $fetchPerPage,
                     $context['cursor'] ?? null,
-                    (int) $page,
-                    $filters
+                    (int) $page
                 );
 
             if ($cursorPage !== null) {
                 $results['products'] = SearchCategoryPayload::fromCursor(
                     $cursorPage,
-                    $this->productService->countByKeyword($q, $categoryId, $filters),
+                    $this->productService->countByKeyword($q, $categoryId),
                     $format($cursorPage->items())
                 );
 
                 return $results;
             }
 
-            $searchPage = $this->productService->searchByKeyword($q, $sort, $categoryId, $offset, $fetchPerPage, $filters);
+            $searchPage = $this->productService->searchByKeyword($q, $sort, $categoryId, $offset, $fetchPerPage);
 
             $results['products'] = SearchCategoryPayload::fromBounded($searchPage, $format($searchPage->items()));
         } catch (\Exception $e) {
@@ -279,14 +268,6 @@ class SearchProductsListener implements HookListenerInterface
             'description_highlighted' => $this->highlightKeyword($shortDescription, $keyword),
             'thumbnail_url' => $product->getThumbnailUrl(),
             'category_name' => $primaryCategory?->getLocalizedName() ?? '',
-            // 상품 카드가 읽는 이름 — 공개 상품 목록 응답과 같은 키·같은 모양(대표 분류 이름)
-            'primary_category' => $primaryCategory?->getLocalizedName(),
-            // 카드 단추용 (공개 상품 목록 응답과 같은 키)
-            'has_options' => (bool) $product->has_options,
-            'options_count' => (int) ($product->options_count ?? 0),
-            'has_additional_options' => (bool) ($product->has_additional_options ?? false),
-            'min_purchase_qty' => $product->min_purchase_qty,
-            'is_wishlisted' => $product->relationLoaded('currentUserWishlist') && $product->currentUserWishlist->isNotEmpty(),
             'brand_name' => $product->brand?->getLocalizedName() ?? '',
             'sales_status' => $product->sales_status?->value,
             'sales_status_label' => $product->sales_status?->label(),
@@ -301,7 +282,7 @@ class SearchProductsListener implements HookListenerInterface
             'multi_currency_list_price' => $this->buildMultiCurrencyPrices($product->list_price),
             'labels' => $labels,
             // 상점 주소는 운영자 설정 — 기본값 리터럴은 주소를 바꾼 상점에서 죽은 링크가 된다 (공개 #85)
-            'url' => ShopPathResolver::path('products/'.$product->product_code),
+            'url' => EcommerceScreenUrl::product((string) $product->product_code),
             'review_count' => (int) ($product->review_count ?? 0),
             'rating_avg' => $product->rating_avg !== null ? round((float) $product->rating_avg, 1) : 0.0,
         ];

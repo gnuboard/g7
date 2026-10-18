@@ -62,7 +62,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{settings !== undefined && (_local.form?.mileage?.expiry_enabled ?? true)}}",
+            "if": "{{_local.form?.mileage?.expiry_enabled ?? true}}",
             "props": {
                 "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
             },
@@ -109,7 +109,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.expiry_days']}}",
                     "props": {
-                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
                     },
                     "text": "{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}"
                 }

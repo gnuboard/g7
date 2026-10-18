@@ -49,8 +49,7 @@ describe('관리자 회원 상세 — 비밀번호 구획 (#736)', () => {
     const expires = nodes.find((n) => n.id === 'field_password_expires_at');
     const branches = flatten(expires).filter((n) => n.if).map((n) => n.if);
     expect(branches).toEqual([
-      // 「적용 안 됨」은 회원 정보를 받은 뒤에만 판정한다(받는 중을 「적용 안 됨」으로 읽지 않는다, #915)
-      '{{user !== undefined && (!user?.data?.password_status?.applies)}}',
+      '{{!user?.data?.password_status?.applies}}',
       '{{user?.data?.password_status?.applies && user?.data?.password_status?.expired}}',
       '{{user?.data?.password_status?.applies && !user?.data?.password_status?.expired}}',
     ]);

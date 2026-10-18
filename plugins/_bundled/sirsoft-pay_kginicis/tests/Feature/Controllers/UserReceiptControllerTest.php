@@ -135,7 +135,7 @@ class UserReceiptControllerTest extends PluginTestCase
      *
      * 주문 상세 입금 안내 조각(user_order_show)이 관리자에게만 보여 주는 값이다. 예전에는 화면 스크립트가
      * 은행 이름표를 들고 있었으나 조각으로 옮기며 서버가 계산한다. 화면만 is_admin 으로 숨기고 응답에는 누구에게나
-     * 실렸으므로(7.1.0 abilities 게이트) 주문 조회 권한이 있는 관리자에게만 싣는다.
+     * 실렸으므로(7.1.0 abilities 게이트 basic-shop-mypage #7) 주문 조회 권한이 있는 관리자에게만 싣는다.
      *
      * @scenario viewer=member_session, payment=vbank_waiting
      *
@@ -347,7 +347,7 @@ class UserReceiptControllerTest extends PluginTestCase
      *
      * @scenario viewer=member_session, payment=cbt_cvs_waiting
      *
-     * @effects cbt_cvs_waiting_uses_cvs_labels, cbt_cvs_payment_term_marked_jst
+     * @effects cbt_cvs_waiting_uses_cvs_labels
      *
      * @return void 반환값 없음
      */
@@ -420,10 +420,7 @@ class UserReceiptControllerTest extends PluginTestCase
             ->assertJsonFragment(['label' => '편의점 코드', 'value' => '00007'])
             ->assertJsonFragment(['label' => '편의점 확인번호', 'value' => '999999999999999999'])
             ->assertJsonFragment(['label' => '편의점 접수번호', 'value' => '1779433713966'])
-            // 일본 PG 가 준 일본 시각 그대로 두고 시간대를 밝힌다(#160 D11)
-            ->assertJsonFragment(['label' => '입금 마감일시', 'value' => '2026-05-27 23:59:59 (JST)'])
-            // 편의점 승인 시각도 일본 PG 의 일본 시각이다 — 같은 방식으로 시간대를 밝힌다(#160 D11)
-            ->assertJsonFragment(['label' => '승인일시', 'value' => '2026-05-22 16:08:34 (JST)'])
+            ->assertJsonFragment(['label' => '입금 마감일시', 'value' => '2026-05-27 23:59:59'])
             ->assertJsonMissing(['label' => 'CBT MID', 'value' => 'CBTTEST001'])
             ->assertJsonMissing(['label' => 'SID', 'value' => 'CBTTEST00120260522M280RzeXo']);
     }

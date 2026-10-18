@@ -51,8 +51,7 @@ class GdprWithdrawRelayQueuedTest extends PluginTestCase
         HookListenerRegistrar::register(GdprConsentChangeRelayListener::class, 'sirsoft-gdpr');
 
         $this->consentManager = Mockery::spy(ConsentManager::class);
-        // 동의 매니저는 요청 단위(scoped)라 워커가 작업마다 비운다(#860) — 비운 뒤에도 같은 스파이가 해석되게 묶는다
-        $this->app->scoped(ConsentManager::class, fn () => $this->consentManager);
+        $this->app->instance(ConsentManager::class, $this->consentManager);
     }
 
     /**

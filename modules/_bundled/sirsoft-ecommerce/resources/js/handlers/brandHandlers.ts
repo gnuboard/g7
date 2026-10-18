@@ -5,7 +5,6 @@
  */
 
 import type { ActionContext } from '../types';
-import { localizedText } from '../utils/localizedText';
 
 interface Brand {
     id: number;
@@ -42,7 +41,7 @@ export function getBrandNameHandler(
     const locale = G7Core?.locale?.current?.() || 'ko';
 
     const brand = brands.find((b) => b.id === brandId);
-    return brand ? (localizedText(brand.name, locale) ?? '') : '';
+    return brand ? (brand.name?.[locale] ?? brand.name?.ko ?? '') : '';
 }
 
 /**
@@ -68,5 +67,5 @@ export function getBrandDescriptionHandler(
     const locale = G7Core?.locale?.current?.() || 'ko';
 
     const brand = brands.find((b) => b.id === brandId);
-    return localizedText(brand?.description, locale) ?? '';
+    return brand?.description?.[locale] ?? brand?.description?.ko ?? '';
 }

@@ -17,7 +17,6 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Mockery;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -41,7 +40,6 @@ use Tests\TestCase;
  */
 class ExtensionLifecycleHookContractTest extends TestCase
 {
-    use FakesGithubReleases;
     use RefreshDatabase;
 
     private const MODULE = 'gnuboard7-hello_module';
@@ -143,9 +141,6 @@ class ExtensionLifecycleHookContractTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
-        $this->fakeGithubReleases();
 
         foreach ([
             base_path('modules/'.self::MODULE),

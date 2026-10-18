@@ -170,13 +170,10 @@ Firefox/WebKit 프로젝트를 상시 스위트에 넣지 않은 이유:
 |---|---|---|---|
 | 코어 권한/역할/유저/Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` | `php artisan playwright:issue-token --permissions=core.xxx` (권한 경계 검증은 `--no-admin-role` 추가 — §5.1) |
 | 편집기 저장 spec 대상 시드 화면 | 코어 | `app/Console/Commands/PlaywrightSeedLayout.php` | `php artisan playwright:seed-layout [--remove]` (globalSetup/globalTeardown 자동 호출) |
-| 회원 알림(안 읽음 2·읽음 1) | 코어 | `app/Console/Commands/PlaywrightSeedMemberNotification.php` | `php artisan playwright:seed-member-notification [--user=<uuid\|email>] [--url=<이동 주소>] [--teardown] --json` — `--user` 를 주면 그 회원(토큰 회원 — uuid 는 토큰으로 `GET /api/admin/auth/user`)에게 심고, `--teardown --user` 는 심은 알림만 지운다(회원·다른 알림 유지). 없으면 고정 회원을 만들고 지운다 |
 | 로그인 2단계 인증 계정·인증번호 | 코어 | `app/Console/Commands/PlaywrightSeedTwoFactor.php` | `php artisan playwright:seed-two-factor --ensure-user=… \| --plant=<challenge_id>` (§4.2) |
 | 인증 앱(TOTP) 자격증명·현재 코드 | 플러그인 | `plugins/_bundled/sirsoft-totp/src/Console/Commands/PlaywrightSeedTotp.php` | `php artisan playwright:seed-totp --enroll=<email> \| --code=<secret>` (§4.2) |
 | 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 그 모듈이 정의한 권한(설치 때 생성)·게시판별 권한(게시판 생성 때 생성) | 코어 커맨드의 `--permissions=` — **DB 에 있는 식별자만** 받는다(없으면 발급 거절 — 아래 「없는 권한 식별자」) |
 | 모듈 도메인 데이터 (상품/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | `php artisan playwright:seed-{id}` |
-| 관리자 클레임 상세 신청서(옵션 변경 교환·상품 1건 승인 반품·계좌 빈 승인 환불) | 모듈 | `modules/_bundled/sirsoft-ecommerce/src/Console/Commands/PlaywrightSeedClaimDetail.php` | `php artisan playwright:seed-claim-detail --tag=<워커 꼬리표> [--teardown] --json` — 워커마다 다른 `--tag` 로 심고, `--teardown --tag` 는 그 꼬리표만, `--tag` 없는 `--teardown` 은 심은 것 전량을 지운다. 신청서는 팩토리로 목표 상태에 바로 세워 알림·활동 로그를 내보내지 않는다 |
-| 두 쪽인 공개 게시판(쪽당 2건·글 3건 — 페이지 번호·게시글 행·글쓰기 링크 실측) | 모듈 | `modules/_bundled/sirsoft-board/src/Console/Commands/PlaywrightSeedBoardPosts.php` | `php artisan playwright:seed-board-posts --tag=<워커 꼬리표> [--posts=3] [--per-page=2] [--teardown] --json` — 게시판 `e2e-nav-{tag}` 를 만들고(기본 권한: 비로그인 읽기 · 회원 쓰기) 글을 DB 로 바로 심는다(글 쿨다운 우회). 기본 `user` 역할 회원 `e2e-nav-{tag}@example.test` 도 만들어 `member_token` 을 낸다 — 역할 없는 `issueScopedToken()` 계정은 회원 쓰기 권한을 받지 못한다. `--teardown --tag` 는 그 꼬리표의 게시판·글·게시판별 권한·회원만 지운다 |
 | 플러그인 도메인 데이터 (결제 키) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | 동일 |
 | 외부 의존 (토스 결제창 응답) | spec 안 mock | `page.route(...)` | 호출 없음 |
 
@@ -332,7 +329,7 @@ test('편집 후 저장 → PUT 200', async ({ page }) => {
 
 | 하지 말 것 | 이유 (실측) | 대신 |
 |---|---|---|
-| 전환 오버레이 가림을 `toBeVisible()` 로 판정 | Playwright 의 가시성 판정은 **가림(occlusion)을 보지 않는다**. 오버레이는 타겟 안/head 에 덧붙는 방식이고 콘텐츠는 DOM 에 남으므로, 덮여 있어도 visible 로 판정된다 | 오버레이 엘리먼트의 attach/detach 시각으로 측정 (`#g7-skeleton-overlay`, 또는 `<head>` 의 표식 요소 `#g7-transition-overlay`·`#g7-skeleton-overlay-style`). engine-v1.91.0 부터 덮개 규칙은 `<style>` 요소가 아니라 스타일시트 객체로 붙고, `<head>` 에는 같은 id 의 표식 요소(`<meta data-g7-runtime-style="adopted">`)가 덮개가 떠 있는 동안만 남는다 — 태그 이름(`style#…`)으로 찾지 말고 **id 로만** 찾는다(`head #g7-transition-overlay`). 표식 요소는 화면에 보이지 않으므로 `toBeVisible()` 이 아니라 `toBeAttached()`·`toHaveCount()` 로 판정한다 |
+| 전환 오버레이 가림을 `toBeVisible()` 로 판정 | Playwright 의 가시성 판정은 **가림(occlusion)을 보지 않는다**. 오버레이는 타겟 안/head 에 덧붙는 방식이고 콘텐츠는 DOM 에 남으므로, 덮여 있어도 visible 로 판정된다 | 오버레이 엘리먼트의 attach/detach 시각으로 측정 (`#g7-skeleton-overlay` 또는 `style#g7-transition-overlay`) |
 | "캔버스 텍스트 길이가 늘어난다" 로 본체 렌더 판정 | 탭/상태를 바꾸면 **줄어들 수도** 있다. 실측: my_comments 서브탭이 정상 렌더되는데 881 → 669 로 감소(항목당 길이가 짧아서) | 그 데이터에만 있는 고유 문구 존재로 판정 |
 | 상태/옵션의 **총 개수**를 단언 | 상태 그룹은 편집기 스펙에서 계속 늘어난다. 체크아웃 상태가 3 → 4 로 늘면서 `toHaveCount(3)` 이 깨졌다 | 그 테스트가 실제로 쓰는 값의 존재로 판정 |
 | `waitForLoadState('networkidle')` | 관리자 SPA 는 실시간 연결·주기 폴링이 붙어 500ms 무통신 구간이 오지 않을 수 있다. 실측 30초 타임아웃 | 다음 단계에 필요한 구체 신호(클릭할 버튼의 가시성 등) |
@@ -432,27 +429,6 @@ test('이커머스 상품 목록', async ({ page, settingsToken, seededEcommerce
   await page.goto('/admin/ecommerce/products');
   await expect(page.getByTestId('product-list-row')).toHaveCount(seededEcommerce.productIds.length);
 });
-```
-
-### 5.3 실행 환경변수로 계정을 받는 spec — `G7_E2E_TOKEN` · `G7_E2E_ENGINE_BUNDLE`
-
-공유 개발 서버에서 도는 spec 이 계정·역할을 새로 만들지 않아야 하면, 로그인은 실행 환경변수로만 받는다. 기본 구현은
-`templates/_bundled/sirsoft-basic/tests/Playwright/fixtures/env-account.ts` 다(`hasEnvAccount` · `envAccountToken` ·
-`authenticateWith` · `guardWrites` · `ACCOUNT_SKIP_REASON`). 다른 확장의 spec 도 같은 규약을 따른다.
-
-| 환경변수 | 뜻 | 규약 |
-| --- | --- | --- |
-| `G7_E2E_TOKEN` | 이미 받은 Sanctum 토큰(일회용 — 실행이 끝나면 회수한다) | 가장 먼저 쓴다. 없으면 `G7_E2E_ADMIN_EMAIL` + `G7_E2E_ADMIN_PASSWORD_FILE` 로 로그인하고, 둘 다 없으면 `test.skip(!hasEnvAccount(), ACCOUNT_SKIP_REASON)` 으로 사유를 남기고 건너뛴다 |
-| `G7_E2E_ENGINE_BUNDLE` | 수정 전 엔진 번들 파일 경로(예: `git show HEAD:public/build/core/template-engine.min.js` 로 뽑은 파일) | 주면 그 브라우저에서만 `template-engine.min.js` 요청을 이 파일로 바꿔 끼운다(서버 파일은 그대로). 고치기 전 번들에서 red, 고친 번들에서 green 인지 대조할 때 쓴다 |
-
-- **토큰·비밀번호는 출력하지 않는다** — `console.log`·첨부(annotation)·오류 메시지에는 URL·칸 값·상태 코드만 남긴다. 예시 명령에는 `<일회용 관리자 토큰>` 같은 자리표시를 쓴다.
-- 계정을 받는 spec 은 저장(PUT 등)이 서버에 닿지 않게 `guardWrites(page)` 를 먼저 건다 — GET·HEAD 가 아닌 `/api/` 요청을 네트워크 단에서 가로채 XHR·fetch 를 함께 막는다. 화면별 모의 응답은 그 뒤에 등록한다(Playwright 는 나중에 건 route 를 먼저 탄다). 제품 화면의 영속 데이터 오염 금지는 §4.1 과 같다.
-- 대상 레코드(상품 등)가 없으면 사유와 함께 skip 한다 — 계정이 있어도 데이터가 없는 환경에서 실패로 끝내지 않는다.
-
-```powershell
-$env:G7_E2E_TOKEN='<일회용 관리자 토큰>'
-$env:G7_E2E_ENGINE_BUNDLE='<수정 전 엔진 번들 경로>'   # 수정 전 대조가 필요할 때만
-npx playwright test --config=templates/_bundled/sirsoft-basic/tests/Playwright/playwright.config.ts <spec 파일>
 ```
 
 ## §6. 도메인 매트릭스 (4 카테고리)

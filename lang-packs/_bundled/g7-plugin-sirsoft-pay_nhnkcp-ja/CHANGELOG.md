@@ -4,26 +4,6 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.3] - 2026-11-10
-
-### Added
-
-- NHN KCP 1.1.3 의 비회원 모바일 결제 확인 만료 안내(`payment.error.mobile_guest_auth_failed` 「注文確認情報の有効期限が切れました。…」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 한국어로 보입니다.
-
-## [1.1.2] - 2026-11-01
-
-### Added
-
-- NHN KCP 1.1.2 의 PC 결제창 프레임 요청 항목명(`messages.kcp_frame.sdk` 「決済ウィンドウ SDK の URL」)의 일본어 번역을 추가했습니다.
-- 결제 정보 부가세 내역의 「영세금액」(ゼロ税率金額) 일본어 번역을 추가했습니다.
-- KCP 1.1.2 의 모바일 결제를 쓸 수 없을 때 고객에게 보이는 안내(`messages.errors.mobile_payment_unavailable` 「現在モバイル決済をご利用いただけません。…」)의 일본어 번역을 추가했습니다.
-
-## [1.1.1] - 2026-10-21
-
-### Added
-
-- NHN KCP 1.1.1 의 관리자 주문 상세 에스크로 배송 등록 택배사 이름 11개(`admin.escrow_couriers.*` — 「韓進宅配」「ロジェン宅配」 등)의 일본어 번역을 추가했습니다. 종전에는 일본어 화면에서도 택배사 이름이 한국어로 보였습니다.
-
 ## [1.1.0] - 2026-10-10
 
 ### Added

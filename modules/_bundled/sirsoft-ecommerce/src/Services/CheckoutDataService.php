@@ -205,8 +205,7 @@ class CheckoutDataService
         // "화면이 허용한 값인데 결제에서 422" 가 된다.
         $paymentAmount = (int) ($calculationArray['summary']['payment_amount'] ?? $subtotal);
         $mileageInfo = $this->userMileageService->getBalance($userId);
-        // 상품 합계(할인 전 소계)를 함께 넘겨 「사용 가능 최소 상품 합계」에 못 미치면 안내값도 0 이 되게 한다
-        $mileageInfo['max_usable'] = $this->userMileageService->getMaxUsable($userId, $paymentAmount, null, (int) $subtotal);
+        $mileageInfo['max_usable'] = $this->userMileageService->getMaxUsable($userId, $paymentAmount);
         // 기본 통화 사용 규칙 미설정 시 사용 불가(M2) — 적립(enabled)과 분리된 "사용 가능" 플래그
         $mileageInfo['usable'] = $this->userMileageService->isMileageUsable();
         // 사용 정책(최소 사용액/사용 단위/정책상 최대) — 입력 UI 가 서버 판정과 같은 기준을 쓰도록 노출

@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models\Concerns;
 
-use App\Support\PublicAssetDisk;
 use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
 
 /**
@@ -48,11 +47,6 @@ trait HasDirectAssetUrl
         $path = (string) ($this->path ?? '');
 
         if ($disk === '' || $path === '') {
-            return null;
-        }
-
-        // 「공개 디스크로 내보낼 확장자」 밖의 파일은 직접 주소로 내보내지 않는다 — 서버를 거치는 주소로.
-        if (! PublicAssetDisk::exportsExtension(pathinfo($path, PATHINFO_EXTENSION))) {
             return null;
         }
 

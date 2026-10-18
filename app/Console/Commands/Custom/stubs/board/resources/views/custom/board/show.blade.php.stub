@@ -1,0 +1,69 @@
+@extends('custom.layout')
+
+@section('title', $post['title'] ?? '')
+@section('footer_note', __('custom::board.show_footer'))
+
+@section('content')
+<article class="cx-wrap cx-narrow cx-stack">
+    <nav class="cx-crumb" aria-label="{{ __('custom::board.crumb') }}">
+        <a href="{{ $listUrl }}">{{ $board['name'] ?? $slug }}</a>
+        <span aria-hidden="true">&rsaquo;</span>
+        <span>{{ __('custom::board.view') }}</span>
+    </nav>
+
+    <div class="cx-card cx-post">
+        <header class="cx-post-head">
+            <h1 class="cx-h1" data-testid="cx-post-title">{{ $post['title'] ?? '' }}</h1>
+            <div class="cx-meta">
+                <span>{{ $post['author']['name'] ?? '' }}</span>
+                <span>{{ $post['created_at'] ?? '' }}</span>
+                <span>{{ trans_choice('custom::board.views', (int) ($post['view_count'] ?? 0)) }}</span>
+                <span>{{ trans_choice('custom::board.comment_count', (int) ($post['comment_count'] ?? 0)) }}</span>
+            </div>
+        </header>
+
+        {{-- 본문은 코어 SEO 렌더와 같은 정리기(HtmlSanitizer)로 정리한 HTML 이다 --}}
+        <div class="cx-content" data-testid="cx-post-content">{!! $contentHtml !!}</div>
+
+        @if(!empty($post['attachments']))
+            <div class="cx-attachments">
+                <span class="cx-muted">{{ trans_choice('custom::board.attachments', count($post['attachments'])) }}</span>
+                @foreach($post['attachments'] as $file)
+                    <a href="{{ $file['download_url'] ?? '#' }}">{{ $file['original_filename'] ?? ($file['name'] ?? '') }}</a>
+                @endforeach
+            </div>
+        @endif
+
+        <div class="cx-actions">
+            <a class="cx-button-outline" href="{{ $listUrl }}">{{ __('custom::board.list') }}</a>
+            @if(!empty($post['abilities']['can_update']) || !empty($post['is_author']))
+                <a class="cx-button cx-push" href="{{ $editUrl }}">{{ __('custom::board.edit') }} <small>{{ __('custom::board.g7_screen') }}</small></a>
+            @endif
+        </div>
+    </div>
+
+    @if(!empty($post['comments']))
+        <section class="cx-card cx-comments-box" aria-labelledby="cx-comments-title">
+            <h2 id="cx-comments-title" class="cx-h2">{{ trans_choice('custom::board.comment_count', (int) ($post['comments_total'] ?? count($post['comments']))) }}</h2>
+            @foreach($post['comments'] as $comment)
+                <div class="cx-comment">
+                    <span class="cx-comment-author">{{ $comment['author']['name'] ?? '' }} <span class="cx-muted">&middot; {{ $comment['created_at_formatted'] ?? ($comment['created_at'] ?? '') }}</span></span>
+                    <span>{{ $comment['content'] ?? '' }}</span>
+                </div>
+            @endforeach
+        </section>
+    @endif
+
+    @php($nav = $post['navigation'] ?? [])
+    @if(!empty($nav['prev']) || !empty($nav['next']))
+        <nav class="cx-card cx-prevnext" aria-label="{{ __('custom::board.prev_next') }}">
+            @if(!empty($nav['prev']))
+                <a href="/board/{{ $slug }}/{{ $nav['prev']['id'] }}"><span class="cx-muted">{{ __('custom::board.prev_post') }}</span> {{ $nav['prev']['title'] ?? '' }}</a>
+            @endif
+            @if(!empty($nav['next']))
+                <a href="/board/{{ $slug }}/{{ $nav['next']['id'] }}"><span class="cx-muted">{{ __('custom::board.next_post') }}</span> {{ $nav['next']['title'] ?? '' }}</a>
+            @endif
+        </nav>
+    @endif
+</article>
+@endsection

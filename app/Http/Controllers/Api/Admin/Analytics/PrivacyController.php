@@ -57,7 +57,6 @@ class PrivacyController extends AdminBaseController
             'visits' => $found['visits']->map(fn ($visit): array => [
                 'visit_id' => $visit->id,
                 'visitor_key' => $visit->visitor_key,
-                // audit:allow datetime-display-user-timezone reason: 날짜 전용 컬럼(사이트 날짜) 원값 — 변환 대상 아님
                 'visit_date' => $visit->visit_date?->toDateString(),
                 'first_action_at' => AnalyticsClock::toSiteDateTimeString($visit->first_action_at),
                 'last_action_at' => AnalyticsClock::toSiteDateTimeString($visit->last_action_at),
@@ -65,7 +64,7 @@ class PrivacyController extends AdminBaseController
                 // 이 경로는 열람 권한 전용이라 주소를 그대로 보여 준다(익명 구간은 애초에 null 이다).
                 'ip' => $visit->ip,
                 // 그 주소가 지금 설정대로 가려진 값인지 — 열 이름만 설정을 따르면 소급을 건너뛴 기존
-                // 행의 원래 주소가 「마스킹됨」 아래 서서 가려진 값으로 읽힌다(7.1.0 실측).
+                // 행의 원래 주소가 「마스킹됨」 아래 서서 가려진 값으로 읽힌다(7.1.0 실측 O-E8).
                 'ip_masked' => IpAddress::isMaskedBy($visit->ip, $config->ipMaskOctets),
                 'visitor_type' => $visit->visitor_type instanceof \BackedEnum ? $visit->visitor_type->value : $visit->visitor_type,
                 'pageviews_count' => $visit->pageviews_count,
@@ -126,19 +125,14 @@ class PrivacyController extends AdminBaseController
      */
     public function deleteSubject(SubjectDeleteRequest $request): JsonResponse
     {
-        $deleted = $this->subjects->delete(
-            $request->subject(),
-            AnalyticsConfig::fromSettings(),
-            $request->input('from'),
-            $request->input('to'),
-        );
-
-        // `extensions` 는 확장 식별자 → 지운 건수 맵이라 비면 `{}` 로 낸다 — 서비스·훅(`subject_deleted`) 인자는 배열 그대로 (7.1.1 출시 전)
-        if (($deleted['extensions'] ?? null) === []) {
-            $deleted['extensions'] = new \stdClass;
-        }
-
-        return $this->success('analytics.privacy.subject_delete_success', ['deleted' => $deleted]);
+        return $this->success('analytics.privacy.subject_delete_success', [
+            'deleted' => $this->subjects->delete(
+                $request->subject(),
+                AnalyticsConfig::fromSettings(),
+                $request->input('from'),
+                $request->input('to'),
+            ),
+        ]);
     }
 
     /**

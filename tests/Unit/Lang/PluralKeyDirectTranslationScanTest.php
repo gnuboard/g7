@@ -28,12 +28,6 @@ class PluralKeyDirectTranslationScanTest extends TestCase
      */
     private const NOT_PLURAL_PIPE_KEYS = [
         'validation.schedule_command.shell_not_allowed' => '「파이프(|)」 문자를 설명하는 문장이다 — 수 자리표시자 없음',
-        // 명령 선택지를 `a|b|c` 로 나열한 콘솔 안내다 — 단·복수 문구가 아니라 `__()` 가 맞다(두 문장으로 갈리지 않는다)
-        'settings.bundled_sources.unknown_action' => '동작 선택지 목록(list|place|prune) — 수 자리표시자 없음',
-        'settings.bundled_sources.errors.unknown_type' => '번들 유형 선택지 목록 — 수 자리표시자 없음',
-        'language_packs.commands.update.invalid_source' => '--source 선택지 목록 — 수 자리표시자 없음',
-        'layouts.console.audit_expressions.invalid_source' => '--source 선택지 목록 — 수 자리표시자 없음',
-        'settings.bundled_sources.place_summary' => '`|` 는 명령 패턴 {module|plugin|template} 안의 글자다 — trans_choice 로 부르면 오히려 문장이 갈린다',
     ];
 
     /**

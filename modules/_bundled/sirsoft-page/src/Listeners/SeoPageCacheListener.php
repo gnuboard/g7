@@ -10,6 +10,7 @@ use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SitemapIndexer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Page\Support\PageScreenUrl;
 
 /**
  * 페이지 변경 시 SEO 캐시 무효화 리스너
@@ -162,7 +163,7 @@ class SeoPageCacheListener implements HookListenerInterface
 
             if ($visible) {
                 $indexer->indexResource('page', $page->id, 'sirsoft-page', [[
-                    'url' => "/page/{$page->slug}",
+                    'url' => PageScreenUrl::show((string) $page->slug),
                     'lastmod' => $page->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Monthly->value,
                     'priority' => 0.5,

@@ -13,7 +13,7 @@ class FilePermissionHelper
      * - 기존 디렉토리: 퍼미션/소유자/그룹 유지
      * - 신규 디렉토리: 부모 디렉토리의 퍼미션/소유자/그룹 상속
      * - 기존 파일: 퍼미션/소유자/그룹 유지한 채 내용만 교체
-     * - 신규 파일: 부모 디렉토리의 퍼미션(실행 비트 제외)·소유자/그룹 상속 — umask 무관
+     * - 신규 파일: 부모 디렉토리의 소유자/그룹 상속 (퍼미션은 PHP 기본 umask)
      * - removeOrphans=false: 소스에 없고 대상에만 있는 파일 유지 (사용자 추가 파일 보호)
      * - removeOrphans=true: 소스에 없고 대상에만 있는 파일/디렉토리 삭제 (excludes 제외)
      * - preserveTopLevelOrphans=true: removeOrphans=true 라도 *최상위 한 레벨* 에서 소스에
@@ -344,7 +344,7 @@ class FilePermissionHelper
      * 퍼미션과 소유권을 보존하면서 파일을 복사합니다.
      *
      * - 기존 파일: 복사 후 원래 퍼미션/소유자/그룹 복원
-     * - 신규 파일: 부모 디렉토리의 퍼미션(실행 비트 제외, `newFileModeFromParent`)·소유자/그룹 상속 — umask 무관
+     * - 신규 파일: 부모 디렉토리의 소유자/그룹 상속 (퍼미션은 PHP 기본 umask)
      *
      * 신규 파일에 부모 소유권을 상속시키는 이유는 sudo 로 실행된 업데이트가 root 소유로
      * 파일을 생성하는 문제를 방지하기 위함이다. vendor/ 내부처럼 cleanDirectory 후
@@ -382,46 +382,9 @@ class FilePermissionHelper
                 @chgrp($destination, $existingGroup);
             }
         } else {
-            // 신규 파일: 부모 디렉토리의 퍼미션(실행 비트 제외)·소유자·그룹 상속
-            $mode = static::newFileModeFromParent(dirname($destination), $source);
-            if ($mode !== null) {
-                @chmod($destination, $mode);
-            }
+            // 신규 파일: 부모 디렉토리의 소유자/그룹 상속
             static::inheritOwnershipFromParent($destination);
         }
-    }
-
-    /**
-     * 새 파일에 줄 퍼미션을 부모 디렉토리 퍼미션에서 정합니다.
-     *
-     * `copy()` 로 만든 새 파일의 퍼미션은 프로세스 umask 를 따른다 — umask 0027·0077 인 실행(보안 강화 서버의
-     * CLI·sudo)에서는 0640·0600 이 되어, 웹서버가 직접 내주는 public/ 아래 새 파일(해시 파일명이 바뀌는
-     * `public/build/core/*.js` 등)을 웹서버 계정이 읽지 못해 403 이 난다. 부모 디렉토리 퍼미션에서 실행 비트를
-     * 뺀 값(0755 → 0644, 0775 → 0664, 0750 → 0640)을 주면 그 트리의 공개 범위를 그대로 따른다. 실행 비트는
-     * 원본에 있고 부모가 허용하는 것만 남긴다.
-     *
-     * @param  string  $parentDir  새 파일이 놓일 디렉토리
-     * @param  string|null  $source  원본 파일 (실행 비트 판정용, null 이면 실행 비트 없음)
-     * @return int|null 줄 퍼미션 (부모 퍼미션을 읽지 못하면 null — 손대지 않음)
-     */
-    public static function newFileModeFromParent(string $parentDir, ?string $source = null): ?int
-    {
-        $parentPerms = @fileperms($parentDir);
-        if ($parentPerms === false) {
-            return null;
-        }
-        $parentPerms &= 0777;
-
-        $mode = $parentPerms & 0666;
-
-        if ($source !== null) {
-            $sourcePerms = @fileperms($source);
-            if ($sourcePerms !== false) {
-                $mode |= ($sourcePerms & 0111) & $parentPerms;
-            }
-        }
-
-        return $mode;
     }
 
     /**
@@ -437,10 +400,6 @@ class FilePermissionHelper
         $parentPerms = $parentExists ? (fileperms($parentDir) & 0777) : 0755;
 
         File::ensureDirectoryExists($path, $parentPerms, true);
-
-        // mkdir 의 mode 인자는 umask 로 깎인다(umask 0027 이면 0755 요청이 0750) — 그대로 두면 웹서버가
-        // 직접 내주는 public/ 아래 새 폴더(public/build/core 등)에 웹서버 계정이 들어가지 못한다. 명시 chmod.
-        @chmod($path, $parentPerms);
 
         if ($parentExists) {
             static::applyOwnership($path, fileowner($parentDir), filegroup($parentDir));

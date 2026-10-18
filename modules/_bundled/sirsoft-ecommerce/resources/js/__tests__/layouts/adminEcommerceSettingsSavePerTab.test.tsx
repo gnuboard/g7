@@ -228,7 +228,7 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             );
             expect(tabChangeAction).toBeDefined();
 
-            // 고친 것이 있으면 확인 창을 먼저 띄운다(7.1.0 브라우저 실측 조치 — admin-ecommerce-settings-unsaved-tab-confirm.test.ts).
+            // 고친 것이 있으면 확인 창을 먼저 띄운다(7.1.0 조치 G2 — admin-ecommerce-settings-unsaved-tab-confirm.test.ts).
             // 고친 것이 없으면 탭 전환 이벤트만 보낸다 — 정리·전역 탭·이동은 탭 본문 틀의 이벤트 받기가 한다(#753)
             expect(tabChangeAction.handler).toBe('conditions');
             const directSwitch = tabChangeAction.conditions[1].then;
@@ -258,9 +258,9 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
          *
          * @effects settings_tabs_include_privacy_retention
          */
-        it('12개 탭이 정의되어야 한다 (마일리지·개인정보 보유기간·상품 진열 탭 포함)', () => {
+        it('11개 탭이 정의되어야 한다 (마일리지·개인정보 보유기간 탭 포함)', () => {
             const tabs = tabNav.props.tabs;
-            expect(tabs).toHaveLength(12);
+            expect(tabs).toHaveLength(11);
 
             const tabIds = tabs.map((t: any) => t.id);
             expect(tabIds).toEqual([
@@ -271,8 +271,6 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
                 'claim',
                 'shipping',
                 'review_settings',
-                // 상품 상세 관련 상품(「이 상품은 어떠세요?」) 순서·목록 유지 시간
-                'product_display',
                 'notification_definitions',
                 'identity_policies',
                 'mileage',

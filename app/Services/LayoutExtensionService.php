@@ -19,7 +19,6 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Traits\CollectsFragmentSources;
@@ -90,17 +89,6 @@ class LayoutExtensionService
      * @var array<int, array>
      */
     private array $previewContentOverrides = [];
-
-    /**
-     * 확장점 주입 한 번(applyExtensionPoints) 동안 데이터 소스·모달을 이미 병합한 확장 ID.
-     *
-     * 같은 이름의 확장점이 한 레이아웃에 여러 자리 있으면(같은 조각을 유형별 갈래 세 곳에 include 한 화면,
-     * 목록 행의 PC·모바일 두 자리) 조각 컴포넌트는 자리마다 들어가야 하지만, 조각의 데이터 소스·모달은 레이아웃에
-     * 한 번만 있어야 한다. 종전에는 자리마다 다시 병합해 응답에 같은 정의가 자리 수만큼 실렸다(#149).
-     *
-     * @var array<int, true>
-     */
-    private array $assetMergedExtensionIds = [];
 
     /**
      * 미리보기 확장 content 오버라이드를 설정합니다.
@@ -570,7 +558,6 @@ class LayoutExtensionService
             return $layout;
         }
 
-        $this->assetMergedExtensionIds = [];
         $dataSources = $layout['data_sources'] ?? [];
         $modals = $layout['modals'] ?? [];
 
@@ -672,15 +659,6 @@ class LayoutExtensionService
                             'prepend' => array_merge($componentsWithProps, $injectedComponents),
                             default => array_merge($injectedComponents, $componentsWithProps),
                         };
-                    }
-
-                    // 데이터 소스·스크립트·모달은 레이아웃 단위 자원이다 — 같은 확장점이 여러 자리에 있어도 확장마다
-                    // 한 번만 병합한다({@see $assetMergedExtensionIds}). 컴포넌트는 위에서 자리마다 주입했다.
-                    if ($extension->id !== null) {
-                        if (isset($this->assetMergedExtensionIds[$extension->id])) {
-                            continue;
-                        }
-                        $this->assetMergedExtensionIds[$extension->id] = true;
                     }
 
                     // 데이터 소스 병합 — 편집 모드에서는 주입한 data_source 에 확장 출처 메타
@@ -2505,7 +2483,6 @@ class LayoutExtensionService
                     'fragment_key' => $definition['key'],
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('layout_extension_register', basename((string) $definition['path']), $e->getMessage());
             }
         }
 

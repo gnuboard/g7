@@ -3,15 +3,15 @@
   `responsive` 로 한쪽만 남긴다. -->
 <partial description="Product Form - Sales Information Section">
   <div data-ref="sales" class="admin-card-accordion">
-    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.salesInfoExpanded !== false}}">
+    <div class="card-header">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.salesInfoExpanded="{{!_local.ui.salesInfoExpanded}}"/>
       </on>
       <icon name="coins" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.sales_info</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.salesInfoExpanded !== false ? 'rotate-180' : ''}}"/>
-    </button>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.salesInfoExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
     <div data-ref="sales_info_body" data-if="{{_local.ui.salesInfoExpanded !== false}}" class="row-stack">
       <div data-ref="base_currency_row_desktop" class="flex-center form-group gap-4">
         <responsive on="portable" data-if="{{false}}"/>
@@ -111,16 +111,7 @@
             </on>
             $t:sirsoft-ecommerce.admin.product.tax.tax_free
           </button>
-          <!-- 영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (#612, 넓은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'zero_rated' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
-            <on type="click">
-              <set-state target="local" form.tax_status="zero_rated"/>
-            </on>
-            $t:sirsoft-ecommerce.admin.product.tax.zero_rated
-          </button>
         </div>
-        <!-- 옵션마다 과세 종류를 다르게 정하는 곳 안내 (넓은 화면) -->
-        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.create.sales_info.tax_status_help</span>
       </div>
       <div data-ref="tax_status_row_mobile" class="form-group">
         <responsive on="desktop" data-if="{{false}}"/>
@@ -140,16 +131,7 @@
             </on>
             $t:sirsoft-ecommerce.admin.product.tax.tax_free
           </button>
-          <!-- 영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (#612, 좁은 화면) -->
-          <button type="button" class="btn-group-item {{_local.form.tax_status === 'zero_rated' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
-            <on type="click">
-              <set-state target="local" form.tax_status="zero_rated"/>
-            </on>
-            $t:sirsoft-ecommerce.admin.product.tax.zero_rated
-          </button>
         </div>
-        <!-- 옵션마다 과세 종류를 다르게 정하는 곳 안내 (좁은 화면) -->
-        <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.product.create.sales_info.tax_status_help</p>
       </div>
       <div data-ref="sales_status_row_desktop" class="flex-center form-group gap-4">
         <responsive on="portable" data-if="{{false}}"/>

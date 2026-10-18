@@ -4,7 +4,6 @@ return [
     // Retention handler labels — shared by command output and the dry-run badge on the settings screen.
     'handlers' => [
         'user_withdrawn' => 'Residual personal data of withdrawn members',
-        'search_history' => 'Recent search retention',
     ],
 
     // Target list modal — column labels and target list API errors.
@@ -15,14 +14,9 @@ return [
             'withdrawn_at' => 'Withdrawn on',
             'last_activity_at' => 'Last activity',
             'dormant_at' => 'Dormant since',
-            'member' => 'Member',
-            'search_scope' => 'Search scope',
-            'keyword_count' => 'Searches',
-            'oldest_searched_at' => 'Oldest search',
         ],
         'unknown_handler' => 'This personal data processing target is not registered.',
         'unknown_stage' => 'Unknown dormant stage.',
-        'keyword_count_value' => ':count searches',
     ],
 
     // Manual run by an administrator — the "Run now" button on settings cards (queue → process → result on the card).
@@ -52,31 +46,5 @@ return [
     // Public consent snapshot (GET /api/consent) response message.
     'consent' => [
         'fetch_success' => 'Checked the visitor consent status.',
-    ],
-    // `privacy:*` command output
-    'console' => [
-        'lock_unavailable' => 'This item was not processed because the lock store (cache) is unavailable.',
-        'process_retention' => [
-            'handler_required' => 'Specify a handler identifier for --handler. To run all handlers, omit the option.',
-            'registered_handlers' => 'Registered handlers: :handlers',
-            'none' => 'none',
-            'unknown_handler' => 'Unregistered retention handler: :handler',
-            'no_handlers' => 'No retention handlers are registered.',
-            'handler_disabled' => ':id (:label): skipped because it is turned off.',
-            'handler_locked' => ':id (:label): skipped because an administrator-initiated run is in progress.',
-            'handler_failed' => ':id (:label): failed — :error',
-            'handler_done' => ':id (:label): :count (:mode)',
-            'total' => 'Total: :count',
-        ],
-        'process_dormant' => [
-            'disabled' => 'Skipped because the dormant account feature is turned off. (privacy.dormant_enabled = false)',
-            'locked' => 'Skipped this cycle because an administrator-initiated run is processing the dormancy stages.',
-            'pre_notice' => 'Dormancy advance notices: :count',
-            'converted' => 'Converted to dormant: :count',
-            'withdraw_notice' => 'Upcoming withdrawal notices: :count',
-            'withdrawn' => 'Withdrawn: :count',
-            'withdraw_disabled' => 'Skipped because automatic withdrawal after dormancy is turned off. (privacy.dormant_withdraw_enabled = false)',
-            'stage_failed' => 'Stage failed — :stage: :error',
-        ],
     ],
 ];

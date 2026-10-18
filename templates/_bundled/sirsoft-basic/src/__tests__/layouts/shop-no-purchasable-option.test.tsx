@@ -11,10 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
-import { inlineNamedActions } from '../../../__tests__/helpers/inlineNamedActions';
-import purchaseCardRaw from '../../../layouts/partials/shop/detail/_purchase_card.json';
-const purchaseCard = inlineNamedActions(purchaseCardRaw);
+import purchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
 
 /**
  * JSON 트리에서 조건을 만족하는 모든 노드를 수집한다.
@@ -59,7 +56,7 @@ function evaluateDisabled(expression: string, product: any, local: any = {}): bo
 const NO_OPTION_GUARD = '(Array.isArray(product.data?.options) && product.data.options.length === 0)';
 
 /**
- * 주문 권한(7.1.0 abilities 게이트) — 상품 응답은 `abilities.can_order` 를 늘 싣고 [바로 구매]는 `can_order !== true` 면 잠긴다.
+ * 주문 권한(7.1.0 shop#3) — 상품 응답은 `abilities.can_order` 를 늘 싣고 [바로 구매]는 `can_order !== true` 면 잠긴다.
  * 이 파일은 옵션 없음 가드만 재므로 권한은 있는 상태로 둔다. 빼면 「잠긴다」 단언이 권한 게이트 때문에 공허하게 통과한다.
  */
 const CAN_ORDER = { abilities: { can_order: true } };

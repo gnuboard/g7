@@ -3,8 +3,6 @@
 namespace Plugins\Sirsoft\Gdpr\Tests\Unit\Support;
 
 use App\Extension\HookManager;
-use App\Extension\TemplateManager;
-use App\Support\CoreNecessaryStorage;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Support\NecessaryAllowlist;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
@@ -43,77 +41,6 @@ class ProvidedNecessaryStorageTest extends PluginTestCase
         $this->saved = HookManager::getFilters()[Plugin::PROVIDED_NECESSARY_STORAGE_HOOK] ?? [];
         HookManager::clearFilter(Plugin::PROVIDED_NECESSARY_STORAGE_HOOK);
         $this->forgetMemo();
-
-        // 활성 템플릿의 template.json 선언(코어 7.1.3)은 설치본 상태에 따라 달라진다 — 훅 계약만 보도록 비운다
-        $this->bindTemplateDeclarations(['localStorage' => [], 'sessionStorage' => [], 'cookie' => []]);
-    }
-
-    /**
-     * 활성 템플릿의 필수 저장 키 선언을 정해 둡니다 (TemplateManager 대역).
-     *
-     * @param  array<string, array<int, string>>  $declared  저장소 종류 => 키 목록
-     * @return void 반환값 없음
-     */
-    private function bindTemplateDeclarations(array $declared): void
-    {
-        $templates = \Mockery::mock(TemplateManager::class)->makePartial();
-        $templates->shouldReceive('getActiveTemplatesNecessaryStorage')->andReturn($declared);
-        $this->app->instance(TemplateManager::class, $templates);
-    }
-
-    /**
-     * 활성 템플릿이 template.json 으로 선언한 키가 제공 목록에 합쳐지고, 형식이 틀린 항목은 버린다 (1.1.2).
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario scope=sessionStorage, notation=wildcard, locked=operator_item, settings_state=populated, request=valid_item
-     *
-     * @effects template_declarations_merged_into_provided
-     */
-    public function test_template_declarations_are_merged_into_provided(): void
-    {
-        $this->bindTemplateDeclarations([
-            'localStorage' => ['g7_color_scheme', '*'],
-            'sessionStorage' => ['g7_dismissed_warnings'],
-            'cookie' => [],
-        ]);
-
-        $provided = Plugin::providedNecessaryStorage();
-
-        $this->assertSame(['g7_color_scheme', ...self::coreLocalKeys()], $provided['localStorage'], '`*` 단독은 게이트를 열므로 버린다');
-        $this->assertSame(['g7_dismissed_warnings'], $provided['sessionStorage']);
-    }
-
-    /**
-     * 코어가 선언한 필수 키(비회원 최근 검색어 `g7_search_history`)가 제공 목록과 판정에 합쳐집니다 (코어 7.1.5, 1.1.4).
-     *
-     * 코어 엔진은 동의 플러그인을 모르므로 키를 `App\Support\CoreNecessaryStorage` 로 선언하고 이 플러그인이 합쳐 읽는다.
-     * 빠지면 동의 전 방문자의 최근 검색어가 부팅 때마다 지워진다.
-     *
-     * @return void 반환값 없음
-     *
-     * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=empty, request=valid_item
-     *
-     * @effects core_declarations_merged_into_provided
-     */
-    public function test_core_declared_keys_are_merged_into_provided(): void
-    {
-        $provided = Plugin::providedNecessaryStorage();
-
-        $this->assertContains('g7_search_history', $provided['localStorage']);
-        $this->assertSame(CoreNecessaryStorage::keys()['localStorage'], self::coreLocalKeys());
-        $this->assertTrue(NecessaryAllowlist::matches('g7_search_history', 'localStorage'));
-        $this->assertFalse(NecessaryAllowlist::matches('g7_search_history', 'sessionStorage'), '선언한 저장소 종류로만 허용한다');
-    }
-
-    /**
-     * 코어 선언 localStorage 키 목록 (옛 코어면 빈 배열).
-     *
-     * @return array<int, string> 키 목록
-     */
-    private static function coreLocalKeys(): array
-    {
-        return class_exists(CoreNecessaryStorage::class) ? CoreNecessaryStorage::keys()['localStorage'] : [];
     }
 
     /**
@@ -135,7 +62,7 @@ class ProvidedNecessaryStorageTest extends PluginTestCase
     }
 
     /**
-     * 리스너가 없으면 제공 집합은 코어 선언 키(코어 7.1.5 `CoreNecessaryStorage`)만 남습니다.
+     * 리스너가 없으면 제공 집합은 세 스코프 모두 빈 배열입니다.
      *
      * @return void 반환값 없음
      *
@@ -146,7 +73,7 @@ class ProvidedNecessaryStorageTest extends PluginTestCase
     public function test_provided_set_is_empty_without_listeners(): void
     {
         $this->assertSame(
-            ['localStorage' => self::coreLocalKeys(), 'sessionStorage' => [], 'cookie' => []],
+            ['localStorage' => [], 'sessionStorage' => [], 'cookie' => []],
             Plugin::providedNecessaryStorage()
         );
     }
@@ -168,7 +95,7 @@ class ProvidedNecessaryStorageTest extends PluginTestCase
         $provided = Plugin::providedNecessaryStorage();
 
         $this->assertSame(['ext_a.pending', 'ext_b.stash'], $provided['sessionStorage']);
-        $this->assertSame(['ext_b_cart', ...self::coreLocalKeys()], $provided['localStorage']);
+        $this->assertSame(['ext_b_cart'], $provided['localStorage']);
         $this->assertSame([], $provided['cookie']);
     }
 
@@ -190,12 +117,12 @@ class ProvidedNecessaryStorageTest extends PluginTestCase
 
         $provided = Plugin::providedNecessaryStorage();
 
-        $this->assertSame(['ok_prefix_*', 'ok.key', ...self::coreLocalKeys()], $provided['localStorage']);
+        $this->assertSame(['ok_prefix_*', 'ok.key'], $provided['localStorage']);
         $this->assertSame(['localStorage', 'sessionStorage', 'cookie'], array_keys($provided));
     }
 
     /**
-     * 리스너가 배열이 아닌 값을 돌려주면 제공 집합은 코어 선언 키만 남은 집합으로 떨어집니다.
+     * 리스너가 배열이 아닌 값을 돌려주면 제공 집합은 빈 배열로 떨어집니다.
      *
      * @return void 반환값 없음
      *
@@ -209,7 +136,7 @@ class ProvidedNecessaryStorageTest extends PluginTestCase
         HookManager::addFilter(Plugin::PROVIDED_NECESSARY_STORAGE_HOOK, $callback);
 
         $this->assertSame(
-            ['localStorage' => self::coreLocalKeys(), 'sessionStorage' => [], 'cookie' => []],
+            ['localStorage' => [], 'sessionStorage' => [], 'cookie' => []],
             Plugin::providedNecessaryStorage()
         );
     }

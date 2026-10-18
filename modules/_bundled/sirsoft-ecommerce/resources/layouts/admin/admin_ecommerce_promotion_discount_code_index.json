@@ -161,7 +161,6 @@
                                         ],
                                         "props": {
                                             "name": "searchField",
-                                            "aria-label": "$t:common.search_field",
                                             "className": "w-32",
                                             "value": "{{_local.searchField}}",
                                             "options": [
@@ -220,7 +219,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
+                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                                                 }
                                             }
                                         ]
@@ -257,7 +256,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-500 dark:text-gray-300"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "(9)"
                                                     }
@@ -688,7 +687,6 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "text",
-                                                                    "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_min",
                                                                     "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min",
                                                                     "className": "input w-28",
                                                                     "value": "{{_local.benefitMin}}"
@@ -725,7 +723,6 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "text",
-                                                                    "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_max",
                                                                     "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max",
                                                                     "className": "input w-28",
                                                                     "value": "{{_local.benefitMax}}"
@@ -787,7 +784,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "calendar",
-                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
+                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                                                                         }
                                                                     },
                                                                     {
@@ -806,7 +803,6 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "text",
-                                                                            "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}",
                                                                             "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date",
                                                                             "className": "input w-32 pl-10",
                                                                             "value": "{{_local.startDate}}"
@@ -834,7 +830,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "calendar",
-                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
+                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                                                                         }
                                                                     },
                                                                     {
@@ -853,7 +849,6 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "text",
-                                                                            "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}",
                                                                             "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date",
                                                                             "className": "input w-32 pl-10",
                                                                             "value": "{{_local.endDate}}"
@@ -1043,7 +1038,6 @@
                                                 ],
                                                 "props": {
                                                     "name": "bulkStatus",
-                                                    "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.status_change",
                                                     "className": "w-32",
                                                     "value": "{{_local.bulkStatus}}",
                                                     "options": [
@@ -1130,7 +1124,6 @@
                                         ],
                                         "props": {
                                             "name": "sortBy",
-                                            "aria-label": "$t:common.sort_order",
                                             "className": "w-40",
                                             "value": "{{_local.sortBy}}",
                                             "options": [
@@ -1169,7 +1162,6 @@
                                         ],
                                         "props": {
                                             "name": "perPage",
-                                            "aria-label": "$t:common.per_page",
                                             "className": "w-20",
                                             "value": "{{_local.perPage}}",
                                             "options": [
@@ -1230,7 +1222,6 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.new_member_10",
                                                                             "className": "checkbox"
                                                                         }
                                                                     },
@@ -1240,7 +1231,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.new_member_10"
+                                                                        "text": "신규회원 10% 할인코"
                                                                     }
                                                                 ]
                                                             },
@@ -1302,7 +1293,7 @@
                                                                 "props": {
                                                                     "className": "text-sm font-medium text-primary"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.percent_max|percent=10|max=10,000"
+                                                                "text": "10% (최대 10,000원)"
                                                             }
                                                         ]
                                                     },
@@ -1391,7 +1382,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.issued_used|issued=8|used=8"
+                                                                                "text": "발급 8건 / 사용 8건"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1475,7 +1466,6 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000",
                                                                             "className": "checkbox"
                                                                         }
                                                                     },
@@ -1485,7 +1475,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000"
+                                                                        "text": "첫구매 5천원 할인"
                                                                     }
                                                                 ]
                                                             },
@@ -1547,7 +1537,7 @@
                                                                 "props": {
                                                                     "className": "text-sm font-medium text-primary"
                                                                 },
-                                                                "text": "₩5,000"
+                                                                "text": "5,000원"
                                                             }
                                                         ]
                                                     },
@@ -1636,7 +1626,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.issued_used|issued=152|used=89"
+                                                                                "text": "발급 152건 / 사용 89건"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1751,7 +1741,6 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_all",
                                                                             "className": "checkbox",
                                                                             "checked": "{{_local.selectAll}}"
                                                                         }
@@ -1873,7 +1862,6 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.new_member_10",
                                                                             "className": "checkbox"
                                                                         }
                                                                     }
@@ -1930,11 +1918,12 @@
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "Span",
+                                                                        "name": "A",
                                                                         "props": {
-                                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                                            "href": "#",
+                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.new_member_10"
+                                                                        "text": "신규회원 10% 할인코"
                                                                     }
                                                                 ]
                                                             },
@@ -1982,7 +1971,7 @@
                                                                                 "props": {
                                                                                     "className": "text-xs text-secondary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.max_amount|amount=10,000"
+                                                                                "text": "(최대 10,000원)"
                                                                             }
                                                                         ]
                                                                     }
@@ -2075,7 +2064,6 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000",
                                                                             "className": "checkbox"
                                                                         }
                                                                     }
@@ -2132,11 +2120,12 @@
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "Span",
+                                                                        "name": "A",
                                                                         "props": {
-                                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                                            "href": "#",
+                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000"
+                                                                        "text": "첫구매 5천원 할인"
                                                                     }
                                                                 ]
                                                             },
@@ -2176,7 +2165,7 @@
                                                                                 "props": {
                                                                                     "className": "text-sm text-primary"
                                                                                 },
-                                                                                "text": "₩5,000"
+                                                                                "text": "5,000원"
                                                                             }
                                                                         ]
                                                                     }

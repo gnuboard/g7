@@ -7,7 +7,7 @@
  * 줄지 않고, 블록 제목에는 단어 중간 줄바꿈이 없었다. 같은 결함이 이름·제목·본문을 그리는 화면 곳곳에 있어
  * 네 가지 표시 규칙으로 일괄 보호한다.
  *
- * - 상단 바 이름: 감싼 flex 자식 `min-w-0 flex-1`, 이름 `truncate`, 우측 단추 묶음 `shrink-0`
+ * - R1 상단 바 이름: 감싼 flex 자식 `min-w-0 flex-1`, 이름 `truncate`, 우측 단추 묶음 `shrink-0`
  * - R2 블록 글: `break-words`
  * - R3 flex 줄 안의 글: `min-w-0` + `wrap-anywhere` (`break-words` 는 flex 최소 폭 계산을 줄이지 못한다)
  * - R4 좁은 칸: `truncate` + 폭 상한(flex 자식이면 `min-w-0`, 줄지 않는 배지면 `max-w-32`)
@@ -334,7 +334,7 @@ describe('U15 회원 공개 프로필', () => {
    */
   it('작성글: 경로 이름 단추 min-w-0 truncate, 제목 H1 min-w-0 wrap-anywhere', () => {
     const layout = loadLayout('users/posts.json');
-    expectTokens(findOne(layout, (n) => ['A', 'Button'].includes(n.name) && textHas('userProfile.data?.name')(n), '작성글 경로 이름'), ['min-w-0', 'truncate'], '작성글 경로 이름');
+    expectTokens(findOne(layout, (n) => n.name === 'Button' && textHas('userProfile.data?.name')(n), '작성글 경로 이름'), ['min-w-0', 'truncate'], '작성글 경로 이름');
     expectTokens(findOne(layout, (n) => n.name === 'H1' && textHas('userProfile.data?.name')(n), '작성글 제목'), ['min-w-0', 'wrap-anywhere'], '작성글 제목');
   });
 });
@@ -480,8 +480,7 @@ describe('실측 발견 — 상품 상세의 운영자 입력 이름 (2026-10-13
     expectTokens(findOne(header, textHas('category_name'), '상품 카테고리 이름'), ['block', 'truncate'], '상품 카테고리 이름');
     const summary = loadLayout('partials/shop/detail/_info_summary.json');
     expectTokens(findOne(summary, (n) => typeof n.text === 'string' && n.text.includes('group.name_localized'), '옵션 요약 이름'), ['shrink-0', 'truncate'], '옵션 요약 이름');
-    // 옵션 선택 영역은 구매 카드와 바텀시트가 같이 쓰는 조각이다
-    const purchase = loadLayout('partials/shop/detail/_purchase_options.json');
+    const purchase = loadLayout('partials/shop/detail/_purchase_card.json');
     expectTokens(findOne(purchase, (n) => n.name === 'Label' && typeof n.text === 'string' && n.text.includes('group.name_localized'), '옵션 선택 라벨'), ['break-words'], '옵션 선택 라벨');
   });
 });
@@ -493,19 +492,14 @@ describe('실측 발견 — 하위 카테고리 칩 (2026-10-13 Chrome MCP)', ()
    * @scenario case=shop_category_long_name
    * @effects narrow_label_ellipsis_with_cap
    */
-  it('칩은 폭 상한(16rem), 칩 이름은 min-w-0 truncate, 칩 줄은 가로로 넘기는 ChipRows 안', () => {
-    // 칩 줄이 두 줄 + 가로 넘김(ChipRows)으로 바뀌면서 칩 폭 기준이 「줄 폭」에서 「고정 상한」으로 바뀌었다 —
-    // 가로로 넘기는 줄 안에서는 줄 폭이 칩들의 합이라 max-w-full 이 상한 구실을 하지 못한다.
-    // 긴 이름이 화면을 넘기지 않는다는 보장은 그대로다: 칩은 16rem 을 넘지 않고, 넘치는 줄은 ChipRows 가 안에서 넘긴다.
+  it('칩 래퍼·단추는 max-w-full, 칩 이름은 min-w-0 truncate', () => {
     const layout = loadLayout('shop/category.json');
     const name = findOne(layout, (n) => n.text === '{{sub?.name_localized}}', '하위 카테고리 칩 이름');
     expectTokens(name, ['min-w-0', 'truncate'], '하위 카테고리 칩 이름');
-    const chip = findOne(layout, (n) => ['A', 'Button'].includes(n.name) && (n.children ?? []).includes(name), '하위 카테고리 칩');
-    expectTokens(chip, ['max-w-[16rem]'], '하위 카테고리 칩');
+    const chip = findOne(layout, (n) => n.name === 'Button' && (n.children ?? []).includes(name), '하위 카테고리 칩');
+    expectTokens(chip, ['max-w-full'], '하위 카테고리 칩');
     const wrap = findOne(layout, (n) => (n.children ?? []).includes(chip), '하위 카테고리 칩 래퍼');
-    expectTokens(wrap, ['shrink-0'], '하위 카테고리 칩 래퍼');
-    const rows = findOne(layout, (n) => (n.children ?? []).includes(wrap), '하위 카테고리 칩 줄');
-    expect(rows.name).toBe('ChipRows');
+    expectTokens(wrap, ['max-w-full'], '하위 카테고리 칩 래퍼');
   });
 });
 
@@ -561,13 +555,12 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
    * validate-plan 라운드 3) — 한 줄 고정이던 때 297px 에서 제목이 0px 였고, 긴 게시판 이름이면 문서가 28px 넘쳤다.
    * 제목은 최소 3rem 을 지키고 배지가 줄어든다 — 배지가 줄지 않으면 360px·긴 이름에서 제목이 2px 였다.
    */
-  it('인기글 배지·제목 묶음은 한 줄(min-w-0 flex-1 basis-40), 제목 min-w-12·배지 줄어듦, 줄은 flex-wrap, N·시각 묶음 shrink-0', () => {
+  it('인기글 배지·제목 묶음은 한 줄(min-w-0 flex-1 basis-32), 제목 min-w-12·배지 줄어듦, 줄은 flex-wrap, N·시각 묶음 shrink-0', () => {
     const layout = loadLayout('partials/board/popular/_popular_item.json');
     const title = findOne(layout, (n) => n.text === '{{post.title}}', '인기글 제목');
     expectTokens(title, ['min-w-12', 'truncate', 'flex-1'], '인기글 제목');
     const group = findOne(layout, (n) => (n.children ?? []).includes(title), '인기글 배지·제목 묶음');
-    // 기준 폭 8rem(basis-32)이면 320px 에서도 시각이 같은 줄에 남아 제목이 79px(4~5자)였다 — 10rem 이면 320px 에서 시각이 내려가고 제목 122px (7.1.1 실측)
-    expectTokens(group, ['min-w-0', 'flex-1', 'basis-40'], '인기글 배지·제목 묶음');
+    expectTokens(group, ['min-w-0', 'flex-1', 'basis-32'], '인기글 배지·제목 묶음');
     expect(tokens(group)).not.toContain('flex-wrap');
     const badge = findOne(group.children ?? [], (c: Node) => c.text === '{{post.board_name}}', '인기글 배지');
     expectTokens(badge, ['min-w-0', 'truncate', 'max-w-32'], '인기글 배지');
@@ -576,22 +569,6 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
     expectTokens(row, ['flex-wrap'], '인기글 제목 줄');
     const meta = findOne(row.children ?? [], (c: Node) => (c.children ?? []).some((k: Node) => String(k.text ?? '').includes('created_at_formatted')), '인기글 N·시각 묶음');
     expectTokens(meta, ['shrink-0'], '인기글 N·시각 묶음');
-  });
-
-  /**
-   * 320px 에서 작성자 묶음이 줄어들 수 없어(min-w-0 없음) 비회원 작성자 「관리자」·「비회원」 배지가 글자 단위로 접혔다(7.1.1).
-   * 작성자 묶음은 줄어들고 조회·댓글 수 묶음은 제 폭을 지킨다.
-   *
-   * @scenario case=home_popular_boards_long_name
-   * @effects flex_text_shrinks_and_wraps, narrow_label_ellipsis_with_cap
-   */
-  it('인기글 작성자 줄: 작성자 묶음 min-w-0, 조회·댓글 수 묶음 shrink-0', () => {
-    const layout = loadLayout('partials/board/popular/_popular_item.json');
-    const author = findOne(layout, (n) => (n.children ?? []).some((c: Node) => c.name === 'UserInfo'), '인기글 작성자 묶음');
-    expectTokens(author, ['min-w-0'], '인기글 작성자 묶음');
-    const row = findOne(layout, (n) => (n.children ?? []).includes(author), '인기글 작성자 줄');
-    const stats = findOne(row.children ?? [], (c: Node) => c !== author && findAll(c, (k) => String(k.text ?? '').includes('view_count')).length > 0, '조회·댓글 수 묶음');
-    expectTokens(stats, ['shrink-0'], '조회·댓글 수 묶음');
   });
 
   /**
@@ -605,7 +582,7 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
     const layout = loadLayout(file);
     const row = findOne(layout, classHas('flex-1', 'min-w-0', 'flex', 'items-center', 'gap-2'), '배지·제목 줄');
     expect(tokens(row)).not.toContain('flex-wrap');
-    expectTokens(findOne(layout, (n) => ['P', 'Div'].includes(n.name) && typeof n.text === 'string' && n.text.includes(preview), '미리보기'), ['break-words'], `${file} 미리보기`);
+    expectTokens(findOne(layout, (n) => n.name === 'P' && typeof n.text === 'string' && n.text.includes(preview), '미리보기'), ['break-words'], `${file} 미리보기`);
   });
 });
 
@@ -623,40 +600,5 @@ describe('실측 발견 — 로고 이미지 비율 (2026-10-13 Chrome MCP)', ()
     const img = findOne(left, (n) => n.name === 'Img', '모바일 상단 로고');
     expectTokens(img, ['max-w-full', 'object-contain', 'object-left'], '모바일 상단 로고');
     expectTokens(findOne(left, (n) => (n.children ?? []).includes(img), '로고 감싼 칸'), ['min-w-0'], '로고 감싼 칸');
-  });
-});
-
-
-describe('게시글 분류 배지 전수 — 모집단을 레이아웃에서 파생 (7.1.1)', () => {
-  /**
-   * 글 보기의 분류 배지가 줄지 않는 배지 묶음 안에서 폭 상한이 없어, 띄어쓰기 없는 긴 분류 이름이 카드 밖으로 나가
-   * 390px 에서 문서가 628px 로 넓어졌다(basic 1.2.1 「카테고리 칩 같은 좁은 칸은 한 줄로 줄임」). 글 목록(일반·카드·갤러리)·
-   * 홈 게시판 요약·회원 작성글·문의 분류 배지도 같은 모양이라 함께 잠근다.
-   *
-   * @scenario case=post_title_long
-   * @effects narrow_label_ellipsis_with_cap, document_no_horizontal_overflow
-   */
-  it('분류 값만 그리는 노드는 truncate max-w-32', () => {
-    const files: string[] = [];
-    const walk = (dir: string) => {
-      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-        const p = path.join(dir, e.name);
-        if (e.isDirectory()) walk(p);
-        else if (e.name.endsWith('.json')) files.push(p);
-      }
-    };
-    walk(layoutsDir);
-    const seen: string[] = [];
-    for (const file of files) {
-      const rel = path.relative(layoutsDir, file).split(path.sep).join('/');
-      const nodes = findAll(JSON.parse(fs.readFileSync(file, 'utf-8')), (n) => typeof n.text === 'string' && /^\{\{\s*[\w?.]+\.category(\s*\?\?\s*'')?\s*\}\}$/.test(n.text.trim()));
-      for (const n of nodes) {
-        seen.push(rel);
-        expectTokens(n, ['truncate', 'max-w-32'], `${rel} 분류 배지 ${n.text}`);
-      }
-    }
-    // 글 보기 2(본문·원글) · 일반 목록 2 · 카드 · 갤러리 · 홈 요약 · 회원 작성글 2 · 문의 2
-    expect(seen.length).toBeGreaterThanOrEqual(11);
-    expect(seen).toContain('partials/board/types/basic/show.json');
   });
 });

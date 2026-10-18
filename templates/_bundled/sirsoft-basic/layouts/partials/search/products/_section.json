@@ -1,12 +1,11 @@
 {
-    "comment": "상품 결과 묶음(전체 탭) — 다섯 건까지만 보이고 나머지는 상품 탭으로 넘긴다. 쇼핑몰 모듈이 꺼져 있으면 묶음째 숨긴다.",
+    "comment": "상품 결과 묶음(전체 탭) — 다섯 건까지만 보이고 나머지는 상품 탭으로 넘긴다.",
     "meta": {
         "is_partial": true,
         "description": "전체 탭 - 상품 섹션 (최대 5개 + 전체보기)"
     },
     "type": "basic",
     "name": "Div",
-    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
     "props": {
         "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
     },
@@ -56,7 +55,7 @@
                 {
                     "comment": "전체보기 버튼",
                     "type": "basic",
-                    "name": "A",
+                    "name": "Button",
                     "if": "{{(searchResults?.data?.products_count ?? 0) > 0}}",
                     "actions": [
                         {
@@ -64,6 +63,7 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
+                                "path": "/search",
                                 "mergeQuery": true,
                                 "query": {
                                     "type": "products",
@@ -75,8 +75,6 @@
                         }
                     ],
                     "props": {
-                        "href": "/search?type=products&board_slug=&page=&cursor=",
-                        "mergeQuery": true,
                         "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                     },
                     "children": [
@@ -173,7 +171,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "mt-1 text-xs text-gray-400 dark:text-gray-500"
                     },
                     "text": "$t:search.failed.suggestion"
                 }

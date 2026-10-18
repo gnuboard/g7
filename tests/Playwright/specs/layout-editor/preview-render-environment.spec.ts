@@ -282,8 +282,7 @@ test.describe('@layout-editor 미리보기 렌더 환경 격리 (#141)', () => {
       }
       return {
         markerRules,
-        // 표식 요소는 생성형 시트 환경에서 <meta>, 폴백에서 <style> 이다 — 태그를 가리지 않는다
-        styleTags: document.querySelectorAll('[data-g7le-media-isolation]').length,
+        styleTags: document.querySelectorAll('style[data-g7le-media-isolation]').length,
         editorMarkers: document.querySelectorAll('[data-editor-path],[data-editor-item-path]').length,
         cols: getComputedStyle(document.querySelector('.grid.md\\:grid-cols-2.lg\\:grid-cols-4')!).gridTemplateColumns.split(' ').length,
       };

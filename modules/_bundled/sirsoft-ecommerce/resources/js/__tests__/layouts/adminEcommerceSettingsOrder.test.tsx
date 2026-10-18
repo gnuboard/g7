@@ -465,15 +465,12 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
 
         /**
          * @scenario partial=payment_methods_list
-         * @effects orphaned_method_row_marked
+         * @effects orphaned_method_row_dimmed
          */
         it('고아 항목 classMap이 정의되어야 한다', () => {
             expect(tpl.classMap).toBeDefined();
             expect(tpl.classMap.key).toContain('_orphaned');
-            // 고아 행은 빨강 바탕·테두리로 표시한다 — 투명도로 흐리면 배지·삭제 단추 글자가 대비 4.5 아래로 떨어진다(삭제 단추는 눌러야 하는 활성 단추)
-            expect(tpl.classMap.variants.orphaned).toContain('bg-red-50');
-            expect(tpl.classMap.variants.orphaned).toContain('border-red-300');
-            expect(tpl.classMap.variants.orphaned).not.toContain('opacity-');
+            expect(tpl.classMap.variants.orphaned).toContain('opacity-60');
         });
 
         /**
@@ -862,7 +859,7 @@ describe('결제수단 모바일 카드 구조 검증 (_payment_methods_cards.js
 
     /**
      * @scenario partial=payment_methods_cards
-     * @effects orphaned_method_row_marked
+     * @effects orphaned_method_row_dimmed
      */
     it('고아 항목 classMap이 정의되어야 한다', () => {
         expect(layout.itemTemplate.classMap).toBeDefined();

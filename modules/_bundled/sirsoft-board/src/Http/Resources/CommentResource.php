@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
@@ -121,14 +120,11 @@ class CommentResource extends BaseApiResource
 
         $logs = $this->action_logs ?? [];
 
-        // 처리 시각은 naive UTC 문자열로 저장된다(PostService·CommentService) — 보는 사람 시간대로 바꿔 내보낸다.
-        return array_map(fn (array $log): array => [
+        return array_map(static fn (array $log): array => [
             'action' => $log['action'] ?? null,
             'reason' => $log['reason'] ?? null,
             'admin_name' => $log['admin_name'] ?? null,
-            'created_at' => ! empty($log['created_at'])
-                ? $this->formatDateTimeStringForUser(Carbon::parse($log['created_at'], 'UTC'))
-                : null,
+            'created_at' => $log['created_at'] ?? null,
         ], $logs);
     }
 
@@ -165,8 +161,6 @@ class CommentResource extends BaseApiResource
             ];
         }
 
-        // 회원 번호가 남았는데 계정이 없으면(하드 삭제) 비회원이 아니다 — 비회원 배지 없이 이름(없으면
-        // 화면이 「알 수 없음」)만 보인다. 게시글 작성자(PostResource)와 같은 판정이다.
         return [
             'uuid' => null,
             'name' => $this->author_name,
@@ -174,7 +168,7 @@ class CommentResource extends BaseApiResource
             'avatar' => null,
             'status' => null,
             'status_label' => null,
-            'is_guest' => $this->user_id === null,
+            'is_guest' => true,
         ];
     }
 

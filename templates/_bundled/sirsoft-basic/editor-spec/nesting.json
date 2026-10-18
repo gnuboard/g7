@@ -45,11 +45,7 @@
     "PasswordInput",
     "Label",
     "Form",
-    "Table",
-    "ProductRail",
-    "ChipRows",
-    "MobileBuyBar",
-    "BottomSheet"
+    "Table"
   ],
   "containers": {
     "Div": {
@@ -103,10 +99,7 @@
         "Header",
         "NotificationCenter",
         "SlotContainer",
-        "ThemeToggle",
-        "RecentSearchCombobox",
-        "ProductRail",
-        "ChipRows"
+        "ThemeToggle"
       ]
     },
     "Nav": {
@@ -185,10 +178,7 @@
         "ImageGallery",
         "Pagination",
         "SearchBar",
-        "TabNavigation",
-        "ChipRows",
-        "MobileBuyBar",
-        "BottomSheet"
+        "TabNavigation"
       ]
     },
     "Flex": {
@@ -260,26 +250,6 @@
     },
     "Table": {
       "accepts": []
-    },
-    "ProductRail": {
-      "accepts": [
-        "Div",
-        "ProductCard"
-      ]
-    },
-    "ChipRows": {
-      "accepts": [
-        "Div",
-        "A"
-      ]
-    },
-    "BottomSheet": {
-      "accepts": [
-        "Div",
-        "Span",
-        "P",
-        "Button"
-      ]
     }
   }
 }

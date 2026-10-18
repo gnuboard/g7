@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Extension\ModuleManager;
 use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -31,11 +30,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInte
  */
 class EcommerceDashboardService
 {
-    /**
-     * 상품 문의를 글로 저장하는 게시판 모듈 식별자 (manifest `integrations.modules` 에 선언한 선택 연동).
-     */
-    private const BOARD_MODULE = 'sirsoft-board';
-
     /**
      * 「오늘」 배지 키 → 그 배지 링크가 여는 주문 목록의 상태 조건 (`admin_dashboard_commerce.g7.html` 의 navigate 경로와 같다).
      *
@@ -117,7 +111,6 @@ class EcommerceDashboardService
      */
     public function getOverview(): array
     {
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $today = $this->siteToday()->toDateString();
         $dayFilters = [
             'date_type' => 'ordered_at',
@@ -160,24 +153,18 @@ class EcommerceDashboardService
         $previousEnd = $currentStart->subDay();
 
         $currentRows = $this->statRepository->getByDateRange(
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $currentStart->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $today->toDateString(),
         );
         $previousRows = $this->statRepository->getByDateRange(
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousStart->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousEnd->toDateString(),
         );
 
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $indexed = $currentRows->keyBy(fn ($row) => $row->date->toDateString());
 
         $days = [];
         for ($i = 0; $i < $graphDays; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $currentStart->addDays($i)->toDateString();
             $row = $indexed->get($date);
             $days[] = [
@@ -219,33 +206,17 @@ class EcommerceDashboardService
     /**
      * 전체 상품의 미답변 문의 목록과 총 건수를 조회합니다.
      *
-     * 상품 문의는 게시판 모듈의 글로 저장되고, 항목·「전체 보기」는 게시판 관리자 화면으로 간다.
-     * 게시판 모듈(선택 연동)이 꺼져 있거나 설치되지 않았으면 그 화면이 없으므로 항목을 내지 않는다
-     * (`board_active=false`, 빈 목록·0건·slug null). 대시보드 카드도 이 값으로 숨는다.
-     *
      * @param  int  $limit  조회 건수
-     * @return array{items: Collection, total: int, board_slug: string|null, board_active: bool} 미답변 문의
+     * @return array{items: Collection, total: int, board_slug: string|null} 미답변 문의
      */
     public function getPendingInquiries(int $limit): array
     {
-        $boardActive = in_array(self::BOARD_MODULE, ModuleManager::getActiveModuleIdentifiers(), true);
-
-        if (! $boardActive) {
-            return [
-                'items' => new Collection,
-                'total' => 0,
-                'board_slug' => null,
-                'board_active' => false,
-            ];
-        }
-
         return [
             'items' => $this->inquiryRepository->getPendingRecent($limit),
             'total' => $this->inquiryRepository->countPending(),
             // 상품 문의는 게시판 모듈 Post 로 저장된다. 관리자 상세는 지정된 문의 게시판의
             // 글 상세(/admin/board/{slug}/post/{inquirable_id})에서 본다 (미지정 시 null).
             'board_slug' => g7_module_settings('sirsoft-ecommerce', 'inquiry.board_slug'),
-            'board_active' => true,
         ];
     }
 
@@ -266,7 +237,6 @@ class EcommerceDashboardService
         $result = [];
 
         for ($i = 0; $i < $days; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
 
             $salesQuantity = $this->orderOptionRepository->sumNetQuantityOnDate($date);
@@ -292,7 +262,7 @@ class EcommerceDashboardService
      *
      * 집계 표(ecommerce_stats)는 모든 운영자가 함께 보는 하루 1행이라 보는 사람마다 하루 경계를 달리할 수 없다.
      * 방문자 통계·게시판 대시보드처럼 사이트 표준시의 하루로 행을 만들고 읽는다 — UTC 자정으로 자르면 한국 시간
-     * 새벽 0~9시 주문이 전날 행에 들어가고 「오늘」 배지가 아침 9시까지 어제 행을 읽는다(7.1.0).
+     * 새벽 0~9시 주문이 전날 행에 들어가고 「오늘」 배지가 아침 9시까지 어제 행을 읽는다(7.1.0 QE-O2).
      *
      * @return CarbonImmutable 사이트 표준시 오늘 0시
      */

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Concerns;
 
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -67,7 +67,7 @@ trait HandlesClaimPaymentCallbacks
             // 필터(이 플러그인 승인 리스너의 `voidApproval()`)가 맡아, API 승인 경로와 같은 한 구현이 된다.
             return ClaimPaymentCallback::approveAndRedirect($payment, $callback);
         } catch (LockTimeoutException) {
-            return redirect(SiteUrl::absolute($this->busyClaimCallbackRedirectUrl($payment)));
+            return redirect(ScreenUrl::toAbsolute($this->busyClaimCallbackRedirectUrl($payment)));
         } finally {
             $this->releaseOrderCallbackLock($lock);
         }
@@ -117,8 +117,8 @@ trait HandlesClaimPaymentCallbacks
         }
 
         return $errorCode === null
-            ? redirect(SiteUrl::absolute(ClaimPaymentRedirect::cancelled($payment)))
-            : redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, $errorCode)));
+            ? redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::cancelled($payment)))
+            : redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::fail($payment, $errorCode)));
     }
 
     /**
@@ -158,8 +158,7 @@ trait HandlesClaimPaymentCallbacks
         // 주문이 사라진 결제 건에서 열람자 판정을 0 == 0 으로 접어 통과시킨다. 지금은 라우트가
         // `auth:sanctum` 이라 오른쪽이 0 이 될 수 없어 실질은 닫혀 있지만, 그 방어가 이 함수
         // 밖의 조건에 얹혀 있는 형태다. 형제 플러그인(kginicis·nicepayments)과 같은 형태로
-        // 이 자리에서 닫는다. 모바일 승인키 라우트가 optional.sanctum 으로 바뀐 뒤(#883 — 비회원 주문 결제)
-        // 비로그인 요청은 여기의 `$viewerId === 0` 이 막는다.
+        // 이 자리에서 닫는다.
         $viewerId = (int) ($request->user()?->id ?? 0);
 
         if (! $payment->order || $viewerId === 0 || (int) $payment->order->user_id !== $viewerId) {

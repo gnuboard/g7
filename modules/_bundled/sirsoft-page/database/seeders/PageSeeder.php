@@ -75,7 +75,7 @@ class PageSeeder extends Seeder implements TranslatableSeederInterface
      */
     public function run(): void
     {
-        $this->command->info(__('sirsoft-page::messages.seeders.page.start'));
+        $this->command->info('페이지 데이터 생성 중...');
 
         // 이번 실행에서 새로 만든 페이지만 활동 로그 샘플 대상이 되도록 기록을 새로 시작한다
         PageSampleRunRegistry::reset();
@@ -88,7 +88,7 @@ class PageSeeder extends Seeder implements TranslatableSeederInterface
 
         foreach ($pages as $pageData) {
             if (Page::where('slug', $pageData['slug'])->exists()) {
-                $this->command->warn('  - '.__('sirsoft-page::messages.seeders.page.exists_skip', ['slug' => $pageData['slug']]));
+                $this->command->warn("  - [{$pageData['slug']}] 이미 존재합니다. 스킵합니다.");
 
                 continue;
             }
@@ -118,11 +118,11 @@ class PageSeeder extends Seeder implements TranslatableSeederInterface
                 'created_by' => $superAdminId,
             ]);
 
-            $status = $page->published ? __('sirsoft-page::messages.seeders.page.status.published') : __('sirsoft-page::messages.seeders.page.status.unpublished');
-            $this->command->info('  - '.__('sirsoft-page::messages.seeders.page.created', ['slug' => $page->slug, 'status' => $status]));
+            $status = $page->published ? '발행' : '미발행';
+            $this->command->info("  - [{$page->slug}] 생성 완료 ({$status})");
         }
 
-        $this->command->info(__('sirsoft-page::messages.seeders.page.done', ['count' => count($pages)]));
+        $this->command->info('페이지 데이터 생성 완료: '.count($pages).'개');
     }
 
     /**

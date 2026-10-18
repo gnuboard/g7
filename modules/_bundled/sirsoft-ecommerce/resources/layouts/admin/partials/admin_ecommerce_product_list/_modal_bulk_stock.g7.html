@@ -10,16 +10,14 @@
     <div data-ref="bulk_stock_form">
       <div data-ref="stock_method_field">
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method</label>
-        <select class="w-full" aria-label="$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method" value="{{_local.bulkStockMethod || 'increase'}}">
+        <select class="select w-full">
           <on type="change">
             <!-- `set` 은 "얼마로 맞춘다" 라 옵션마다 현재 재고와 무관하게 같은 값이 되고, 증감은 옵션별 현재값 기준이다 — 미리보기 문구 세 개가 이 값으로 갈린다. -->
             <set-state target="local" bulkStockMethod="{{$event.target.value}}"/>
           </on>
-          <options>
-            <option value="increase">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_increase</option>
-            <option value="decrease">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_decrease</option>
-            <option value="set">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_set</option>
-          </options>
+          <option value="increase">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_increase</option>
+          <option value="decrease">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_decrease</option>
+          <option value="set">$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_set</option>
         </select>
       </div>
       <div data-ref="stock_value_field">
@@ -47,7 +45,7 @@
       <button type="button" data-testid="bulk-stock-apply" class="btn btn-primary">
         <on type="click">
           <!-- 적용. 확인 창에 보여 줄 조건 문구를 여기서 만든다 — 지정이면 값 그대로, 증감이면 부호를 붙여 적는다 -->
-          <set-state target="global" bulkStockCondition="{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit') : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit')}}" bulkStockMethod="{{_local.bulkStockMethod || 'increase'}}" bulkStockValue="{{_local.bulkStockValue || 0}}"/>
+          <set-state target="global" bulkStockCondition="{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + '개' : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + '개'}}" bulkStockMethod="{{_local.bulkStockMethod || 'increase'}}" bulkStockValue="{{_local.bulkStockValue || 0}}"/>
         </on>
         <on type="click">
           <close-modal/>

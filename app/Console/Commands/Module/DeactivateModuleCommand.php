@@ -2,9 +2,6 @@
 
 namespace App\Console\Commands\Module;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsIntegrationNotices;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
@@ -14,14 +11,15 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivateModuleCommand extends Command
 {
-    use LocalizesDescription;
-    use ReportsIntegrationNotices;
-    use ReportsLifecycleWarnings;
-
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'module:deactivate {identifier : 비활성화할 모듈 식별자} {--force : 의존 템플릿이 있어도 강제 비활성화}';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '모듈을 비활성화합니다';
 
     /**
      * 모듈 관리자 및 리포지토리
@@ -77,7 +75,7 @@ class DeactivateModuleCommand extends Command
 
                 // 의존하는 템플릿 목록
                 if (! empty($result['dependent_templates'])) {
-                    $this->info(__('modules.commands.deactivate.dependent_templates'));
+                    $this->info('의존하는 템플릿 목록:');
                     foreach ($result['dependent_templates'] as $template) {
                         $this->line("   - {$template['identifier']} ({$template['name']})");
                     }
@@ -85,7 +83,7 @@ class DeactivateModuleCommand extends Command
 
                 // 의존하는 모듈 목록
                 if (! empty($result['dependent_modules'])) {
-                    $this->info(__('modules.commands.deactivate.dependent_modules'));
+                    $this->info('의존하는 모듈 목록:');
                     foreach ($result['dependent_modules'] as $module) {
                         $this->line("   - {$module['identifier']} ({$module['name']})");
                     }
@@ -93,21 +91,20 @@ class DeactivateModuleCommand extends Command
 
                 // 의존하는 플러그인 목록
                 if (! empty($result['dependent_plugins'])) {
-                    $this->info(__('modules.commands.deactivate.dependent_plugins'));
+                    $this->info('의존하는 플러그인 목록:');
                     foreach ($result['dependent_plugins'] as $plugin) {
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']})");
                     }
                 }
 
                 $this->line('');
-                $this->info(__('modules.commands.deactivate.force_hint'));
+                $this->info('강제로 비활성화하려면 --force 옵션을 사용하세요.');
 
                 return Command::FAILURE;
             }
 
             if ($result['success']) {
-                $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.deactivate.success', ['module' => $identifier]));
-                $this->reportIntegratedBy('module', $identifier);
+                $this->info('✅ '.__('modules.commands.deactivate.success', ['module' => $identifier]));
                 $this->info('   - '.trans_choice('modules.commands.deactivate.layouts_deleted', (int) ($result['layouts_deleted'] ?? 0)));
                 $this->warn('⚠️  '.__('modules.commands.deactivate.warning'));
                 Log::info(__('modules.commands.deactivate.success', ['module' => $identifier]));

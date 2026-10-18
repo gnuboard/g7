@@ -7,7 +7,7 @@
   <modal data-type="composite" data-ref="plugin_force_activate_modal" title="$t:admin.plugins.modals.activate_warning_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
-        <icon name="warning" class="text-xl text-yellow-700 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
         <div>
           <p class="text-warning-soft">$t:admin.plugins.modals.activate_warning_message</p>
         </div>
@@ -18,9 +18,8 @@
           <div data-each="module in _global.activateWarningData?.missing_modules ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
             <icon name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
             <span class="text-body">{{module.name || module.identifier}}</span>
-            <span data-if="{{module.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
-            <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">$t:admin.modules.status.not_installed</span>
-            <span data-if="{{module.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.modules.status.version_mismatch ({{module.installed_version}} → {{module.required_version}})</span>
+            <span data-if="{{module.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
+            <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">$t:admin.modules.status.not_installed</span>
           </div>
         </div>
       </div>
@@ -30,16 +29,15 @@
           <div data-each="plugin in _global.activateWarningData?.missing_plugins ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
             <icon name="plug" class="text-base text-gray-500 dark:text-gray-400"/>
             <span class="text-body">{{plugin.name || plugin.identifier}}</span>
-            <span data-if="{{plugin.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
-            <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded">$t:admin.plugins.status.not_installed</span>
-            <span data-if="{{plugin.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.plugins.status.version_mismatch ({{plugin.installed_version}} → {{plugin.required_version}})</span>
+            <span data-if="{{plugin.status === 'inactive'}}" class="text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
+            <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded">$t:admin.plugins.status.not_installed</span>
           </div>
         </div>
       </div>
       <p class="mt-4 text-label">$t:admin.plugins.modals.force_activate_description</p>
     </div>
     <div class="modal-footer-buttons">
-      <button type="button" class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
+      <button class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
         <on type="click">
           <!-- 그만두더라도 목록을 다시 받아야 한다 — 스위치는 이미 켜진 모양으로 넘어가 있고 서버는 안 켰으므로, 다시 받지 않으면 화면과 서버가 어긋난 채 남는다. -->
           <sequence>
@@ -50,7 +48,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
+      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceActivating}}">
         <on type="click">
           <!-- 같은 활성 요청에 「밀어붙임」 표시만 얹어 다시 보낸다. 성공 뒤 목록·관리자 메뉴를 함께 다시 받는 이유는 플러그인이 메뉴를 더할 수 있어서다(셋을 나란히 돌려 순서를 기다리지 않는다). -->
           <sequence>
@@ -66,8 +64,6 @@
                   <reload-extensions pluginInfo="{{result.data?.plugin ?? result}}" action="add"/>
                 </parallel>
                 <toast type="success" message="$t:admin.plugins.activate_success"/>
-                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다. -->
-                <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"/>
                 <!-- 토글과 같은 활성화 API 다 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록했으면 몇 건인지 경고로 알린다. -->
                 <toast if="{{(response?.data?.layout_warnings?.length ?? 0) &gt; 0}}" type="warning" message="$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"/>
                 <close-modal/>
@@ -76,9 +72,6 @@
                      언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다. -->
                 <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}"/>
                 <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="plugin_reactivate_language_packs_modal"/>
-                <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
-                <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
-                <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
                 <set-state target="global" :isForceActivating="false"/>

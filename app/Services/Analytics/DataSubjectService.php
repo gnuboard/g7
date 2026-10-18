@@ -108,8 +108,7 @@ class DataSubjectService
         ]);
 
         return [
-            // 확장 식별자 → 내용 맵이라 비면 `{}` (7.1.1 출시 전)
-            'extensions' => is_array($extensions) && $extensions !== [] ? $extensions : new \stdClass,
+            'extensions' => is_array($extensions) ? $extensions : [],
             'exported_at' => AnalyticsClock::now()->toIso8601String(),
             'subject' => array_keys(array_filter($subject)),
             'notice' => $found['notice'],
@@ -302,7 +301,6 @@ class DataSubjectService
         $today = Carbon::parse(AnalyticsClock::today());
 
         for ($offset = 0; $offset < self::HASH_LOOKBACK_DAYS; $offset++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $salt = $this->salts->findForDate($today->copy()->subDays($offset)->toDateString());
 
             if ($salt !== null) {

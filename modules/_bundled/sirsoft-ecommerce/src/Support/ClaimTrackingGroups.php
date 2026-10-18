@@ -2,8 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Support;
 
-use App\Helpers\TimezoneHelper;
-use App\Support\LocalizedValue;
 use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimItemCollectionStateEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
@@ -184,12 +182,8 @@ final class ClaimTrackingGroups
             }
         }
 
-        // 일수는 사이트 날짜로 센다 — UTC 자정으로 자르면 사이트 새벽 시간대에 하루 적게 나온다.
-        // 알림(overdue_days)·관리자 목록·사용자 상세가 모두 이 값을 쓴다.
-        $tz = TimezoneHelper::getSiteTimezone();
-
         return $pending
-            ? ['is_overdue' => true, 'days' => max(1, (int) $due->copy()->setTimezone($tz)->startOfDay()->diffInDays(Carbon::now($tz)->startOfDay()))]
+            ? ['is_overdue' => true, 'days' => max(1, (int) $due->startOfDay()->diffInDays(now()->startOfDay()))]
             : ['is_overdue' => false, 'days' => 0];
     }
 
@@ -368,7 +362,7 @@ final class ClaimTrackingGroups
     protected static function localize(mixed $value, string $locale): ?string
     {
         if (is_array($value)) {
-            $value = LocalizedValue::pick($value, $locale);
+            $value = $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? (reset($value) ?: null);
         }
 
         return $value === null ? null : (string) $value;

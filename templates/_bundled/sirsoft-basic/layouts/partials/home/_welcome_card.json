@@ -31,7 +31,7 @@
                     "props": {
                         "className": "text-sm font-medium opacity-90"
                     },
-                    "text": "$t:home.welcome_badge"
+                    "text": "Welcome"
                 }
             ]
         },
@@ -42,7 +42,7 @@
             "props": {
                 "className": "text-xl font-bold mb-2 break-words"
             },
-            "text": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}$t:home.welcome_suffix"
+            "text": "{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix"
         },
         {
             "type": "basic",
@@ -62,17 +62,19 @@
                 {
                     "id": "register_button",
                     "type": "basic",
-                    "name": "A",
-                    "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
+                    "name": "Button",
+                    "if": "{{!_global.currentUser?.uuid}}",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate"
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/register"
+                            }
                         }
                     ],
                     "props": {
-                        "href": "/register",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-300 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
                     },
                     "children": [
                         {
@@ -93,17 +95,19 @@
                 {
                     "id": "dashboard_button",
                     "type": "basic",
-                    "name": "A",
+                    "name": "Button",
                     "if": "{{_global.currentUser?.uuid}}",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate"
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/mypage"
+                            }
                         }
                     ],
                     "props": {
-                        "href": "/mypage",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-300 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
                     },
                     "children": [
                         {
@@ -122,20 +126,19 @@
                     ]
                 },
                 {
-                    "comment": "소개 문서(/page/about)는 페이지 모듈 문서라 페이지 모듈이 꺼져 있으면 단추를 숨긴다.",
-                    "id": "welcome_learn_more",
                     "type": "basic",
-                    "name": "A",
-                    "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate"
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/page/about"
+                            }
                         }
                     ],
                     "props": {
-                        "href": "/page/about",
-                        "className": "inline-flex items-center justify-center px-4 py-2 bg-black/20 text-white rounded-lg font-medium text-sm hover:bg-black/30 transition-colors cursor-pointer"
+                        "className": "px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
                     },
                     "text": "$t:home.learn_more"
                 }

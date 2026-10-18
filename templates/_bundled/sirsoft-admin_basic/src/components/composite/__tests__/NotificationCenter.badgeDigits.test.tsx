@@ -19,8 +19,7 @@ describe('NotificationCenter 배지 자릿수', () => {
     const badge = screen.getByText('99+');
     expect(badge.className).toContain('text-[9px]');
     expect(badge.className).not.toContain('text-xs');
-    // 흰 글자 배지 바탕 red-600(4.76) — red-500 은 3.82 로 대비 미달
-    expect(badge.className).toContain('bg-red-600');
+    expect(badge.className).toContain('bg-red-500');
   });
 
   /**

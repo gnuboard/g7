@@ -26,11 +26,8 @@ class ProductReviewControllerTest extends ModuleTestCase
 
     private User $reviewer;
 
-    /**
-     * 읽기·수정·삭제 권한 관리자, 후기 작성 회원, 판매중 상품을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
+    private OrderOption $orderOption;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,21 +40,22 @@ class ProductReviewControllerTest extends ModuleTestCase
 
         $this->reviewer = $this->createUser();
         $this->product = Product::factory()->onSale()->create();
+        $this->orderOption = OrderOption::factory()->create([
+            'product_id' => $this->product->id,
+        ]);
     }
 
     /**
      * 리뷰 하나를 생성하는 헬퍼
      *
-     * 주문옵션당 활성 후기는 1건만 둘 수 있어(DB 유니크) 후기마다 새 주문옵션을 만든다.
-     *
-     * @param  array<string, mixed>  $overrides  기본값을 덮어쓸 후기 속성
-     * @return ProductReview 생성된 후기
+     * @param  array  $overrides
+     * @return ProductReview
      */
     protected function createReview(array $overrides = []): ProductReview
     {
         return ProductReview::factory()->create(array_merge([
             'product_id' => $this->product->id,
-            'order_option_id' => OrderOption::factory()->create(['product_id' => $this->product->id])->id,
+            'order_option_id' => $this->orderOption->id,
             'user_id' => $this->reviewer->id,
             'status' => ReviewStatus::VISIBLE->value,
         ], $overrides));
@@ -67,15 +65,6 @@ class ProductReviewControllerTest extends ModuleTestCase
     // index() — 목록 조회
     // ========================================
 
-    /**
-     * 관리자가 후기 목록을 조회하면 페이지 정보(meta)와 함께 전시·숨김 후기가 모두 내려오는지 확인합니다.
-     *
-     * @scenario operation=list
-     *
-     * @effects admin_review_list_returns_paginated_reviews
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_fetch_review_list(): void
     {
@@ -101,15 +90,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $this->assertGreaterThanOrEqual(2, count($response->json('data.data')));
     }
 
-    /**
-     * 후기 읽기 권한이 없는 관리자의 목록 조회는 403 으로 막히는지 확인합니다.
-     *
-     * @scenario operation=list
-     *
-     * @effects admin_review_api_enforces_permission_per_action
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_review_list_requires_read_permission(): void
     {
@@ -124,15 +104,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $response->assertForbidden();
     }
 
-    /**
-     * 비로그인 상태의 목록 조회는 401 로 막히는지 확인합니다.
-     *
-     * @scenario operation=list
-     *
-     * @effects admin_review_api_requires_authentication
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_review_list_requires_authentication(): void
     {
@@ -143,15 +114,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $response->assertUnauthorized();
     }
 
-    /**
-     * status=hidden 필터를 주면 숨김 후기만 내려오는지 확인합니다.
-     *
-     * @scenario operation=list
-     *
-     * @effects admin_review_list_filters_by_status_rating_reply_status
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_review_list_can_filter_by_status(): void
     {
@@ -171,15 +133,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         }
     }
 
-    /**
-     * rating=5 필터를 주면 별점 5 후기만 내려오는지 확인합니다.
-     *
-     * @scenario operation=list
-     *
-     * @effects admin_review_list_filters_by_status_rating_reply_status
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_review_list_can_filter_by_rating(): void
     {
@@ -199,15 +152,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         }
     }
 
-    /**
-     * reply_status=unreplied 필터를 주면 답변 없는 후기만 내려오는지 확인합니다.
-     *
-     * @scenario operation=list
-     *
-     * @effects admin_review_list_filters_by_status_rating_reply_status
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_review_list_can_filter_by_reply_status(): void
     {
@@ -235,15 +179,6 @@ class ProductReviewControllerTest extends ModuleTestCase
     // show() — 상세 조회
     // ========================================
 
-    /**
-     * 관리자가 후기 상세를 조회하면 요청한 후기가 내려오는지 확인합니다.
-     *
-     * @scenario operation=show
-     *
-     * @effects admin_review_detail_returns_requested_review
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_fetch_review_detail(): void
     {
@@ -260,15 +195,6 @@ class ProductReviewControllerTest extends ModuleTestCase
             ->assertJsonPath('data.id', $review->id);
     }
 
-    /**
-     * 없는 후기 ID 의 상세 조회는 404 인지 확인합니다.
-     *
-     * @scenario operation=show
-     *
-     * @effects admin_review_missing_review_returns_404
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_show_returns_404_for_nonexistent_review(): void
     {
@@ -284,15 +210,6 @@ class ProductReviewControllerTest extends ModuleTestCase
     // updateStatus() — 상태 변경
     // ========================================
 
-    /**
-     * 전시 중 후기를 숨김으로 바꾸면 응답과 DB 모두 숨김 상태가 되는지 확인합니다.
-     *
-     * @scenario operation=update_status
-     *
-     * @effects admin_review_status_change_persisted
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_update_review_status_to_hidden(): void
     {
@@ -311,15 +228,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $this->assertEquals(ReviewStatus::HIDDEN->value, $review->fresh()->status->value);
     }
 
-    /**
-     * 숨김 후기를 전시로 바꾸면 응답 상태가 전시가 되는지 확인합니다.
-     *
-     * @scenario operation=update_status
-     *
-     * @effects admin_review_status_change_persisted
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_update_review_status_to_visible(): void
     {
@@ -335,15 +243,6 @@ class ProductReviewControllerTest extends ModuleTestCase
             ->assertJsonPath('data.status', 'visible');
     }
 
-    /**
-     * 허용되지 않은 상태 값으로 바꾸려 하면 422 인지 확인합니다.
-     *
-     * @scenario operation=update_status
-     *
-     * @effects admin_review_invalid_input_rejected_with_422
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_update_status_validates_invalid_value(): void
     {
@@ -358,15 +257,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $response->assertUnprocessable();
     }
 
-    /**
-     * 읽기 권한만 있는 관리자의 상태 변경은 403 으로 막히는지 확인합니다.
-     *
-     * @scenario operation=update_status
-     *
-     * @effects admin_review_api_enforces_permission_per_action
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_update_status_requires_update_permission(): void
     {
@@ -386,15 +276,6 @@ class ProductReviewControllerTest extends ModuleTestCase
     // storeReply() — 판매자 답변 등록/수정
     // ========================================
 
-    /**
-     * 답변 없는 후기에 첫 답변을 달면 내용·작성 관리자·replied_at 이 기록되고 reply_updated_at 은 비어 있는지 확인합니다.
-     *
-     * @scenario operation=save_reply
-     *
-     * @effects admin_review_reply_saved_with_first_reply_timestamp
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_store_reply(): void
     {
@@ -420,15 +301,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $this->assertNull($fresh->reply_updated_at);
     }
 
-    /**
-     * 이미 답변이 있는 후기의 답변을 고치면 내용이 바뀌고 reply_updated_at 이 기록되는지 확인합니다.
-     *
-     * @scenario operation=save_reply
-     *
-     * @effects admin_review_reply_edit_records_updated_timestamp
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_update_existing_reply(): void
     {
@@ -452,15 +324,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $this->assertNotNull($fresh->reply_updated_at);
     }
 
-    /**
-     * 빈 답변을 저장하려 하면 422 인지 확인합니다.
-     *
-     * @scenario operation=save_reply
-     *
-     * @effects admin_review_invalid_input_rejected_with_422
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_store_reply_validates_empty_content(): void
     {
@@ -477,15 +340,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $response->assertUnprocessable();
     }
 
-    /**
-     * 2001자 답변을 저장하려 하면 422 인지 확인합니다.
-     *
-     * @scenario operation=save_reply
-     *
-     * @effects admin_review_invalid_input_rejected_with_422
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_store_reply_validates_max_length(): void
     {
@@ -506,15 +360,6 @@ class ProductReviewControllerTest extends ModuleTestCase
     // destroyReply() — 판매자 답변 삭제
     // ========================================
 
-    /**
-     * 답변을 삭제하면 답변 내용·작성 관리자·두 시각이 모두 비워지는지 확인합니다.
-     *
-     * @scenario operation=delete_reply
-     *
-     * @effects admin_review_reply_cleared_on_delete
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_destroy_reply(): void
     {
@@ -545,15 +390,6 @@ class ProductReviewControllerTest extends ModuleTestCase
     // destroy() — 리뷰 삭제
     // ========================================
 
-    /**
-     * 관리자가 후기를 삭제하면 소프트 삭제되는지 확인합니다.
-     *
-     * @scenario operation=delete_review
-     *
-     * @effects admin_review_soft_deleted_on_delete
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_delete_review(): void
     {
@@ -573,15 +409,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $this->assertSoftDeleted('ecommerce_product_reviews', ['id' => $reviewId]);
     }
 
-    /**
-     * 삭제 권한이 없는(읽기·수정만 있는) 관리자의 후기 삭제는 403 으로 막히는지 확인합니다.
-     *
-     * @scenario operation=delete_review
-     *
-     * @effects admin_review_api_enforces_permission_per_action
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_delete_review_requires_delete_permission(): void
     {
@@ -600,15 +427,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $response->assertForbidden();
     }
 
-    /**
-     * 없는 후기 ID 의 삭제는 404 인지 확인합니다.
-     *
-     * @scenario operation=delete_review
-     *
-     * @effects admin_review_missing_review_returns_404
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_delete_review_returns_404_for_nonexistent(): void
     {
@@ -624,15 +442,6 @@ class ProductReviewControllerTest extends ModuleTestCase
     // bulk() — 일괄 처리
     // ========================================
 
-    /**
-     * 일괄 숨김 처리가 모든 대상 후기에 반영되고 updated_count 가 대상 수인지 확인합니다.
-     *
-     * @scenario operation=bulk
-     *
-     * @effects admin_review_bulk_status_change_applies_to_every_id
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_bulk_change_status(): void
     {
@@ -657,15 +466,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $this->assertEquals(ReviewStatus::HIDDEN->value, $review2->fresh()->status->value);
     }
 
-    /**
-     * 일괄 삭제가 모든 대상 후기를 소프트 삭제하고 deleted_count 가 대상 수인지 확인합니다.
-     *
-     * @scenario operation=bulk
-     *
-     * @effects admin_review_bulk_delete_soft_deletes_every_id
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_admin_can_bulk_delete(): void
     {
@@ -690,15 +490,6 @@ class ProductReviewControllerTest extends ModuleTestCase
         $this->assertSoftDeleted('ecommerce_product_reviews', ['id' => $review2->id]);
     }
 
-    /**
-     * 일괄 처리 대상 ids 가 비어 있으면 ids 검증 오류(422)인지 확인합니다.
-     *
-     * @scenario operation=bulk
-     *
-     * @effects admin_review_invalid_input_rejected_with_422
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_bulk_validates_empty_ids(): void
     {
@@ -714,15 +505,6 @@ class ProductReviewControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['ids']);
     }
 
-    /**
-     * 허용되지 않은 일괄 동작이면 action 검증 오류(422)인지 확인합니다.
-     *
-     * @scenario operation=bulk
-     *
-     * @effects admin_review_invalid_input_rejected_with_422
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_bulk_validates_invalid_action(): void
     {
@@ -741,15 +523,6 @@ class ProductReviewControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['action']);
     }
 
-    /**
-     * 일괄 상태 변경에 status 가 없으면 status 검증 오류(422)인지 확인합니다.
-     *
-     * @scenario operation=bulk
-     *
-     * @effects admin_review_invalid_input_rejected_with_422
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_bulk_change_status_requires_status_field(): void
     {
@@ -769,15 +542,6 @@ class ProductReviewControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['status']);
     }
 
-    /**
-     * 없는 후기 ID 가 일괄 대상에 들어 있으면 ids.0 검증 오류(422)인지 확인합니다.
-     *
-     * @scenario operation=bulk
-     *
-     * @effects admin_review_invalid_input_rejected_with_422
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_bulk_validates_nonexistent_review_ids(): void
     {
@@ -793,15 +557,6 @@ class ProductReviewControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['ids.0']);
     }
 
-    /**
-     * 읽기 권한만 있는 관리자의 일괄 처리는 403 으로 막히는지 확인합니다.
-     *
-     * @scenario operation=bulk
-     *
-     * @effects admin_review_api_enforces_permission_per_action
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_bulk_requires_update_permission(): void
     {
@@ -833,8 +588,6 @@ class ProductReviewControllerTest extends ModuleTestCase
      * @scenario resource=review_image, parent_state=restricted
      *
      * @effects admin_review_serializes_signed_download_url_for_hidden_review
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function test_admin_detail_serializes_signed_download_url_for_hidden_review(): void
@@ -861,8 +614,6 @@ class ProductReviewControllerTest extends ModuleTestCase
      * @scenario resource=review_image, parent_state=public
      *
      * @effects visible_review_serializes_plain_download_url
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function test_admin_detail_serializes_plain_download_url_for_visible_review(): void

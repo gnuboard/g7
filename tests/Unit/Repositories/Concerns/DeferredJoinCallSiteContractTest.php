@@ -27,22 +27,12 @@ use PHPUnit\Framework\TestCase;
  *
  * @scenario case=deferred_join_call_site_contract
  *
- * @effects every_call_site_declares_columns, every_call_site_declares_non_empty_sort, call_sites_pass_relations_as_argument
+ * @effects call_sites_declare_columns, call_sites_declare_sort, call_sites_pass_relations_as_argument
  */
 class DeferredJoinCallSiteContractTest extends TestCase
 {
     /** 스캔 대상 루트 (저장소 상대) */
     private const SCAN_ROOTS = ['app', 'modules/_bundled', 'plugins/_bundled'];
-
-    /** 순회 단계에서 통째로 건너뛰는 디렉터리 — 소스가 아닌 의존성·빌드 산출물 */
-    private const PRUNED_DIRS = ['node_modules', 'vendor', 'dist', '.git', 'storage', 'tests'];
-
-    /**
-     * 스캔 결과 캐시 — 데이터 프로바이더는 테스트 탐색 때 메서드마다 불리므로(3개 테스트가 공유) 한 번만 스캔한다.
-     *
-     * @var array<string, array{0: string, 1: int, 2: string}>|null
-     */
-    private static ?array $callSites = null;
 
     /**
      * 지연 조인 호출처를 스캔해 돌려줍니다.
@@ -51,10 +41,6 @@ class DeferredJoinCallSiteContractTest extends TestCase
      */
     public static function callSiteProvider(): array
     {
-        if (self::$callSites !== null) {
-            return self::$callSites;
-        }
-
         // tests/Unit/Repositories/Concerns → 저장소 루트
         $root = dirname(__DIR__, 4);
         $cases = [];
@@ -66,12 +52,8 @@ class DeferredJoinCallSiteContractTest extends TestCase
                 continue;
             }
 
-            // 확장 디렉터리의 node_modules 등은 수만 파일이라, 다 내려간 뒤 거르지 않고 순회 단계에서 가지를 친다
             $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveCallbackFilterIterator(
-                    new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS),
-                    static fn (\SplFileInfo $entry): bool => ! ($entry->isDir() && in_array($entry->getFilename(), self::PRUNED_DIRS, true))
-                )
+                new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS)
             );
 
             foreach ($iterator as $file) {
@@ -99,7 +81,7 @@ class DeferredJoinCallSiteContractTest extends TestCase
             }
         }
 
-        return self::$callSites = $cases;
+        return $cases;
     }
 
     /**
@@ -200,19 +182,6 @@ class DeferredJoinCallSiteContractTest extends TestCase
         return '';
     }
 
-    /**
-     * 호출을 감싼 메서드가 쿼리에 with()/withCount() 를 붙였다면 relations:/withCount: 인자로도 넘기는지 검사한다.
-     *
-     * @scenario relations=eager_load
-     *
-     * @effects call_sites_pass_relations_as_argument
-     *
-     * @param  string  $file  호출처 파일의 저장소 상대 경로
-     * @param  int  $line  호출이 위치한 줄번호
-     * @param  string  $args  호출 인자 텍스트
-     * @param  string  $body  호출 인자를 뺀 감싸는 메서드 본문
-     * @return void 반환값 없음
-     */
     #[DataProvider('callSiteWithMethodBodyProvider')]
     public function test_call_site_passes_relations_as_argument(string $file, int $line, string $args, string $body): void
     {
@@ -232,18 +201,6 @@ class DeferredJoinCallSiteContractTest extends TestCase
         );
     }
 
-    /**
-     * 모든 지연 조인 호출처가 columns: 를 명시하고 빈 컬럼 목록을 넘기지 않는지 검사한다.
-     *
-     * @scenario columns=pruned
-     *
-     * @effects every_call_site_declares_columns
-     *
-     * @param  string  $file  호출처 파일의 저장소 상대 경로
-     * @param  int  $line  호출이 위치한 줄번호
-     * @param  string  $args  호출 인자 텍스트
-     * @return void 반환값 없음
-     */
     #[DataProvider('callSiteProvider')]
     public function test_call_site_declares_columns(string $file, int $line, string $args): void
     {
@@ -260,18 +217,6 @@ class DeferredJoinCallSiteContractTest extends TestCase
         );
     }
 
-    /**
-     * 모든 지연 조인 호출처가 sort: 를 명시하고 빈 정렬 스펙을 넘기지 않는지 검사한다.
-     *
-     * @scenario sort_column=indexed_non_key
-     *
-     * @effects every_call_site_declares_non_empty_sort
-     *
-     * @param  string  $file  호출처 파일의 저장소 상대 경로
-     * @param  int  $line  호출이 위치한 줄번호
-     * @param  string  $args  호출 인자 텍스트
-     * @return void 반환값 없음
-     */
     #[DataProvider('callSiteProvider')]
     public function test_call_site_declares_sort_spec(string $file, int $line, string $args): void
     {
@@ -288,15 +233,6 @@ class DeferredJoinCallSiteContractTest extends TestCase
         );
     }
 
-    /**
-     * 호출처 스캔이 최소 한 건을 찾아 위 계약 검사가 빈 데이터로 무력화되지 않는지 확인한다.
-     *
-     * @scenario columns=all
-     *
-     * @effects every_call_site_declares_columns, every_call_site_declares_non_empty_sort
-     *
-     * @return void 반환값 없음
-     */
     public function test_scan_finds_call_sites(): void
     {
         // 스캔이 0건이면 위 두 테스트가 조용히 통과해 계약 검사가 무력화된다

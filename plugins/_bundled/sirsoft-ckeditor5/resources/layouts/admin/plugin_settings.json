@@ -4,7 +4,6 @@
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
     "meta": {
-        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-ckeditor5.settings.title",
         "description": "$t:sirsoft-ckeditor5.settings.description"
     },
@@ -19,33 +18,6 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
-            "errorHandling": {
-                "default": {
-                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
-                    "handler": "conditions",
-                    "conditions": [
-                        {
-                            "if": "{{error.refetch}}",
-                            "then": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "$t:core.errors.refresh_failed"
-                                }
-                            }
-                        },
-                        {
-                            "then": {
-                                "handler": "showErrorPage",
-                                "params": {
-                                    "errorCode": "{{error.status}}",
-                                    "target": "content"
-                                }
-                            }
-                        }
-                    ]
-                }
-            },
             "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
     ],
@@ -100,7 +72,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
+                                    "className": "text-warning-soft"
                                 },
                                 "text": "$t:sirsoft-ckeditor5.plugin_read_only"
                             }
@@ -134,7 +106,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-xs text-blue-700 dark:text-blue-300"
+                                            "className": "text-info-soft"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.settings.notice"
                                     }
@@ -286,24 +258,35 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "toolbar",
-                                                            "aria-label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.label",
-                                                            "className": "w-full",
-                                                            "disabled": "{{_computed.isPluginReadOnly}}",
-                                                            "options": [
-                                                                {
-                                                                    "value": "minimal",
-                                                                    "label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Option",
+                                                                "props": {
+                                                                    "value": "minimal"
                                                                 },
-                                                                {
-                                                                    "value": "standard",
-                                                                    "label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.standard"
+                                                                "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Option",
+                                                                "props": {
+                                                                    "value": "standard"
                                                                 },
-                                                                {
-                                                                    "value": "full",
-                                                                    "label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.full"
-                                                                }
-                                                            ]
-                                                        }
+                                                                "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.standard"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Option",
+                                                                "props": {
+                                                                    "value": "full"
+                                                                },
+                                                                "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.full"
+                                                            }
+                                                        ]
                                                     }
                                                 ]
                                             }
@@ -564,7 +547,7 @@
                                                         "if": "{{!!_local.form?.public_asset_disk_unavailable}}",
                                                         "props": {
                                                             "role": "status",
-                                                            "className": "text-xs text-yellow-700 dark:text-yellow-300 mt-2"
+                                                            "className": "text-warning-soft mt-2"
                                                         },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}"
                                                     }
@@ -736,16 +719,19 @@
                                             {
                                                 "id": "open_uploads_button",
                                                 "type": "basic",
-                                                "name": "A",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate"
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins/sirsoft-ckeditor5/uploads"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "/admin/plugins/sirsoft-ckeditor5/uploads",
-                                                    "className": "button btn btn-secondary"
+                                                    "type": "button",
+                                                    "className": "btn btn-secondary"
                                                 },
                                                 "children": [
                                                     {
@@ -837,66 +823,53 @@
                         },
                         "children": [
                             {
-                                "comment": "미리보기 머리 — 다른 구역처럼 제목(h3)으로 남기고, 그 안의 펼침 단추가 머리 줄 전체를 차지한다(7.1.1 — 종전 클릭만 받는 div 라 Tab 이 닿지 않았다). 단추 안에는 블록 요소를 두지 않아 제목·안내는 span 이다",
-                                "id": "section_preview_heading",
+                                "id": "section_preview_header",
                                 "type": "basic",
-                                "name": "H3",
+                                "name": "Div",
+                                "actions": [
+                                    {
+                                        "comment": "미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다",
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "showPreview": "{{!_local.showPreview}}"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                },
                                 "children": [
                                     {
-                                        "id": "section_preview_header",
                                         "type": "basic",
-                                        "name": "Button",
-                                        "actions": [
-                                            {
-                                                "comment": "미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다",
-                                                "type": "click",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "local",
-                                                    "showPreview": "{{!_local.showPreview}}"
-                                                }
-                                            }
-                                        ],
-                                        "props": {
-                                            "type": "button",
-                                            "className": "w-full text-left px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors",
-                                            "aria-expanded": "{{!!_local.showPreview}}"
-                                        },
+                                        "name": "Div",
                                         "children": [
                                             {
                                                 "type": "basic",
-                                                "name": "Span",
+                                                "name": "H3",
                                                 "props": {
-                                                    "className": "block"
+                                                    "className": "section-heading-md"
                                                 },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "block section-heading-md"
-                                                        },
-                                                        "text": "$t:sirsoft-ckeditor5.settings.section_preview"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "block form-hint"
-                                                        },
-                                                        "text": "$t:sirsoft-ckeditor5.settings.section_preview_hint"
-                                                    }
-                                                ]
+                                                "text": "$t:sirsoft-ckeditor5.settings.section_preview"
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Icon",
+                                                "name": "P",
                                                 "props": {
-                                                    "name": "{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}",
-                                                    "className": "text-gray-500 dark:text-gray-400"
-                                                }
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:sirsoft-ckeditor5.settings.section_preview_hint"
                                             }
                                         ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}",
+                                            "className": "text-gray-400 dark:text-gray-500"
+                                        }
                                     }
                                 ]
                             },
@@ -953,19 +926,19 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "bypassLeaveGuard": true
+                                            "path": "/admin/plugins"
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/admin/plugins",
-                                    "className": "button btn btn-secondary"
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
                                 },
                                 "children": [
                                     {

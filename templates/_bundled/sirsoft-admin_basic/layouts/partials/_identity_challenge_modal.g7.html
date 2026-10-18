@@ -61,7 +61,7 @@
         <button data-if="{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}" type="button" disabled="{{(_global.identityChallenge?.resendCooldown ?? 0) > 0 || (_global.identityChallenge?.resending ?? false) || (_global.identityChallenge?.verifying ?? false)}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed">
           <on type="click">
             <sequence>
-              <set-state target="global" :identityChallenge.resending="true" :identityChallenge.resendCooldown="60" :identityChallenge.error="null" identityChallenge.code=""/>
+              <set-state target="global" :identityChallenge.resending="true" :identityChallenge.resendCooldown="30" :identityChallenge.error="null" identityChallenge.code=""/>
               <api-call target="/api/identity/challenges" method="POST">
                 <success>
                   <set-state target="global" :identityChallenge.resending="false" identityChallenge.challenge_id="{{response.data.id}}" identityChallenge.expires_at="{{response.data.expires_at}}" identityChallenge.render_hint="{{response.data.render_hint ?? _global.identityChallenge?.render_hint ?? 'text_code'}}" :identityChallenge.attempts="0" identityChallenge.code=""/>

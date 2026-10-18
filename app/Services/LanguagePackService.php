@@ -11,8 +11,6 @@ use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Extension\Helpers\ExtensionBackupHelper;
-use App\Extension\Helpers\ExtensionOperationLock;
-use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\InstalledExtensionLookup;
 use App\Extension\Helpers\ZipInstallHelper;
@@ -738,19 +736,12 @@ class LanguagePackService
      * 언어팩의 합집합을 반환하여 코어 기본 로케일이 누락되지 않도록
      * 합니다. 언어팩 설치/활성화 직후 사용자 UI 갱신용으로 사용됩니다.
      *
-     * 활성 코어 언어팩은 부팅에서 레지스트리가 이미 읽어 둔 메모를 쓴다 — DB 를 다시 조회하지 않는다(#860).
-     * 활성화·비활성화·제거는 `LanguagePackRegistry::invalidate()` 로 그 메모를 비운다.
-     *
      * @return array<int, string> 로케일 문자열 배열
      */
     public function getActiveLocales(): array
     {
         $configLocales = (array) config('app.supported_locales', ['ko', 'en']);
-        $activeLocales = $this->registry->getActivePacks(LanguagePackScope::Core->value)
-            ->pluck('locale')
-            ->unique()
-            ->values()
-            ->all();
+        $activeLocales = $this->repository->getActiveCoreLocales();
 
         return array_values(array_unique(array_merge($configLocales, $activeLocales)));
     }
@@ -814,7 +805,7 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
+            ZipInstallHelper::extractZip($zipPath, $extractPath);
 
             return $this->finalizeInstall($extractPath, 'zip', $file->getClientOriginalName(), $autoActivate, $installedBy);
         } catch (Throwable $e) {
@@ -1001,10 +992,6 @@ class LanguagePackService
         $targetInactive = $this->isTargetExtensionInactive($manifest);
 
         $identifier = $manifest['identifier'];
-
-        // 같은 언어팩의 다른 작업과 겹치지 않게 잠근다 — 업데이트(performUpdate)가 부른 설치는 그 잠금에 합류한다(#161)
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $identifier, 'install');
-
         $existing = $this->repository->findByIdentifier($identifier);
 
         if ($existing && ! $force) {
@@ -1013,10 +1000,15 @@ class LanguagePackService
         }
 
         $finalPath = base_path('lang-packs/'.$identifier);
-        $this->placeInstallDirectory($packageRoot, $finalPath, $manifest);
+        if (File::isDirectory($finalPath)) {
+            File::deleteDirectory($finalPath);
+        }
+        File::ensureDirectoryExists(dirname($finalPath));
+        File::moveDirectory($packageRoot, $finalPath);
 
-        // 새 판은 복사로 놓였으므로 _pending 사본은 통째로 정리한다(잠금으로 덜 지워져도 무해 — 다음 설치와 이름이 겹치지 않는다).
-        $this->cleanupPending($extractPath);
+        if ($extractPath !== $packageRoot) {
+            File::deleteDirectory($extractPath);
+        }
 
         // 재설치(update path) 시 자기 자신을 슬롯 충돌로 오인하지 않도록 $existing->id 를 제외.
         // 이전엔 재설치 시 자기가 active 였더라도 $shouldActivate 가 false 가 되어
@@ -1090,10 +1082,6 @@ class LanguagePackService
      */
     public function activate(LanguagePack $pack, bool $force = false): LanguagePack
     {
-        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'activate');
-
         $this->assertNotInProgress($pack);
 
         if ($pack->isActive()) {
@@ -1180,10 +1168,6 @@ class LanguagePackService
      */
     public function deactivate(LanguagePack $pack, bool $cascadeFromHost = false): LanguagePack
     {
-        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'deactivate');
-
         $this->assertNotInProgress($pack);
 
         if (! $pack->isActive()) {
@@ -1225,10 +1209,6 @@ class LanguagePackService
         if ($pack->isProtected()) {
             throw new LanguagePackOperationException('language_packs.errors.protected_pack');
         }
-
-        // 같은 언어팩의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 겹치면 409, 잠금 저장소 오류면
-        // 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'uninstall');
 
         $this->assertNotInProgress($pack);
 
@@ -1547,26 +1527,6 @@ class LanguagePackService
     }
 
     /**
-     * 번들 언어팩의 설치 차단 사유를 지금 다시 판정합니다 — 같은 실행에서 앞선 팩(코어 locale 팩)이 설치되면 사유가 사라질 수 있다.
-     *
-     * `language-pack:provision` 이 미리 계산된 `install_blocked_reason` 대신 그 팩 차례에 부른다(#153).
-     *
-     * @param  string  $bundledIdentifier  번들 식별자 (`lang-packs/_bundled/{식별자}`)
-     * @return string|null 차단 사유 키 또는 null (manifest 를 읽지 못하면 null — 설치 단계가 사유와 함께 실패한다)
-     */
-    public function bundledInstallBlockedReason(string $bundledIdentifier): ?string
-    {
-        $manifestPath = base_path('lang-packs/_bundled/'.$bundledIdentifier.'/language-pack.json');
-        if (! File::isFile($manifestPath)) {
-            return null;
-        }
-
-        $manifest = json_decode(File::get($manifestPath), true);
-
-        return is_array($manifest) ? $this->resolveInstallBlockedReason($manifest) : null;
-    }
-
-    /**
      * 설치는 되지만 알려 둘 사정을 단일 키워드로 반환합니다 (UI 안내용, 설치를 막지 않음).
      *
      * 현재는 대상 확장이 설치돼 있으나 꺼진 경우 `target_inactive` — 설치는 꺼진 채 되고, 그 확장을 켠 뒤에 켤 수 있습니다.
@@ -1705,65 +1665,6 @@ class LanguagePackService
         $cleaned = ltrim($constraint, '^~>=<! ');
 
         return version_compare((string) $row->version, $cleaned, '<');
-    }
-
-    /**
-     * 검증을 마친 새 설치본을 활성 디렉토리(`lang-packs/{identifier}`) 자리에 놓습니다.
-     *
-     * 확장 폴더 교체와 같은 `ExtensionPendingHelper::copyToActive` 를 쓴다 — 사본을 만든 뒤 옛 폴더를 `_pending` 으로
-     * 비켜 두고 새 폴더를 놓으며, 디렉토리 rename 이 막히면(Windows 에서 다른 프로그램이 트리 안 핸들을 잡고 있을 때)
-     * 파일 단위 복사·제자리 동기화로 폴백한다. 놓은 뒤 manifest 의 식별자·판이 설치하려던 것과 같은지 확인한다.
-     *
-     * 예전에는 옛 폴더를 먼저 지우고(`deleteDirectory`) `moveDirectory` 결과를 보지 않았다. rename 이 실패하면 예외 없이
-     * DB 만 새 판·active 로 기록되고 활성 폴더는 사라졌다 — 2026-10-14 `g7-plugin-sirsoft-pay_nicepayments-ja` 재설치 뒤
-     * 사본이 `lang-packs/_pending/{uuid}` 에 남고 설치 폴더가 없어져 「파일 없음」 이 된 실측 사례.
-     *
-     * @param  string  $packageRoot  검증을 마친 새 설치본 디렉토리(`_pending` 아래)
-     * @param  string  $finalPath  활성 디렉토리 경로
-     * @param  array<string, mixed>  $manifest  검증을 마친 manifest
-     * @return void 반환값 없음
-     *
-     * @throws LanguagePackOperationException 새 설치본을 활성 자리에 놓지 못했을 때(DB 기록 전)
-     */
-    private function placeInstallDirectory(string $packageRoot, string $finalPath, array $manifest): void
-    {
-        $identifier = (string) $manifest['identifier'];
-
-        try {
-            File::ensureDirectoryExists(dirname($finalPath));
-            ExtensionPendingHelper::copyToActive($packageRoot, $finalPath);
-        } catch (Throwable $e) {
-            Log::error('lang-pack install directory replace failed', [
-                'identifier' => $identifier,
-                'path' => $finalPath,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw new LanguagePackOperationException(
-                'language_packs.errors.install_directory_replace_failed',
-                ['identifier' => $identifier],
-                $e
-            );
-        }
-
-        // 폴백 복사가 일부 파일을 조용히 놓치는 경우까지 — 활성 자리의 manifest 가 이번 판이어야 DB 에 기록한다.
-        $placedManifestPath = $finalPath.DIRECTORY_SEPARATOR.'language-pack.json';
-        $placed = File::isFile($placedManifestPath) ? json_decode((string) File::get($placedManifestPath), true) : null;
-        if (! is_array($placed)
-            || ($placed['identifier'] ?? null) !== $identifier
-            || (string) ($placed['version'] ?? '') !== (string) ($manifest['version'] ?? '')) {
-            Log::error('lang-pack install directory replace incomplete', [
-                'identifier' => $identifier,
-                'path' => $finalPath,
-                'placed_version' => is_array($placed) ? ($placed['version'] ?? null) : null,
-                'expected_version' => $manifest['version'] ?? null,
-            ]);
-
-            throw new LanguagePackOperationException(
-                'language_packs.errors.install_directory_replace_failed',
-                ['identifier' => $identifier]
-            );
-        }
     }
 
     /**
@@ -2040,10 +1941,6 @@ class LanguagePackService
             throw new LanguagePackOperationException('language_packs.errors.update_no_source');
         }
 
-        // 같은 언어팩의 업데이트는 한 번에 하나만 — 업데이트 확인(네트워크)과 Updating 기록 사이 구간에 들어온 두 번째 요청이
-        // 함께 통과하던 창(#138 과 같은 창)을 막는다. 안쪽 설치(finalizeInstall)는 이 잠금에 합류한다(#161).
-        $operationLock = ExtensionOperationLock::acquire('language_pack', $pack->identifier, 'update');
-
         $this->assertNotInProgress($pack);
 
         // force=false 일 때만 버전 변동 여부를 가드한다. force=true 는 모듈/플러그인/템플릿의
@@ -2082,7 +1979,6 @@ class LanguagePackService
             if (File::isDirectory($activeDir)) {
                 $backupPath = ExtensionBackupHelper::createBackup('lang-packs', $identifier);
             }
-            $operationLock->keepAlive();
 
             // 3. 신버전 다운로드 + 적용 (force 전파 — 다운그레이드 우회 허용)
             if ($useBundled) {
@@ -2090,7 +1986,6 @@ class LanguagePackService
             } else {
                 $updated = $this->installFromGithub((string) $githubUrl, $autoActivate, $pack->installed_by, $force);
             }
-            $operationLock->keepAlive(force: true);
 
             // 4. 꺼져 있던 팩의 상태·사유 복원 — 재설치 경로는 활성이 아닌 팩을 installed·사유 없음으로 기록한다.
             //    그대로 두면 꺼 둔 팩(inactive)은 대상 확장을 다시 켤 때의 「함께 켤 언어팩」 목록(inactive 만 고른다)에서,
@@ -2109,7 +2004,6 @@ class LanguagePackService
                     $this->refreshCache();
                 }
             }
-            $operationLock->keepAlive();
 
             // 5. 백업 정리
             if ($backupPath) {
@@ -2254,7 +2148,7 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
+            ZipInstallHelper::extractZip($zipPath, $extractPath);
 
             $manifestPath = ZipInstallHelper::findManifest($extractPath, 'language-pack.json');
             if (! $manifestPath) {

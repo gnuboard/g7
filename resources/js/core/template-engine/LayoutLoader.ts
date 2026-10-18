@@ -25,21 +25,6 @@ import { getApiClient } from '../api/ApiClient';
 const logger = createLogger('LayoutLoader');
 
 /**
- * 오류 UI 에 끼워 넣는 글자를 HTML 로 해석되지 않게 바꿉니다(컴포넌트 이름·오류 메시지·오류 코드).
- *
- * @param value 원문
- * @returns 이스케이프한 문자열
- */
-function escapeHtmlText(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-/**
  * 레이아웃 컴포넌트 데이터 인터페이스
  */
 export interface LayoutComponent {
@@ -1004,8 +989,8 @@ export class LayoutLoader {
     div.className = 'component-placeholder';
     div.setAttribute('data-component-type', componentType);
     div.innerHTML = `
-      <div class="g7-layout-placeholder__box">
-        <p class="g7-layout-placeholder__text">Component not found: <strong>${escapeHtmlText(componentType)}</strong></p>
+      <div style="padding: 1rem; border: 2px dashed #ccc; background: #f9f9f9; text-align: center;">
+        <p style="margin: 0; color: #666;">Component not found: <strong>${componentType}</strong></p>
       </div>
     `;
     return div;
@@ -1023,9 +1008,9 @@ export class LayoutLoader {
     div.className = 'component-error';
     div.setAttribute('data-component-type', componentType);
     div.innerHTML = `
-      <div class="g7-layout-component-error__box">
-        <p class="g7-layout-component-error__title">Component Error: ${escapeHtmlText(componentType)}</p>
-        <p class="g7-layout-component-error__message">${escapeHtmlText(error?.message || 'Unknown error')}</p>
+      <div style="padding: 1rem; border: 2px solid #f44336; background: #ffebee; border-radius: 4px;">
+        <p style="margin: 0 0 0.5rem 0; color: #c62828; font-weight: bold;">Component Error: ${componentType}</p>
+        <p style="margin: 0; color: #666; font-size: 0.875rem;">${error?.message || 'Unknown error'}</p>
       </div>
     `;
     return div;
@@ -1042,25 +1027,48 @@ export class LayoutLoader {
     const errorCode = error instanceof LayoutLoaderError ? error.code : 'UNKNOWN_ERROR';
 
     container.innerHTML = `
-      <div class="layout-error g7-layout-error__box" data-error-code="${escapeHtmlText(errorCode)}">
-        <h2 class="g7-layout-error__title">레이아웃 로드 실패</h2>
+      <div class="layout-error" data-error-code="${errorCode}" style="
+        padding: 2rem;
+        text-align: center;
+        background: #ffebee;
+        border: 2px solid #f44336;
+        border-radius: 8px;
+        margin: 2rem auto;
+        max-width: 600px;
+      ">
+        <h2 style="
+          margin: 0 0 1rem 0;
+          color: #c62828;
+          font-size: 1.5rem;
+        ">레이아웃 로드 실패</h2>
 
-        <p class="g7-layout-error__message">${escapeHtmlText(errorMessage)}</p>
+        <p style="
+          margin: 0 0 1rem 0;
+          color: #666;
+          font-size: 1rem;
+        ">${errorMessage}</p>
 
-        <p class="g7-layout-error__code">오류 코드: ${escapeHtmlText(errorCode)}</p>
+        <p style="
+          margin: 0;
+          color: #999;
+          font-size: 0.875rem;
+        ">오류 코드: ${errorCode}</p>
 
         <button
-          type="button"
-          data-g7-error-reload="1"
-          class="g7-layout-error__button"
+          onclick="window.location.reload()"
+          style="
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+          "
         >페이지 새로고침</button>
       </div>
     `;
-
-    // 인라인 onclick 대신 리스너 — strict CSP 에서 인라인 핸들러는 실행되지 않는다(#158).
-    container
-      .querySelector('[data-g7-error-reload]')
-      ?.addEventListener('click', () => window.location.reload());
 
     logger.error('Error state rendered:', errorCode, errorMessage);
   }

@@ -40,17 +40,6 @@ if (!$isTestCommand && file_exists($extensionAutoloadFile)) {
         }
     }
 
-    // 확장 소스 classmap 등록 (FQCN → 절대경로) — public/index.php 와 같은 블록이다.
-    // 웹 진입점만 등록하면 콘솔 프로세스는 같은 클래스를 PSR-4 파일시스템 탐색으로만 찾는다(느리고,
-    // 낡은 캐시 복구가 「등록돼 있던 classmap 키」를 기준으로 삼는 판정도 콘솔에서는 비어 있게 된다).
-    if (!empty($extensionAutoloads['src_classmap'])) {
-        $absoluteClassmap = [];
-        foreach ($extensionAutoloads['src_classmap'] as $fqcn => $relPath) {
-            $absoluteClassmap[$fqcn] = __DIR__.'/'.$relPath;
-        }
-        $loader->addClassMap($absoluteClassmap);
-    }
-
     // Classmap 파일 로드 (module.php, plugin.php)
     if (!empty($extensionAutoloads['classmap'])) {
         foreach ($extensionAutoloads['classmap'] as $file) {

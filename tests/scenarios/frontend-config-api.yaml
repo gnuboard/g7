@@ -1,0 +1,27 @@
+feature: 공개 설정 API — 셸(window.G7Config)과 같은 값 (#792 D8)
+
+description: |
+  GET /api/frontend-config(공개, optional.sanctum)·GET /api/admin/frontend-config(관리자 인증)는 셸과 같은 함수
+  FrontendConfigService 로 설정·모듈·플러그인·앱 설정·로케일·실시간 알림 접속정보·custom 주소 패턴을 돌려준다.
+  frontend_schema 가 거른 민감·비노출 키와 엔진 전용 값은 싣지 않고, 사용자 템플릿이 없어도 동작한다.
+  셸 출력은 customRoutes 한 줄 추가 외 바이트 동일(수동 대조 기록).
+
+test_files:
+  - tests/Feature/Api/FrontendConfigApiTest.php
+
+axes:
+  case:
+    - user_equals_shell
+    - admin_equals_shell
+    - sensitive
+    - no_template
+    - admin_auth
+    - shell_bytes
+
+effects:
+  - user_api_equals_shell
+  - admin_api_equals_shell
+  - sensitive_keys_absent
+  - api_works_without_template
+  - admin_api_requires_admin
+  - shell_output_unchanged_except_custom_routes

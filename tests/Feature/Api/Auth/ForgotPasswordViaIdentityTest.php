@@ -95,23 +95,21 @@ class ForgotPasswordViaIdentityTest extends TestCase
     }
 
     /**
-     * 가입되지 않은 이메일로 비밀번호 찾기를 요청해도 가입 주소와 같은 200 을 받고, 토큰은 만들어지지 않는다
-     * (계정 존재를 응답으로 알려 주지 않는다 — 7.1.6).
+     * 가입되지 않은 이메일로 비밀번호 찾기를 요청하면 email 검증 오류 422 를 받는다.
      *
      * @scenario surface=forgot_password
      *
-     * @effects forgot_password_unregistered_email_gets_same_200
+     * @effects forgot_password_unregistered_email_rejected_422
      *
      * @return void 반환값 없음
      */
-    public function test_forgot_password_for_unregistered_email_gets_the_same_200(): void
+    public function test_forgot_password_fails_for_unregistered_email(): void
     {
         $response = $this->postJson('/api/auth/forgot-password', [
             'email' => 'nonexistent@example.com',
         ]);
 
-        $response->assertStatus(200)->assertJson(['success' => true]);
-        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'nonexistent@example.com']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['email']);
     }
 
     /**

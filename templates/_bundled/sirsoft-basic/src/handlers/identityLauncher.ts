@@ -243,14 +243,9 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
   // 코어 mail provider 응답에는 환경설정의 max_attempts 가 정확히 반영되므로 화면 카운트도 정합.
   const maxAttempts = typeof challenge.max_attempts === 'number' ? challenge.max_attempts : 0;
 
-  // 이 띄움의 열쇠 — 창이 닫힌 뒤 이름 공간을 비울 때 다른 띄움(이어진 428)이 쓴 상태를 건드리지 않게 견준다.
-  // 건 번호는 [다시 보내기]가 바꾸므로 열쇠로 쓰지 않는다
-  const launchKey = `${challenge.id}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-
   G7Core.state.set({
     identityChallenge: {
       policy_key: payload.policy_key,
-      launch_key: launchKey,
       purpose: payload.purpose,
       provider_id: payload.provider_id ?? null,
       render_hint: challenge.render_hint,
@@ -326,9 +321,6 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
     unsubscribe?.();
     return identity.redirectExternally({
       ...payload,
-      // 해석한 대상을 함께 보관한다 — 전체화면은 페이지를 새로 읽어 전역 상태가 사라지고, 비회원은 로그인 세션에서
-      // 대상을 얻을 수 없다. 전체화면의 [코드 재전송] 이 이 값을 되살려 싣는다(restoreIdentityTargetHandler).
-      target: target ?? payload.target ?? null,
       render_hint: 'external_redirect',
       // 인증 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는 빼는데,
       // 인증 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
@@ -350,39 +342,7 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
     stopClaim();
     window.clearInterval(tickHandle);
     unsubscribe?.();
-    clearChallengeNamespaceAfterClose(G7Core, launchKey);
   }
-}
-
-/** 인증 창 이름 공간 정리가 창이 닫히기를 기다리는 횟수(100ms 간격 — 최대 5초) */
-const CLEAR_WAIT_TRIES = 50;
-
-/**
- * 인증 창이 닫힌 뒤 이 띄움의 창 이름 공간(`_global.identityChallenge` — 인증번호·건 번호)을 비웁니다.
- *
- * 결과(확인·취소·실패)가 나면 창은 닫히지만 이름 공간은 다음 띄움까지 전역에 남아, 친 인증번호가 개발자 도구로 보였다
- * (docs/frontend/security.md 「창 고유 이름 공간은 창을 닫을 때 비우면 허용」). 결과를 넘기는 동작 바로 뒤에 창 닫기가
- * 이어지므로, 창이 아직 열려 있으면 닫힐 때까지 기다렸다 비운다 — 열린 창을 비우면 빈 칸이 한 번 보인다. 그 사이 다른
- * 띄움(이어진 요청의 새 428)이 이름 공간을 새로 썼으면 그 상태는 건드리지 않는다.
- *
- * @param G7Core 코어 전역 객체
- * @param launchKey 이 띄움의 열쇠
- * @return 반환값 없음
- */
-function clearChallengeNamespaceAfterClose(G7Core: any, launchKey: string): void {
-  let tries = 0;
-  const attempt = (): void => {
-    const current = (G7Core.state?.getGlobal?.() ?? G7Core.state?.get?.())?.identityChallenge;
-    if (!current || current.launch_key !== launchKey) return;
-    if (G7Core.modal?.isOpen?.('identity-challenge-modal')) {
-      tries += 1;
-      if (tries <= CLEAR_WAIT_TRIES) window.setTimeout(attempt, 100);
-
-      return;
-    }
-    G7Core.state.set({ identityChallenge: null });
-  };
-  window.setTimeout(attempt, 0);
 }
 
 /**
@@ -409,51 +369,6 @@ export function rememberIdentityClaimHandler(
   }
   claimSecrets.set(id, secret);
   return true;
-}
-
-/** 전체화면이 되살릴 수 있는 보관값의 수명 — 같은 탭에서 한참 전에 시작한 다른 인증의 대상이 섞이지 않게. */
-const TARGET_STASH_TTL_MS = 30 * 60 * 1000;
-
-/**
- * 전체화면 본인인증 진입 때, 넘어오기 전 화면이 세션 보관함에 남긴 인증 대상을 화면 상태로 되살립니다.
- *
- * 모달을 열지 못해 전체화면으로 넘어가면 페이지를 새로 읽어 전역 상태(`_global.identityChallenge.target`)가 사라진다.
- * 비회원은 로그인 세션에서 대상을 얻을 수 없어 [코드 재전송] 이 대상 없이 나가 422 로 거절됐다. launcher(와 코어
- * 기본 launcher)가 넘어가기 전 코어 보관함(`G7Core.identity.redirectStashKey`)에 대상을 함께 넣으므로, 그 값의
- * 이메일·전화번호만 꺼내 `_local.identity_target` 에 둔다. 30분이 지났거나 깨진 보관값은 쓰지 않는다.
- *
- * @param _action 액션 정의 (인자 없음)
- * @param _context 실행 컨텍스트 (미사용 — 상태는 G7Core.state 로 쓴다)
- * @return 되살린 대상, 없으면 null
- */
-export function restoreIdentityTargetHandler(_action?: unknown, _context?: unknown): IdentityVerificationTarget | null {
-  const G7Core = (window as any).G7Core;
-  const key: string = G7Core?.identity?.redirectStashKey ?? 'g7.identity.redirectStash';
-
-  let stash: { payload?: { target?: Record<string, unknown> | null }; stashed_at?: number } | null = null;
-  try {
-    const raw = window.sessionStorage?.getItem(key);
-    stash = raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-
-  if (!stash || typeof stash.stashed_at !== 'number' || Date.now() - stash.stashed_at > TARGET_STASH_TTL_MS) {
-    return null;
-  }
-
-  const source = stash.payload?.target ?? null;
-  const target: IdentityVerificationTarget = {};
-  if (typeof source?.email === 'string' && source.email !== '') target.email = source.email;
-  if (typeof source?.phone === 'string' && source.phone !== '') target.phone = source.phone;
-
-  if (!target.email && !target.phone) {
-    return null;
-  }
-
-  G7Core?.state?.setLocal?.({ identity_target: target });
-
-  return target;
 }
 
 /** 링크 방식 결과를 묻는 간격 — 서버 throttle(분당 60) 안에서 회원이 링크를 누른 뒤 곧 이어지게. */

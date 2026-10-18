@@ -258,7 +258,6 @@ class Plugin implements PluginInterface
 | `getDynamicPermissionIdentifiers()` | `[]` | 런타임 생성 권한 식별자 — stale cleanup 보존 대상 |
 | `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDependencies()` | `[]` | 의존하는 모듈/플러그인 목록 |
-| `getComputedSettingKeys()` | `[]` | 매번 계산하는 설정 키 — 저장·설치 시드하지 않고 읽을 때 실시간 값 (7.1.3+, [계산값 키](#계산값-키-getcomputedsettingkeys-713)) |
 | `getHookListeners()` | `[]` | 훅 리스너 클래스 목록 |
 | `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
 | `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
@@ -308,30 +307,6 @@ class Plugin implements PluginInterface
 
 - `"src/"`: src 디렉토리 내 클래스 로딩
 - `"./"`: 루트의 plugin.php 로딩
-
-### 진입 클래스와 자체 vendor (7.1.5~)
-
-- **진입 클래스가 자기 소스 클래스를 상속해도 됩니다.** `plugin.php` 의 `Plugin` 이 `AbstractPlugin` 을 직접 상속하지 않고 자기 PSR-4 네임스페이스의 클래스를 상속·구현하는 구조(예: `final class Plugin extends \Acme\Foo\Plugin`)도 설치 마법사·명령줄·관리자 화면 설치에서 지원합니다. 코어는 설치 전 확인에서 `plugin.json` 만 읽고 `plugin.php` 를 실행하지 않습니다.
-- **`plugin.php` 에서 자체 `vendor/autoload.php` 를 직접 불러오지 마세요.** 코어가 `bootstrap/cache/autoload-extensions.php` 의 `vendor_autoloads` 로 불러옵니다. 직접 부르던 플러그인도 7.1.5 부터는 「Cannot declare class ComposerAutoloaderInit…」 오류가 나지 않지만 불필요합니다.
-- 설치가 중간에 끊겨 반쯤 설치된 상태(목록에는 보이지만 동작하지 않음)로 남았으면 `php artisan plugin:install {식별자} --force` 로 다시 설치합니다.
-
-### PHP 확장 요구 선언
-
-코어 기준 「선택」 PHP 확장(`bcmath`·`gd`·`zlib` 등)이나 코어 목록 밖 확장(`soap` 등)을 쓰면 composer.json 에 선언한다.
-`composer install` 판단에서는 `ext-*` 를 무시하지만, 코어가 설치·활성화·업데이트 때 이 선언을 검사하고 관리자 화면·README 에 표시한다.
-
-```json
-{
-    "require": { "php": "^8.2", "ext-openssl": "*" },
-    "suggest": { "ext-soap": "모바일 결제(SmartPhone Pay) 승인키 발급에 필요" }
-}
-```
-
-- `require.ext-*`: 필수 — 서버에 없으면 설치·활성화를 막는다(업데이트는 경고만).
-- `suggest.ext-*`: 권장 — 일부 기능에만 필요할 때. 막지 않고 「권장 PHP 확장: 이름(미설치)」 배지만 표시한다. 값은 사유 문장이다.
-- `suggest` 로 선언한 확장을 쓰는 코드는 `class_exists`·`function_exists` 로 가드하고, 없을 때 고객에게는 일반 문구를, 로그에는 원인을 남긴다.
-
-상세: [requirements.md §1.8](../requirements.md#18-확장모듈플러그인이-요구하는-php-확장)
 
 ---
 
@@ -408,7 +383,7 @@ plugins/_bundled/sirsoft-payment/
 
 ---
 
-> 결제·본인인증처럼 외부로 복귀·콜백 주소를 보내거나 결과 화면으로 리다이렉트하는 플러그인은 그 주소를 `url()`·`redirect('/x')` 가 아니라 `SiteUrl::absolute()` 로 만든다 — [routing.md 「절대 URL 은 사이트 주소로 만든다」](../backend/routing.md#절대-url-은-사이트-주소로-만든다).
+> 결제·본인인증처럼 외부로 콜백·웹훅 주소를 보내는 플러그인은 그 주소를 `url()`·`redirect('/x')` 가 아니라 `SiteUrl::absolute()` 로 만든다. 결제 성공·실패 화면처럼 **회원이 브라우저로 여는 결과 화면**으로 리다이렉트할 때는 `ScreenUrl::toAbsolute()`(또는 화면 키 `ScreenUrl::absolute()`)로 만든다 — 환경설정 「사용자 화면 URL」(외부 화면)을 따라야 한다(7.2.0+). [routing.md 「절대 URL 은 사이트 주소로 만든다」](../backend/routing.md#절대-url-은-사이트-주소로-만든다), [개발자 화면 가이드 5절](../custom-development.md#5-화면-주소-키와-주소-필터).
 
 ## 서비스 프로바이더 작성
 
@@ -619,40 +594,13 @@ class Plugin extends AbstractPlugin
 플러그인 설치 시 `initializePluginSettings()`에서 다음 순서로 기본값을 결정합니다:
 
 1. `defaults.json`의 `defaults` 섹션 (1순위)
-2. `getConfigValues()` 반환값 중 **설정 스키마(`getSettingsSchema()`)에 있는 키만** (하위 호환성, 7.1.3+)
-3. 어느 경로든 계산값 키(`getComputedSettingKeys()`)는 빼고 쓴다 (7.1.3+)
-4. 빈 값이면 초기화 스킵
+2. `getConfigValues()` 반환값 (하위 호환성)
+3. 빈 값이면 초기화 스킵
 
 ```text
 하위 호환성: defaults.json이 없는 기존 플러그인은 기존 동작을 유지합니다.
 ✅ 권장: 새 플러그인은 defaults.json + frontend_schema를 사용하세요.
 ```
-
-> 7.1.3 전에는 `defaults` 절이 없을 때 `getConfigValues()` 전체를 설정 파일에 썼다. 설치 시점의 고정 기본값·계산값이 파일에 굳어 이후 기본값 변경·실시간 값을 덮었다. 읽기는 늘 `getConfigValues()` 위에 저장값을 병합하므로, 스키마 밖 키는 파일에 없어도 기본값으로 읽힌다.
-
-### 계산값 키 (getComputedSettingKeys, 7.1.3+)
-
-`getConfigValues()` 가 요청마다 계산해 돌려주는 값(다른 확장의 훅 결과, 세션 쿠키 이름처럼 환경에서 읽는 값)은 저장하면 안 된다. 이런 키를 `getComputedSettingKeys()` 로 선언한다(`AbstractPlugin`·`AbstractModule` 공통, 기본 `[]`).
-
-```php
-public function getComputedSettingKeys(): array
-{
-    // 도트 표기 가능
-    return ['provided_keys', 'locked.cookie'];
-}
-```
-
-| 시점 | 코어 동작 |
-|------|----------|
-| 설치 | 설정 파일에 쓰지 않는다 |
-| 저장 | 저장 요청에서 빼고, 기존 파일에 남아 있던 값도 뺀다 |
-| 읽기 | 파일에 값이 남아 있어도 무시하고 늘 `getConfigValues()` 의 실시간 값을 쓴다 |
-
-선언하지 않으면 설치 시점의 값이 파일에 굳어 이후 실시간 값을 영원히 덮는다. 이미 굳은 값이 있는 사이트는 읽기에서 무시되지만, 파일을 정리하려면 업그레이드 스텝에서 해당 키를 지운다.
-
-### 설치 시더·부분 실패 경고 (7.1.3+)
-
-플러그인도 모듈과 같은 규칙을 따른다 — [모듈 개발 기초 — 설치 시더 규칙](module-basics.md#설치-시더-규칙-713) (프로바이더 선등록, 시더 실패 = 설치 실패·새 설치 되돌림), [부분 실패를 경고로 알리는 방법](module-basics.md#부분-실패를-경고로-알리는-방법-lifecyclewarnings-713) (`LifecycleWarnings` + `class_exists` 가드).
 
 ### 플러그인이 제공하는 훅 정의
 
@@ -1177,58 +1125,24 @@ class ReportSyncListener implements HookListenerInterface
 
 선언하지 않고 협력만 하려면 이름 대신 훅 키만 씁니다 — 상대가 없는 사이트에서는 구독한 훅이 발화하지 않을 뿐입니다.
 
-##### 선택 연동 (`integrations`)
-
-상대 확장이 없어도 동작하지만 있으면 기능이 이어지는 경우(예: 쇼핑몰·게시판이 있으면 그 알림 설정 화면에 탭을 끼우는 알림 플러그인,
-게시판·쇼핑몰을 골라 쓰는 사용자 템플릿)는 `integrations` 에 선언합니다. 모듈(`module.json`)·플러그인(`plugin.json`)·템플릿(`template.json`)
-공통 스펙이고, `dependencies` 와 같은 자리에 같은 모양으로 적습니다(코어 7.1.4 부터 설치기·생명주기가 `dependencies` 와 같은 수준으로
-읽습니다 — 그 전 코어는 관리자 확장 상세와 확장 문서에 표시만 합니다).
-
-레이아웃 조각(`resources/extensions/*`)이 다른 확장의 화면을 `target_layout` 으로 지목하는 것도 이름 참조이므로 둘 중 하나에 선언해야
-합니다 — 대상 화면이 없는 설치에서 코어는 그 조각을 건너뛸 뿐 오류를 내지 않으므로, 선언이 없으면 결합을 아무도 모릅니다.
+**선택 연동 (`integrations`)** — 상대 확장이 없어도 동작하지만 있으면 기능이 이어지는 경우(예: 쇼핑몰·게시판이 있으면 그 알림 설정 화면에
+탭을 끼우는 알림 플러그인)는 `integrations` 에 선언합니다. 설치를 막지 않고, 관리자 확장 상세의 「함께 쓰면 연동되는 확장」과 확장 문서의
+의존 관계 절에 드러나 결합이 추적됩니다. 레이아웃 조각(`resources/extensions/*`)이 다른 확장의 화면을 `target_layout` 으로 지목하는 것도
+이름 참조이므로 둘 중 하나에 선언해야 합니다 — 대상 화면이 없는 설치에서 코어는 그 조각을 건너뛸 뿐 오류를 내지 않으므로, 선언이 없으면
+결합을 아무도 모릅니다.
 
 ```json
 {
-    "dependencies": { "modules": {}, "plugins": {} },
     "integrations": {
-        "modules": { "vendor-sample_shop": ">=1.2.0", "vendor-sample_board": ">=1.0.0" },
-        "plugins": ["vendor-sample_postcode"],
+        "modules": ["vendor-sample_shop", "vendor-sample_board"],
+        "plugins": [],
         "templates": []
     }
 }
 ```
 
-| 형식 | 뜻 |
-| --- | --- |
-| 객체형 `{"식별자": "버전 제약"}` | 값은 `dependencies` 와 같은 버전 제약(`>=1.2.0` — 표기 규칙은 [Changelog 규칙 — 코어 버전 제약 정책](changelog-rules.md#8-코어-버전-제약-정책)). 새로 선언할 때 권장 |
-| 목록형 `["식별자"]` | 버전 무관 |
-| 객체형인데 값이 버전 제약이 아닌 문자열(7.1.3 이전의 설명형 `{"vendor-sample_shop": "주문 알림 탭"}`) | 버전 무관으로 받고 서버 로그에 경고를 남깁니다. 버전 제약이나 목록형으로 바꾸세요 |
-
-**`dependencies` 와 무엇이 다른가** — 같은 자리에서 읽되, 연동은 **막지 않고 안내만** 합니다.
-
-| 시점 | `dependencies` (필수) | `integrations` (선택 연동) |
-| --- | --- | --- |
-| 설치·활성화 | 대상이 없거나 꺼졌거나 버전이 모자라면 막는다 | 진행한다. 미설치·비활성·「연동 버전 미달」 대상을 결과 메시지로 안내한다 |
-| 업데이트 | 의존 확장의 버전 제약 경고 | 같은 방식으로 연동 확장의 버전 미달을 안내한다 |
-| 웹 설치 마법사 | 고르면 함께 선택되고 해제하면 「다음」이 막힌다 | 고른 순간 한 번 함께 체크되고 「연동」 표시가 붙는다. 해제할 수 있고, 해제한 것은 다시 체크하지 않으며 「다음」도 막지 않는다. 사용자가 직접 고른 확장의 연동만 따라간다(연동의 연동은 따라가지 않는다). 대상이 템플릿이면 안내만 한다 |
-| 관리자 설치 창 | 함께 설치(권한 확인) | 「함께 쓰면 연동되는 확장(선택)」 체크 목록 — 미설치·비활성 항목이 기본 체크되고, 해제해도 본체 설치는 진행한다. 고른 연동 확장은 본체보다 먼저 설치·활성화되며, 그 설치가 실패해도 본체 설치는 계속하고 안내만 남긴다. 대상이 템플릿이면 표시만 한다 |
-| 관리자 확장 상세 | 의존 목록 | 「함께 쓰면 연동되는 확장」 — 요구 버전과 「연동 버전 미달」 표시 |
-| 대상을 끄거나 지울 때 | 이 확장이 의존하면 경고하거나 막는다 | 막지 않는다. 확인 창에 「연동 중인 확장」 목록을 보여 주고 진행하며, Artisan 명령도 같은 목록을 출력한다(종료 코드는 그대로) |
-| 코어 업데이트의 번들 정리 | 보존 | 활성 확장이 연동으로 선언한 번들도 보존한다 |
-
-**연동 대상이 꺼진 사이트에서의 동작은 선언한 확장이 책임집니다.** 코어는 설치를 막지 않으므로, 상대가 없을 때 죽은 메뉴·404 알림·빈 화면이
-남지 않게 각 경로에서 가립니다.
-
-- 서버(PHP): 상대 확장의 훅은 발화하지 않을 뿐이라 따로 할 일이 없습니다. 상대 화면으로 가는 링크·데이터를 응답에 싣는다면
-  활성 여부(`ModuleManager::getActiveModuleIdentifiers()` 등)를 확인하고 꺼져 있으면 싣지 않습니다.
-- 레이아웃: 상대 API 를 부르는 데이터소스와 링크·단추는 `_global.activeModules`/`activePlugins` 로 가립니다 —
-  `{{_global.activeModules?.includes('vendor-sample_shop') ?? true}}`. 식의 모양과 규칙은
-  [전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)에 있습니다.
-- 사용자 템플릿의 라우트: 상대 모듈 화면을 선언한 라우트에는 `requires` 를 달아 모듈이 꺼지면 라우트를 내지 않게 합니다
-  ([템플릿 라우팅 — requires](template-routing.md)).
-
-정적 검사는 `dependencies` 에도 `integrations` 에도 없는 확장 참조를 오류로 보고, 템플릿 레이아웃의 데이터소스가 선택 연동 확장의 API 를
-가드 없이 부르는 것도 오류로 봅니다(그 레이아웃을 쓰는 라우트가 모두 `requires` 로 그 확장을 거는 경우는 제외).
+객체 형식(`{"vendor-sample_shop": "주문 알림 탭"}`)도 받으며 키를 식별자로 씁니다. 정적 검사 `extension-undeclared-extension-reference` 는
+`dependencies` 에도 `integrations` 에도 없는 확장 참조를 오류로 봅니다.
 
 #### 3. 훅 계약 (Hook Contract)
 
@@ -1340,41 +1254,6 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 - 정적 검사 `state-contract-write-ownership` 이 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
   규칙은 [레이아웃 확장 — 조각의 전역 상태 키 접두 규칙](layout-extensions.md#조각의-전역-상태-키-접두-규칙)입니다.
 
-### 최근 검색어 범위 (search_scopes)
-
-검색창 「최근 검색어」는 **검색 범위**마다 따로 쌓입니다(코어 7.1.5). 코어 통합검색은 `core.site` 이고, 자기 검색창을 가진 모듈·플러그인은
-매니페스트(`module.json`·`plugin.json`)에 범위를 선언합니다. 템플릿은 선언하지 않습니다.
-
-```json
-{
-    "search_scopes": {
-        "products": {
-            "label": "sirsoft-ecommerce::messages.search_history.scope_products",
-            "max_count": 10,
-            "retention_days": 0
-        }
-    }
-}
-```
-
-| 필드 | 의미 |
-| --- | --- |
-| 키 | 확장 안의 이름(`/^[a-z][a-z0-9_-]{0,49}$/`). 코어가 `{식별자}.` 를 붙여 범위 id(`sirsoft-ecommerce.products`)를 만든다 — 남의 범위를 주장할 수 없다 |
-| `label` | 관리자 화면에 보일 범위 이름. 번역 키 문자열(`{식별자}::파일.키` — 일본어 언어팩까지 번역된다) 또는 다국어 맵(`{"ko": "…", "en": "…"}`) |
-| `max_count` | 기본 보관 개수(1~50, 생략하면 10) |
-| `retention_days` | 기본 보관 기한(일, 0 = 기한 없음, 생략하면 0). 0 보다 크면 설치만으로 보유기간 작업이 지우기 시작하므로 꼭 필요할 때만 적는다 |
-
-- 형식이 틀린 항목은 버리고 설치·활성화·업데이트 결과에 경고(`search_scopes`)로 알립니다. 설치는 막지 않습니다. 경고 사유는 이유별로 나뉩니다 —
-  이름 형식이 틀린 범위·선언이 객체가 아닌 범위는 통째로 버리고, `max_count`·`retention_days` 가 허용 범위 밖이거나 정수가 아니면 그 값만
-  버리고 기본값을 씁니다(예: 「범위 이름 형식이 틀려 버렸습니다: Bad Name! / 보관 개수가 1~50 사이 정수가 아니라 무시하고 기본값을 씁니다:
-  big(999)」). 경고 항목에는 `cause: "declaration"` 이 실려, 관리자 결과 창이 운영자에게 다시 실행할 작업이 아니라 확장 개발자가 고칠
-  선언이라고 안내합니다.
-- 운영자는 환경설정 > 개인정보 「최근 검색어」 카드에서 범위마다 보관 개수·보관 기한을 고칩니다(설정이 선언값보다 우선).
-- 확장이 꺼지면 그 범위는 사라집니다 — 서버 API 가 그 범위의 기록을 422 로 거부하고, 엔진은 조용히 건너뜁니다. 운영자가 고친 값은 보존됩니다.
-- 검색창 쪽은 [G7Core.searchHistory](../frontend/g7core-api.md#최근-검색어-g7coresearchhistory) 를 씁니다 — 레이아웃은 검색 이동 앞에
-  `<record-search-keyword scope="sirsoft-ecommerce.products" keyword="{{…}}"/>`, 컴포넌트는 `G7Core.useSearchHistory(scope)`.
-- PHP 에서는 `getSearchScopes()`(정규화된 선언)와 `App\Support\SearchScopes::keys()`(지금 선언된 범위 전체)로 읽습니다.
-
 ### 코어 비공개 내부를 쓰지 않는다
 
 확장의 브라우저 코드는 코어의 **공개 API** 만 씁니다. 엔진 내부 구조는 예고 없이 바뀌고, 그때 확장은 오류 없이 조용히 다르게 동작합니다.
@@ -1402,7 +1281,7 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 |--------|------|
 | `php artisan plugin:list` | 플러그인 목록 조회 |
 | `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함) |
-| `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략). 필요한 의존 확장이 없거나 꺼져 있거나 버전이 모자라면 사유(미설치·비활성·버전 미달 설치 → 요구)를 출력하고 멈춘다 — `--force` 로 강제 활성화 |
+| `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략) |
 | `php artisan plugin:deactivate [identifier]` | 플러그인 비활성화 |
 | `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함) |
 | `php artisan plugin:composer-install [identifier]` | 플러그인 Composer 의존성 설치 |
@@ -1729,3 +1608,4 @@ G7Core.state.setLocal(
 - [활동 로그 시스템](../backend/activity-log.md) - 활동 로그 Listener, Per-Item Bulk 로깅 규칙
 - [module-basics.md](module-basics.md) - 모듈 개발 기초 (비교용)
 - [extension-update-system.md](extension-update-system.md) - 확장 업데이트 시스템
+- [개발자 화면 가이드](../custom-development.md) - 화면 주소 키·필터, 엔진 없는 화면이 부르는 결제·본인인증·쿠키 동의 API 순서

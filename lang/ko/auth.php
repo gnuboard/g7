@@ -9,9 +9,6 @@ return [
     'two_factor_enrollment_required' => '로그인하려면 인증 앱 등록이 필요합니다. 관리자에게 문의해주세요.',
     'two_factor_failed' => '인증번호가 올바르지 않거나 유효시간이 지났습니다.',
     'two_factor_invalid_challenge' => '인증 요청을 찾을 수 없습니다. 처음부터 다시 로그인해주세요.',
-    'two_factor_resend_not_supported' => '인증 앱은 코드를 보내지 않습니다. 인증 앱에 표시된 현재 코드를 입력해 주세요.',
-    'two_factor_resend_cooldown' => '방금 인증번호를 보냈습니다. :seconds초 후 다시 요청할 수 있습니다.',
-    'password_reconfirm_throttled' => '비밀번호 확인을 너무 여러 번 실패했습니다. :seconds초 후 다시 시도해 주세요.',
     'two_factor_delivery_failed' => '인증번호를 보내지 못했습니다. 관리자에게 문의해주세요.',
     // 비밀번호 변경 단계 (#736) — 비밀번호·2단계 인증을 통과했지만 비밀번호를 바꿔야 로그인이 끝난다
     'password_change_required' => '비밀번호 사용 기간이 지났습니다. 새 비밀번호를 설정해 주세요.',
@@ -40,6 +37,7 @@ return [
     'layout_guest_permission_denied' => '로그인이 필요한 레이아웃입니다. (필요 권한: :required_permissions)',
     'invalid_permission_type' => '유효하지 않은 권한 타입입니다.',
     'role_denied' => '해당 역할이 없습니다.',
+    'email_not_registered' => '등록되지 않은 이메일입니다.',
     'guest_permission_denied' => '비회원은 해당 작업을 수행할 수 없습니다. 로그인이 필요합니다.',
     'scope_denied' => '이 리소스에 대한 접근 권한이 없습니다.',
     'scope_type_all' => '전체',
@@ -61,16 +59,6 @@ return [
     // 비밀번호 재설정
     'reset_token_invalid' => '유효하지 않은 비밀번호 재설정 토큰입니다.',
     'reset_token_expired' => '비밀번호 재설정 토큰이 만료되었습니다. 다시 요청해주세요.',
-    'password_reset_email_sent' => '가입된 이메일이면 비밀번호 재설정 링크를 보냈습니다. 메일함을 확인해 주세요.',
+    'password_reset_email_sent' => '비밀번호 재설정 이메일이 발송되었습니다.',
     'email_send_failed' => '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
-    // `auth:process-password-expiry` 명령 출력
-    'console' => [
-        'process_password_expiry' => [
-            'disabled' => '비밀번호 만료 기능이 꺼져 있어 실행하지 않았습니다. (security.password_expiry_enabled = false)',
-            'locked' => '관리자 직권 실행이 비밀번호 만료 처리를 하고 있어 이번 주기는 건너뛰었습니다.',
-            'notice' => '만료 사전 안내: :count건 (남은 대상 :remaining건)',
-            'expire' => '만료일 처리: :count건 (남은 대상 :remaining건)',
-            'stage_failed' => '단계 실패 — :stage: :error',
-        ],
-    ],
 ];

@@ -13,55 +13,23 @@ return [
         'language_pack' => 'language pack',
     ],
 
-    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (#153)
-    'dependency_types' => [
-        'module' => 'module',
-        'plugin' => 'plugin',
-        'template' => 'template',
-    ],
-
-    // 멈춘 업데이트 정리 안내 (7.1.1)
-    'stuck_update_recovered' => 'Cleaned up a stuck update (restored state: :status): :name — the update ended midway and left it in "updating".',
-    'stuck_update_activate_hint' => 'The cleaned-up extension is now inactive. To turn it back on: :command',
-    // The update stopped before finishing the version change (files, recorded version, upgrade steps) (7.1.1)
-    'stuck_update_unfinished_hint' => 'This update (:from → :to) did not finish — the files may already be the new version, so the recorded version was set back to :from. Run the update again to finish only the remaining steps: :command',
-
     'errors' => [
         'state_contract_conflict' => "The ':name' state contract is owned by :owner. :extension cannot declare the same name.",
         'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
-        'php_extension_missing' => 'The :name extension requires these PHP extensions on the server: :extensions. Install them and try again.',
         'version_check_failed' => 'Version check failed.',
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',
-        'operation_stuck' => '":name" has been stuck in "updating" for more than :minutes minutes. If the update ended midway, update again with --force to clean it up and finish the update, or activate it to only clean it up and turn it on (you will be told to run an unfinished update again).',
         'update_already_running' => 'An update of ":name" is already running. Check again after it finishes.',
-        'operation_already_running' => 'Another operation (install, update, activation, etc.) on ":name" is in progress. Try again after it finishes.',
-        'operation_lock_unavailable' => 'The operation lock store (cache) is unavailable, so the operation on ":name" was not started. Check the cache status in Settings > Drivers and try again.',
         'zip_missing_manifest' => 'Manifest :file not found inside ZIP: :zip',
         'zip_invalid_manifest' => 'Manifest :file inside ZIP is not valid JSON.',
         'zip_identifier_mismatch' => 'ZIP manifest identifier does not match target extension. (expected: :expected, actual: :actual)',
         'zip_missing_version' => 'Manifest :file inside ZIP has no version field.',
         'not_found' => 'Extension (:identifier) not found.',
         'cascade_dependency_failed' => 'Failed to install cascade dependency :type (:identifier): :message',
-        'unknown_error' => 'An unknown error occurred.',
-        'cascade_dependency_activation_failed' => 'Failed to activate dependency :identifier: :reason',
-        'cascade_dependencies_kept' => 'Dependencies installed or activated along the way were kept, not rolled back: :list',
-        'cascade_dependency_unmet_list' => 'Required dependencies are not met — :list',
-        'cascade_dependency_cycle' => 'Dependencies form a cycle: :cycle',
-        'cascade_dependency_not_found' => 'Dependency :identifier required by :required_by was not found.',
-        'cascade_dependency_version' => ':identifier :version does not satisfy the version (:required) required by :required_by.',
         'cascade_permission_denied' => 'You do not have permission to install or activate the :type (:identifier) selected for installation together.',
         'invalid_type' => 'Invalid extension type.',
         'not_auto_deactivated' => 'This extension was not automatically deactivated due to core version incompatibility.',
-        'recover_dependencies_unmet' => 'Could not recover — required extensions do not meet the requirements: :list',
-        'recover_failed' => 'Could not recover — :reason',
         'hidden_extension' => 'Hidden (internal-only) extensions are not exposed to user actions.',
         'internal_error' => 'An internal server error occurred. Check the server log for details.',
-        'seeder_failed' => 'Installation was cancelled because seeding default data (:seeder) failed: :message',
-        'seeder_class_not_found' => 'Seeder class not found',
-        'upgrade_step_class_missing' => 'The update was stopped because class :class of upgrade step :file was not found',
-        'upgrade_step_interface_missing' => 'The update was stopped because class :class of upgrade step :file does not implement :interface',
-        'entry_class_missing_on_update' => 'The update was stopped because class :class was not found in :file of the new version',
-        'unsafe_archive_entry' => 'The archive contains a path that is not allowed: :entry',
     ],
 
     'warnings' => [
@@ -72,71 +40,6 @@ return [
         'dependency_not_installed' => ':identifier :required is required, but it is not installed',
         'dependency_inactive' => 'Extension :identifier is turned off (requires :required)',
         'dependency_summary' => 'However, some dependencies do not meet the requirements — :list. Update or turn on those extensions as well.',
-        'dependent_unmet' => ':dependent_type ":dependent" requires ":identifier" :required, which is no longer met (now :state).',
-        'dependent_template_503' => 'Screens using this template will show the 503 notice.',
-        'archive_backslash_normalized' => 'Extracted after normalizing :count backslash (\\) paths to /',
-        'seeder_class_name_mismatch' => 'Skipped seeder file :file because the inferred class :class was not found',
-        'storage_cleanup_incomplete' => 'Could not delete the whole extension storage folder — check the server file permissions and delete the remaining files manually',
-        'completed_with_warnings' => '⚠️ Completed, but some items failed (:count warnings)',
-        'completed_with_notices' => 'ℹ️ Completed — notices to review: :count',
-        'column_step' => 'Step',
-        'column_target' => 'Target',
-        'column_message' => 'Reason',
-        'composer_install_failed' => 'Installing Composer dependencies failed — run composer install manually in the extension directory',
-        'php_extension_missing' => 'The server is missing PHP extensions required by this extension (:extensions) —related features may not work until they are installed',
-        'search_scopes_not_object' => 'The search_scopes declaration is not an object, so all of it was ignored',
-        'search_scopes_invalid_name' => 'Dropped scopes with an invalid name (must start with a lowercase letter and use only lowercase letters, digits, _ or -, up to 50 characters): :names',
-        'search_scopes_invalid_definition' => 'Dropped scopes whose declaration is not an object: :names',
-        'search_scopes_max_count_out_of_range' => 'Ignored max_count values that are not integers between :min and :max (the default is used): :items',
-        'search_scopes_retention_days_out_of_range' => 'Ignored retention_days values that are not integers between :min and :max days (the default is used): :items',
-        'necessary_storage_not_object' => 'The necessary_storage declaration is not an object, so all of it was ignored',
-        'necessary_storage_invalid_scope' => 'Dropped storage types that are not localStorage, sessionStorage or cookie, or whose key list is not an array: :names',
-        'necessary_storage_invalid_key' => 'Dropped storage keys with an invalid format (letters, digits, _ . : @ + - up to 128 characters; a single trailing * for prefix match): :items',
-        'declaration_hint' => 'This is a mistake in the extension\'s own declaration, so running the task again will not change it — let the extension developer know',
-    ],
-
-    // Unmet required dependency (dependencies) reasons — shared by recovery failure, cascade install failure and CLI (7.1.4)
-    'dependency_status' => [
-        'label' => ':name (:identifier)',
-        'not_installed' => 'not installed',
-        'inactive' => 'disabled',
-        'version_mismatch' => 'version too low :installed → :required',
-    ],
-
-    // Optional integration (integrations) notices — informational only, never blocking (7.1.4)
-    'integrations' => [
-        'notice_not_installed' => ':name not installed',
-        'notice_inactive' => ':name turned off',
-        'notice_version_mismatch' => ':name requires :required (installed :installed)',
-        'notice_summary' => 'Some optional integrations are not working — :list. Install, turn on or update them to enable the integration.',
-        'cascade_failed' => 'Skipped :name because it could not be installed or turned on together: :message',
-        'requires_no_permission' => 'You do not have permission to install or turn on :identifier, which this integration requires',
-        'states' => [
-            'not_installed' => 'Not installed',
-            'inactive' => 'Inactive',
-            'version_mismatch' => 'Version too low',
-        ],
-        'console' => [
-            'notices_title' => 'Optional integrations — this extension works without them; install, turn on or update them to enable the integration',
-            'integrated_by_title' => 'Extensions integrating with this extension — their menus and screens that used this extension will disappear',
-            'column_type' => 'Type',
-            'column_extension' => 'Extension',
-            'column_state' => 'State',
-            'column_required' => 'Required version',
-            'column_installed' => 'Installed version',
-        ],
-    ],
-
-    // Validation field names for items installed together (7.1.4)
-    'install_fields' => [
-        'dependencies' => 'dependencies to install together',
-        'dependency_type' => 'dependency type',
-        'dependency_identifier' => 'dependency identifier',
-        'integrations' => 'integrations to install together',
-        'integration_type' => 'integration type',
-        'integration_identifier' => 'integration identifier',
-        'language_packs' => 'language packs to install together',
-        'language_pack' => 'language pack identifier',
     ],
 
     'alerts' => [
@@ -180,20 +83,6 @@ return [
     ],
 
     'commands' => [
-        // Cascade options of the install commands (--with-dependencies · --with-language-packs)
-        'cascade' => [
-            'dependency_unmet' => 'Dependency not met: :identifier (requires :required, currently :state)',
-            'use_with_dependencies' => 'Use --with-dependencies to install and activate it together.',
-            'state_install_activate' => 'not installed',
-            'state_activate' => 'inactive',
-            'dependency_step' => 'Dependency :identifier is :action — handling it together (required by :required_by)',
-            'dependencies_done' => 'Dependencies done — :installed installed, :activated activated',
-            'language_pack_failed' => 'Language pack :identifier failed to install: :reason',
-            'language_pack_skipped' => 'Skipped language pack :identifier: :reason',
-            'language_pack_awaiting' => 'Language pack :identifier will turn on when its target extension is activated.',
-            'language_packs_done' => ':count language packs installed',
-            'language_pack_not_candidate' => 'Not a language pack that can be installed with it: :list',
-        ],
         'clear_cache_success' => 'Extension version check cache has been cleared.',
 
         // Shared option validation and ZIP notices for module:update / plugin:update / template:update
@@ -214,7 +103,6 @@ return [
 
         // Bundled extension bulk update prompt of core:update / core:execute-bundled-updates
         'bundled_update' => [
-            'lock_unavailable_aborted' => 'The bulk update was aborted because the operation lock store (cache) is unavailable — skipped the rest (remaining: :count). Check the cache status and run it again.',
             'up_to_date' => 'Active extensions match the latest bundle.',
             'detected' => 'Extensions with a newer version in the bundle were detected:',
             'detected_items' => [
@@ -225,7 +113,6 @@ return [
             ],
             'confirm_proceed' => 'Do you want to proceed with the bulk update?',
             'skipped' => 'Skipping the bulk update.',
-            'dependency_cycle' => 'Dependencies form a cycle — these are updated in their original order: :cycle',
             'strategy_question' => 'Select the global layout strategy',
             'strategy_options' => [
                 'overwrite' => 'Overwrite all layouts with the bundle',
@@ -250,134 +137,16 @@ return [
             ],
             'item_failed' => '  Failed: :message',
             'completed' => 'Update completed: :success succeeded, :failed failed',
-            'exit_failure' => 'The core was updated to :version, but some bundled extension updates failed (failed: :failed). Check the failed items above and update those extensions again.',
+            'exit_failure' => 'The core was updated to :version, but :failed bundled extension update(s) failed. Check the failed items above and update those extensions again.',
             'search_index_result' => 'Search index: :summary',
             'manifest_required' => 'The --manifest option is required and must point to an existing file.',
             'manifest_parse_failed' => 'Failed to parse manifest JSON: :path',
             'lang_pack_phase_in_process' => 'Could not run the language pack phase in a separate process; continuing in this process — if extension data translations are empty afterwards, run php artisan language-pack:update <pack> --force.',
         ],
-        // `extension:composer-install`, `extension:update-autoload` and vendor bundle command output
-        'composer_install' => [
-            'start' => 'Installing Composer dependencies for all extensions',
-            'section_modules' => 'Modules',
-            'section_plugins' => 'Plugins',
-            'done' => 'Composer dependencies installed for all extensions',
-            'partial_failure' => 'Failed to install Composer dependencies for some extensions.',
-        ],
-        'update_autoload' => [
-            'generating' => 'Generating the extension autoload file...',
-            'generated' => 'Autoload file generated successfully.',
-            'hooks_cache_regenerated' => 'Static hook mapping cache regenerated.',
-            'failed' => 'An error occurred while generating the autoload file: :error',
-        ],
-        'vendor_bundle_action' => [
-            'no_build_targets' => 'No build targets.',
-            'no_verify_targets' => 'No verification targets.',
-            'output_path_missing' => ':label: output path not found',
-            'bundle_missing' => ':label: no bundle (skipped)',
-            'verify_failed' => 'Verification failed: :count',
-            'verify_passed' => 'All bundles passed the integrity check.',
-            'building' => 'Building :label...',
-            'skipped_no_dependencies' => ':label: skipped (no external composer dependencies)',
-            'skipped_not_installed' => ':label: skipped (extension not installed — run module:install / plugin:install first)',
-            'skipped_reason' => ':label: skipped (:reason, :size, :count packages)',
-            'path_missing' => ':label: path not found (:path)',
-            'check_skipped_no_composer' => ':label: SKIPPED (no composer.json)',
-            'check_skipped_no_dependencies' => ':label: SKIPPED (no external composer dependencies)',
-            'stale' => ':label: STALE — rebuild required',
-        ],
-        // `ext-static:*` and `ext-bundles:cleanup` command output
-        'ext_static_status' => [
-            'title' => 'Bootstrap resource static publishing status',
-            'labels' => [
-                'process_user' => 'Process user   :',
-                'version' => 'Cache version  :',
-                'base' => 'Publish root   :',
-                'tree_write' => 'Tree writable  :',
-                'publish_state' => 'Publish state  :',
-                'manifest_files' => 'Manifest files :',
-                'published_at' => 'Published at   :',
-                'retained_versions' => 'Retained       :',
-                'failure_reason' => 'Reason     :',
-                'failure_version' => 'Version    :',
-                'failure_at' => 'Time       :',
-                'failure_count' => 'Failures   :',
-                'failure_message' => 'Detail     :',
-            ],
-            'values' => [
-                'enabled_on' => 'on (publishing)',
-                'enabled_off' => 'off (not publishing)',
-                'writable_yes' => 'yes',
-                'writable_no' => 'no',
-                'published' => 'published',
-                'not_published' => 'not published',
-                'files_count' => ':count',
-                'failure_count' => ':count',
-                'none' => '(none)',
-            ],
-            'root_warning' => 'Running as root — publishing with this account can leave the cache folder owned by root. Run it as the web account: :command',
-            'kill_switch_off' => 'The kill-switch is off, so the publishing status is not checked (core.static_cache.enabled).',
-            'failure_title' => 'Recent publishing failure',
-            'problems' => [
-                'tree_not_writable' => 'The publish tree is not writable (:path, owner=:owner, perms=:perms). The web account cannot republish, so every request falls back to the API.',
-                'manifest_empty' => 'The manifest lists 0 files — the publication is empty.',
-                'not_published' => 'The current version (:version) is not published. Self-healing will try on the next web render; to publish immediately, run `:command` as the web account or use "Rebuild now" under Admin > Settings > General.',
-                'failure_marker' => 'A publishing failure marker remains (reason: :reason).',
-                'versions_accumulated' => ':count published versions have accumulated (normally 2: current + previous). Deletion may be failing — check ownership/permissions.',
-            ],
-            'ok' => 'No problems found.',
-            'publish_hint_unknown_web' => 'sudo -u <web-server-account> :command (the web server account is the owner of the storage directory)',
-            'hints' => [
-                'parent_not_writable' => 'This is a publish tree permission problem. Check that the CLI and web accounts share a group and that `public/build` is group-writable (g+w). To publish manually, use the web account: :command',
-                'write_failed' => 'Writing failed midway. Check free disk space and quota.',
-                'lock_unavailable' => 'Could not acquire the cache lock. Check the cache store (file cache directory permissions, etc.).',
-                'default' => 'Check the detailed message.',
-            ],
-        ],
-        'ext_static_publish' => [
-            'disabled' => 'Static publishing is disabled (G7_STATIC_CACHE=false). Skipping publishing.',
-            'root_warning' => 'Running as root — publishing with this account leaves the cache folder and merged bundles owned by root, which can make later web requests fail.',
-            'run_as_web' => 'Run it as the web account: :command',
-            'failed' => 'Static publishing failed. Check the log — the site keeps working normally via the API fallback.',
-            'done' => 'Bootstrap resource static publishing is complete.',
-        ],
-        'ext_static_cleanup' => [
-            'done' => 'Deleted :count old static publish directories.',
-        ],
-        'ext_bundles_cleanup' => [
-            'done' => 'Deleted :count old extension bundles. (current version: :version)',
-        ],
-        // `ext:docgen` command output
-        'ext_docgen' => [
-            'conflict_check_dry_run' => '--check and --dry-run cannot be used together (dry-run does not perform checks).',
-            'conflict_init_dry_run' => '--init and --dry-run cannot be used together (dry-run does not create files).',
-            'conflict_init_check' => '--init and --check cannot be used together (check does not create files).',
-            'no_extensions' => 'No bundled extensions found for scope \':scope\'.',
-            'dry_run_header' => ':count extensions (scope=:scope)',
-            'documents' => ':count documents: :list',
-            'surface' => 'Declarative surface: :reason',
-            'created' => ':label created: :list',
-            'updated' => ':label updated: :list',
-            'missing_documents' => ':label missing documents: :list',
-            'missing_blocks' => ':label missing generated blocks: :list',
-            'missing_sections' => ':label missing required sections: :list',
-            'drifted_blocks' => ':label block drift (does not match the code): :list',
-            'orphan_blocks' => ':label generated blocks not targeted for update (orphans): :list',
-            'unfilled' => ':label unfilled markers (:total): :list',
-            'surface_error' => ':label failed to collect declarative surface :getter(): :message',
-            'malformed' => '[:type] :id — excluded from checks because :manifest could not be read (:reason). This means "could not read", not "no extension".',
-            'summary' => 'Processed :count extensions (scope=:scope, mode=:mode) — :issues issues',
-            'check_hint' => 'Create skeletons with `php artisan ext:docgen --init`, then update blocks with `php artisan ext:docgen`.',
-        ],
-        // Build output cleanup notice shared by module:build, plugin:build and template:build
-        'prune_build_output' => [
-            'active_dir_skipped' => 'Building in the active directory — previous build output is not cleaned up (cleaning would interrupt serving until the build finishes). Stale output may accumulate, so develop in _bundled and apply changes to the active copy with the update command.',
-        ],
     ],
 
     // Progress messages for extension install/uninstall/update (manager onProgress callback steps)
     'progress' => [
-        'starting' => 'Starting...',
         'move_blocked_in_place' => 'Directory move was blocked; switching to in-place per-file replacement...',
         'move_blocked_copy' => 'Directory move was blocked; switching to per-file copy...',
         'vendor_copy_keep' => 'Copying vendor directory (keeping existing)...',

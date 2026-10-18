@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Core;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\Traits\ClearsTemplateCaches;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +10,6 @@ use Symfony\Component\Process\Process;
 class BuildCoreCommand extends Command
 {
     use ClearsTemplateCaches;
-    use LocalizesDescription;
 
     /**
      * The name and signature of the console command.
@@ -20,6 +18,11 @@ class BuildCoreCommand extends Command
                             {--watch : 파일 변경 감시 모드}
                             {--production : 프로덕션 빌드}
                             {--full : 전체 빌드 (npm run build)}';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '그누보드7 코어 프론트엔드 에셋을 빌드합니다';
 
     /**
      * Execute the console command.
@@ -38,18 +41,18 @@ class BuildCoreCommand extends Command
 
             // package.json 존재 확인
             if (! file_exists($packageJsonPath)) {
-                $this->error('❌ '.__('common.console.core_build.package_json_missing'));
+                $this->error('❌ package.json 파일이 없습니다.');
 
                 return Command::FAILURE;
             }
 
             // node_modules 확인 및 설치
             if (! is_dir($projectPath.'/node_modules')) {
-                $this->info('📦 '.__('common.console.core_build.installing_dependencies'));
+                $this->info('📦 의존성 설치 중...');
                 $installResult = $this->runNpmCommand(['npm', 'install'], $projectPath);
 
                 if ($installResult !== Command::SUCCESS) {
-                    $this->error('❌ '.__('common.console.core_build.npm_install_failed'));
+                    $this->error('❌ npm install 실패');
 
                     return Command::FAILURE;
                 }
@@ -85,8 +88,8 @@ class BuildCoreCommand extends Command
         // 감시 모드: 엔진 번들 + 편집기 번들(layout-editor.min.js)을 각각 vite --watch 로
         // 병렬 감시한다. (기존 dev 서버는 코어 lib 를 빌드하지 않으므로 사용 불가)
         if ($watchMode) {
-            $this->info('👀 '.__('common.console.core_build.watch_start', ['target' => __('common.console.core_build.targets.all_bundles')]));
-            $this->line('   '.__('common.console.core_build.watch_stop_hint'));
+            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
+            $this->line('   Ctrl+C로 종료할 수 있습니다.');
 
             return $this->runWatchBundles($projectPath);
         }
@@ -95,9 +98,7 @@ class BuildCoreCommand extends Command
         $buildEnv = $this->buildEnv($productionMode);
 
         // ── 1) 템플릿 엔진 번들 (편집기 코드 제외) ──────────────────────────────
-        $this->info('🔨 '.__($productionMode ? 'common.console.core_build.start_production' : 'common.console.core_build.start', [
-            'target' => __('common.console.core_build.targets.engine'),
-        ]));
+        $this->info('🔨 코어 빌드 시작 (템플릿 엔진)'.($productionMode ? ' (프로덕션)' : ''));
         $engineResult = $this->runNpmCommand(['npm', 'run', 'build:core'], $projectPath, true, $buildEnv);
 
         if ($engineResult !== Command::SUCCESS) {
@@ -105,44 +106,38 @@ class BuildCoreCommand extends Command
         }
 
         // ── 2) 레이아웃 편집기 번들 (lazy, /admin/layout-editor/* 진입 시 로드) ──
-        $this->info('🔨 '.__($productionMode ? 'common.console.core_build.start_production' : 'common.console.core_build.start', [
-            'target' => __('common.console.core_build.targets.editor'),
-        ]));
+        $this->info('🔨 코어 빌드 시작 (레이아웃 편집기)'.($productionMode ? ' (프로덕션)' : ''));
         $editorResult = $this->runNpmCommand(['npm', 'run', 'build:core-editor'], $projectPath, true, $buildEnv);
 
         if ($editorResult !== Command::SUCCESS) {
-            $this->error('❌ '.__('common.console.core_build.editor_failed'));
+            $this->error('❌ 레이아웃 편집기 번들 빌드 실패');
 
             return $editorResult;
         }
 
         // ── 3) DevTools 번들 (lazy, 디버그 모드에서만 로드) ──
-        $this->info('🔨 '.__($productionMode ? 'common.console.core_build.start_production' : 'common.console.core_build.start', [
-            'target' => __('common.console.core_build.targets.devtools'),
-        ]));
+        $this->info('🔨 코어 빌드 시작 (DevTools)'.($productionMode ? ' (프로덕션)' : ''));
         $devtoolsResult = $this->runNpmCommand(['npm', 'run', 'build:core-devtools'], $projectPath, true, $buildEnv);
 
         if ($devtoolsResult !== Command::SUCCESS) {
-            $this->error('❌ '.__('common.console.core_build.devtools_failed'));
+            $this->error('❌ DevTools 번들 빌드 실패');
 
             return $devtoolsResult;
         }
 
         // ── 4) 개발 대시보드 CSS (자체 제공 — 종전 Tailwind Play CDN 대체) ──
-        $this->info('🔨 '.__($productionMode ? 'common.console.core_build.start_production' : 'common.console.core_build.start', [
-            'target' => __('common.console.core_build.targets.dashboard_css'),
-        ]));
+        $this->info('🔨 코어 빌드 시작 (개발 대시보드 CSS)'.($productionMode ? ' (프로덕션)' : ''));
         $dashboardResult = $this->runNpmCommand(['npm', 'run', 'build:core-devdashboard'], $projectPath, true, $buildEnv);
 
         if ($dashboardResult !== Command::SUCCESS) {
-            $this->error('❌ '.__('common.console.core_build.dashboard_css_failed'));
+            $this->error('❌ 개발 대시보드 CSS 빌드 실패');
 
             return $dashboardResult;
         }
 
         $this->pruneStaleSourceMaps($productionMode);
 
-        $this->info('✅ '.__('common.console.core_build.done', ['target' => __('common.console.core_build.targets.all_bundles')]));
+        $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
         $this->showEngineBuildResults($projectPath);
         $this->incrementExtensionCacheVersion();
 
@@ -162,7 +157,6 @@ class BuildCoreCommand extends Command
      * 소스맵 정리 책임을 빌드 커맨드가 명시적으로 넘겨받는다.
      *
      * @param  bool  $productionMode  프로덕션 빌드 여부
-     * @return void
      */
     private function pruneStaleSourceMaps(bool $productionMode): void
     {
@@ -180,11 +174,11 @@ class BuildCoreCommand extends Command
                 continue;
             }
 
-            $this->warn('   ⚠️  '.__('common.console.core_build.sourcemap_delete_failed', ['path' => $map]));
+            $this->warn('   ⚠️  소스맵 삭제 실패 (수동 제거 필요): '.$map);
         }
 
         if ($removed !== []) {
-            $this->line('   🧹 '.__('common.console.core_build.sourcemap_removed', ['files' => implode(', ', $removed)]));
+            $this->line('   🧹 잔존 소스맵 제거: '.implode(', ', $removed));
         }
     }
 
@@ -252,13 +246,11 @@ class BuildCoreCommand extends Command
 
         if ($watchMode) {
             $buildCommand[] = 'dev';
-            $this->info('👀 '.__('common.console.core_build.watch_start', ['target' => __('common.console.core_build.targets.full')]));
-            $this->line('   '.__('common.console.core_build.watch_stop_hint'));
+            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (전체)');
+            $this->line('   Ctrl+C로 종료할 수 있습니다.');
         } else {
             $buildCommand[] = 'build';
-            $this->info('🔨 '.__($productionMode ? 'common.console.core_build.start_production' : 'common.console.core_build.start', [
-                'target' => __('common.console.core_build.targets.full'),
-            ]));
+            $this->info('🔨 코어 빌드 시작 (전체)'.($productionMode ? ' (프로덕션)' : ''));
         }
 
         // 감시 모드에는 소스맵 억제를 주입하지 않는다 — 개발 중 디버깅 필요
@@ -271,7 +263,7 @@ class BuildCoreCommand extends Command
 
         if ($result === Command::SUCCESS && ! $watchMode) {
             $this->pruneStaleSourceMaps($productionMode);
-            $this->info('✅ '.__('common.console.core_build.done', ['target' => __('common.console.core_build.targets.full')]));
+            $this->info('✅ 코어 빌드 완료 (전체)');
             $this->showFullBuildResults($projectPath);
             $this->incrementExtensionCacheVersion();
         }
@@ -283,7 +275,6 @@ class BuildCoreCommand extends Command
      * 템플릿 엔진 빌드 결과 출력
      *
      * @param  string  $projectPath  프로젝트 경로
-     * @return void
      */
     private function showEngineBuildResults(string $projectPath): void
     {
@@ -293,7 +284,7 @@ class BuildCoreCommand extends Command
             return;
         }
 
-        $this->line('   '.__('common.console.core_build.build_results'));
+        $this->line('   빌드 결과:');
 
         // template-engine.min.js 확인 (일반 페이지 초기 로드 = 이 번들만)
         $engineFile = $corePath.'/template-engine.min.js';
@@ -321,7 +312,6 @@ class BuildCoreCommand extends Command
      * 전체 빌드 결과 출력
      *
      * @param  string  $projectPath  프로젝트 경로
-     * @return void
      */
     private function showFullBuildResults(string $projectPath): void
     {
@@ -331,7 +321,7 @@ class BuildCoreCommand extends Command
             return;
         }
 
-        $this->line('   '.__('common.console.core_build.build_results'));
+        $this->line('   빌드 결과:');
 
         // manifest.json 확인
         $manifestPath = $buildPath.'/manifest.json';
@@ -360,7 +350,6 @@ class BuildCoreCommand extends Command
      *
      * @param  string  $buildPath  빌드 경로
      * @param  string  $subDir  하위 디렉토리
-     * @return void
      */
     private function scanBuildFiles(string $buildPath, string $subDir): void
     {

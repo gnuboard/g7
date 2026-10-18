@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Layouts;
 
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
-use Tests\PureTestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 설정 클레임 탭의 신청 가능 상태 어휘 ↔ 서버 게이트 파리티
@@ -25,7 +25,7 @@ use Tests\PureTestCase;
  *
  * @effects settings_claim_status_vocabulary_matches_server_gate
  */
-class ClaimSettingsStatusVocabularyTest extends PureTestCase
+class ClaimSettingsStatusVocabularyTest extends ModuleTestCase
 {
     /** 클레임 정책 카드를 담은 레이아웃 파셜 */
     private const POLICY_PARTIAL = __DIR__.'/../../../resources/layouts/admin/partials/admin_ecommerce_settings/_claim_policy_section.json';
@@ -54,7 +54,7 @@ class ClaimSettingsStatusVocabularyTest extends PureTestCase
      *
      * @effects instant_cancel_hint_describes_auto_advance
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_auto_advance_hint_describes_a_refund_request_not_an_instant_cancel(): void
     {
@@ -133,7 +133,7 @@ class ClaimSettingsStatusVocabularyTest extends PureTestCase
      *
      * @effects settings_claim_status_vocabulary_matches_server_gate
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_claim_status_options_match_server_gate(): void
     {
@@ -179,7 +179,7 @@ class ClaimSettingsStatusVocabularyTest extends PureTestCase
      *
      * @effects settings_claim_status_vocabulary_matches_server_gate
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_gate_excludes_terminal_and_pre_payment_statuses(): void
     {
@@ -291,7 +291,7 @@ class ClaimSettingsStatusVocabularyTest extends PureTestCase
      *
      * @param  mixed  $node  현재 노드
      * @param  callable  $visit  노드 방문 콜백
-     * @return void 반환값 없음
+     * @return void
      */
     private function walk(mixed $node, callable $visit): void
     {

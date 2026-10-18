@@ -64,10 +64,6 @@ return [
         ],
     ],
     'attributes' => [
-        'content_media' => [
-            'file' => '本文メディアファイル',
-            'temp_key' => '一時キー',
-        ],
         'search' => '検索ワード',
         'temp_key' => '一時添付キー',
         'title' => 'ページタイトル',

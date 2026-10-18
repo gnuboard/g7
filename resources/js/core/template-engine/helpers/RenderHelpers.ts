@@ -16,7 +16,6 @@ import { getActionDispatcher } from '../ActionDispatcher';
 import { createLogger } from '../../utils/Logger';
 import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep, stripRawDeep, stripRawPrefix } from '../rawMarkers';
 import { hasPipes } from '../PipeRegistry';
-import { stripTranslationParamMarkers } from '../translationParamValues';
 import {
   extractSingleBinding as canonicalExtractSingleBinding,
   isComplexExpression as canonicalIsComplexExpression,
@@ -918,9 +917,7 @@ export function renderItemChildren(
       // 문자열 보간
       if (value.includes('{{')) {
         // skipCache: true - 반복 렌더링에서 같은 경로가 다른 값을 가져야 함
-        // protectTranslationParams - 아래에서 곧바로 번역하므로 `$t:키|이름={{값}}` 의 인자 자리 값을 보호한다
-        // (값의 `&`·`|`·`=`·끝 ` /` 가 인자 구분자로 읽히지 않는다 — engine-v1.80.1)
-        const interpolated = bindingEngine.resolveBindings(value, context, { skipCache: true, protectTranslationParams: true });
+        const interpolated = bindingEngine.resolveBindings(value, context, { skipCache: true });
         // 보간 결과에 $t: 접두사가 포함되면 번역 처리 @since engine-v1.28.1
         if (typeof interpolated === 'string' && /\$t:[a-zA-Z0-9._-]+/.test(interpolated)) {
           return translationEngine.resolveTranslations(
@@ -929,7 +926,7 @@ export function renderItemChildren(
             context
           );
         }
-        return typeof interpolated === 'string' ? stripTranslationParamMarkers(interpolated) : interpolated;
+        return interpolated;
       }
 
       return value;

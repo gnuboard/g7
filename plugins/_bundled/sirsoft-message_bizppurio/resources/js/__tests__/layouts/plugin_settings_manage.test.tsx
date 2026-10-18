@@ -421,7 +421,7 @@ describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §1
 
         for (const b of saveButtons) {
             const disabled = String((b.props as { disabled?: string } | undefined)?.disabled ?? '');
-            // 저장 계열은 메시징 관리 권한(isMessagingReadOnly)으로도 잠긴다(7.1.0 abilities 게이트) — 권한 있는 관리자 맥락으로 본다
+            // 저장 계열은 메시징 관리 권한(isMessagingReadOnly)으로도 잠긴다(7.1.0 G19) — 권한 있는 관리자 맥락으로 본다
             expect(evalBinding(disabled, { _computed: { isMessagingReadOnly: false }, _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: true } } }),
                 '업로드 중 저장이 열려 있으면 빈 이미지 URL 로 저장된다').toBe(true);
             expect(evalBinding(disabled, { _computed: { isMessagingReadOnly: false }, _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: false } } }),
@@ -627,7 +627,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         const walk = (n: AnyNode) => { all.push(n); (n.children ?? []).forEach(walk); };
         walk(row);
         const meta = all.find((n) => typeof n.text === 'string'
-            && n.text.includes('requested_at_date_formatted')
+            && n.text.includes("requested_at ?? '').slice(0, 10)")
             && n.text.includes('last_synced_at'));
         expect(meta, '카드 메타 줄(신청·동기화 합본)이 없다').toBeTruthy();
         expect(String((meta!.props as { className?: string })?.className)).toContain('hidden');

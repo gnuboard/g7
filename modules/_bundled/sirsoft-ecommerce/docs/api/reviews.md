@@ -68,9 +68,6 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
 | option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
-| is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
-| content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Molestiae repellendus accusantium omn…` | 리뷰 내용 |
 | content_mode | string | `text` | 콘텐츠 모드: text / html |
@@ -336,9 +333,6 @@ _단건 응답: `data` 객체의 필드._
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
 | option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
-| is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
-| content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Molestiae repellendus accusantium omn…` | 리뷰 내용 |
 | content_mode | string | `text` | 콘텐츠 모드: text / html |
@@ -470,9 +464,6 @@ _단건 응답: `data` 객체의 필드._
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
 | option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
-| is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
-| content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 본문 내용 |
 | content_mode | string | `text` | 콘텐츠 모드: text / html |
@@ -595,9 +586,6 @@ _단건 응답: `data` 객체의 필드._
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
 | option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
-| is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
-| content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 본문 내용 |
 | content_mode | string | `text` | 콘텐츠 모드: text / html |
@@ -719,9 +707,6 @@ _단건 응답: `data` 객체의 필드 (상태가 변경된 리뷰 리소스). 
 | user | object | `{"uuid":"a234c2b1-...","name":"API 문서 샘플 사용자","email":"apidoc-sample-user@example.com"}` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
 | option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (옵션명 보존용, 주문 옵션에서 복사) |
 | option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다 |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
-| is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
-| content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 리뷰 내용 |
 | content_mode | string | `text` | 콘텐츠 모드: text / html |
@@ -847,9 +832,6 @@ _단건 응답: `data` 객체의 필드 (생성된 리뷰 리소스, HTTP 201). 
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | 작성자 UUID (로그인 사용자) |
 | option_snapshot | object\|null | `null` | 주문 시점 옵션 스냅샷 (주문 옵션의 `option_snapshot` 을 복사) |
 | option_snapshot_label | string | `` | `option_snapshot.option_name` 의 현재 로케일 표시 문자열 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다 |
-| author_name | string | `장*맨` | 작성자 표시 이름 — 회원 후기는 회원 이름, 회원·주문 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 그대로 |
-| is_imported | boolean | `false` | 회원 없이 등록한 후기 여부 — `true` 이면 `user`·`user_id`·`orderOption`·`order_option_id` 가 null |
-| content_plain | string | `배송이 빨라서 좋았어요` | 태그를 걷어 낸 한 줄 본문 (`content_mode=text` 이면 `content` 그대로) |
 | rating | integer | `5` | 별점 (1~5, 요청값 그대로) |
 | content | string | `예시 내용입니다.` | 리뷰 내용 (10~2000자, 요청값 그대로) |
 | content_mode | string | `text` | 콘텐츠 모드: text / html (미지정 시 text) |
@@ -1225,52 +1207,4 @@ HTTP/1.1 200
 
 **설명** 로그인 회원이 자신의 리뷰에서 첨부 이미지 1건을 삭제합니다. `sirsoft-ecommerce.user-reviews.write` 권한이 필요하며, 컨트롤러가 `review->user_id` 로 본인 소유를 확인(불일치 시 403)하고 `image->review_id` 가 해당 리뷰에 속하는지 대조(불일치 시 404)한 뒤 `ProductReviewImageService::delete()` 로 파일과 레코드를 함께 제거합니다. 포토 리뷰에서 잘못 올린 이미지를 개별 삭제할 때 사용합니다.
 
-### GET /api/modules/sirsoft-ecommerce/reviews
 
-- **라우트명**: `api.modules.sirsoft-ecommerce.reviews.index`
-- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ReviewFeedController@index`
-- **인증/권한**: `optional.sanctum`, `permission:user,sirsoft-ecommerce.user-products.read`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| sort | query | string | 아니오 | `created_at_desc`, `created_at_asc`, `rating_desc`, `rating_asc` | 정렬 (기본 최신순) |
-| photo_only | query | string | 아니오 | `0`, `1`, `true`, `false` | 사진 후기만 보기 |
-| rating | query | integer | 아니오 | 1~5 | 별점 필터 |
-| page | query | integer | 아니오 | min 1 | 페이지 번호 |
-| per_page | query | integer | 아니오 | min 1, max 50 | 페이지당 항목 수 (기본 10) |
-
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.review.public_feed_validation_rules`).
-
-**요청 예시**
-
-```http
-GET /api/modules/sirsoft-ecommerce/reviews?sort=created_at_desc&photo_only=1&page=1 HTTP/1.1
-Host: api.example.com
-Accept: application/json
-```
-
-**응답 필드** (`data.reviews` 내부)
-
-_목록 응답: `data.reviews.data[]` 배열 항목의 필드. 페이지 정보는 `data.reviews.meta`._
-
-| 필드 | 타입 | 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `31` | 후기 번호 |
-| product_id | integer | `12` | 상품 번호 |
-| product | object | `{"product_code":"P-0012","name":"…","thumbnail_url":"…"}` | 후기가 달린 상품 요약(상품코드·현재 로케일 이름·대표 이미지 주소) |
-| author_name | string | `홍*동` | 작성자 표시 이름. 환경설정 「리뷰 설정 → 작성자 이름 가림」이 「가운데 가림」(기본)이면 가린 이름 |
-| user | object\|null | `{"name":"홍*동","email":null}` | 작성 회원(이름은 같은 규칙으로 가림, 회원 식별자는 싣지 않음). 회원 없이 등록한 후기는 `null` |
-| is_imported | boolean | `false` | 회원·주문 없이 등록한 후기 여부 |
-| rating | integer | `5` | 별점 |
-| content | string | `좋아요` | 본문 |
-| content_mode | string | `text` | 본문 형식 |
-| option_snapshot_label | string | `빨강 / L` | 구매 옵션 표시 문자열 |
-| images | array | — | 첨부 이미지 |
-| image_count | integer | `2` | 첨부 이미지 수 |
-| has_reply | boolean | `true` | 판매자 답글 여부 |
-| reply_content | string\|null | `감사합니다` | 판매자 답글 |
-| created_at | string | `2026-11-01 10:00:00` | 작성 일시(보는 사람 시간대) |
-
-**설명** 전시 중인 모든 상품의 노출 후기를 모아 돌려줍니다(리뷰 모아보기). 숨긴 상품·삭제한 상품의 후기와 비노출 후기는 빠집니다. 정렬·사진 후기만·별점 필터는 상품별 후기 목록과 같은 값을 받습니다. 작성자 이름은 상품별 후기 목록과 같은 가림 규칙을 따르고, 회원 식별자(`user_id`·`user.uuid`)는 싣지 않습니다.

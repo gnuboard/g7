@@ -4,21 +4,17 @@ namespace Tests\Feature\Module;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
-use App\Extension\Helpers\ExtensionPendingHelper;
-use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\ModuleManager;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
 class ModuleRolePermissionTest extends TestCase
 {
-    use FakesGithubReleases;
     use ProtectsExtensionDirectories;
     use RefreshDatabase;
 
@@ -36,9 +32,6 @@ class ModuleRolePermissionTest extends TestCase
     {
         parent::setUp();
 
-        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
-        $this->fakeGithubReleases();
-
         $activePath = base_path('modules/sirsoft-board');
         $bundledPath = base_path('modules/_bundled/sirsoft-board');
 
@@ -53,7 +46,7 @@ class ModuleRolePermissionTest extends TestCase
 
         // 미설치 시 _bundled에서 복사 (테스트 실행을 위한 준비)
         if (! $this->boardExistedBefore && File::isDirectory($bundledPath)) {
-            FilePermissionHelper::copyDirectory($bundledPath, $activePath, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
+            File::copyDirectory($bundledPath, $activePath);
         }
 
         // 확장 디렉토리 보호 활성화 (이후 모든 deleteDirectory 호출 차단)

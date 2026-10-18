@@ -27,13 +27,10 @@
   "503": {
     "title": "Service Unavailable",
     "description": "The service is currently unavailable.",
-    "unmet_dependencies": "Required extensions do not meet the requirements.",
+    "unmet_dependencies": "Required extensions are not activated.",
     "required_modules": "Required Modules",
     "required_plugins": "Required Plugins",
-    "contact_admin": "Please contact the administrator to install, activate or update the required extensions.",
-    "back_to_home": "Back to Home",
-    "reason_not_installed": "Not installed",
-    "reason_inactive": "Disabled",
-    "reason_version_mismatch": "Version too low {{installed}} → {{required}}"
+    "contact_admin": "Please contact the administrator to activate required extensions.",
+    "back_to_home": "Back to Home"
   }
 }

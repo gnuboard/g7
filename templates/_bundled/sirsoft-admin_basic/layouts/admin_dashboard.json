@@ -70,12 +70,19 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
+            "params": {
+                "per_page": "5"
+            },
             "fallback": {
                 "data": {
-                    "data": []
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 5,
+                    "total": 0
                 }
             },
-            "comment": "설치된 모듈. 모듈 목록 화면과 **같은 API** 를 쓴다(요약 전용 API 를 따로 두지 않는다).\n       이 API 는 페이지를 나누지 않고 설치분 전량을 주므로(`per_page` 를 보내도 무시된다) 6건 자르기는\n       아래 갤러리의 반복식이 하고, 넘친 개수도 받은 전량에서 센다. 전체는 모듈 관리 화면으로 넘긴다."
+            "comment": "모듈 요약 5건. 모듈 목록 화면과 **같은 API** 를 쓰되 5건으로 잘라 받는다(요약 전용 API 를 따로\n       두지 않는다). 전체는 모듈 관리 화면으로 넘긴다."
         },
         {
             "id": "dashboard_plugins",
@@ -86,12 +93,19 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
+            "params": {
+                "per_page": "5"
+            },
             "fallback": {
                 "data": {
-                    "data": []
+                    "data": [],
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 5,
+                    "total": 0
                 }
             },
-            "comment": "설치된 플러그인 — 위 모듈과 같은 API 형태라 자르기도 같다."
+            "comment": "플러그인 요약 5건 — 위 모듈과 같은 형태다."
         },
         {
             "id": "dashboard_templates",
@@ -103,20 +117,18 @@
             "auth_required": true,
             "loading_strategy": "progressive",
             "params": {
-                "per_page": "6"
+                "per_page": "5"
             },
             "fallback": {
                 "data": {
                     "data": [],
-                    "pagination": {
-                        "current_page": 1,
-                        "last_page": 1,
-                        "per_page": 6,
-                        "total": 0
-                    }
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 5,
+                    "total": 0
                 }
             },
-            "comment": "템플릿 요약 6건. 이 API 는 페이지를 나누므로 6건만 받고, 넘친 개수는 `pagination.total` 로 센다."
+            "comment": "템플릿 요약 5건 — 위 둘과 같은 형태다."
         },
         {
             "id": "dashboard_alerts",
@@ -299,7 +311,6 @@
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
                                     "className": "btn-icon",
                                     "aria-label": "$t:admin.dashboard.refresh"
                                 },
@@ -365,16 +376,22 @@
                                         "comment": "자산 주소 방식이 어긋났다는 경고에서 설정 화면으로 바로 보낸다 — 대시보드에서 문제를 알리고 고칠 자리까지 데려가는 것이 이 링크의 몫이다",
                                         "id": "asset_url_mode_drift_link",
                                         "type": "basic",
-                                        "name": "A",
+                                        "name": "Button",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate"
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/settings",
+                                                    "query": {
+                                                        "tab": "general"
+                                                    }
+                                                }
                                             }
                                         ],
                                         "props": {
-                                            "href": "/admin/settings?tab=general",
-                                            "className": "button mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"
+                                            "type": "button",
+                                            "className": "mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"
                                         },
                                         "text": "$t:admin.dashboard.asset_url_mode_drift_action"
                                     }
@@ -410,7 +427,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "{{alert.icon ?? 'info-circle'}}",
-                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
+                                            "className": "{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
                                         }
                                     },
                                     {
@@ -496,20 +513,6 @@
                                                                         "params": {
                                                                             "dataSourceId": "dashboard_alerts"
                                                                         }
-                                                                    },
-                                                                    {
-                                                                        "comment": "확장을 다시 켜다 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 확장 목록 화면과 같은 노란 경고 결과 창을 연다.",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "global",
-                                                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                                            "lifecycleWarningsOpen": false
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "handler": "openModal",
-                                                                        "target": "lifecycle_warnings_modal",
-                                                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
                                                                     }
                                                                 ],
                                                                 "onError": {
@@ -523,7 +526,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
                                                             "disabled": "{{alert.abilities?.can_recover !== true}}"
                                                         },
                                                         "children": [
@@ -552,18 +555,21 @@
                                                     {
                                                         "id": "top_alert_navigate_button_{{$idx}}",
                                                         "type": "basic",
-                                                        "name": "A",
+                                                        "name": "Button",
                                                         "if": "{{!alert.recover_endpoint && !!alert.action_url}}",
                                                         "actions": [
                                                             {
                                                                 "comment": "복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —\n                       버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.\n                       절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다.",
                                                                 "type": "click",
-                                                                "handler": "navigate"
+                                                                "handler": "navigate",
+                                                                "params": {
+                                                                    "path": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"
+                                                                }
                                                             }
                                                         ],
                                                         "props": {
-                                                            "href": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}",
-                                                            "className": "button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded"
+                                                            "type": "button",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
                                                         },
                                                         "children": [
                                                             {
@@ -828,16 +834,19 @@
                                             {
                                                 "id": "recent_notifications_more_btn",
                                                 "type": "basic",
-                                                "name": "A",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate"
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/notification-logs"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "/admin/notification-logs",
-                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
@@ -847,9 +856,9 @@
                                         "id": "recent_notifications_empty",
                                         "type": "basic",
                                         "name": "P",
-                                        "if": "{{dashboard_recent_notifications !== undefined && (dashboard_recent_notifications?.data ?? []).length === 0}}",
+                                        "if": "{{(dashboard_recent_notifications?.data ?? []).length === 0}}",
                                         "props": {
-                                            "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
+                                            "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
                                         },
                                         "text": "$t:admin.dashboard.recent_notifications.empty"
                                     },
@@ -976,16 +985,19 @@
                                             {
                                                 "id": "activity_more_btn",
                                                 "type": "basic",
-                                                "name": "A",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate"
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/activity-logs"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "/admin/activity-logs",
-                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
@@ -1081,15 +1093,17 @@
                             {
                                 "id": "modules_badge",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Div",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/modules"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/admin/modules",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1125,15 +1139,17 @@
                             {
                                 "id": "plugins_badge",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Div",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/admin/plugins",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1169,15 +1185,17 @@
                             {
                                 "id": "templates_badge",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Div",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/templates/admin"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/admin/templates/admin",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1213,15 +1231,17 @@
                             {
                                 "id": "language_packs_badge",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Div",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/settings?tab=language_packs"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/admin/settings?tab=language_packs",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1273,7 +1293,7 @@
                                     "data_sources": "dashboard_modules"
                                 },
                                 "props": {
-                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
                                 },
                                 "children": [
                                     {
@@ -1322,147 +1342,79 @@
                                             {
                                                 "id": "module_more_btn",
                                                 "type": "basic",
-                                                "name": "A",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate"
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/modules"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "/admin/modules",
-                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
                                     {
-                                        "comment": "갤러리 — 아이콘 왼쪽 작은 카드를 받은 순서 그대로 최대 6장 깐다(활성·비활성으로 다시 줄 세우지 않는다).\n               아이콘은 기본 글리프를 늘 깔고 이미지가 그 위를 덮는다 — 이미지가 없거나 깨지면 글리프가 드러난다.\n               깨짐은 칸 종류를 붙인 식별자 목록으로 든다(불리언 하나면 한 장이 깨질 때 전부 글리프로 바뀐다).\n               열 수는 화면 폭이 아니라 칸 폭(`@container`)으로 정한다 — 사이드바가 있는 1,100px 대 화면에서 바깥이 3칸이면\n               칸 하나가 245px 남짓이라, 화면 폭 기준 2열은 카드가 100px 로 줄어 이름이 「H..」가 되고 배지가 카드 밖으로 넘쳤다.",
                                         "id": "module_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "grid grid-cols-1 @xs:grid-cols-2 gap-2"
-                                        },
                                         "children": [
                                             {
                                                 "id": "module_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "iteration": {
-                                                    "source": "{{(dashboard_modules?.data?.data ?? []).slice(0, 6)}}",
+                                                    "source": "dashboard_modules?.data?.data",
                                                     "item_var": "module",
                                                     "index_var": "$idx"
                                                 },
                                                 "props": {
-                                                    "className": "flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700"
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
-                                                    {
-                                                        "id": "module_icon_{{$idx}}",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "props": {
-                                                            "className": "relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "props": {
-                                                                    "name": "cube",
-                                                                    "className": "text-slate-500 dark:text-slate-300",
-                                                                    "aria-hidden": "true"
-                                                                }
-                                                            },
-                                                            {
-                                                                "comment": "모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
-                                                                "id": "module_icon_img_{{$idx}}",
-                                                                "type": "basic",
-                                                                "name": "Img",
-                                                                "if": "{{module.icon_url && !(_local.dashboardIconBroken ?? []).includes('module:' + module.identifier)}}",
-                                                                "actions": [
-                                                                    {
-                                                                        "event": "onError",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "dashboardIconBroken": "{{[...(_local.dashboardIconBroken ?? []), 'module:' + module.identifier]}}"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "src": "{{module.icon_url}}",
-                                                                    "alt": "",
-                                                                    "loading": "lazy",
-                                                                    "decoding": "async",
-                                                                    "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
                                                     {
                                                         "id": "module_info_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "min-w-0 flex-1"
-                                                        },
                                                         "children": [
                                                             {
                                                                 "id": "module_name_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-heading truncate",
-                                                                    "title": "{{module.name}}"
+                                                                    "className": "text-heading"
                                                                 },
                                                                 "text": "{{module.name}}"
                                                             },
                                                             {
-                                                                "id": "module_meta_{{$idx}}",
+                                                                "id": "module_version_{{$idx}}",
                                                                 "type": "basic",
-                                                                "name": "Div",
+                                                                "name": "P",
                                                                 "props": {
-                                                                    "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-1"
+                                                                    "className": "text-tertiary"
                                                                 },
-                                                                "children": [
-                                                                    {
-                                                                        "id": "module_version_{{$idx}}",
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "text-tertiary"
-                                                                        },
-                                                                        "text": "v{{module.version}}"
-                                                                    },
-                                                                    {
-                                                                        "id": "module_badge_{{$idx}}",
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "{{module.status === 'active' ? 'badge badge-green whitespace-nowrap' : 'badge badge-gray whitespace-nowrap'}}"
-                                                                        },
-                                                                        "text": "{{module.status === 'active' ? '$t:admin.dashboard.module_status.active' : '$t:admin.dashboard.module_status.inactive'}}"
-                                                                    }
-                                                                ]
+                                                                "text": "v{{module.version}}"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "id": "module_badge_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "{{module.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}"
+                                                        },
+                                                        "text": "{{module.status === 'active' ? '$t:admin.dashboard.module_status.active' : '$t:admin.dashboard.module_status.inactive'}}"
                                                     }
                                                 ]
                                             }
                                         ]
-                                    },
-                                    {
-                                        "id": "module_more_count",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "if": "{{(dashboard_modules?.data?.data ?? []).length > 6}}",
-                                        "props": {
-                                            "className": "mt-3 text-center text-label-subtle"
-                                        },
-                                        "text": "$t:admin.dashboard.extension_status.more_count|count={{(dashboard_modules?.data?.data ?? []).length - 6}}"
                                     }
                                 ],
                                 "permissions": [
@@ -1478,7 +1430,7 @@
                                     "data_sources": "dashboard_plugins"
                                 },
                                 "props": {
-                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
                                 },
                                 "children": [
                                     {
@@ -1527,147 +1479,79 @@
                                             {
                                                 "id": "plugin_more_btn",
                                                 "type": "basic",
-                                                "name": "A",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate"
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "/admin/plugins",
-                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
                                     {
-                                        "comment": "갤러리 — 모듈 칸과 같은 모양·같은 6장 자르기다.",
                                         "id": "plugin_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "grid grid-cols-1 @xs:grid-cols-2 gap-2"
-                                        },
                                         "children": [
                                             {
                                                 "id": "plugin_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "iteration": {
-                                                    "source": "{{(dashboard_plugins?.data?.data ?? []).slice(0, 6)}}",
+                                                    "source": "dashboard_plugins?.data?.data",
                                                     "item_var": "plugin",
                                                     "index_var": "$idx"
                                                 },
                                                 "props": {
-                                                    "className": "flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700"
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
-                                                    {
-                                                        "id": "plugin_icon_{{$idx}}",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "props": {
-                                                            "className": "relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "props": {
-                                                                    "name": "puzzle-piece",
-                                                                    "className": "text-slate-500 dark:text-slate-300",
-                                                                    "aria-hidden": "true"
-                                                                }
-                                                            },
-                                                            {
-                                                                "comment": "플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
-                                                                "id": "plugin_icon_img_{{$idx}}",
-                                                                "type": "basic",
-                                                                "name": "Img",
-                                                                "if": "{{plugin.icon_url && !(_local.dashboardIconBroken ?? []).includes('plugin:' + plugin.identifier)}}",
-                                                                "actions": [
-                                                                    {
-                                                                        "event": "onError",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "dashboardIconBroken": "{{[...(_local.dashboardIconBroken ?? []), 'plugin:' + plugin.identifier]}}"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "src": "{{plugin.icon_url}}",
-                                                                    "alt": "",
-                                                                    "loading": "lazy",
-                                                                    "decoding": "async",
-                                                                    "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
                                                     {
                                                         "id": "plugin_info_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "min-w-0 flex-1"
-                                                        },
                                                         "children": [
                                                             {
                                                                 "id": "plugin_name_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-heading truncate",
-                                                                    "title": "{{plugin.name}}"
+                                                                    "className": "text-heading"
                                                                 },
                                                                 "text": "{{plugin.name}}"
                                                             },
                                                             {
-                                                                "id": "plugin_meta_{{$idx}}",
+                                                                "id": "plugin_version_{{$idx}}",
                                                                 "type": "basic",
-                                                                "name": "Div",
+                                                                "name": "P",
                                                                 "props": {
-                                                                    "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-1"
+                                                                    "className": "text-tertiary"
                                                                 },
-                                                                "children": [
-                                                                    {
-                                                                        "id": "plugin_version_{{$idx}}",
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "text-tertiary"
-                                                                        },
-                                                                        "text": "v{{plugin.version}}"
-                                                                    },
-                                                                    {
-                                                                        "id": "plugin_badge_{{$idx}}",
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "{{plugin.status === 'active' ? 'badge badge-green whitespace-nowrap' : 'badge badge-gray whitespace-nowrap'}}"
-                                                                        },
-                                                                        "text": "{{plugin.status === 'active' ? '$t:admin.dashboard.plugin_status.active' : '$t:admin.dashboard.plugin_status.inactive'}}"
-                                                                    }
-                                                                ]
+                                                                "text": "v{{plugin.version}}"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "id": "plugin_badge_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "{{plugin.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}"
+                                                        },
+                                                        "text": "{{plugin.status === 'active' ? '$t:admin.dashboard.plugin_status.active' : '$t:admin.dashboard.plugin_status.inactive'}}"
                                                     }
                                                 ]
                                             }
                                         ]
-                                    },
-                                    {
-                                        "id": "plugin_more_count",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "if": "{{(dashboard_plugins?.data?.data ?? []).length > 6}}",
-                                        "props": {
-                                            "className": "mt-3 text-center text-label-subtle"
-                                        },
-                                        "text": "$t:admin.dashboard.extension_status.more_count|count={{(dashboard_plugins?.data?.data ?? []).length - 6}}"
                                     }
                                 ],
                                 "permissions": [
@@ -1683,7 +1567,7 @@
                                     "data_sources": "dashboard_templates"
                                 },
                                 "props": {
-                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
                                 },
                                 "children": [
                                     {
@@ -1732,147 +1616,79 @@
                                             {
                                                 "id": "template_more_btn",
                                                 "type": "basic",
-                                                "name": "A",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate"
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/templates/admin"
+                                                        }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "/admin/templates/admin",
-                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "type": "button",
+                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
                                         ]
                                     },
                                     {
-                                        "comment": "갤러리 — 모듈 칸과 같은 모양이다. 서버가 이미 6건으로 잘라 주지만 반복식도 6장으로 묶어 둔다\n               (API 기본 쪽수가 바뀌어도 칸이 늘지 않게). 넘친 개수는 받은 건수가 아니라 `pagination.total` 로 센다.",
                                         "id": "template_list",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": {
-                                            "className": "grid grid-cols-1 @xs:grid-cols-2 gap-2"
-                                        },
                                         "children": [
                                             {
                                                 "id": "template_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "iteration": {
-                                                    "source": "{{(dashboard_templates?.data?.data ?? []).slice(0, 6)}}",
+                                                    "source": "dashboard_templates?.data?.data",
                                                     "item_var": "template",
                                                     "index_var": "$idx"
                                                 },
                                                 "props": {
-                                                    "className": "flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700"
+                                                    "className": "flex-between py-2"
                                                 },
                                                 "children": [
-                                                    {
-                                                        "id": "template_icon_{{$idx}}",
-                                                        "type": "basic",
-                                                        "name": "Div",
-                                                        "props": {
-                                                            "className": "relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Icon",
-                                                                "props": {
-                                                                    "name": "palette",
-                                                                    "className": "text-slate-500 dark:text-slate-300",
-                                                                    "aria-hidden": "true"
-                                                                }
-                                                            },
-                                                            {
-                                                                "comment": "템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
-                                                                "id": "template_icon_img_{{$idx}}",
-                                                                "type": "basic",
-                                                                "name": "Img",
-                                                                "if": "{{template.icon_url && !(_local.dashboardIconBroken ?? []).includes('template:' + template.identifier)}}",
-                                                                "actions": [
-                                                                    {
-                                                                        "event": "onError",
-                                                                        "handler": "setState",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "dashboardIconBroken": "{{[...(_local.dashboardIconBroken ?? []), 'template:' + template.identifier]}}"
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "src": "{{template.icon_url}}",
-                                                                    "alt": "",
-                                                                    "loading": "lazy",
-                                                                    "decoding": "async",
-                                                                    "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600"
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
                                                     {
                                                         "id": "template_info_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": {
-                                                            "className": "min-w-0 flex-1"
-                                                        },
                                                         "children": [
                                                             {
                                                                 "id": "template_name_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-heading truncate",
-                                                                    "title": "{{template.name}}"
+                                                                    "className": "text-heading"
                                                                 },
                                                                 "text": "{{template.name}}"
                                                             },
                                                             {
-                                                                "id": "template_meta_{{$idx}}",
+                                                                "id": "template_version_{{$idx}}",
                                                                 "type": "basic",
-                                                                "name": "Div",
+                                                                "name": "P",
                                                                 "props": {
-                                                                    "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-1"
+                                                                    "className": "text-tertiary"
                                                                 },
-                                                                "children": [
-                                                                    {
-                                                                        "id": "template_version_{{$idx}}",
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "text-tertiary"
-                                                                        },
-                                                                        "text": "v{{template.version}}"
-                                                                    },
-                                                                    {
-                                                                        "id": "template_badge_{{$idx}}",
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "{{template.status === 'active' ? 'badge badge-green whitespace-nowrap' : 'badge badge-gray whitespace-nowrap'}}"
-                                                                        },
-                                                                        "text": "{{template.status === 'active' ? '$t:admin.dashboard.template_status.active' : '$t:admin.dashboard.template_status.inactive'}}"
-                                                                    }
-                                                                ]
+                                                                "text": "v{{template.version}}"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "id": "template_badge_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "{{template.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}"
+                                                        },
+                                                        "text": "{{template.status === 'active' ? '$t:admin.dashboard.template_status.active' : '$t:admin.dashboard.template_status.inactive'}}"
                                                     }
                                                 ]
                                             }
                                         ]
-                                    },
-                                    {
-                                        "id": "template_more_count",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "if": "{{(dashboard_templates?.data?.pagination?.total ?? 0) > 6}}",
-                                        "props": {
-                                            "className": "mt-3 text-center text-label-subtle"
-                                        },
-                                        "text": "$t:admin.dashboard.extension_status.more_count|count={{(dashboard_templates?.data?.pagination?.total ?? 0) - 6}}"
                                     }
                                 ],
                                 "permissions": [
@@ -1957,7 +1773,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{alert.icon ?? 'info-circle'}}",
-                                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
+                                                            "className": "{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
                                                         }
                                                     },
                                                     {
@@ -2043,20 +1859,6 @@
                                                                                         "params": {
                                                                                             "dataSourceId": "dashboard_alerts"
                                                                                         }
-                                                                                    },
-                                                                                    {
-                                                                                        "comment": "복구 중 일부 항목 실패는 노란 경고 결과 창으로 보인다(위 상단 알림 버튼과 같음, 코어 7.1.3).",
-                                                                                        "handler": "setState",
-                                                                                        "params": {
-                                                                                            "target": "global",
-                                                                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                                                            "lifecycleWarningsOpen": false
-                                                                                        }
-                                                                                    },
-                                                                                    {
-                                                                                        "handler": "openModal",
-                                                                                        "target": "lifecycle_warnings_modal",
-                                                                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
                                                                                     }
                                                                                 ],
                                                                                 "onError": {
@@ -2070,7 +1872,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
                                                                             "disabled": "{{alert.abilities?.can_recover !== true}}"
                                                                         },
                                                                         "children": [
@@ -2099,18 +1901,21 @@
                                                                     {
                                                                         "id": "alert_navigate_button_{{$idx}}",
                                                                         "type": "basic",
-                                                                        "name": "A",
+                                                                        "name": "Button",
                                                                         "if": "{{!alert.recover_endpoint && !!alert.action_url}}",
                                                                         "actions": [
                                                                             {
                                                                                 "comment": "복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —\n                           버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.\n                           절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다.",
                                                                                 "type": "click",
-                                                                                "handler": "navigate"
+                                                                                "handler": "navigate",
+                                                                                "params": {
+                                                                                    "path": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"
+                                                                                }
                                                                             }
                                                                         ],
                                                                         "props": {
-                                                                            "href": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}",
-                                                                            "className": "button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded"
+                                                                            "type": "button",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -2205,11 +2010,5 @@
                 ]
             }
         ]
-    },
-    "modals": [
-        {
-            "comment": "확장 복구가 「완료했지만 일부 항목이 실패」했을 때의 노란 경고 결과 창 — 복구 버튼 성공 갈래가 응답 data.warnings 로 연다(코어 7.1.3).",
-            "partial": "partials/_modal_lifecycle_warnings.json"
-        }
-    ]
+    }
 }

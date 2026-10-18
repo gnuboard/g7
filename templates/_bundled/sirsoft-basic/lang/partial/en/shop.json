@@ -158,8 +158,7 @@
     "product_count": "{{count}} products",
     "product_count_one": "{{count}} product",
     "select": "Select category",
-    "all_in": "All {{name}}",
-    "chips_label": "Product categories"
+    "all_in": "All {{name}}"
   },
   "filter": {
     "title": "Filter",
@@ -246,8 +245,6 @@
     "sort_rating_high": "Highest Rating",
     "sort_rating_low": "Lowest Rating",
     "review_image_preview": "Review Image",
-    "review_image_open": "Enlarge review image {{n}}",
-    "review_image_open_more": "Enlarge review image {{n}} ({{count}} more)",
     "rating_out_of_5": "Out of 5 · {{total}} reviews",
     "rating_out_of_5_one": "Out of 5 · {{total}} review",
     "filter_all": "All Options",
@@ -257,9 +254,7 @@
     "filter_rating_3": "⭐⭐⭐ 3 stars",
     "filter_rating_2": "⭐⭐ 2 stars",
     "filter_rating_1": "⭐ 1 star",
-    "filter_reset": "Reset Filters",
-    "category_path": "Category path",
-    "buy_sheet_title": "Choose options"
+    "filter_reset": "Reset Filters"
   },
   "cart": {
     "title": "Cart",
@@ -282,7 +277,6 @@
     "product_amount": "Product Amount",
     "taxable_amount": "Taxable Amount",
     "tax_free_amount": "Tax-free Amount",
-    "zero_rated_amount": "Zero-rated Amount",
     "discount_total": "Discount",
     "coupon_discount": "Coupon Discount",
     "code_discount": "Code Discount",
@@ -333,8 +327,7 @@
     "min_qty_item": "The minimum purchase quantity is {{limit}}. (Requested: {{requested}})",
     "restricted_item": "This item is not available for your account to purchase.",
     "sold_out": "Sold Out",
-    "go_to_cart": "Go to Cart",
-    "checkout_with_count": "Checkout ({{count}})"
+    "go_to_cart": "Go to Cart"
   },
   "checkout": {
     "title": "Checkout",
@@ -469,6 +462,8 @@
     "coupon_not_applied": "Some coupons could not be applied and were excluded. Please check the minimum order amount, usage limit, and combination rules.",
     "order_coupon": "Order Discount Coupon",
     "shipping_coupon": "Shipping Discount Coupon",
+    "exclusive_coupon_title": "Exclusive Coupon",
+    "exclusive_coupon_message": "Using an exclusive coupon will automatically remove other coupons. Do you want to continue?",
     "coupon_disabled_exclusive": "Cannot use with other coupons",
     "coupon_disabled_already_applied": "Already applied",
     "coupon_min_amount_not_met": "Minimum order amount not met",
@@ -513,8 +508,7 @@
     "refund_bank_select": "Select bank",
     "refund_bank_account_placeholder": "Account number (no hyphens)",
     "refund_bank_holder_placeholder": "Account holder",
-    "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required.",
-    "mileage_min_product_total": "Mileage can be used when the product total is {{amount}} or more."
+    "refund_bank_partial_notice": "If you fill in any one of the three fields, the others are required."
   },
   "order_complete": {
     "page_title": "Order Complete",
@@ -602,8 +596,7 @@
     "go_login": "Log In",
     "confirm_title": "Download Coupon",
     "confirm_message": "Would you like to download this coupon?",
-    "fetch_failed": "Failed to load coupon list.",
-    "download_all": "Download all"
+    "fetch_failed": "Failed to load coupon list."
   },
   "wishlist": {
     "title": "Wishlist",
@@ -649,36 +642,5 @@
     "page_description": "File an exchange, return, or cancellation/refund request for a guest order.",
     "edit_page_title": "Edit Guest Claim"
   },
-  "order_permission_denied": "You do not have permission to place orders. Please contact the seller.",
-  "related_products": "How about these?",
-  "product_rail": {
-    "roledescription": "product carousel"
-  },
-  "reviews": {
-    "title": "All Reviews",
-    "total_count": "{{count}} reviews",
-    "photo_only": "Photo reviews only",
-    "rating_filter": "Rating",
-    "rating_all": "All ratings",
-    "rating_n": "{{n}} stars",
-    "rating_one": "1 star",
-    "sort": {
-      "latest": "Newest",
-      "oldest": "Oldest",
-      "rating_high": "Highest rated",
-      "rating_low": "Lowest rated"
-    },
-    "empty": "There are no reviews yet.",
-    "empty_filtered": "No reviews match your filters.",
-    "total_count_one": "{{count}} review"
-  },
-  "exclude_sold_out": "Hide sold out",
-  "product_card": {
-    "add_to_cart": "Add to cart: {{name}}",
-    "wishlist": "Add to wishlist: {{name}}"
-  },
-  "quick_option": {
-    "title": "Choose options",
-    "view_detail": "View details"
-  }
+  "order_permission_denied": "You do not have permission to place orders. Please contact the seller."
 }

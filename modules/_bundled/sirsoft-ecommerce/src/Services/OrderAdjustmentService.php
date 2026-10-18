@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
-use App\Support\LocalizedValue;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
@@ -16,7 +15,6 @@ use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
 use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -569,7 +567,6 @@ class OrderAdjustmentService
             'total_tax_amount' => (float) $order->total_tax_amount,
             'total_tax_free_amount' => (float) $order->total_tax_free_amount,
             'total_vat_amount' => (float) $order->total_vat_amount,
-            'total_zero_rated_amount' => (float) ($order->total_zero_rated_amount ?? 0),
             'total_earned_points_amount' => (float) $order->total_earned_points_amount,
             'item_count' => $this->countAccountableItems($order),
         ];
@@ -836,7 +833,7 @@ class OrderAdjustmentService
             return '';
         }
 
-        $text = LocalizedValue::pick($value);
+        $text = $value[app()->getLocale()] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value);
 
         return is_string($text) ? $text : '';
     }
@@ -910,19 +907,12 @@ class OrderAdjustmentService
                 continue;
             }
 
-            // 재계산의 과세 분류는 이 행에 확정해 둔 과세 종류를 따른다(#612) — 옵션 스냅샷 값이 없거나
-            // 다른 옵션 스냅샷으로 대체된 경우에도 원 주문이 나눈 과세·면세·영세 갈래가 바뀌지 않는다.
-            $optionSnapshot = (array) ($successorOverrides[(int) $optionId]['option_snapshot'] ?? $option->option_snapshot ?? []);
-            if ($option->tax_status instanceof ProductTaxStatus) {
-                $optionSnapshot['tax_status'] = $option->tax_status->value;
-            }
-
             $items[] = CalculationItem::fromArray([
                 'product_id' => $option->product_id,
                 'product_option_id' => $option->product_option_id,
                 'quantity' => $remainingQty,
                 'product_snapshot' => $option->product_snapshot,
-                'option_snapshot' => $optionSnapshot,
+                'option_snapshot' => $successorOverrides[(int) $optionId]['option_snapshot'] ?? $option->option_snapshot,
                 'additional_options_snapshot' => $option->additional_options_snapshot,
             ]);
             $lineOrderOptionIds[] = (int) $optionId;
@@ -1217,7 +1207,6 @@ class OrderAdjustmentService
             'total_tax_amount' => 0,
             'total_tax_free_amount' => 0,
             'total_vat_amount' => 0,
-            'total_zero_rated_amount' => 0,
             'total_earned_points_amount' => 0,
             'item_count' => 0,
         ], $currencySnapshot);
@@ -1251,7 +1240,6 @@ class OrderAdjustmentService
                 'total_tax_amount' => 0,
                 'total_vat_amount' => 0,
                 'total_tax_free_amount' => 0,
-                'total_zero_rated_amount' => 0,
                 // base 를 0 으로 내리면서 짝이 되는 mc_* 를 두면 주문상세 보조통화 줄이
                 // **직전 회차 금액**을 계속 보여준다 (S1-D3 — 부분취소 경로와 같은 결함).
                 // 실측: `총 결제금액 0원` 옆에 `$22.00 / ¥2,530`(마지막 회차 환불액) 이 찍혔다.
@@ -1312,7 +1300,6 @@ class OrderAdjustmentService
             'mc_total_points_used_amount' => $zero,
             'mc_total_tax_amount' => $zero,
             'mc_total_tax_free_amount' => $zero,
-            'mc_total_zero_rated_amount' => $zero,
             'mc_total_amount' => $zero,
         ];
     }
@@ -1351,11 +1338,8 @@ class OrderAdjustmentService
             'total_deposit_used_amount' => 0,
             'total_tax_amount' => $taxableAmount,
             'total_tax_free_amount' => (float) $result->summary->taxFreeAmount,
-            // 재계산 결과의 옵션별 세율 반영 부가세를 그대로 사용 (주문 생성 시점과 동일 산식).
-            // 폴백 기준은 주문 생성(resolveVatAmount)과 같이 영세분을 뺀 과세표준이다(#612).
-            'total_vat_amount' => (float) ($result->summary->vatAmount
-                ?? VatCalculator::fromTaxableAmount((int) $taxableAmount - (int) $result->summary->zeroRatedAmount)),
-            'total_zero_rated_amount' => (float) $result->summary->zeroRatedAmount,
+            // 재계산 결과의 옵션별 세율 반영 부가세를 그대로 사용 (주문 생성 시점과 동일 산식)
+            'total_vat_amount' => (float) ($result->summary->vatAmount ?? VatCalculator::fromTaxableAmount((int) $taxableAmount)),
             'total_earned_points_amount' => (float) ($result->summary->pointsEarning ?? 0),
             'item_count' => $itemCount,
         ];
@@ -1672,13 +1656,8 @@ class OrderAdjustmentService
             // (과세표준 - 부가세)이 음수까지 갈 수 있다. 같은 재계산 결과에서 함께 쓴다.
             'total_vat_amount' => (float) (
                 $recalcResult->summary->vatAmount
-                ?? VatCalculator::fromTaxableAmount(
-                    (int) $recalcResult->summary->taxableAmount - (int) $recalcResult->summary->zeroRatedAmount
-                )
+                ?? VatCalculator::fromTaxableAmount((int) $recalcResult->summary->taxableAmount)
             ),
-            // 영세 금액도 같은 재계산 결과에서 — 빠지면 영세 상품을 취소해도 결제사·현금영수증에
-            // 넘기는 면세 몫(면세 + 영세)이 취소 전 영세 금액을 계속 품는다(#612).
-            'total_zero_rated_amount' => (float) $recalcResult->summary->zeroRatedAmount,
             // 현금성 금액도 잔여 실결제액 기준으로 재계산한다. 이 값을 갱신하지 않으면
             // CashReceiptService::syncFromOrder() 가 "금액 변동 없음"으로 판정해 부분환불 후
             // 현금영수증 재발급이 일어나지 않는다.
@@ -1735,7 +1714,6 @@ class OrderAdjustmentService
             'mc_total_points_used_amount' => $convert((float) $summary->pointsUsed),
             'mc_total_tax_amount' => $convert((float) $summary->taxableAmount),
             'mc_total_tax_free_amount' => $convert((float) $summary->taxFreeAmount),
-            'mc_total_zero_rated_amount' => $convert((float) $summary->zeroRatedAmount),
             'mc_total_amount' => $convert((float) $summary->finalAmount),
         ];
     }

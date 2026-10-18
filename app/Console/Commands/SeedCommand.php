@@ -2,9 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use Illuminate\Database\Console\Seeds\SeedCommand as BaseSeedCommand;
-use Illuminate\Database\Seeder;
 use Symfony\Component\Console\Input\InputOption;
 
 /**
@@ -18,15 +16,13 @@ use Symfony\Component\Console\Input\InputOption;
  */
 class SeedCommand extends BaseSeedCommand
 {
-    use LocalizesDescription;
-
     /**
      * 시더 인스턴스를 컨테이너에서 생성합니다.
      *
      * 부모 메서드를 호출한 뒤, --count 옵션이 있으면
      * 시더에 setSeederCounts()로 전달합니다.
      *
-     * @return Seeder
+     * @return \Illuminate\Database\Seeder
      */
     protected function getSeeder()
     {

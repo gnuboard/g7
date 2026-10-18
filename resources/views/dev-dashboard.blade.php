@@ -997,6 +997,14 @@ if (isset($_GET['ajax_action'])) {
                                     <span>전체 Vendor 검증</span>
                                     <span class="text-[10px] opacity-60">(vendor-bundle:verify-all)</span>
                                 </button>
+                                <button onclick="runCommand('custom:check')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium rounded transition-colors">
+                                    <span>custom 예약 자리 점검</span>
+                                    <span class="text-[10px] opacity-60">(custom:check)</span>
+                                </button>
+                                <button onclick="runCommand('custom:vendor-verify')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-800 hover:bg-teal-900 text-white text-xs font-medium rounded transition-colors">
+                                    <span>custom Vendor 검증</span>
+                                    <span class="text-[10px] opacity-60">(custom:vendor-verify)</span>
+                                </button>
                             </div>
                         </div>
 

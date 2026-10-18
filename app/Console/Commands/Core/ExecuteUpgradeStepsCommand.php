@@ -4,14 +4,11 @@ namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Services\CoreUpdateService;
@@ -47,8 +44,6 @@ class ExecuteUpgradeStepsCommand extends Command
     use BundledExtensionUpdatePrompt;
     use ClearsTemplateCaches;
     use HasUnifiedConfirm;
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
 
     protected $signature = 'core:execute-upgrade-steps
         {--from= : 시작 버전}
@@ -61,15 +56,7 @@ class ExecuteUpgradeStepsCommand extends Command
         {--skip-cache-clear : 캐시 정리 생략 (부모 Step 11 가 처리)}
         {--skip-bundled-updates : 번들 확장 일괄 업데이트 생략 (부모가 prompt 로 처리)}';
 
-    /**
-     * 재동기화·오토로드 갱신 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모(core:update)는 종료코드 0 만 성공으로 본다.
-     *
-     * @return bool 늘 false
-     */
-    protected function lifecycleWarningsChangeExitCode(): bool
-    {
-        return false;
-    }
+    protected $description = '코어 업그레이드 스텝을 별도 프로세스에서 실행합니다. 단독 실행 시 사전/사후 단계를 자동 수행하며, --steps-only 로 스텝만 실행할 수 있습니다.';
 
     /**
      * 커맨드를 실행합니다.
@@ -89,7 +76,7 @@ class ExecuteUpgradeStepsCommand extends Command
         $stepsOnly = (bool) $this->option('steps-only');
 
         if ($from === '' || $to === '') {
-            $this->error(__('common.console.core_execute_upgrade_steps.from_to_required'));
+            $this->error('--from 과 --to 는 필수 옵션입니다.');
 
             return self::INVALID;
         }
@@ -112,7 +99,6 @@ class ExecuteUpgradeStepsCommand extends Command
                 Log::warning('upgrade step spawn 자식: updateComposerAutoload 호출 실패', [
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('autoload', 'autoload-extensions.php', $e->getMessage());
             }
         }
 
@@ -131,7 +117,7 @@ class ExecuteUpgradeStepsCommand extends Command
                 // 판정은 캐시 파일의 실존으로 한다 — 부팅에 쓰였든 위 updateComposerAutoload() 가 방금
                 // 재생성했든, 파일이 있으면 메모리 config 를 신뢰하지 않는다 (디스크 판독은 멱등).
                 if (is_file($this->laravel->getCachedConfigPath())) {
-                    Log::channel('upgrade')->warning('[spawn] config 캐시 파일이 있어 쓰기 권한 디렉토리 목록을 디스크 config/app.php 에서 직접 읽는다 (이전 버전 캐시일 수 있어 캐시 값을 쓰지 않음 — 업데이트 오류 아님)');
+                    Log::channel('upgrade')->warning('[spawn] 이전 버전 config 캐시로 부팅됨 — update 목록은 디스크 config/app.php 에서 읽는다');
                     $writablePaths = (array) $service->freshDiskUpdateConfig('restore_ownership_group_writable', []);
                 } else {
                     $writablePaths = (array) config('app.update.restore_ownership_group_writable', []);
@@ -176,21 +162,17 @@ class ExecuteUpgradeStepsCommand extends Command
         // 운영자 단독 호출 시 옵션 미전달 → 기본값으로 두 단계 자동 수행 →
         // migration / permission / menu / seeder 누락 차단.
         if (! $this->option('skip-migrations') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.migrations'));
+            $this->info('마이그레이션 실행');
             $service->runMigrations();
         } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.migrations')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.migrations'));
+            $this->info($stepsOnly ? '[steps-only] 마이그레이션 스킵' : '[spawn] 마이그레이션 스킵 — 부모가 이미 실행');
         }
 
         if (! $this->option('skip-resync') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.resync'));
+            $this->info('코어 config 재로드 및 권한/메뉴/시더 동기화');
             $service->reloadCoreConfigAndResync();
         } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.resync')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.resync'));
+            $this->info($stepsOnly ? '[steps-only] resync 스킵' : '[spawn] resync 스킵 — 부모가 이미 실행');
         }
 
         $stepsExecuted = 0;
@@ -201,7 +183,7 @@ class ExecuteUpgradeStepsCommand extends Command
                 $from,
                 $to,
                 function (string $version) use (&$stepsExecuted): void {
-                    $this->info(__('common.console.core_execute_upgrade_steps.step_running', ['version' => $version]));
+                    $this->info("upgrade step 실행: {$version}");
                     $stepsExecuted++;
                 },
                 $force,
@@ -270,21 +252,19 @@ class ExecuteUpgradeStepsCommand extends Command
         // 단독 실행 시엔 옵션 미전달 → 기본값으로 3단계 자동 수행 → gnuboard/g7#34 의 운영자 수동 절차
         // (sed APP_VERSION + cache:clear + module/plugin/template:update --force --source=bundled) 통합.
         if (! $this->option('skip-version-env') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.version_env', ['version' => $to]));
+            $this->info(".env APP_VERSION={$to} 갱신");
             $service->updateVersionInEnv($to);
         } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.version_env')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.version_env'));
+            $this->info($stepsOnly ? '[steps-only] .env APP_VERSION 갱신 스킵' : '[spawn] .env APP_VERSION 갱신 스킵 — 부모가 처리');
         }
 
         if (! $this->option('skip-cache-clear') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.cache_clear'));
+            $this->info('캐시 정리 (config/route/view/services/packages)');
             $service->clearAllCaches();
             // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시 정리 직후 재시작 신호.
             // spawn 자식·steps-only 는 이 블록을 스킵하고 부모가 보낸다.
             $service->signalQueueRestart();
-            $this->info(__('common.console.core_execute_upgrade_steps.queue_restart'));
+            $this->info('큐 워커 재시작 신호 전송 (queue:restart)');
             // clearAllCaches() 는 config:clear 만 하므로, 단독 실행 흐름에서는 config 캐시가
             // 비활성 상태로 남는다. 모든 upgrade step + 번들 확장 업데이트가 config 소스를
             // 변경했을 수 있으니, 캐시 정리 세트의 마지막에 config 캐시를 재생성한다.
@@ -298,15 +278,13 @@ class ExecuteUpgradeStepsCommand extends Command
             // spawn 자식·steps-only 모드에서는 부모가 처리하므로 스킵.
             $this->incrementExtensionCacheVersion();
         } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.cache_clear')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.cache_clear'));
+            $this->info($stepsOnly ? '[steps-only] 캐시 정리 스킵' : '[spawn] 캐시 정리 스킵 — 부모가 처리');
         }
 
         $bundledResult = ['failed' => 0];
 
         if (! $this->option('skip-bundled-updates') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.bundled_updates'));
+            $this->info('번들 확장 일괄 업데이트 (모듈/플러그인/템플릿/언어팩)');
             $bundledResult = $this->runBundledExtensionUpdatePrompt(
                 app(ModuleManager::class),
                 app(PluginManager::class),
@@ -314,9 +292,7 @@ class ExecuteUpgradeStepsCommand extends Command
                 $force,
             );
         } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.bundled_updates')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.bundled_updates'));
+            $this->info($stepsOnly ? '[steps-only] 번들 확장 일괄 업데이트 스킵' : '[spawn] 번들 확장 일괄 업데이트 스킵 — 부모가 처리');
         }
 
         $this->restoreUpgradeLogOwnership();
@@ -348,7 +324,7 @@ class ExecuteUpgradeStepsCommand extends Command
         try {
             $swept = $service->sweepEmptyStagingDirectories();
             if ($swept > 0) {
-                $this->info('[spawn] '.__('common.console.core_execute_upgrade_steps.staging_swept', ['count' => $swept]));
+                $this->info("[spawn] 빈 격리 디렉토리 청소: {$swept}개");
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('[spawn] 빈 격리 디렉토리 청소 실패', ['error' => $e->getMessage()]);

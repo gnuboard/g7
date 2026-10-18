@@ -33,17 +33,9 @@
 로그인을 처리하고 토큰을 저장합니다.
 
 ```html
-<on type="submit">
-  <login target="admin">
-    <body email="{{form.email}}" password="{{form.password}}"/>
-    <success>
-      <navigate path="/admin/dashboard"/>
-    </success>
-    <fail>
-      <set-error target="{{error.response.message}}"/>
-    </fail>
-  </login>
-</on>
+<partial name="doc_example">
+<json>{"version":"1.0.0","type":"submit","handler":"login","target":"admin","params":{"body":{"email":"{{form.email}}","password":"{{form.password}}"}},"onSuccess":[{"handler":"navigate","params":{"path":"/admin/dashboard"}}],"onError":[{"handler":"setError","target":"{{error.response.message}}"}],"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -378,8 +370,6 @@
 }
 ```
 
-> `closeModal` 은 `target` 을 읽지 않는다 — 모달 id 를 적어도 **모달 스택의 맨 위 모달 하나**를 닫는다. 특정 모달을 골라 닫는 인자는 없다.
-
 **작동 원리**:
 - `openModal`: `_global.modalStack`에 모달 ID를 push, `_global.activeModal`도 동시 설정
 - `closeModal`: `_global.modalStack`에서 최상위 모달만 제거, 이전 모달 유지
@@ -403,9 +393,9 @@
 브라우저 기본 알림(alert)을 표시합니다.
 
 ```html
-<on type="click">
-  <show-alert target="$t:messages.confirm_delete"/>
-</on>
+<partial name="doc_example">
+<json>{"version":"1.0.0","type":"click","handler":"showAlert","target":"$t:messages.confirm_delete","components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
+</partial>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -575,13 +565,13 @@
 <on type="click">
   <switch on="{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}">
     <case when="popup">
-      <call-external constructor="kakao.Postcode" method="open"/>
+      <call-external constructor="daum.Postcode" method="open"/>
     </case>
     <case when="layer">
-      <call-external-embed constructor="kakao.Postcode"/>
+      <call-external-embed constructor="daum.Postcode"/>
     </case>
     <default>
-      <call-external-embed constructor="kakao.Postcode"/>
+      <call-external-embed constructor="daum.Postcode"/>
     </default>
   </switch>
 </on>
@@ -599,15 +589,15 @@
   "cases": {
     "popup": {
       "handler": "callExternal",
-      "params": { "constructor": "kakao.Postcode", "method": "open" }
+      "params": { "constructor": "daum.Postcode", "method": "open" }
     },
     "layer": {
       "handler": "callExternalEmbed",
-      "params": { "constructor": "kakao.Postcode" }
+      "params": { "constructor": "daum.Postcode" }
     },
     "default": {
       "handler": "callExternalEmbed",
-      "params": { "constructor": "kakao.Postcode" }
+      "params": { "constructor": "daum.Postcode" }
     }
   }
 }
@@ -1137,9 +1127,8 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 |------|------|------|--------|------|
 | `errorCode` | number | ❌ | errorHandling 키값 | 에러 코드 |
 | `target` | string | ❌ | `"content"` | `"full"` 또는 `"content"` |
-| `containerId` | string | ❌ | `target` 이 `full` 이면 `app`, 아니면 `main_content` | 렌더링할 컨테이너 ID |
-
-> 오류 화면 레이아웃은 에러 코드로 정해진다 — 레이아웃을 고르는 인자(`layout`)는 엔진이 읽지 않는다.
+| `containerId` | string | ❌ | - | 렌더링할 컨테이너 ID |
+| `layout` | string | ❌ | - | 사용할 레이아웃 경로 |
 
 ---
 
@@ -1366,7 +1355,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 ```html
 <on type="click">
-  <load-script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script">
+  <load-script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode_script">
     <field name="onLoad">
       <field name="handler" value="setState"/>
       <field name="params">
@@ -1384,7 +1373,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
   "type": "click",
   "handler": "loadScript",
   "params": {
-    "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+    "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
     "id": "daum_postcode_script"
   },
   "onLoad": {
@@ -1465,7 +1454,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 ```html
 <on type="click">
-  <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete" method="open">
+  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="open">
     <field name="args">
       <field name="oncomplete" :value="true"/>
     </field>
@@ -1480,7 +1469,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
   "type": "click",
   "handler": "callExternal",
   "params": {
-    "constructor": "kakao.Postcode",
+    "constructor": "daum.Postcode",
     "args": { "oncomplete": true },
     "callbackEvent": "postcode:complete",
     "method": "open"
@@ -1492,7 +1481,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| `constructor` | string | - | 호출할 생성자 경로 (필수, 예: "kakao.Postcode") |
+| `constructor` | string | - | 호출할 생성자 경로 (필수, 예: "daum.Postcode") |
 | `args` | object | {} | 생성자에 전달할 인자 객체 |
 | `method` | string | - | 인스턴스 생성 후 호출할 메서드 (예: "open") |
 | `methodArgs` | array | [] | 메서드에 전달할 인자 배열 |
@@ -1505,7 +1494,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 
 ```html
 <on type="click">
-  <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete">
+  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete">
     <field name="args">
       <field name="oncomplete" :value="true"/>
     </field>
@@ -1519,7 +1508,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 {
   "handler": "callExternal",
   "params": {
-    "constructor": "kakao.Postcode",
+    "constructor": "daum.Postcode",
     "args": {
       "oncomplete": true
     },
@@ -1531,7 +1520,7 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 위 설정은 다음과 동일합니다:
 
 ```javascript
-new kakao.Postcode({
+new daum.Postcode({
   oncomplete: (data) => {
     G7Core.componentEvent.emit('postcode:complete', data);
   }
@@ -1575,7 +1564,7 @@ new kakao.Postcode({
 
 ```html
 <on type="click">
-  <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete" method="embed" embedTarget="#postcode_container">
+  <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="embed" embedTarget="#postcode_container">
     <field name="args">
       <field name="oncomplete" :value="true"/>
     </field>
@@ -1589,7 +1578,7 @@ new kakao.Postcode({
 {
   "handler": "callExternal",
   "params": {
-    "constructor": "kakao.Postcode",
+    "constructor": "daum.Postcode",
     "args": { "oncomplete": true },
     "callbackEvent": "postcode:complete",
     "method": "embed",
@@ -1603,8 +1592,8 @@ new kakao.Postcode({
 ```html
 <button data-ref="search_address_button">
   <on type="click">
-    <load-script src="//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode"/>
-    <call-external constructor="kakao.Postcode" callbackEvent="postcode:complete" method="open">
+    <load-script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" id="daum_postcode"/>
+    <call-external constructor="daum.Postcode" callbackEvent="postcode:complete" method="open">
       <field name="args">
         <field name="oncomplete" :value="true"/>
       </field>
@@ -1635,14 +1624,14 @@ new kakao.Postcode({
         {
           "handler": "loadScript",
           "params": {
-            "src": "//t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+            "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
             "id": "daum_postcode"
           }
         },
         {
           "handler": "callExternal",
           "params": {
-            "constructor": "kakao.Postcode",
+            "constructor": "daum.Postcode",
             "args": { "oncomplete": true },
             "callbackEvent": "postcode:complete",
             "method": "open"
@@ -1777,16 +1766,7 @@ new kakao.Postcode({
 | `render_hint` | `string` | ❌ | 인증 UI 렌더 힌트 |
 | `target` | `object` | ❌ | 인증 대상 (`{ email, phone }`) — `apiCall` 의 `identity_target` 과 같은 채널 |
 
-`resolveIdentityChallenge` 는 본인인증 모달·풀페이지·외부 redirect 콜백이 진행 중인 인증 대기(인터셉터)에 결과를 알리는 짝 핸들러다.
-
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `result` | `string` | ❌ | `verified` / `pending` / `failed` / `cancelled` (그 밖의 값·생략은 `cancelled`) |
-| `token` | `string` | `verified` 일 때 | 인증 토큰. 비면 `failed`(`MISSING_TOKEN`)로 강등 |
-| `providerData` | `object` | ❌ | 제공자 부가 정보 (`verified`) |
-| `pollUrl` · `expiresAt` | `string` | `pending` 일 때 | 상태 조회 주소·만료 시각. 하나라도 없으면 `failed`(`MALFORMED_PENDING`)로 강등 |
-| `pollIntervalMs` | `number` | ❌ | 조회 간격 (`pending`) |
-| `failureCode` · `reason` | `string` | ❌ | 실패 코드(기본 `UNKNOWN`)·사유 (`failed`) |
+`resolveIdentityChallenge` 는 외부 redirect 콜백 이후 challenge 를 해소하는 짝 핸들러다.
 
 ---
 

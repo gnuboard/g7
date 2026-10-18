@@ -2,12 +2,12 @@
 
 namespace Modules\Gnuboard7\HelloModule\Tests\Unit\Layouts;
 
-use Tests\PureTestCase;
+use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
 
 /**
  * 사용자 메모 목록 화면의 마크업 테스트.
  *
- * 7.1.0 전수 실측(sirsoft-basic `/memos`, 1440px): 제목이 관리자 템플릿 전용 의미 클래스
+ * 7.1.0 전수 실측 M3(sirsoft-basic `/memos`, 1440px): 제목이 관리자 템플릿 전용 의미 클래스
  * (`text-page-heading`, `section-heading`)를 써서 사용자 템플릿에서는 정의가 없어 쪽 제목 16px,
  * 메모 제목 굵기 400 으로 나왔다(#408 치환이 사용자 화면까지 바꿨다. 0.1.0 은 `text-2xl font-bold`,
  * `text-lg font-semibold`). 또 반복(`data-each`)이 `space-y-3` 묶음 쪽에 붙어 메모마다 묶음이 새로 생겨
@@ -17,7 +17,7 @@ use Tests\PureTestCase;
  *
  * @scenario-manifest tests/scenarios/user-memo-list-markup.yaml
  */
-class UserMemoListMarkupTest extends PureTestCase
+class UserMemoListMarkupTest extends ModuleTestCase
 {
     /**
      * 사용자 메모 목록 레이아웃 JSON 을 읽습니다.
@@ -126,34 +126,5 @@ class UserMemoListMarkupTest extends PureTestCase
         ));
 
         $this->assertSame([], array_values(array_diff($names, $minimal)));
-    }
-
-    /**
-     * 모듈 화면 SEO 예시를 선언한다 — 템플릿 기본값(SEO 끔)을 이 화면이 덮어 검색봇에 서버 렌더되고,
-     * 메모 데이터 소스를 봇 렌더 때 받아 본문에 메모 제목이 나간다. og 설명 문구 키는 ko·en 언어 파일에 있다 (공개#154).
-     *
-     * @scenario part=seo
-     *
-     * @effects user_memo_list_declares_module_screen_seo_example
-     *
-     * @return void 반환값 없음
-     */
-    public function test_declares_module_screen_seo_example(): void
-    {
-        $seo = $this->layout()['meta']['seo'] ?? null;
-
-        $this->assertIsArray($seo, 'meta.seo 선언이 없다');
-        $this->assertTrue($seo['enabled'] ?? false);
-        $this->assertSame('website', $seo['og']['type'] ?? null);
-        $this->assertSame('$t:gnuboard7-hello_module.user.memos.index.seo_description', $seo['og']['description'] ?? null);
-        $this->assertSame(['memos'], $seo['data_sources'] ?? null);
-
-        $declaredSources = array_column($this->layout()['data_sources'] ?? [], 'id');
-        $this->assertContains('memos', $declaredSources, 'SEO 데이터 소스가 레이아웃에 선언돼 있지 않다');
-
-        foreach (['ko', 'en'] as $locale) {
-            $lang = json_decode((string) file_get_contents(dirname(__DIR__, 3)."/resources/lang/{$locale}.json"), true);
-            $this->assertNotEmpty($lang['user']['memos']['index']['seo_description'] ?? null, "{$locale} 설명 문구 누락");
-        }
     }
 }

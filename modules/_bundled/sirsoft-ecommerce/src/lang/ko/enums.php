@@ -17,7 +17,6 @@ return [
         'order_cancel_restore' => '주문취소 복원',
         'earn_cancel' => '적립 회수',
         'refund_credit' => '환불 지급',
-        'signup_earn' => '가입 적립',
     ],
 
     // 마일리지 적립 시점 (MileageEarnTriggerEnum 값과 일치)
@@ -39,7 +38,6 @@ return [
     'tax_status' => [
         'taxable' => '과세',
         'tax_free' => '면세',
-        'zero_rated' => '영세',
     ],
     'image_collection' => [
         'main' => '대표 이미지',

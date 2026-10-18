@@ -63,7 +63,7 @@
           "widget": "datasource-picker"
         }
       ],
-      "expr": "({src}?.data?.length ?? -1) === 0"
+      "expr": "({src}?.data?.length ?? 0) === 0"
     },
     {
       "value": "dsLoading",
@@ -75,7 +75,7 @@
           "widget": "datasource-picker"
         }
       ],
-      "expr": "typeof {src} === 'undefined'"
+      "expr": "{src}?.loading"
     },
     {
       "value": "dsError",
@@ -87,7 +87,7 @@
           "widget": "datasource-picker"
         }
       ],
-      "expr": "!!_dataSourceErrors?.{src}"
+      "expr": "!!{src}?.error"
     },
     {
       "value": "fieldEquals",

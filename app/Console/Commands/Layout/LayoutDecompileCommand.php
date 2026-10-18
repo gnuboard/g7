@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Layout;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\LayoutMarkupService;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
@@ -45,8 +44,6 @@ use Illuminate\Support\Facades\File;
  */
 class LayoutDecompileCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * @var string
      */
@@ -56,6 +53,11 @@ class LayoutDecompileCommand extends Command
                             {--sync : 컴파일 산출을 짝 .json 에 기록 (짝이 없으면 생성)}
                             {--check : 짝 .json 이 컴파일 산출과 일치하는지 대조만 (불일치 시 non-zero)}
                             {--out= : 산출 JSON 덤프 경로 (단일 파일 진단·검수용, 미지정 시 검증만)}';
+
+    /**
+     * @var string
+     */
+    protected $description = '.g7.html 소스 파일을 JSON 레이아웃으로 역변환하고 강검증·lint·굽기(--sync/--check) 합니다';
 
     /**
      * 굽기 집계 — `--sync` 는 생성·갱신·무변경, `--check` 는 불일치 파일 목록을 모은다.
@@ -89,7 +91,7 @@ class LayoutDecompileCommand extends Command
         $path = $this->argument('path');
 
         if ($path === null && ! $this->option('all')) {
-            $this->error(__('layouts.console.path_or_all'));
+            $this->error('경로를 지정하거나 --all 을 사용하세요.');
 
             return self::FAILURE;
         }
@@ -97,7 +99,7 @@ class LayoutDecompileCommand extends Command
         // 굽기와 대조는 서로 배타다 — 함께 주면 "쓰지 않고 대조만" 이라는 --check 의 계약이
         // 깨지므로, 어느 쪽을 침묵으로 이기게 하지 않고 즉시 실패한다.
         if ($this->option('sync') && $this->option('check')) {
-            $this->error(__('layouts.console.sync_check_exclusive'));
+            $this->error('--sync 와 --check 는 함께 쓸 수 없습니다 (--check 는 쓰지 않고 대조만 합니다).');
 
             return self::FAILURE;
         }
@@ -105,7 +107,7 @@ class LayoutDecompileCommand extends Command
         $files = $this->option('all') ? $this->scanMarkupFiles() : [$this->absolutePath((string) $path)];
 
         if ($files === []) {
-            $this->info(__('layouts.console.decompile_no_targets'));
+            $this->info('역변환할 .g7.html 파일이 없습니다.');
 
             return self::SUCCESS;
         }
@@ -120,20 +122,21 @@ class LayoutDecompileCommand extends Command
         }
 
         $this->newLine();
-        $this->info(__('layouts.console.decompile_done', ['files' => count($files), 'failed' => $failed, 'warned' => $warned]));
+        $this->info(sprintf('완료 — 파일 %d개, 실패 %d개, 경고 있는 파일 %d개.', count($files), $failed, $warned));
 
         if ($this->option('sync')) {
-            $this->info(__('layouts.console.bake_summary', [
-                'created' => $this->bake['created'],
-                'updated' => $this->bake['updated'],
-                'unchanged' => $this->bake['unchanged'],
-            ]));
+            $this->info(sprintf(
+                '굽기 — 생성 %d개, 갱신 %d개, 무변경 %d개.',
+                $this->bake['created'],
+                $this->bake['updated'],
+                $this->bake['unchanged'],
+            ));
         }
 
         if ($this->option('check')) {
             if ($this->bake['stale'] !== []) {
                 $this->newLine();
-                $this->error(__('layouts.console.bake_stale', ['count' => count($this->bake['stale'])]));
+                $this->error(sprintf('짝 .json 이 컴파일 산출과 다릅니다 (%d개) — `layout:decompile --all --sync` 로 다시 구우세요:', count($this->bake['stale'])));
 
                 foreach ($this->bake['stale'] as $stale) {
                     $this->line("  <fg=red>✗</> {$stale}");
@@ -145,7 +148,7 @@ class LayoutDecompileCommand extends Command
             // 통과도 소리를 낸다. 전건 최신일 때 아무것도 출력하지 않으면 "검사해서 통과했다" 와
             // "검사가 한 건도 돌지 않았다" 가 출력상 구분되지 않는다 — 이 트랙이 여러 회차에 걸쳐
             // 대가를 치른 무관측 형태이므로, 대조한 짝의 수를 세어서 남긴다.
-            $this->info(__('layouts.console.bake_up_to_date', ['count' => $this->bake['unchanged']]));
+            $this->info(sprintf('굽기 대조 — 짝 %d개 전건 최신.', $this->bake['unchanged']));
         }
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
@@ -160,7 +163,7 @@ class LayoutDecompileCommand extends Command
     private function decompileOne(string $file): array
     {
         if (! File::exists($file)) {
-            $this->error(__('layouts.console.file_not_found', ['file' => $file]));
+            $this->error("파일을 찾을 수 없습니다: {$file}");
 
             return [false, false];
         }
@@ -198,8 +201,8 @@ class LayoutDecompileCommand extends Command
             $this->bake[$outcome]++;
 
             $note = match ($outcome) {
-                'created' => ' <comment>'.__('layouts.console.sibling_created').'</comment>',
-                'updated' => ' <comment>'.__('layouts.console.sibling_updated').'</comment>',
+                'created' => ' <comment>(짝 .json 생성)</comment>',
+                'updated' => ' <comment>(짝 .json 갱신)</comment>',
                 default => '',
             };
         }
@@ -214,7 +217,7 @@ class LayoutDecompileCommand extends Command
             }
         }
 
-        $this->line("<info>✓</info> {$file}".($result->hasWarnings() ? ' <comment>'.__('layouts.console.warning_count', ['count' => count($result->warnings)]).'</comment>' : '').$note);
+        $this->line("<info>✓</info> {$file}".($result->hasWarnings() ? ' <comment>(경고 '.count($result->warnings).'건)</comment>' : '').$note);
 
         return [true, $result->hasWarnings()];
     }

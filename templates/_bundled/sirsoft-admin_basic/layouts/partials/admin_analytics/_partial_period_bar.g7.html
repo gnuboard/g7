@@ -120,7 +120,7 @@
           <on type="change">
             <!-- 달력을 직접 고치면 프리셋 표시가 빠진다 — 버튼이 만든 범위를 손으로 바꾼 순간 그 버튼은 지금 조건이 아니다.
                  키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28). 바로 이동하면
-                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측) — 입력이 멎은 뒤 한 번만 이동한다. -->
+                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측 O-E2) — 입력이 멎은 뒤 한 번만 이동한다. -->
             <sequence if="{{!!$event.target.value}}" :debounce="600">
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query from="{{$event.target.value}}" to="{{(function(f, t) { return t &amp;&amp; t >= f ? t : f; })($event.target.value, _computed.periodTo || '')}}" preset="{{undefined}}" :page="1"/>
@@ -128,13 +128,13 @@
             </sequence>
           </on>
         </input>
-        <span class="text-gray-500 dark:text-gray-400">~</span>
+        <span class="text-gray-400 dark:text-gray-500">~</span>
         <input data-ref="period_to" name="analytics_period_to" type="date" class="input flex-1 min-w-0 sm:flex-none sm:w-40" value="{{_computed.periodTo || ''}}" aria-label="$t:admin.analytics.period.to">
           <on type="change">
             <!-- 끝 날짜를 고치면 시작 칸은 화면에 보이던 값을 잇되, 새 끝보다 늦으면 끝 날짜 하루로 당긴다(시작 칸 쪽과 짝을 이루는 규칙).
                  비운 값으로는 이동하지 않는다.
                  키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28). 바로 이동하면
-                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측) — 입력이 멎은 뒤 한 번만 이동한다. -->
+                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측 O-E2) — 입력이 멎은 뒤 한 번만 이동한다. -->
             <sequence if="{{!!$event.target.value}}" :debounce="600">
               <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                 <query from="{{(function(f, t) { return f &amp;&amp; t >= f ? f : t; })(_computed.periodFrom || '', $event.target.value)}}" to="{{$event.target.value}}" preset="{{undefined}}" :page="1"/>
@@ -204,9 +204,9 @@
         시각 문자열은 서버가 사이트 표준시 `Y-m-d H:i:s` 로 주므로 잘라 쓴다(형식 파이프 의존 없음). -->
       <span data-ref="period_freshness" data-if="{{!!_computed.archiveFreshness?.last_run_at}}" class="text-hint text-xs w-full sm:w-auto">
         <span data-if="{{_computed.archiveFreshness?.scheduler?.alive === true}}">$t:admin.analytics.freshness.scheduled|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
-        <span data-if="{{_computed.archiveFreshness != null &amp;&amp; (_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled === true)}}">$t:admin.analytics.freshness.on_view|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
-        <span data-if="{{_computed.archiveFreshness != null &amp;&amp; (_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled !== true &amp;&amp; _computed.archiveFreshness?.is_today === true)}}">$t:admin.analytics.freshness.plain_time|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
-        <span data-if="{{_computed.archiveFreshness != null &amp;&amp; (_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled !== true &amp;&amp; _computed.archiveFreshness?.is_today !== true)}}">$t:admin.analytics.freshness.plain_date|month={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(5, 7))}}|day={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(8, 10))}}|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
+        <span data-if="{{_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled === true}}">$t:admin.analytics.freshness.on_view|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
+        <span data-if="{{_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled !== true &amp;&amp; _computed.archiveFreshness?.is_today === true}}">$t:admin.analytics.freshness.plain_time|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
+        <span data-if="{{_computed.archiveFreshness?.scheduler?.alive !== true &amp;&amp; _computed.archiveFreshness?.on_view?.enabled !== true &amp;&amp; _computed.archiveFreshness?.is_today !== true}}">$t:admin.analytics.freshness.plain_date|month={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(5, 7))}}|day={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(8, 10))}}|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}</span>
       </span>
       <!-- 모바일에서는 기간 바 아래 전폭 — 390px 에서 칩 사이에 끼면 눌리는 면적이 칩 하나만 해진다(계획서 §4.11). -->
       <button data-ref="csv_download_button" data-if="{{!!_computed.csvUrl}}" type="button" class="btn btn-secondary btn-sm flex-center gap-1.5 w-full sm:w-auto">

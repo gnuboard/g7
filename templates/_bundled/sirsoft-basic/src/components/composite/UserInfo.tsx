@@ -47,8 +47,9 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
-import { LinkButton } from '../../support/LinkButton';
-import { navigateTo } from '../../support/navigationLink';
+
+// G7Core 참조
+const getG7Core = () => (window as any).G7Core;
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -339,9 +340,13 @@ export const UserInfo: React.FC<UserInfoProps> = ({
       item.onClick();
     } else if (item.path) {
       const path = item.path.replace(/\{\{userId\}\}/g, String(actualUserId ?? ''));
-      // 보안: 같은 출처 경로로만 이동한다(메뉴 데이터의 외부 주소 차단). 이동은 엔진 navigate 핸들러로 —
-      // 코어에는 `G7Core.navigate` 가 없다(종전 호출은 아무 일도 하지 않거나 전체 다시 부르기로 떨어졌다)
-      if (isSameOriginNavPath(path)) navigateTo(path);
+      const g7Core = getG7Core();
+      if (g7Core?.navigate) {
+        g7Core.navigate(path);
+      } else if (isSameOriginNavPath(path)) {
+        // 보안: 엔진 navigate 가 없을 때의 폴백도 같은 출처 경로로만 이동한다(메뉴 데이터의 외부 주소 차단).
+        window.location.href = path;
+      }
     }
   }, [actualUserId]);
 
@@ -367,18 +372,17 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     }
     // 드롭다운이 비활성화되고 클릭 가능한 경우
     else if (clickable) {
-      navigateTo(actualProfilePath);
+      getG7Core()?.navigate?.(actualProfilePath);
     }
   }, [stopPropagation, actualIsGuest, actualUserId, showDropdown, showMenu, updateMenuPosition, clickable, actualProfilePath]);
 
-  // 비회원인 경우 — 이름은 회원 이름과 같이 한 줄 … (최대 8rem), 「비회원」 배지는 줄지 않는다. 좁은 줄(320px 인기글)에서
-  // 이름·배지가 「관리/자」「비회/원」 으로 글자 단위로 접혔다(7.1.1).
+  // 비회원인 경우
   if (actualIsGuest || !actualUserId) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
-        <Div className="flex items-center gap-1.5 min-w-0 text-gray-500 dark:text-gray-400">
-          <Span className="min-w-0 truncate max-w-32" title={actualName}>{actualName}</Span>
-          <Span className="shrink-0 whitespace-nowrap text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+        <Div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
+          <Span>{actualName}</Span>
+          <Span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
             {t('userinfo.guest_badge')}
           </Span>
         </Div>
@@ -391,7 +395,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   if (actualIsWithdrawn) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
-        <Span className="text-gray-500 dark:text-gray-400 line-through">
+        <Span className="text-gray-400 dark:text-gray-500 line-through">
           {actualName}
         </Span>
         <SubText text={subText} title={subTextTitle} />
@@ -412,25 +416,13 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   return (
     <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>
       <Div className={LAYOUT_CLASSES[layout]}>
-        {/* 드롭다운 없이 프로필로 가는 이름은 링크 — 새 탭으로 열 수 있다(#757). 드롭다운을 여는 이름은 단추 그대로 */}
-        {!showDropdown && clickable ? (
-          <LinkButton
-            href={actualProfilePath}
-            onNavigate={() => navigateTo(actualProfilePath)}
-            stopPropagation={stopPropagation}
-            className={nameButtonClass}
-          >
-            {actualName}
-          </LinkButton>
-        ) : (
-          <Button
-            ref={buttonRef}
-            onClick={handleClick}
-            className={nameButtonClass}
-          >
-            {actualName}
-          </Button>
-        )}
+        <Button
+          ref={buttonRef}
+          onClick={handleClick}
+          className={nameButtonClass}
+        >
+          {actualName}
+        </Button>
         <SubText text={subText} title={subTextTitle} />
       </Div>
 
@@ -442,43 +434,17 @@ export const UserInfo: React.FC<UserInfoProps> = ({
           style={{ top: menuPosition.top, left: menuPosition.left }}
           data-testid="author-dropdown-menu"
         >
-          {finalMenuItems.map((item) => {
-            const menuItemClass = 'flex items-center justify-start gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer';
-            // 주소로 가는 항목은 링크(새 탭 열기, #757). 동작을 부르는 항목(onClick)은 단추 그대로
-            if (!item.onClick && item.path) {
-              const path = item.path.replace(/\{\{userId\}\}/g, String(actualUserId ?? ''));
-              if (isSameOriginNavPath(path)) {
-                return (
-                  <LinkButton
-                    key={item.key}
-                    href={path}
-                    onNavigate={() => {
-                      setShowMenu(false);
-                      navigateTo(path);
-                    }}
-                    stopPropagation
-                    className={menuItemClass}
-                    data-testid={`menu-item-${item.key}`}
-                  >
-                    {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
-                    <Span>{item.label}</Span>
-                  </LinkButton>
-                );
-              }
-            }
-
-            return (
-              <Button
-                key={item.key}
-                onClick={(e) => handleMenuItemClick(item, e)}
-                className={menuItemClass}
-                data-testid={`menu-item-${item.key}`}
-              >
-                {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
-                <Span>{item.label}</Span>
-              </Button>
-            );
-          })}
+          {finalMenuItems.map((item) => (
+            <Button
+              key={item.key}
+              onClick={(e) => handleMenuItemClick(item, e)}
+              className="flex items-center justify-start gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              data-testid={`menu-item-${item.key}`}
+            >
+              {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
+              <Span>{item.label}</Span>
+            </Button>
+          ))}
         </Div>,
         document.body
       )}

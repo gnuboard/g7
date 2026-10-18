@@ -1,7 +1,7 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
 /**
  * @file plugin-settings-read-only.test.ts
- * @description 플러그인 설정 화면 읽기 전용 (7.1.0 abilities 게이트)
+ * @description 플러그인 설정 화면 읽기 전용 (7.1.0 abilities 게이트 G19)
  *
  * 코어 설정 응답의 `data.abilities.can_update`(= core.plugins.update)가 true 가 아니면 — 응답 전·키 없음 포함(fail-closed) —
  * 안내를 보이고 설정 입력·저장·쓰기 버튼을 잠근다. 저장 PUT 은 코어가 본문의 abilities 를 버린다.
@@ -9,7 +9,6 @@
 
 import { describe, it, expect } from 'vitest';
 import layout from '../../../layouts/admin/plugin_settings.json';
-import notificationsCard from '../../../layouts/admin/partials/plugin_settings/_notifications_card.json';
 
 type Node = Record<string, any>;
 
@@ -66,7 +65,7 @@ function assertReadOnly(tree: Node, settingsId: string, scopeId: string | null) 
   }
 }
 
-describe('플러그인 설정 읽기 전용', () => {
+describe('플러그인 설정 읽기 전용 (G19)', () => {
   /**
    * 수정 권한 판정(can_update)이 없거나 false 면 안내·입력·저장·쓰기 버튼이 잠긴다.
    *
@@ -76,38 +75,5 @@ describe('플러그인 설정 읽기 전용', () => {
    */
   it('sirsoft-totp 설정 화면', () => {
     assertReadOnly(layout as Node, 'totpSettings', 'totp_settings_card');
-  });
-
-  /**
-   * 보안 알림 카드는 알림 정의 응답의 `data.abilities.can_update` 를 본다(플러그인 설정 권한과 별개 축).
-   * 응답 전·키 없음·false 면 채널 스위치·템플릿 스위치·발송 수단 저장·템플릿 편집·기본값 되돌리기를 모두 잠근다.
-   *
-   * @scenario case=notification_definitions_without_update
-   *
-   * @effects notification_card_locked_read_only
-   */
-  it('sirsoft-totp 보안 알림 카드', () => {
-    const computed = ((layout as Node).computed ?? {}) as Record<string, string>;
-    expect(computed.isNotificationReadOnly, 'isNotificationReadOnly computed 가 없습니다').toBeTruthy();
-    const ds = (v: unknown) => ({ totpNotificationDefinitions: v });
-    expect(evaluate(computed.isNotificationReadOnly, ds(undefined))).toBe(true);
-    expect(evaluate(computed.isNotificationReadOnly, ds({ data: {} }))).toBe(true);
-    expect(evaluate(computed.isNotificationReadOnly, ds({ data: { abilities: { can_update: false } } }))).toBe(true);
-    expect(evaluate(computed.isNotificationReadOnly, ds({ data: { abilities: { can_update: true } } }))).toBe(false);
-    // 플러그인 설정 권한(isPluginReadOnly)과 다른 데이터 소스를 본다 — 한쪽 권한만 있는 관리자가 다른 쪽을 잘못 잠그거나 풀지 않게
-    expect(computed.isNotificationReadOnly).not.toBe(computed.isPluginReadOnly);
-
-    const card = notificationsCard as Node;
-    const toggles = collect(card, (n) => n.name === 'Toggle');
-    expect(toggles.length).toBeGreaterThanOrEqual(2);
-    for (const t of toggles) {
-      expect(evaluate(t.props?.disabled ?? false, LOCKED), `Toggle ${t.props?.label ?? ''}`).toBe(true);
-    }
-    // 쓰기 API 를 부르는 버튼(발송 수단 저장)과 쓰기 창을 여는 버튼(템플릿 편집·기본값 되돌리기)
-    const writers = collect(card, (n) => n.name === 'Button' && collect(n, (a) => (a.handler === 'apiCall' && WRITE_METHODS.includes(String(a.params?.method ?? ''))) || a.handler === 'openModal').length > 0);
-    expect(writers.length).toBeGreaterThanOrEqual(3);
-    for (const button of writers) {
-      expect(evaluate(button.props?.disabled ?? false, LOCKED), `Button ${button.id ?? ''}`).toBe(true);
-    }
   });
 });

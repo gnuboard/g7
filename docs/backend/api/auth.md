@@ -93,7 +93,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a26219fc-94a0-4f63-9404-04c2a6ac99e4","name":"최고…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
-| token | string | `{MASKED}`|ZjZl46uRlhHt53MEhb7XAb0r5lYoDEsXF…` | 발급된 API 접근 토큰 평문 (Bearer 토큰으로 사용, 발급 시 1회만 노출) |
+| token | string | `380\|ZjZl46uRlhHt53MEhb7XAb0r5lYoDEsXF…` | 발급된 API 접근 토큰 평문 (Bearer 토큰으로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (일반적으로 Bearer) |
 
 **응답 예시**
@@ -111,7 +111,7 @@ HTTP/1.1 200
             "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
             "name": "최고관리자",
             "nickname": "최고관리자",
-            "email": "admin@example.com",
+            "email": "heuristing@gmail.com",
             "avatar": null,
             "language": "ko",
             "language_label": "한국어",
@@ -192,7 +192,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `admin@example.com` | 이메일 주소 |
+| email | string | `heuristing@gmail.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() — 아바타 미설정 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -234,7 +234,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "admin@example.com",
+        "email": "heuristing@gmail.com",
         "avatar": null,
         "...": "(25개 키 생략, 총 30개)"
     }
@@ -294,7 +294,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::login()` 이 반환한 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"관리자","is_admin":true, …}` | 로그인한 관리자 정보 (`UserResource` — 필드 전수는 `GET /api/admin/auth/user` 응답 필드 표와 동일) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer` — `AuthService::login()` 이 상수로 반환) |
 
 **응답 예시**
@@ -396,7 +396,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 
@@ -478,7 +478,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 | postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
@@ -560,7 +560,7 @@ _단건 응답: `POST /api/auth/admin/login` 의 성공 페이로드와 동일�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","is_admin":true, …}` | 로그인한 관리자 정보 (`UserResource`) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**
@@ -597,7 +597,7 @@ HTTP/1.1 200
 | 401 | Unauthorized | 코드가 틀렸거나(`auth.two_factor_failed`), challenge 의 `purpose` 가 `login` 이 아니거나, 확인된 사용자가 없거나 `active` 상태가 아닌 경우 |
 | 403 | Forbidden | 코드 확인은 통과했으나 관리자 역할이 아닌 경우 (`auth.admin_required`) |
 | 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
-| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일. 2단계 코드 오답도 같은 실패 횟수에 더해진다(7.1.6 — 사용자 경로와 같음) |
+| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일 |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
 | 503 | Service Unavailable | 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — 토큰도 발급하지 않는다, #736) |
 
@@ -673,10 +673,8 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | challenge 가 식별한 사용자가 관리자 역할이 아닌 경우 (`auth.admin_required`) |
 | 422 | Unprocessable Entity | 재발송 대상이 아닌 challenge (`auth.two_factor_invalid_challenge`) — 사유는 구분하지 않는다 |
-| 422 | Unprocessable Entity | 인증 앱처럼 코드를 보내지 않는 수단의 challenge (`auth.two_factor_resend_not_supported`, 7.1.6) — 인증 앱 코드는 앱이 30초마다 새로 만들므로 재발송이 없다. 화면에는 재발송 버튼이 없고 API 응답으로만 알린다 |
 | 423 | Locked | challenge 를 받은 뒤 계정이 잠긴 경우 |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
-| 429 | Too Many Requests | 메일 인증번호를 보낸 지 60초가 지나지 않은 경우 (`auth.two_factor_resend_cooldown`, `:seconds` 치환, `Retry-After` 헤더, 7.1.6) — 공개 본인인증 요청(`POST /api/identity/challenges`)과 같은 대기 시간 |
 | 503 | Service Unavailable | 새 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
 
 <!-- @generated:end -->
@@ -730,7 +728,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "가입된 이메일이면 비밀번호 재설정 링크를 보냈습니다. 메일함을 확인해 주세요.",
+    "message": "비밀번호 재설정 이메일이 발송되었습니다.",
     "data": null
 }
 ```
@@ -739,16 +737,13 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (이메일 형식·필수 값). 가입 여부로는 422 가 나지 않는다 |
-| 429 | Too Many Requests | 같은 IP 의 분당 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정값(기본 10) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우, 또는 등록되지 않은 이메일인 경우 (`auth.password_reset_failed` — `error.errors.email` 에 `auth.email_not_registered` 메시지) |
 
 <!-- @generated:end -->
 
 **설명**
 
-비밀번호 재설정 메일 발송을 요청한다(공개). `email` 로 계정을 찾아 재설정 링크 메일을 보내고 `message: auth.password_reset_email_sent` 를 반환한다. `redirect_prefix` 는 재설정 링크가 향할 화면을 구분하는 값으로 관리자 흐름(`admin_forgot_password.g7.html`)에서는 `admin` 을 전달해 링크가 관리자 재설정 화면을 가리키게 한다(미지정 시 사용자 화면). 단, 관리자가 아닌 계정에는 `admin` 을 전달해도 사용자 재설정 화면 링크를 보낸다.
-
-계정 존재를 알려 주지 않는다(7.1.6): 가입되지 않은 이메일도 **같은 200·같은 본문**을 받고, 응답 시간으로도 갈리지 않게 메일 발송·활동 기록은 응답을 보낸 뒤에 처리한다. 같은 이메일로 60초 안에 다시 요청하면 같은 200 을 주되 토큰을 바꾸지 않고 메일도 다시 보내지 않는다. 요청 수는 같은 IP 기준 분당 한도(보안 환경설정 `password_reset_rate_limit_per_minute`, 기본 10)로 제한하며 넘으면 429 다 — 이 한도는 로그인, 재설정·토큰 확인과 따로 센다.
+비밀번호 재설정 메일 발송을 요청한다(공개). `email` 로 계정을 찾아 재설정 링크 메일을 보내고 `message: auth.password_reset_email_sent` 를 반환한다. `redirect_prefix` 는 재설정 링크가 향할 화면을 구분하는 값으로 관리자 흐름(`admin_forgot_password.g7.html`)에서는 `admin` 을 전달해 링크가 관리자 재설정 화면을 가리키게 한다(미지정 시 사용자 화면). 계정 열거 방지를 위해 이메일 존재 여부와 무관하게 동일 응답을 주는 것이 원칙이다.
 
 
 ### POST /api/auth/login
@@ -787,7 +782,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::login()` 이 반환한 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**
@@ -839,7 +834,7 @@ HTTP/1.1 200
 
 **설명**
 
-일반 사용자 로그인(공개). 관리자 로그인과 달리 `isAdmin()` 검사가 없다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user` 를 반환하며 `message: auth.login_success`. 계정 잠금 시 `423 auth.account_locked` 를 잠금 해제까지 남은 정보(`errors.locked_until`, `errors.retry_after_seconds`)와 함께 반환한다. 보안 환경설정의 잠금 시간이 `0`(무한대)이면 무기한 잠금이 되어 `423 auth.account_locked_permanently` 와 함께 `errors.permanent=true`, `errors.locked_until=null`, `errors.retry_after_seconds=null` 을 반환하며 `Retry-After` 헤더도 붙지 않는다. 이 경우 해제 수단은 관리자 해제 API(`POST /api/admin/users/{user}/unlock`) 와 본인의 비밀번호 재설정(`POST /api/auth/reset-password`)이다. 실패 횟수는 보안 환경설정의 잠금 시간 안의 연속 실패만 센다 — 직전 실패가 잠금 시간보다 오래됐으면 1 부터 다시 센다(잠금 시간 `0` 이면 기간 없이 누적). 실패 횟수 증가·잠금과 성공 시 초기화는 큐 드라이버와 무관하게 로그인 요청 안에서 바로 반영된다 — 큐로 미루면 워커가 없는 사이트에서 잠금이 걸리지 않는다. 가입되지 않은 이메일의 실패도 같은 기준으로 세어 같은 횟수 뒤에는 가입 계정과 같은 `423` 응답(같은 본문 모양)을 돌려준다(7.1.6) — 잠금 응답의 차이로 가입 여부를 알 수 없게 하기 위함이며, 이 기록은 캐시에만 있고(무기한 잠금 설정에서도 최대 24시간) 회원 데이터·잠금 알림과는 무관하다. 프론트 로그인 폼(`partials/auth/_register_form.g7.html` 인접)에서 소비한다.
+일반 사용자 로그인(공개). 관리자 로그인과 달리 `isAdmin()` 검사가 없다. 성공 시 `data.token`(Sanctum Bearer) 과 `data.user` 를 반환하며 `message: auth.login_success`. 계정 잠금 시 `423 auth.account_locked` 를 잠금 해제까지 남은 정보(`errors.locked_until`, `errors.retry_after_seconds`)와 함께 반환한다. 보안 환경설정의 잠금 시간이 `0`(무한대)이면 무기한 잠금이 되어 `423 auth.account_locked_permanently` 와 함께 `errors.permanent=true`, `errors.locked_until=null`, `errors.retry_after_seconds=null` 을 반환하며 `Retry-After` 헤더도 붙지 않는다. 이 경우 해제 수단은 관리자 해제 API(`POST /api/admin/users/{user}/unlock`) 와 본인의 비밀번호 재설정(`POST /api/auth/reset-password`)이다. 실패 횟수는 보안 환경설정의 잠금 시간 안의 연속 실패만 센다 — 직전 실패가 잠금 시간보다 오래됐으면 1 부터 다시 센다(잠금 시간 `0` 이면 기간 없이 누적). 실패 횟수 증가·잠금과 성공 시 초기화는 큐 드라이버와 무관하게 로그인 요청 안에서 바로 반영된다 — 큐로 미루면 워커가 없는 사이트에서 잠금이 걸리지 않는다. 프론트 로그인 폼(`partials/auth/_register_form.g7.html` 인접)에서 소비한다.
 
 **비밀번호를 바꿔야 하는 경우 (#736)**: 비밀번호(·2단계 인증)를 통과했어도 비밀번호가 만료됐거나(`security.password_expiry_*`) 관리자가 정해 준 비밀번호면 **토큰을 발급하지 않는다**. 대신 `200` 과 함께 `message: auth.password_change_required`(만료) / `auth.password_change_required_admin_assigned` 및 아래 필드를 반환하며, 클라이언트는 `POST /api/auth/login/password-change`(연기는 `/postpone`)로 새 비밀번호를 보내야 로그인이 완료된다. 순서는 2단계 인증이 먼저다 — 2단계 인증이 켜져 있으면 이 응답은 `POST /api/auth/login/two-factor` 가 돌려준다.
 
@@ -913,7 +908,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 
@@ -993,7 +988,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 | postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
@@ -1073,7 +1068,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::completeTwoFactor()` 가 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 > 위 문서의 실측이 `422` 로 관측된 것은 유효한 challenge 없이 프로브가 호출됐기 때문이다. 정상 흐름(비밀번호 단계가 돌려준 `challenge_id` + 올바른 코드)에서는 `200` 과 위 페이로드가 반환된다.
@@ -1119,7 +1114,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthorized | 코드가 틀렸거나(`auth.two_factor_failed`), challenge 의 `purpose` 가 `login` 이 아니거나, 확인된 사용자가 없거나 `active` 상태가 아닌 경우. **세 사유를 같은 응답으로 뭉뚱그린다** — 구분해 내보내면 challenge 유효성 탐색에 쓰인다 |
 | 422 | Unprocessable Entity | `challenge_id`/`code` 형식 위반 |
-| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 (`auth.account_locked` / 무기한이면 `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`). **2단계 코드 오답도 비밀번호 오답과 같은 실패 횟수에 더해진다(7.1.6)** — 이 요청으로 상한에 닿으면 401 대신 423 을 받고, 잠긴 계정은 코드를 확인하기 전에 423 이다 |
+| 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 (`auth.account_locked` / 무기한이면 `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (로그인과 같은 제한을 공유하므로 코드 대입 시도도 함께 억제된다 — `auth.too_many_attempts`) |
 | 503 | Service Unavailable | 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — 토큰도 발급하지 않는다, #736) |
 
@@ -1197,10 +1192,8 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 422 | Unprocessable Entity | `challenge_id` 형식 위반, 또는 재발송 대상이 아닌 challenge (`auth.two_factor_invalid_challenge`) — 존재하지 않음 / `purpose` 가 `login` 이 아님 / 이미 검증·취소·실패 / 만료 / 대상 사용자가 없거나 `active` 가 아님. **사유를 구분하지 않는다** — 구분해 내보내면 challenge 유효성 탐색에 쓰인다 |
-| 422 | Unprocessable Entity | 인증 앱처럼 코드를 보내지 않는 수단의 challenge (`auth.two_factor_resend_not_supported`, 7.1.6) — 인증 앱 코드는 앱이 30초마다 새로 만들므로 재발송이 없다. 화면에는 재발송 버튼이 없고 API 응답으로만 알린다 |
 | 423 | Locked | challenge 를 받은 뒤 계정이 잠긴 경우. 응답 형태는 `POST /api/auth/login` 의 423 과 동일하다 |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
-| 429 | Too Many Requests | 메일 인증번호를 보낸 지 60초가 지나지 않은 경우 (`auth.two_factor_resend_cooldown`, `:seconds` 치환, `Retry-After` 헤더, 7.1.6) — 공개 본인인증 요청(`POST /api/identity/challenges`)과 같은 대기 시간 |
 | 503 | Service Unavailable | 새 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`) |
 
 <!-- @generated:end -->
@@ -1210,8 +1203,6 @@ HTTP/1.1 200
 인증번호를 받지 못했을 때 새 코드를 발행한다. 서버는 **기존 challenge 를 취소하고 새로 발행**하므로, 앞서 받은 인증번호는 더 이상 통하지 않는다 — 유효한 코드를 여러 개 동시에 살려 두면 대입 시도의 표적이 넓어진다. 클라이언트는 응답의 `challenge_id` 로 반드시 교체하고 입력란을 비워야 한다.
 
 계정 잠금은 여기서도 다시 검사한다. challenge 를 받은 뒤 잠긴 계정에는 새 코드를 보내지 않는다. 로그인과 같은 요청 제한(`throttle:auth-login`)이 걸린다.
-
-**재발송 규칙 (7.1.6)**: 「오답 몇 번 → 재발송」을 되풀이해 시도 횟수를 매번 0 으로 되돌리지 못하게, ① 인증 앱처럼 코드를 보내지 않는 수단은 재발송하지 않고 422 `auth.two_factor_resend_not_supported` 로 거부하며(수단이 `ChallengeDeliveryAwareProviderInterface::deliversChallengeCode()` 로 `false` 를 알리거나 challenge 의 채널이 `app` 이면), ② 메일 인증번호는 직전 발송 뒤 60초 안의 재요청을 429 `auth.two_factor_resend_cooldown`(`Retry-After`)으로 거부한다. 또 2단계 코드 오답은 확인 단계에서 계정 실패 횟수에 더해지므로(`POST /api/auth/login/two-factor` 의 423) 재발송으로 시도 상한을 넘길 수 없다.
 
 
 ### POST /api/auth/logout
@@ -1326,7 +1317,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::register()` 이 반환한
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","status":"active", …}` | 생성된 사용자 정보 (`UserResource`. `status` 는 `active`, 가입 후 본인인증 정책이 걸린 경우 `pending_verification`) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 가입 즉시 발급되는 Sanctum 접근 토큰 평문 (가입 직후 로그인 상태로 이어짐) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 가입 즉시 발급되는 Sanctum 접근 토큰 평문 (가입 직후 로그인 상태로 이어짐) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**
@@ -1371,13 +1362,12 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`auth.register_failed` — `error.errors` 에 필드별 메시지) |
 | 428 | Precondition Required | 가입 전 본인인증 정책이 매칭되었으나 유효한 `verification_token` 이 없는 경우 (`core.auth.before_register` 훅) |
-| 429 | Too Many Requests | 같은 IP 의 분당 가입 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정 `register_rate_limit_per_minute`(기본 10) |
 
 <!-- @generated:end -->
 
 **설명**
 
-회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. `agree_*` 동의 파라미터(약관/개인정보/이메일수신/마케팅/제3자제공/정보공개)는 가입 시점의 동의 이력으로 기록된다 — 그중 `agree_email_subscription`/`agree_marketing_consent`/`agree_third_party_consent`/`agree_info_disclosure` 및 `preferred_currency`/`preferred_shipping_country` 는 marketing·ecommerce 확장이 훅(`core.auth.register_validation_rules`)으로 주입하는 파라미터로, 해당 확장 비활성 시 무시된다. 검증 실패 시 `422 auth.register_failed`. 요청 수는 같은 IP 기준 분당 한도로 제한한다(7.1.6, 보안 환경설정 `register_rate_limit_per_minute`). 이미 쓰는 이메일 안내 문구는 가입 흐름을 위해 그대로 둔다.
+회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. `agree_*` 동의 파라미터(약관/개인정보/이메일수신/마케팅/제3자제공/정보공개)는 가입 시점의 동의 이력으로 기록된다 — 그중 `agree_email_subscription`/`agree_marketing_consent`/`agree_third_party_consent`/`agree_info_disclosure` 및 `preferred_currency`/`preferred_shipping_country` 는 marketing·ecommerce 확장이 훅(`core.auth.register_validation_rules`)으로 주입하는 파라미터로, 해당 확장 비활성 시 무시된다. 검증 실패 시 `422 auth.register_failed`.
 
 
 ### POST /api/auth/reset-password
@@ -1433,14 +1423,13 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반했거나, 토큰이 유효하지 않거나 만료된 경우 (`auth.password_reset_failed` — `error.errors` 에 필드별 메시지). 가입되지 않은 이메일은 토큰이 틀린 것과 같은 `error.errors.token` 으로 답한다 |
-| 429 | Too Many Requests | 같은 IP 의 분당 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정값(기본 10) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반했거나, 토큰이 유효하지 않거나 만료된 경우 (`auth.password_reset_failed` — `error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
 **설명**
 
-비밀번호 재설정을 실제 반영한다(공개). 재설정 메일의 `token` 과 `email`, 새 `password` 를 받아 비밀번호를 갱신하고 `message: auth.password_reset_success`. 토큰 만료/불일치 등 검증 실패 시 `422 auth.password_reset_failed`. 반영 전 토큰 유효성만 먼저 확인하려면 `/api/auth/validate-reset-token` 을 사용한다. 가입되지 않은 이메일과 토큰이 틀린 이메일은 같은 필드(`token`)·같은 문구로 답해 계정 존재를 알려 주지 않는다(7.1.6). 요청 수는 같은 IP 기준 분당 한도로 제한하며(`/api/auth/validate-reset-token` 과 한 카운터, 비밀번호 찾기와는 별도) 넘으면 429 다.
+비밀번호 재설정을 실제 반영한다(공개). 재설정 메일의 `token` 과 `email`, 새 `password` 를 받아 비밀번호를 갱신하고 `message: auth.password_reset_success`. 토큰 만료/불일치 등 검증 실패 시 `422 auth.password_reset_failed`. 반영 전 토큰 유효성만 먼저 확인하려면 `/api/auth/validate-reset-token` 을 사용한다.
 
 **재설정은 로그인 잠금도 푼다.** 재설정 메일을 받아 링크를 연 것이 본인 확인이므로, 반영과 같은 트랜잭션에서 로그인 실패 횟수·잠금(시한·무기한 모두)을 초기화한다. 잠금은 이메일만 알면 남이 걸 수 있어, 이 경로가 없으면 피해자는 차단 시간이 끝나기를 기다리거나 관리자 해제를 받아야 했다. 실제로 잠겨 있던 계정이면 `core.auth.account_unlocked` 훅이 `reason=password_reset` 과 함께 발화되어 활동 로그에 "비밀번호 재설정으로 계정 잠금 해제" 로 남는다.
 
@@ -1473,7 +1462,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `admin@example.com` | 이메일 주소 |
+| email | string | `heuristing@gmail.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() — 아바타 미설정 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -1553,7 +1542,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "admin@example.com",
+        "email": "heuristing@gmail.com",
         "avatar": null,
         "...": "(63개 키 생략, 총 68개)"
     }
@@ -1634,14 +1623,13 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 위반, 또는 토큰이 유효하지 않거나 만료된 경우 (`auth.reset_token_invalid` — `error.errors.token` 에 사유 메시지). 가입되지 않은 이메일은 토큰이 틀린 것과 같은 문구로 답한다 |
-| 429 | Too Many Requests | 같은 IP 의 분당 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정값(기본 10) |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 위반, 또는 토큰이 유효하지 않거나 만료된 경우 / 미등록 이메일 (`auth.reset_token_invalid` — `error.errors.token` 에 사유 메시지) |
 
 <!-- @generated:end -->
 
 **설명**
 
-비밀번호 재설정 토큰의 유효성만 사전 확인한다(공개, 비밀번호 미변경). 재설정 화면(`admin_reset_password.g7.html`/`auth/reset_password.g7.html`) 진입 시 토큰/이메일이 유효한지 먼저 검사해, 만료·위조 링크면 즉시 오류 화면을 보이고 유효하면 새 비밀번호 입력 폼을 노출하는 용도다. 실제 반영은 `/api/auth/reset-password` 가 담당한다. 가입되지 않은 이메일도 토큰이 틀린 것과 같은 응답을 받는다(7.1.6). 요청 수는 `/api/auth/reset-password` 와 한 카운터로 같은 IP 기준 분당 한도를 받는다.
+비밀번호 재설정 토큰의 유효성만 사전 확인한다(공개, 비밀번호 미변경). 재설정 화면(`admin_reset_password.g7.html`/`auth/reset_password.g7.html`) 진입 시 토큰/이메일이 유효한지 먼저 검사해, 만료·위조 링크면 즉시 오류 화면을 보이고 유효하면 새 비밀번호 입력 폼을 노출하는 용도다. 실제 반영은 `/api/auth/reset-password` 가 담당한다.
 
 
 ### POST /api/user/auth/logout
@@ -1772,7 +1760,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::refreshToken()` 반환 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 토큰을 갱신한 사용자 정보 (`UserResource`) |
-| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 새로 발급된 Sanctum 접근 토큰 평문 (기존 토큰은 폐기됨) |
+| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 새로 발급된 Sanctum 접근 토큰 평문 (기존 토큰은 폐기됨) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**

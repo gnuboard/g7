@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Sirsoft\Ecommerce\Support;
 
-use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
-
 /**
  * 클레임 신청서 화면 주소의 SSoT.
  *
@@ -56,7 +54,17 @@ final class ClaimUrl
      */
     public static function memberDetail(string $claimNumber): string
     {
-        return strtr(self::MEMBER_DETAIL, ['{claimNumber}' => $claimNumber]);
+        return EcommerceScreenUrl::mypageClaimDetail($claimNumber);
+    }
+
+    /**
+     * 회원 신청서 목록 경로 (화면 주소 헬퍼 경유, #792).
+     *
+     * @return string 앱 내 경로 (주소 필터가 절대 URL 을 돌려주면 그 URL)
+     */
+    public static function memberList(): string
+    {
+        return EcommerceScreenUrl::mypageClaims();
     }
 
     /**
@@ -72,7 +80,7 @@ final class ClaimUrl
      */
     public static function memberOrderDetail(string $orderNumber): string
     {
-        return strtr(self::MEMBER_ORDER_DETAIL, ['{orderNumber}' => $orderNumber]);
+        return EcommerceScreenUrl::mypageOrderDetail($orderNumber);
     }
 
     /**
@@ -83,10 +91,7 @@ final class ClaimUrl
      */
     public static function guestDetail(string $claimNumber): string
     {
-        return strtr(self::GUEST_DETAIL, [
-            '{shopBase}' => ShopPathResolver::base(),
-            '{claimNumber}' => $claimNumber,
-        ]);
+        return EcommerceScreenUrl::guestClaimDetail($claimNumber);
     }
 
     /**
@@ -97,7 +102,7 @@ final class ClaimUrl
      */
     public static function adminDetail(string $claimNumber): string
     {
-        return strtr(self::ADMIN_DETAIL, ['{claimNumber}' => $claimNumber]);
+        return EcommerceScreenUrl::admin('ecommerce.admin.claim.detail', self::ADMIN_DETAIL, ['claimNumber' => $claimNumber]);
     }
 
     /**
@@ -110,6 +115,6 @@ final class ClaimUrl
      */
     public static function guestLookup(): string
     {
-        return ShopPathResolver::path(EcommerceNotificationDataListener::GUEST_ORDER_LOOKUP_SUFFIX);
+        return EcommerceScreenUrl::guestOrders();
     }
 }

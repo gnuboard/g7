@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Rules\ConnectionHost;
 use App\Support\OutboundUrlValidator;
 use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
@@ -82,13 +81,6 @@ class DriverConnectionTester
     public function testS3(array $config): array
     {
         try {
-            // 연결 대상 주소를 먼저 본다 — 요청 검증을 거치지 않은 호출(저장값·내부 호출)도 같은 판정을 받는다.
-            foreach (['s3_endpoint', 's3_url'] as $urlKey) {
-                if (! empty($config[$urlKey]) && OutboundUrlValidator::isRefusedConnectionUrl((string) $config[$urlKey])) {
-                    return $this->blockedTarget('settings.s3_test_failed');
-                }
-            }
-
             // 필수 설정 확인
             $bucket = $config['s3_bucket'] ?? '';
             $region = $config['s3_region'] ?? '';
@@ -122,7 +114,29 @@ class DriverConnectionTester
 
             $startTime = microtime(true);
 
-            $client = new S3Client($this->s3ClientOptions($config));
+            $clientOptions = [
+                'version' => 'latest',
+                'region' => $region,
+                'credentials' => [
+                    'key' => $accessKey,
+                    'secret' => $secretKey,
+                ],
+                'http' => [
+                    'timeout' => 5,
+                    'connect_timeout' => 3,
+                ],
+            ];
+
+            // S3 호환 스토리지(R2/MinIO 등) — 실경로(applyS3Config 주입)와 동일하게
+            // endpoint/path-style 을 반영해야 테스트가 실제 연결 대상과 일치한다.
+            if (! empty($config['s3_endpoint'])) {
+                $clientOptions['endpoint'] = $config['s3_endpoint'];
+            }
+            if (! empty($config['s3_use_path_style'])) {
+                $clientOptions['use_path_style_endpoint'] = true;
+            }
+
+            $client = new S3Client($clientOptions);
 
             // 버킷 존재 확인
             $client->headBucket(['Bucket' => $bucket]);
@@ -162,44 +176,6 @@ class DriverConnectionTester
     }
 
     /**
-     * S3 연결 테스트에 쓰는 클라이언트 옵션을 만듭니다.
-     *
-     * 응답의 리다이렉트를 따라가지 않는다 — 관리자가 넣은 주소가 다른 주소(내부망·메타데이터)로 넘기는 응답을
-     * 돌려줘도 서버는 그 주소에 닿지 않는다.
-     *
-     * @param  array  $config  S3 설정 (s3_region, s3_access_key, s3_secret_key, s3_endpoint, s3_use_path_style)
-     * @return array<string, mixed> S3Client 생성 옵션
-     */
-    protected function s3ClientOptions(array $config): array
-    {
-        $clientOptions = [
-            'version' => 'latest',
-            'region' => $config['s3_region'] ?? '',
-            'credentials' => [
-                'key' => $config['s3_access_key'] ?? '',
-                'secret' => $config['s3_secret_key'] ?? '',
-            ],
-            'http' => [
-                'timeout' => 5,
-                'connect_timeout' => 3,
-                // 응답의 리다이렉트로 다른 주소에 닿지 않게 한다.
-                'allow_redirects' => false,
-            ],
-        ];
-
-        // S3 호환 스토리지(R2/MinIO 등) — 실경로(applyS3Config 주입)와 동일하게
-        // endpoint/path-style 을 반영해야 테스트가 실제 연결 대상과 일치한다.
-        if (! empty($config['s3_endpoint'])) {
-            $clientOptions['endpoint'] = $config['s3_endpoint'];
-        }
-        if (! empty($config['s3_use_path_style'])) {
-            $clientOptions['use_path_style_endpoint'] = true;
-        }
-
-        return $clientOptions;
-    }
-
-    /**
      * Redis 서버 연결을 테스트합니다.
      *
      * @param  array  $config  Redis 설정 배열
@@ -210,12 +186,7 @@ class DriverConnectionTester
         try {
             $host = $config['redis_host'] ?? '127.0.0.1';
             $port = (int) ($config['redis_port'] ?? 6379);
-
-            if (ConnectionHost::violation((string) $host, true) !== null) {
-                return $this->blockedTarget('settings.redis_test_failed', (string) $host, true);
-            }
-
-            $auth = $this->resolveRedisAuth($config);
+            $password = $config['redis_password'] ?? '';
             $database = (int) ($config['redis_database'] ?? 0);
 
             // PHP Redis 확장 확인
@@ -228,7 +199,7 @@ class DriverConnectionTester
                     ];
                 }
 
-                return $this->testRedisWithPredis($host, $port, $auth, $database);
+                return $this->testRedisWithPredis($host, $port, $password, $database);
             }
 
             $startTime = microtime(true);
@@ -243,8 +214,8 @@ class DriverConnectionTester
                 ];
             }
 
-            if ($auth !== null) {
-                if (! $redis->auth($auth)) {
+            if (! empty($password)) {
+                if (! $redis->auth($password)) {
                     return [
                         'success' => false,
                         'message' => __('settings.redis_auth_failed'),
@@ -290,46 +261,15 @@ class DriverConnectionTester
     }
 
     /**
-     * Redis 연결 테스트에 쓸 인증 자격을 정합니다.
-     *
-     * 사이트별 ACL 사용자 이름(REDIS_USERNAME)은 설정 화면에 없고, 운영자가 비밀번호 칸을 비워 시험할 수도 있다.
-     * 그래서 시험 대상이 지금 설정된 연결(host·port)과 같을 때만 설정의 사용자 이름을 쓰고 빈 비밀번호를 설정값으로 채운다.
-     * 다른 서버를 시험할 때는 입력한 비밀번호만 쓴다.
-     *
-     * @param  array  $config  드라이버 설정 배열 (redis_host·redis_port·redis_password)
-     * @return string|array|null 비밀번호 문자열, [사용자 이름, 비밀번호], 인증 없음이면 null
-     */
-    public function resolveRedisAuth(array $config): string|array|null
-    {
-        $host = (string) ($config['redis_host'] ?? '127.0.0.1');
-        $port = (int) ($config['redis_port'] ?? 6379);
-        $password = (string) ($config['redis_password'] ?? '');
-
-        $sameEndpoint = $host === (string) config('database.redis.default.host')
-            && $port === (int) config('database.redis.default.port');
-
-        $username = $sameEndpoint ? (string) config('database.redis.default.username') : '';
-        if ($password === '' && $sameEndpoint) {
-            $password = (string) config('database.redis.default.password');
-        }
-
-        if ($password === '') {
-            return null;
-        }
-
-        return $username !== '' ? [$username, $password] : $password;
-    }
-
-    /**
      * Predis 라이브러리를 사용하여 Redis 연결을 테스트합니다.
      *
      * @param  string  $host  호스트
      * @param  int  $port  포트
-     * @param  string|array|null  $auth  비밀번호 또는 [사용자 이름, 비밀번호] (resolveRedisAuth)
+     * @param  string  $password  비밀번호
      * @param  int  $database  데이터베이스 번호
      * @return array 테스트 결과
      */
-    private function testRedisWithPredis(string $host, int $port, string|array|null $auth, int $database): array
+    private function testRedisWithPredis(string $host, int $port, string $password, int $database): array
     {
         try {
             $startTime = microtime(true);
@@ -342,10 +282,8 @@ class DriverConnectionTester
                 'timeout' => 3.0,
             ];
 
-            if (is_array($auth)) {
-                [$options['username'], $options['password']] = $auth;
-            } elseif ($auth !== null) {
-                $options['password'] = $auth;
+            if (! empty($password)) {
+                $options['password'] = $password;
             }
 
             $client = new Client($options);
@@ -383,12 +321,6 @@ class DriverConnectionTester
     public function testMemcached(array $config): array
     {
         try {
-            // 연결 대상 주소를 먼저 본다 (확장 유무와 무관하게 같은 답을 낸다).
-            $targetHost = (string) ($config['memcached_host'] ?? '127.0.0.1');
-            if (ConnectionHost::violation($targetHost, true) !== null) {
-                return $this->blockedTarget('settings.memcached_test_failed', $targetHost, true);
-            }
-
             // Memcached 확장 확인
             if (! extension_loaded('memcached')) {
                 return [
@@ -474,14 +406,6 @@ class DriverConnectionTester
         $serverPort = (int) ($config['websocket_server_port'] ?? 0) > 0 ? (int) $config['websocket_server_port'] : $clientPort;
         $serverScheme = ($config['websocket_server_scheme'] ?? '') !== '' ? $config['websocket_server_scheme'] : $clientScheme;
 
-        // 호스트 칸에는 호스트명·IP 만 온다 — 경로·쿼리가 섞이면 아래에서 조립한 주소가 화면에 보인 것과
-        // 다른 곳을 가리키고(포트가 쿼리로 밀려난다), 링크로컬·메타데이터 주소는 어떤 정상 구성에도 없다.
-        foreach ([$clientHost, $serverHost] as $host) {
-            if (ConnectionHost::violation((string) $host) !== null) {
-                return $this->blockedTarget('settings.websocket_test_failed', (string) $host);
-            }
-        }
-
         $clientUrl = sprintf('%s://%s:%d', $clientScheme, $clientHost, $clientPort);
         $serverUrl = sprintf('%s://%s:%d', $serverScheme, $serverHost, $serverPort);
 
@@ -530,10 +454,8 @@ class DriverConnectionTester
 
             $startTime = microtime(true);
 
-            // HTTP 요청으로 서버 응답 확인. 리다이렉트는 따라가지 않는다 — 응답이 가리키는 다른 주소에
-            // 서버가 대신 닿지 않게 한다(3xx 도 "서버가 응답했다" 로 본다).
+            // HTTP 요청으로 서버 응답 확인
             $response = Http::timeout(5)
-                ->withoutRedirecting()
                 ->withOptions([
                     'verify' => false, // 로컬 개발 환경에서 SSL 인증서 검증 무시
                 ])
@@ -574,30 +496,6 @@ class DriverConnectionTester
                 'error' => $e->getMessage(),
             ];
         }
-    }
-
-    /**
-     * 연결 대상이 허용되지 않아 테스트를 시작하지 않았다는 결과를 만듭니다.
-     *
-     * 형식이 틀린 호스트(경로·쿼리·계정 정보)와 링크로컬·메타데이터 주소를 구분해 알린다.
-     * 연결을 시도한 뒤의 실패 사유(연결 거부·시간 초과 등)는 이 경로를 거치지 않고 원문 그대로 나간다.
-     *
-     * @param  string  $messageKey  그 드라이버의 실패 문구 키
-     * @param  string|null  $host  판정한 호스트 칸 값 (URL 판정이면 null)
-     * @param  bool  $allowSocketAndTls  소켓 경로·TLS 접두 허용 칸인지
-     * @return array{success: bool, message: string, error: string} 테스트 결과
-     */
-    private function blockedTarget(string $messageKey, ?string $host = null, bool $allowSocketAndTls = false): array
-    {
-        $formatOnly = $host !== null && ConnectionHost::violation($host, $allowSocketAndTls) === 'format';
-
-        return [
-            'success' => false,
-            'message' => __($messageKey),
-            'error' => $formatOnly
-                ? __('validation.settings.host_format_invalid')
-                : __('settings.connection_target_blocked'),
-        ];
     }
 
     /**

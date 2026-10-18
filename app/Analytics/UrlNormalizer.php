@@ -2,8 +2,6 @@
 
 namespace App\Analytics;
 
-use App\Support\RequestPath;
-
 /**
  * URL 정규화
  *
@@ -186,8 +184,7 @@ class UrlNormalizer
      */
     private static function buildName(string $host, string $path, array $query): string
     {
-        // 끝·연속 슬래시 주소는 정규형과 같은 페이지로 센다 (빈 경로는 루트, 공개#156)
-        $path = RequestPath::normalize($path);
+        $path = $path === '' ? '/' : $path;
 
         // 추적 파라미터는 페이지를 가르는 값이 아니므로 뺀다.
         $stripped = AnalyticsTables::strippedQueryParams();

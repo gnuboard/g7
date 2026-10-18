@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
-use App\Support\LocalizedValue;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -2260,8 +2259,8 @@ class OrderExchangeService
      *
      * 교환은 그 옵션을 새로 한 번 더 내보내는 일이라, 지금 판매하지 않는 것을 보내 달라는 신청은
      * 받을 수 없다. 예전에는 옵션의 `is_active` 만, 그것도 **옵션을 바꾸는 경로에서만** 봤다 —
-     * 그래서 ① 판매 중지한 옵션으로 **동일옵션 교환**이 접수되고(2026-09-22 #599 실측
-     * `is_active=false` 인 원 옵션으로 낸 동일옵션 교환이 201 로 통과했다) ② 품절·판매중지·
+     * 그래서 ① 판매 중지한 옵션으로 **동일옵션 교환**이 접수되고(2026-09-22 #599 3차 실측 L-4 ·
+     * T2-D11: `is_active=false` 인 원 옵션으로 낸 동일옵션 교환이 201 로 통과했다) ② 품절·판매중지·
      * 출시예정·미노출·구매등급제한 **상품**으로도 교환이 접수됐다.
      *
      * 재고는 여기서 보지 않는다 — 수량과 함께 판정해야 해서 `assertRedeliveryStock()` 이 따로 맡는다.
@@ -3374,14 +3373,11 @@ class OrderExchangeService
             $successor->subtotal_volume = ($target->volume ?? 0) * $successor->quantity;
 
             // 스냅샷의 정체는 신규 옵션, 가격은 원 행 — 재계산이 원 금액을 재현해야 한다.
-            // 과세 종류도 원 행을 잇는다(#612): 과세·면세·영세 금액이 원 행에서 그대로 복사되므로,
-            // 신규 옵션의 지정값을 스냅샷에 실으면 이후 부분취소 재계산이 같은 금액을 다른 갈래로 다시 나눈다.
             $originalSnapshot = $original->option_snapshot ?? [];
             $successor->option_snapshot = array_merge($target->toSnapshotArray(), [
                 'price_adjustment' => $originalSnapshot['price_adjustment'] ?? $target->price_adjustment,
                 'list_price' => $originalSnapshot['list_price'] ?? $target->list_price,
                 'selling_price' => $originalSnapshot['selling_price'] ?? $target->selling_price,
-                'tax_status' => $originalSnapshot['tax_status'] ?? null,
             ]);
         }
 
@@ -3504,6 +3500,7 @@ class OrderExchangeService
 
         if (isset($values[0]['key'])) {
             $locales = config('app.supported_locales', ['ko', 'en']);
+            $fallback = config('app.fallback_locale', 'ko');
             $result = [];
 
             foreach ($locales as $locale) {
@@ -3513,8 +3510,8 @@ class OrderExchangeService
                     $key = $entry['key'] ?? [];
                     $value = $entry['value'] ?? [];
 
-                    $localizedKey = is_array($key) ? (LocalizedValue::pick($key, $locale) ?? '') : $key;
-                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale) ?? '') : $value;
+                    $localizedKey = is_array($key) ? ($key[$locale] ?? $key[$fallback] ?? array_values($key)[0] ?? '') : $key;
+                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[$fallback] ?? array_values($value)[0] ?? '') : $value;
 
                     if ($localizedKey !== '' && $localizedValue !== '') {
                         $parts[] = $localizedKey.': '.$localizedValue;
@@ -4065,27 +4062,6 @@ class OrderExchangeService
     }
 
     /**
-     * 「교환 후」 재계산 입력 스냅샷의 과세 종류를 원 주문상품 행 값으로 맞춥니다 (#612).
-     *
-     * 실제 후속 행은 원 행의 과세 종류를 잇는다(`ensureNewOrderOption`) — 미리보기만 신규 옵션 값을 쓰면
-     * 영세 → 과세 교환이 화면에서는 부가세가 붙은 금액으로 보이고 실제 장부는 영세로 남는다.
-     *
-     * @param  array  $snapshot  치환 옵션 스냅샷
-     * @param  OrderOption|null  $original  원 주문상품 행
-     * @return array 과세 종류를 맞춘 스냅샷
-     */
-    protected function withOriginalTaxStatus(array $snapshot, ?OrderOption $original): array
-    {
-        if ($original === null) {
-            return $snapshot;
-        }
-
-        $snapshot['tax_status'] = $original->option_snapshot['tax_status'] ?? $original->tax_status?->value;
-
-        return $snapshot;
-    }
-
-    /**
      * 신청 계획을 재계산 엔진의 옵션 치환 입력으로 바꿉니다. ("교환 후" 열의 표시용 2-패스)
      *
      * 옵션을 바꾸는 교환은 신규 옵션 스냅샷(정가·조정액·적립 규칙·옵션값 요약)을, 같은 옵션에서
@@ -4108,9 +4084,9 @@ class OrderExchangeService
                 'quantity' => (int) $plan['quantity'],
                 'product_option_id' => $plan['is_option_change'] ? (int) $plan['target']->id : null,
                 'unit_price' => (int) round((float) $plan['new_unit_price']),
-                'option_snapshot' => $this->withOriginalTaxStatus($plan['is_option_change']
+                'option_snapshot' => $plan['is_option_change']
                     ? $newSnapshot
-                    : array_merge($option->option_snapshot ?? [], $newSnapshot), $option),
+                    : array_merge($option->option_snapshot ?? [], $newSnapshot),
                 'additional_options_snapshot' => $plan['new_additional_options_snapshot'] ?? [],
             ];
         }
@@ -4140,9 +4116,9 @@ class OrderExchangeService
                 'quantity' => (int) $item->exchange_quantity,
                 'product_option_id' => $item->new_product_option_id ? (int) $item->new_product_option_id : null,
                 'unit_price' => (int) round((float) $item->new_unit_price),
-                'option_snapshot' => $this->withOriginalTaxStatus($item->new_product_option_id
+                'option_snapshot' => $item->new_product_option_id
                     ? $newSnapshot
-                    : array_merge($orderOption?->option_snapshot ?? [], $newSnapshot), $orderOption),
+                    : array_merge($orderOption?->option_snapshot ?? [], $newSnapshot),
                 'additional_options_snapshot' => $newSnapshot['additional_options_snapshot'] ?? [],
             ];
         }

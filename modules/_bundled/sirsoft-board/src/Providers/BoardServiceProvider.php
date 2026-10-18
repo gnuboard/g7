@@ -5,12 +5,10 @@ namespace Modules\Sirsoft\Board\Providers;
 use App\Extension\BaseModuleServiceProvider;
 use App\Helpers\ResponseHelper;
 use App\Seo\SitemapGenerator;
-use App\Support\ContentMedia\ContentMediaRegistrar;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Board\Console\Commands\AggregateBoardStatsCommand;
-use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardPosts;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardReaction;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardRetention;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardScrap;
@@ -41,8 +39,6 @@ use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
-use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaService;
-use Modules\Sirsoft\Board\Services\ContentMedia\BoardContentMediaStore;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
@@ -68,7 +64,6 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     protected array $storageServices = [
         AttachmentService::class,
         BoardService::class,
-        BoardContentMediaService::class,
     ];
 
     /**
@@ -115,7 +110,6 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     protected array $commands = [
         AggregateBoardStatsCommand::class,
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
-        PlaywrightSeedBoardPosts::class,
         PlaywrightSeedBoardReaction::class,
         PlaywrightSeedBoardRetention::class,
         PlaywrightSeedBoardScrap::class,
@@ -131,67 +125,43 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     {
         parent::boot();
 
-        // 요청 처리에 끼어드는 부수효과는 활성일 때만 건다 (#730 게이트, #860)
-        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
-            $this->registerRateLimiters();
-        }
-
-        // 본문 미디어 서빙 라우트를 미디어 출처 허용 패턴의 원천으로 등록한다 — 코어는 기본 출처 패턴을 두지 않으므로,
-        // 이것이 없으면 게시판 본문의 동영상·오디오가 화면·봇 정화·저장에서 지워진다. 모듈이 꺼져 라우트가 없으면
-        // 패턴 생성 쪽이 이 이름을 건너뛴다 (#887)
-        ContentMediaRegistrar::register(BoardContentMediaStore::SERVE_ROUTE);
+        $this->registerRateLimiters();
 
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {
             $this->commands($this->commands);
         }
 
-        // Sitemap 기여자 등록 — 생성기를 처음 해석할 때(사이트맵 생성·SEO 화면) 붙는다. 이미 해석돼 있으면 바로
-        // 붙는다. 부팅마다 생성기·기여자·리포지토리를 만들지 않는다 (#860). 비활성이면 걸지 않는다(#730 게이트).
-        if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
-            $this->callAfterResolving(SitemapGenerator::class, function (SitemapGenerator $generator): void {
-                try {
-                    // Repository 주입을 위해 컨테이너로 해석합니다.
-                    $generator->registerContributor($this->app->make(BoardSitemapContributor::class));
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-            });
-        }
+        // Sitemap 기여자 등록
+        $this->app->booted(function () {
+            if ($this->app->bound(SitemapGenerator::class)) {
+                // Repository 주입을 위해 컨테이너로 해석합니다.
+                $this->app->make(SitemapGenerator::class)->registerContributor(
+                    $this->app->make(BoardSitemapContributor::class)
+                );
+            }
+        });
     }
 
     /**
      * 게시판 모듈의 이름 붙은 요청 제한기를 등록합니다.
      *
-     * 비밀번호 확인 엔드포인트(비밀글 글 비밀번호·스레드 비밀번호, 비회원 글 수정·삭제용 확인, 비회원 댓글
-     * 비밀번호 확인)는 그룹 제한(분당 600회)뿐이거나 제한이 없어 비밀번호 대입이 사실상 막히지 않았다.
-     * 네 엔드포인트가 같은 제한기를 써서 IP 당 합산 분당 10회로 묶는다 — 문을 바꿔 가며 대입해도 합쳐서 센다.
-     * 429 응답은 로그인 제한과 같은 다국어 문구로 낸다.
-     *
-     * 글·댓글의 수정·삭제 요청도 비밀번호를 본문으로 직접 받아 비교하므로 같은 제한기를 건다. 다만 비밀번호가
-     * 실리지 않은 요청(회원 본인 수정·삭제, 확인 토큰으로 오는 요청)은 비교할 것이 없으므로 세지 않는다.
-     * 글 번호와 비밀번호를 함께 받는 글쓰기 폼 데이터 조회·첨부 업로드·본문 미디어 업로드도 같은 방식으로 건다.
+     * 비밀글 비밀번호 확인(글 비밀번호·스레드 비밀번호)은 그룹 제한(분당 600회)만 걸려 있어
+     * 비밀번호 대입이 사실상 막히지 않았다. 두 엔드포인트가 같은 제한기를 써서 IP 당 합산
+     * 분당 10회로 묶는다. 429 응답은 로그인 제한과 같은 다국어 문구로 낸다.
      *
      * @return void 반환값 없음
      */
     protected function registerRateLimiters(): void
     {
-        RateLimiter::for('sirsoft-board.secret-password-verify', function (Request $request) {
-            $password = $request->input('password');
-
-            if (! is_string($password) || $password === '') {
-                return Limit::none();
-            }
-
-            return Limit::perMinute(10)
-                ->by((string) $request->ip())
-                ->response(fn (Request $request, array $headers) => ResponseHelper::error(
-                    'auth.too_many_attempts',
-                    429,
-                    null,
-                    // `count` 로 「1 second」/「2 seconds」 를 고른다.
-                    ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
-                )->withHeaders($headers));
-        });
+        RateLimiter::for('sirsoft-board.secret-password-verify', fn (Request $request) => Limit::perMinute(10)
+            ->by((string) $request->ip())
+            ->response(fn (Request $request, array $headers) => ResponseHelper::error(
+                'auth.too_many_attempts',
+                429,
+                null,
+                // `count` 로 「1 second」/「2 seconds」 를 고른다.
+                ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
+            )->withHeaders($headers)));
     }
 }

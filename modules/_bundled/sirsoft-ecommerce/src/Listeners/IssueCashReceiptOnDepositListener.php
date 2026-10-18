@@ -102,8 +102,7 @@ class IssueCashReceiptOnDepositListener implements HookListenerInterface
 
             $receipt = $this->cashReceiptService->issue($order, $type, $identifier, $identifierType);
 
-            // 처리 중 행이 돌아왔다면 겹친 발급(다른 훅 경로·관리자)이 이미 진행 중이다 — 실패가 아니다.
-            if (! $receipt->isCompletedIssue() && ! $receipt->isInProgress()) {
+            if (! $receipt->isCompletedIssue()) {
                 Log::warning('IssueCashReceiptOnDepositListener: 자동 발급 실패 — 관리자 수동 발급 필요', [
                     'order_id' => $order->id,
                     'error_code' => $receipt->error_code,

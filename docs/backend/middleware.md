@@ -352,6 +352,20 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 
 ---
 
+## 개발자 화면 미들웨어 (custom, 7.2.0)
+
+`routes/custom.php` 의 라우트에는 `web` 과 `custom.screen` 이 자동으로 붙는다. 회원·관리자 제한은 라우트에 직접 단다.
+
+| 이름 | 종류 | 동작 |
+| --- | --- | --- |
+| `custom.screen` | 그룹 | `canonical.host`(정식 주소 이동) → `MarkBotRequest`(봇 표식) → `analytics.bots`(봇 방문 기록) → `analytics.fallback`(서버 방문 집계) |
+| `custom.auth` | 별칭 (`RequireScreenUser`) | `ScreenAuth::user()` 가 없으면 로그인 화면(`ScreenUrl` 키 `auth.login`)으로 `?redirect=` 를 붙여 보내고, JSON 요청이면 401 |
+| `custom.admin` | 별칭 (`RequireScreenAdmin`) | 비회원은 관리자 로그인(`admin.login`)으로, 관리자가 아닌 회원은 403 |
+
+등록 위치는 `bootstrap/app.php`. 사용법은 [개발자 화면 가이드](../custom-development.md).
+
+---
+
 ## OptionalSanctumMiddleware (선택적 인증)
 
 공개 API이면서 인증된 사용자에게는 추가 정보를 제공해야 하는 경우 사용합니다.
@@ -391,35 +405,6 @@ Route::middleware('optional.sanctum')
 | 토큰 유효 | 인증 | 인증 |
 | 토큰 만료 | 401 | guest 통과 |
 | 토큰 무효 | 401 | 401 |
-
-### 만료 토큰 표지 — `hadExpiredToken()` (7.1.5)
-
-`optional.sanctum` 은 만료 토큰을 비회원으로 통과시키므로, 그 요청이 뒤에서 「본인 확인」(내 글 수정·내 업로드 연결 등)에 실패하면 컨트롤러는
-비회원 기준으로 막게 됩니다. 이때 권한 없음(403)으로 답하면 화면은 「권한이 없습니다」만 보여 주지만, 실제로는 다시 로그인하면 되는 상황입니다.
-미들웨어는 만료 토큰을 실은 요청에 표지를 남기고, 컨트롤러는 그 표지로 401(`auth.token_expired`, 세션 만료)과 403(권한 없음)을 가릅니다.
-401 을 받은 화면은 토큰 갱신 → 세션 만료 안내 흐름을 탑니다.
-
-| 공개 API | 내용 |
-| --- | --- |
-| `OptionalSanctumMiddleware::EXPIRED_TOKEN_ATTRIBUTE` | 요청 속성 이름(`g7.auth.expired_token`). 만료 토큰으로 비회원 통과할 때 `true` 로 남습니다 |
-| `OptionalSanctumMiddleware::hadExpiredToken(Request $request): bool` | 이 요청이 만료 토큰을 실었는지. 토큰 없음·유효 토큰이면 `false` |
-
-```php
-use App\Http\Middleware\OptionalSanctumMiddleware;
-
-// 본인 확인 실패 응답 — 만료 토큰이면 세션 만료(401), 아니면 권한 없음(403)
-protected function ownershipDenied(Request $request, string $messageKey): JsonResponse
-{
-    if (OptionalSanctumMiddleware::hadExpiredToken($request)) {
-        return $this->error('auth.token_expired', 401);
-    }
-
-    return $this->error($messageKey, 403);
-}
-```
-
-번들 게시판 모듈의 `RespondsToExpiredSession` 트레이트가 이 방식으로 비회원 쓰기·업로드 권한이 있는 게시판의 본인 확인 실패를 가립니다.
-본인 확인과 무관한 권한 거부(역할·권한 부족)에는 쓰지 않습니다 — 만료 여부와 관계없이 403 이 맞습니다.
 
 ### 구현 파일
 
@@ -523,6 +508,7 @@ if (Auth::check()) {  // ✅ 정상 작동! Sanctum 인증 후이므로
 
 - [권한 시스템](../extension/permissions.md) - scope_type 시스템 상세, resource_route_key/owner_key 매핑
 - [인증 시스템](authentication.md) - Sanctum 인증 및 세션 처리
+- [개발자 화면 가이드](../custom-development.md) - `custom.auth`·`custom.admin`·`custom.screen`
 - [서비스 프로바이더 안전성](service-provider.md) - 프로바이더 등록 규칙
 - [백엔드 가이드 인덱스](README.md) - 전체 가이드 목록
 

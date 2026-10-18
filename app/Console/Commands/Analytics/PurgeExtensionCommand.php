@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Enums\ExtensionStatus;
@@ -22,7 +21,6 @@ use Illuminate\Console\Command;
 class PurgeExtensionCommand extends Command
 {
     use HasUnifiedConfirm;
-    use LocalizesDescription;
 
     /**
      * 커맨드 이름 및 시그니처
@@ -34,6 +32,13 @@ class PurgeExtensionCommand extends Command
         {identifier : 확장 식별자}
         {--confirm : 되돌릴 수 없음을 확인}
         {--force : 켜져 있는 확장의 통계도 지운다}';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '확장 하나가 남긴 방문자 통계 전환·분류 기준 집계를 삭제합니다 (되돌릴 수 없음).';
 
     /**
      * 커맨드 실행
@@ -49,7 +54,7 @@ class PurgeExtensionCommand extends Command
         $identifier = (string) $this->argument('identifier');
 
         if (! in_array($type, ['module', 'plugin'], true) || $identifier === '') {
-            $this->error(__('analytics.console.purge_extension.invalid_arguments'));
+            $this->error('확장 종류는 module 또는 plugin 이고 식별자가 필요합니다.');
 
             return self::FAILURE;
         }
@@ -62,13 +67,13 @@ class PurgeExtensionCommand extends Command
         $status = $status instanceof \BackedEnum ? $status->value : (string) $status;
 
         if ($installed && $status === ExtensionStatus::Active->value && ! $this->option('force')) {
-            $this->error(__('analytics.console.purge_extension.extension_active', ['type' => $type, 'identifier' => $identifier]));
+            $this->error("{$type} {$identifier} 는 켜져 있습니다. 끄거나 제거한 뒤 실행하거나, 켜진 채로 지우려면 --force 를 붙이세요.");
 
             return self::FAILURE;
         }
 
         if (! $this->option('confirm')) {
-            $this->error(__('analytics.console.purge_extension.confirm_option_required'));
+            $this->error('확장 통계 정리는 --confirm 을 붙여야 실행됩니다. 되돌릴 수 없습니다.');
 
             return self::FAILURE;
         }
@@ -76,13 +81,13 @@ class PurgeExtensionCommand extends Command
         if (! $installed) {
             // 「데이터 보존」으로 제거한 확장이 이 커맨드의 주 대상이라 막지는 않는다 — 다만 식별자
             // 오타는 「0건 삭제 성공」으로 끝나므로 확인 전에 알린다.
-            $this->warn(__('analytics.console.purge_extension.not_installed', ['type' => $type, 'identifier' => $identifier]));
+            $this->warn("{$type} {$identifier} 는 설치되어 있지 않습니다. 데이터를 남기고 제거한 확장이면 그대로 진행하고, 식별자를 잘못 적었다면 취소하세요.");
         }
 
-        if (! $this->unifiedConfirm(__('analytics.console.purge_extension.confirm', ['type' => $type, 'identifier' => $identifier]))) {
-            $this->info(__('analytics.console.purge_extension.cancelled'));
+        if (! $this->unifiedConfirm("{$type} {$identifier} 의 방문자 통계 전환·차원 집계를 지웁니다. 되돌릴 수 없습니다. 진행할까요?")) {
+            $this->info('취소했습니다.');
 
-            return $this->confirmAbortExitCode();
+            return self::SUCCESS;
         }
 
         $result = $service->purge($type, $identifier);
@@ -90,12 +95,12 @@ class PurgeExtensionCommand extends Command
         if ($result['failed']) {
             // 서비스는 확장 제거 흐름을 막지 않으려고 예외를 삼킨다. 커맨드는 운영자가 직접
             // 부른 것이므로 실패를 종료 코드로 알린다 — 「0건 삭제」가 성공처럼 보이면 안 된다.
-            $this->error(__('analytics.console.purge_extension.failed'));
+            $this->error('정리에 실패했습니다. 진단 화면의 실행 이력과 애플리케이션 로그에서 사유를 확인하세요.');
 
             return self::FAILURE;
         }
 
-        $this->table([__('analytics.console.purge_extension.headers.target'), __('analytics.console.purge_extension.headers.deleted')], [
+        $this->table(['대상', '삭제'], [
             ['conversions', $result['conversions']],
             ['dimensions', $result['dimensions']],
         ]);

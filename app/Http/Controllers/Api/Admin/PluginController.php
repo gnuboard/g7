@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
-use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\PluginOperationException;
-use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Layout\LayoutInstallSourceScope;
 use App\Extension\Layout\LayoutSyncSummary;
 use App\Extension\Vendor\VendorMode;
@@ -14,7 +13,6 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
 use App\Http\Controllers\Concerns\RebuildsSearchIndexOnDemand;
-use App\Http\Controllers\Concerns\RespondsWithIntegrationNotices;
 use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Requests\Plugin\ActivatePluginRequest;
 use App\Http\Requests\Plugin\DeactivatePluginRequest;
@@ -49,7 +47,6 @@ class PluginController extends AdminBaseController
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
     use RebuildsSearchIndexOnDemand;
-    use RespondsWithIntegrationNotices;
 
     /**
      * 플러그인 관리 API 컨트롤러를 생성합니다.
@@ -202,9 +199,8 @@ class PluginController extends AdminBaseController
             );
 
             // 동반 설치 항목마다 그 종류의 설치·활성화 권한을 먼저 확인한다 (설치 창 can_select 와 같은 판정)
-            // 함께 고른 선택 연동 확장(7.1.4)도 같은 판정을 거친다 — 설치 창 연동 목록의 can_select 와 같다
             $denied = $this->findUnauthorizedCascadeSelection(
-                array_merge($validated['dependencies'] ?? [], $validated['integrations'] ?? []),
+                $validated['dependencies'] ?? [],
                 $validated['language_packs'] ?? []
             );
             if ($denied !== null) {
@@ -216,11 +212,8 @@ class PluginController extends AdminBaseController
 
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
-            $pluginInfo = LayoutInstallSourceScope::run($request->validated('layout_source'), function () use ($validated, $pluginName, $vendorMode, &$installFailureReason, &$integrationFailures) {
-                $this->installSelectedDependencies($validated['dependencies'] ?? [], $vendorMode, 'plugin', $pluginName);
-
-                // cascade 1.5단계: 고른 선택 연동 확장을 의존 다음·본체 이전에 설치·활성화 (실패해도 본체는 계속, 7.1.4 D9)
-                $integrationFailures = $this->installSelectedIntegrations($validated['integrations'] ?? []);
+            $pluginInfo = LayoutInstallSourceScope::run($request->validated('layout_source'), function () use ($validated, $pluginName, $vendorMode, &$installFailureReason) {
+                $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
                 return $this->pluginService->installPlugin($pluginName, $vendorMode, false, $installFailureReason);
             });
@@ -234,29 +227,22 @@ class PluginController extends AdminBaseController
                 // 꺼진 채 설치돼 이 확장을 켤 때 함께 켜질 언어팩 — 화면이 안내 토스트로 알린다.
                 $payload['language_packs_awaiting_host'] = $lpAwaitingHost;
 
-                return $this->withIntegrationNotices(
-                    $this->success('plugins.install_success', $payload),
-                    $this->buildIntegrationNotices('plugin', $pluginName, $integrationFailures ?? []),
-                );
+                return $this->success('plugins.install_success', $payload);
             } else {
                 return $this->error('plugins.install_failed', 400, null, [
-                    'error' => $this->withKeptDependencies($installFailureReason ?? __('plugins.errors.unknown_error')),
+                    'error' => $installFailureReason ?? __('plugins.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('plugins.install_failed', ['error' => SafeExceptionMessage::for($e)]);
 
-            // 의존 버전 미달처럼 검증 예외로 끝나도 앞서 설치·활성화해 남긴 의존 확장을 함께 알린다 (D14)
-            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $this->withKeptDependencies($firstError)]);
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
         } catch (\Exception $e) {
             return $this->error('plugins.installation_failed', 500, $e->getMessage(), [
-                'error' => $this->withKeptDependencies(SafeExceptionMessage::for($e)),
+                'error' => SafeExceptionMessage::for($e),
             ]);
         }
     }
@@ -296,26 +282,23 @@ class PluginController extends AdminBaseController
                     ->getPendingForReactivation('plugin', $pluginName);
 
                 if ($pluginInfo) {
-                    return $this->withIntegrationNotices($this->success('plugins.activate_success', [
+                    return $this->success('plugins.activate_success', [
                         'plugin' => (new PluginResource($pluginInfo))->resolve(),
                         'pending_language_packs' => $pendingLanguagePacks,
                         // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 — 화면이 경고 토스트로 알린다 (#712)
                         'layout_warnings' => $result['layout_warnings'] ?? [],
-                    ]), IntegrationNotices::forExtension('plugin', $pluginName));
+                    ]);
                 }
 
-                return $this->withIntegrationNotices($this->success('plugins.activate_success', array_merge($result, [
+                return $this->success('plugins.activate_success', array_merge($result, [
                     'pending_language_packs' => $pendingLanguagePacks,
                     'layout_warnings' => $result['layout_warnings'] ?? [],
-                ])), IntegrationNotices::forExtension('plugin', $pluginName));
+                ]));
             } else {
                 return $this->error('plugins.activate_failed', 400, null, [
                     'error' => $result['reason'] ?? __('plugins.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.activate_validation_failed',
@@ -364,21 +347,18 @@ class PluginController extends AdminBaseController
                 $pluginInfo = $result['plugin_info'] ?? null;
 
                 if ($pluginInfo) {
-                    return $this->withIntegratedBy($this->successWithResource(
+                    return $this->successWithResource(
                         'plugins.deactivate_success',
                         new PluginResource($pluginInfo)
-                    ), 'plugin', $pluginName);
+                    );
                 }
 
-                return $this->withIntegratedBy($this->success('plugins.deactivate_success', $result), 'plugin', $pluginName);
+                return $this->success('plugins.deactivate_success', $result);
             } else {
                 return $this->error('plugins.deactivate_failed', 400, null, [
                     'error' => $result['reason'] ?? __('plugins.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             return $this->error(
                 'plugins.deactivate_validation_failed',
@@ -459,17 +439,14 @@ class PluginController extends AdminBaseController
             if ($result) {
                 // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 응답에 실어
                 // 알리지 않으면 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.
-                return $this->withIntegratedBy($this->success('plugins.uninstall_success', [
+                return $this->success('plugins.uninstall_success', [
                     'preserved_backups' => $preservedBackups ?? [],
-                ]), 'plugin', $pluginName);
+                ]);
             } else {
                 return $this->error('plugins.uninstall_failed', 400, null, [
                     'error' => $uninstallFailureReason ?? __('plugins.errors.unknown_error'),
                 ]);
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (ValidationException $e) {
             // Service 가 이미 「…제거에 실패했습니다: 사유」로 감싸 두었으므로 첫 사유를 그대로 쓴다 — 같은 문구로 한 번 더
             // 감싸면 「…실패했습니다: …실패했습니다: …」가 된다(#138 실측 ① 후속, performUpdate 와 같은 처리)
@@ -515,14 +492,11 @@ class PluginController extends AdminBaseController
             $file = $request->file('file');
             $plugin = $this->pluginService->installFromZipFile($file);
 
-            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
-            return $this->withIntegrationNotices(
-                $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
-                $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
+            return $this->successWithResource(
+                'plugins.install_success',
+                new PluginResource($plugin),
+                201
             );
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (PluginOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
@@ -544,14 +518,11 @@ class PluginController extends AdminBaseController
             $githubUrl = $request->validated()['github_url'];
             $plugin = $this->pluginService->installFromGithub($githubUrl);
 
-            // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
-            return $this->withIntegrationNotices(
-                $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
-                $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
+            return $this->successWithResource(
+                'plugins.install_success',
+                new PluginResource($plugin),
+                201
             );
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
         } catch (PluginOperationException $e) {
             // 원본 키와 파라미터를 보존해 넘긴다 — 이미 번역된 getMessage() 를 키 자리에
             // 넘기면 키 해석에 실패해 그 문장이 그대로 나간다 (상태코드는 기존 계약 유지).
@@ -667,24 +638,23 @@ class PluginController extends AdminBaseController
                 // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
                 $data['layout_warnings'] = $result['layout_warnings'] ?? [];
 
-                // 새 판 manifest 기준 연동 안내도 싣는다 — 매니저 결과에만 있고 화면에 닿지 않았다 (#822 D10)
-                return $this->withIntegrationNotices($this->successWithResource(
+                return $this->successWithResource(
                     $messageKey,
                     (new JsonResource($data))->additional(['search_index' => $searchIndex]),
                     200,
                     $messageParams
-                ), $result['integration_notices'] ?? []);
+                );
             }
 
-            return $this->withIntegrationNotices($this->success(
+            return $this->success(
                 $messageKey,
                 $result + ['search_index' => $searchIndex],
                 200,
                 $messageParams
-            ), $result['integration_notices'] ?? []);
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
-            return $this->operationLockError($e);
+            );
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 두 번째 요청(버튼 더블클릭 등)을 409 로 거절한다(#138 실측 ②)
+            return $this->error($e->getMessageKey(), 409, null, $e->getMessageParams());
         } catch (ValidationException $e) {
             // Service/Manager에서 이미 번역된 메시지를 errors에 포함하므로
             // 첫 번째 에러를 top-level message로 직접 사용 (이중 래핑 방지)

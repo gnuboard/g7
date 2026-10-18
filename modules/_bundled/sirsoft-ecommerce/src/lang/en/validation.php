@@ -268,7 +268,6 @@ return [
             'option_selling_price' => 'option selling price',
             'option_price_adjustment' => 'option price adjustment',
             'option_stock_quantity' => 'option stock quantity',
-            'option_tax_status' => 'option tax type',
             'option_name' => 'option name',
             'option_code' => 'option code',
             // Multilingual required field names (option groups, additional options, product notice)
@@ -294,11 +293,11 @@ return [
         ],
         'list_price' => [
             'required' => 'Please enter the list price.',
-            'min' => 'List price must be 0 or greater.',
+            'min' => 'List price must be 1 or greater.',
         ],
         'selling_price' => [
             'required' => 'Please enter the selling price.',
-            'min' => 'Selling price must be 0 or greater.',
+            'min' => 'Selling price must be 1 or greater.',
             'lte' => 'Selling price must be less than or equal to the list price.',
         ],
         'stock_quantity' => [
@@ -341,9 +340,6 @@ return [
             ],
             'stock_quantity' => [
                 'required_with' => 'Option stock quantity is required.',
-            ],
-            'tax_status' => [
-                'in' => 'The option tax type must be taxable, tax-free or zero-rated, or left empty.',
             ],
         ],
         'additional_options' => [
@@ -522,7 +518,7 @@ return [
             'required' => 'Please select an image file.',
             'file' => 'The file is not valid.',
             'image' => 'Only image files are allowed.',
-            'mimes' => 'Supported image formats: jpeg, png, jpg, gif, webp',
+            'mimes' => 'Supported image formats: jpeg, png, jpg, gif, svg, webp',
             'max' => 'Image file size must be 10MB or less.',
         ],
         'temp_key' => [
@@ -667,7 +663,6 @@ return [
         'user_ids_required' => 'Please select members to issue the coupon to.',
         'user_ids_min' => 'Please select at least one member.',
         'user_ids_invalid' => 'One or more selected members do not exist.',
-        'user_withdrawn' => 'Coupons cannot be issued to a withdrawn member.',
     ],
 
     // Order validation messages (orders.* format - unified with FormRequest)
@@ -1373,26 +1368,6 @@ return [
     ],
 
     // User coupon validation messages
-    'settings_attributes' => [
-        'hosting_provider' => 'Hosting Provider',
-        'show_business_footer' => 'Show Business Information',
-        'author_name_masking' => 'Public Review Author Name Masking',
-        'signup_earn_enabled' => 'Signup Bonus Enabled',
-        'signup_earn_amount' => 'Signup Bonus Amount',
-        'no_earn_when_points_used' => 'No Earning When Mileage Is Used',
-        'min_product_total_for_use_enabled' => 'Minimum Product Total for Use Enabled',
-        'min_product_total_for_use' => 'Minimum Product Total for Use',
-        'product_total' => 'Product Total',
-    ],
-    'user_coupon_attributes' => [
-        'coupon_ids' => 'coupon ID list',
-    ],
-    'public_list_attributes' => [
-        'sort' => 'sort order',
-        'photo_only' => 'photo reviews only',
-        'rating' => 'rating',
-        'exclude_sold_out' => 'exclude sold out',
-    ],
     'user_coupon' => [
         'status' => [
             'in' => 'Please select a valid coupon status.',
@@ -1424,12 +1399,6 @@ return [
 
     // Field name translations (Laravel standard)
     'attributes' => [
-        'content_media' => [
-            'owner_type' => 'content media owner type',
-            'file' => 'content media file',
-            'temp_key' => 'temporary key',
-        ],
-        'content_media_temp_key' => 'content media temporary key',
         // Manual paid transition confirm items (Q13·Q14)
         'apply_stock_deduction' => 'stock deduction',
         'apply_mileage_deduction' => 'used mileage deduction',
@@ -1470,11 +1439,6 @@ return [
         'review_settings.write_deadline_days' => 'Review write deadline (days)',
         'review_settings.max_images' => 'Max review images',
         'review_settings.max_image_size_mb' => 'Max review image size (MB)',
-        'review_settings.author_name_masking' => 'Public review author name masking',
-
-        // Product display settings
-        'product_display.related_order' => 'Related products order',
-        'product_display.related_cache_hours' => 'Related products refresh interval',
 
         // Claim settings
         'claim.exchange_reasons' => 'Exchange reasons',
@@ -1546,14 +1510,6 @@ return [
         'mileage.currency_rules.*.earn_rounding_method' => 'Earning Rounding Method',
         'mileage.expiry_days' => 'Expiry Days',
         'mileage.expiry_notification_days_before' => 'Expiry Notification Days',
-        'basic_info.hosting_provider' => 'Hosting Provider',
-        'basic_info.show_business_footer' => 'Show Business Information',
-        'mileage.signup_earn_enabled' => 'Signup Bonus Enabled',
-        'mileage.signup_earn_amount' => 'Signup Bonus Amount',
-        'mileage.no_earn_when_points_used' => 'No Earning When Mileage Is Used',
-        'mileage.min_product_total_for_use_enabled' => 'Minimum Product Total for Use Enabled',
-        'mileage.min_product_total_for_use' => 'Minimum Product Total for Use',
-        'product_total' => 'Product Total',
 
         // SEO settings
         'seo' => 'SEO Settings',
@@ -2300,7 +2256,6 @@ return [
         'user_required' => 'Please select a target member.',
         'amount_min' => 'The amount must be at least 1 point.',
         'action_invalid' => 'Only grant or deduct is allowed.',
-        'user_withdrawn' => 'Mileage cannot be granted to a withdrawn member.',
         'expires_at_invalid' => 'The expiry must be a valid date.',
         'duplicate_currency' => 'Duplicate currency code.',
         'first_must_be_default' => 'The first currency must be the default currency (:currency).',

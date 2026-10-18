@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Services;
 
-use Carbon\CarbonImmutable;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\Client\PendingRequest;
@@ -573,7 +572,6 @@ class KgInicisApiService
         $msg ??= __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason');
         $type = $cancelPrice === null ? 'Refund' : 'PartialRefund';
         $paymethod = 'CBT';
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = $this->resolveServerIp();
 
@@ -712,7 +710,6 @@ class KgInicisApiService
     {
         $mid = ($overrideMid !== null && $overrideMid !== '') ? $overrideMid : $this->mid;
         $type = 'inquiry';
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -774,7 +771,6 @@ class KgInicisApiService
      * @param  string|null  $msg  취소 사유 (null 이면 화면 언어의 기본 문구)
      * @param  int|null  $totalAmount  원결제 금액 (부분취소 시 confirmPrice 계산용)
      * @param  array|null  $refundAccount  가상계좌 환불계좌 {bank_code, account_number, holder}
-     * @param  array{tax: int, taxFree: int}|null  $taxSplit  부분취소분의 부가세·비과세 (승인 때 과세 구분을 실은 결제만, 그 외 null)
      * @return array PG 응답 데이터
      *
      * @throws \Exception API 호출 실패 시
@@ -786,11 +782,9 @@ class KgInicisApiService
         ?string $msg = null,
         ?int $totalAmount = null,
         ?array $refundAccount = null,
-        ?array $taxSplit = null,
     ): array {
         $msg ??= __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason');
         $type = $cancelPrice === null ? 'refund' : 'partialRefund';
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -804,8 +798,8 @@ class KgInicisApiService
             $detail['price'] = (string) $cancelPrice;
             $detail['confirmPrice'] = (string) $confirmPrice;
             $detail['currency'] = 'WON';
-            // 과세 분리(`tax`·`taxFree`)는 선택 필드다(P-D8). 승인 때 과세 구분을 실은 결제에만 같은 구분을 싣는다(아래) —
-            // 가상계좌 환불(`/vacct`)에는 이 필드가 없다. 예전의 `tax='0'`·`taxfree='0'` 고정값은 문서 키(`taxFree`)와도 달랐다.
+            // 과세 분리(`tax`·`taxFree`)는 선택 필드다(P-D8). 승인 때 과세 분리를 보내지 않으므로 취소에도 싣지 않는다 —
+            // 예전의 `tax='0'`·`taxfree='0'` 고정값은 문서 키(`taxFree`)와도 달랐다.
         }
 
         // 입금완료된 가상계좌는 **환불받을 계좌**가 없으면 PG 가 취소를 거절한다(P5).
@@ -826,11 +820,6 @@ class KgInicisApiService
             $detail['refundBankCode'] = (string) $refundAccount['bank_code'];
             $detail['refundAcctName'] = (string) ($refundAccount['holder'] ?? '');
             $isVacctRefund = true;
-        }
-
-        if ($cancelPrice !== null && $taxSplit !== null && ! $isVacctRefund) {
-            $detail['tax'] = (string) $taxSplit['tax'];
-            $detail['taxFree'] = (string) $taxSplit['taxFree'];
         }
 
         $detailJson = str_replace('\\/', '/', json_encode($detail, JSON_UNESCAPED_UNICODE));
@@ -909,7 +898,6 @@ class KgInicisApiService
     public function registerEscrowDelivery(array $data): array
     {
         $type = 'Dlv';
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -932,9 +920,7 @@ class KgInicisApiService
             'exCode' => $data['exCode'],
             'exName' => $data['exName'],
             'charge' => $data['charge'] ?? 'SH',
-            // 배송등록일은 PG 업무 날짜 — 한국 시간(D7)
-            // audit:allow datetime-display-user-timezone reason: PG 업무 날짜(invoiceDay) — Asia/Seoul 고정(D7)
-            'invoiceDay' => $data['invoiceDay'] ?? CarbonImmutable::now('Asia/Seoul')->format('Y-m-d H:i:s'),
+            'invoiceDay' => $data['invoiceDay'] ?? date('Y-m-d H:i:s'),
             'sendName' => $data['sendName'] ?? '',
             'sendTel' => $data['sendTel'] ?? '',
             'sendPost' => $data['sendPost'] ?? '',
@@ -981,7 +967,6 @@ class KgInicisApiService
     public function denyConfirmEscrow(array $data): array
     {
         $type = 'Dncf';
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -1041,7 +1026,6 @@ class KgInicisApiService
     public function issueCashReceipt(array $data): array
     {
         $type = 'receipt';
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 
@@ -1107,7 +1091,6 @@ class KgInicisApiService
     {
         $msg ??= __('sirsoft-pay_kginicis::messages.cash_receipt.cancel_reason');
         $type = 'refund';
-        // audit:allow datetime-display-user-timezone reason: PG 통신값 — 시간대 사양 확인 후속(D7)
         $timestamp = date('YmdHis');
         $clientIp = request()->ip() ?? '127.0.0.1';
 

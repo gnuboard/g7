@@ -44,10 +44,6 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "blur_until_loaded": {
-                        "enabled": true,
-                        "data_sources": "cartItems"
-                    },
                     "props": {
                         "className": "font-medium text-gray-900 dark:text-white"
                     },
@@ -70,7 +66,7 @@
                     "props": {
                         "name": "spinner",
                         "spin": true,
-                        "className": "text-gray-500 dark:text-gray-500",
+                        "className": "text-gray-400",
                         "size": "lg"
                     }
                 }
@@ -80,7 +76,7 @@
             "comment": "선택 없음 안내",
             "type": "basic",
             "name": "Div",
-            "if": "{{cartItems !== undefined && _local.cartSelectionReady !== undefined && !_local.isCalculating && (!_local.selectedItems || _local.selectedItems.length === 0)}}",
+            "if": "{{!_local.isCalculating && (!_local.selectedItems || _local.selectedItems.length === 0)}}",
             "props": {
                 "className": "py-8 text-center"
             },
@@ -91,7 +87,7 @@
                     "props": {
                         "name": "shopping-cart",
                         "size": "3x",
-                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
+                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
                     }
                 },
                 {
@@ -123,64 +119,52 @@
                             "name": "Div",
                             "children": [
                                 {
-                                    "comment": "줄 단추는 -mx-2 로 좌우 여백까지 넓힌 감싸개를 꽉 채운다(단추는 블록처럼 늘어나지 않아 w-full 이 감싸개 기준이어야 종전 폭과 같다)",
                                     "type": "basic",
                                     "name": "Div",
+                                    "actions": [
+                                        {
+                                            "comment": "상품 금액 줄을 누르면 과세·면세 분해를 접었다 폈다 한다(별도 버튼 없이 줄 자체가 토글)",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "showTaxDetails": "{{!_local.showTaxDetails}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
-                                        "className": "-mx-2"
+                                        "className": "flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Button",
-                                            "actions": [
-                                                {
-                                                    "comment": "상품 금액 줄을 누르면 과세·면세 분해를 접었다 폈다 한다(줄 자체가 펼침 단추 — Tab·Enter·Space 로도 편다, 7.1.1)",
-                                                    "type": "click",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "showTaxDetails": "{{!_local.showTaxDetails}}"
-                                                    }
-                                                }
-                                            ],
+                                            "name": "Div",
                                             "props": {
-                                                "type": "button",
-                                                "className": "flex w-full items-stretch justify-between text-sm text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 py-1 rounded",
-                                                "aria-expanded": "{{!!_local.showTaxDetails}}"
+                                                "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "props": {
-                                                        "className": "flex items-center gap-1 text-gray-600 dark:text-gray-300"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "text": "$t:shop.cart.product_amount"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Icon",
-                                                            "props": {
-                                                                "name": "{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}",
-                                                                "size": "sm"
-                                                            }
-                                                        }
-                                                    ]
+                                                    "text": "$t:shop.cart.product_amount"
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Span",
+                                                    "name": "Icon",
                                                     "props": {
-                                                        "className": "font-medium text-gray-900 dark:text-white"
-                                                    },
-                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? cartItems.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
+                                                        "name": "{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}",
+                                                        "size": "sm"
+                                                    }
                                                 }
                                             ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? cartItems.data.calculation?.summary?.subtotal_formatted ?? '-'}}"
                                         }
                                     ]
                                 },
@@ -205,7 +189,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.taxable_amount"
                                                 },
@@ -215,7 +199,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}"
+                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -231,7 +215,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.tax_free_amount"
                                                 },
@@ -241,34 +225,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "comment": "영세 금액 — 과세 금액에 포함된 세율 0% 몫(부가세 없음), 있을 때만 (#612)",
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "if": "{{(cartItems.data.calculation?.summary?.zero_rated_amount ?? 0) > 0}}",
-                                            "props": {
-                                                "className": "flex justify-between text-xs"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
-                                                    },
-                                                    "text": "$t:shop.cart.zero_rated_amount"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400"
-                                                    },
-                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.zero_rated_amount_formatted ?? '-'}}"
+                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         }
@@ -303,7 +260,7 @@
                                             "props": {
                                                 "className": "font-medium text-red-600 dark:text-red-400"
                                             },
-                                            "text": "-{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? cartItems.data.calculation?.summary?.discount_formatted}}"
+                                            "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? cartItems.data.calculation?.summary?.discount_formatted}}"
                                         }
                                     ]
                                 },
@@ -327,7 +284,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.coupon_discount"
                                                 },
@@ -335,9 +292,9 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400"
+                                                        "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}"
+                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -353,7 +310,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.code_discount"
                                                 },
@@ -361,9 +318,9 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400"
+                                                        "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}"
+                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -379,7 +336,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.order_discount"
                                                 },
@@ -387,9 +344,9 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400"
+                                                        "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}"
+                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         }
@@ -420,14 +377,10 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "blur_until_loaded": {
-                                                "enabled": true,
-                                                "data_sources": "cartItems"
-                                            },
                                             "props": {
-                                                "className": "font-medium {{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
+                                                "className": "font-medium {{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                             },
-                                            "text": "{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.free_shipping' : (cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? cartItems.data.calculation?.summary?.shipping_fee_formatted)}}"
+                                            "text": "{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.free_shipping' : (cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? cartItems.data.calculation?.summary?.shipping_fee_formatted)}}"
                                         }
                                     ]
                                 },
@@ -452,7 +405,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.base_shipping"
                                                 },
@@ -462,7 +415,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}"
+                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -478,7 +431,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.extra_shipping"
                                                 },
@@ -488,7 +441,7 @@
                                                     "props": {
                                                         "className": "text-gray-600 dark:text-gray-400"
                                                     },
-                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}"
+                                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}"
                                                 }
                                             ]
                                         },
@@ -504,7 +457,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-500"
                                                     },
                                                     "text": "$t:shop.cart.shipping_discount"
                                                 },
@@ -512,9 +465,9 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400"
+                                                        "className": "text-red-500 dark:text-red-400"
                                                     },
-                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}"
+                                                    "text": "-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}"
                                                 }
                                             ]
                                         }
@@ -544,7 +497,7 @@
                                     "props": {
                                         "className": "font-medium text-gray-900 dark:text-white"
                                     },
-                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? cartItems.data.calculation?.summary?.payment_amount_formatted ?? '-'}}"
+                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? cartItems.data.calculation?.summary?.payment_amount_formatted ?? '-'}}"
                                 }
                             ]
                         },
@@ -606,7 +559,7 @@
                                     "props": {
                                         "className": "text-xl font-bold text-gray-900 dark:text-white"
                                     },
-                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? cartItems.data.calculation?.summary?.final_amount_formatted ?? '-'}}"
+                                    "text": "{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? cartItems.data.calculation?.summary?.final_amount_formatted ?? '-'}}"
                                 }
                             ]
                         },
@@ -651,7 +604,7 @@
             "name": "P",
             "if": "{{cartItems.data?.abilities?.can_order === false}}",
             "props": {
-                "className": "text-xs text-amber-700 dark:text-amber-400 mb-2"
+                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
             },
             "text": "$t:shop.order_permission_denied"
         },
@@ -663,11 +616,111 @@
             "actions": [
                 {
                     "type": "click",
-                    "actionRef": "cartCheckout"
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "isOrdering": true
+                            }
+                        },
+                        {
+                            "handler": "apiCall",
+                            "target": "/api/modules/sirsoft-ecommerce/checkout",
+                            "auth_mode": "optional",
+                            "params": {
+                                "method": "POST",
+                                "body": {
+                                    "item_ids": "{{_local.selectedItems}}"
+                                },
+                                "headers": {
+                                    "X-Cart-Key": "{{_global.cartKey}}"
+                                }
+                            },
+                            "onSuccess": {
+                                "comment": "로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨",
+                                "handler": "conditions",
+                                "conditions": [
+                                    {
+                                        "if": "{{_global.currentUser?.uuid}}",
+                                        "then": {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_global.shopBase}}/checkout"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "then": {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/login",
+                                                "query": {
+                                                    "redirect": "{{_global.shopBase}}/checkout"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "onError": [
+                                {
+                                    "comment": "구매불가 상품 에러 처리",
+                                    "handler": "sequence",
+                                    "if": "{{error.errors?.code === 'cart_unavailable'}}",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isOrdering": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "unavailableModal": {
+                                                    "visible": true,
+                                                    "items": "{{error.errors?.unavailable_items ?? []}}",
+                                                    "hasStockIssue": "{{error.errors?.has_stock_issue ?? false}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "cart_unavailable_modal"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "기타 에러 처리",
+                                    "handler": "sequence",
+                                    "if": "{{error.errors?.code !== 'cart_unavailable'}}",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isOrdering": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.errors?.message ?? error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
             ],
             "props": {
-                "type": "button",
                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                 "disabled": "{{(_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true) || cartItems.data?.abilities?.can_order !== true}}"
             },
@@ -707,15 +760,17 @@
         },
         {
             "type": "basic",
-            "name": "A",
+            "name": "Button",
             "actions": [
                 {
                     "type": "click",
-                    "handler": "navigate"
+                    "handler": "navigate",
+                    "params": {
+                        "path": "{{_global.shopBase}}/products"
+                    }
                 }
             ],
             "props": {
-                "href": "{{_global.shopBase}}/products",
                 "className": "block w-full text-center text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mt-3 cursor-pointer"
             },
             "text": "$t:shop.cart.continue_shopping"

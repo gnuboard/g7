@@ -8,7 +8,6 @@ use App\Benchmark\Contracts\BenchmarkAxisRunner;
 use App\Benchmark\DTO\BenchmarkProfile;
 use App\Benchmark\DTO\BenchmarkResult;
 use App\Benchmark\DTO\BenchmarkRunOptions;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\BenchmarkAxis;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -28,14 +27,12 @@ use Illuminate\Support\Facades\DB;
  */
 class BenchCommand extends Command
 {
-    use LocalizesDescription;
-
     protected $signature = 'g7:bench
         {--profile=* : 계측할 프로파일 키 (짧은 키 또는 출처/키 형태). 다중 지정 가능}
-        {--axis= : 축 단위 실행 (list|screen|write|batch|boot)}
+        {--axis= : 축 단위 실행 (list|screen|write|batch)}
         {--all : 등록된 모든 프로파일 실행}
         {--offsets=0,20000,50000,99980 : 측정할 OFFSET 목록 (쉼표 구분, list 축)}
-        {--runs=3 : 측정 횟수 (첫 회는 버림. boot 축은 미지정 시 프로파일 기본값 20)}
+        {--runs=3 : 측정 횟수 (첫 회는 버림)}
         {--per-page=20 : 목록/화면 1페이지 건수}
         {--seed=0 : 계측 전 합성 행 시딩 건수 (0 = 시딩 안 함, list 축)}
         {--fresh : 시딩 전에 대상 테이블을 비움 (운영 환경에서는 거부)}
@@ -46,6 +43,8 @@ class BenchCommand extends Command
         {--json : 기계 판독용 JSON 출력}
         {--report= : 마크다운 리포트 저장 경로 (값 없이 --report 만 주면 storage/app/benchmarks/ 아래 자동 생성)}
         {--list-profiles : 등록된 프로파일 목록 출력}';
+
+    protected $description = '목록 조회·화면 응답·쓰기·배치 4축 성능을 계측합니다 (대상은 코어 config + 확장 선언에서 수집)';
 
     protected $aliases = ['g7:bench:pagination'];
 
@@ -89,7 +88,7 @@ class BenchCommand extends Command
         }
 
         if ($profiles === []) {
-            $this->error(__('common.console.g7_bench.no_profiles'));
+            $this->error('계측할 프로파일이 없습니다. --profile / --axis / --all 중 하나를 지정하세요.');
 
             return self::FAILURE;
         }
@@ -122,8 +121,6 @@ class BenchCommand extends Command
      * 계측은 대량 시딩을 동반하므로 개발 DB 대신 폐기 가능한 DB 를 지정할 수 있어야 합니다.
      * config 가 캐시된 환경에서는 `.env` / `--env` 로 연결을 바꿀 수 없어 런타임 치환이
      * 유일한 수단입니다.
-     *
-     * @return void
      */
     private function applyDatabaseOverride(): void
     {
@@ -163,7 +160,7 @@ class BenchCommand extends Command
         }
 
         $this->table(
-            [__('common.console.g7_bench.headers.profile'), __('common.console.g7_bench.headers.axis'), __('common.console.g7_bench.headers.source'), __('common.console.g7_bench.headers.description')],
+            ['프로파일', '축', '출처', '설명'],
             array_map(fn (BenchmarkProfile $profile) => [
                 $profile->qualifiedKey(),
                 $profile->axis->value,
@@ -208,7 +205,7 @@ class BenchCommand extends Command
             $axis = BenchmarkAxis::tryFrom($axisOption);
 
             if ($axis === null) {
-                return [[], __('common.console.g7_bench.unknown_axis', ['axis' => $axisOption, 'allowed' => implode('|', BenchmarkAxis::values())])];
+                return [[], "알 수 없는 축: {$axisOption} (허용: ".implode('|', BenchmarkAxis::values()).')'];
             }
 
             return [array_values($this->registry->byAxis($axis)), null];
@@ -235,7 +232,6 @@ class BenchCommand extends Command
             allowWrite: (bool) $this->option('allow-write'),
             asUser: $asUser === '' ? null : $asUser,
             perPage: max(1, (int) $this->option('per-page')),
-            runsExplicit: $this->input->hasParameterOption('--runs'),
         );
     }
 
@@ -264,7 +260,7 @@ class BenchCommand extends Command
         $runner = $this->runnerFor($profile->axis);
 
         if ($runner === null) {
-            return BenchmarkResult::skipped($profile, __('common.console.g7_bench.no_runner', ['axis' => $profile->axis->value]));
+            return BenchmarkResult::skipped($profile, "축 실행기가 없습니다: {$profile->axis->value}");
         }
 
         if (! $this->option('json')) {
@@ -299,8 +295,6 @@ class BenchCommand extends Command
      * 무시된 프로파일 선언을 알립니다.
      *
      * 선언 오류를 조용히 버리면 그 대상이 계측 사각으로 남으므로 매 실행에 드러냅니다.
-     *
-     * @return void
      */
     private function reportCollectionWarnings(): void
     {
@@ -309,7 +303,7 @@ class BenchCommand extends Command
         }
 
         foreach ($this->registry->warnings() as $warning) {
-            $this->warn(__('common.console.g7_bench.ignored_declaration', ['warning' => $warning]));
+            $this->warn('무시된 프로파일 선언 — '.$warning);
         }
     }
 
@@ -332,7 +326,7 @@ class BenchCommand extends Command
                 $this->line(sprintf('%s (%s)', $result->profile->qualifiedKey(), $result->profile->axis->label()));
 
                 if ($result->skipped) {
-                    $this->warn('  '.__('common.console.g7_bench.skipped', ['reason' => $result->skipReason]));
+                    $this->warn('  측정하지 않음: '.$result->skipReason);
 
                     continue;
                 }
@@ -348,7 +342,7 @@ class BenchCommand extends Command
         if ($this->wantsReport()) {
             $path = $this->writeReport($results, $options, $warnings);
             $this->newLine();
-            $this->info(__('common.console.g7_bench.report_saved', ['path' => $path]));
+            $this->info('리포트 저장: '.$path);
         }
 
         // 전부 건너뛴 실행을 성공으로 보고하면 "측정했다"로 읽히므로 실패로 돌려준다
@@ -386,7 +380,6 @@ class BenchCommand extends Command
 
         $path = $given !== ''
             ? $given
-            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             : storage_path(self::REPORT_DIR.'/bench-'.now()->format('Ymd-His').'.md');
 
         $directory = dirname($path);

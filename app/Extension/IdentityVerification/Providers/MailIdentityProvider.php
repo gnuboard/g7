@@ -9,7 +9,7 @@ use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\User;
 use App\Services\IdentityMessageDispatcher;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -129,21 +129,6 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * 수신 이메일의 대상 해시를 계산합니다 (로그의 `target_hash` 와 같은 값).
-     *
-     * 발행과 재요청 대기 판정이 같은 계산을 쓴다 — 따로 재면 대소문자만 바꾼 주소가 다른 대상으로 갈린다.
-     *
-     * @param  string  $email  수신 이메일
-     * @return string sha256 해시
-     *
-     * @since 7.1.6
-     */
-    public static function targetHash(string $email): string
-    {
-        return hash('sha256', mb_strtolower($email));
-    }
-
-    /**
      * 인증 챌린지를 발급하고 메일을 발송합니다.
      *
      * @param  User|array  $target  대상 사용자 또는 식별 정보
@@ -166,7 +151,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
         $renderHint = $this->resolveRenderHint($purpose);
         $ttlMinutes = (int) config('settings.identity.challenge_ttl_minutes', 15);
         $maxAttempts = (int) config('settings.identity.max_attempts', 5);
-        $targetHash = self::targetHash($email);
+        $targetHash = hash('sha256', mb_strtolower($email));
 
         $metadata = [];
         $publicPayload = [];
@@ -257,42 +242,42 @@ class MailIdentityProvider implements IdentityVerificationInterface
             return VerificationResult::failure($challengeId, self::ID, 'WRONG_PROVIDER', 'identity.errors.wrong_provider');
         }
 
-        // 진행 중(requested·sent)인 challenge 만 확인한다. `status` 는 enum 으로 캐스팅되므로 enum 끼리 비교한다 —
-        // 문자열 배열과 엄격 비교하면 늘 거짓이라 이미 쓴·취소된·발송 실패한 인증번호가 다시 통과했다(KVE 동형 O1).
-        if (! in_array($log->status, [IdentityVerificationStatus::Requested, IdentityVerificationStatus::Sent], true)) {
+        if (in_array($log->status, [
+            IdentityVerificationStatus::Verified->value,
+            IdentityVerificationStatus::Expired->value,
+            IdentityVerificationStatus::Cancelled->value,
+        ], true)) {
             return VerificationResult::failure($challengeId, self::ID, 'INVALID_STATE', 'identity.errors.invalid_state');
         }
 
         if ($log->isExpired()) {
-            $this->logRepository->expireIfPending($log);
+            $this->logRepository->updateById($log->id, [
+                'status' => IdentityVerificationStatus::Expired->value,
+            ]);
 
             return VerificationResult::failure($challengeId, self::ID, 'EXPIRED', 'identity.errors.expired');
         }
 
-        // 시도 횟수는 DB 가 상한 안에서만 올린다 — 읽은 값 + 1 을 저장하면 동시 오답이 서로를 덮어
-        // 5회 제한을 넘겨 맞혀 볼 수 있었다(KVE-2026-3190).
-        $attempts = $this->logRepository->incrementAttemptsIfAllowed($log->id);
-
-        if ($attempts === null) {
-            $current = $this->logRepository->findById($log->id);
-            $stillPending = $current !== null
-                && in_array($current->status, [IdentityVerificationStatus::Requested, IdentityVerificationStatus::Sent], true);
-
-            return $stillPending
-                ? VerificationResult::failure($challengeId, self::ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts')
-                : VerificationResult::failure($challengeId, self::ID, 'INVALID_STATE', 'identity.errors.invalid_state');
+        if ($log->attempts >= $log->max_attempts) {
+            return VerificationResult::failure($challengeId, self::ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts');
         }
 
         $storedHash = $log->metadata['code_hash'] ?? $log->metadata['link_token_hash'] ?? null;
         $provided = (string) ($input['code'] ?? $input['token'] ?? '');
+
+        $this->logRepository->updateById($log->id, [
+            'attempts' => $log->attempts + 1,
+        ]);
 
         if ($storedHash === null || ! Hash::check($provided, $storedHash)) {
             // 이번 오답으로 max_attempts 에 도달하면 잠금(Failed)으로 전환하고, 사용자에게
             // 일반 오답 안내 대신 "최대 시도 초과 + 재요청" 안내(MAX_ATTEMPTS)를 반환한다.
             // 프론트 모달은 도달 즉시 확인 버튼을 비활성화하므로 추가 시도를 기대할 수 없어,
             // 막 소진된 이 응답에서 안내하지 않으면 max_attempts 문구가 사용자에게 영영 도달하지 못한다.
-            if ($attempts >= (int) $log->max_attempts) {
-                $this->logRepository->markFailedIfPending($log->id);
+            if (($log->attempts + 1) >= $log->max_attempts) {
+                $this->logRepository->updateById($log->id, [
+                    'status' => IdentityVerificationStatus::Failed->value,
+                ]);
 
                 return VerificationResult::failure($challengeId, self::ID, 'MAX_ATTEMPTS', 'identity.errors.max_attempts');
             }
@@ -303,14 +288,11 @@ class MailIdentityProvider implements IdentityVerificationInterface
         $verifiedAt = Carbon::now();
         $verificationToken = $this->generateVerificationToken($log->purpose, $log->target_hash);
 
-        // 진행 중일 때만 확인 완료로 바꾼다 — 같은 challenge 에 맞는 코드를 동시에 내도 토큰은 하나다(KVE 동형 O3).
-        if (! $this->logRepository->markVerifiedIfPending($log->id, [
+        $this->logRepository->updateById($log->id, [
             'status' => IdentityVerificationStatus::Verified->value,
             'verified_at' => $verifiedAt,
             'verification_token' => $verificationToken,
-        ])) {
-            return VerificationResult::failure($challengeId, self::ID, 'INVALID_STATE', 'identity.errors.invalid_state');
-        }
+        ]);
 
         return VerificationResult::success(
             challengeId: $challengeId,
@@ -329,8 +311,9 @@ class MailIdentityProvider implements IdentityVerificationInterface
      */
     public function cancel(string $challengeId): bool
     {
-        // 진행 중일 때만 취소한다 — 확인을 마친 challenge 를 재발송이 취소로 덮지 않는다.
-        return $this->logRepository->markCancelledIfPending($challengeId);
+        return $this->logRepository->updateById($challengeId, [
+            'status' => IdentityVerificationStatus::Cancelled->value,
+        ]);
     }
 
     /**
@@ -482,7 +465,7 @@ class MailIdentityProvider implements IdentityVerificationInterface
                     'expire_minutes' => $ttlMinutes,
                     'purpose_label' => $this->resolvePurposeLabel($purpose),
                     'app_name' => (string) config('app.name'),
-                    'site_url' => (string) config('app.url'),
+                    'site_url' => ScreenUrl::userBase(),
                     'recipient_email' => $email,
                 ],
                 context: [
@@ -516,9 +499,11 @@ class MailIdentityProvider implements IdentityVerificationInterface
      */
     protected function buildSignedLink(string $challengeId, string $linkToken, Carbon $expiresAt): string
     {
-        return SiteUrl::absolute(
-            '/identity/verify?challenge='.rawurlencode($challengeId).'&token='.rawurlencode($linkToken)
-        );
+        // 사람이 여는 확인 화면이므로 화면 주소 헬퍼를 거친다(#792) — 「사용자 화면 URL」·주소 필터를 따른다.
+        return ScreenUrl::absolute('identity.verify', '/identity/verify?challenge={challenge}&token={token}', [
+            'challenge' => $challengeId,
+            'token' => $linkToken,
+        ]);
     }
 
     /**

@@ -18,10 +18,9 @@ _`getSettingsSchema()` 선언이 없습니다._
 |---|---|
 | `_meta.categories` | 설정 그룹 10개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `claim` · `shipping` · `seo` · `review_settings` · `inquiry` · `notifications` · `mileage`) |
 | `defaults` | 그룹별 기본값. 설치 시 `storage/app/settings/` 로 동기화되어 `module_setting()` 이 읽는 값이 됩니다 |
-| `frontend_schema` | 관리자 화면이 자동으로 그리는 입력 폼 정의. 칸마다 `expose` 로 사용자 화면(페이지 소스의 설정 묶음)에 내려보낼지를 정합니다 |
-| `public_api_schema` | 비회원도 부르는 공개 설정 API(`settings/shipping`·`payment`·`review`·`checkout`)가 돌려줄 칸 목록. 여기에 없는 칸은 저장돼 있어도 응답에 싣지 않습니다. 페이지 소스 노출(`frontend_schema` 의 `expose`)과는 따로 관리합니다 — 화면이 API 로만 읽는 칸을 페이지 소스에까지 싣지 않기 위해서입니다 |
+| `frontend_schema` | 관리자 화면이 자동으로 그리는 입력 폼 정의 |
 
-**`frontend_schema` 에는 `claim` 이 없고, `mileage` 는 입력 폼 정의 없이 사용자 화면 노출 정의(`expose`)만 있습니다.** 자동 생성 폼으로는
+**`frontend_schema` 는 8개 그룹뿐이고 `claim` 과 `mileage` 가 없습니다.** 자동 생성 폼으로는
 표현할 수 없는 입력(통화별 적립 규칙 표, 유형별 신청 가능 상태·환불 자동 승인 결제수단 같은
 다중 선택 묶음)이 있어서 이 두 탭만 레이아웃 JSON 으로 직접 그리기 때문입니다
 (`resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage*.json` 6개,
@@ -60,14 +59,6 @@ _`getSettingsSchema()` 선언이 없습니다._
 기한(`vbank_due_at`·`deposit_due_at`)이 있는 결제수단만 훑고, 임시주문 정리는 다른 테이블을 봅니다.
 브라우저 리턴 콜백이 주문 상태를 바꾸지 않게 된 뒤로는 승인 거절분도 여기에 머무르므로, 이 정리가
 선차감 마일리지 복원의 최종 안전망입니다.
-
-`mileage` 그룹의 정책 세 가지(모두 기본 꺼짐)는 다음과 같습니다.
-
-| 칸 | 뜻 |
-|---|---|
-| `signup_earn_enabled` · `signup_earn_amount` | 가입 적립금. **가입 훅(`core.auth.after_register`, 본인인증 대기 뒤 활성화는 `core.auth.after_register_activated`)을 발행하는 가입 경로에만 지급합니다** — 스스로 가입한 회원이 대상이고, 관리자 화면에서 만든 회원·일괄 등록처럼 이 훅을 발행하지 않는 경로에는 지급하지 않습니다. 회원당 한 번만 지급하며 마일리지 사용(`enabled`)이 꺼져 있으면 지급하지 않습니다 |
-| `no_earn_when_points_used` | 적립금을 쓴 주문에는 구매 적립을 하지 않습니다. 주문 시점의 값을 주문에 남겨, 나중에 설정을 바꿔도 그 주문의 판정은 바뀌지 않습니다 |
-| `min_product_total_for_use_enabled` · `min_product_total_for_use` | 상품 합계(배송비·할인 전 소계)가 이 금액 이상일 때만 적립금을 쓸 수 있습니다. 주문서에 안내 줄이 보이고, 미달이면 사용 요청을 거절합니다 |
 
 `claim` 그룹(스키마 1.5.0)은 신청 가능 조건(교환·반품·즉시취소·환불신청 가능 상품 상태, 신청
 가능 기간) · 청구(허용 청구 방식 · 추가 결제수단) · 자동 승인 3종 · **환불 자동 승인 결제수단** ·
@@ -118,13 +109,6 @@ _`getSettingsSchema()` 선언이 없습니다._
 `validateManagedExchangeRatesUnchanged()` 가 비교해 거절합니다. 따라서 화면 쪽에서 이 키를 다시
 싣거나, 서버 쪽에서 「키 없음」을 「변경」으로 판정하게 바꾸면 이 결함이 되살아납니다.
 
-**언어팩으로 보강한 통화·국가 이름은 저장하지 않습니다(1.3.2).** 설정을 읽을 때 통화
-(`language_currency.currencies[].name`)·배송 국가(`shipping.available_countries[].name`)의 이름은 모듈 자체
-언어(ko·en) 밖의 언어를 설치된 언어팩 번역으로 채워 내려갑니다. 화면은 받은 값을 그대로 저장 본문에 되돌려
-보내므로, 저장 때 `EcommerceSettingsService` 가 **ko·en 밖 언어이면서 지금 번역과 같은 값**을 보강분으로 보고
-뺍니다. 운영자가 번역과 다르게 적은 이름은 남깁니다. 보강분이 파일에 굳으면 언어팩을 끄거나 번역을 고쳐도
-옛 이름이 남기 때문이며, 읽기는 매번 다시 채웁니다(코어 계산값 키와 같은 유형의 문제).
-
 ### 설정 저장 요청의 계약 (`PUT …/admin/settings`)
 
 `StoreEcommerceSettingsRequest::SECTIONS` 상수(`basic_info` · `language_currency` · `seo` ·
@@ -141,13 +125,6 @@ _`getSettingsSchema()` 선언이 없습니다._
 나가 모든 탭 저장이 아무것도 저장하지 못했습니다(#703 실측). 관리 환율 제외처럼 키를 걸러야 하면
 `Object.keys(…).filter(…).reduce(…)` 로 구성합니다.
 
-**사업자 연락처는 합친 값으로 저장하고 폼은 나눔 칸으로 받습니다.** 「기본정보」 탭은 사업자등록번호·
-전화·팩스를 `*_1`·`*_2`·`*_3`, 이메일을 `email_id`·`email_domain` 으로 입력받고, 저장 때 합쳐
-`business_number`·`phone`·`fax`·`email` 로 남깁니다. 관리자 조회·카테고리 조회·저장 응답은 모두
-`EcommerceSettingsAdminService::getSettingsForAdmin()` 을 거쳐 합친 값을 나눔 칸으로 펼쳐
-(`EcommerceSettingsService::withSplitContactFields()`) 싣습니다 — 펼치지 않으면 폼이 빈 칸을 보이고
-다른 칸만 고쳐 저장해도 그 빈 칸이 합쳐져 네 값이 지워집니다(1.3.5 에서 고침).
-
 **무통장입금은 사용할 수 있는 계좌와 짝입니다.** 「사용할 수 있는 계좌」는 사용 중(`is_active`)이고
 계좌번호가 채워진 계좌이며, 판정은 `EcommerceSettingsService::hasUsableBankAccount()` 한 곳입니다.
 공개 결제 설정(`getPublicPaymentSettings()`)은 그런 계좌가 없으면 무통장입금(`dbank`)을 결제수단
@@ -157,14 +134,6 @@ _`getSettingsSchema()` 선언이 없습니다._
 같은 결과), 주문설정을 싣지 않은 다른 탭 저장에는 관여하지 않습니다. 설치 기본값(무통장입금 활성 +
 비어 있는 비활성 계좌 1건)을 그대로 두면 주문서가 무통장입금을 기본 선택하고 결제하기가 「입금 은행을
 선택해주세요」로만 끝났기 때문에 둔 짝입니다.
-
-이 422 는 이번 요청이 그 상태를 **새로 만들 때만** 냅니다 — 무통장입금을 이번에 새로 켜거나 계좌 목록을
-바꾸는 저장입니다. 저장된 상태가 이미 「무통장입금 켜짐 + 사용할 수 있는 계좌 없음」(새 설치 기본값)이고
-이번 저장이 그 둘을 건드리지 않으면 다른 값의 저장은 막지 않습니다. 또한 저장 요청의
-`prepareForValidation()` 은 「사용 안 함」이면서 계좌번호·예금주가 모두 빈 자리표시 계좌 행을 검사와
-저장에서 함께 뺍니다(계좌 목록 비교도 이 행을 뺀 정규화 목록으로 합니다). 사용 중인 행은 칸이 비어도
-빼지 않습니다 — 그건 입력 누락이라 필수 검사에 걸립니다. 기본값의 빈 행이 계좌번호·예금주 필수에 걸려
-새 설치 사이트가 주문설정의 어떤 값도 저장하지 못했기 때문입니다.
 
 **공개 자산 디스크(`basic_info.public_asset_disk`)가 사라진 경우**: 선택지는 코어
 `DriverRegistryService::getAvailableDrivers('public_asset')` 카탈로그이고, 설정 조회·저장 응답 모두
@@ -182,16 +151,6 @@ _`getSettingsSchema()` 선언이 없습니다._
 활성 여부로 좁힙니다. 이 진입점이 채널 제공 확장(문자 등)이 코어 훅에 더한 후보와 이 모듈의
 `sirsoft-ecommerce.notification.channels` 필터를 **발송 경로와 같은 순서로** 거치므로, 화면 표시와
 실제 발송 채널이 갈라지지 않습니다. 이 모듈 필터만 직접 부르면 코어에 등록된 채널이 카드에서 빠집니다.
-
-### 터미널에서 설정 지정 (`settings:set --module=sirsoft-ecommerce`, 1.3.3 · 코어 7.1.4)
-
-코어 `php artisan settings:set --module=sirsoft-ecommerce {범주.항목} {값}` 은 이 모듈 설정 서비스의 선택 메서드
-`EcommerceSettingsService::settingsSaveRequestClass()` 가 돌려주는 `StoreEcommerceSettingsRequest` 로 위 「설정 저장
-요청의 계약」과 같은 규칙(교차 검증 포함)을 검증한 뒤 `saveSettings()` 로 그 범주만 저장하고, 코어 훅
-`core.module_settings.after_save` 를 발화합니다. 키는 `config/settings/defaults.json` 에 선언된 항목만 받습니다 —
-배송사·배송유형·클레임 사유(DB 카탈로그)처럼 `EcommerceSettingsAdminService` 가 따로 동기화하는 항목은
-「관리자 화면 전용」으로 거부되고, 저장 본문에서도 기본값 파일에 없는 키는 빠집니다. 터미널 경로는 관리자 화면의
-`sirsoft-ecommerce.settings.after_save` 훅을 발화하지 않습니다(그 훅은 「관리자가 화면에서 저장했다」는 뜻).
 
 ### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
 
@@ -412,24 +371,23 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.3` |
-| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.3` |
-| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.3` |
-| `sirsoft-tosspayments` | 플러그인 | `>=1.3.3` |
+| `sirsoft-pay_kginicis` | 플러그인 | `>=1.4.0` |
+| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.0` |
+| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.0` |
+| `sirsoft-tosspayments` | 플러그인 | `>=1.3.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.3.0` |
 
 **함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
 
-| 확장 | 유형 | 버전 제약 | 번들 |
-|---|---|---|---|
-| `sirsoft-board` | 모듈 | `*` | ✅ |
+| 확장 | 유형 | 번들 |
+|---|---|---|
+| `sirsoft-board` | 모듈 | ✅ |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 
-| 확장 | 유형 | 요구 버전 |
-|---|---|---|
-| `sirsoft-board` | 모듈 | `*` |
-| `sirsoft-message_bizppurio` | 플러그인 | `*` |
-| `sirsoft-basic` | 템플릿 | `>=1.3.5` |
+| 확장 | 유형 |
+|---|---|
+| `sirsoft-message_bizppurio` | 플러그인 |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
@@ -458,17 +416,3 @@ manifest 에는 없지만 **실제로 맞물리는 확장이 둘 더** 있습니
 `dependencies.modules.sirsoft-ecommerce` 하한으로 잡습니다. 하한이 그보다 낮으면 필터가 없는
 모듈로도 제약이 충족되어, 플러그인은 정상 활성화된 채 추가결제만 동작하지 않습니다(오류·로그 없음).
 <!-- @intent END -->
-
-## 최근 검색어 범위 (코어 7.1.5+)
-
-`module.json` 의 `search_scopes` 로 최근 검색어 범위 `products`(범위 id `sirsoft-ecommerce.products`, 이름 「상품 검색」 — 번역 키 `messages.search_history.scope_products`, 보관 개수 10)를 선언합니다.
-보관 기한은 선언하지 않아 기본값(기한 없음)입니다. 운영자는 코어 환경설정 > 개인정보 「최근 검색어」 카드에서 이 범위의 보관 개수·보관 기한을 고칩니다(설정이 선언값보다 우선).
-모듈을 끄면 범위가 사라져 그 범위의 기록을 서버가 거부하고 엔진은 건너뜁니다. 고친 설정 값은 보존됩니다.
-이 범위를 쓰는 검색창 연결(검색 이동 앞 `<record-search-keyword scope="sirsoft-ecommerce.products" …/>` 또는 `G7Core.useSearchHistory('sirsoft-ecommerce.products')`)은 템플릿 몫입니다.
-형식 규칙: 코어 문서 「플러그인 개발 — 최근 검색어 범위(search_scopes)」.
-
-## 본문 미디어 (`product_display.content_media`, 1.3.4)
-
-상품 설명·공통 정보 편집기 본문 미디어 정책입니다(환경설정 「상품 진열」 탭). 형식은 코어 `ContentMediaPolicy` 이고, 비어 있으면(기본 null) 상품
-이미지 규칙(jpg·jpeg·png·gif·webp, 코어 첨부 최대 크기)으로 만든 대체 정책을 씁니다(동영상·오디오는 코어 「본문 콘텐츠」 스위치를 켜면 후보 형식 전부를 코어 첨부 최대 크기로). 「직접 정하기」 스위치(`use_custom`)를 끄고
-저장하면 비웁니다. 동영상·오디오는 코어 환경설정 「본문 콘텐츠」의 업로드 후보도 켜야 받습니다.

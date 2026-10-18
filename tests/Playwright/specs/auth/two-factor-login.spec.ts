@@ -113,10 +113,10 @@ test('사용자 로그인 — 인증번호 단계로 전환되고 코드 확인 
   // 영문 TypeError 원문이 화면에 남으면 안 된다.
   await expect(page.locator('body')).not.toContainText('Cannot read properties of undefined');
 
-  // 오답 → 오류 문구, 로그인 미완료. getByRole 은 숨은 셸 안내(#g7-shell-stall, role=alert)를 제외한다
+  // 오답 → 오류 문구, 로그인 미완료
   await codeInput.fill('000000');
   await page.click('form button[type="submit"]');
-  await expect(page.getByRole('alert')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 10_000 });
   expect(page.url()).toContain('/login');
 
   // 정답 → 홈 이동
@@ -149,18 +149,6 @@ test('사용자 로그인 — 인증번호 다시 받기는 새 challenge 를 �
   const codeInput = page.locator('input[name="two_factor_code"]');
   await expect(codeInput).toBeVisible({ timeout: 10_000 });
   await codeInput.fill('111111');
-
-  // 메일 재발송은 60초 대기를 지킨다(7.1.6) — 곧바로 누르면 429 와 대기 안내가 보이고 challenge 는 그대로다
-  const [earlyResponse] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes('/two-factor/resend') && r.request().method() === 'POST'),
-    page.getByRole('button', { name: /다시|Resend|再送/ }).click(),
-  ]);
-  expect(earlyResponse.status()).toBe(429);
-  expect(earlyResponse.headers()['retry-after']).toBeTruthy();
-
-  // 대기가 지나면 새 challenge 를 받는다
-  test.setTimeout(150_000);
-  await page.waitForTimeout(61_000);
 
   const [resendResponse] = await Promise.all([
     page.waitForResponse((r) => r.url().includes('/two-factor/resend') && r.request().method() === 'POST'),
@@ -447,7 +435,7 @@ test('인증번호 단계 — 세 번 틀려도 입력이 남고 네 번째 정�
     ]);
 
     expect(response.status(), `${attempt}회째 오답이 거부되지 않았습니다`).toBe(401);
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 10_000 });
 
     // 오답 뒤에도 입력은 남는다.
     await expect(codeInput).toHaveValue('000000');

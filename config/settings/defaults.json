@@ -2,12 +2,13 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "analytics", "privacy", "content"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "analytics", "privacy"]
     },
     "defaults": {
         "general": {
             "site_name": "그누보드7",
             "site_url": "",
+            "user_screen_url": "",
             "site_description": "",
             "admin_email": "",
             "timezone": "Asia/Seoul",
@@ -23,8 +24,6 @@
             "auth_token_lifetime": 30,
             "max_login_attempts": 5,
             "login_lockout_time": 5,
-            "password_reset_rate_limit_per_minute": 10,
-            "register_rate_limit_per_minute": 10,
             "two_factor_auth": false,
             "two_factor_scope": "all",
             "password_min_length": 8,
@@ -49,12 +48,7 @@
             "allow_internal_outbound_urls": false,
             "ip_restriction_enabled": false,
             "admin_allowed_ips": [],
-            "ip_restriction_rules": [],
-            "csp_mode": "off",
-            "csp_extra_script_hosts": [],
-            "csp_style_mode": "off",
-            "csp_style_level": "basic",
-            "csp_extra_style_hosts": []
+            "ip_restriction_rules": []
         },
         "mail": {
             "mailer": "smtp",
@@ -75,7 +69,6 @@
         "upload": {
             "max_file_size": 10,
             "allowed_extensions": ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "zip"],
-            "layout_attachment_extensions": ["jpg", "jpeg", "png", "gif", "webp"],
             "image_max_width": 2000,
             "image_max_height": 2000,
             "image_quality": 85,
@@ -153,7 +146,6 @@
         "drivers": {
             "storage_driver": "local",
             "public_asset_disk": "none",
-            "public_asset_extensions": ["jpg", "jpeg", "png", "gif", "webp", "avif"],
             "s3_bucket": "",
             "s3_region": "ap-northeast-2",
             "s3_access_key": "",
@@ -261,33 +253,18 @@
             "dormant_days": 730,
             "dormant_notice_days": 30,
             "dormant_withdraw_enabled": false,
-            "dormant_withdraw_days": 365,
-            "search_history_enabled": true,
-            "search_history_scopes": []
-        },
-        "content": {
-            "allow_figure_caption": true,
-            "allow_uploaded_video": false,
-            "allow_uploaded_audio": false,
-            "allow_external_embed": true,
-            "embed_presets": {
-                "youtube": true,
-                "vimeo": true,
-                "tiktok": false
-            },
-            "embed_custom_providers": [],
-            "custom_tags": [],
-            "media_url_ttl_minutes": 240
+            "dormant_withdraw_days": 365
         }
     },
     "frontend_schema": {
         "_description": "프론트엔드에 노출할 설정 필드 정의. 각 카테고리별로 노출할 필드와 타입 캐스팅, 민감 정보 여부를 정의합니다.",
         "general": {
             "expose": true,
-            "_comment": "site_url, admin_email, language는 프론트엔드에서 미참조하므로 expose: false. timezone 은 관리자 빠른 기간·통계 기간이 「오늘」을 계정·사이트 시간대로 정하는 데 쓰므로 노출(민감 정보 아님)",
+            "_comment": "site_url, user_screen_url, admin_email, language는 프론트엔드에서 미참조하므로 expose: false. timezone 은 관리자 빠른 기간·통계 기간이 「오늘」을 계정·사이트 시간대로 정하는 데 쓰므로 노출(민감 정보 아님)",
             "fields": {
                 "site_name": { "type": "string", "sensitive": false },
                 "site_url": { "type": "string", "sensitive": false, "expose": false },
+                "user_screen_url": { "type": "string", "sensitive": false, "expose": false },
                 "site_description": { "type": "string", "sensitive": false },
                 "admin_email": { "type": "string", "sensitive": false, "expose": false },
                 "language": { "type": "string", "sensitive": false, "expose": false },
@@ -322,7 +299,6 @@
             "fields": {
                 "max_file_size": { "type": "integer", "sensitive": false },
                 "allowed_extensions": { "type": "string", "sensitive": false, "transform": "join_comma", "expose": false },
-                "layout_attachment_extensions": { "type": "string", "sensitive": false, "transform": "join_comma", "expose": false },
                 "allowed_extensions_formatted": { "type": "string", "sensitive": false, "computed": true, "source": "allowed_extensions", "transform": "format_extensions" },
                 "image_max_width": { "type": "integer", "sensitive": false },
                 "image_max_height": { "type": "integer", "sensitive": false },
@@ -434,7 +410,6 @@
             "fields": {
                 "storage_driver": { "type": "string", "sensitive": false },
                 "public_asset_disk": { "type": "string", "sensitive": false },
-                "public_asset_extensions": { "type": "string", "sensitive": false, "transform": "join_comma" },
                 "s3_bucket": { "type": "string", "sensitive": false },
                 "s3_region": { "type": "string", "sensitive": false },
                 "s3_access_key": { "type": "string", "sensitive": true },
@@ -541,59 +516,6 @@
         "privacy": {
             "expose": false,
             "_comment": "보유기간·휴면 정책은 공개 화면이 참조하지 않는다 — 노출하면 어떤 회원이 언제 휴면·파기 대상이 되는지 밖에서 역산할 수 있다. 휴면 해제 안내는 로그인 응답이 직접 알려준다"
-        },
-        "content": {
-            "expose": true,
-            "_comment": "원본 설정은 공개하지 않고, 표시기·편집기가 쓰는 계산 규칙(render_policy — 허용 태그·속성·미디어 출처·켜진 외부 영상 서비스의 컴파일 정규식)만 내린다 (#883)",
-            "fields": {
-                "allow_figure_caption": {
-                    "type": "boolean",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "allow_uploaded_video": {
-                    "type": "boolean",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "allow_uploaded_audio": {
-                    "type": "boolean",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "allow_external_embed": {
-                    "type": "boolean",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "embed_presets": {
-                    "type": "array",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "embed_custom_providers": {
-                    "type": "array",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "custom_tags": {
-                    "type": "array",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "media_url_ttl_minutes": {
-                    "type": "integer",
-                    "sensitive": false,
-                    "expose": false
-                },
-                "render_policy": {
-                    "type": "object",
-                    "sensitive": false,
-                    "computed": true,
-                    "source": "allow_external_embed",
-                    "transform": "content_render_policy"
-                }
-            }
         }
     }
 }

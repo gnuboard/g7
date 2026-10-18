@@ -244,7 +244,6 @@ class OrderOptionService
                     ? $this->orderOptionRepository->findMergeCandidate($option, $newStatus)
                     : null;
                 $mergeCandidate = $this->guardMergeByStockFlag($mergeCandidate, $option);
-                $mergeCandidate = $this->guardMergeByActiveReviews($mergeCandidate, $option);
                 if ($mergeCandidate && $mergeCandidate->id !== $option->id) {
                     $this->mergeOptions($mergeCandidate, $option);
                     $result['merged_into'] = $mergeCandidate;
@@ -337,7 +336,6 @@ class OrderOptionService
                     ? $this->orderOptionRepository->findMergeCandidate($splitOption, $newStatus)
                     : null;
                 $mergeCandidate = $this->guardMergeByStockFlag($mergeCandidate, $splitOption);
-                $mergeCandidate = $this->guardMergeByActiveReviews($mergeCandidate, $splitOption);
                 if ($mergeCandidate && $mergeCandidate->id !== $splitOption->id) {
                     $this->mergeOptions($mergeCandidate, $splitOption);
                     $result['split'] = null;
@@ -419,29 +417,6 @@ class OrderOptionService
         $sourceDeducted = (bool) ($source->fresh()?->is_stock_deducted ?? $source->is_stock_deducted);
 
         return (bool) $candidate->is_stock_deducted === $sourceDeducted ? $candidate : null;
-    }
-
-    /**
-     * 두 행에 모두 활성 후기가 있으면 병합하지 않습니다.
-     *
-     * 병합은 피흡수 행의 후기를 생존 행으로 옮긴다. 생존 행에도 후기가 있으면 「주문옵션당 활성 후기 1개」
-     * 유니크에 걸려 상태 변경 전체가 실패한다(1.3.5). 어느 후기를 지울지 고를 근거가 없으므로 두 행으로 둔다
-     * — 수량·금액은 행마다 정확하고 이후 상태 변경도 행 단위로 동작한다.
-     *
-     * @param  OrderOption|null  $candidate  병합 후보
-     * @param  OrderOption  $source  병합될 행
-     * @return OrderOption|null 병합해도 되는 후보 (아니면 null)
-     */
-    private function guardMergeByActiveReviews(?OrderOption $candidate, OrderOption $source): ?OrderOption
-    {
-        if ($candidate === null) {
-            return null;
-        }
-
-        $bothReviewed = $this->productReviewRepository->findByOrderOptionId($candidate->id) !== null
-            && $this->productReviewRepository->findByOrderOptionId($source->id) !== null;
-
-        return $bothReviewed ? null : $candidate;
     }
 
     /**

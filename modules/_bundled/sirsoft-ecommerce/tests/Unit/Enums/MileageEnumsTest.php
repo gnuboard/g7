@@ -24,8 +24,7 @@ class MileageEnumsTest extends ModuleTestCase
         $this->assertSame('order_use', MileageTransactionTypeEnum::ORDER_USE->value);
         $this->assertSame('earn_cancel', MileageTransactionTypeEnum::EARN_CANCEL->value);
         $this->assertSame('refund_credit', MileageTransactionTypeEnum::REFUND_CREDIT->value);
-        $this->assertSame('signup_earn', MileageTransactionTypeEnum::SIGNUP_EARN->value);
-        $this->assertCount(10, MileageTransactionTypeEnum::cases());
+        $this->assertCount(9, MileageTransactionTypeEnum::cases());
 
         foreach (MileageTransactionTypeEnum::cases() as $case) {
             $this->assertIsString($case->label());

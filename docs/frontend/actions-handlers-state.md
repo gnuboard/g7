@@ -404,8 +404,6 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
 
 ### 전역 상태 변경 (target: "global")
 
-> 전역 대상은 **`"global"`** 하나다. `target="_global"` 은 전역으로 가지 않고 지역 상태(`_local`)에 써진다 — 컴파일러가 `set_state_underscore_global_target` lint 경고를 낸다. 지역은 `"local"`(또는 생략), 점 경로(`_local.form.name`)·부모 스코프(`$parent._global`·`$parent._local`)는 그 표기 그대로 쓴다.
-
 ```html
 <on type="change">
   <set-state target="global" selectedIds="{{$args[0]}}" searchQuery="{{$event.target.value}}"/>
@@ -590,14 +588,6 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
 ## setError
 
 에러 상태를 설정합니다. `apiError` 상태 키에 저장됩니다.
-
-```html
-<on type="click">
-  <set-error target="{{error.response.message}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. `target` 은 액션 최상위로 구워진다(7.1.3 — 그 전 컴파일러는 `params.target` 으로 구워 메시지를 잃었다).
 
 ```json
 {
@@ -830,13 +820,6 @@ refetch 시 상태를 임시로 오버라이드하여 데이터소스 파라미�
 | `dataSourceId` | string | ✅ | - | 대상 데이터 소스 ID |
 | `dataPath` | string | ❌ | null | 병합할 데이터 경로 (예: "data") |
 | `newData` | array | ✅ | - | 병합할 새 데이터 배열 |
-
-### 뒤로 가기와 더보기 목록 (engine-v1.85.0+)
-
-`appendDataSource` 로 늘린 데이터소스는 화면을 떠날 때 엔진이 스냅샷으로 기억했다가, 뒤로/앞으로 가기로 돌아오면 그 길이로
-되살리고 다시 받은 첫 묶음의 바뀐 항목만 갈아끼운다. 다음 쪽 번호 같은 진행 상태는 레이아웃 `meta.scroll_restoration.snapshot.state`
-에 경로를 적어야 함께 돌아온다 — 적지 않으면 되살린 여러 쪽 목록에서 다음 더보기가 받은 쪽을 다시 받을 수 있다.
-목록이 화면 안 영역에서 스크롤되면 그 영역을 `containers` 에 적는다. 상세는 [scroll-restoration.md](scroll-restoration.md#더보기-목록-스냅샷-snapshot).
 
 ### 무한스크롤 예시
 

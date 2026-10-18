@@ -65,8 +65,7 @@
                 "per_page": 12,
                 "category_id": "{{query.category ?? ''}}",
                 "sort": "{{query.sort ?? 'latest'}}",
-                "search": "{{query.keyword ?? ''}}",
-                "exclude_sold_out": "{{query.exclude_sold_out ?? ''}}"
+                "search": "{{query.keyword ?? ''}}"
             },
             "fallback": {
                 "data": [],
@@ -219,7 +218,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "triangle-exclamation",
-                                    "className": "text-yellow-700 dark:text-yellow-400"
+                                    "className": "text-yellow-600 dark:text-yellow-400"
                                 }
                             },
                             {
@@ -233,30 +232,29 @@
                         ]
                     },
                     {
-                        "comment": "최상위 분류 칩 (전체 + 1단계 분류). 한 줄에 다 들어가면 한 줄, 넘치면 두 줄로 나눠 가로로 넘긴다 — 줄 배치는\n           ChipRows 가 칩 폭을 재서 정하고, 칩 링크와 이동 동작은 여기 그대로 둔다. 칩의 좌우 여백·글자 크기는\n           ChipRows 가 거는 변수를 읽는다(없으면 원래 크기)",
-                        "type": "composite",
-                        "name": "ChipRows",
+                        "comment": "최상위 카테고리 버튼 (전체 + 1단계 카테고리)",
+                        "type": "basic",
+                        "name": "Div",
                         "props": {
-                            "ariaLabel": "$t:shop.category.chips_label",
-                            "className": "mb-4"
+                            "className": "flex flex-wrap gap-2 mb-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
                                 "actions": [
                                     {
                                         "comment": "audit:allow layout-list-context-navigate-merge-query 카테고리 '전체' 선택 — 카테고리 필터를 푸는 의도적 리셋이므로 병합하지 않는다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
+                                            "path": "{{_global.shopBase}}/products",
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "href": "{{_global.shopBase}}/products",
-                                    "className": "inline-flex items-center justify-center shrink-0 max-w-[16rem] {{!query.category ? 'px-[var(--g7-chip-px,0.75rem)] py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-[length:var(--g7-chip-fs,0.875rem)] font-medium' : 'px-[var(--g7-chip-px,0.75rem)] py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-[length:var(--g7-chip-fs,0.875rem)] hover:bg-gray-100 dark:hover:bg-gray-600'}}"
+                                    "className": "{{!query.category ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"
                                 },
                                 "text": "$t:shop.category.all"
                             },
@@ -267,19 +265,17 @@
                                     "source": "{{categories?.data ?? []}}",
                                     "item_var": "cat"
                                 },
-                                "props": {
-                                    "className": "shrink-0"
-                                },
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "A",
+                                        "name": "Button",
                                         "actions": [
                                             {
                                                 "comment": "audit:allow layout-list-context-navigate-merge-query 카테고리 전환 — 다른 목록으로의 이동이라 이전 카테고리의 검색·정렬 상태를 승계하지 않는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
+                                                    "path": "{{_global.shopBase}}/products",
                                                     "query": {
                                                         "category": "{{cat?.id}}",
                                                         "page": "1"
@@ -288,19 +284,9 @@
                                             }
                                         ],
                                         "props": {
-                                            "href": "{{_global.shopBase}}/products?category={{cat?.id}}&page=1",
-                                            "className": "inline-flex items-center justify-center shrink-0 max-w-[16rem] {{query.category == cat?.id ? 'px-[var(--g7-chip-px,0.75rem)] py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-[length:var(--g7-chip-fs,0.875rem)] font-medium' : 'px-[var(--g7-chip-px,0.75rem)] py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-[length:var(--g7-chip-fs,0.875rem)] hover:bg-gray-100 dark:hover:bg-gray-600'}}"
+                                            "className": "{{query.category == cat?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}"
                                         },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "props": {
-                                                    "className": "min-w-0 truncate"
-                                                },
-                                                "text": "{{cat?.name_localized}}"
-                                            }
-                                        ]
+                                        "text": "{{cat?.name_localized}}"
                                     }
                                 ]
                             }

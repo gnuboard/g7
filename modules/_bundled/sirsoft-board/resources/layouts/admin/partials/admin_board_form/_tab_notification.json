@@ -7,6 +7,13 @@
     "id": "section_notification_card",
     "type": "basic",
     "name": "Div",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
     "props": {
         "className": "admin-card"
     },

@@ -23,7 +23,6 @@ import { hasPipes } from './PipeRegistry';
 import { extractSingleBinding } from './BindingShape';
 import { evaluateStringCondition } from './helpers/ConditionEvaluator';
 import { addMissingLeafKeys } from './helpers/StateMerge';
-import { registerUrlOnlyPathChange } from './helpers/urlOnlyPathChange';
 import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { DataSourceManager, dataSourceManager } from './DataSourceManager';
 import DynamicRenderer from './DynamicRenderer';
@@ -34,12 +33,6 @@ import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
 import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
-import { getContentMediaRuntime } from '../contentMedia';
-import { getContentPolicyRuntime } from '../contentPolicy';
-import * as InlineStyleDeferral from '../contentStyle/InlineStyleDeferral';
-import * as RuntimeStyleSheet from '../style/RuntimeStyleSheet';
-import { SEARCH_HISTORY_CHANGED_EVENT, getSearchHistoryRuntime } from '../searchHistory';
-import { useSearchHistory } from '../searchHistory/useSearchHistory';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
@@ -76,10 +69,6 @@ import {
 } from '../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
-import { getSiteLocale, pickLocalized } from '../support/localeTag';
-import { isPlainLeftClick, mergeQueryIntoHref, mergeRelForTarget, resolveInternalHref, subscribeLocationSearch, useLocationSearch, type LinkClickLike } from './navigationLinks';
-import { configureLeaveGuard, isLeaveGuarded } from '../routing/LeaveGuard';
-import { markDataSourceGrown } from './dataSourceSnapshot';
 import {
   notifyAssetFailure,
   drainExternalAssetFailures,
@@ -188,13 +177,10 @@ export interface G7DevToolsInterface {
     startTime: number;
     endTime?: number;
     duration?: number;
-    /** `skipped` — 미리보기 모드에서 억제된 액션 (ActionDispatcher.executeAction) */
-    status: 'started' | 'success' | 'error' | 'skipped';
+    status: 'started' | 'success' | 'error';
     result?: any;
     error?: { name: string; message: string; stack?: string };
     children?: Array<any>;
-    /** 부가 정보 (예: `{ reason: 'preview_mode_suppressed' }`) */
-    metadata?: Record<string, any>;
   }): void;
 
   /** 네트워크 요청 시작 추적 */
@@ -646,10 +632,6 @@ export interface G7CoreDependencies {
     bindingEngine: DataBindingEngine | null;
     actionDispatcher: ActionDispatcher | null;
     templateMetadata: { locales: string[] } | null;
-    /** 지금 화면의 레이아웃 JSON — 레이아웃 이탈 가드가 읽는다 @since engine-v1.82.0 */
-    currentLayoutJson?: any;
-    /** 지금 화면의 데이터 컨텍스트 — 레이아웃 이탈 가드가 읽는다 @since engine-v1.82.0 */
-    currentDataContext?: Record<string, any>;
   };
   /** TransitionManager 인스턴스 */
   transitionManager: {
@@ -672,13 +654,6 @@ export interface G7CoreDependencies {
   getTranslationEngine?: () => TranslationEngine | null;
   /** ActionDispatcher getter */
   getActionDispatcher?: () => ActionDispatcher | null;
-  /**
-   * 경로 전환 세대 getter — `G7Core.navigation.getRouteGeneration()` 의 값 출처. 없으면 `window.__templateApp.getRouteChangeId()`
-   * (ActionDispatcher·DataSourceManager 와 같은 출처)를 읽는다.
-   *
-   * @since engine-v1.81.1
-   */
-  getRouteChangeId?: () => number | undefined;
 }
 
 /**
@@ -725,93 +700,6 @@ function initConsentAPI(G7Core: any): void {
       return G7Core.componentEvent.on(CONSENT_CHANGED_EVENT, listener);
     },
   });
-}
-
-/**
- * 본문 콘텐츠 규칙 API 초기화 — `G7Core.contentPolicy` (engine-v1.90.0, #883).
- *
- * 코어 환경설정 「본문 콘텐츠」 규칙(`_global.settings.content.render_policy`)으로 본문을 정화하고 외부 영상을 플레이어로 바꾼다.
- * 템플릿 HtmlContent·편집기 플러그인이 쓰며, 규칙이 없으면 `sanitize` 가 null 을 돌려 호출자가 종전 경로를 쓴다.
- *
- * @param G7Core 전역 G7Core 객체
- */
-function initContentPolicyAPI(G7Core: any): void {
-  const runtime = () => getContentPolicyRuntime();
-  G7Core.contentPolicy = Object.freeze({
-    getPolicy: () => runtime().getPolicy(),
-    sanitize: (purify: any, html: string, baseConfig: Record<string, any>) => runtime().sanitize(purify, html, baseConfig),
-    renderEmbeds: (root: any, policy?: any) => runtime().renderEmbeds(root, policy),
-    resolveEmbed: (url: string) => runtime().resolveEmbed(url),
-    editorConstraints: () => runtime().editorConstraints(),
-  });
-}
-
-/**
- * 본문 미디어 업로드 파사드 초기화 — `G7Core.contentMedia` (engine-v1.89.0, #883)
- *
- * 확장(게시판·페이지·이커머스)이 확장점 `html_editor` 의 prop `mediaUpload` 로 넘긴 업로드 계약을 편집기 플러그인이
- * 확장의 API 경로를 모른 채 쓰게 한다. 런타임은 코어 본문 미디어 런타임(`resources/js/core/contentMedia`) 하나다.
- *
- * - `normalizeTarget(raw)` — 형식이 틀리거나 다른 출처면 null
- * - `validateFile(target, file)` → `{ok, kind, messageKey?, params?}`
- * - `countReferences(html, target)` · `isAtLimit(html, target)` — 문서당 개수 사전 차단
- * - `upload(target, file, {signal, onProgress})` → `{url, id?, kind}` (무토큰 401 은 거절 그대로 — engine-v1.88.2)
- * - `registerAdapter(adapter)` → 해제 함수 · `listAdapters()`
- *
- * @param G7Core 전역 G7Core 객체
- */
-function initContentMediaAPI(G7Core: any): void {
-  const runtime = () => getContentMediaRuntime();
-  G7Core.contentMedia = Object.freeze({
-    normalizeTarget: (raw: unknown) => runtime().normalizeTarget(raw),
-    validateFile: (target: any, file: any) => runtime().validateFile(target, file),
-    countReferences: (html: string | null | undefined, target: any) => runtime().countReferences(html, target),
-    isAtLimit: (html: string | null | undefined, target: any) => runtime().isAtLimit(html, target),
-    upload: (target: any, file: File, ctx?: any) => runtime().upload(target, file, ctx),
-    registerAdapter: (adapter: any) => runtime().registerAdapter(adapter),
-    listAdapters: () => runtime().listAdapters().map((a) => Object.freeze({ id: a.id, priority: a.priority ?? 0 })),
-  });
-}
-
-/**
- * 최근 검색어 파사드·훅 초기화 — `G7Core.searchHistory` · `G7Core.useSearchHistory` (engine-v1.87.0)
- *
- * 검색창 컴포넌트가 범위(scope)별 최근 검색어를 읽고 고친다. 런타임은 코어 최근 검색어 런타임
- * (`resources/js/core/searchHistory`) 하나이고 이 파사드는 그것을 감싸기만 한다. 런타임이 없는 화면(관리자)에서는
- * 모든 범위가 `enabled: false` 이고 동작은 false 를 돌려준다.
- *
- * - `isEnabled(scope)` — 선언된 범위인지 (`G7Config.searchScopes`)
- * - `getSnapshot(scope)` — 지금 상태 사본 `{scope, enabled, autoSave, items, maxCount, loading, source}`
- * - `list(scope, {force?})` — 최근 검색어 읽기 (회원은 서버에서 받아 캐시)
- * - `record(scope, keyword)` · `remove(scope, item|id|keyword)` · `clear(scope?)`
- * - `getAutoSave()` · `setAutoSave(on)` — 사람 단위 자동 저장 (끄면 기록 멈춤·목록 감춤)
- * - `subscribe(listener)` — 변경(`searchHistory:changed`, `{scope, reason}`)을 구독하고 **해제 함수**를 돌려준다.
- *
- * @param G7Core 전역 G7Core 객체
- */
-function initSearchHistoryAPI(G7Core: any): void {
-  const disabled = (scope: string) => ({ scope, enabled: false, autoSave: true, items: [], maxCount: 0, loading: false, source: 'none' as const });
-
-  G7Core.searchHistory = Object.freeze({
-    isEnabled: (scope: string) => getSearchHistoryRuntime()?.isScopeAvailable(scope) ?? false,
-    getSnapshot: (scope: string) => getSearchHistoryRuntime()?.getSnapshot(scope) ?? disabled(scope),
-    list: async (scope: string, options?: { force?: boolean }) => {
-      const runtime = getSearchHistoryRuntime();
-      return runtime ? runtime.list(scope, options) : disabled(scope);
-    },
-    record: async (scope: string, keyword: unknown) => (await getSearchHistoryRuntime()?.record(scope, keyword)) ?? false,
-    remove: async (scope: string, target: any) => (await getSearchHistoryRuntime()?.remove(scope, target)) ?? false,
-    clear: async (scope?: string | null) => (await getSearchHistoryRuntime()?.clear(scope)) ?? false,
-    getAutoSave: () => getSearchHistoryRuntime()?.getAutoSave() ?? true,
-    setAutoSave: async (autoSave: boolean) => (await getSearchHistoryRuntime()?.setAutoSave(autoSave)) ?? false,
-    subscribe: (listener: (change: unknown) => void): (() => void) => {
-      if (typeof listener !== 'function') return () => {};
-      return G7Core.componentEvent.on(SEARCH_HISTORY_CHANGED_EVENT, listener);
-    },
-  });
-
-  // 템플릿 컴포넌트용 훅 — 같은 범위의 검색창끼리 목록을 공유한다
-  G7Core.useSearchHistory = useSearchHistory;
 }
 
 /**
@@ -1203,8 +1091,9 @@ function initTranslationAPI(G7Core: any, deps: G7CoreDependencies): void {
     }
 
     if (params) {
-      // 인자 객체를 그대로 넘긴다 — `|key=value` 로 이어 붙이면 값의 `|`·`&`·`=` 에서 잘린다(engine-v1.80.1)
-      return state.translationEngine.translate(key, state.translationContext, params);
+      // 파라미터를 TranslationEngine 형식으로 변환 (|key=value|key2=value2)
+      const paramsStr = '|' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('|');
+      return state.translationEngine.translate(key, state.translationContext, paramsStr);
     }
     return state.translationEngine.translate(key, state.translationContext);
   };
@@ -2147,31 +2036,12 @@ function initStateAPI(G7Core: any): void {
             // scope:'parent'|'root' 은 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의
             // 부모/루트 슬롯을 대상으로 한다. 여기서 저장소 B 를 함께 쓰면 모달의 쓰기가
             // 페이지 _local 을 오염시킨다(사례 29).
-            const scopedUpdater = (currentLocal: Record<string, any>) => {
+            // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
+            targetContext.setState((currentLocal: Record<string, any>) => {
               if (mergeMode === 'replace') return converted;
               if (mergeMode === 'shallow') return { ...(currentLocal || {}), ...converted };
               return deepMerge(currentLocal || {}, converted);
-            };
-            // engine-v1.81.2: shallow·replace 표지 — 아래 4단계와 같다(저장소 A writer 가 결과를 다시 깊게 병합하지 않는다)
-            if (mergeMode !== 'deep') {
-              (scopedUpdater as any).__g7MergeMode = mergeMode;
-            }
-            // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유) — 페이지 대상이면 아래에서 쓴 키만 B 에 얹는다
-            targetContext.setState(scopedUpdater);
-            // engine-v1.81.2 (7.1.1): 대상이 스택 맨 아래(첫 모달을 연 페이지)면 페이지 `_local` 쓰기다 — 쓴 키만 live B 에 얹는다
-            // (setParentLocal·`$parent._local` setState 와 같은 계약). 모달 자신의 상태는 넣지 않는다(사례 29). replace 는 B 도 교체
-            if (targetContext === contextStack[0] && templateApp?.setGlobalState) {
-              const canonicalLocal = templateApp.getGlobalState?.()?._local;
-              if (canonicalLocal && typeof canonicalLocal === 'object' && !Array.isArray(canonicalLocal)) {
-                const nextLocal = mergeMode === 'replace'
-                  ? converted
-                  : mergeMode === 'shallow'
-                    ? { ...canonicalLocal, ...converted }
-                    : deepMerge(canonicalLocal, converted);
-                templateApp.setGlobalState({ _local: nextLocal }, { render: false });
-                (window as any).__g7LastSetLocalSnapshot = undefined;
-              }
-            }
+            });
             logger.log(`[setLocal] scope=${scope}: 타겟 컨텍스트에 상태 업데이트 (mergeMode=${mergeMode})`, converted);
             return;
           }
@@ -2246,13 +2116,9 @@ function initStateAPI(G7Core: any): void {
       (window as any).__g7LastSetLocalSnapshot = mergedPending;
 
       // 3. forcedLocalFields 업데이트 (dataKey 자동 바인딩 컴포넌트 충돌 방지)
-      // engine-v1.81.2 (7.1.1): shallow 는 B·pending 과 같은 최상위 펼침이다 — 깊게 병합하면 `{}`·키를 줄인 객체가
-      // forced(화면 최우선 덧칠)와 override 키(저장소 A 갱신의 base) 에 앞 값을 남겨 화면·A 가 앞 선택을 되살렸다.
       if (mergeMode === 'replace') {
         // replace 모드: 기존 forcedLocalFields 초기화 후 새 값으로 교체
         (window as any).__g7ForcedLocalFields = converted;
-      } else if (mergeMode === 'shallow') {
-        (window as any).__g7ForcedLocalFields = { ...((window as any).__g7ForcedLocalFields || {}), ...converted };
       } else {
         const existingForced = (window as any).__g7ForcedLocalFields || {};
         (window as any).__g7ForcedLocalFields = deepMerge(existingForced, converted);
@@ -2264,50 +2130,19 @@ function initStateAPI(G7Core: any): void {
       // setState(target: "local")가 아닌 setLocal만 기록 (setState는 localDynamicState를 직접 업데이트)
       if (mergeMode === 'replace') {
         (window as any).__g7SetLocalOverrideKeys = converted;
-      } else if (mergeMode === 'shallow') {
-        (window as any).__g7SetLocalOverrideKeys = { ...((window as any).__g7SetLocalOverrideKeys || {}), ...converted };
       } else {
         const existingKeys = (window as any).__g7SetLocalOverrideKeys || {};
         (window as any).__g7SetLocalOverrideKeys = deepMerge(existingKeys, converted);
       }
       logger.log('[setLocal] __g7SetLocalOverrideKeys updated:', converted);
 
-      // 3-1. engine-v1.81.2 (7.1.1): 액션 밖(actionContext 없음 — 컴포넌트 코드·타이머·웹소켓 콜백)의 shallow·replace 는 아래 4단계가
-      // 없어 저장소 A 를 고치지 못한다. A 가 그 키 아래에 setState 동작·자동바인딩으로 쓴 하위 키를 갖고 있으면 렌더 병합(A 우선)이
-      // 그 하위 키를 되살려 화면 ≠ B 가 되고, 다음 동작의 잎 키 보충이 B 에까지 되썼다. 교체한 최상위 키를 표지로 남겨 루트 렌더러가
-      // 그 키를 정본 B 값으로 그리고, B 사본이 따라온 뒤 저장소 A 에서 그 키를 지우게 한다 — DynamicRenderer
-      // `applySetLocalReplacedKeys`·`pruneSetLocalReplacedKeys` 참조. 4단계가 A 를 고치는 경우(actionContext 있음)는 종전과 같다.
-      // 표지는 경로 전환 세대에 묶는다(다른 화면으로 가면 무효). render:false 여도 루트를 한 번 다시 그린다 — B 사본이 따라와야
-      // 저장소 A 정리가 끝나므로, 미루면 그 사이 같은 키에 들어온 A 전용 쓰기(미러하지 않는 값)가 정리에 함께 지워질 수 있다
-      // (자동바인딩 경로 render:false 승격 engine-v1.43.0 과 같은 「A↔B 맞춤에는 렌더가 필요」 원칙)
-      if (mergeMode !== 'deep' && !actionContext?.setState) {
-        const generation = templateApp?.getRouteChangeId?.();
-        const previousMarker = (window as any).__g7SetLocalReplacedKeys as { all: boolean; keys: string[]; generation?: number } | undefined;
-        const carried = previousMarker && previousMarker.generation === generation ? previousMarker : undefined;
-        (window as any).__g7SetLocalReplacedKeys = {
-          all: mergeMode === 'replace' || !!carried?.all,
-          keys: Array.from(new Set([...(carried?.keys ?? []), ...Object.keys(converted)])),
-          generation,
-        };
-        if (options?.render === false && templateApp?.setGlobalState) {
-          templateApp.setGlobalState({});
-        }
-      }
-
       // 4. actionContext가 있으면 컴포넌트 로컬 상태도 업데이트 (리액티비티용)
-      // engine-v1.81.2 (7.1.1): shallow·replace 갱신에는 병합 방식 표지(`__g7MergeMode`)를 단다 — 저장소 A writer
-      // (DynamicRenderer handleLocalSetState)는 표지가 있으면 함수 결과를 다시 깊게 병합하지 않는다(종전: 다시 깊게 병합돼 `{}` 무효).
-      // 표지를 모르는 writer(전역 setState 대체 문맥 등)는 종전처럼 함수만 부른다.
       if (actionContext?.setState) {
-        const localUpdater = (currentLocal: Record<string, any>) => {
+        actionContext.setState((currentLocal: Record<string, any>) => {
           if (mergeMode === 'replace') return converted;
           if (mergeMode === 'shallow') return { ...(currentLocal || {}), ...converted };
           return deepMerge(currentLocal || {}, converted);
-        };
-        if (mergeMode !== 'deep') {
-          (localUpdater as any).__g7MergeMode = mergeMode;
-        }
-        actionContext.setState(localUpdater);
+        });
       }
 
       // templateApp이 없는 경우 경고
@@ -2838,7 +2673,7 @@ function initDataSourceAPI(G7Core: any): void {
      * @param options 옵션
      * @returns refetch 결과 데이터
      */
-    refetch: async (dataSourceId: string, options?: { skipCache?: boolean; sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any>; isolatedStateOverride?: Record<string, any> }) => {
+    refetch: async (dataSourceId: string, options?: { skipCache?: boolean; sync?: boolean }) => {
       const templateApp = (window as any).__templateApp;
       if (templateApp?.refetchDataSource) {
         return templateApp.refetchDataSource(dataSourceId, options);
@@ -2987,9 +2822,6 @@ function initDataSourceAPI(G7Core: any): void {
         templateApp.setDataSource(dataSourceId, mergedArray, { merge: false });
       }
 
-      // 더보기로 늘어났다 — 화면을 떠날 때 스냅샷으로 기억해 뒤로 가기로 돌아오면 그 길이로 되살린다 (@since engine-v1.85.0)
-      markDataSourceGrown(dataSourceId, dataPath || null);
-
       logger.log(`G7Core.dataSource.updateData: '${dataSourceId}'에 ${newData.length}개 항목 ${mode === 'prepend' ? '앞에' : '뒤에'} 추가됨`);
       return true;
     },
@@ -3022,21 +2854,6 @@ function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
       const state = deps.getState();
       return state.templateMetadata?.locales || ['ko', 'en'];
     },
-    /**
-     * 사이트 기본 언어(환경설정 「기본 언어」)를 반환합니다. 모르면 현재 로케일.
-     *
-     * @since engine-v1.81.0
-     */
-    site: (): string => getSiteLocale() ?? G7Core.locale.current(),
-    /**
-     * 다국어 값에서 보여 줄 글자를 고릅니다 — 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값(빈 칸 건너뜀).
-     * 백엔드 `LocalizedValue::pick()` 과 같은 규칙이다. 고를 값이 없으면 null.
-     *
-     * @param value 다국어 값(`{ ko, en, … }`) 또는 문자열
-     * @param locale 우선 언어 (생략 시 현재 로케일)
-     * @since engine-v1.81.0
-     */
-    pick: (value: unknown, locale?: string): string | null => pickLocalized(value, locale),
     /**
      * 로케일을 변경합니다.
      * @param locale 변경할 로케일 (예: 'ko', 'en')
@@ -3213,51 +3030,9 @@ function initStyleAPI(G7Core: any): void {
      * ```
      */
     joinClasses,
-    /**
-     * 런타임 CSS 규칙을 문서에 붙입니다(같은 key 는 교체). `<style>` 요소를 만들지 않으므로 엄격한 스타일
-     * 정책(`style-src 'self'`)에서도 적용됩니다. 확장이 동적 규칙이 필요할 때 씁니다(정적 규칙은 확장 CSS 자산으로).
-     *
-     * @example
-     * ```typescript
-     * const handle = G7Core.style.setRules('my-plugin-overlay', '#target::after{content:"";position:absolute;inset:0}');
-     * handle.remove();
-     * ```
-     * @since engine-v1.91.0
-     */
-    setRules: (key: string, css: string | string[], opts?: RuntimeStyleSheet.RuntimeStyleOptions) => RuntimeStyleSheet.setRules(key, css, opts),
-    /** 런타임 CSS 규칙 묶음을 제거합니다. @since engine-v1.91.0 */
-    remove: (key: string) => RuntimeStyleSheet.remove(key),
-    /** 런타임 CSS 규칙 묶음이 붙어 있는지 확인합니다. @since engine-v1.91.0 */
-    has: (key: string) => RuntimeStyleSheet.has(key),
   };
 
   logger.log('전역 객체 window.G7Core.style에 노출됨');
-}
-
-/**
- * 본문 서식 지연 장치 초기화 — `G7Core.inlineStyle` (engine-v1.91.0, #163)
- *
- * 엄격한 스타일 정책에서는 HTML 문자열의 `style` 속성이 적용되지 않는다(문자열 파싱만으로 위반 보고).
- * 본문 HTML 을 꽂는 컴포넌트는 정화할 때 `style` 을 `data-g7-style` 로 옮기고, DOM 에 붙인 뒤 `apply(root)` 로
- * `el.style.cssText` 에 대입한다.
- *
- * - `ATTR` — `'data-g7-style'`
- * - `sanitize(purifyInstance, html, config)` — 전용 DOMPurify 인스턴스(`DOMPurify(window)`)로 이름 바꾸기 → 훅 → 정화 → 훅 해제
- * - `apply(root)` → 적용한 요소 수
- * - `defer(html)` → `{html, token}` · `installHook(purifyInstance, config, token)` — 단계별로 쓸 때
- *
- * 코어 본문 규칙 경로는 `G7Core.contentPolicy.sanitize(purify, html, {...config, G7_DEFER_STYLE: true})` 로 같은 결과를 낸다.
- *
- * @param G7Core 전역 G7Core 객체
- */
-function initInlineStyleAPI(G7Core: any): void {
-  G7Core.inlineStyle = Object.freeze({
-    ATTR: InlineStyleDeferral.ATTR,
-    defer: (html: string) => InlineStyleDeferral.defer(html),
-    installHook: (purifyInstance: any, config?: Record<string, any>, token?: string) => InlineStyleDeferral.installHook(purifyInstance, config, token),
-    sanitize: (purifyInstance: any, html: string, config?: Record<string, any>) => InlineStyleDeferral.sanitize(purifyInstance, html, config),
-    apply: (root: Element | DocumentFragment | null | undefined) => InlineStyleDeferral.apply(root),
-  });
 }
 
 /**
@@ -3318,16 +3093,6 @@ function initWebSocketAPI(G7Core: any, deps: G7CoreDependencies): void {
 function initNavigationAPI(G7Core: any, deps: G7CoreDependencies): void {
   const { transitionManager } = deps;
 
-  // 레이아웃 이탈 가드(meta.leave_guard)가 읽을 엔진 환경 — 라우터가 엔진 본체를 가져오지 않게 함수로 넘긴다 (engine-v1.82.0)
-  configureLeaveGuard({
-    getLayoutJson: () => deps.getState().currentLayoutJson,
-    getDataContext: () => deps.getState().currentDataContext,
-    getBindingEngine: () => deps.getState().bindingEngine,
-    translate: (key: string) => G7Core.t(key),
-    // 아직 상태에 닿지 않은 디바운스 입력(자동바인딩 대기 쓰기·디바운스 액션) — 존재만 읽는다, flush 하지 않는다
-    hasPendingInput: () => deps.getState().actionDispatcher?.hasPendingDebounce?.() === true,
-  });
-
   G7Core.navigation = {
     /**
      * 현재 페이지 전환이 진행 중인지 확인합니다.
@@ -3366,73 +3131,6 @@ function initNavigationAPI(G7Core: any, deps: G7CoreDependencies): void {
 
       return unsubscribe;
     },
-    /**
-     * 「보통 클릭」인지 판정합니다 — 왼쪽 버튼·수정키 없음·링크면 target 없음/_self·download 없음.
-     *
-     * 링크(`<a href>`)를 그리는 합성 컴포넌트는 이것이 참일 때만 기본 동작을 막고 기존 콜백을 부른다.
-     * 거짓(Ctrl·Cmd·Shift·Alt·새 창·내려받기)이면 브라우저에 맡겨 새 탭·새 창으로 열리게 한다.
-     * 엔진의 클릭 처리(`createHandler`)와 같은 함수다.
-     *
-     * @since engine-v1.80.1
-     */
-    isPlainLeftClick: (event?: LinkClickLike | null): boolean => isPlainLeftClick(event),
-    /**
-     * 현재 주소의 쿼리를 링크 주소에 합칩니다(링크 자신의 쿼리가 이김). 같은 출처 주소가 아니면 그대로.
-     *
-     * A 컴포넌트 `mergeQuery`·페이지 번호 링크가 렌더할 때 href 를 만든다 — 보통 클릭(path 없는 navigate +
-     * mergeQuery)과 새 탭이 같은 목적지를 받는다.
-     *
-     * @since engine-v1.80.1
-     */
-    mergeQueryIntoHref: (href: string): string => mergeQueryIntoHref(href),
-    /** 주소 검색부가 바뀔 수 있는 순간(뒤로/앞으로·같은 화면 쿼리 교체) 구독 — mergeQuery 링크 다시 그리기용 @since engine-v1.82.1 */
-    subscribeLocationSearch: (callback: () => void): (() => void) => subscribeLocationSearch(callback),
-    /**
-     * 주소 검색부 구독 React 훅 — 렌더할 때 현재 쿼리를 href 에 합치는 링크가 부른다(`enabled` 가 거짓이면 구독하지 않음).
-     * 템플릿은 코어와 같은 React 를 쓰므로 이 훅을 그대로 부른다. 컴포넌트 렌더 중에만 부른다(훅 규칙).
-     *
-     * @since engine-v1.83.0
-     */
-    useLocationSearch,
-    /**
-     * 링크 href 가 이 사이트 안 주소면 「경로?쿼리#해시」, 아니면 null — 링크 컴포넌트의 SPA 이동 판정 하나(엔진 navigate 와 같은 규칙).
-     *
-     * @since engine-v1.83.0
-     */
-    resolveInternalHref: (href: unknown): string | null => resolveInternalHref(href),
-    /**
-     * 새 창(`target="_blank"`) 링크의 rel — `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다.
-     *
-     * @since engine-v1.83.0
-     */
-    mergeRelForTarget: (rel?: string | null, target?: string | null): string | undefined => mergeRelForTarget(rel, target),
-    /**
-     * 지금 경로 전환 세대를 돌려줍니다 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다).
-     *
-     * 비동기 응답을 기다린 뒤 화면을 바꾸는 확장 핸들러는 시작할 때 이 값을 잡아 두고, 응답 뒤 값이 다르면 오류 화면·상태
-     * 쓰기·이동을 하지 않는다. 엔진 showErrorPage 가 거르는 것과 같은 값(`TemplateApp.getRouteChangeId`)이다 — 별도
-     * 카운터가 아니다 (7.1.1 확장 보완: 「경로+쿼리」 표식만으로는 나갔다가 같은 주소로 돌아온 경우를 못 가른다).
-     *
-     * @returns 경로 전환 세대 (엔진이 아직 없으면 0)
-     * @since engine-v1.81.1
-     */
-    getRouteGeneration: (): number => {
-      const id = deps.getRouteChangeId
-        ? deps.getRouteChangeId()
-        : (typeof window !== 'undefined' ? (window as any).__templateApp?.getRouteChangeId?.() : undefined);
-
-      return typeof id === 'number' && Number.isFinite(id) ? id : 0;
-    },
-    /**
-     * 지금 화면을 떠나면 이탈 확인 창이 뜨는지 돌려줍니다 — 레이아웃 `meta.leave_guard` 식을 읽기 전용으로 평가한다.
-     *
-     * 확장 핸들러가 SPA 밖으로 나가는 이동(`window.location` 대입 등)을 하기 전에 직접 물을 때 쓴다.
-     * 레이아웃에 선언이 없거나, 이미 떠나기로 승인된 이동 중이면 false 다.
-     *
-     * @returns 확인이 필요하면 true
-     * @since engine-v1.82.0
-     */
-    isLeaveGuarded: (): boolean => isLeaveGuarded(),
   };
 
   logger.log('전역 객체 window.G7Core.navigation에 노출됨');
@@ -3579,7 +3277,6 @@ function initCoreAPIs(G7Core: any, deps: G7CoreDependencies): void {
   ) => {
     const templateApp = (window as any).__templateApp;
     if (templateApp?.updateQueryParams) {
-      registerUrlOnlyPathChange(newPath, templateApp);
       return templateApp.updateQueryParams(newPath, options);
     }
     logger.warn('G7Core.updateQueryParams: TemplateApp이 초기화되지 않았습니다.');
@@ -3761,10 +3458,6 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
   initConsentAPI(G7Core);
-  initContentMediaAPI(G7Core);
-  initContentPolicyAPI(G7Core);
-  initInlineStyleAPI(G7Core);
-  initSearchHistoryAPI(G7Core);
   initStateContractsAPI(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
   initLayoutEditorStub(G7Core);
@@ -3850,7 +3543,7 @@ export function initDevToolsInterface(): void {
       }
     },
 
-    trackIfCondition: (id, condition, result, _componentName) => {
+    trackIfCondition: (id, condition, result, componentName) => {
       try {
         if (getDevTools().isEnabled()) {
           getDevTools().trackIfCondition(id, condition, result);

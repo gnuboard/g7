@@ -6,7 +6,6 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardSettingsController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\CommentController as AdminCommentController;
-use Modules\Sirsoft\Board\Http\Controllers\Admin\ContentMediaController as AdminContentMediaController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\IdentityPolicyController as AdminIdentityPolicyController;
 use Modules\Sirsoft\Board\Http\Controllers\Admin\PostController as AdminPostController;
@@ -17,7 +16,6 @@ use Modules\Sirsoft\Board\Http\Controllers\Admin\ReportController as AdminReport
 use Modules\Sirsoft\Board\Http\Controllers\User\AttachmentController as UserAttachmentController;
 use Modules\Sirsoft\Board\Http\Controllers\User\BoardController as UserBoardController;
 use Modules\Sirsoft\Board\Http\Controllers\User\CommentController as UserCommentController;
-use Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController as UserContentMediaController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostController as UserPostController;
 use Modules\Sirsoft\Board\Http\Controllers\User\PostScrapController as UserPostScrapController;
 use Modules\Sirsoft\Board\Http\Controllers\User\ReactionController as UserReactionController;
@@ -94,12 +92,6 @@ Route::prefix('boards')->middleware(['optional.sanctum', 'throttle:600,1'])->nam
     Route::get('/{slug}/attachment/{hash}/preview', [UserAttachmentController::class, 'preview'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.preview');
-
-    // 본문 미디어 서빙 (#883) — 권한 미들웨어 없음: <img>·<video> 요청에는 Bearer 가 실리지 않으므로
-    // 서명·글 읽기 권한·비밀/삭제/블라인드 게이트는 컨트롤러(서비스)가 맡는다
-    Route::get('/{slug}/content-media/{hash}', [UserContentMediaController::class, 'show'])
-        ->where('hash', '[a-zA-Z0-9]{12}')
-        ->name('content-media.show');
 });
 
 /*
@@ -258,11 +250,6 @@ Route::prefix('admin/boards')->middleware(['auth:sanctum', 'admin', 'throttle:60
     Route::post('/bulk-members', [BoardController::class, 'bulkMembers'])
         ->middleware('permission:admin,sirsoft-board.boards.update')
         ->name('bulk-members');
-
-    // 게시판 표시 순서 저장 (와일드카드 라우트보다 먼저 등록 — `order` 가 {board} 로 해석되지 않게)
-    Route::put('/order', [BoardController::class, 'reorder'])
-        ->middleware('permission:admin,sirsoft-board.boards.update')
-        ->name('order');
 
     // 게시판 단건 조회 (ID)
     Route::get('/{board}', [BoardController::class, 'show'])
@@ -498,18 +485,6 @@ Route::prefix('admin/board/{slug}/attachments')->middleware(['auth:sanctum', 'ad
         ->name('download');
 });
 
-// 관리자 본문 미디어 업로드 (#883) — 서빙은 사용자 경로(boards/{slug}/content-media/{hash})를 함께 쓴다
-Route::prefix('admin/board/{slug}/content-media')->middleware(['auth:sanctum', 'admin', 'throttle:60,1'])->name('admin.board.content-media.')->group(function () {
-    Route::post('/', [AdminContentMediaController::class, 'upload'])
-        ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
-        ->name('upload');
-
-    // 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887). 권한은 업로드와 같다
-    Route::get('/target', [AdminContentMediaController::class, 'target'])
-        ->middleware('permission:admin,sirsoft-board.{slug}.admin.attachments.upload')
-        ->name('target');
-});
-
 /*
 |--------------------------------------------------------------------------
 | Admin Comment Routes (관리자 댓글)
@@ -562,9 +537,8 @@ Route::prefix('admin/board/{slug}/posts/{postId}/comments')->middleware(['auth:s
 // optional.sanctum: Bearer 토큰이 있으면 인증, 없으면 guest로 통과
 Route::prefix('boards/{slug}/posts')->middleware(['optional.sanctum', 'throttle:600,1'])->name('boards.posts.')->group(function () {
     // 게시글 폼 데이터 조회 (생성/수정/답글 모드)
-    // 수정 모드는 비회원 글 비밀번호를 직접 받을 수 있다 — 비밀번호가 실린 요청만 확인 요청과 같은 제한기로 센다
     Route::get('/form-data', [UserPostController::class, 'getFormData'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.posts.write', 'throttle:sirsoft-board.secret-password-verify'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.write')
         ->name('form-data');
 
     // 게시글 폼 메타 데이터 조회
@@ -593,14 +567,13 @@ Route::prefix('boards/{slug}/posts')->middleware(['optional.sanctum', 'throttle:
         ->name('store');
 
     // 게시글 수정 (작성자 posts.write 또는 게시판 관리 manager)
-    // 비밀번호를 실어 보낸 요청은 비밀번호 확인과 같은 제한기로 센다 (없는 요청은 세지 않는다).
     Route::put('/{id}', [UserPostController::class, 'update'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager,false', 'throttle:sirsoft-board.secret-password-verify'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager,false')
         ->name('update');
 
-    // 게시글 삭제 (비밀번호를 실어 보낸 요청은 비밀번호 확인과 같은 제한기)
+    // 게시글 삭제
     Route::delete('/{id}', [UserPostController::class, 'destroy'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager,false', 'throttle:sirsoft-board.secret-password-verify'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager,false')
         ->name('destroy');
 
     // 비밀글 조회용 비밀번호 검증 (posts.read 권한 필요, 비밀번호 대입 제한)
@@ -613,9 +586,9 @@ Route::prefix('boards/{slug}/posts')->middleware(['optional.sanctum', 'throttle:
         ->middleware(['permission:user,sirsoft-board.{slug}.posts.read', 'throttle:sirsoft-board.secret-password-verify'])
         ->name('verify-thread-password');
 
-    // 수정/삭제용 비밀번호 검증 (posts.write 권한 필요, 비밀번호 대입 제한 — 비밀글 확인과 같은 제한기)
+    // 수정/삭제용 비밀번호 검증 (posts.write 권한 필요)
     Route::post('/{id}/verify-password-for-modify', [UserPostController::class, 'verifyPasswordForModify'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.posts.write', 'throttle:sirsoft-board.secret-password-verify'])
+        ->middleware('permission:user,sirsoft-board.{slug}.posts.write')
         ->name('verify-password-for-modify');
 });
 
@@ -644,20 +617,19 @@ Route::prefix('boards/{slug}/posts/{postId}/comments')->middleware(['optional.sa
         ->name('store');
 
     // 댓글 수정 (작성자 comments.write 또는 게시판 관리 manager)
-    // 비밀번호를 실어 보낸 요청은 비밀번호 확인과 같은 제한기로 센다 (없는 요청은 세지 않는다).
     Route::put('/{commentId}', [UserCommentController::class, 'update'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager,false', 'throttle:sirsoft-board.secret-password-verify'])
+        ->middleware('permission:user,sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager,false')
         ->name('update');
 
-    // 댓글 삭제 (비밀번호를 실어 보낸 요청은 비밀번호 확인과 같은 제한기)
+    // 댓글 삭제
     Route::delete('/{commentId}', [UserCommentController::class, 'destroy'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager,false', 'throttle:sirsoft-board.secret-password-verify'])
+        ->middleware('permission:user,sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager,false')
         ->name('destroy');
 });
 
-// 비회원 댓글 비밀번호 검증 (비밀번호 대입 제한 — 비밀글 확인과 같은 제한기)
+// 비회원 댓글 비밀번호 검증
 Route::post('boards/{slug}/comments/{commentId}/verify-password', [UserCommentController::class, 'verifyPassword'])
-    ->middleware(['optional.sanctum', 'permission:user,sirsoft-board.{slug}.comments.write', 'throttle:sirsoft-board.secret-password-verify'])
+    ->middleware(['optional.sanctum', 'permission:user,sirsoft-board.{slug}.comments.write'])
     ->name('boards.comments.verify-password');
 
 /*
@@ -782,9 +754,8 @@ Route::prefix('boards/{slug}')->middleware(['throttle:600,1', 'auth:sanctum'])->
 // optional.sanctum: Bearer 토큰이 있으면 인증, 없으면 guest로 통과
 Route::prefix('boards/{slug}/attachments')->middleware(['optional.sanctum', 'throttle:600,1'])->name('boards.attachments.')->group(function () {
     // 첨부파일 업로드 (임시 업로드 포함)
-    // 글 번호와 비회원 글 비밀번호를 함께 받을 수 있다 — 비밀번호가 실린 요청만 확인 요청과 같은 제한기로 센다
     Route::post('/', [UserAttachmentController::class, 'upload'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.attachments.upload', 'throttle:sirsoft-board.secret-password-verify'])
+        ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
         ->name('upload');
 
     // 첨부파일 순서 변경 (FileUploader 컴포넌트가 PATCH 메서드 사용)
@@ -796,19 +767,6 @@ Route::prefix('boards/{slug}/attachments')->middleware(['optional.sanctum', 'thr
     Route::delete('/{id}', [UserAttachmentController::class, 'destroy'])
         ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
         ->name('destroy');
-});
-
-// 본문 미디어 업로드 (#883) — 편집기 본문 이미지·동영상·오디오. 「파일 첨부 사용」과 무관하게 업로드 권한 + 본문 미디어 정책으로 판정
-Route::prefix('boards/{slug}/content-media')->middleware(['optional.sanctum', 'throttle:60,1'])->name('boards.content-media.')->group(function () {
-    // 글 번호와 비회원 글 비밀번호를 함께 받을 수 있다 — 비밀번호가 실린 요청만 확인 요청과 같은 제한기로 센다
-    Route::post('/', [UserContentMediaController::class, 'upload'])
-        ->middleware(['permission:user,sirsoft-board.{slug}.attachments.upload', 'throttle:sirsoft-board.secret-password-verify'])
-        ->name('upload');
-
-    // 편집기 업로드 계약 — 표준 계약 엔드포인트 (#887). 권한은 업로드와 같다(비회원 포함). 서빙 경로 `{hash}`(12자)와 겹치지 않는다
-    Route::get('/target', [UserContentMediaController::class, 'target'])
-        ->middleware('permission:user,sirsoft-board.{slug}.attachments.upload')
-        ->name('target');
 });
 
 /*

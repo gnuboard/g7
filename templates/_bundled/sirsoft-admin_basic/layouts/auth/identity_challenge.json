@@ -13,9 +13,7 @@
         "maxAttempts": 0,
         "expiresAt": null,
         "remainingSeconds": 0,
-        "error": null,
-        "provider_id": null,
-        "policy_key": null
+        "error": null
     },
     "init_actions": [
         {
@@ -48,8 +46,6 @@
                     "target": "local",
                     "render_hint": "{{response.data.render_hint ?? _local.render_hint}}",
                     "purpose": "{{response.data.purpose ?? _local.purpose}}",
-                    "provider_id": "{{response.data.provider_id ?? null}}",
-                    "policy_key": "{{response.data.policy_key ?? null}}",
                     "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
                     "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
                     "maxAttempts": "{{Number(response.data.max_attempts ?? _local.maxAttempts ?? 0)}}"
@@ -229,8 +225,7 @@
                                                                             {
                                                                                 "handler": "navigate",
                                                                                 "params": {
-                                                                                    "path": "{{_local.return_url}}",
-                                                                                    "fallbackPath": "/admin",
+                                                                                    "path": "{{_local.return_url ?? '/admin'}}",
                                                                                     "mergeQuery": true,
                                                                                     "query": {
                                                                                         "verification_token": "{{response.data.verification_token ?? ''}}",
@@ -276,7 +271,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "코드 재발송. 쿨다운 60초(서버의 재요청 제한과 같은 값)를 **응답 전에** 걸어 연타를 막는다(실패해도 풀지 않는다 —\n                         서버가 거절한 경우에도 곧바로 다시 두드리면 같은 결과다). 새 챌린지는 id 부터\n                         만료까지 통째로 갈리므로 시도 횟수와 오류 문구도 함께 초기화한다.",
+                                                                        "comment": "코드 재발송. 쿨다운 30초를 **응답 전에** 걸어 연타를 막는다(실패해도 풀지 않는다 —\n                         서버가 거절한 경우에도 곧바로 다시 두드리면 같은 결과다). 새 챌린지는 id 부터\n                         만료까지 통째로 갈리므로 시도 횟수와 오류 문구도 함께 초기화한다.",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -284,7 +279,7 @@
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "resendCooldown": 60
+                                                                                    "resendCooldown": 30
                                                                                 }
                                                                             },
                                                                             {
@@ -293,9 +288,7 @@
                                                                                 "params": {
                                                                                     "method": "POST",
                                                                                     "body": {
-                                                                                        "purpose": "{{_local.purpose ?? 'sensitive_action'}}",
-                                                                                        "provider_id": "{{_local.provider_id ?? ''}}",
-                                                                                        "policy_key": "{{_local.policy_key ?? ''}}"
+                                                                                        "purpose": "{{_local.purpose ?? 'sensitive_action'}}"
                                                                                     }
                                                                                 },
                                                                                 "onSuccess": {

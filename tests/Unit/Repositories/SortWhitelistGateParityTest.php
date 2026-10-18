@@ -16,7 +16,7 @@ use App\Repositories\ScheduleRepository;
 use App\Repositories\UserRepository;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
-use Tests\PureTestCase;
+use Tests\TestCase;
 
 /**
  * 정렬 허용 컬럼의 포함관계 회귀 가드.
@@ -38,7 +38,7 @@ use Tests\PureTestCase;
  *
  * 대상 쌍을 손으로 나열하지 않고 파일에서 도출한다. 새 목록이 추가돼도 자동으로 검사된다.
  */
-class SortWhitelistGateParityTest extends PureTestCase
+class SortWhitelistGateParityTest extends TestCase
 {
     /**
      * Repository 상수 ↔ FormRequest 규칙 쌍 목록.

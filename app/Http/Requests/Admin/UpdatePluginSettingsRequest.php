@@ -7,7 +7,6 @@ namespace App\Http\Requests\Admin;
 use App\Extension\HookManager;
 use App\Extension\PluginManager;
 use App\Services\DriverRegistryService;
-use App\Support\LocalizedValue;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Lang;
 
@@ -185,6 +184,7 @@ class UpdatePluginSettingsRequest extends FormRequest
         }
 
         $locale = app()->getLocale();
+        $fallback = config('app.fallback_locale', 'en');
         $attributes = [];
 
         foreach ($plugin->getSettingsSchema() as $field => $config) {
@@ -202,7 +202,7 @@ class UpdatePluginSettingsRequest extends FormRequest
             $label = $config['label'] ?? null;
 
             if (is_array($label)) {
-                $label = LocalizedValue::pick($label, $locale);
+                $label = $label[$locale] ?? $label[$fallback] ?? reset($label);
             }
 
             if (is_string($label) && $label !== '') {

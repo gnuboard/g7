@@ -71,6 +71,253 @@
                     ]
                 },
                 {
+                    "comment": "직전 업데이트 시도가 개발자 custom 자리 사전 검사로 시작 전에 멈췄을 때만 보인다(같은 새 버전 한정) —\n     개발자 패키지(custom/composer.lock)가 새 코어와 맞지 않거나 배포본이 custom 예약 자리에 파일을 실었다.",
+                    "id": "custom_preflight_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!$parent._local.coreUpdateInfo?.custom_preflight}}",
+                    "props": {
+                        "className": "space-y-3",
+                        "role": "alert"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-warning space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_preflight_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_preflight_desc|count={{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length}}|version={{$parent._local.coreUpdateInfo?.custom_preflight?.to_version ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}",
+                            "props": {
+                                "className": "overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": {
+                                        "className": "min-w-full text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": {
+                                                "className": "bg-gray-50 dark:bg-gray-700/50"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_package"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_reason"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_core"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "iteration": {
+                                                        "source": "{{$parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []}}",
+                                                        "item_var": "conflict"
+                                                    },
+                                                    "props": {
+                                                        "className": "border-t border-gray-200 dark:border-gray-700 align-top"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "block font-mono text-gray-900 dark:text-white"
+                                                                    },
+                                                                    "text": "{{conflict.package}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:admin.settings.info.custom_conflict_installed|version={{conflict.installed}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{conflict.type === 'duplicate'}}",
+                                                                    "text": "$t:admin.settings.info.custom_conflict_duplicate"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{conflict.type !== 'duplicate'}}",
+                                                                    "text": "$t:admin.settings.info.custom_conflict_constraint|requires={{conflict.requires}}|constraint={{conflict.constraint}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 font-mono text-xs text-amber-700 dark:text-amber-400"
+                                                            },
+                                                            "text": "{{conflict.core_package}} {{conflict.core_version}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{($parent._local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []).length > 0}}",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_reserved_files"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "text-xs font-mono text-gray-600 dark:text-gray-400 list-disc pl-5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "{{$parent._local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []}}",
+                                                "item_var": "reservedFile"
+                                            },
+                                            "text": "{{reservedFile}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-1 text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "font-semibold"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_fix_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ol",
+                                    "props": {
+                                        "className": "list-decimal pl-5 space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step1"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step2"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step3"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "id": "update_available_section",
                     "type": "basic",
                     "name": "Div",

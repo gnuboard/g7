@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 
@@ -151,7 +150,10 @@ class ActivityLogResource extends BaseApiResource
             return $value;
         }
 
-        return LocalizedValue::pick($value, App::getLocale()) ?? $value;
+        $locale = App::getLocale();
+        $fallback = config('app.fallback_locale', 'en');
+
+        return $value[$locale] ?? $value[$fallback] ?? reset($value) ?: $value;
     }
 
     /**

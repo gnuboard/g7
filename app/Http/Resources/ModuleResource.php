@@ -4,16 +4,12 @@ namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
 use App\Helpers\TimezoneHelper;
-use App\Http\Resources\Traits\ExposesIntegratedBy;
-use App\Http\Resources\Traits\ExposesPhpExtensionRequirements;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ModuleResource extends BaseApiResource
 {
-    use ExposesIntegratedBy;
-    use ExposesPhpExtensionRequirements;
     use ExposesUpdateCoreCompatibility;
 
     /**
@@ -32,11 +28,7 @@ class ModuleResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
-            // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
-            'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
-            // 멈춘 업데이트 — 관리자 카드가 「업데이트 멈춤」 표시와 정리(다시 업데이트)·활성화 단추를 보인다
-            'stuck_update' => (bool) $this->getValue('stuck_update', false),
             'assets' => $this->getValue('assets'),
             'icon_url' => $this->getValue('icon_url'),
             'icon_source' => $this->getValue('icon_source', 'none'),
@@ -62,10 +54,6 @@ class ModuleResource extends BaseApiResource
             ),
             // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
             ...$this->updateCoreCompatibilityFields(),
-            // 업데이트 대상 판이 요구하는 의존·연동 중 못 미치는 것(업데이트가 있을 때만) — 업데이트 창이 실행 전에 경고한다.
-            ...$this->updateTargetRequirementFields(),
-            // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(#151)
-            ...$this->phpExtensionRequirementFields('module'),
             // 레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
             ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             ...$this->resourceMeta($request),
@@ -119,8 +107,6 @@ class ModuleResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
-            // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
-            'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
             'is_installed' => $this->getValue('is_installed', false),
             // 상세 정보
@@ -146,8 +132,6 @@ class ModuleResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
-            // composer.json require/suggest ext-* 와 서버 로드 상태 — 상세 창의 PHP 확장 배지(#151)
-            ...$this->phpExtensionRequirementFields('module'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at')
                 ? TimezoneHelper::toUserDateTimeString(Carbon::parse($this->getValue('created_at')))

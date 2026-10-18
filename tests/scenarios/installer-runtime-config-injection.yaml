@@ -3,22 +3,18 @@ feature: installer_runtime_config_injection
 description: |
   InstallerRuntimeServiceProvider 는 인스톨러 runtime 파일(storage/installer/runtime.php)이 있고 testing 이 아니면 DB 자격증명·APP_KEY 를
   config 에 주입한다. beta.7 코어 한정 보정으로, 디스크 .env 가 정합(설치 완료·root 아님)이고 프로세스 env 가 stale(root·빈 값)이면
-  프로세스 env 를 디스크 값으로 복구한다. 설치가 끝난 사이트에 runtime 파일이 남아 있으면(지우지 못한 잔여) `.env` 에 적힌 값이 이기고,
-  `.env` 의 빈 칸만 runtime 값으로 채운다 — 서버를 옮기며 고친 `.env` 가 반영되고, `.env` 가 비어 runtime 으로만 돌던 사이트도 그대로 돈다. 디스크 코어 버전은 CoreVersionDiskReader 로 읽는다(격리 앱 루트에 beta.7 config 를 써서 검증).
+  프로세스 env 를 디스크 값으로 복구한다. 디스크 코어 버전은 CoreVersionDiskReader 로 읽는다(격리 앱 루트에 beta.7 config 를 써서 검증).
 
 coverage_strategy: full
 
 axes:
-  case: [runtime_absent, testing_env, runtime_db, runtime_app_key, runtime_read_db, runtime_invalid, runtime_empty_app_key, beta7_stale_env, healthy_env, disk_stale, installer_incomplete, runtime_present, residual_env_wins, residual_fills_blank, installing_runtime_wins, residual_env_example_account]
+  case: [runtime_absent, testing_env, runtime_db, runtime_app_key, runtime_read_db, runtime_invalid, runtime_empty_app_key, beta7_stale_env, healthy_env, disk_stale, installer_incomplete, runtime_present]
 
 effects:
   - runtime_config_skipped
   - runtime_config_injected
   - beta7_stale_env_recovered
   - beta7_recovery_not_triggered
-  - residual_runtime_does_not_override_env
-  - residual_runtime_fills_blank_env_keys
-  - residual_runtime_wins_over_example_account
 
 test_files:
   - tests/Unit/Providers/InstallerRuntimeServiceProviderTest.php

@@ -1265,8 +1265,6 @@ hr {
 }
 
 .progress-bar-fill {
-  /* 초기 폭 — 종전 마크업의 style="width: 0%" 를 대신한다. 갱신은 스크립트의 el.style.width 대입 */
-  width: 0;
   height: 100%;
   background-color: var(--primary-color);
   background-image: linear-gradient(
@@ -1339,34 +1337,6 @@ hr {
 .task-name {
   flex: 1;
   line-height: var(--line-height-normal);
-}
-
-/* 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 배지 (#153) — 색은 테마 변수라 다크 테마에서도 따라 바뀐다 */
-.task-required-by {
-  flex-shrink: 0;
-  font-size: var(--font-size-xs);
-  line-height: 1.5;
-  color: var(--text-secondary);
-  background-color: var(--bg-gray);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 1px var(--spacing-sm);
-}
-
-/* 모바일 폭에서는 이름 아래 줄로 내린다 */
-@media (max-width: 480px) {
-  .task-item:has(.task-required-by) {
-    flex-wrap: wrap;
-    row-gap: 4px;
-  }
-
-  .task-required-by {
-    margin-left: calc(18px + var(--spacing-md));
-  }
-
-  .task-item:has(.task-required-by) .task-name {
-    flex-basis: calc(100% - 18px - var(--spacing-md));
-  }
 }
 
 .task-pending {
@@ -1558,11 +1528,6 @@ hr {
   width: 16px;
   height: 16px;
 }
-
-/* 스크립트가 만드는 상태 아이콘의 크기 — 종전 svg 의 style 속성(width·height)을 대신한다.
-   style 속성은 위 16px 규칙을 포함해 어떤 클래스 규칙보다 우선했으므로 같은 결과가 나오도록 !important 를 붙인다. */
-.icon-px-20 { width: 20px !important; height: 20px !important; }
-.icon-px-24 { width: 24px !important; height: 24px !important; }
 
 /* 다크 모드 그룹 스타일 */
 .dark .task-group {
@@ -2437,11 +2402,7 @@ hr {
   animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
 }
 
-/* 경고 아이콘 — currentColor 로 그리는 도형의 기준 색 (종전 svg 의 style 속성을 대신한다) */
-.result-icon-warning {
-  color: #f59e0b;
-}
-
+/* 경고 아이콘 */
 .result-icon-warning .result-icon-circle {
   stroke: #f59e0b;
 }
@@ -4167,176 +4128,6 @@ body {
   background-color: #334155;
 }
 
-/* Step 4 선택 연동(integrations) — 필수 의존성(주황)과 구분되는 청록 */
-.integration-selection-notice {
-  margin: 0 0 var(--spacing-md) 0;
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-sm);
-  color: #115e59;
-  background-color: rgba(13, 148, 136, 0.08);
-  border: 1px solid rgba(13, 148, 136, 0.25);
-  border-radius: 6px;
-}
-
-.integration-selection-notice i {
-  margin-right: 6px;
-  color: #0d9488;
-}
-
-.extension-card.integration-auto-selected.selected {
-  border-color: #0d9488;
-  background-color: rgba(13, 148, 136, 0.08);
-}
-
-.extension-card.integration-auto-selected.selected .extension-card-icon {
-  background-color: #0d9488;
-  color: white;
-}
-
-.extension-card.integration-auto-selected.selected .extension-card-select {
-  color: #0d9488;
-}
-
-.integration-auto-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 4px;
-  padding: 2px 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #115e59;
-  background-color: rgba(13, 148, 136, 0.12);
-  border: 1px solid rgba(13, 148, 136, 0.3);
-  border-radius: 4px;
-  line-height: 1.4;
-}
-
-.integration-auto-badge i {
-  font-size: 0.6rem;
-}
-
-.integration-auto-badge-owner {
-  font-weight: 400;
-  opacity: 0.8;
-}
-
-.extension-card-integrations {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.extension-card-dependencies + .extension-card-integrations {
-  margin-top: 6px;
-}
-
-.integration-label {
-  font-size: 0.7rem;
-  color: #0f766e;
-  margin-right: 2px;
-}
-
-.integration-tag {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 3px 8px;
-  background-color: rgba(13, 148, 136, 0.08);
-  border: 1px dashed rgba(13, 148, 136, 0.4);
-  border-radius: 12px;
-  font-size: 0.7rem;
-  color: #115e59;
-}
-
-.integration-tag i {
-  font-size: 0.65rem;
-  opacity: 0.7;
-}
-
-.integration-template-hint {
-  opacity: 0.75;
-}
-
-.integration-tag.integration-version-mismatch {
-  border-style: solid;
-  border-color: rgba(220, 38, 38, 0.45);
-}
-
-.integration-version-warning {
-  color: var(--color-danger, #dc2626);
-  font-weight: 600;
-}
-
-[data-theme="dark"] .integration-selection-notice {
-  color: #99f6e4;
-  background-color: rgba(45, 212, 191, 0.1);
-  border-color: rgba(45, 212, 191, 0.3);
-}
-
-[data-theme="dark"] .integration-selection-notice i {
-  color: #2dd4bf;
-}
-
-[data-theme="dark"] .extension-card.integration-auto-selected.selected {
-  border-color: #2dd4bf;
-  background-color: rgba(45, 212, 191, 0.12);
-}
-
-[data-theme="dark"] .extension-card.integration-auto-selected.selected .extension-card-icon {
-  background-color: #14b8a6;
-}
-
-[data-theme="dark"] .extension-card.integration-auto-selected.selected .extension-card-select {
-  color: #2dd4bf;
-}
-
-[data-theme="dark"] .integration-auto-badge {
-  color: #99f6e4;
-  background-color: rgba(45, 212, 191, 0.15);
-  border-color: rgba(45, 212, 191, 0.35);
-}
-
-[data-theme="dark"] .integration-label {
-  color: #5eead4;
-}
-
-[data-theme="dark"] .integration-tag {
-  color: #99f6e4;
-  background-color: rgba(45, 212, 191, 0.1);
-  border-color: rgba(45, 212, 191, 0.4);
-}
-
-[data-theme="dark"] .integration-tag.integration-version-mismatch {
-  border-color: rgba(248, 113, 113, 0.6);
-}
-
-.extension-card-php-notice {
-  margin-top: 6px;
-  font-size: 0.75rem;
-  color: #b45309;
-}
-
-.extension-card-php-notice.extension-card-php-blocked {
-  color: var(--color-danger, #dc2626);
-  font-weight: 600;
-}
-
-[data-theme="dark"] .extension-card-php-notice {
-  color: #fbbf24;
-}
-
-[data-theme="dark"] .extension-card-php-notice.extension-card-php-blocked {
-  color: #f87171;
-}
-
-[data-theme="dark"] .integration-version-warning {
-  color: #f87171;
-}
-
 /* ========================================================================
    Step 3 Vendor 설치 방식 카드
    ======================================================================== */
@@ -4614,44 +4405,4 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-}
-
-/* ========================================
-   배치 유틸리티 (u-) — 종전 마크업의 style 속성을 대신한다
-   웹서버가 `style-src 'self'; style-src-attr 'none'` 을 걸면 문자열 style 속성이 막힌다.
-   style 속성은 어떤 클래스 규칙보다 우선했으므로 같은 결과가 나오도록 !important 를 붙인다.
-   ======================================== */
-.u-m-0 { margin: 0 !important; }
-.u-mt-xs { margin-top: var(--spacing-xs) !important; }
-.u-mt-sm { margin-top: var(--spacing-sm) !important; }
-.u-mt-075 { margin-top: 0.75rem !important; }
-.u-mt-md { margin-top: var(--spacing-md) !important; }
-.u-mb-0 { margin-bottom: 0 !important; }
-.u-mb-md { margin-bottom: var(--spacing-md) !important; }
-.u-mb-lg { margin-bottom: var(--spacing-lg) !important; }
-
-.u-flex { display: flex !important; }
-.u-flex-middle { display: flex !important; align-items: center !important; }
-.u-flex-between { display: flex !important; justify-content: space-between !important; align-items: center !important; }
-.u-flex-1 { flex: 1 !important; }
-.u-flex-wrap { flex-wrap: wrap !important; }
-.u-justify-end { justify-content: flex-end !important; }
-.u-gap-sm { gap: var(--spacing-sm) !important; }
-.u-gap-lg { gap: var(--spacing-lg) !important; }
-
-.u-pointer { cursor: pointer !important; }
-.u-nowrap { white-space: nowrap !important; }
-.u-transition { transition: all 0.3s ease-out !important; }
-.u-note { font-size: 0.85rem !important; opacity: 0.75 !important; }
-.u-list-compact { margin: var(--spacing-xs) 0 !important; padding-left: var(--spacing-lg) !important; }
-
-/* 유틸리티의 display 가 초기 숨김(hidden)을 이기지 않게 뒤에서 한 번 더 선언한다 */
-.hidden { display: none !important; }
-
-/* 경고 배너 닫기 버튼 (Step 0 세션 쿠키 차단 안내) */
-.btn-close {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-size: 1.25rem;
 }

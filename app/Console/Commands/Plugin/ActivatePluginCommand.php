@@ -2,12 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
-use App\Console\Commands\Traits\LabelsMissingDependencies;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
-use App\Console\Commands\Traits\ReportsIntegrationNotices;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
-use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Console\Commands\Traits\RestoresHostLanguagePacks;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
@@ -17,18 +12,18 @@ use Illuminate\Support\Facades\Log;
 
 class ActivatePluginCommand extends Command
 {
-    use LabelsMissingDependencies;
-    use LocalizesDescription;
     use RendersLayoutSyncResult;
-    use ReportsIntegrationNotices;
-    use ReportsLifecycleWarnings;
-    use ReportsStuckUpdateRecovery;
     use RestoresHostLanguagePacks;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:activate {identifier : 활성화할 플러그인 식별자} {--force : 의존성 미충족 시 강제 활성화}';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '플러그인을 활성화합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리
@@ -76,7 +71,6 @@ class ActivatePluginCommand extends Command
             // 플러그인 활성화
             $force = $this->option('force');
             $result = $this->pluginManager->activatePlugin($identifier, $force);
-            $this->reportStuckUpdateRecovery();
 
             // 경고 응답인 경우 (의존성 미충족)
             if (isset($result['warning']) && $result['warning'] === true) {
@@ -84,30 +78,29 @@ class ActivatePluginCommand extends Command
                 $this->line('');
 
                 if (! empty($result['missing_modules'])) {
-                    $this->info(__('plugins.commands.activate.required_modules'));
+                    $this->info('필요한 모듈:');
                     foreach ($result['missing_modules'] as $module) {
-                        $statusLabel = $this->missingDependencyStatusLabel('plugins', $module);
+                        $statusLabel = $module['status'] === 'not_installed' ? '미설치' : '비활성';
                         $this->line("   - {$module['identifier']} ({$module['name']}) [{$statusLabel}]");
                     }
                 }
 
                 if (! empty($result['missing_plugins'])) {
-                    $this->info(__('plugins.commands.activate.required_plugins'));
+                    $this->info('필요한 플러그인:');
                     foreach ($result['missing_plugins'] as $plugin) {
-                        $statusLabel = $this->missingDependencyStatusLabel('plugins', $plugin);
+                        $statusLabel = $plugin['status'] === 'not_installed' ? '미설치' : '비활성';
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']}) [{$statusLabel}]");
                     }
                 }
 
                 $this->line('');
-                $this->info(__('plugins.commands.activate.force_hint'));
+                $this->info('강제로 활성화하려면 --force 옵션을 사용하세요.');
 
                 return Command::FAILURE;
             }
 
             if ($result['success']) {
-                $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
-                $this->reportIntegrationNotices('plugin', $identifier);
+                $this->info('✅ '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
                 $this->info('   - '.trans_choice('plugins.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
                 $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                 $this->restoreHostLanguagePacks('plugin', $identifier, 'plugins');
@@ -118,7 +111,6 @@ class ActivatePluginCommand extends Command
 
             return Command::FAILURE;
         } catch (\Exception $e) {
-            $this->reportStuckUpdateRecovery();
             $this->error('❌ '.$e->getMessage());
             Log::error('플러그인 활성화 실패', [
                 'plugin' => $identifier,

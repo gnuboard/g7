@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Core;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Services\Core\BundledInventory;
@@ -24,8 +23,6 @@ use Illuminate\Support\Facades\File;
  */
 class BundledSourcesCommand extends Command
 {
-    use LocalizesDescription;
-
     protected $signature = 'core:bundled-sources
         {action : list|place|prune}
         {identifiers?* : 대상 번들 식별자 (type:id 허용)}
@@ -33,6 +30,8 @@ class BundledSourcesCommand extends Command
         {--zip= : 배포본 ZIP 파일 경로 (현재 코어와 같은 버전)}
         {--force : prune 미리보기 대신 실제로 삭제}
         {--include-modified : prune 이 배포본과 다른 파일이 있는 폴더도 삭제}';
+
+    protected $description = '설치하지 않은 공식 번들 소스를 보고·배치·정리합니다';
 
     /**
      * 이번 실행이 만든 격리 디렉토리(zip 추출·GitHub 다운로드) — 종료 시 정리.
@@ -168,44 +167,28 @@ class BundledSourcesCommand extends Command
 
         $this->warn((string) $error);
 
-        // 배포본을 못 읽은 두 갈래(기록 파일·디스크만)는 같은 표를 쓴다 — 디스크의 `_bundled` 전체(manifest 의 판·샘플·의존 대상)에
-        // 기록 파일의 미배치 항목(디스크에 없는 것)을 더한다. 종전 기록 파일 갈래는 미배치만 나열해 미배치가 0이면 머리글만 남은
-        // 빈 표가 나왔고(예: `core:update --bundled-sources=none` 직후 출시 태그에 닿지 못할 때), 의존 대상 열은 늘 `-` 였다.
         $record = $planner->readRecord();
-        $useRecord = $record !== null && ($record['core_version'] ?? null) === CoreVersionChecker::getCoreVersion();
+        if ($record !== null && ($record['core_version'] ?? null) === CoreVersionChecker::getCoreVersion()) {
+            $this->line(__('settings.bundled_sources.record_fallback', ['recorded_at' => (string) ($record['recorded_at'] ?? '')]));
+            $rows = [];
+            foreach ($record['unplaced'] as $item) {
+                $rows[] = [
+                    __('settings.bundled_sources.types.'.$item['type']),
+                    $item['identifier'].(! empty($item['hidden']) ? __('settings.bundled_sources.sample_suffix') : ''),
+                    (string) ($item['version'] ?? ''),
+                    $this->yesNo($planner->isOnDisk($item['type'], $item['identifier'])),
+                    $this->yesNo(isset($installed[BundledInventory::key($item['type'], $item['identifier'])])),
+                    '-',
+                ];
+            }
+            $this->table($headers, $rows);
 
-        $this->line($useRecord
-            ? __('settings.bundled_sources.record_fallback', ['recorded_at' => (string) ($record['recorded_at'] ?? '')])
-            : __('settings.bundled_sources.disk_db_only'));
-
-        $this->table($headers, $this->fallbackRows($planner, $installed, $useRecord ? (array) ($record['unplaced'] ?? []) : []));
-
-        if ($useRecord) {
-            $this->info(__('settings.bundled_sources.record_unplaced_count', ['count' => count((array) ($record['unplaced'] ?? []))]));
+            return self::SUCCESS;
         }
 
-        return self::SUCCESS;
-    }
-
-    /**
-     * 배포본 없이 보여 줄 표의 행 — 디스크 `_bundled` 전체 + 기록 파일 미배치 가운데 디스크에 없는 것.
-     *
-     * 판·샘플 표시·의존 대상은 디스크 manifest 에서 읽는다(manifest 가 없거나 폴더명과 식별자가 다른 폴더는 `-`).
-     * 디스크에 없는 미배치 항목은 기록 파일의 판·샘플 표시를 쓰고, 의존 대상은 설치 확장의 manifest 기준으로 판정한다.
-     *
-     * @param  BundledSourcePlanner  $planner  판정 서비스
-     * @param  array<string, bool>  $installed  설치된 키 집합
-     * @param  array<int, array<string, mixed>>  $unplaced  기록 파일의 미배치 항목 (없으면 빈 배열)
-     * @return array<int, array<int, string>> 표 행
-     */
-    private function fallbackRows(BundledSourcePlanner $planner, array $installed, array $unplaced): array
-    {
-        $disk = $planner->readInventoryFromDirectory(base_path());
-        $required = $planner->installedDependencyKeys($disk);
+        $this->line(__('settings.bundled_sources.disk_db_only'));
+        $rows = [];
         $domains = BundledSourcePlanner::EXTENSION_DOMAINS + ['language_pack' => BundledSourcePlanner::LANGUAGE_PACK_DOMAIN];
-        $typeOrder = array_flip(array_keys($domains));
-
-        $byKey = [];
         foreach ($domains as $type => [$domain]) {
             $dir = base_path($domain.DIRECTORY_SEPARATOR.'_bundled');
             if (! is_dir($dir)) {
@@ -213,48 +196,15 @@ class BundledSourcesCommand extends Command
             }
             foreach (File::directories($dir) as $path) {
                 $id = basename($path);
-                $key = BundledInventory::key($type, $id);
-                $entry = $disk->get($key);
-                $byKey[$key] = [
-                    'sort' => [$typeOrder[$type], $id],
-                    'row' => [
-                        __('settings.bundled_sources.types.'.$type),
-                        $id.($entry !== null && ! empty($entry['hidden']) ? __('settings.bundled_sources.sample_suffix') : ''),
-                        $entry !== null && ($entry['version'] ?? '') !== '' ? (string) $entry['version'] : '-',
-                        $this->yesNo(true),
-                        $this->yesNo(isset($installed[$key])),
-                        $entry !== null ? $this->yesNo(isset($required[$key])) : '-',
-                    ],
+                $rows[] = [
+                    __('settings.bundled_sources.types.'.$type), $id, '-', $this->yesNo(true),
+                    $this->yesNo(isset($installed[BundledInventory::key($type, $id)])), '-',
                 ];
             }
         }
+        $this->table($headers, $rows);
 
-        foreach ($unplaced as $item) {
-            $type = (string) ($item['type'] ?? '');
-            $id = (string) ($item['identifier'] ?? '');
-            if ($id === '' || ! isset($typeOrder[$type])) {
-                continue;
-            }
-            $key = BundledInventory::key($type, $id);
-            if (isset($byKey[$key])) {
-                continue;
-            }
-            $byKey[$key] = [
-                'sort' => [$typeOrder[$type], $id],
-                'row' => [
-                    __('settings.bundled_sources.types.'.$type),
-                    $id.(! empty($item['hidden']) ? __('settings.bundled_sources.sample_suffix') : ''),
-                    ($item['version'] ?? '') !== '' ? (string) $item['version'] : '-',
-                    $this->yesNo($planner->isOnDisk($type, $id)),
-                    $this->yesNo(isset($installed[$key])),
-                    $this->yesNo(isset($required[$key])),
-                ],
-            ];
-        }
-
-        uasort($byKey, fn (array $a, array $b) => $a['sort'] <=> $b['sort']);
-
-        return array_values(array_map(fn (array $v) => $v['row'], $byKey));
+        return self::SUCCESS;
     }
 
     /**
@@ -329,7 +279,7 @@ class BundledSourcesCommand extends Command
             if ($error !== null) {
                 $this->warn($error);
             }
-            $this->error(__('settings.bundled_sources.errors.release_required_prune'));
+            $this->error(__('settings.bundled_sources.errors.release_required'));
 
             return self::FAILURE;
         }
@@ -359,30 +309,13 @@ class BundledSourcesCommand extends Command
         foreach ($result['protected'] as $key => $requiredBy) {
             $this->line(__('settings.bundled_sources.prune_protected_dependency', ['label' => $key, 'required_by' => implode(', ', $requiredBy)]));
         }
-        foreach ($result['protected_integrations'] ?? [] as $key => $integratedBy) {
-            $this->line(__('settings.bundled_sources.prune_protected_integration', ['label' => $key, 'integrated_by' => implode(', ', $integratedBy)]));
-        }
-        // 배포본에 없는 파일만 다른 폴더는 따로 알린다 — 기본 업데이트가 남긴 이전 판 파일일 수 있다(7.1.1 출시 전).
-        // 보존 동작은 같다(--include-modified 일 때만 지운다).
-        $hasContentChanges = false;
-        $hasExtraOnly = false;
         foreach ($result['modified'] as $key => $files) {
-            $missing = $planner->filesMissingFromRelease($inventory, (array) $inventory->get($key), $files);
-            if ($files !== [] && count($missing) === count($files)) {
-                $hasExtraOnly = true;
-                $this->warn(__('settings.bundled_sources.prune_extra_only_kept', ['label' => $key, 'count' => count($files)]));
-            } else {
-                $hasContentChanges = true;
-                $this->warn(__('settings.bundled_sources.prune_modified_kept', ['label' => $key, 'count' => count($files)]));
-            }
+            $this->warn(__('settings.bundled_sources.prune_modified_kept', ['label' => $key, 'count' => count($files)]));
             foreach ($files as $file) {
                 $this->line(__('settings.bundled_sources.prune_modified_file', ['file' => $file]));
             }
         }
-        if ($hasExtraOnly) {
-            $this->line(__('settings.bundled_sources.prune_extra_only_hint'));
-        }
-        if ($hasContentChanges) {
+        if ($result['modified'] !== []) {
             $this->line(__('settings.bundled_sources.prune_modified_hint'));
         }
 

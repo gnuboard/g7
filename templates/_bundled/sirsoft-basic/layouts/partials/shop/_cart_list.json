@@ -68,7 +68,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-300"
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "({{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}})"
                                 }
@@ -101,8 +101,7 @@
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0}}"
                             },
                             "children": [
@@ -161,7 +160,7 @@
                     "comment": "장바구니 비어있음",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{cartItems !== undefined && (!cartItems.data.items || cartItems.data.items.length === 0)}}",
+                    "if": "{{!cartItems.data.items || cartItems.data.items.length === 0}}",
                     "props": {
                         "className": "text-center py-16"
                     },
@@ -171,7 +170,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "shopping-cart",
-                                "className": "text-[4rem] mx-auto mb-4 text-gray-500 dark:text-gray-500"
+                                "className": "text-[4rem] mx-auto mb-4 text-gray-300 dark:text-gray-600"
                             }
                         },
                         {
@@ -184,15 +183,17 @@
                         },
                         {
                             "type": "basic",
-                            "name": "A",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate"
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_global.shopBase}}/products"
+                                    }
                                 }
                             ],
                             "props": {
-                                "href": "{{_global.shopBase}}/products",
                                 "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
                             },
                             "children": [

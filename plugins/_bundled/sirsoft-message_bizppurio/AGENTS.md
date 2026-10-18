@@ -75,10 +75,7 @@
 **발송**: 코어·모듈이 알림 발화 → 코어 알림 시스템이 켜져 있는 채널별로 발송 작업을 큐잉 →
 이 플러그인의 채널 구현이 그 작업을 받음 → 알림톡이면 승인된 템플릿 내용으로, 문자면 본문
 길이에 따라 SMS/LMS 를 골라 비즈뿌리오 발송 API 호출 → 발송 기록(`bizppurio_dispatches`)
-적재. 알림톡 발송이 불가하거나 실패하면 설정에 따라 대체 SMS 로 내려갑니다. `sms`·`alimtalk` 채널
-드라이버는 provider boot 에서 코어 알림 채널 매니저에 등록하며, 코어 7.1.5 이상에서는 플러그인이
-활성일 때만 등록합니다(`isExtensionActive()` 게이트 — 비활성 플러그인의 채널은 코어가 사용 가능 채널에서
-빼므로 발송 경로가 드라이버를 찾지 않음).
+적재. 알림톡 발송이 불가하거나 실패하면 설정에 따라 대체 SMS 로 내려갑니다.
 
 **결과 수신**: 비즈뿌리오가 `POST /webhook` 으로 결과 통보 →
 `BizppurioWebhookIpWhitelist` 미들웨어가 발신 IP 를 검사 → `WebhookReportService` 가 결과
@@ -171,12 +168,6 @@ HookManager::addAction(
 후보에 오릅니다. 비회원 수신 번호는 알림을 보내는 도메인이 코어 표준 키
 (`GenericNotification::RECIPIENT_PHONE_KEY`)로 알림 data 에 싣고, 이 플러그인은 그 키만 읽습니다.
 
-**활성화 재시드 실패는 경고로 보고합니다.** `activate()` 는 이미 저장된 알림 정의에도 템플릿 행을 만들도록
-코어 시더 → 활성 모듈 → 활성 플러그인 순으로 재시드하며, 한 단계가 실패해도 다음 단계와 활성화는 막지
-않습니다. 그 실패는 로그와 함께 코어 생명주기 경고 목록(`LifecycleWarnings`, step `reseed`, target
-`sirsoft-message_bizppurio:{core|modules|plugins}`)에 올라가 관리자 결과 창·API `data.warnings`·CLI 경고 표로
-운영자에게 보입니다(코어 7.1.3+ — 클래스가 없는 옛 코어에서는 `class_exists` 가드로 로그만 남깁니다).
-
 레이아웃 조각 7개가 UI 대부분입니다 — 알림 설정 화면의 비즈뿌리오 탭(코어·게시판·이커머스
 각각), 알림 목록 행 하단 요약, 알림 템플릿 편집 창의 알림톡·문자 섹션과 하단 버튼, 발송 이력
 화면의 결과 열. 대상 화면이 그 자리를 없애면 조각은 **오류 없이 사라집니다.**
@@ -192,7 +183,6 @@ HookManager::addAction(
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] webhook 라우트를 추가·변경했다면 `getMiddleware()` 의 `targets` 에 그 라우트 이름을 함께 추가 (누락 시 인증 없는 공개 경로가 된다)
 - [ ] 결과 코드 분류(성공/재시도/잔액부족/영구실패)를 바꿨다면 `lang/{ko,en}/result_codes.php` 의 사유 문구도 함께 갱신
 - [ ] 코어 알림 시스템(채널 등록·발송 로그 훅)이 바뀌면 이 플러그인의 구독 4종이 조용히 끊기므로 함께 확인
@@ -223,10 +213,10 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 46개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
-| Vitest | 24개 | `vitest.config.ts` |
+| PHPUnit | 45개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| Vitest | 19개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 29개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

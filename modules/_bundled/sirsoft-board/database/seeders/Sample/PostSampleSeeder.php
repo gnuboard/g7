@@ -292,7 +292,7 @@ class PostSampleSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info(__('sirsoft-board::messages.seeders.post_sample.start'));
+        $this->command->info('게시글/댓글 샘플 데이터 생성 중...');
 
         // 쿼리 로그 비활성화 (메모리 절약 — 수백~수천 건 INSERT 시 필수).
         // 쿼리 이벤트 디스패처도 잠시 끄되, 같은 프로세스에서 뒤에 도는 시더(전체 모듈 시드)의
@@ -318,9 +318,9 @@ class PostSampleSeeder extends Seeder
         // 시드 직후 그래프와 직전 기간 비교가 비지 않도록 샘플 글이 퍼진 최근 30일을 한 번 집계한다(B-15).
         try {
             app(BoardDashboardService::class)->aggregateRecentDays(self::STATS_AGGREGATE_DAYS);
-            $this->command->info('  ✅ '.__('sirsoft-board::messages.seeders.post_sample.stats_aggregated', ['days' => self::STATS_AGGREGATE_DAYS]));
+            $this->command->info('  ✅ 대시보드 집계(board_stats) 최근 '.self::STATS_AGGREGATE_DAYS.'일 갱신 완료');
         } catch (\Throwable $e) {
-            $this->command->warn('  ⚠ '.__('sirsoft-board::messages.seeders.post_sample.stats_failed', ['error' => $e->getMessage()]));
+            $this->command->warn('  ⚠ 대시보드 집계 실패(시드는 계속): '.$e->getMessage());
         }
     }
 
@@ -335,7 +335,7 @@ class PostSampleSeeder extends Seeder
         $users = User::where('status', UserStatus::Active->value)->orderBy('id')->limit(20)->get();
 
         if ($users->isEmpty()) {
-            $this->command->error(__('sirsoft-board::messages.seeders.post_sample.no_active_users'));
+            $this->command->error('활성 회원이 없습니다. DummyUserSeeder를 먼저 실행하세요.');
 
             return [];
         }
@@ -343,12 +343,12 @@ class PostSampleSeeder extends Seeder
         // 관리자/스텝 사용자 조회
         $this->resolveRoleUsers($users);
 
-        $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.users_count', ['count' => $users->count()]));
+        $this->command->info("  - {$users->count()}명의 사용자로 게시글/댓글 생성");
         if ($this->adminUser) {
-            $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.admin_user', ['name' => $this->adminUser->name, 'id' => $this->adminUser->id]));
+            $this->command->info("  - 관리자: {$this->adminUser->name} (ID: {$this->adminUser->id})");
         }
         if ($this->stepUser) {
-            $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.step_user', ['name' => $this->stepUser->name, 'id' => $this->stepUser->id]));
+            $this->command->info("  - 스텝: {$this->stepUser->name} (ID: {$this->stepUser->id})");
         }
 
         // 스케일링 비율 계산
@@ -357,7 +357,7 @@ class PostSampleSeeder extends Seeder
         $ratio = $requestedTotal / $baseTotal;
 
         if ($ratio !== 1.0) {
-            $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.scaling', ['base' => $baseTotal, 'requested' => $requestedTotal, 'ratio' => $ratio]));
+            $this->command->info("  - 게시글 수 스케일링: 기본 {$baseTotal}개 → 요청 {$requestedTotal}개 (비율: {$ratio})");
         }
 
         // 샘플 이미지 파일 미리 생성 (5개)
@@ -375,14 +375,14 @@ class PostSampleSeeder extends Seeder
 
         foreach ($boards as $board) {
             try {
-                $this->command->warn('  >>> '.__('sirsoft-board::messages.seeders.post_sample.board_start', ['slug' => $board->slug]));
+                $this->command->warn("  >>> {$board->slug} 게시판 처리 시작");
                 $stats = $this->createPostsForBoard($board, $users, $ratio);
                 $totalStats['posts'] += $stats['posts'];
                 $totalStats['replies'] += $stats['replies'];
                 $totalStats['comments'] += $stats['comments'];
-                $this->command->warn('  <<< '.__('sirsoft-board::messages.seeders.post_sample.board_done', ['slug' => $board->slug, 'posts' => $stats['posts'], 'replies' => $stats['replies'], 'comments' => $stats['comments']]));
+                $this->command->warn("  <<< {$board->slug} 게시판 처리 완료 (게시글 {$stats['posts']}, 답변글 {$stats['replies']}, 댓글 {$stats['comments']})");
             } catch (\Exception $e) {
-                $this->command->error('  !!! '.__('sirsoft-board::messages.seeders.post_sample.board_error', ['slug' => $board->slug, 'error' => $e->getMessage()]));
+                $this->command->error("  !!! {$board->slug} 게시판 처리 중 오류: {$e->getMessage()}");
                 $this->command->error("      {$e->getFile()}:{$e->getLine()}");
             }
 
@@ -395,16 +395,16 @@ class PostSampleSeeder extends Seeder
         }
 
         $this->command->info('');
-        $this->command->info(__('sirsoft-board::messages.seeders.post_sample.done', ['posts' => $totalStats['posts'], 'replies' => $totalStats['replies'], 'comments' => $totalStats['comments']]));
+        $this->command->info("게시글/댓글 샘플 데이터 생성 완료 — 총 게시글 {$totalStats['posts']}개, 답변글 {$totalStats['replies']}개, 댓글 {$totalStats['comments']}개");
 
         // 시드는 모델 이벤트(BoardCommentsCountSyncListener / PostCountSyncListener)를
         // 우회하는 raw INSERT 라 캐시 컬럼이 갱신되지 않는다. 시드 직후 게시글 상세 화면에서
         // 댓글/답글 영역이 "comments_count > 0" 조건으로 가려져 표시 안 되는 결함이 발생하므로
         // 일괄 재집계로 actual count 와 일치시킨다 (soft delete 제외, 샘플 게시판만).
-        $this->command->info(__('sirsoft-board::messages.seeders.post_sample.counts_syncing'));
+        $this->command->info('비정규화 카운트 컬럼 동기화 중...');
         $boardIds = $boards->pluck('id')->all();
         $this->syncBoardCounts($boardIds);
-        $this->command->info('  ✅ '.__('sirsoft-board::messages.seeders.post_sample.counts_synced'));
+        $this->command->info('  ✅ 게시글·댓글·게시판 카운트 컬럼 갱신 완료');
 
         return $boardIds;
     }
@@ -447,14 +447,7 @@ class PostSampleSeeder extends Seeder
      */
     private function createSampleImageFiles(): void
     {
-        $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.images_creating'));
-
-        // gd 는 코어 기준 「선택」 확장이다 — 없으면 이미지 없이 진행한다(#151, ClaimSeeder·PageSampleSeeder 와 같은 가드)
-        if (! $this->gdAvailable()) {
-            $this->command->warn('  - '.__('sirsoft-board::messages.seeders.post_sample.images_skipped_no_gd'));
-
-            return;
-        }
+        $this->command->info('  - 샘플 이미지 파일 생성 중...');
 
         $datePath = date('Y/m/d');
 
@@ -486,7 +479,7 @@ class PostSampleSeeder extends Seeder
                 'height' => $height,
             ];
 
-            $this->command->info('    - '.__('sirsoft-board::messages.seeders.post_sample.image_created', ['index' => $i, 'path' => $storagePath]));
+            $this->command->info("    - 샘플 이미지 #{$i}: {$storagePath}");
         }
     }
 
@@ -503,7 +496,7 @@ class PostSampleSeeder extends Seeder
         // 이미 데이터가 있으면 스킵
         $existingCount = DB::table('board_posts')->where('board_id', $board->id)->count();
         if ($existingCount > 0) {
-            $this->command->warn('  - '.__('sirsoft-board::messages.seeders.post_sample.posts_exist_skip', ['slug' => $board->slug, 'count' => $existingCount]));
+            $this->command->warn("  - {$board->slug} 게시판에 이미 게시글 {$existingCount}개가 있습니다. 스킵합니다.");
 
             return ['posts' => 0, 'replies' => 0, 'comments' => 0];
         }
@@ -651,7 +644,7 @@ class PostSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.board_summary', ['slug' => $board->slug, 'posts' => $postCount, 'replies' => $replyPostCount, 'comments' => $commentCount]));
+        $this->command->info("  - {$board->slug}: 게시글 {$postCount}개, 답변글 {$replyPostCount}개, 댓글 {$commentCount}개 생성");
 
         return ['posts' => $postCount, 'replies' => $replyPostCount, 'comments' => $commentCount];
     }
@@ -676,7 +669,7 @@ class PostSampleSeeder extends Seeder
      */
     private function createBadgeCasePosts(Board $board, $users): array
     {
-        $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.badge_creating', ['slug' => $board->slug]));
+        $this->command->info("  - {$board->slug}: 배지 케이스 보장 게시글 생성 중...");
 
         $postCount = 0;
         $replyCount = 0;
@@ -913,7 +906,7 @@ class PostSampleSeeder extends Seeder
         }
         $postCount++;
 
-        $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.badge_done', ['slug' => $board->slug, 'posts' => $postCount, 'replies' => $replyCount]));
+        $this->command->info("  - {$board->slug}: 배지 케이스 보장 게시글 {$postCount}개, 답글 {$replyCount}개 생성 완료");
 
         return ['posts' => $postCount, 'replies' => $replyCount, 'comments' => ($board->use_comment ? 2 : 0)];
     }
@@ -1534,11 +1527,6 @@ class PostSampleSeeder extends Seeder
      */
     private function createAttachmentsForPost(int $boardId, int $postId, ?int $userId, ?Carbon $createdAt = null): void
     {
-        // 샘플 이미지를 만들지 못했으면(gd 없음) 첨부 없이 진행
-        if ($this->sampleImages === []) {
-            return;
-        }
-
         $attachedAt = $createdAt ?? now();
 
         // 첨부파일 개수 랜덤 (1~3개)
@@ -1575,21 +1563,11 @@ class PostSampleSeeder extends Seeder
                 ]);
             } catch (\Exception $e) {
                 // 오류 발생 시 스킵하고 계속 진행
-                $this->command->warn('    - '.__('sirsoft-board::messages.seeders.post_sample.attachment_failed', ['post_id' => $postId, 'error' => $e->getMessage()]));
+                $this->command->warn("    - 첨부파일 레코드 생성 실패 (Post {$postId}): {$e->getMessage()}");
 
                 continue;
             }
         }
-    }
-
-    /**
-     * PHP gd 확장(이미지 함수)을 쓸 수 있는지 반환합니다. (테스트가 부재를 흉내 내도록 protected)
-     *
-     * @return bool imagecreatetruecolor 가 있으면 true
-     */
-    protected function gdAvailable(): bool
-    {
-        return function_exists('imagecreatetruecolor');
     }
 
     /**
@@ -1601,7 +1579,6 @@ class PostSampleSeeder extends Seeder
      */
     private function createSampleImage(int $width, int $height): string
     {
-        // php-ext-guard: createSampleImageFiles() 가 gdAvailable() 로 먼저 거른다
         // GD 라이브러리로 간단한 그라데이션 이미지 생성
         $image = imagecreatetruecolor($width, $height);
 

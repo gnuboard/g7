@@ -7,7 +7,6 @@ use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\TemplateLayoutAttachment;
-use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use App\Support\PublicAssetDisk;
 use Illuminate\Database\Eloquent\Collection;
@@ -29,9 +28,6 @@ class TemplateLayoutAttachmentService
 {
     /** 스토리지 카테고리 — {category}/{path} 경로 패턴의 prefix */
     private const STORAGE_CATEGORY = 'template-layout-attachments';
-
-    /** 원본 이름 컬럼(original_name) 길이 — 넘는 이름은 이 길이로 줄여 기록한다 */
-    private const ORIGINAL_NAME_MAX_LENGTH = 255;
 
     /**
      * @param  TemplateLayoutAttachmentRepositoryInterface  $repository  첨부 리포지토리
@@ -65,17 +61,14 @@ class TemplateLayoutAttachmentService
         // 필터 훅 - 파일 데이터 변형 (압축, 리사이즈 등 확장 포인트)
         $file = HookManager::applyFilters('core.template_layout_attachment.filter_upload_file', $file);
 
-        // 저장 경로 — 템플릿 식별자/날짜별 디렉토리 + UUID 파일명 (충돌 회피).
-        // 확장자는 올린 이름이 아니라 파일 내용에서 정한다 (StoredFileExtension 주석 참조).
-        $extension = StoredFileExtension::resolve($file);
-        $storedFilename = Str::uuid().'.'.$extension;
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
+        // 저장 경로 — 템플릿 식별자/날짜별 디렉토리 + UUID 파일명 (충돌 회피)
+        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $relativePath = "{$templateIdentifier}/".date('Y/m/d')."/{$storedFilename}";
 
-        // 운영자가 공개 자산 디스크를 선언했고 이 확장자가 「공개 디스크로 내보낼 확장자」 안이면
-        // 그쪽에 저장한다 (방문자 요청이 CDN 을 탄다). 그 밖에는 기존 첨부 디스크에 두고 서버를 거쳐
-        // 내려보낸다. 행이 자기 disk 를 기록하므로 나중에 설정이 바뀌어도 각 행은 자기 저장 위치를 기억한다.
-        $disk = PublicAssetDisk::resolveForExtension($extension) ?? config('attachment.disk', 'attachments');
+        // 운영자가 공개 자산 디스크를 선언했으면 그쪽에 저장한다 (방문자 요청이 CDN 을 탄다).
+        // 미선언이면 기존 첨부 디스크 그대로. 행이 자기 disk 를 기록하므로 나중에 설정이
+        // 바뀌어도 각 행은 자기 저장 위치를 기억한다.
+        $disk = PublicAssetDisk::resolve() ?? config('attachment.disk', 'attachments');
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용).
         // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 기록이 모두 축소본을 본다.
@@ -94,9 +87,7 @@ class TemplateLayoutAttachmentService
             'layout_name' => $layoutName,
             'disk' => $disk,
             'path' => $relativePath,
-            // 표시·내려받기용 이름일 뿐이라 컬럼 길이에 맞춰 줄인다 — 줄이지 않으면 파일을 저장한 뒤
-            // 행 기록이 실패해 주인 없는 파일이 디스크에 남는다.
-            'original_name' => mb_substr($file->getClientOriginalName(), 0, self::ORIGINAL_NAME_MAX_LENGTH),
+            'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getMimeType(),
             'size' => $file->getSize(),
             'created_by' => Auth::id(),
@@ -162,8 +153,7 @@ class TemplateLayoutAttachmentService
      * 첨부 파일의 공개 접근 URL을 생성합니다.
      *
      * 운영자가 공개 자산 디스크(`core.storage.public_asset_disk`)를 선언했고 행 disk 가
-     * 그 값과 일치하며 저장 경로의 확장자가 「공개 디스크로 내보낼 확장자」 안일 때만 직접 URL(CDN)을
-     * 돌려준다. 그 외에는 인증 불필요한 공개 서빙
+     * 그 값과 일치할 때만 직접 URL(CDN)을 돌려준다. 그 외에는 인증 불필요한 공개 서빙
      * 라우트(`PublicTemplateController::serveFile`)의 URL 을 돌려주며, 라우트는 첨부 id 로
      * 키되고 서빙 시 첨부가 해당 템플릿 소속인지 검증한다.
      *
@@ -187,7 +177,7 @@ class TemplateLayoutAttachmentService
      */
     private function resolveDirectUrl(TemplateLayoutAttachment $attachment): ?string
     {
-        if (! PublicAssetDisk::allowsDirectUrl($attachment->disk, (string) $attachment->path)) {
+        if (! PublicAssetDisk::isCurrent($attachment->disk)) {
             return null;
         }
 

@@ -115,7 +115,6 @@ effects:
   - same_status_rows_merge_back_into_one              # 같은 상태가 되면 행이 다시 하나로 합쳐진다
   - merged_row_sums_amounts_and_quantity              # 병합 행의 수량·금액이 합산된다
   - merge_reassigns_dependent_shipping_and_review_rows # 병합 시 배송·리뷰 행이 생존 행으로 이전(cascade 삭제 방지)
-  - merge_skipped_when_both_rows_have_active_reviews # 두 행 모두 활성 후기면 병합하지 않음(옵션당 활성 후기 1개 유니크, 1.3.5)
   - sequential_splits_accumulate_independent_rows     # 연속 분할이 서로 독립한 행으로 쌓인다
   - option_bulk_response_carries_result_row_ids       # 응답 results 의 order_option_id·split_order_option_id
   - parent_order_status_syncs_to_lowest_option_stage  # 부모 주문 상태가 옵션 최저 단계로 동기화

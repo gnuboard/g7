@@ -196,35 +196,6 @@ catch-all 은 그 뒤에 등록된 라우트를 **가린다**. Laravel 은 등�
 예약 프리픽스를 추가하는 확장·기능은 이 목록에 자기 프리픽스를 함께 넣는다. 스코프가 좁은 catch-all
 (`admin/` 하위만 받는 admin catch-all 등)은 애초에 다른 프리픽스를 삼키지 않으므로 대상이 아니다.
 
-### 끝·연속 슬래시는 301 로 정규형에 모은다
-
-Laravel 라우터는 `path()` 로 매칭하므로 `/admin/`·`/board//free` 도 catch-all 에 걸린다. 그러나 그 뒤의
-템플릿 라우트 판정·SEO 렌더·SEO 캐시 키·방문 통계는 요청 경로 문자열을 쓰는데, `getPathInfo()`·`getRequestUri()`
-는 끝 `/` 와 `//` 를 그대로 남긴다. 그대로 두면 같은 화면이 두 갈래가 된다(웹 서버에 따라 `/admin/` 이 404).
-
-그래서 화면 셸 라우트 두 묶음(admin catch-all · user catch-all)에 `canonical.path` 미들웨어를 붙인다.
-
-- **GET·HEAD 만** 이동한다. 다른 메서드는 통과한다.
-- 끝 `/` 를 떼고(루트 제외) 연속 `/` 를 하나로 줄인 주소로 **301** 한다. 쿼리스트링은 원문 그대로 붙인다(순서 보존).
-- 템플릿에 없는 주소도 먼저 이동하고, 이동한 곳에서 404 를 판정한다.
-- `public/` 아래 실제 디렉터리 경로는 건너뛴다(이동 루프 방지 — Apache `RewriteCond !-d` 와 같음).
-- 이동 주소는 사이트 주소 안에서만 만든다 — `//evil.com/` 같은 경로도 `https://<사이트>/evil.com` 으로 간다.
-- `/api/*`·확장 라우트·사이트맵은 대상이 아니다.
-
-**순서가 계약이다.** `canonical.path` 는 `canonical.host` 바로 뒤, 봇 기록(`analytics.bots`)·SEO(`seo`)·서버 통계
-(`analytics.fallback`)보다 **앞**에 둔다. 그래야 끝·연속 슬래시 주소가 그쪽에 닿지 않는다.
-
-```php
-Route::middleware(['canonical.host', 'canonical.path', 'template.dependencies:user', 'analytics.bots', 'seo', 'analytics.fallback'])
-```
-
-요청 경로를 문자열 비교·캐시 키로 쓸 때는 `getPathInfo()` 를 직접 쓰지 말고 `App\Support\RequestPath::normalize()`
-를 거친다. 미들웨어를 거치지 않는 경로(직접 호출·다른 라우트)에서도 같은 정규형을 쓰기 위해서다. 클라이언트 라우터도
-같은 규칙으로 주소창을 정규형으로 바꾼다([라우터 주소 정규화](../frontend/actions-handlers-navigation.md)).
-
-이 미들웨어로 Apache 와 nginx 의 동작이 같아졌다. Apache 는 `public/.htaccess` 의 끝 슬래시 301 규칙이 먼저
-처리하고, nginx 는 이 미들웨어가 처리한다. 연속 슬래시는 두 서버 모두 이 미들웨어가 처리한다.
-
 ### 디버그·개발 라우트는 그룹 단위로 게이트한다
 
 디버그 도구처럼 "특정 조건에서만 열려야 하는" 라우트군은 판정을 **핸들러 안이 아니라 그룹
@@ -475,6 +446,17 @@ Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormR
 | `SiteUrl::base()` · `SiteUrl::origin()` · `SiteUrl::hostWithPort()` | 사이트 주소(끝 `/` 제거)·출처(`scheme://host[:port]`)·호스트[:포트] |
 | `SiteUrl::isSameOrigin($url)` | 주어진 URL 이 사이트 주소와 같은 출처인지 |
 
+**사람이 여는 화면 주소는 화면 주소 헬퍼로 (7.2.0)** — 알림·메일 링크, 비밀번호 재설정, 결제·클레임 결제 뒤 성공·실패 복귀, 본인인증 복귀처럼 **회원이 브라우저로 여는 사용자 화면**은 `SiteUrl` 대신 `App\Support\ScreenUrl` 로 만든다. 기본은 사이트 주소와 같고, 환경설정 「사용자 화면 URL」(`general.user_screen_url`)을 정하면 그 주소가 베이스가 되며, 필터 훅 `core.screen_url.filter_path` 로 경로를 바꿀 수 있다. PG·본인인증 제공자에 넘기는 **콜백·웹훅 주소와 관리자 화면 주소**는 이 서버가 받아야 하므로 계속 `SiteUrl` 이다.
+
+| 용도 | 사용 |
+| --- | --- |
+| 화면 키로 경로·절대 URL 만들기 | `ScreenUrl::path('auth.login', '/login')` · `ScreenUrl::absolute('board.post', '/board/{slug}/{id}', [...])` |
+| 이미 만든 상대 경로(설정값 등)를 사용자 화면 베이스로 | `redirect(ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($setting)))` (브라우저 복귀용 `failedValidation` 포함) |
+| 관리자 링크 | 범위 `ScreenUrl::SCOPE_ADMIN` — 베이스는 사이트 주소 |
+| 입력 복귀 주소 출처 허용 | `SiteUrl::isSameOrigin($url) \|\| ScreenUrl::isUserScreenOrigin($url)` |
+
+화면 키 목록과 필터 예제는 [개발자 화면 가이드](../custom-development.md#5-화면-주소-키와-주소-필터).
+
 API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
 
 요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 `// audit:allow request-host-absolute-url reason: …` 를 단다. 회귀 가드: audit 룰 `request-host-absolute-url`, 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
@@ -499,25 +481,14 @@ API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON �
 
 | 메서드 | 동작 |
 |--------|------|
-| `RouteCacheHelper::rebuild()` | 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼운다. 테스트 환경·설치 미완료는 비우기까지만 |
+| `RouteCacheHelper::rebuild()` | 비운 뒤 즉시 재생성. 테스트 환경·설치 미완료는 비우기까지만 |
 | `RouteCacheHelper::clear()` | 재생성 없이 비우기만 — 재생성이 부적절한 흐름 중간용 |
 
 `rebuild()` 는 `route:cache` 를 호출하며, 이 커맨드는 **새 애플리케이션을 부팅해** 라우트를
 수집한다. 방금 설치·활성화한 확장의 라우트가 함께 잡히려면 그 새 부팅이 바뀐 상태를 읽어야
 하므로, 굽기 전에 상태 캐시를 비워야 한다(아래 절). 재생성이 실패하면(직렬화
-불가한 클로저 라우트 등) 그때 낡은 캐시를 지운다 — 비어 있으면 느릴 뿐 정확하지만, 낡은 캐시는
+불가한 클로저 라우트 등) 비운 상태로 둔다 — 비어 있으면 느릴 뿐 정확하지만, 낡은 캐시는
 방금 설치한 확장을 통째로 없는 것으로 만든다.
-
-### 먼저 지우지 않는다 — 비는 순간 없이 바꿔 끼우기 (7.1.5)
-
-종전에는 `route:clear` 로 지운 뒤 `route:cache` 로 다시 구웠다. 굽는 1~2초 사이에 들어온 요청은
-`file_exists()` 를 통과한 뒤 `require` 직전에 파일이 지워져 500(`routes-v7.php: No such file`)을 받았다
-— 확장을 켜고 끄는 동안 다른 관리자가 화면을 열면 「초기화 실패 Failed to reload routes」로 멈췄다.
-이제 `App\Support\AtomicBootstrapCache` 가 굽는 동안만 출력 경로(`APP_ROUTES_CACHE`)를 같은 폴더의
-임시 파일로 돌리고, 다 구우면 `rename` 으로 바꿔 끼운다. 실제 파일은 굽는 내내 남아 다른 요청이 계속 쓴다.
-Windows 는 다른 요청이 그 순간 파일을 열고 있으면 `rename` 이 실패하므로 짧게 다시 시도한다.
-config 캐시(`ConfigCacheHelper`)·훅 캐시(`HookCacheManager`)·확장 오토로드(`ExtensionManager`)도
-같은 도우미를 쓴다. 관리자 「캐시 정리」·「최적화」도 두 헬퍼를 거친다.
 
 ### 갱신이 필요한 지점
 

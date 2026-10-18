@@ -51,7 +51,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
      */
     protected function scopeLabel(): string
     {
-        return '['.__('common.console.seeders.notification_log.scope_label').']';
+        return '[코어]';
     }
 
     /**

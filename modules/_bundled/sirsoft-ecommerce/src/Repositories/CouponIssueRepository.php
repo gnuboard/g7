@@ -19,11 +19,6 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
 {
     use PaginatesWithDeferredJoin;
 
-    /**
-     * 쿠폰 발급 모델을 주입받습니다.
-     *
-     * @param  CouponIssue  $model  쿠폰 발급 모델
-     */
     public function __construct(
         protected CouponIssue $model
     ) {}
@@ -229,25 +224,6 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
             ->where('user_id', $userId)
             ->where('coupon_id', $couponId)
             ->count();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getUserIssuedCountsForCoupons(int $userId, array $couponIds): array
-    {
-        if ($couponIds === []) {
-            return [];
-        }
-
-        return $this->model->newQuery()
-            ->where('user_id', $userId)
-            ->whereIn('coupon_id', $couponIds)
-            ->groupBy('coupon_id')
-            ->selectRaw('coupon_id, COUNT(*) as issued_count')
-            ->pluck('issued_count', 'coupon_id')
-            ->map(fn ($count) => (int) $count)
-            ->all();
     }
 
     /**

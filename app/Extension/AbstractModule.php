@@ -8,17 +8,12 @@ use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\ModuleCacheDriver;
-use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Storage\ModuleStorageDriver;
-use App\Extension\Support\UnusableUpgradeStep;
-use App\Extension\Support\UpgradeStepFileLoader;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
 use App\Support\ExtensionIntegrations;
 use App\Support\PublicAssetDisk;
-use App\Support\SearchScopes;
 use App\Support\StateContracts;
-use App\Support\TrustedStyleHosts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -279,23 +274,15 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
                 $version .= '-'.str_replace('_', '.', $matches[4]);
             }
 
+            require_once $file;
+
             // 네임스페이스 추론: 모듈 네임스페이스 + Upgrades\ClassName
             $namespacePart = ExtensionManager::directoryToNamespace($this->getIdentifier());
             $namespace = 'Modules\\'.$namespacePart.'\\Upgrades\\'.$filename;
 
-            // 활성·번들 동일 사본이 이미 선언한 클래스는 다시 싣지 않는다(재선언 Fatal 방지, 7.1.5)
-            UpgradeStepFileLoader::load($file, $namespace);
-
-            // 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 자리 표시를 둔다 — 업데이트가 이번 범위로 고른 단계에
-            // 있을 때만 실패한다(7.1.3, 코어와 같은 규칙 — 예전엔 조용히 건너뜀)
-            try {
-                UpgradeStepClassMissingException::assertUsable($file, $namespace, UpgradeStepInterface::class);
-            } catch (UpgradeStepClassMissingException $e) {
-                $steps[$version] = new UnusableUpgradeStep($e);
-
-                continue;
+            if (class_exists($namespace) && is_subclass_of($namespace, UpgradeStepInterface::class)) {
+                $steps[$version] = new $namespace;
             }
-            $steps[$version] = new $namespace;
         }
 
         ksort($steps, SORT_NATURAL);
@@ -530,8 +517,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 브로드캐스트 채널 정의를 반환합니다.
      *
      * 모듈에서 WebSocket 실시간 채널이 필요한 경우 오버라이드합니다.
-     * 반환된 채널은 모듈이 활성일 때 채널 인가 요청(`/api/broadcasting/auth`)에서 코어가
-     * Broadcast::channel()에 등록합니다(7.1.5 부터 부팅 때가 아니라 인가 요청 때).
+     * 반환된 채널은 ModuleManager가 자동으로 Broadcast::channel()에 등록합니다.
      *
      * 네이밍 규칙: module.{identifier}.{resource}.{param}
      *
@@ -564,13 +550,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
      *               'description' => '작업 설명 (선택)',
      *               'enabled_config' => 'setting.key' (선택, module_setting()으로 조회하여 활성화 여부 결정),
-     *               'without_overlapping' => false | int (선택, 기본 true = 중복 실행 방지·1440분 뒤 잠금 만료, 정수면 그 분 뒤 만료),
-     *               'on_one_server' => false (선택, 기본 true = 다중 서버에서 한 서버만 실행 — 공유 캐시 스토어 필요),
      *               ],
      *               ]
-     *
-     * 중복 실행 방지(7.1.5): 이전 회차가 끝나지 않았으면 다음 회차를 건너뛴다. 비정상 종료로 남은 잠금은 만료 시간이 지나거나
-     * `php artisan schedule:clear-cache` 로 풀린다. 같은 작업을 겹쳐 돌려도 되면 `without_overlapping => false` 로 끈다.
      *
      * enabled_config 형식:
      *   - 'order_settings.auto_cancel_expired' → module_setting($identifier, 'order_settings.auto_cancel_expired')
@@ -928,19 +909,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 매번 계산하는 값이라 설정 파일에 저장하지 않는 설정 키 목록 (7.1.3)
-     *
-     * `getConfigValues()` 가 요청마다 계산해 돌려주는 값은 여기에 선언한다. 코어는 이 키를 설치 때 설정 파일에
-     * 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 실시간 값을 쓴다.
-     *
-     * @return array<int, string> 계산값 키 (도트 표기 가능)
-     */
-    public function getComputedSettingKeys(): array
-    {
-        return [];
-    }
-
-    /**
      * 모듈 설정 스키마 반환
      *
      * 민감한 필드(sensitive: true) 정보 등을 포함합니다.
@@ -1040,23 +1008,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 이 모듈이 선언한 최근 검색어 범위를 반환합니다.
-     *
-     * module.json 의 `search_scopes` 에서 읽고, 범위 id 에 `{식별자}.` 를 붙입니다. 같은 범위를 적은 검색창끼리
-     * 최근 검색어 목록을 공유하며, 운영자는 환경설정 > 개인정보 「최근 검색어」 카드에서 범위마다 보관 개수·보관
-     * 기한을 고칩니다. 형식이 틀린 항목은 버립니다({@see SearchScopes}).
-     *
-     * @param  bool  $reportWarnings  설치·활성화·업데이트처럼 운영자에게 알릴 작업이면 true — 틀린 항목을 생명주기 경고로도 남긴다
-     * @return array<string, array{label: string|array<string, string>|null, max_count: int|null, retention_days: int|null}> 범위 id → 선언
-     *
-     * @since 7.1.5
-     */
-    public function getSearchScopes(bool $reportWarnings = false): array
-    {
-        return SearchScopes::normalize($this->loadManifest()['search_scopes'] ?? null, $this->getIdentifier(), $reportWarnings);
-    }
-
-    /**
      * 함께 쓰면 연동되는(선택) 확장을 반환합니다.
      *
      * module.json 의 `integrations` 에서 읽습니다. `dependencies` 와 달리 설치·활성화를 막지 않습니다
@@ -1069,21 +1020,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getIntegrations(): array
     {
         return ExtensionIntegrations::normalize($this->loadManifest()['integrations'] ?? []);
-    }
-
-    /**
-     * 함께 쓰면 연동되는(선택) 확장을 「식별자 => 버전 제약」 맵으로 반환합니다.
-     *
-     * module.json 의 `integrations` 에서 읽습니다. 목록형·버전식이 아닌 값은 `'*'`(버전 무관)입니다. 버전이 모자라도
-     * 설치·활성화를 막지 않고 안내만 합니다 ({@see ExtensionIntegrations::constraints()}).
-     *
-     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
-     *
-     * @since 7.1.4
-     */
-    public function getIntegrationConstraints(): array
-    {
-        return ExtensionIntegrations::constraints($this->loadManifest()['integrations'] ?? []);
     }
 
     /**
@@ -1100,30 +1036,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getTrustedScriptHosts(): array
     {
         $hosts = $this->loadManifest()['trusted_script_hosts'] ?? [];
-
-        if (! is_array($hosts)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
-            fn ($host) => $host !== ''
-        ));
-    }
-
-    /**
-     * 신뢰하는 외부 스타일시트 호스트 목록을 반환합니다.
-     *
-     * module.json 의 `trusted_style_hosts` 배열에서 읽습니다. 이 모듈이 싣는 외부 스크립트(결제사 결제창 등)가
-     * 자기 호스트에서 불러오는 CSS 파일의 호스트를 선언합니다. 코어는 켜진 확장의 선언을 모아
-     * ({@see TrustedStyleHosts}) 스타일 정책(`style-src`)의 허용 호스트에 더합니다. 확장이 직접 쓰는
-     * CSS 는 선언하지 않고 동봉해 같은 사이트에서 싣습니다.
-     *
-     * @return array<int, string> 신뢰 호스트명 목록 (예: ['stdpay.example.com'])
-     */
-    public function getTrustedStyleHosts(): array
-    {
-        $hosts = $this->loadManifest()['trusted_style_hosts'] ?? [];
 
         if (! is_array($hosts)) {
             return [];
@@ -1599,19 +1511,11 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
      * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
      *
-     * 저장할 파일의 확장자를 함께 주면 그 확장자가 「공개 디스크로 내보낼 확장자」 안일 때만 디스크
-     * 이름을 돌려줍니다 (7.1.6). 확장자를 주지 않으면 종전과 같습니다.
-     *
      * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
-     * @param  string|null  $extension  저장할 파일의 확장자 (null 이면 확장자 판정 없음)
      * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
      */
-    protected function resolvePublicAssetDisk(?string $override = null, ?string $extension = null): ?string
+    protected function resolvePublicAssetDisk(?string $override = null): ?string
     {
-        if ($extension !== null) {
-            return PublicAssetDisk::resolveForExtension($extension, $override);
-        }
-
         return PublicAssetDisk::resolve($override);
     }
 

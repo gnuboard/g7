@@ -84,7 +84,6 @@
                                 }
                             ],
                             "props": {
-                                "aria-label": "$t:board.guest_password",
                                 "type": "password",
                                 "placeholder": "$t:board.guest_password_placeholder",
                                 "value": "{{_global.deleteModal.password ?? ''}}",
@@ -99,7 +98,7 @@
                     "name": "Div",
                     "if": "{{_local.deleteError}}",
                     "props": {
-                        "className": "text-sm text-red-600 dark:text-red-400"
+                        "className": "text-sm text-red-500"
                     },
                     "text": "{{_local.deleteError}}"
                 },
@@ -141,7 +140,6 @@
                                 }
                             ],
                             "props": {
-                                "type": "button",
                                 "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                             },
                             "text": "$t:common.cancel"
@@ -237,9 +235,8 @@
                                 }
                             ],
                             "props": {
-                                "type": "button",
                                 "disabled": "{{_local.deleteSubmitting || (_global.deleteModal.isGuest && !_global.deleteModal.password)}}",
-                                "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {

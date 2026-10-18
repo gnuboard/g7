@@ -95,7 +95,6 @@
                                     "props": {
                                         "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}",
                                         "target": "_blank",
-                                        "rel": "noopener",
                                         "className": "flex-shrink-0"
                                     },
                                     "children": [
@@ -137,7 +136,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-gray-400 dark:text-gray-500"
                                                             }
                                                         }
                                                     ]
@@ -161,7 +160,6 @@
                                             "props": {
                                                 "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}",
                                                 "target": "_blank",
-                                                "rel": "noopener",
                                                 "className": "block no-underline"
                                             },
                                             "children": [
@@ -248,7 +246,7 @@
                                                     "props": {
                                                         "name": "truck",
                                                         "size": "xs",
-                                                        "className": "text-gray-500 dark:text-gray-500"
+                                                        "className": "text-gray-400 dark:text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -263,7 +261,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
                                                     },
                                                     "text": "/"
                                                 },
@@ -283,7 +281,7 @@
                                                     "name": "Span",
                                                     "if": "{{(checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-green-700 dark:text-green-400"
+                                                        "className": "text-xs text-green-600 dark:text-green-400"
                                                     },
                                                     "text": "$t:shop.checkout.free_shipping"
                                                 }
@@ -303,7 +301,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500 line-through"
                                                     },
                                                     "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
                                                 },
@@ -312,7 +310,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs font-bold text-red-600 dark:text-red-400"
+                                                        "className": "text-xs font-bold text-red-500"
                                                     },
                                                     "text": "{{item.product_option?.discount_rate}}%"
                                                 }
@@ -335,7 +333,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500 line-through"
                                                     },
                                                     "text": "{{currency[1]?.formatted}}"
                                                 }
@@ -546,11 +544,32 @@
                                                     ],
                                                     "props": {
                                                         "name": "item_coupon_1",
-                                                        "aria-label": "$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_1')}}",
                                                         "value": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? ''}}",
-                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500",
-                                                        "options": "{{[{ value: '', label: (item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_1' : '$t:shop.checkout.coupon_no_available' }].concat((item.available_coupons ?? []).map(pc => ({ value: String(pc.id), label: (item.disabled_coupon_ids ?? []).includes(pc.id) ? '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + (pc.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pc.benefit_formatted) + ')', disabled: _local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pc.id || (item.disabled_coupon_ids ?? []).includes(pc.id) })))}}"
-                                                    }
+                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Option",
+                                                            "props": {
+                                                                "value": ""
+                                                            },
+                                                            "text": "{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_1' : '$t:shop.checkout.coupon_no_available'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Option",
+                                                            "iteration": {
+                                                                "source": "{{item.available_coupons ?? []}}",
+                                                                "item_var": "pcoupon"
+                                                            },
+                                                            "props": {
+                                                                "value": "{{pcoupon.id}}",
+                                                                "disabled": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pcoupon.id || (item.disabled_coupon_ids ?? []).includes(pcoupon.id)}}"
+                                                            },
+                                                            "text": "{{(item.disabled_coupon_ids ?? []).includes(pcoupon.id) ? '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + pcoupon.benefit_formatted + ')'}}"
+                                                        }
+                                                    ]
                                                 },
                                                 {
                                                     "comment": "상품 쿠폰 2 (첫 번째 쿠폰 선택 시에만 표시)",
@@ -621,11 +640,32 @@
                                                     ],
                                                     "props": {
                                                         "name": "item_coupon_2",
-                                                        "aria-label": "$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_2')}}",
                                                         "value": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? ''}}",
-                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500",
-                                                        "options": "{{[{ value: '', label: (item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_2' : '$t:shop.checkout.coupon_no_available' }].concat((item.available_coupons ?? []).map(pc => ({ value: String(pc.id), label: (item.disabled_coupon_ids ?? []).includes(pc.id) ? '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + (pc.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pc.benefit_formatted) + ')', disabled: _local.checkout?.item_coupons?.[item.product_option_id]?.[0] == pc.id || (item.disabled_coupon_ids ?? []).includes(pc.id) })))}}"
-                                                    }
+                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Option",
+                                                            "props": {
+                                                                "value": ""
+                                                            },
+                                                            "text": "{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_2' : '$t:shop.checkout.coupon_no_available'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Option",
+                                                            "iteration": {
+                                                                "source": "{{item.available_coupons ?? []}}",
+                                                                "item_var": "pcoupon2"
+                                                            },
+                                                            "props": {
+                                                                "value": "{{pcoupon2.id}}",
+                                                                "disabled": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] == pcoupon2.id || (item.disabled_coupon_ids ?? []).includes(pcoupon2.id)}}"
+                                                            },
+                                                            "text": "{{(item.disabled_coupon_ids ?? []).includes(pcoupon2.id) ? '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + pcoupon2.benefit_formatted + ')'}}"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -671,7 +711,7 @@
                                             "name": "Div",
                                             "if": "{{(item.product_coupon_discount_amount ?? 0) > 0}}",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
+                                                "className": "text-sm text-gray-400 dark:text-gray-500 line-through"
                                             },
                                             "text": "{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}"
                                         },
@@ -725,7 +765,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                        "className": "text-xs text-red-500 dark:text-red-400"
                                                     },
                                                     "text": "{{finalCurrency[1]?.formatted}}"
                                                 }

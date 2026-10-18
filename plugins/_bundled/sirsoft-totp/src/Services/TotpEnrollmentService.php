@@ -4,13 +4,10 @@ namespace Plugins\Sirsoft\Totp\Services;
 
 use App\Extension\HookManager;
 use App\Models\User;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\Totp\Exceptions\AlreadyEnrolledException;
-use Plugins\Sirsoft\Totp\Exceptions\EnrollmentConflictException;
-use Plugins\Sirsoft\Totp\Exceptions\OwnershipThrottledException;
 use Plugins\Sirsoft\Totp\Models\TotpCredential;
 use Plugins\Sirsoft\Totp\Repositories\Contracts\TotpCredentialRepositoryInterface;
 use Plugins\Sirsoft\Totp\Support\Base32;
@@ -34,20 +31,11 @@ class TotpEnrollmentService
     private const BACKUP_CODE_LENGTH = 10;
 
     /**
-     * 본인 확인 시도 제한기 (미지정 시 컨테이너에서 해석 — 기존 수동 생성 호환)
-     */
-    private readonly TotpOwnershipThrottle $ownershipThrottle;
-
-    /**
      * @param  TotpCredentialRepositoryInterface  $credentials  자격증명 저장소
-     * @param  TotpOwnershipThrottle|null  $ownershipThrottle  해제·재발급 코드 확인 시도 제한 (1.0.3)
      */
     public function __construct(
         private readonly TotpCredentialRepositoryInterface $credentials,
-        ?TotpOwnershipThrottle $ownershipThrottle = null,
-    ) {
-        $this->ownershipThrottle = $ownershipThrottle ?? app(TotpOwnershipThrottle::class);
-    }
+    ) {}
 
     /**
      * 등록을 시작해 새 시크릿을 발급합니다.
@@ -101,18 +89,11 @@ class TotpEnrollmentService
      * 확정 시점의 timestep 을 `last_used_timestep` 에 새겨 둔다 — 확정에 쓴 코드를 곧바로
      * 로그인에 재사용하지 못하게 한다.
      *
-     * 확정은 「미확정이고 시크릿이 그대로일 때만」 저장한다 — 다른 화면이 먼저 확정했거나 그 사이 시크릿이 새로 발급되면
-     * `EnrollmentConflictException` 이다(화면의 백업 코드와 저장 코드가 어긋나지 않게 — KVE 동형 L3).
-     * 확정되면 `sirsoft-totp.credential.enrolled` 훅을 발화한다(본인 알림).
-     *
      * @param  User  $user  대상 사용자
      * @param  string  $code  인증 앱이 만든 6자리 코드
-     * @param  array<string, mixed>  $context  요청 문맥 (ip_address·user_agent)
      * @return array<int, string>|null 평문 백업 코드 10개, 코드가 틀리면 null
-     *
-     * @throws EnrollmentConflictException 다른 확정·재발급과 겹쳤을 때
      */
-    public function confirm(User $user, string $code, array $context = []): ?array
+    public function confirm(User $user, string $code): ?array
     {
         $credential = $this->findFor($user);
 
@@ -120,15 +101,7 @@ class TotpEnrollmentService
             return null;
         }
 
-        try {
-            $secret = (string) $credential->secret;
-        } catch (DecryptException) {
-            // 미확정 행의 시크릿이 지금 키로 풀리지 않는다(사이트 암호화 키가 바뀐 뒤 남은 행) — 맞출 수 있는 코드가
-            // 없으므로 코드 불일치로 답한다. 등록을 다시 시작하면 새 시크릿이 발급된다.
-            return null;
-        }
-
-        $step = Totp::verify($secret, $code);
+        $step = Totp::verify((string) $credential->secret, $code);
 
         if ($step === null) {
             return null;
@@ -136,11 +109,11 @@ class TotpEnrollmentService
 
         $plain = $this->generateBackupCodes();
 
-        if (! $this->credentials->confirmIfPending($credential, $step, $this->hashBackupCodes($plain))) {
-            throw new EnrollmentConflictException;
-        }
-
-        HookManager::doAction('sirsoft-totp.credential.enrolled', $user, $this->hookContext($context));
+        $this->credentials->update($credential, [
+            'confirmed_at' => Carbon::now(),
+            'last_used_timestep' => $step,
+            'backup_codes' => $this->hashBackupCodes($plain),
+        ]);
 
         return $plain;
     }
@@ -151,16 +124,11 @@ class TotpEnrollmentService
      * 해제에도 현재 코드를 요구한다 — 잠깐 자리를 비운 사이 열린 세션으로 2단계 인증을
      * 꺼 버리는 경로를 막는다.
      *
-     * 코드 확인은 회원 단위로 시도를 제한한다(KVE 동형 A1). 해제되면 `sirsoft-totp.credential.disabled` 훅(본인 알림)을 발화한다.
-     *
      * @param  User  $user  대상 사용자
      * @param  string  $code  현재 코드 또는 백업 코드
-     * @param  array<string, mixed>  $context  요청 문맥 (ip_address·user_agent)
      * @return bool 해제 성공 여부
-     *
-     * @throws OwnershipThrottledException 시도 기준을 넘었을 때
      */
-    public function disable(User $user, string $code, array $context = []): bool
+    public function disable(User $user, string $code): bool
     {
         $credential = $this->findFor($user);
 
@@ -168,13 +136,11 @@ class TotpEnrollmentService
             return false;
         }
 
-        if (! $this->verifyOwnership($user, $credential, $code)) {
+        if (! $this->verifyOwnership($credential, $code)) {
             return false;
         }
 
         $this->credentials->deleteByUserId((int) $user->id);
-
-        HookManager::doAction('sirsoft-totp.credential.disabled', $user, $this->hookContext($context) + ['by_admin' => false]);
 
         return true;
     }
@@ -182,16 +148,11 @@ class TotpEnrollmentService
     /**
      * 백업 코드를 새로 발급합니다 (기존 코드는 전부 무효).
      *
-     * 코드 확인은 회원 단위로 시도를 제한한다(KVE 동형 A1). 재발급되면 `sirsoft-totp.backup_codes.regenerated` 훅(본인 알림)을 발화한다.
-     *
      * @param  User  $user  대상 사용자
      * @param  string  $code  현재 코드 또는 남은 백업 코드
-     * @param  array<string, mixed>  $context  요청 문맥 (ip_address·user_agent)
      * @return array<int, string>|null 평문 백업 코드 10개, 확인에 실패하면 null
-     *
-     * @throws OwnershipThrottledException 시도 기준을 넘었을 때
      */
-    public function regenerateBackupCodes(User $user, string $code, array $context = []): ?array
+    public function regenerateBackupCodes(User $user, string $code): ?array
     {
         $credential = $this->findFor($user);
 
@@ -199,15 +160,15 @@ class TotpEnrollmentService
             return null;
         }
 
-        if (! $this->verifyOwnership($user, $credential, $code)) {
+        if (! $this->verifyOwnership($credential, $code)) {
             return null;
         }
 
         $plain = $this->generateBackupCodes();
 
-        $this->credentials->replaceBackupCodes((int) $credential->getKey(), $this->hashBackupCodes($plain));
-
-        HookManager::doAction('sirsoft-totp.backup_codes.regenerated', $user, $this->hookContext($context));
+        $this->credentials->update($credential, [
+            'backup_codes' => $this->hashBackupCodes($plain),
+        ]);
 
         return $plain;
     }
@@ -268,23 +229,13 @@ class TotpEnrollmentService
      *
      * 백업 코드가 맞으면 그 코드는 소진된다 — 해제·재발급도 1회용 규칙을 따른다.
      *
-     * 회원 단위로 시도를 제한하고(기준 초과면 계산 전에 거부), 코드 소진은 조건부 갱신·행 잠금으로 한다 —
-     * 같은 코드를 동시에 두 번 쓰지 못한다(KVE-2026-3193·동형 A1).
-     *
-     * @param  User  $user  대상 회원
      * @param  TotpCredential  $credential  대상 자격증명
      * @param  string  $code  입력 코드
      * @return bool 확인 성공 여부
-     *
-     * @throws OwnershipThrottledException 시도 기준을 넘었을 때
      */
-    protected function verifyOwnership(User $user, TotpCredential $credential, string $code): bool
+    protected function verifyOwnership(TotpCredential $credential, string $code): bool
     {
-        // 시도 1회를 먼저 세어 자리를 잡는다 — 동시에 보낸 요청이 같은 남은 횟수를 함께 통과하지 못하게(성공하면 아래에서 지운다)
-        $this->ownershipThrottle->reserve($user);
-
         $alnum = preg_replace('/[^A-Za-z0-9]/', '', $code) ?? '';
-        $ok = false;
 
         if (strlen($alnum) === Totp::DIGITS && ctype_digit($alnum)) {
             $step = Totp::verify(
@@ -294,31 +245,24 @@ class TotpEnrollmentService
                 notBeforeTimestep: $credential->last_used_timestep,
             );
 
-            $ok = $step !== null && $this->credentials->advanceTimestep((int) $credential->getKey(), $step);
-        } else {
-            $ok = $this->credentials->consumeBackupCode((int) $credential->getKey(), $code);
+            if ($step === null) {
+                return false;
+            }
+
+            $this->credentials->update($credential, ['last_used_timestep' => $step]);
+
+            return true;
         }
 
-        if ($ok) {
-            $this->ownershipThrottle->clear($user);
+        $remaining = $credential->matchBackupCode($code);
+
+        if ($remaining === null) {
+            return false;
         }
 
-        return $ok;
-    }
+        $this->credentials->update($credential, ['backup_codes' => $remaining]);
 
-    /**
-     * 알림 훅 문맥을 만듭니다.
-     *
-     * @param  array<string, mixed>  $context  호출자가 넘긴 요청 문맥
-     * @return array<string, mixed> 훅 문맥 (ip_address·user_agent·occurred_at)
-     */
-    private function hookContext(array $context): array
-    {
-        return [
-            'ip_address' => $context['ip_address'] ?? null,
-            'user_agent' => $context['user_agent'] ?? null,
-            'occurred_at' => Carbon::now()->toIso8601String(),
-        ];
+        return true;
     }
 
     /**

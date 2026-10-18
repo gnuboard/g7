@@ -37,8 +37,7 @@
     "1year": "1년"
   },
   "error": {
-    "general": "오류가 발생했습니다.",
-    "list_load_failed": "목록을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요."
+    "general": "오류가 발생했습니다."
   },
   "currency": {
     "won": "원"

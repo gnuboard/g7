@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\ActivityLogType;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -134,7 +133,10 @@ class ActivityLog extends Model
         // 다국어 배열 값을 현재 로케일 문자열로 변환 (__() 함수는 문자열만 치환 가능)
         $params = array_map(function ($value) {
             if (is_array($value)) {
-                return LocalizedValue::pick($value) ?? '';
+                $locale = app()->getLocale();
+                $fallback = config('app.fallback_locale', 'en');
+
+                return $value[$locale] ?? $value[$fallback] ?? (string) reset($value);
             }
 
             return $value;

@@ -1,0 +1,64 @@
+feature: custom 예약 자리 — 코어 업데이트가 덮지도 지우지도 않는 개발자 자리 (#792)
+
+description: |
+  업데이트 대상 폴더(routes·resources·app·public·lang·config·database) 안쪽의 custom 예약 자리
+  (routes/custom.php·app/Custom·resources/views/custom·public/custom·lang/custom·config/custom.php·
+  database/migrations/custom)와 최상위 custom/(개발자 composer)를 증분·prune·백업 없음 세 모드 모두에서
+  복사·orphan 정리·자동 발견·신규 파일 manifest·롤백 prune 이 건너뛴다. 배포본이 예약 자리에 파일을 실으면
+  사전 검사가 찾아 업데이트를 시작하지 않는다. 판정은 경로 구간 단위(app/CustomX 는 예약 자리가 아님).
+
+test_files:
+  - tests/Unit/Services/CoreUpdateReservedPathsTest.php
+  - tests/Feature/Console/CoreUpdateCustomPreflightTest.php
+  - tests/Unit/Extension/CustomPackageConflictCheckerTest.php
+  - tests/Feature/Custom/CustomVendorServiceTest.php
+  - tests/Feature/Installer/InstallerCustomVendorTest.php
+
+axes:
+  case:
+    - apply_modes
+    - release_ships_reserved
+    - segment_exact
+    - manifest_and_rollback
+    - auto_discovery
+    - command_blocks_reserved_release
+    - command_blocks_zip_with_new_version
+    - command_blocks_package_conflict
+    - command_passes_without_conflict
+    - no_conflict
+    - constraint_unsatisfied
+    - duplicate
+    - unparseable_or_missing
+    - no_custom
+    - bundle_install
+    - integrity_mismatch
+    - installer_no_custom
+    - installer_bundle
+
+effects:
+  - reserved_files_survive_every_mode
+  - core_files_in_same_target_updated
+  - release_reserved_file_detected
+  - release_reserved_file_not_applied
+  - reserved_prefix_is_segment_exact
+  - manifest_excludes_reserved
+  - rollback_prune_skips_reserved
+  - top_level_custom_not_auto_discovered
+  - update_not_started_before_maintenance
+  - preflight_result_recorded_for_admin
+  - conflict_table_printed
+  - preflight_passes_without_conflict
+  - compatible_packages_pass
+  - constraint_conflict_detected
+  - duplicate_conflict_detected
+  - same_version_duplicate_allowed
+  - unparseable_version_not_blocking
+  - missing_lock_is_empty
+  - no_custom_is_noop
+  - bundle_extracted_when_vendor_missing
+  - in_sync_vendor_skipped
+  - integrity_mismatch_not_installed
+  - out_of_sync_vendor_reinstalled_from_new_bundle
+  - installer_skips_without_custom
+  - installer_extracts_custom_bundle
+  - installer_skips_in_sync

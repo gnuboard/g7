@@ -2,11 +2,11 @@
 
 # Gnuboard7
 
-**The clean open-source CMS for builders and agents.**
-Enterprise-grade foundation. Minimal tokens.
+**A modern, extensible CMS platform built with Laravel + React**
+The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.1.6-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.2.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -31,12 +31,12 @@ Enterprise-grade foundation. Minimal tokens.
 
 ## About Gnuboard7
 
-**Gnuboard7** is an open-source CMS designed so that anyone can build their own web platform quickly, together with AI agents.
+**Gnuboard7** is a complete, ground-up redesign of Gnuboard — Korea's most widely used open-source CMS for 23 years — rebuilt on a modern stack.
 
-Declarative layouts, an extension system that never touches the core, and agent development rules built into the repository let agents read and write only what matters — so you can build community or storefront services with **minimal tokens**, on an enterprise-grade foundation where access control, i18n, identity verification, and payments are built in from day one. It is the next generation of Gnuboard, Korea's most widely used open-source CMS for 23 years, built anew on Laravel and React.
+Everything from security to architecture was rewritten from scratch on Laravel and React.
 
 - **Declarative layout engine**: define React-based UI declaratively with HTML-like markup (`.g7.html`) alone, no React knowledge required — the server compiles it into a runtime JSON contract at install time. Modules and plugins inject or extend UI dynamically without a frontend build. When you need something more advanced, you can develop and register custom React components
-- **One platform, many business models**: community, storefront — extend it to fit your business
+- **One platform, many business models**: community, storefront, subscription, booking — extend it to fit your business
 - **Fine-grained access control**: Role + Permission + Scope, a three-tier model that keeps control as your service grows
 - **Global-ready**: native i18n support, locale-driven UI, multi-currency handling
 - **Extension system**: modules + plugins + templates, a three-layer structure that adds functionality without touching the core
@@ -414,7 +414,7 @@ Personal data whose retention period has ended is destroyed or anonymized per do
 
 ### System requirements
 
-- PHP 8.2+ with the required extensions (16 in total), including `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, and `zip`. Additional extensions (`gd`/`imagick`, `intl`, `redis`, `bcmath`, and others) are optional and only needed for the features that use them — see [docs/requirements.md](docs/requirements.md). Modules and plugins may declare extra PHP extensions in their `composer.json` (`require`/`suggest` `ext-*`), which are checked on install and shown in the admin screens
+- PHP 8.2+ with the required extensions (16 in total), including `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, and `zip`. Additional extensions (`gd`/`imagick`, `intl`, `redis`, `bcmath`, and others) are optional and only needed for the features that use them — see [docs/requirements.md](docs/requirements.md)
 - MySQL 8.0+ or MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
 - Node.js 20+ (only needed when building frontend assets)
@@ -442,13 +442,6 @@ cp .env.example .env
 ```
 
 The setup wizard creates the application key, configures the database connection, runs the migrations, and lets you choose which modules, plugins, templates, and language packs to install. Once setup completes, the installer endpoints are blocked automatically (HTTP 410).
-
-You can run the same installation from a server terminal without a browser — interactively, or non-interactively with options and environment variables only:
-
-```bash
-php g7-install                       # interactive
-php g7-install --no-interaction ...  # automation — see "방법 5" in INSTALL.md
-```
 
 > Detailed installation guide (Korean): [INSTALL.md](INSTALL.md)
 
@@ -598,15 +591,13 @@ Thanks to everyone who reported an issue or suggested a feature that shipped —
 
 <!-- community-contributors:start -->
 <p>
-  <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
   <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
+  <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
   <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
   <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
-  <a href="https://github.com/digitalnomadxxx" title="digitalnomadxxx"><img src="https://github.com/digitalnomadxxx.png" width="48" alt="digitalnomadxxx"></a>
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
-  <a href="https://github.com/eondcom" title="eondcom"><img src="https://github.com/eondcom.png" width="48" alt="eondcom"></a>
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
   <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
@@ -634,7 +625,7 @@ The list of code contributors is available on [GitHub Contributors](https://gith
 |---------|------|
 | GitHub | [github.com/gnuboard/g7](https://github.com/gnuboard/g7) |
 | SIR community (Korean) | [sir.kr](https://sir.kr) |
-| Contact | jjh621@sir.kr |
+| Contact | minsup@sir.kr |
 
 ---
 
@@ -646,7 +637,7 @@ For details on recent changes, see the [CHANGELOG](CHANGELOG.md) (Korean).
 
 ## Security Vulnerabilities
 
-If you discover a security vulnerability, please report it as a private post on the [SIR inquiry board](https://sir.kr/boards/co_qa) (Korean board), or email jjh621@sir.kr.
+If you discover a security vulnerability, please report it as a private post on the [SIR inquiry board](https://sir.kr/boards/co_qa) (Korean board), or email minsup@sir.kr.
 
 ---
 

@@ -3,7 +3,6 @@
 namespace Plugins\Sirsoft\Gdpr\Services;
 
 use App\Services\PluginSettingsService;
-use App\Support\LocalizedValue;
 use Plugins\Sirsoft\Gdpr\Enums\CookieCategory;
 
 /**
@@ -136,6 +135,9 @@ class CookieCategoryService
     public function getLabelForKey(string $consentKey): ?string
     {
         $bareKey = $this->stripCookiePrefix($consentKey);
+        $locale = (string) app()->getLocale();
+        $fallbackLocale = (string) config('app.fallback_locale', 'en');
+
         foreach ($this->getCategories() as $cat) {
             if (($cat['key'] ?? null) !== $bareKey) {
                 continue;
@@ -143,7 +145,7 @@ class CookieCategoryService
 
             $label = $cat['label'] ?? null;
             if (is_array($label)) {
-                return LocalizedValue::pick($label);
+                return $label[$locale] ?? $label[$fallbackLocale] ?? reset($label) ?: null;
             }
 
             return is_string($label) && $label !== '' ? $label : null;
@@ -166,6 +168,9 @@ class CookieCategoryService
     public function getDescriptionForKey(string $consentKey): ?string
     {
         $bareKey = $this->stripCookiePrefix($consentKey);
+        $locale = (string) app()->getLocale();
+        $fallbackLocale = (string) config('app.fallback_locale', 'en');
+
         foreach ($this->getDefaultCategories() as $cat) {
             if (($cat['key'] ?? null) !== $bareKey) {
                 continue;
@@ -173,7 +178,7 @@ class CookieCategoryService
 
             $description = $cat['description'] ?? null;
             if (is_array($description)) {
-                $resolved = LocalizedValue::pick($description);
+                $resolved = $description[$locale] ?? $description[$fallbackLocale] ?? reset($description);
 
                 return is_string($resolved) && $resolved !== '' ? $resolved : null;
             }

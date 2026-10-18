@@ -50,13 +50,6 @@ enum LayoutMarkupLintCode: string
     case SwitchValueNotConsumed = 'switch_value_not_consumed';
 
     /**
-     * `setState` 의 `target="_global"` — 엔진은 `"global"` 만 전역으로 보고 `_global` 은 지역 상태에 쓴다 (7.1.3).
-     *
-     * 문서·자동완성이 `_global` 을 권하던 시절의 마크업이 조용히 지역 상태에 써서 다른 화면에서 값이 보이지 않았다.
-     */
-    case SetStateUnderscoreGlobalTarget = 'set_state_underscore_global_target';
-
-    /**
      * 액션 `params` 에 **정본이 다른 자리인 키**가 실림 (S23 축 A — 78차 프로브 f3·f4a·f4d).
      *
      * 마크업 문법에는 `params` 화이트리스트가 없어 무접두 속성이 검사 없이 `params.*` 로 통과한다.
@@ -123,7 +116,7 @@ enum LayoutMarkupLintCode: string
      *
      * 엔진은 이벤트에 바로 묶인 진입점 액션의 debounce 만 적용한다(ActionDispatcher::bindActionsToProps).
      * 안쪽 액션은 바깥 흐름이 기다려 결과·순서를 이어받으므로 늦출 수 없어 매 이벤트 즉시 실행된다 —
-     * 코드 편집기 내용 검색이 글자마다 요청을 보낸 원인(2026-10-06 실측). 감싸는 진입점
+     * 코드 편집기 내용 검색이 글자마다 요청을 보낸 원인(2026-10-06 실측 D-I1-8). 감싸는 진입점
      * (`<conditions :debounce>`·`<sequence :debounce>`)에 달아야 한다.
      */
     case NestedActionDebounceIgnored = 'nested_action_debounce_ignored';

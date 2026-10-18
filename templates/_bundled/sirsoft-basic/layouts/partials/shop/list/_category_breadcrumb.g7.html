@@ -1,0 +1,111 @@
+<!-- 카테고리 경로 표시줄. 깊이를 `d1`~`d3` 쿼리에 따로 들고 다니는 이유는, 지금 카테고리(`category`)만으로는
+     그 위 경로를 되짚을 수 없기 때문이다 — 카테고리 트리를 매번 거슬러 올라가지 않으려는 선택이다.
+     각 단계 버튼은 그 단계까지만 남긴 쿼리로 이동하고, 마지막 항목의 × 는 한 단계 위로 되돌린다. -->
+<partial description="카테고리 브레드크럼 경로 (카테고리 선택 시에만 표시, 마지막 항목에 × 삭제)">
+  <div data-if="{{query.category &amp;&amp; query.category !== 'all'}}" class="flex items-center gap-1.5 text-base flex-wrap my-4 px-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+    <!-- 전체 링크 -->
+    <button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+      <on type="click">
+        <navigate path="{{_global.shopBase}}/products">
+          <query/>
+        </navigate>
+      </on>
+      $t:shop.category.all
+    </button>
+    <!-- 1단계 브레드크럼 (d2 이상 선택 시 - 클릭 가능) -->
+    <div data-if="{{!!query.d1 &amp;&amp; !!query.d2}}" class="flex items-center gap-1">
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
+      <!-- 1단계 카테고리로 되돌아간다. 하위 단계 선택을 버리고 그 단계만 남긴다 -->
+      <button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+        <on type="click">
+          <navigate path="{{_global.shopBase}}/products">
+            <query category="{{query.d1}}" d1="{{query.d1}}"/>
+          </navigate>
+        </on>
+        {{(categories?.data ?? []).find(c => c.id == query.d1)?.name_localized ?? ''}}
+      </button>
+    </div>
+    <!-- 2단계 브레드크럼 (d3 이상 선택 시 - 클릭 가능) -->
+    <div data-if="{{!!query.d2 &amp;&amp; !!query.d3}}" class="flex items-center gap-1">
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
+      <!-- 2단계 카테고리로 되돌아간다 -->
+      <button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+        <on type="click">
+          <navigate path="{{_global.shopBase}}/products">
+            <query category="{{query.d2}}" d1="{{query.d1}}" d2="{{query.d2}}"/>
+          </navigate>
+        </on>
+        {{((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.name_localized ?? ''}}
+      </button>
+    </div>
+    <!-- 3단계 브레드크럼 (4단계 선택 시 - 클릭 가능) -->
+    <div data-if="{{!!query.d3 &amp;&amp; query.category != query.d3}}" class="flex items-center gap-1">
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
+      <!-- 3단계 카테고리로 되돌아간다 -->
+      <button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+        <on type="click">
+          <navigate path="{{_global.shopBase}}/products">
+            <query category="{{query.d3}}" d1="{{query.d1}}" d2="{{query.d2}}" d3="{{query.d3}}"/>
+          </navigate>
+        </on>
+        {{(((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.name_localized ?? ''}}
+      </button>
+    </div>
+    <!-- 현재 카테고리 (마지막 항목, 굵게 + × 삭제 버튼) -->
+    <div class="flex items-center gap-1">
+      <icon name="chevron-right" class="text-xs text-gray-400 dark:text-gray-500"/>
+      <!-- 1단계 선택 (d1만, d2 없음) - 현재 카테고리명 + × 삭제 -->
+      <div data-if="{{!!query.d1 &amp;&amp; !query.d2}}" class="flex items-center gap-1">
+        <span class="text-gray-900 dark:text-white font-semibold">{{(categories?.data ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}</span>
+        <button class="ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+          <on type="click">
+            <!-- 1단계에서 × — 위가 없으므로 조건을 전부 떨구고 전체 목록으로 -->
+            <navigate path="{{_global.shopBase}}/products">
+              <query/>
+            </navigate>
+          </on>
+          ×
+        </button>
+      </div>
+      <!-- 2단계 선택 (d2 있고, d3 없음) - × 클릭 시 1단계로 -->
+      <div data-if="{{!!query.d2 &amp;&amp; !query.d3}}" class="flex items-center gap-1">
+        <span class="text-gray-900 dark:text-white font-semibold">{{((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}</span>
+        <button class="ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+          <on type="click">
+            <!-- 2단계에서 × — 한 칸 위(1단계)로 -->
+            <navigate path="{{_global.shopBase}}/products">
+              <query category="{{query.d1}}" d1="{{query.d1}}"/>
+            </navigate>
+          </on>
+          ×
+        </button>
+      </div>
+      <!-- 3단계 선택 (d3 있고, category == d3) - × 클릭 시 2단계로 -->
+      <div data-if="{{!!query.d3 &amp;&amp; query.category == query.d3}}" class="flex items-center gap-1">
+        <span class="text-gray-900 dark:text-white font-semibold">{{(((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}</span>
+        <button class="ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+          <on type="click">
+            <!-- 3단계에서 × — 한 칸 위(2단계)로 -->
+            <navigate path="{{_global.shopBase}}/products">
+              <query category="{{query.d2}}" d1="{{query.d1}}" d2="{{query.d2}}"/>
+            </navigate>
+          </on>
+          ×
+        </button>
+      </div>
+      <!-- 4단계 선택 (d3 있고, category != d3) - × 클릭 시 3단계로 -->
+      <div data-if="{{!!query.d3 &amp;&amp; query.category != query.d3}}" class="flex items-center gap-1">
+        <span class="text-gray-900 dark:text-white font-semibold">{{((((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.children ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}</span>
+        <button class="ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+          <on type="click">
+            <!-- 4단계에서 × — 한 칸 위(3단계)로 -->
+            <navigate path="{{_global.shopBase}}/products">
+              <query category="{{query.d3}}" d1="{{query.d1}}" d2="{{query.d2}}" d3="{{query.d3}}"/>
+            </navigate>
+          </on>
+          ×
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

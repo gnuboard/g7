@@ -4,7 +4,7 @@ namespace Plugins\Sirsoft\VerificationNhnkcp\Tests\Unit\Listeners;
 
 use App\Extension\HookManager;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ProvideNecessaryStorageKeysListener;
-use Tests\PureTestCase;
+use Plugins\Sirsoft\VerificationNhnkcp\Tests\PluginTestCase;
 
 /**
  * 개인정보 동의 플러그인에 필수 저장 키를 제공하는 리스너 검증
@@ -20,7 +20,7 @@ use Tests\PureTestCase;
  *   provider_keys_match_the_storage_writing_code,
  *   provider_does_not_reference_consent_plugin_classes
  */
-class ProvideNecessaryStorageKeysListenerTest extends PureTestCase
+class ProvideNecessaryStorageKeysListenerTest extends PluginTestCase
 {
     /** @var string 동의 플러그인이 소유한 계약 훅 */
     private const HOOK = 'sirsoft-gdpr.necessary_storage.filter_provided_keys';

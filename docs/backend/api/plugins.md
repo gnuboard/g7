@@ -58,9 +58,6 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | version | string | `1.0.0` | 플러그인 버전 |
 | description | string | `CKEditor 5를 이용한 WYSIWYG 에디터 플러그인입니다. …` | 플러그인 설명 (다국어 JSON) |
 | dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
-| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
-| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
-| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | permissions | array | `[]` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
 | roles | array | `[]` | 플러그인이 정의한 역할 목록 (manifest 파생 — 설치 시 시드되는 역할) |
 | config | array | `[]` | 플러그인 설정 값 (manifest config 정의 기반 현재 설정 맵) |
@@ -73,7 +70,6 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/plugin/sirsoft-ckeditor5/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
-| stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.0` | 설치된 파일의 manifest 버전 |
@@ -120,7 +116,6 @@ HTTP/1.1 200
                     "priority": 100
                 },
                 "update_available": false,
-                "stuck_update": false,
                 "update_source": null,
                 "latest_version": "1.0.0",
                 "file_version": "1.0.0",
@@ -216,8 +211,6 @@ HTTP/1.1 200
 | is_compatible | boolean | `false` | (업데이트가 있는 행에만) 업데이트할 새 버전이 지금 코어와 호환되는지. 업데이트 창의 코어 호환 경고·「강제 업데이트」 체크가 읽는다. 업데이트가 없으면 키 자체가 없다 — 설치본 호환은 `core_compatible` |
 | required_core_version | string\|null | `>=7.2.0` | (업데이트가 있는 행에만) 새 버전이 요구하는 코어 버전 — 번들 출처면 _bundled 매니페스트, GitHub 출처면 설치된 매니페스트의 `g7_version`(원격 매니페스트는 받지 않는 추정) |
 | current_core_version | string | `7.1.0` | (업데이트가 있는 행에만) 현재 코어 버전 |
-| update_dependency_warnings | array\|null | `[{"type":"module","identifier":"sirsoft-ecommerce","state":"version_mismatch","required_version":">=1.3.4","installed_version":"1.3.3",…}]` | (업데이트가 있는 행에만) 새 버전이 요구하는 의존 확장(`dependencies`) 중 지금 미설치·꺼짐·버전 미달인 것. `state` 는 `not_installed`·`inactive`·`version_mismatch`. 판정은 업데이트 뒤 결과의 `dependency_warnings` 와 같고 업데이트를 막지 않는다. 번들 출처면 _bundled 매니페스트로 대조하고, GitHub 출처는 _bundled 판이 같은 버전일 때만 대조하며 아니면 `null`(원격 매니페스트를 받지 않음) |
-| update_integration_notices | array\|null | `[{"type":"plugin","identifier":"sirsoft-daum_postcode","state":"version_mismatch","required_version":">=1.2.0","installed_version":"1.1.2",…}]` | (업데이트가 있는 행에만) 새 버전과 함께 쓰면 연동되는 확장(`integrations`) 중 지금 미설치·꺼짐·버전 미달인 것 — 업데이트 창이 실행 전에 알린다. 판정은 업데이트 뒤 결과의 `integration_notices` 와 같다. 출처별 대조 규칙·`null` 은 `update_dependency_warnings` 와 같다 |
 
 **설명** 설치된 플러그인과 미설치 플러그인을 모두 포함한 전체 플러그인 목록을 페이지네이션으로 조회합니다. `search` 는 이름·식별자·설명·벤더에 대한 OR 검색이고 `filters` 는 AND 조건으로 적용됩니다. `core.plugins.read` 권한이 필요하며, 응답의 `abilities` 는 현재 사용자의 install/activate/uninstall 권한 보유 여부를 담습니다. 관리자 플러그인 관리 화면의 목록 그리드를 구성하는 기본 엔드포인트입니다.
 
@@ -259,11 +252,9 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| plugin | object | `{"identifier":"sirsoft-daum_postcode","status":"active", …}` | 활성화된 플러그인 리소스 (PluginResource — 목록 항목과 동일 필드 구성). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
+| plugin | object | `{"identifier":"sirsoft-daum_postcode","status":"active", …}` | 활성화된 플러그인 리소스 (PluginResource — 목록 항목과 동일 필드 구성) |
 | pending_language_packs | array | `[]` | 이 플러그인 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 대기 후보) |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
-| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 **응답 예시**
 
@@ -325,13 +316,11 @@ _단건 응답: `data` 객체의 필드._
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 409 | Conflict | 필요한 의존 확장(모듈/플러그인)이 설치·활성화되지 않은 경우 (`force: true` 로 우회 가능) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 활성화 처리 중 예외 발생 (`plugins.activate_error`) |
 
 <!-- @generated:end -->
 
-**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다. 미충족 항목의 `status` 는 `not_installed`·`inactive`·`version_mismatch`(활성이지만 설치 버전이 요구 버전 제약 미달, 7.1.4) 이며, 각 항목에 `required_version`·`installed_version` 이 함께 온다.
+**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다.
 
 
 ### POST /api/admin/plugins/check-updates
@@ -446,7 +435,6 @@ _단건 응답: `data` 객체의 필드 — 비활성화된 플러그인 리소�
 | deactivated_reason | string\|null | `manual` | 비활성화 사유 (manual: 사용자 수동 \| incompatible_core: 코어 버전 비호환) |
 | deactivated_at | string\|null | `2026-07-14T05:12:33.000000Z` | 비활성화 일시 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
-| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 켜진 확장 목록 (7.1.4, 안내만 — 차단 없음). 각 원소 `type`·`identifier`·`name`(현재 로케일 문자열). 그 확장에서 이 확장을 쓰던 메뉴·화면이 사라진다 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -507,8 +495,6 @@ _단건 응답: `data` 객체의 필드 — 비활성화된 플러그인 리소�
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 409 | Conflict | 이 플러그인에 의존하는 활성 템플릿/모듈/플러그인이 있는 경우 (`force: true` 로 우회 가능) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 비활성화 처리 중 예외 발생 (`plugins.deactivate_error`) |
 
 <!-- @generated:end -->
@@ -529,7 +515,6 @@ _단건 응답: `data` 객체의 필드 — 비활성화된 플러그인 리소�
 | plugin_name | body | string | 예 | max 255 | plugin 이름 (식별자) |
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | dependencies | body | array | 아니오 | — | 함께 설치할 의존 확장 목록 (install-preview 응답 기반 사용자 선택 — 원소 type: module\|plugin, identifier) |
-| integrations | body | array | 아니오 | — | 함께 설치할 선택 연동 확장 목록 (7.1.4). 각 원소 `type`(module\|plugin — 템플릿은 고를 수 없다)·`identifier`. install-preview 응답 `integrations[]` 에서 사용자가 고른 항목. 의존 확장 다음·본체 이전에 설치·활성화하며, 실패해도 본체 설치는 계속되고 실패 사유는 응답 `integration_notices` 로 알린다. 권한 판정은 `dependencies` 와 같다 |
 | language_packs | body | array | 아니오 | — | 함께 설치할 번들 언어팩 식별자 목록 (best-effort cascade 2단계) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
@@ -573,8 +558,6 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계(번들 언어팩 best-effort 설치) 에서 실패한 항목 목록 (성공 시 빈 배열) |
 | language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
-| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -633,17 +616,13 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 설치 실패 (`plugin_name` 에 번역된 설치 실패 사유 — 이미 설치됨/대기소 미존재/의존성 미충족 등) |
-| 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.installation_failed`) |
 
 <!-- @generated:end -->
 
-**설명** `_pending`·`_bundled` 대기소에 있는 플러그인을 활성 디렉토리로 설치합니다. `core.plugins.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담겨 반환됩니다. 설치 직후 플러그인은 비활성이라 그 플러그인 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 플러그인을 켤 때 함께 켜집니다. 의존 확장은 의존 관계 순서(의존의 의존 먼저)로 설치하고 본 확장과 같은 `vendor_mode` 를 쓴다(7.1.4). 의존 확장 활성화가 실패하면 그 확장 이름과 실제 사유(`extensions.errors.cascade_dependency_activation_failed`)로 중단한다 — 앞서 설치한 의존 확장은 되돌리지 않는다 — 이때와 본 확장 설치가 실패했을 때, 실패 사유 끝에(400·500 응답은 `error`, 의존 버전 미달 같은 검증 실패 422 응답은 `message`) 남겨 둔 의존 확장 목록(`extensions.errors.cascade_dependencies_kept`, 예: 「함께 설치·활성화한 의존 확장은 되돌리지 않고 남겨 두었습니다: sirsoft-ecommerce」)을 붙인다(7.1.4).
+**설명** `_pending`·`_bundled` 대기소에 있는 플러그인을 활성 디렉토리로 설치합니다. `core.plugins.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담겨 반환됩니다. 설치 직후 플러그인은 비활성이라 그 플러그인 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 플러그인을 켤 때 함께 켜집니다.
 
 **동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
-
-**선택 연동 함께 설치(7.1.4)** 요청 본문 `integrations[]` 로 고른 연동 모듈·플러그인은 의존 확장 다음·본체 이전에 설치·활성화한다(템플릿을 켤 때 연동 모듈의 레이아웃·확장 조각이 함께 등록되도록). 의존과 달리 실패해도 본체 설치는 계속되며, 응답 `integration_notices` 에 그 항목과 실패 사유가 실린다. 권한은 `dependencies[]` 와 같이 먼저 확인해 없으면 403 이다. 설치 뒤에도 연동 대상 중 미설치·비활성·버전 미달이 남으면 `integration_notices` 와 응답 `message` 끝 한 줄로 알린다(막지 않음).
 
 ### POST /api/admin/plugins/install-from-file
 <!-- @generated:start:api.admin.plugins.install-from-file -->
@@ -689,8 +668,6 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | status | string | `inactive` | 설치 직후 상태 |
 | is_installed | boolean | `true` | 설치 여부 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
-| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -748,8 +725,6 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 검증 실패(ZIP 아님/50MB 초과) 또는 ZIP 처리 실패 (plugin.json 미존재/형식 오류/식별자 누락/이미 설치됨) |
-| 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.install_failed`) |
 
 <!-- @generated:end -->
@@ -799,8 +774,6 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | is_installed | boolean | `true` | 설치 여부 |
 | github_url | string\|null | `https://github.com/gnuboard/g7-plugin-daum_postcode` | 설치 출처 GitHub 저장소 URL |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
-| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -858,8 +831,6 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | URL 형식 오류(GitHub 저장소 URL 아님) 또는 다운로드/압축 해제/검증 실패 (저장소 미존재·ZIP URL 미발견·plugin.json 오류·이미 설치됨) |
-| 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 설치 처리 중 예외 발생 (`plugins.install_failed`) |
 
 <!-- @generated:end -->
@@ -899,9 +870,6 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | version | string | `1.0.0` | 플러그인 버전 |
 | description | string | `CKEditor 5를 이용한 WYSIWYG 에디터 플러그인입니다. …` | 플러그인 설명 (다국어 JSON) |
 | dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
-| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
-| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
-| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | permissions | array | `[]` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
 | roles | array | `[]` | 플러그인이 정의한 역할 목록 (manifest 파생 — 설치 시 시드되는 역할) |
 | config | array | `[]` | 플러그인 설정 값 (manifest config 정의 기반 현재 설정 맵) |
@@ -1160,7 +1128,6 @@ _단건 응답: `data` 객체의 필드._
 | deleted | integer | `0` | 파일에서 사라져 DB 에서도 삭제된 레이아웃 건수 |
 | unchanged | integer | `0` | 변경 없이 그대로 유지된 레이아웃 건수 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1223,7 +1190,6 @@ Authorization: Bearer {YOUR_TOKEN}
 | preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
 | preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
 | preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
-| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 켜진 확장 목록 (7.1.4, 안내만 — 차단 없음). 각 원소 `type`·`identifier`·`name`(현재 로케일 문자열). 그 확장에서 이 확장을 쓰던 메뉴·화면이 사라진다 |
 
 > 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
 > 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
@@ -1252,8 +1218,6 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패 또는 제거 실패 (`plugin_name` 에 번역된 제거 실패 사유 — 미설치/진행 중 상태 등) |
-| 409 | Conflict | 같은 플러그인에 다른 작업(설치·업데이트·활성화·비활성화·제거)이 진행 중인 경우 — `errors.operation_in_progress: true`, 메시지 `extensions.errors.operation_already_running` (7.1.5) |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
 | 500 | Server Error | 제거 처리 중 예외 발생 (`plugins.uninstall_error`) |
 
 <!-- @generated:end -->
@@ -1832,9 +1796,6 @@ _단건 응답: `data` 객체의 필드 (PluginResource::toDetailArray + 언어�
 | github_url | string\|null | `https://github.com/gnuboard/g7-plugin-daum_postcode` | GitHub 저장소 URL |
 | requires_core | string\|null | `>=7.0.0-beta.2` | 요구되는 코어 최소 버전 (manifest `requires.g7_version`) |
 | dependencies | array | `[]` | 의존하는 확장 목록 (manifest 파생) |
-| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
-| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
-| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `active` | 상태 (active/inactive/uninstalled/installing/uninstalling/updating) |
 | is_installed | boolean | `true` | 설치 여부 |
 | has_settings | boolean | `true` | 설정 UI 제공 여부 |
@@ -2028,23 +1989,6 @@ _단건 응답: `data` 객체의 필드._
 | dependencies[].is_met | boolean | `false` | 의존 조건 충족 여부 |
 | dependencies[].available | boolean | `true` | cascade 선택 후보 여부 (미충족 항목만 true) |
 | dependencies[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 (미충족 + 미설치) |
-| dependencies[].required_by | string | `sirsoft-ecommerce` | 2단계 이상 의존 행만 — 이 확장을 필요로 하는 의존 확장 식별자 (7.1.4, 직접 의존 행에는 없음) |
-| integrations | array | `[{"type":"module", ...}]` | 함께 쓰면 연동되는 확장(선택) 체크목록 (7.1.4, 아래 하위 필드). 고른 항목은 install API 의 `integrations[]` 로 보낸다 |
-| integrations[].type | string | `module` | 연동 대상 유형 (`module` \| `plugin` \| `template`) |
-| integrations[].identifier | string | `sirsoft-board` | 연동 대상 식별자 |
-| integrations[].name | string\|null | `게시판` | 연동 대상 이름 (현재 로케일, 미설치면 식별자) |
-| integrations[].status | string | `not_installed` | `not_installed` \| `inactive` \| `active` |
-| integrations[].required_version | string | `>=1.2.1` | 요구 버전 제약 (제약 없음은 `*`) |
-| integrations[].installed_version | string\|null | `null` | 설치 버전 (미설치면 null) |
-| integrations[].is_installed | boolean | `false` | 설치 여부 |
-| integrations[].is_active | boolean | `false` | 활성 여부 |
-| integrations[].is_met | boolean | `false` | 설치됨 && 버전 제약 충족 |
-| integrations[].can_select | boolean | `true` | 함께 설치·활성화할 수 있는지 — 권한(의존 확장과 같은 판정)이 있고 대상이 템플릿이 아니며, 연동 대상의 필수 의존(`requires`)을 모두 세울 수 있고 설치할 권한이 있을 때 true |
-| integrations[].default_selected | boolean | `true` | 기본 체크 여부 = `status !== 'active' && can_select` |
-| integrations[].requires | array | `[{"type":"module","identifier":"sirsoft-page","name":"페이지","action":"install_activate"}]` | 이 연동을 고르면 먼저 함께 설치·활성화되는 연동 대상 자신의 필수 의존(의존의 의존까지, 먼저 올 순서). 이미 활성인 의존은 빠진다. 연동 대상이 활성이면 빈 배열 |
-| integrations[].requires[].action | string | `install_activate` | `install_activate`(미설치) \| `activate`(설치됨·비활성) |
-| integrations[].blocked_reason | string\|null | `null` | 필수 의존 계획을 세울 수 없는 사유(없음·버전 미달·순환) — 있으면 `can_select=false` |
-| integrations[].blocked_by_permission | boolean | `false` | 필수 의존 중 현재 사용자가 설치·활성화할 권한이 없는 것이 있으면 true — 이때도 `can_select=false` |
 | language_packs | array | `[]` | 함께 설치 가능한 미설치 번들 언어팩 목록 (아래 필드) |
 | language_packs[].bundled_identifier | string | `g7-plugin-daum_postcode-ja` | 번들 언어팩 식별자 |
 | language_packs[].locale | string | `ja` | 로케일 코드 |
@@ -2053,11 +1997,8 @@ _단건 응답: `data` 객체의 필드._
 | language_packs[].version | string | `1.0.0` | 언어팩 버전 |
 | language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 확장 소유이면 null). 이미 설치·활성화되어 충족된 의존 확장의 언어팩도 null — 그 의존 확장은 함께 고를 항목이 아니므로 언어팩을 따로 고를 수 있다 |
 | language_packs[].target_identifier | string | `sirsoft-board` | 이 언어팩이 번역하는 확장 식별자(본 확장·의존 확장 모두) — 창의 「종속: …」 배지가 쓴다 |
-| language_packs[].scope | string | `module` | 이 언어팩이 번역하는 확장의 종류(module\|plugin\|template) — 사유 문장(「대상 :scope (:target) …」)에 쓴다 (7.1.4) |
-| language_packs[].required_target_version | string\|null | `null` | 언어팩이 요구하는 대상 확장 버전(manifest `requires.target_version`, 선언하지 않았으면 null) — `target_version_too_old` 사유 문장에 쓴다 (7.1.4) |
-| language_packs[].available | boolean | `true` | 지금 설치할 수 있는지. 같은 언어의 코어 언어팩이 켜져 있지 않거나, 이미 설치된 대상 확장의 버전이 언어팩 요구(`requires.target_version`)보다 낮으면 `false` |
-| language_packs[].blocked_reason | string\|null | `null` | 설치할 수 없는 사유 키 — `core_locale_missing`(같은 언어의 코어 언어팩이 꺼져 있음)·`target_version_too_old`(이미 설치된 대상 확장의 버전이 요구보다 낮음 — 함께 설치는 설치된 확장을 업데이트하지 않는다) 중 하나. 대상 확장이 아직 설치되지 않은 것은 이 설치로 풀리므로 사유가 아니다 |
-| language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 (`available` 이고 함께 설치할 권한이 있을 때 true) |
+| language_packs[].available | boolean | `true` | 함께 설치 가능한지 여부 |
+| language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 |
 
 **응답 예시**
 
@@ -2239,8 +2180,6 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | latest_version | string\|null | `1.1.0` | 감지된 최신 배포 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
-| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
-| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의). 업데이트할 내용이 없고 `force` 도 없는 경우에는 `{"success": false, "from_version": …, "to_version": …, "message": "업데이트할 내용이 없습니다."}` 형태가 `data` 로 반환됩니다.
 
@@ -2299,8 +2238,7 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | 403 | Forbidden | 요구 권한(`core.plugins.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 업데이트 실패 (`plugin_name` 에 번역된 사유 — 다운그레이드 차단, 강제 업데이트 소스 없음, 코어 버전 비호환, 진행 중 상태 등) |
-| 409 | Conflict | 같은 플러그인의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) · 7.1.5 부터 `errors.operation_in_progress: true` 를 싣고, 같은 확장의 설치·활성화·비활성화·제거가 진행 중이어도 같은 응답이다 |
-| 503 | Service Unavailable | 작업 잠금 저장소(캐시)를 쓸 수 없어 작업을 시작하지 않은 경우 — `errors.operation_lock_unavailable: true`, 메시지 `extensions.errors.operation_lock_unavailable`. 원본 오류(서버 경로 등)는 응답에 싣지 않는다 (7.1.5) |
+| 409 | Conflict | 같은 플러그인의 업데이트가 이미 진행 중인 경우 — 관리자 화면·Artisan 커맨드 공통 (`extensions.errors.update_already_running`) |
 | 500 | Server Error | 업데이트 처리 중 예외 발생 (`plugins.errors.update_failed`) |
 
 <!-- @generated:end -->

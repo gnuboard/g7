@@ -4,24 +4,6 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.2.3] - 2026-11-15
-
-### Added
-
-- KG이니시스 결제 1.2.4 의 에스크로 관리자 요청 안내 문구 일본어 번역을 추가했습니다 — 같은 주문의 에스크로 요청을 다른 곳에서 처리하고 있을 때(`messages.errors.escrow_in_progress`), 배송등록이 이미 끝났을 때(`escrow_delivery_already_registered`), 구매거절확인이 이미 끝났을 때(`escrow_deny_already_confirmed`).
-
-## [1.2.2] - 2026-11-01
-
-### Added
-
-- 결제 정보 부가세 내역의 「영세금액」(ゼロ税率金額) 일본어 번역을 추가했습니다.
-
-## [1.2.1] - 2026-10-21
-
-### Added
-
-- KG이니시스 1.2.1 의 관리자 주문 상세 에스크로 배송 등록 택배사 이름 12개(`admin.escrow_couriers.*` — 「韓進宅配」「CJ大韓通運」 등)의 일본어 번역을 추가했습니다. 종전에는 일본어 화면에서도 택배사 이름이 한국어로 보였습니다.
-
 ## [1.2.0] - 2026-10-10
 
 ### Added

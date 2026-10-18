@@ -22,7 +22,7 @@ use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
-use App\Support\LocalizedValue;
+use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -74,40 +74,6 @@ class IdentityVerificationController extends PublicBaseController
             $validated['policy_key'] ?? null,
             (string) $validated['purpose'],
         );
-
-        // 정책이 인증 수단을 지정했으면 그 수단으로만 발급한다(KVE-2026-3188) — 요청이 수단을 빼면 정책 값을 쓰고,
-        // 다른 수단을 고르면 거부한다. 다른 수단으로 받은 결과는 정책 강제 단계에서 어차피 인정되지 않는다.
-        // 수단 해석은 재요청 대기 계산보다 먼저 한다 — 대기는 실제로 보낼 수단 기준이다.
-        $requiredProviderId = $originPolicy !== null ? $this->policyService->requiredProviderId($originPolicy) : null;
-        if ($requiredProviderId !== null) {
-            if ($providerId !== null && $providerId !== $requiredProviderId) {
-                return $this->error('identity.errors.provider_policy_mismatch', 422, [
-                    'provider_id' => [__('identity.errors.provider_policy_mismatch')],
-                ]);
-            }
-
-            // 지정 수단을 지금 쓸 수 없으면(플러그인 꺼짐·제거) 다른 수단으로 대신 발급하지 않는다(B9)
-            if ($this->policyService->resolveProviderId($originPolicy) === null) {
-                return $this->error('identity.errors.policy_provider_unavailable', 503, [
-                    'failure_code' => 'POLICY_PROVIDER_UNAVAILABLE',
-                    'policy_key' => $originPolicy->key,
-                ]);
-            }
-
-            $providerId = $requiredProviderId;
-        }
-
-        // 같은 수신 주소·같은 목적의 재요청 대기 — 새 challenge 를 만들지 않고 남은 시간을 알린다.
-        // 로그인하지 않아도 아무 주소로 요청할 수 있는 입구라, 제한이 없으면 한 주소에 메일을 계속 보낸다.
-        $cooldown = $this->service->cooldownRemaining((string) $validated['purpose'], $target, $providerId);
-        if ($cooldown > 0) {
-            return $this->error(
-                'identity.errors.challenge_cooldown',
-                429,
-                null,
-                ['seconds' => $cooldown, 'count' => $cooldown]
-            )->header('Retry-After', (string) $cooldown);
-        }
 
         $challenge = $this->service->start(
             purpose: (string) $validated['purpose'],
@@ -354,17 +320,18 @@ class IdentityVerificationController extends PublicBaseController
     }
 
     /**
-     * `return` 쿼리 URL 이 사이트 주소와 같은 출처인지 검증 — open redirect 차단.
+     * `return` 쿼리 URL 이 사이트 주소 또는 「사용자 화면 URL」과 같은 출처인지 검증 — open redirect 차단.
      *
      * 보안: 브라우저와 PHP 가 다르게 해석하는 입력(`/\evil.com`·제어 문자·`https://evil.com\@site/`)과
-     * scheme·port·userinfo 가 다른 절대 URL 을 모두 거부한다. 판정은 `SiteUrl::isSameOrigin()` 이 소유한다.
+     * scheme·port·userinfo 가 다른 절대 URL 을 모두 거부한다. 판정은 `SiteUrl::isSameOrigin()` 과
+     * `ScreenUrl::isUserScreenOrigin()` 이 소유한다 — 외부 화면(다른 주소의 Next.js 등)으로 돌아가는 복귀를 허용한다(#792).
      *
      * @param  string  $url  검사할 복귀 URL
-     * @return bool 같은 출처면 true
+     * @return bool 허용 출처면 true
      */
     private function isSafeReturnUrl(string $url): bool
     {
-        return SiteUrl::isSameOrigin($url);
+        return SiteUrl::isSameOrigin($url) || ScreenUrl::isUserScreenOrigin($url);
     }
 
     /**
@@ -378,7 +345,8 @@ class IdentityVerificationController extends PublicBaseController
      */
     private function absoluteReturnUrl(string $url): string
     {
-        return str_starts_with($url, '/') ? SiteUrl::forPath($url) : $url;
+        // 상대 경로는 사용자 화면 베이스(「사용자 화면 URL」, 비면 사이트 주소)로 절대화한다(#792)
+        return str_starts_with($url, '/') ? ScreenUrl::toAbsolute($url) : $url;
     }
 
     /**
@@ -432,7 +400,7 @@ class IdentityVerificationController extends PublicBaseController
      *
      * 입력 형태 3가지 지원:
      * - i18n 키 문자열 (예: `identity.purposes.signup.label`) → `__()` 로 풀이
-     * - 다국어 배열 (`['ko' => ..., 'en' => ...]`) → 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값
+     * - 다국어 배열 (`['ko' => ..., 'en' => ...]`) → 현재 로케일 우선, en 폴백
      * - 일반 문자열 → 그대로 반환
      *
      * @param  mixed  $value  i18n 키 문자열 · 다국어 배열 · 일반 문자열
@@ -441,8 +409,9 @@ class IdentityVerificationController extends PublicBaseController
     private function resolvePurposeText($value): string
     {
         if (is_array($value)) {
-            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-            return LocalizedValue::pick($value) ?? '';
+            $locale = app()->getLocale();
+
+            return (string) ($value[$locale] ?? $value['en'] ?? reset($value) ?: '');
         }
 
         if (! is_string($value) || $value === '') {

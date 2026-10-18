@@ -7,6 +7,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\PermissionType;
 use App\Models\User;
 use App\Services\Analytics\StorageStatsService;
+use App\Support\ScreenUrl;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -86,7 +87,7 @@ class AnalyticsAlertListener implements HookListenerInterface
         // 다만 그 길은 누를 수 있는 사람에게만 — 대시보드는 통계 설정 권한 없이도 열리므로, 권한이
         // 없는 관리자에게 버튼을 주면 누르는 순간 권한 없음 화면이다. 경고 자체는 모두에게 보인다.
         if ($this->canOpenSettings()) {
-            $alert['action_url'] = rtrim((string) config('app.url'), '/').'/admin/analytics/settings?tab=retention';
+            $alert['action_url'] = ScreenUrl::absolute('admin.analytics.settings', '/admin/analytics/settings?tab=retention', [], ScreenUrl::SCOPE_ADMIN);
             $alert['action_label'] = __('analytics.alerts.ledger_limit_action');
         }
 

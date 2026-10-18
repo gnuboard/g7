@@ -5,11 +5,10 @@ namespace App\Services;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
-use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ModuleOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\EditorSpecAssembler;
-use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
@@ -17,7 +16,6 @@ use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Models\Module;
 use App\Services\Extension\ExtensionIconResolver;
-use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -98,21 +96,6 @@ class ModuleService
         $this->moduleManager->loadModules();
 
         return $this->moduleManager->getModuleInfo($moduleName);
-    }
-
-    /**
-     * 설치·의존 판정용 모듈 정보를 조회합니다 — 미설치 모듈은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
-     *
-     * 같은 프로세스에서 이어서 설치할 때 쓴다(명령줄·연쇄 설치, 설치 미리보기). 상세 화면은 {@see getModuleInfo()}.
-     *
-     * @param  string  $moduleName  모듈명
-     * @return array<string, mixed>|null 모듈 정보 또는 null
-     */
-    public function getModuleManifestInfo(string $moduleName): ?array
-    {
-        $this->moduleManager->loadModules();
-
-        return $this->moduleManager->getModuleManifestInfo($moduleName);
     }
 
     /**
@@ -231,9 +214,8 @@ class ModuleService
             return array_merge($result, [
                 'module_info' => $moduleInfo,
             ]);
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 「업데이트 실패」(422)로 감싸면 화면이 두 번째 요청을 실패로 보여 준다(#138 실측 ②)
             throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
@@ -303,10 +285,6 @@ class ModuleService
             }
 
             return null;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'module_name' => [__('modules.installation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -353,10 +331,6 @@ class ModuleService
             // 실패 사유(reason)를 그대로 전달한다 — 여기서 떨어뜨리면 관리자 화면의
             // 실패 문구에 원인 자리가 비어 자리표시자가 그대로 노출된다.
             return $result;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'module_name' => [__('modules.activation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -396,10 +370,6 @@ class ModuleService
             }
 
             return $result;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'module_name' => [__('modules.deactivation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -453,10 +423,6 @@ class ModuleService
             }
 
             return $result;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'module_name' => [__('modules.uninstallation_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -748,8 +714,10 @@ class ModuleService
 
         // 다국어 필드인 경우 (name, description)
         if (is_array($value)) {
-            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-            return LocalizedValue::pick($value);
+            // 현재 로케일 우선, 없으면 ko, 그 다음 en
+            $locale = app()->getLocale();
+
+            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
         }
 
         return (string) $value;
@@ -784,7 +752,7 @@ class ModuleService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'module.json', 'modules'
             );
 
             $manifest = $result['config'];
@@ -834,12 +802,8 @@ class ModuleService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'module.json', 'modules'
             );
-
-            // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
-            $operationLock = ExtensionOperationLock::acquire('module', $result['identifier'], 'install');
 
             $this->ensureModuleNotInstalled($result['identifier']);
 
@@ -856,10 +820,6 @@ class ModuleService
                 }
                 throw $e;
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (ModuleOperationException $e) {
             throw $e;
         } catch (\RuntimeException $e) {
@@ -905,10 +865,6 @@ class ModuleService
                 $zipPath, $extractPath, 'module.json', 'modules'
             );
 
-            // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
-            $operationLock = ExtensionOperationLock::acquire('module', $result['identifier'], 'install');
-
             $this->ensureModuleNotInstalled($result['identifier']);
 
             ZipInstallHelper::moveToPending(
@@ -924,10 +880,6 @@ class ModuleService
                 }
                 throw $e;
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (ModuleOperationException $e) {
             throw $e;
         } catch (\RuntimeException $e) {
@@ -957,8 +909,7 @@ class ModuleService
     private function ensureModuleNotInstalled(string $identifier): void
     {
         $this->moduleManager->loadModules();
-        // 같은 요청에서 곧 설치하므로 `_bundled`·`_pending` 사본의 진입 파일을 실행하지 않는다 (#159)
-        $existingModule = $this->moduleManager->getModuleManifestInfo($identifier);
+        $existingModule = $this->moduleManager->getModuleInfo($identifier);
 
         if ($existingModule && $existingModule['is_installed']) {
             throw new ModuleOperationException('modules.errors.already_installed');

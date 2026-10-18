@@ -13,7 +13,7 @@
             "endpoint": "/api/admin/modules/{{_global.selectedModule.identifier}}",
             "auth_required": true,
             "initGlobal": "selectedModule",
-            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedModule`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창이 열리는 순간에는 목록 값으로 먼저 그려지고 곧 채워진다.\n         그래서 목록 응답에 없는 항목(코어 요구·언어·메뉴·권한·역할·레이아웃)의 「없음」은 상세 응답에만 있는\n         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「권한 없음」이 먼저 보였다가 바뀌지 않게(#915)."
+            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedModule`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창이 열리는 순간에는 목록 값으로 먼저 그려지고 곧 채워진다."
         }
     ],
     "id": "module_detail_modal",
@@ -406,7 +406,7 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{_global.selectedModule?.metadata !== undefined && (!_global.selectedModule.requires_core)}}",
+                                                            "if": "{{!_global.selectedModule.requires_core}}",
                                                             "props": {
                                                                 "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded"
                                                             },
@@ -417,7 +417,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "P",
-                                                    "if": "{{_global.selectedModule?.metadata !== undefined && (!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0)}}",
+                                                    "if": "{{!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0}}",
                                                     "props": {
                                                         "className": "text-label-subtle"
                                                     },
@@ -490,7 +490,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{dep.is_met}}",
                                                                     "props": {
-                                                                        "className": "text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded"
+                                                                        "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
                                                                     },
                                                                     "text": "$t:admin.modules.modals.dependency_met"
                                                                 },
@@ -530,154 +530,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "이 확장이 composer.json 으로 요구한 PHP 확장 (#151) — require(필수: 없으면 설치·활성화 불가)·suggest(권장: 경고만).\n            서버에 없는 것만 배지로 알린다. 이미 켜진 확장도 자동으로 끄지 않고 여기서만 알린다. 선언이 없으면 절을 그리지 않는다.",
-                                    "id": "php_extensions_section",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{(_global.selectedModule?.php_extensions?.required ?? []).length > 0 || Object.keys(_global.selectedModule?.php_extensions?.suggested ?? {}).length > 0}}",
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "flex-center gap-2 mb-3"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Icon",
-                                                    "props": {
-                                                        "name": "server",
-                                                        "className": "text-xl text-gray-500",
-                                                        "aria-hidden": "true"
-                                                    }
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "text-primary font-semibold"
-                                                    },
-                                                    "text": "$t:extensions.php_extensions.title"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "row-stack"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "iteration": {
-                                                        "source": "(_global.selectedModule?.php_extensions?.required ?? [])",
-                                                        "item_var": "ext"
-                                                    },
-                                                    "props": {
-                                                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "text-heading font-mono"
-                                                            },
-                                                            "text": "{{ext}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
-                                                            },
-                                                            "text": "$t:extensions.php_extensions.level_require"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{(_global.selectedModule?.php_extensions?.missing_required ?? []).includes(ext)}}",
-                                                            "props": {
-                                                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
-                                                            },
-                                                            "text": "$t:extensions.php_extensions.not_installed"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{!(_global.selectedModule?.php_extensions?.missing_required ?? []).includes(ext)}}",
-                                                            "props": {
-                                                                "className": "text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded"
-                                                            },
-                                                            "text": "$t:extensions.php_extensions.installed"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "iteration": {
-                                                        "source": "Object.entries(_global.selectedModule?.php_extensions?.suggested ?? {})",
-                                                        "item_var": "sug"
-                                                    },
-                                                    "props": {
-                                                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "text-heading font-mono"
-                                                            },
-                                                            "text": "{{sug[0]}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
-                                                            },
-                                                            "text": "$t:extensions.php_extensions.level_suggest"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{(_global.selectedModule?.php_extensions?.missing_suggested ?? []).includes(sug[0])}}",
-                                                            "props": {
-                                                                "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
-                                                            },
-                                                            "text": "$t:extensions.php_extensions.not_installed"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{!(_global.selectedModule?.php_extensions?.missing_suggested ?? []).includes(sug[0])}}",
-                                                            "props": {
-                                                                "className": "text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded"
-                                                            },
-                                                            "text": "$t:extensions.php_extensions.installed"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{sug[1]}}",
-                                                            "props": {
-                                                                "className": "text-label-subtle"
-                                                            },
-                                                            "text": "{{sug[1]}}"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.\n            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다(#822).\n            옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다.",
+                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.",
                                     "id": "integrations_section",
                                     "type": "basic",
                                     "name": "Div",
@@ -776,24 +629,6 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{item.required_version && item.required_version !== '*'}}",
-                                                            "props": {
-                                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
-                                                            },
-                                                            "text": "$t:admin.extension_integrations.required_version|version={{item.required_version}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{item.installed_version}}",
-                                                            "props": {
-                                                                "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono"
-                                                            },
-                                                            "text": "$t:admin.extension_integrations.installed_version|version={{item.installed_version}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
                                                             "if": "{{!item.is_installed}}",
                                                             "props": {
                                                                 "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
@@ -808,15 +643,6 @@
                                                                 "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
                                                             },
                                                             "text": "$t:admin.extension_integrations.inactive"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{item.is_installed && item.is_met === false}}",
-                                                            "props": {
-                                                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
-                                                            },
-                                                            "text": "$t:admin.extension_integrations.version_mismatch"
                                                         }
                                                     ]
                                                 }
@@ -857,7 +683,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{_global.selectedModule?.metadata !== undefined && (!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0)}}",
+                                            "if": "{{!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -913,7 +739,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.origin === 'user_installed'}}",
                                                             "props": {
-                                                                "className": "text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded"
+                                                                "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.origin.user_installed"
                                                         },
@@ -922,7 +748,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.status === 'active'}}",
                                                             "props": {
-                                                                "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 rounded"
+                                                                "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.status.active"
                                                         },
@@ -931,7 +757,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.status === 'inactive'}}",
                                                             "props": {
-                                                                "className": "text-body px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                                                "className": "text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.status.inactive"
                                                         },
@@ -940,7 +766,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.status === 'uninstalled'}}",
                                                             "props": {
-                                                                "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded"
+                                                                "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.status.uninstalled"
                                                         },
@@ -992,7 +818,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{_global.selectedModule?.metadata !== undefined && (!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0)}}",
+                                            "if": "{{!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -1052,7 +878,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{_global.selectedModule?.metadata !== undefined && (!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0)}}",
+                                            "if": "{{!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -1142,7 +968,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{_global.selectedModule?.metadata !== undefined && (!_global.selectedModule.roles || _global.selectedModule.roles.length === 0)}}",
+                                            "if": "{{!_global.selectedModule.roles || _global.selectedModule.roles.length === 0}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -1205,7 +1031,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{_global.selectedModule?.metadata !== undefined && (!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0)}}",
+                                            "if": "{{!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },

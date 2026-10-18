@@ -7,11 +7,7 @@ namespace Plugins\Sirsoft\PayKginicis\Controllers;
 // audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
 
 use App\Helpers\ResponseHelper;
-use App\Helpers\TimezoneHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +16,6 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
-use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
@@ -34,10 +29,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
 {
     use GuardsOrderScope;
     use SanitizesPgResponse;
-    use SerializesPaymentCallbacks;
-
-    /** 배송등록 주문 잠금 문맥 (SerializesPaymentCallbacks 잠금 키 구분자) */
-    public const LOCK_CONTEXT = 'escrow-delivery';
 
     /** 택배사 코드 → 택배사명 매핑 (KG 이니시스 공식 코드표 — EscrowDeliveryRegisterRequest 의 허용값 SSoT) */
     public const COURIER_CODES = [
@@ -116,9 +107,8 @@ class AdminEscrowDeliveryController extends AdminBaseController
 
         // payment_meta에서 이력 추출
         $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
-        // 시각은 UTC 로 저장돼 있다 — 결제조회 화면에는 보는 사람 시간대로 바꿔 내보낸다
-        $escrowDelivery = $this->withViewerTime($meta['escrow_delivery'] ?? null, 'registered_at');
-        $escrowConfirm = $this->withViewerTime($meta['escrow_confirm'] ?? null, 'confirmed_at');
+        $escrowDelivery = $meta['escrow_delivery'] ?? null;
+        $escrowConfirm = $meta['escrow_confirm'] ?? null;
         $denyConfirmed = isset($meta['escrow_deny_confirm']);
 
         return ResponseHelper::success('common.success', [
@@ -144,11 +134,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
      * 형식·길이·택배사 코드 검증은 EscrowDeliveryRegisterRequest 가 담당한다
      * (종전 인라인 한글 하드코딩 메시지를 다국어 키로 이관).
      *
-     * 같은 주문의 배송등록은 주문 단위 잠금(`escrow-delivery`)으로 한 번에 하나만 처리한다. 더블클릭·재시도로
-     * 두 요청이 겹치면 둘 다 "아직 등록 전"을 보고 PG 에 신규 등록(I)을 두 번 보내기 때문이다. 결제 메타는
-     * 잠금을 잡은 뒤 다시 읽어, 앞선 요청이 이미 등록했으면 신규 등록(I)을 409 로 거절한다(변경 U 는 허용).
-     * 잠금을 기다리다 시간이 다 되면 다른 요청이 처리 중이므로 409(`messages.errors.escrow_in_progress`)를 돌려준다.
-     *
      * @param  EscrowDeliveryRegisterRequest  $request  배송 등록 폼
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse
@@ -159,30 +144,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
             return $denied;
         }
 
-        try {
-            $lock = $this->acquireOrderCallbackLock(self::LOCK_CONTEXT, $orderNumber);
-        } catch (LockTimeoutException) {
-            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.errors.escrow_in_progress', 409, [
-                'message' => [__('sirsoft-pay_kginicis::messages.errors.escrow_in_progress')],
-            ]);
-        }
-
-        try {
-            return $this->registerUnderLock($request, $orderNumber);
-        } finally {
-            $this->releaseOrderCallbackLock($lock);
-        }
-    }
-
-    /**
-     * 주문 잠금을 잡은 상태에서 결제 메타를 다시 읽고 배송등록을 PG 에 전송·기록합니다.
-     *
-     * @param  EscrowDeliveryRegisterRequest  $request  배송 등록 폼
-     * @param  string  $orderNumber  주문번호
-     * @return JsonResponse 등록 결과 응답
-     */
-    private function registerUnderLock(EscrowDeliveryRegisterRequest $request, string $orderNumber): JsonResponse
-    {
         $invoice = trim((string) $request->validated('invoice'));
         $exCode = trim((string) $request->validated('ex_code'));
 
@@ -193,14 +154,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
         }
 
         $report = $request->validated('report') ?? 'I';
-
-        // 잠금 안에서 다시 읽은 메타 기준 — 이미 등록된 건에 신규 등록(I)을 또 보내지 않는다 (변경 U 는 정상 경로)
-        $currentMeta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
-        if ($report === 'I' && ! empty($currentMeta['escrow_delivery'])) {
-            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.errors.escrow_delivery_already_registered', 409, [
-                'message' => [__('sirsoft-pay_kginicis::messages.errors.escrow_delivery_already_registered')],
-            ]);
-        }
         $charge = $request->validated('charge') ?? 'SH';
         $price = (int) round((float) $payment->paid_amount_local);
         $exName = self::COURIER_CODES[$exCode];
@@ -248,9 +201,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 'exCode' => $exCode,
                 'exName' => $exName,
                 'charge' => $charge,
-                // 배송등록일은 PG 업무 날짜 — 한국 시간(D7)
-                // audit:allow datetime-display-user-timezone reason: PG 업무 날짜(invoiceDay) — Asia/Seoul 고정(D7)
-                'invoiceDay' => CarbonImmutable::now('Asia/Seoul')->format('Y-m-d H:i:s'),
+                'invoiceDay' => date('Y-m-d H:i:s'),
                 'sendName' => trim((string) ($request->validated('send_name') ?? '')),
                 'sendTel' => trim((string) ($request->validated('send_tel') ?? '')),
                 'sendPost' => trim((string) ($request->validated('send_post') ?? '')),
@@ -281,7 +232,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
             $meta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
             $meta['pg_response_sanitized'] = true;
             $meta['escrow_delivery'] = [
-                // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
                 'registered_at' => now()->toDateTimeString(),
                 'report' => $report,
                 'invoice' => $invoice,
@@ -325,28 +275,6 @@ class AdminEscrowDeliveryController extends AdminBaseController
                 'message' => [$e->getMessage()],
             ]);
         }
-    }
-
-    /**
-     * 메타 항목의 UTC 시각 필드를 보는 사람 시간대 문자열로 바꾼 사본을 돌려줍니다. (저장값은 바꾸지 않는다)
-     *
-     * @param  mixed  $entry  메타 항목 (배열이 아니면 그대로)
-     * @param  string  $key  시각 필드 이름
-     * @return mixed 변환한 사본
-     */
-    private function withViewerTime(mixed $entry, string $key): mixed
-    {
-        if (! is_array($entry) || empty($entry[$key]) || ! is_string($entry[$key])) {
-            return $entry;
-        }
-
-        try {
-            $entry[$key] = TimezoneHelper::toUserDateTimeString(Carbon::parse($entry[$key], 'UTC'));
-        } catch (\Throwable) {
-            // 해석할 수 없는 값은 원문 그대로 둔다
-        }
-
-        return $entry;
     }
 
     /**

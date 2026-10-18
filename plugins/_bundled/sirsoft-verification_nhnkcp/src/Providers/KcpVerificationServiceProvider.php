@@ -7,8 +7,6 @@ use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CompleteKcpRecordAfterRegister;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpCertTransactionRepository;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpCertTransactionRepositoryInterface;
-use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityClaimRepository;
-use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityClaimRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityLogQueryRepository;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityRecordRepository;
@@ -42,7 +40,6 @@ class KcpVerificationServiceProvider extends BasePluginServiceProvider
         KcpIdentityRecordRepositoryInterface::class => KcpIdentityRecordRepository::class,
         KcpCertTransactionRepositoryInterface::class => KcpCertTransactionRepository::class,
         KcpIdentityLogQueryRepositoryInterface::class => KcpIdentityLogQueryRepository::class,
-        KcpIdentityClaimRepositoryInterface::class => KcpIdentityClaimRepository::class,
     ];
 
     /**
@@ -60,8 +57,6 @@ class KcpVerificationServiceProvider extends BasePluginServiceProvider
 
     /**
      * 컨테이너 바인딩 등록.
-     *
-     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -75,8 +70,6 @@ class KcpVerificationServiceProvider extends BasePluginServiceProvider
 
     /**
      * 플러그인 부팅.
-     *
-     * @return void 반환값 없음
      */
     public function boot(): void
     {

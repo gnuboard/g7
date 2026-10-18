@@ -64,8 +64,8 @@ class BulkUpdateProductsRequest extends FormRequest
             'items.*.name' => ['nullable', 'array'],
             'items.*.name.*' => ['nullable', 'string', 'max:255'],
             // 단건 등록/수정과 동일한 통화 정밀도·하한 규칙 (일괄 수정만 느슨하면 우회로가 된다)
-            'items.*.list_price' => ['nullable', 'numeric', $priceRule, 'min:0'],
-            'items.*.selling_price' => ['nullable', 'numeric', $priceRule, 'min:0'],
+            'items.*.list_price' => ['nullable', 'numeric', $priceRule, 'min:0.01'],
+            'items.*.selling_price' => ['nullable', 'numeric', $priceRule, 'min:0.01'],
             'items.*.sales_status' => ['nullable', 'string', function ($attribute, $value, $fail) {
                 if ($value !== null && ! in_array($value, ProductSalesStatus::values())) {
                     $fail(__('sirsoft-ecommerce::validation.product.invalid_sales_status'));

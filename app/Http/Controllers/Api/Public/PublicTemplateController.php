@@ -314,8 +314,7 @@ class PublicTemplateController extends PublicBaseController
                 'template_not_found' => $this->notFound(
                     __('templates.errors.not_found', ['template' => $identifier])
                 ),
-                // 형식 위반(invalid_locale)도 "지원하지 않는 언어" 로 404 — 500 이 아니다 (#148)
-                'locale_not_supported', 'invalid_locale' => $this->notFound(
+                'locale_not_supported' => $this->notFound(
                     __('templates.errors.locale_not_supported', [
                         'template' => $identifier,
                         'locale' => $locale,

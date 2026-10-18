@@ -19,13 +19,6 @@ interface HeaderProps {
     siteName?: string;
     /** 현재 로그인된 사용자 */
     user?: User | null;
-    /**
-     * 로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고
-     * 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다). 레이아웃이 `{{_global.currentUser === undefined}}` 로 넘긴다.
-     * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다(#915).
-     * 기본값 false — 편집기 미리보기·바인딩이 없는 옛 레이아웃은 지금처럼 그린다.
-     */
-    userLoading?: boolean;
     /** 장바구니 아이템 수 */
     cartCount?: number;
     /** 읽지 않은 알림 수 */
@@ -42,30 +35,6 @@ interface HeaderProps {
     currentLocale?: string;
     /** 쇼핑몰 기본 경로 (예: "/shop", "/") */
     shopBase?: string;
-    /**
-     * 게시판 모듈이 켜져 있는가 — false 면 「인기글」 탭과 게시판 탭·더보기를 그리지 않는다.
-     * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
-     * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다(#822).
-     */
-    boardEnabled?: boolean;
-    /** 쇼핑몰 모듈이 켜져 있는가 — false 면 장바구니 단추·「쇼핑」 탭·회원 메뉴의 주문내역·위시리스트·비회원 「주문조회」를 그리지 않는다. 기본값 true(위와 같은 이유) */
-    shopEnabled?: boolean;
-    /** 검색칸을 그리는가 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다(검색 공급자가 없으면 숨김). 기본값 true */
-    searchEnabled?: boolean;
-    /**
-     * 검색칸의 최근 검색어 범위 — 같은 범위를 쓰는 검색창(모바일 서랍·통합검색 화면)과 목록을 공유한다.
-     * 기본값 `core.site`(코어 통합검색). 엔진이 그 범위를 쓸 수 없다고 답하면 펼침 목록 없이 평범한 검색칸이다
-     */
-    searchHistoryScope?: string;
-    /**
-     * 봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소(예: "/shop/products") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다).
-     * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
-     */
-    shopProductsHref?: string;
-    /**
-     * 봇 화면(seo-config header_nav)의 「리뷰」 링크 주소(예: "/shop/reviews") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다)
-     */
-    shopReviewsHref?: string;
     /** 추가 CSS 클래스 */
     className?: string;
     /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */

@@ -52,8 +52,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=product_options, field=mileage_value, mileage_type=percent
      *
      * @effects percent_mileage_over_100_rejected
-     *
-     * @return void 반환값 없음
      */
     public function test_percent_mileage_over_100_is_rejected(): void
     {
@@ -72,8 +70,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=product_options, field=mileage_value, mileage_type=percent
      *
      * @effects percent_mileage_at_bound_allowed
-     *
-     * @return void 반환값 없음
      */
     public function test_percent_mileage_exactly_100_is_allowed(): void
     {
@@ -92,8 +88,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=product_options, field=mileage_value, mileage_type=fixed
      *
      * @effects fixed_mileage_has_no_upper_bound
-     *
-     * @return void 반환값 없음
      */
     public function test_fixed_mileage_has_no_upper_bound(): void
     {
@@ -116,8 +110,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=bulk_products, field=price, mileage_type=none
      *
      * @effects bulk_price_respects_currency_precision
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_product_price_rejects_decimals_in_zero_precision_currency(): void
     {
@@ -136,8 +128,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=bulk_products, field=price_relation, mileage_type=none
      *
      * @effects bulk_selling_price_cannot_exceed_list_price
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_product_selling_price_cannot_exceed_list_price(): void
     {
@@ -158,8 +148,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=bulk_products, field=price_relation, mileage_type=none
      *
      * @effects bulk_partial_send_deferred_to_service
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_product_partial_price_update_is_not_compared(): void
     {
@@ -173,29 +161,21 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
     }
 
     /**
-     * 0원 가격은 허용하고 음수 가격은 차단하는지 테스트합니다 (0원 상품 허용 이후의 하한).
+     * 0원 가격이 차단되는지 테스트합니다.
      *
      * @scenario surface=bulk_products, field=price, mileage_type=none
      *
-     * @effects bulk_product_price_zero_allowed_negative_rejected
-     *
-     * @return void 반환값 없음
+     * @effects bulk_product_price_zero_rejected
      */
-    public function test_bulk_product_price_zero_is_allowed_and_negative_is_rejected(): void
+    public function test_bulk_product_price_zero_is_rejected(): void
     {
-        $zero = $this->validate(BulkUpdateProductsRequest::class, [
+        $validator = $this->validate(BulkUpdateProductsRequest::class, [
             'items' => [
                 ['id' => 1, 'list_price' => 0],
             ],
         ]);
-        $this->assertFalse($zero->errors()->has('items.0.list_price'));
 
-        $negative = $this->validate(BulkUpdateProductsRequest::class, [
-            'items' => [
-                ['id' => 1, 'list_price' => -1],
-            ],
-        ]);
-        $this->assertTrue($negative->errors()->has('items.0.list_price'));
+        $this->assertTrue($validator->errors()->has('items.0.list_price'));
     }
 
     /**
@@ -204,8 +184,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=bulk_products, field=price, mileage_type=none
      *
      * @effects bulk_valid_price_passes
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_product_valid_price_passes(): void
     {
@@ -225,8 +203,6 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
      * @scenario surface=bulk_options, field=price, mileage_type=none
      *
      * @effects bulk_price_respects_currency_precision
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_option_price_rejects_decimals(): void
     {
@@ -240,20 +216,18 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
     }
 
     /**
-     * 옵션 가격 0 이 허용되는지 테스트합니다.
+     * 옵션 가격 0 은 상품 가격과 달리 허용되는지 테스트합니다.
      *
-     * 옵션 가격 0 은 "이 옵션은 별도 가격이 없다" 는 정상 입력이다 — 단건 등록
-     * (`StoreProductRequest` 의 `options.*.list_price`)도 `min:0` 이다. 일괄 수정만 좁히면
-     * 단건에서 저장한 옵션을 일괄 화면에서는 수정할 수 없게 된다. 두 경로의 경계가 같아야
-     * 한다는 것을 여기서 고정한다. 상품 자신의 가격도 0원 상품 허용 이후 같은 하한(0)이다.
+     * 상품 자신의 가격은 `min:0.01`(0원 상품 금지)이지만, 옵션 가격 0 은 "이 옵션은 별도
+     * 가격이 없다" 는 정상 입력이다 — 단건 등록(`StoreProductRequest` 의 `options.*.list_price`)
+     * 도 `min:0` 이다. 일괄 수정만 `min:0.01` 로 좁히면 단건에서 저장한 옵션을 일괄 화면에서는
+     * 수정할 수 없게 된다. 두 경로의 경계가 같아야 한다는 것을 여기서 고정한다.
      *
      * @scenario surface=bulk_options, field=price, mileage_type=none
      *
      * @effects bulk_option_price_zero_allowed
-     *
-     * @return void 반환값 없음
      */
-    public function test_bulk_option_price_zero_is_allowed_like_product_price(): void
+    public function test_bulk_option_price_zero_is_allowed_unlike_product_price(): void
     {
         $optionValidator = $this->validate(BulkUpdateOptionsRequest::class, [
             'items' => [
@@ -266,13 +240,13 @@ class ProductPriceAndMileageRuleTest extends ModuleTestCase
             '옵션 가격 0(별도 가격 없음)이 거부되면 단건 등록 경로와 어긋납니다.'
         );
 
-        // 대조군 — 상품 자신의 가격도 같은 하한(0)을 쓴다
+        // 대조군 — 상품 자신의 가격 0 은 여전히 거부되어야 한다
         $productValidator = $this->validate(BulkUpdateProductsRequest::class, [
             'items' => [
                 ['id' => 1, 'list_price' => 0],
             ],
         ]);
 
-        $this->assertFalse($productValidator->errors()->has('items.0.list_price'));
+        $this->assertTrue($productValidator->errors()->has('items.0.list_price'));
     }
 }

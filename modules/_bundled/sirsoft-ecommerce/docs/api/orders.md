@@ -618,8 +618,6 @@ _단건 응답: `data` 객체의 필드._
 | total_tax_amount_formatted | string | `¥16,000` | `total_tax_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_vat_amount | integer | `1455` | 총 부가세금액 |
 | total_vat_amount_formatted | string | `¥1,455` | `total_vat_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
-| total_zero_rated_amount | integer | `0` | 총 영세금액 — 총 과세금액에 포함된 세율 0% 몫(부가세 0). 결제사·현금영수증에는 면세로 넘긴다 (1.3.3) |
-| total_zero_rated_amount_formatted | string | `0원` | `total_zero_rated_amount` 의 표시용 포맷 문자열 |
 | total_taxable_supply_amount | integer | `14545` | 과세 공급가액 (총 과세금액 − 부가세, 영수증 과세금액 표시 SSoT) |
 | total_taxable_supply_amount_formatted | string | `¥14,545` | `total_taxable_supply_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_tax_free_amount | integer | `0` | 총 면세금액 |
@@ -630,7 +628,7 @@ _단건 응답: `data` 객체의 필드._
 | orderer_name | string | `박대수` | 주문자 이름 (배송지에서 플래튼) |
 | orderer_phone | string | `010-4416-4675` | 주문자 휴대전화 (배송지에서 플래튼) |
 | orderer_tel | null | `null` | 주문자 일반전화 (배송지에서 플래튼, 미입력 시 null) |
-| orderer_email | string | `user@example.com` | 주문자 이메일 (배송지에서 플래튼, 비회원 알림 수신 통로) |
+| orderer_email | string | `shin.yewon@cheon.biz` | 주문자 이메일 (배송지에서 플래튼, 비회원 알림 수신 통로) |
 | recipient_name | string | `권강희` | 수령인 이름 (배송지에서 플래튼) |
 | recipient_phone | string | `010-6286-6243` | 수령인 휴대전화 (배송지에서 플래튼) |
 | recipient_tel | null | `null` | 수령인 일반전화 (배송지에서 플래튼, 미입력 시 null) |
@@ -640,17 +638,10 @@ _단건 응답: `data` 객체의 필드._
 | delivery_memo | string | `parcel_box` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | string | `택배함에 넣어주세요` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | options | array | `[{"id":1263,"option_status":"payment_complete","option_st…` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
-| options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
-| options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
-| options[].subtotal_tax_amount | integer | `11000` | 이 품목의 과세 금액(과세표준 — 영세 포함). `_formatted` 동반 |
-| options[].subtotal_vat_amount | integer | `1000` | 과세 품목의 부가세(주문 시점 세율), 면세·영세는 0. `_formatted` 동반 |
-| options[].subtotal_zero_rated_amount | integer | `0` | 영세 품목의 영세 금액(= 과세 금액), 그 외 0. `_formatted` 동반 |
-| options[].subtotal_tax_free_amount | integer | `0` | 면세 품목의 면세 금액. `_formatted` 동반 |
 | shipping_address | object | `{"id":319,"address_type":"shipping","orderer_name":"박대수",…` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
 | payment | object | `{"id":1,"payment_status":"paid","payment_status_label":"P…` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액). 무통장 결제행은 현금영수증 발급 프로바이더 `cash_receipt_provider`(id)와 그 현재 언어 표시명 `cash_receipt_provider_label`(등록 항목의 `name_key` 번역 → `name` → id 순)을 함께 싣는다. `has_cash_to_return`(bool)은 이 주문에 돌려줄 현금이 남아 있는지(주문 장부·결제행 수납액 기준 — [입금확인]에서 입금만 기록한 결제 전 주문도 포함) — 취소 창의 환불 계좌 칸 노출 근거 |
 | payments | array | `[{"id":1,"payment_status":"paid","payment_status_label":"…` | 결제 이력 목록 (OrderPaymentResource 배열 — 다회 결제/부분결제 포함) |
-| payments[].cancelled_vat_amount | integer | `0` | 취소·환불로 줄어든 부가세 누적(재계산 전 − 후, 승인 부가세 `vat_amount` 상한). 승인 부가세는 바꾸지 않는다 (1.3.3). `_formatted` 동반 |
 | cash_receipt | null | `null` | 현재 유효한 현금영수증 (CashReceiptResource — 취소되지 않은 발급 건, 없으면 null) |
 | cash_receipts | array | `[]` | 현금영수증 발급·취소 이력 전체 (CashReceiptResource 배열 — 취소된 건 포함) |
 
@@ -1019,7 +1010,7 @@ HTTP/1.1 200
 
 **설명** 관리자가 특정 주문(`order`)에 발급된 현금영수증을 **전액 취소**합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\CashReceiptController@cancel`이 `CashReceiptService::cancelAll()`로 활성 영수증을 발급 프로바이더(토스페이먼츠 등)에 취소 요청합니다. 부분취소 API 는 사용하지 않습니다 — 금액이 바뀌는 경우는 재발급(`/cash-receipt/reissue`)이 담당합니다. 취소 이력은 원장에 남아 국세청 신고 근거로 유지되며, 재발급용 식별번호 암호문은 폐기하지 않습니다(관리자가 같은 번호로 다시 발급할 수 있어야 하므로). 발급 취소는 관리자 전용이며 회원·비회원에게는 노출하지 않습니다.
 
-실패 시 사유는 `errors.error_code` 로 구분합니다 — 활성 영수증이 없으면 `NO_ACTIVE_RECEIPT`, 프로바이더 취소가 실패하면 `CANCEL_FAILED` 이며 둘 다 422 입니다. 같은 영수증의 다른 취소 요청(다른 화면·자동 동기화)이 아직 처리 중이면 실패가 아니라 **409**(`CANCEL_IN_PROGRESS`, 1.3.5 — `cash_receipt.errors.cancel_in_progress`)이며, 잠시 뒤 주문을 다시 조회해 결과를 확인합니다.
+실패 시 사유는 `errors.error_code` 로 구분합니다 — 활성 영수증이 없으면 `NO_ACTIVE_RECEIPT`, 프로바이더 취소가 실패하면 `CANCEL_FAILED` 이며 둘 다 422 입니다.
 
 ```json
 {
@@ -1076,7 +1067,7 @@ Content-Type: application/json
 | receipt_type_label | string | 발급 용도의 다국어 표시명 (예: `소득공제용`) |
 | amount | integer | 발급 금액 (주문 통화 기준 반올림, 과세분 포함 총액) |
 | amount_formatted | string | 발급 금액의 통화 표기 문자열 (예: `12,000원`) |
-| tax_free_amount | integer | 발급 금액 중 면세 금액 — 면세 + 영세(부가세가 없는 몫, 1.3.3) |
+| tax_free_amount | integer | 발급 금액 중 면세 금액 |
 | tax_free_amount_formatted | string | 면세 금액의 통화 표기 문자열 |
 | identifier_masked | string | 마스킹된 식별번호 (원본은 어떤 응답에도 노출되지 않음) |
 | receipt_url | string\|null | 프로바이더가 발급한 영수증 조회 링크 |
@@ -1132,7 +1123,7 @@ HTTP/1.1 200
 
 **설명** 관리자가 특정 주문(`order`)에 현금영수증을 발급합니다. 주문 당시 구매자가 신청하지 않은 건의 **사후 발급**과, 발급 실패 후 식별번호를 다시 입력해 발급하는 경우에 사용합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\CashReceiptController@issue`가 `CashReceiptService::issue()`로 발급 프로바이더에 위임합니다.
 
-발급 가능 조건은 **무통장입금(dbank) + 입금완료(PAID) + 미발급 + 현금성 금액 > 0 + 프로바이더 설정됨** 이며, 하나라도 어긋나면 `errors.error_code` 로 사유를 구분해 반환합니다 — 이미 발급된 주문은 **409**(`ALREADY_ISSUED`), 같은 주문의 다른 발급이 처리 중이면 **409**(`ISSUE_IN_PROGRESS`, 1.3.5), 그 외는 422(`NOT_CASH_PAYMENT` / `PAYMENT_NOT_PAID` / `NO_ISSUABLE_AMOUNT` / `PROVIDER_NOT_CONFIGURED`). 프로바이더가 발급을 거부하면 422(`PROVIDER_ERROR`)와 함께 `errors.error_message` 에 상세 사유가 담깁니다.
+발급 가능 조건은 **무통장입금(dbank) + 입금완료(PAID) + 미발급 + 현금성 금액 > 0 + 프로바이더 설정됨** 이며, 하나라도 어긋나면 `errors.error_code` 로 사유를 구분해 반환합니다 — 이미 발급된 주문은 **409**(`ALREADY_ISSUED`), 그 외는 422(`NOT_CASH_PAYMENT` / `PAYMENT_NOT_PAID` / `NO_ISSUABLE_AMOUNT` / `PROVIDER_NOT_CONFIGURED`). 프로바이더가 발급을 거부하면 422(`PROVIDER_ERROR`)와 함께 `errors.error_message` 에 상세 사유가 담깁니다.
 
 `receipt_type`(발급 용도)과 `identifier_type`(발급 수단)은 독립 필드입니다. 지출증빙용도 휴대폰번호로 발급할 수 있으며, 사업자등록번호는 체크섬을 검증합니다. 소득공제 + 사업자등록번호 조합과, 지출증빙 + 국세청 자진발급 지정번호(`0100001234`) 조합은 거부됩니다.
 
@@ -1145,7 +1136,6 @@ HTTP/1.1 200
 | error_code | 상태코드 | 의미 |
 | --- | --- | --- |
 | `ALREADY_ISSUED` | 409 | 이미 활성 현금영수증이 발급된 주문 |
-| `ISSUE_IN_PROGRESS` | 409 | 같은 주문의 다른 발급 요청이 처리 중(1.3.5). 가드를 통과한 뒤 겹친 요청이 먼저 발급 자리를 예약한 경우도 같은 409 다(`cash_receipt.errors.issue_in_progress`). 잠시 뒤 주문을 다시 조회해 결과를 확인한다 |
 | `PROVIDER_NOT_CONFIGURED` | 422 | 현금영수증 발급 프로바이더가 설정되지 않음 |
 | `PAYMENT_NOT_FOUND` | 422 | 주문에 결제 정보가 없음 |
 | `NOT_CASH_PAYMENT` | 422 | 무통장입금(dbank) 주문이 아님 |
@@ -2039,7 +2029,6 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `orderNumber` 에 해당하는 주문이 없거나 접근 권한이 없는 경우도 포함 (CancelPaymentRequest 의 주문 해석 실패) |
-| 429 | Too Many Requests | 체크아웃·주문 생성과 합산한 요청이 분당 한도(기본 30회, 회원 단위·비회원은 IP 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초) — [checkout.md](checkout.md) 「요청 제한」 |
 
 <!-- @generated:end -->
 
@@ -2174,7 +2163,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원이 마이페이지 주문내역에서 본인 주문 목록을 상태별 통계와 함께 페이지네이션 조회합니다. `auth:sanctum` 인증이 필요하며, `User\OrderController@index`가 `user_id`를 본인으로 고정한 뒤 `OrderService::getList()`와 `getUserStatistics()`를 호출해 `UserOrderCollection`으로 반환합니다. `status`로 특정 주문상태만 필터링할 수 있습니다. 관리자 목록과 달리 항상 본인 주문으로만 한정됩니다. 각 주문에는 대표 배송의 송장 정보 `shipping`(`carrier_name`·`tracking_number`·`tracking_url`)이 실립니다. `tracking_url` 은 주문 상세와 같은 규칙(택배사의 조회 주소 틀에 송장 번호를 넣음)으로 만들며, 송장·택배사가 없으면 `null` 입니다.
+**설명** 회원이 마이페이지 주문내역에서 본인 주문 목록을 상태별 통계와 함께 페이지네이션 조회합니다. `auth:sanctum` 인증이 필요하며, `User\OrderController@index`가 `user_id`를 본인으로 고정한 뒤 `OrderService::getList()`와 `getUserStatistics()`를 호출해 `UserOrderCollection`으로 반환합니다. `status`로 특정 주문상태만 필터링할 수 있습니다. 관리자 목록과 달리 항상 본인 주문으로만 한정됩니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/user/orders
@@ -2301,9 +2290,6 @@ _단건 응답: `data` 객체의 필드 (HTTP 201). 회원은 `order` 에 `Order
 | customer_email | string | `ji792@mail.test` | 주문자 이메일 |
 | customer_phone | string | `01055144949` | 주문자 휴대전화 (숫자만) |
 | customer_key | string \| null | `user_12` | 회원 식별 키 (비회원은 `null`) |
-| tax_free_amount | integer \| null | `5000` | 주문 면세 합계 + 영세 합계(1.3.3 — 영세는 부가세가 없어 결제사에 면세로 넘긴다)를 청구액과 같은 규칙으로 환산한 최소 화폐단위 정수(청구액 `amount` 를 넘지 않게 자름 — 면세 합계는 마일리지 차감 전 값). 면세·영세분이 없으면 `null` |
-| tax_amount | integer \| null | `22000` | 면세·영세분이 있을 때만: 주문 과세 합계(부가세 포함)에서 영세를 뺀 값, 같은 환산 규칙. 없으면 `null` |
-| vat_amount | integer \| null | `2000` | 면세분이 있을 때만: 주문 부가세 합계, 같은 환산 규칙. 없으면 `null` — 공급가액·부가세를 나눠 받는 PG 가 결제액을 `vat_amount / tax_amount` 비율로 나눈다 |
 | escrow_products | array | `[{"id":12,"name":"코튼 후드티 #12","code":"YD1JTVLJEMKAUTKS","unitPrice":31000,"quantity":1}]` | 에스크로 결제(가상계좌·계좌이체)용 상품 상세 (`unitPrice` 는 개당가, 비에스크로는 무시) |
 
 **응답 예시**
@@ -2362,7 +2348,6 @@ HTTP/1.1 201
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다. 필드별 메시지는 `error.errors` 에 담긴다 |
 | 409 | Conflict | 적용한 쿠폰을 다른 주문이 먼저 사용한 경우 (`errors.code = coupon_already_used`, `errors.coupon_issue_id` 에 해당 발급 ID). 주문은 생성되지 않고 쿠폰도 소모되지 않으므로 그대로 재시도할 수 있습니다 |
 | 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우. 응답 payload 로 인증 수단·목적이 함께 내려간다 |
-| 429 | Too Many Requests | 체크아웃·주문 생성 요청이 분당 한도(기본 30회, 회원 단위·비회원은 IP 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초) — [checkout.md](checkout.md) 「요청 제한」 |
 | 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.` — `messages.order.create_failed`). 원인은 서버 로그 `Order create: unexpected failure` 항목에 예외 클래스·메시지·발생 위치가 기록된다 |
 
 <!-- @generated:end -->
@@ -2490,8 +2475,6 @@ _단건 응답: `data` 객체의 필드._
 | total_tax_amount_formatted | string | `29,757원` | `total_tax_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_vat_amount | integer | `0` | 총 부가세금액 |
 | total_vat_amount_formatted | string | `0원` | `total_vat_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
-| total_zero_rated_amount | integer | `0` | 총 영세금액 — 총 과세금액에 포함된 세율 0% 몫(부가세 0). 결제사·현금영수증에는 면세로 넘긴다 (1.3.3) |
-| total_zero_rated_amount_formatted | string | `0원` | `total_zero_rated_amount` 의 표시용 포맷 문자열 |
 | total_taxable_supply_amount | integer | `29757` | 과세 공급가액 (총 과세금액 − 부가세, 영수증 과세금액 표시 SSoT) |
 | total_taxable_supply_amount_formatted | string | `29,757원` | `total_taxable_supply_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_tax_free_amount | integer | `0` | 총 면세금액 |
@@ -2512,12 +2495,6 @@ _단건 응답: `data` 객체의 필드._
 | delivery_memo | null | `null` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | null | `null` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | options | array | `[]` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
-| options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
-| options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
-| options[].subtotal_tax_amount | integer | `11000` | 이 품목의 과세 금액(과세표준 — 영세 포함). `_formatted` 동반 |
-| options[].subtotal_vat_amount | integer | `1000` | 과세 품목의 부가세(주문 시점 세율), 면세·영세는 0. `_formatted` 동반 |
-| options[].subtotal_zero_rated_amount | integer | `0` | 영세 품목의 영세 금액(= 과세 금액), 그 외 0. `_formatted` 동반 |
-| options[].subtotal_tax_free_amount | integer | `0` | 면세 품목의 면세 금액. `_formatted` 동반 |
 | shipping_address | null | `null` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
 | payment | null | `null` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액) |
@@ -2850,7 +2827,7 @@ HTTP/1.1 200
 
 **설명** 회원이 주문 당시 신청하지 않은 현금영수증을 마이페이지 주문상세에서 **직접 사후 발급**합니다. `auth:sanctum` 인증이 필요하며, `User\CashReceiptController@issue`가 `Auth::id()` 로 소유권을 확인한 뒤(타인 주문이면 404) 관리자 발급과 **동일한 검증·가드·프로바이더 위임**을 거칩니다.
 
-요청 본문(`receipt_type` / `identifier_type` / `identifier`)과 오류 코드 체계는 관리자 발급 API 와 같습니다 — 이미 발급된 주문은 409(`ALREADY_ISSUED`), 같은 주문의 다른 발급이 처리 중이면 409(`ISSUE_IN_PROGRESS`, 1.3.5), 그 외 발급 불가 사유는 422 에 `errors.error_code` 로 구분해 담깁니다.
+요청 본문(`receipt_type` / `identifier_type` / `identifier`)과 오류 코드 체계는 관리자 발급 API 와 같습니다 — 이미 발급된 주문은 409(`ALREADY_ISSUED`), 그 외 발급 불가 사유는 422 에 `errors.error_code` 로 구분해 담깁니다.
 
 **발급 취소는 제공하지 않습니다** — 국세청 신고 정정을 동반하므로 관리자 전용이며, 유저용 `DELETE` 라우트 자체를 노출하지 않습니다(403 이 아니라 404/405).
 
@@ -3121,7 +3098,6 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 재주문 도메인 규칙 위반 — 장바구니 담기 불가·수량 한도 초과 등 (`재주문에 실패했습니다.`) |
-| 429 | Too Many Requests | 장바구니 쓰기와 합산한 요청이 분당 한도(기본 120회, 회원 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초, 1.3.5) |
 | 500 | Internal Server Error | 서버 내부 오류 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->
@@ -3344,8 +3320,6 @@ _단건 응답: `data` 객체의 필드._
 | total_tax_amount_formatted | string | `29,757원` | `total_tax_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_vat_amount | integer | `0` | 총 부가세금액 |
 | total_vat_amount_formatted | string | `0원` | `total_vat_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
-| total_zero_rated_amount | integer | `0` | 총 영세금액 — 총 과세금액에 포함된 세율 0% 몫(부가세 0). 결제사·현금영수증에는 면세로 넘긴다 (1.3.3) |
-| total_zero_rated_amount_formatted | string | `0원` | `total_zero_rated_amount` 의 표시용 포맷 문자열 |
 | total_taxable_supply_amount | integer | `29757` | 과세 공급가액 (총 과세금액 − 부가세, 영수증 과세금액 표시 SSoT) |
 | total_taxable_supply_amount_formatted | string | `29,757원` | `total_taxable_supply_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_tax_free_amount | integer | `0` | 총 면세금액 |
@@ -3366,12 +3340,6 @@ _단건 응답: `data` 객체의 필드._
 | delivery_memo | null | `null` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | null | `null` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | options | array | `[]` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
-| options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
-| options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
-| options[].subtotal_tax_amount | integer | `11000` | 이 품목의 과세 금액(과세표준 — 영세 포함). `_formatted` 동반 |
-| options[].subtotal_vat_amount | integer | `1000` | 과세 품목의 부가세(주문 시점 세율), 면세·영세는 0. `_formatted` 동반 |
-| options[].subtotal_zero_rated_amount | integer | `0` | 영세 품목의 영세 금액(= 과세 금액), 그 외 0. `_formatted` 동반 |
-| options[].subtotal_tax_free_amount | integer | `0` | 면세 품목의 면세 금액. `_formatted` 동반 |
 | shipping_address | null | `null` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
 | payment | null | `null` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액) |
@@ -3488,7 +3456,7 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 404 | Not Found | 주문이 없거나 접근 권한이 없는 경우 — 회원: 본인 주문 아님(`errors.redirect_to = /mypage/orders`), 비회원: `X-Guest-Order-Token` 부재·만료·위조(`errors.redirect_to = /shop/guest/orders` — 상점 주소 설정 `basic_info.route_path`/`no_route` 반영). 정보 노출 방지를 위해 모든 실패를 동일 404 로 처리 |
+| 404 | Not Found | 주문이 없거나 접근 권한이 없는 경우 — 회원: 본인 주문 아님(`errors.redirect_to = /mypage/orders`), 비회원: `X-Guest-Order-Token` 부재·만료·위조(`errors.redirect_to = /shop/guest/orders` — 상점 주소 설정 `basic_info.route_path`/`no_route` 반영). 두 주소 모두 화면 주소 키(`mypage.orders`·`ecommerce.guest.orders`)를 거치므로 `core.screen_url.filter_path` 필터로 바꿀 수 있다(7.2.0). 정보 노출 방지를 위해 모든 실패를 동일 404 로 처리 |
 
 <!-- @generated:end -->
 

@@ -5,12 +5,8 @@ namespace App\Extension;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
-use App\Extension\Support\ExtensionFingerprint;
-use App\Extension\Support\LifecycleWarnings;
-use App\Support\AtomicBootstrapCache;
-use App\Support\BootDeferredLog;
-use App\Support\CacheSelfHeal;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 정적 훅 매핑 캐시 관리자.
@@ -32,23 +28,14 @@ use Illuminate\Support\Facades\File;
  * 확장 install/activate/deactivate/uninstall/update 시
  * ExtensionManager::updateComposerAutoload() 가 함께 재생성한다.
  *
- * 캐시를 읽는 `read()` 는 서비스 공급자 부팅 중(언어팩 번역 등록 전)에 돈다. 폴백 경고는 `BootDeferredLog` 로 등록이
- * 끝난 뒤 남겨 사이트 언어(ja 등) 문구가 되게 한다(부팅이 끝난 뒤 부르면 바로 남긴다).
- *
  * @see HookListenerRegistrar::registerFromCache()
  */
 class HookCacheManager
 {
     /**
      * 캐시 파일 형식 번호 — 표지 없는 파일(7.0.x)은 옛 형식으로 보고 버린다. 캐시 항목 구조를 바꾸면 올린다.
-     * 3 (7.1.3): 활성 확장 파일 지문(`extensions_fingerprint`)을 싣는다 — 파일만 교체해도 낡은 캐시를 알아챈다.
      */
-    public const FORMAT = 3;
-
-    /**
-     * 이번 요청 끝 재생성을 이미 예약했는지 — 지문이 달라진 요청에서 한 번만 다시 굽는다.
-     */
-    private static bool $regenerationScheduled = false;
+    public const FORMAT = 2;
 
     /**
      * 캐시 파일 경로.
@@ -89,19 +76,6 @@ class HookCacheManager
     }
 
     /**
-     * 현재 호출이 테스트 환경에서 실 캐시 파일(`bootstrap/cache/hooks.php`)을 건드리는지 판정합니다.
-     *
-     * 경로가 치환된(임시 경로) 인스턴스는 생성 로직 검증용이므로 통과시킨다.
-     *
-     * @return bool 테스트 환경에서 실 캐시 파일을 쓰거나 지우려는 경우 true
-     */
-    protected function touchesRealCacheFileDuringTests(): bool
-    {
-        return app()->environment('testing')
-            && $this->cacheFilePath === base_path('bootstrap/cache/hooks.php');
-    }
-
-    /**
      * 캐시 파일 존재 여부를 반환합니다.
      *
      * @return bool 캐시 파일이 존재하면 true
@@ -135,8 +109,6 @@ class HookCacheManager
 
         if (! $this->isCached()) {
             self::$memo = false;
-            // 파일이 없으면 매 요청 스캔 폴백만 하고 다시 만들지 않았다 — 요청 끝에 한 번 굽는다 (7.1.6)
-            $this->scheduleRegenerationWhenMissing();
 
             return null;
         }
@@ -144,7 +116,7 @@ class HookCacheManager
         try {
             $data = require $this->cacheFilePath;
         } catch (\Throwable $e) {
-            BootDeferredLog::warning('hooks.cache_load_failed', [], [
+            Log::warning('훅 캐시 파일 로드 실패 — 스캔 폴백', [
                 'path' => $this->cacheFilePath,
                 'error' => $e->getMessage(),
             ]);
@@ -154,7 +126,7 @@ class HookCacheManager
         }
 
         if (! is_array($data) || ! isset($data['core'], $data['modules'], $data['plugins'])) {
-            BootDeferredLog::warning('hooks.cache_invalid_structure', [], [
+            Log::warning('훅 캐시 파일 구조가 올바르지 않습니다 — 스캔 폴백', [
                 'path' => $this->cacheFilePath,
             ]);
             self::$memo = false;
@@ -166,7 +138,7 @@ class HookCacheManager
         $format = $data['format'] ?? null;
         $coreVersion = $data['core_version'] ?? null;
         if ($format !== self::FORMAT || $coreVersion !== CoreVersionChecker::getCoreVersion()) {
-            BootDeferredLog::warning('hooks.cache_stale', [], [
+            Log::warning('훅 캐시 파일의 형식·코어 버전이 지금과 다릅니다 — 스캔 폴백 (php artisan hooks:cache 로 다시 만드세요)', [
                 'path' => $this->cacheFilePath,
                 'format' => $format,
                 'core_version' => $coreVersion,
@@ -176,74 +148,9 @@ class HookCacheManager
             return null;
         }
 
-        // 활성 확장의 파일 지문 — 확장 파일만 교체하면(설치 절차 없이) 새 리스너가 빠진 캐시가 그대로 쓰였다(7.1.3).
-        // 다르면 스캔 폴백으로 이 요청을 처리하고, 요청 끝에 한 번 다시 굽는다.
-        $fingerprint = $data['extensions_fingerprint'] ?? [];
-        if (is_array($fingerprint) && $fingerprint !== [] && ! ExtensionFingerprint::matches($fingerprint)) {
-            BootDeferredLog::warning('hooks.cache_stale_extension_changed', [], [
-                'path' => $this->cacheFilePath,
-                'reason' => 'extension_changed',
-                'extensions' => ExtensionFingerprint::changedKeys($fingerprint),
-            ]);
-            self::$memo = false;
-            $this->scheduleRegeneration();
-
-            return null;
-        }
-
         self::$memo = $data;
 
         return $data;
-    }
-
-    /**
-     * 훅 캐시 파일이 없을 때, 운영 중인 사이트의 웹 요청이면 요청 끝에 다시 굽도록 예약합니다.
-     *
-     * 개발 환경은 훅 캐시 없이 돌리는 것이 의도다(굽고 나면 코어 리스너 변경이 캐시에 가려진다) — 그래서 운영 환경의
-     * 웹 요청에서만 한다. 실패가 되풀이되지 않게 표식 파일로 잠시 쉬고, root 프로세스는 만들지 않는다.
-     *
-     * @return void 반환값 없음
-     */
-    protected function scheduleRegenerationWhenMissing(): void
-    {
-        if (! $this->isSelfHealContext()) {
-            return;
-        }
-
-        if (! CacheSelfHeal::claim('hooks', CacheSelfHeal::EXTENSION_BACKOFF_SECONDS)) {
-            return;
-        }
-
-        $this->scheduleRegeneration();
-    }
-
-    /**
-     * 없는 훅 캐시를 스스로 만들어도 되는 실행인지 (운영 중인 사이트의 웹 요청).
-     *
-     * @return bool 만들어도 되면 true
-     */
-    protected function isSelfHealContext(): bool
-    {
-        return CacheSelfHeal::isProductionWebRequest(app());
-    }
-
-    /**
-     * 요청이 끝날 때 훅 캐시를 한 번 다시 굽도록 예약합니다.
-     *
-     * 시험 환경에서는 예약하지 않는다(실 캐시 파일을 시험 DB 기준으로 덮지 않게).
-     *
-     * @return void 반환값 없음
-     */
-    protected function scheduleRegeneration(): void
-    {
-        if (self::$regenerationScheduled || app()->environment('testing')) {
-            return;
-        }
-
-        self::$regenerationScheduled = true;
-        app()->terminating(static function () {
-            app(ExtensionManager::class)->regenerateHookCache();
-        });
     }
 
     /**
@@ -255,7 +162,7 @@ class HookCacheManager
     {
         self::$memo = null;
 
-        if (! $this->isCached() || $this->touchesRealCacheFileDuringTests()) {
+        if (! $this->isCached()) {
             return true;
         }
 
@@ -274,20 +181,26 @@ class HookCacheManager
      */
     public function generate(ModuleManager $moduleManager, PluginManager $pluginManager): array
     {
-        $activeModules = $moduleManager->getActiveModules();
-        $activePlugins = $pluginManager->getActivePlugins();
-
         $cache = [
             'format' => self::FORMAT,
             'core_version' => CoreVersionChecker::getCoreVersion(),
-            'extensions_fingerprint' => ExtensionFingerprint::compute(
-                array_map(fn ($m) => $m->getIdentifier(), array_values($activeModules)),
-                array_map(fn ($p) => $p->getIdentifier(), array_values($activePlugins)),
-            ),
             'core' => $this->collectCoreListeners(),
-            'modules' => $this->collectExtensionListeners($activeModules),
-            'plugins' => $this->collectExtensionListeners($activePlugins),
+            'modules' => $this->collectExtensionListeners($moduleManager->getActiveModules()),
+            'plugins' => $this->collectExtensionListeners($pluginManager->getActivePlugins()),
         ];
+
+        $content = $this->buildCacheFileContent($cache);
+
+        $dir = dirname($this->cacheFilePath);
+        if (! File::isDirectory($dir)) {
+            File::makeDirectory($dir, 0755, true);
+        }
+
+        File::put($this->cacheFilePath, $content);
+
+        // 방금 쓴 새 매핑으로 request-scoped 메모리 캐시를 갱신
+        // (이후 read() 가 옛 memo 를 반환하지 않도록 무효화).
+        self::$memo = null;
 
         $counts = [
             'core' => count($cache['core']),
@@ -295,31 +208,12 @@ class HookCacheManager
             'plugins' => array_sum(array_map('count', $cache['plugins'])),
         ];
 
-        // 테스트 환경에서는 실 캐시 파일을 쓰지 않는다 — 시험 DB 의 활성 확장 구성으로 개발 사이트 훅 매핑이
-        // 바뀐다(2026-11-03 실측: 업그레이드 단계를 태운 테스트가 확장 0건으로 덮음). 경로를 바꾼 인스턴스는 쓴다.
-        if (! $this->touchesRealCacheFileDuringTests()) {
-            $content = $this->buildCacheFileContent($cache);
-
-            $dir = dirname($this->cacheFilePath);
-            if (! File::isDirectory($dir)) {
-                File::makeDirectory($dir, 0755, true);
-            }
-
-            // 제자리에 덮어쓰지 않는다 — 쓰는 사이 다른 요청이 반쯤 쓰인 파일을 읽었다(#882). 임시 파일에 다 쓴 뒤 바꿔 끼운다.
-            AtomicBootstrapCache::write($this->cacheFilePath, $content);
-
-            BootDeferredLog::info('hooks.cache_file_written', [], [
-                'path' => $this->cacheFilePath,
-                'core' => $counts['core'],
-                'modules' => $counts['modules'],
-                'plugins' => $counts['plugins'],
-            ]);
-        }
-
-        // 방금 쓴 새 매핑으로 request-scoped 메모리 캐시를 갱신
-        // (이후 read() 가 옛 memo 를 반환하지 않도록 무효화).
-        self::$memo = null;
-        ExtensionFingerprint::forget();
+        Log::info('훅 매핑 캐시 파일 생성 완료', [
+            'path' => $this->cacheFilePath,
+            'core' => $counts['core'],
+            'modules' => $counts['modules'],
+            'plugins' => $counts['plugins'],
+        ]);
 
         return $counts;
     }
@@ -381,23 +275,12 @@ class HookCacheManager
 
             $identifier = $extension->getIdentifier();
             $entries = [];
-            $failed = [];
 
             foreach ($extension->getHookListeners() as $listenerClass) {
                 $entry = $this->buildListenerEntry($listenerClass);
                 if ($entry !== null) {
                     $entries[] = $entry;
-                } else {
-                    $failed[] = $listenerClass;
                 }
-            }
-
-            // 리스너 일부가 실패(클래스 없음·인터페이스 미구현·구독 목록 오류)한 확장은 캐시에 넣지 않는다 —
-            // 캐시에 항목이 있으면 부팅이 그 확장을 다시 스캔하지 않아, 고친 뒤에도 빠진 채 남는다(7.1.3).
-            if ($failed !== []) {
-                LifecycleWarnings::current()->add('hook_cache', $identifier, implode(', ', $failed));
-
-                continue;
             }
 
             if (! empty($entries)) {
@@ -420,22 +303,19 @@ class HookCacheManager
     protected function buildListenerEntry(string $listenerClass): ?array
     {
         if (! class_exists($listenerClass)) {
-            BootDeferredLog::warning('hooks.cache_listener_not_found', [], ['listener' => $listenerClass]);
+            Log::warning('훅 캐시 생성: 리스너 클래스를 찾을 수 없습니다', ['listener' => $listenerClass]);
 
             return null;
         }
 
         if (! in_array(HookListenerInterface::class, class_implements($listenerClass), true)) {
-            // 조용히 빠지면 「리스너가 왜 안 도나」를 로그로도 알 수 없다 (7.1.3)
-            BootDeferredLog::warning('hooks.cache_listener_interface_missing', [], ['listener' => $listenerClass]);
-
             return null;
         }
 
         try {
             $hooks = $listenerClass::getSubscribedHooks();
         } catch (\Throwable $e) {
-            BootDeferredLog::warning('hooks.cache_listener_hooks_failed', [], [
+            Log::warning('훅 캐시 생성: getSubscribedHooks() 오류 — 항목 제외', [
                 'listener' => $listenerClass,
                 'error' => $e->getMessage(),
             ]);

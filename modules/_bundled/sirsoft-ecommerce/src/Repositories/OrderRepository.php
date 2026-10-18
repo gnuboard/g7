@@ -542,7 +542,7 @@ class OrderRepository implements OrderRepositoryInterface
      * 함수를 씌워 ordered_at 인덱스를 쓸 수 없게 만든다.
      *
      * 「오늘」·「이번 달」은 사이트 표준시로 정한다 — 이 통계는 키 하나짜리 전역 캐시라 보는 사람마다
-     * 경계를 달리할 수 없고, UTC 자정으로 자르면 한국 시간 새벽 0~9시 주문이 전날·지난달로 묶인다(7.1.0).
+     * 경계를 달리할 수 없고, UTC 자정으로 자르면 한국 시간 새벽 0~9시 주문이 전날·지난달로 묶인다(7.1.0 QE-O1).
      *
      * @return array 주문 통계
      */
@@ -563,7 +563,6 @@ class OrderRepository implements OrderRepositoryInterface
 
         $siteTimezone = TimezoneHelper::getSiteTimezone() ?: 'UTC';
         $siteNow = CarbonImmutable::now($siteTimezone);
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $siteToday = $siteNow->toDateString();
 
         // 오늘 주문 수
@@ -583,9 +582,7 @@ class OrderRepository implements OrderRepositoryInterface
         $this->applyDateRangeFilterInTimezone(
             $monthlyRevenueQuery,
             'ordered_at',
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $siteNow->startOfMonth()->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $siteNow->endOfMonth()->toDateString(),
             $siteTimezone
         );

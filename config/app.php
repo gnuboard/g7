@@ -238,7 +238,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.1.6'),
+    'version' => env('APP_VERSION', '7.2.0'),
 
     /*
     |--------------------------------------------------------------------------
@@ -252,20 +252,6 @@ return [
     */
 
     'installer_completed' => env('INSTALLER_COMPLETED', false),
-
-    /*
-    |--------------------------------------------------------------------------
-    | 캐시 파일 자기 복구
-    |--------------------------------------------------------------------------
-    |
-    | bootstrap/cache 의 확장 오토로드·훅·설정·라우트 캐시 파일이 없을 때 스스로 다시 만들지.
-    | 서버를 옮기거나 배포 도구가 디렉토리를 비워도 사이트가 멈추지 않게 하는 안전장치다.
-    | 훅·설정·라우트 캐시는 운영 환경(production, 디버그 꺼짐)의 웹 요청에서만 만든다.
-    | 캐시를 일부러 두지 않는 운영이라면 .env 에 G7_CACHE_SELF_HEAL=false 를 둔다.
-    |
-    */
-
-    'cache_self_heal' => (bool) env('G7_CACHE_SELF_HEAL', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -291,7 +277,7 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,scripts,artisan,g7-install,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,scripts,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         // build/ext: 부트스트랩 리소스 정적 게시본(#122) — 각 서버가 재생성하는 로컬 파생물이라
         // 릴리즈 소스에 없다. 제외하지 않으면 --prune 업데이트가 orphan 으로 삭제해
         // 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다 (백업 대상에서도 제외).
@@ -305,7 +291,13 @@ return [
         // targets 에 `{modules,plugins,templates,lang-packs}/_bundled` 가 명시되어 정상 흐름에서는
         // 처리되므로 영향 없음. 자동 발견 폴백이 부모 디렉토리 단위로 base 를 통째로 복사해
         // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀(#347) 차단용 방어 깊이.
-        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs')))),
+        // `custom`: 개발자 전용 composer(custom/composer.json·vendor) — 코어 업데이트가 건드리지 않는다(#792).
+        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs,custom')))),
+        // 「custom 예약 자리」(#792, 7.2.0) — 업데이트 대상 폴더 *안쪽*이라도 코어 업데이트가 덮지도 지우지도
+        // 않는 경로. 복사·orphan 정리(prune)·신규 파일 manifest·롤백 prune·자동 발견 폴백이 모두 건너뛴다.
+        // 코어 배포본은 이 자리에 파일을 싣지 않는다 — 실리면 업데이트를 시작하지 않는다(UpdateReservedPaths).
+        // 백업에는 targets 범위대로 포함되어 롤백 시 복원된다.
+        'reserved_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_RESERVED_PATHS', 'routes/custom.php,app/Custom,resources/views/custom,public/custom,lang/custom,config/custom.php,database/migrations/custom,custom')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
         // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.

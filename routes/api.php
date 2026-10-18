@@ -1,6 +1,5 @@
 <?php
 
-use App\Broadcasting\BroadcastChannelRegistrar;
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
 use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
@@ -23,6 +22,7 @@ use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
 use App\Http\Controllers\Api\Admin\CoreUpdateController as AdminCoreUpdateController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\ExtensionRecoveryController as AdminExtensionRecoveryController;
+use App\Http\Controllers\Api\Admin\FrontendConfigController as AdminFrontendConfigController;
 use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController;
@@ -61,13 +61,12 @@ use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
-use App\Http\Controllers\Api\Auth\SearchHistoryController;
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
 use App\Http\Controllers\Api\Public\AnalyticsCollectController;
 use App\Http\Controllers\Api\Public\AnalyticsSummaryController;
 use App\Http\Controllers\Api\Public\AssetProbeController;
 use App\Http\Controllers\Api\Public\ConsentController;
-use App\Http\Controllers\Api\Public\CspReportController;
+use App\Http\Controllers\Api\Public\FrontendConfigController as PublicFrontendConfigController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
@@ -80,7 +79,6 @@ use App\Http\Controllers\Api\Public\PublicSearchController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Models\IdentityVerificationLog;
-use App\Support\LocaleTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -112,12 +110,6 @@ Route::group([], function () use ($publicDataThrottle) {
     Route::post('analytics/collect', [AnalyticsCollectController::class, 'store'])
         ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum'])
         ->name('api.public.analytics.collect');
-
-    // 코어 CSP 위반 보고 (#158) — 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때 정책의
-    // `report-uri` 가 이 경로를 가리킨다. 비콘과 같이 잘못된 본문도 204(기록만 생략), 16KB 초과 413.
-    Route::post('csp-report', [CspReportController::class, 'store'])
-        ->middleware('throttle:60,1,csp_report')
-        ->name('api.public.csp_report');
 
     // 방문자 동의 스냅샷 — 코어 동의 런타임이 `_global.consent` 를 채운다. 운영자가 고른 동의 제공자에게
     // 묻으므로 브라우저는 동의를 관리하는 확장의 경로를 몰라도 된다. 회원 동의는 회원 번호로 찾으므로 optional.sanctum.
@@ -161,8 +153,7 @@ Route::group([], function () use ($publicDataThrottle) {
 
         // 다국어 파일 서빙
         Route::dualSuffix('{identifier}/lang/{locale}', 'json', [PublicTemplateController::class, 'serveLanguage'])
-            // 언어팩 설치 규칙(BCP 47)과 같은 형식 — fil·fil-PH·zh-Hant·es-419 (#148)
-            ->where('locale', LocaleTag::PATTERN_BODY)
+            ->where('locale', '[a-z]{2}(-[A-Z]{2})?')
             ->middleware($publicDataThrottle)
             ->name('api.public.templates.language');
 
@@ -250,6 +241,12 @@ Route::group([], function () use ($publicDataThrottle) {
     Route::get('locales/active', [PublicLocaleController::class, 'active'])
         ->name('api.public.locales.active');
 
+    // 공개 설정 — G7 셸(window.G7Config)과 같은 값을 외부 화면(Next.js·HTML+jQuery·Blade)이 받는다(#792 D8).
+    // 회원 토큰이 있으면 회원 맥락으로(로케일 등) 응답한다. 사용자 템플릿이 없어도 동작한다.
+    Route::get('frontend-config', [PublicFrontendConfigController::class, 'show'])
+        ->middleware(['optional.sanctum', $publicDataThrottle])
+        ->name('api.public.frontend-config');
+
     // 확장 아이콘 서빙 — 미설치 번들 확장도 대상이라 DB 상태·인증을 보지 않는다.
     // 관리자 API 는 Bearer 토큰이라 <img src> 가 부를 수 없어 공개 lane 이다.
     // 응답은 <img> 전용(nosniff + SVG CSP). 규격 위반 아이콘은 404 → 화면은 유형 글리프.
@@ -272,9 +269,6 @@ Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request
     if (config('broadcasting.default') === 'null') {
         abort(403);
     }
-
-    // 채널 인가 콜백(코어·활성 확장)은 부팅이 아니라 여기서 한 번 등록한다 (#860)
-    app(BroadcastChannelRegistrar::class)->ensureRegistered();
 
     return Broadcast::auth($request);
 })->name('api.broadcasting.auth');
@@ -330,7 +324,7 @@ Route::prefix('identity')->group(function () {
         ->name('api.identity.callback');
 });
 
-// 인증 관련 라우트 (인증 불필요 - 공개 API)
+// 인증 관련 라우트 (인증 불필요, 속도 제한 없음 - 공개 API)
 // start.api.session: 로그인 시 세션 생성 (/dev 대시보드 인증용)
 // throttle:auth-login: per-IP brute-force 백업 방어 (보안 환경설정의 per-account 잠금과 2중 방어)
 Route::prefix('auth')->group(function () {
@@ -356,19 +350,14 @@ Route::prefix('auth')->group(function () {
     // IDV 정책은 bootstrap/app.php 의 자동 매핑 미들웨어가 라우트 이름 기반으로 enforce.
     // 정책 DB 토글만으로 즉시 효과 — 라우트 코드 수정 불필요. 외부 모듈/플러그인이 자기 정책 키를
     // 강제하고 싶을 때만 ->middleware('identity.policy:KEY') 를 명시 사용.
-    // 요청 제한(같은 IP·분당, 보안 환경설정): 가입 / 비밀번호 찾기 / 재설정·토큰 확인은 서로 따로 센다.
+    // 가입도 세션을 연다 — 가입 직후 개발자 화면(custom)에서 로그인으로 보이도록 세션에 로그인·토큰 짝을 남긴다(#792 D20)
     Route::post('register', [UserAuthController::class, 'register'])
-        ->middleware('throttle:auth-register')
+        ->middleware('start.api.session')
         ->name('api.auth.register');
-    Route::post('forgot-password', [UserAuthController::class, 'forgotPassword'])
-        ->middleware('throttle:auth-password-reset')
-        ->name('api.auth.forgot-password');
+    Route::post('forgot-password', [UserAuthController::class, 'forgotPassword'])->name('api.auth.forgot-password');
     Route::post('reset-password', [UserAuthController::class, 'resetPassword'])
-        ->middleware('throttle:auth-password-reset-verify')
         ->name('api.auth.reset-password');
-    Route::post('validate-reset-token', [UserAuthController::class, 'validateResetToken'])
-        ->middleware('throttle:auth-password-reset-verify')
-        ->name('api.auth.validate-reset-token');
+    Route::post('validate-reset-token', [UserAuthController::class, 'validateResetToken'])->name('api.auth.validate-reset-token');
 
     // 일반 사용자 인증 (인증 필요 - 공용 경로)
     // 본인 정보 조회(헤더·라우트 인증 판정이 부른다)는 비활성 상태 회원이라도 역할의 내 정보 조회 권한으로 허용한다
@@ -416,8 +405,9 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
         Route::get('user', [UserAuthController::class, 'user'])
             ->middleware('permission:user,core.auth.user')
             ->name('api.user.auth.user');
+        // 갱신도 세션을 연다 — 세션의 개발자 화면 짝 토큰을 새 토큰으로 바꾼다(#792 F6-2)
         Route::post('refresh', [UserAuthController::class, 'refresh'])
-            ->middleware('permission:user,core.auth.refresh')
+            ->middleware(['start.api.session', 'permission:user,core.auth.refresh'])
             ->name('api.user.auth.refresh');
     });
 
@@ -475,14 +465,6 @@ Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:
     Route::delete('avatar', [UserProfileController::class, 'deleteAvatar'])->name('api.me.avatar.delete');
     Route::post('verify-password', [UserProfileController::class, 'verifyPassword'])->name('api.me.verify-password');
     Route::put('password', [UserProfileController::class, 'changePassword'])->name('api.me.password');
-
-    // 내 최근 검색어 (7.1.5) — 본인 전용이라 새 권한 없음. 범위(scope)는 코어·활성 확장 선언만 받는다.
-    Route::get('search-history', [SearchHistoryController::class, 'index'])->name('api.me.search-history.index');
-    Route::post('search-history', [SearchHistoryController::class, 'store'])->name('api.me.search-history.store');
-    Route::post('search-history/merge', [SearchHistoryController::class, 'merge'])->name('api.me.search-history.merge');
-    Route::put('search-history/settings', [SearchHistoryController::class, 'updateSettings'])->name('api.me.search-history.settings');
-    Route::delete('search-history', [SearchHistoryController::class, 'destroyAll'])->name('api.me.search-history.destroy-all');
-    Route::delete('search-history/{id}', [SearchHistoryController::class, 'destroy'])->whereNumber('id')->name('api.me.search-history.destroy');
 });
 
 // 첨부파일 다운로드 (공개 - 권한 정책에 따라 접근 제어)
@@ -501,7 +483,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     Route::prefix('auth')->group(function () {
         Route::post('logout', [AdminAuthController::class, 'logout'])->middleware('start.api.session')->name('api.admin.auth.logout');
         Route::get('user', [AdminAuthController::class, 'user'])->name('api.admin.auth.user');
-        Route::post('refresh', [AdminAuthController::class, 'refresh'])->name('api.admin.auth.refresh');
+        Route::post('refresh', [AdminAuthController::class, 'refresh'])->middleware('start.api.session')->name('api.admin.auth.refresh');
     });
 
     // IDV 관리자 라우트 (identity 정책/로그/프로바이더)
@@ -796,8 +778,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('queue-status', [AdminSettingsController::class, 'queueStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.queue-status');
         // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
         Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
-        // 「본문 콘텐츠」 외부 영상 서비스 추가 창의 예시 주소 확인 (#883) — 저장 없음, 저장 때와 같은 컴파일 규칙. `{key}` 와일드카드보다 먼저.
-        Route::post('content/embed-preview', [AdminSettingsController::class, 'embedProviderPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.content.embed-preview');
         // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.
         Route::get('password-expiry-preview', [AdminSettingsController::class, 'passwordExpiryPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.password-expiry-preview');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
@@ -814,6 +794,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');
     });
+
+    // 관리자 공개 설정 — 관리자 셸(window.G7Config)과 같은 값(#792 D8). 관리자 그룹 인증만 요구한다
+    // (관리자 셸은 모든 관리자에게 같은 설정을 내린다).
+    Route::get('frontend-config', [AdminFrontendConfigController::class, 'show'])->name('api.admin.frontend-config');
 
     // 코어 업데이트
     Route::prefix('core-update')->group(function () {

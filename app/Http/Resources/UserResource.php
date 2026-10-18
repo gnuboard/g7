@@ -9,7 +9,6 @@ use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Services\MemberNotificationService;
 use App\Services\PasswordExpiryService;
-use App\Services\SearchHistoryService;
 use App\Support\UserGradeGuard;
 use App\Traits\HasCountryAttributes;
 use Carbon\Carbon;
@@ -436,7 +435,7 @@ class UserResource extends BaseApiResource
             'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
-            // 마이페이지 「내 정보」 가 이름을 보인다 — 코드만 실으면 「ko」 가 그대로 보인다(7.1.0 실측).
+            // 마이페이지 「내 정보」 가 이름을 보인다 — 코드만 실으면 「ko」 가 그대로 보인다(7.1.0 N O-N7).
             'language_label' => $this->languageLabel($this->getValue('language')),
             'timezone' => $this->getValue('timezone'),
             'country' => $this->getValue('country'),
@@ -502,38 +501,6 @@ class UserResource extends BaseApiResource
                 ? $this->formatDateTimeStringForUser($postponedUntil)
                 : null,
             'days_left' => $expiresAt !== null ? $expiry->daysLeft($this->resource) : null,
-        ];
-    }
-
-    /**
-     * 관리자 회원 상세의 최근 검색어를 반환합니다 — 상세 응답에만 `search_history` 로 싣는다.
-     *
-     * 범위마다 몇 건을 읽으므로 목록(UserCollection 이 withAdminInfo 를 행마다 부른다)에는 넣지 않는다.
-     * 범위 id 를 키로 둔다 — 코어 구획은 `core.site`, 확장 탭은 자기 범위를 이름으로 꺼내 그린다.
-     *
-     * @return array{enabled: bool, auto_save: bool, scopes: array<string, array{owner: string, label: string, items: array<int, array{keyword: string, searched_at: string|null}>}>} 범위별 최근 검색어
-     */
-    public function searchHistoryArray(): array
-    {
-        $overview = app(SearchHistoryService::class)->overviewForAdmin($this->resource);
-
-        $scopes = [];
-        foreach ($overview['scopes'] as $scope => $entry) {
-            $scopes[$scope] = [
-                'owner' => $entry['owner'],
-                'label' => $entry['label'],
-                'items' => $entry['items']->map(fn ($history): array => [
-                    'keyword' => (string) $history->keyword,
-                    'searched_at' => $history->searched_at ? $this->formatDateTimeStringForUser($history->searched_at) : null,
-                ])->values()->all(),
-            ];
-        }
-
-        return [
-            'enabled' => $overview['enabled'],
-            'auto_save' => $overview['auto_save'],
-            // 비어도 객체로 — 화면이 `scopes['core.site']` 처럼 키로 읽는다
-            'scopes' => (object) $scopes,
         ];
     }
 

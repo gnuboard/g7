@@ -37,10 +37,6 @@ function findById(node: unknown, id: string): any {
 }
 
 describe('회원 상세 계정 잠금 해제 (C1)', () => {
-  /**
-   * @scenario surface=unlock_button
-   * @effects unlock_button_only_for_locked_account
-   */
   it('잠금 해제 버튼이 잠긴 계정에서만 노출되어야 한다', () => {
     const button = findById(userDetailLayout, 'header_unlock_button');
 
@@ -49,10 +45,6 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
     expect(button.props.disabled).toBe('{{user?.data?.abilities?.can_update !== true}}');
   });
 
-  /**
-   * @scenario surface=unlock_call
-   * @effects unlock_posts_admin_endpoint
-   */
   it('잠금 해제 버튼이 관리자 해제 엔드포인트를 POST 로 호출해야 한다', () => {
     const button = findById(userDetailLayout, 'header_unlock_button');
     const action = actionsOf(button)[0];
@@ -64,10 +56,6 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
     expect(action.auth_required).toBe(true);
   });
 
-  /**
-   * @scenario surface=unlock_refresh
-   * @effects unlock_success_refetches_and_notifies
-   */
   it('해제 성공 시 상세 데이터를 다시 불러오고 성공 안내를 노출해야 한다', () => {
     const button = findById(userDetailLayout, 'header_unlock_button');
     const onSuccess = callbacksOf(actionsOf(button)[0], 'onSuccess');
@@ -82,10 +70,6 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
     expect(toast.params.message).toBe('$t:admin.users.detail.unlock_success');
   });
 
-  /**
-   * @scenario surface=lock_status_field
-   * @effects lock_status_three_branches_after_load
-   */
   it('잠금 상태 필드가 영구/기한부/정상 3분기를 모두 표시해야 한다', () => {
     const field = findById(userDetailLayout, 'field_lock_status');
     expect(field).toBeDefined();
@@ -98,14 +82,9 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
     expect(conditions).toContain(
       '{{user?.data?.locked_permanently !== true && user?.data?.is_locked === true}}',
     );
-    // 「정상」은 회원 정보를 받은 뒤에만 판정한다(받는 중을 「잠금 아님」으로 읽지 않는다, #915)
-    expect(conditions).toContain('{{user !== undefined && (user?.data?.is_locked !== true)}}');
+    expect(conditions).toContain('{{user?.data?.is_locked !== true}}');
   });
 
-  /**
-   * @scenario surface=i18n
-   * @effects unlock_keys_defined_ko_en
-   */
   it('ko/en partial 에 잠금 해제 관련 키가 모두 정의되어야 한다', () => {
     for (const pack of [adminKo, adminEn] as any[]) {
       expect(pack.users.detail.unlock).toBeTruthy();
@@ -117,10 +96,6 @@ describe('회원 상세 계정 잠금 해제 (C1)', () => {
     }
   });
 
-  /**
-   * @scenario surface=i18n
-   * @effects unlock_keys_resolve_ko_en
-   */
   it('TranslationEngine 이 잠금 해제 키를 ko/en 으로 해석해야 한다', () => {
     const engine = TranslationEngine.getInstance();
     const templateId = 'sirsoft-admin_basic';

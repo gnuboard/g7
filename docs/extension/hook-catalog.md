@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (635)
+- [코어](#코어) (613)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -92,7 +92,6 @@
 | `core.attachment.before_download_action` | action | 2 |  |
 | `core.attachment.before_reorder` | action | 1 |  |
 | `core.attachment.before_upload` | action | 3 |  |
-| `core.attachment.filter_can_download` | filter | 3 |  |
 | `core.attachment.filter_upload_file` | filter | 1 |  |
 | `core.attachment.reorder_validation_rules` | filter | 2 |  |
 | `core.attachment.upload_batch_validation_rules` | filter | 2 |  |
@@ -107,7 +106,6 @@
 | `core.auth.before_logout` | action | 1 |  |
 | `core.auth.before_register` | action | 2 |  |
 | `core.auth.before_reset_password` | action | 1 |  |
-| `core.auth.console_password_reset_notices` | filter | 2 |  |
 | `core.auth.forgot_password_validation_rules` | filter | 2 |  |
 | `core.auth.lockout_minutes` | filter | 2 |  |
 | `core.auth.login_failed` | action | 2 |  |
@@ -123,7 +121,6 @@
 | `core.auth.password_expiry_notice` | action | 2 |  |
 | `core.auth.record_consents` | action | 4 |  |
 | `core.auth.register_validation_rules` | filter | 2 |  |
-| `core.auth.registering` | action | 3 |  |
 | `core.auth.reset_password_validation_rules` | filter | 2 |  |
 | `core.auth.two_factor_requested` | action | 2 |  |
 | `core.auth.two_factor_resend_validation_rules` | filter | 2 |  |
@@ -136,13 +133,6 @@
 | `core.consent.allowed_types` | filter | 1 |  |
 | `core.consent.changed` | action | 3 |  |
 | `core.consent.registered_providers` | filter | 1 |  |
-| `core.content.filter_embed_providers` | filter | 1 |  |
-| `core.content.filter_media_source_patterns` | filter | 1 |  |
-| `core.content_media.after_upload` | action | 2 |  |
-| `core.content_media.before_delete` | action | 2 |  |
-| `core.content_media.before_upload` | action | 2 |  |
-| `core.content_media.filter_upload_file` | filter | 2 |  |
-| `core.csp.trusted_style_hosts` | filter | 1 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
 | `core.custom_translation.index_validation_rules` | filter | 2 |  |
@@ -344,7 +334,6 @@
 | `core.module_settings.before_delete_directory` | action | 1 |  |
 | `core.module_settings.before_reset` | action | 1 |  |
 | `core.module_settings.before_save` | action | 2 |  |
-| `core.module_settings.filter_frontend_settings` | filter | 2 |  |
 | `core.module_settings.filter_save_data` | filter | 2 |  |
 | `core.modules.activated` | action | 1 |  |
 | `core.modules.after_activate` | action | 2 |  |
@@ -445,7 +434,6 @@
 | `core.plugin_settings.before_delete_directory` | action | 1 |  |
 | `core.plugin_settings.before_reset` | action | 1 |  |
 | `core.plugin_settings.before_save` | action | 2 |  |
-| `core.plugin_settings.filter_frontend_settings` | filter | 2 |  |
 | `core.plugin_settings.filter_save_data` | filter | 2 |  |
 | `core.plugin_settings.update_rules` | filter | 3 | 호환용 옛 이름 → `core.plugin_settings.update_validation_rules` |
 | `core.plugin_settings.update_validation_rules` | filter | 3 |  |
@@ -473,8 +461,6 @@
 | `core.privacy.manual_run_targets` | filter | 1 |  |
 | `core.privacy.manual_run_validation_rules` | filter | 2 |  |
 | `core.privacy.retention_handlers` | filter | 1 |  |
-| `core.privacy.search_history.after_prune` | action | 2 |  |
-| `core.privacy.search_history.before_prune` | action | 1 |  |
 | `core.privacy.target_list_validation_rules` | filter | 2 |  |
 | `core.privacy.withdrawn_user.after_prune` | action | 2 |  |
 | `core.privacy.withdrawn_user.before_prune` | action | 1 |  |
@@ -516,6 +502,7 @@
 | `core.schedule.history_list_validation_rules` | filter | 2 |  |
 | `core.schedule.list_validation_rules` | filter | 2 |  |
 | `core.schedule.update_validation_rules` | filter | 2 |  |
+| `core.screen_url.filter_path` | filter | 4 |  |
 | `core.search.after_search` | action | 1 |  |
 | `core.search.build_response` | filter | 3 |  |
 | `core.search.engine_drivers` | filter | 1 |  |
@@ -524,13 +511,6 @@
 | `core.search.like_operators` | filter | 1 |  |
 | `core.search.results` | filter | 2 |  |
 | `core.search.validation_rules` | filter | 2 | 호환용 옛 이름 → `core.search.index_validation_rules` |
-| `core.search_history.after_record` | action | 2 |  |
-| `core.search_history.destroy_all_validation_rules` | filter | 2 |  |
-| `core.search_history.filter_keyword` | filter | 3 |  |
-| `core.search_history.index_validation_rules` | filter | 2 |  |
-| `core.search_history.merge_validation_rules` | filter | 2 |  |
-| `core.search_history.store_validation_rules` | filter | 2 |  |
-| `core.search_history.update_settings_validation_rules` | filter | 2 |  |
 | `core.seo.filter_context` | filter | 2 |  |
 | `core.seo.filter_meta` | filter | 2 |  |
 | `core.seo.filter_og_data` | filter | 2 |  |
@@ -551,7 +531,6 @@
 | `core.settings.apply_driver_config` | action | 3 |  |
 | `core.settings.before_save` | action | 1 |  |
 | `core.settings.before_set` | action | 2 |  |
-| `core.settings.embed_preview_validation_rules` | filter | 2 |  |
 | `core.settings.filter_save_data` | filter | 1 |  |
 | `core.settings.password_expiry_preview_validation_rules` | filter | 2 |  |
 | `core.settings.privacy_preview_validation_rules` | filter | 2 |  |
@@ -576,7 +555,6 @@
 | `core.template.update_validation_rules` | filter | 2 |  |
 | `core.template_layout_attachment.after_upload` | action | 1 |  |
 | `core.template_layout_attachment.before_upload` | action | 3 |  |
-| `core.template_layout_attachment.filter_allowed_extensions` | filter | 2 |  |
 | `core.template_layout_attachment.filter_upload_file` | filter | 1 |  |
 | `core.template_layout_attachment.list_validation_rules` | filter | 2 |  |
 | `core.template_layout_attachment.upload_validation_rules` | filter | 2 |  |

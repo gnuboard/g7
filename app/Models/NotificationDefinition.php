@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Models\Concerns\HasUserOverrides;
 use App\Notifications\Identity\IdentityNotificationType;
 use App\Services\NotificationDefinitionService;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -172,7 +171,7 @@ class NotificationDefinition extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->name ?? [];
 
-        return LocalizedValue::pick($name, $locale, anyAsLast: false) ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? '';
     }
 
     /**
@@ -186,7 +185,7 @@ class NotificationDefinition extends Model
         $locale = $locale ?? app()->getLocale();
         $description = $this->description ?? [];
 
-        return LocalizedValue::pick($description, $locale, anyAsLast: false) ?? '';
+        return $description[$locale] ?? $description[config('app.fallback_locale', 'ko')] ?? '';
     }
 
     /**

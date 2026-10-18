@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -363,7 +364,7 @@ class SearchPostsListener implements HookListenerInterface
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count ?? 0,
             'comment_count' => $post->comments_count ?? 0,
-            'url' => "/board/{$boardSlug}/{$post->id}",
+            'url' => BoardScreenUrl::post($boardSlug, $post->id),
         ];
     }
 

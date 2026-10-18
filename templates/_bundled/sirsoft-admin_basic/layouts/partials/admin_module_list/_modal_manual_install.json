@@ -241,7 +241,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "mt-1 text-sm font-mono text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
+                                                "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
                                             },
                                             "text": "module.json"
                                         },
@@ -363,7 +363,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "mt-1 text-sm font-mono text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
+                                                "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block"
                                             },
                                             "text": "module.json"
                                         },
@@ -479,15 +479,6 @@
                                             }
                                         },
                                         {
-                                            "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다.",
-                                            "handler": "toast",
-                                            "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"
-                                            }
-                                        },
-                                        {
                                             "handler": "refetchDataSource",
                                             "params": {
                                                 "dataSourceId": "modules"
@@ -504,20 +495,6 @@
                                         },
                                         {
                                             "handler": "closeModal"
-                                        },
-                                        {
-                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                "lifecycleWarningsOpen": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "lifecycle_warnings_modal",
-                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
                                         }
                                     ],
                                     "onError": {

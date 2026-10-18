@@ -33,13 +33,6 @@ class LayoutService
     private const NON_COMPONENT_KEYS = ['actions', 'params', 'data_sources', 'errorHandling', 'lifecycle', 'init_actions', 'computed', 'meta'];
 
     /**
-     * 요청 본문 자리 키 — 개발자 주석 제거가 이 키 아래로는 내려가지 않는다(서버로 보낼 데이터라 `comment` 도 값이다).
-     *
-     * @var array<int, string>
-     */
-    private const REQUEST_PAYLOAD_KEYS = ['body', 'query', 'headers'];
-
-    /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
      *
      * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 저장소
@@ -319,7 +312,7 @@ class LayoutService
     }
 
     /**
-     * meta 병합 - 자식 값이 우선 (seo·scroll_restoration 키는 deep merge)
+     * meta 병합 - 자식 값이 우선 (seo 키는 deep merge)
      *
      * @param  array  $parentMeta  부모 메타 데이터
      * @param  array  $childMeta  자식 메타 데이터
@@ -332,36 +325,7 @@ class LayoutService
             $childMeta['seo'] = $this->mergeSeo($parentMeta['seo'], $childMeta['seo']);
         }
 
-        // scroll_restoration 은 베이스(편집기의 템플릿 기본값) 위에 화면이 적은 키만 덮어쓴다
-        if (is_array($parentMeta['scroll_restoration'] ?? null) && is_array($childMeta['scroll_restoration'] ?? null)) {
-            $childMeta['scroll_restoration'] = $this->mergeScrollRestoration(
-                $parentMeta['scroll_restoration'],
-                $childMeta['scroll_restoration']
-            );
-        }
-
         return array_merge($parentMeta, $childMeta);
-    }
-
-    /**
-     * 스크롤 복원 설정을 병합합니다.
-     *
-     * 최상위 키와 하위 snapshot 은 키 단위로 자식이 우선한다. 목록 값(containers·snapshot.state)은 자식이
-     * 적으면 통째로 바꾼다(array_replace_recursive 처럼 인덱스별로 섞지 않는다).
-     *
-     * @param  array  $parent  부모(베이스) 스크롤 복원 설정
-     * @param  array  $child  자식(화면) 스크롤 복원 설정
-     * @return array 병합된 스크롤 복원 설정
-     */
-    private function mergeScrollRestoration(array $parent, array $child): array
-    {
-        $merged = array_merge($parent, $child);
-
-        if (is_array($parent['snapshot'] ?? null) && is_array($child['snapshot'] ?? null)) {
-            $merged['snapshot'] = array_merge($parent['snapshot'], $child['snapshot']);
-        }
-
-        return $merged;
     }
 
     /**
@@ -406,18 +370,17 @@ class LayoutService
     private function mergeDataSources(array $parentDataSources, array $childDataSources): array
     {
         $merged = $parentDataSources;
-        // 부모와 겹치는 id 만 막는다 — 자식 안에서 같은 id 를 조건(if·conditions)으로 여러 판 선언한 것은 엔진이 조건으로
-        // 고른다(7.1.1 출시 전). 자식 안의 조건 없는 중복은 설치·저장 검증이 이미 거부한다.
-        $parentIds = array_column($parentDataSources, 'id');
+        $existingIds = array_column($parentDataSources, 'id');
 
         foreach ($childDataSources as $childDataSource) {
-            if (in_array($childDataSource['id'], $parentIds, true)) {
+            if (in_array($childDataSource['id'], $existingIds, true)) {
                 throw new LayoutIncludeException(
                     __('exceptions.layout.duplicate_data_source_id', ['id' => $childDataSource['id']])
                 );
             }
 
             $merged[] = $childDataSource;
+            $existingIds[] = $childDataSource['id'];
         }
 
         return $merged;
@@ -1000,7 +963,7 @@ class LayoutService
             }
 
             // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 배열 캐스트는 `{}` 를 `[]` 로
-            // 바꿔 응답에서 화면 상태(initLocal 값·액션 인자)가 배열이 된다(7.1.0 실측)
+            // 바꿔 응답에서 화면 상태(initLocal 값·액션 인자)가 배열이 된다(7.1.0 실측 O-K3-4)
             $layoutData = LayoutEmptyObjects::decode($layout->getAttributes()['content'] ?? null, $layout->content ?? []);
 
             // 5. 상속 처리 (extends가 있는 경우)
@@ -1770,27 +1733,10 @@ class LayoutService
      * 미리보기 서빙). 그 경로도 같은 계약을 지어야 하므로 public 이다 — 각자 재귀 제거를
      * 새로 짜면 한쪽만 키를 늘렸을 때 조용히 갈린다.
      *
-     * 요청 본문 자리(`body`·`query`·`headers` 아래, 데이터소스의 `params` 아래)는 서버로 보낼 데이터라
-     * `comment` 키도 값이다 — 그 아래는 손대지 않는다(종전에는 지워 비즈뿌리오 「검수 의견」 본문이 빈 채로 갔다).
-     * 액션 `params`·`props`·`initLocal` 바로 아래의 `comment` 는 번들에서 설명 자리로 쓰여 왔으므로 계속 지운다
-     * (남기면 처리기 인자·컴포넌트 prop·`_local.comment` 가 된다).
-     *
      * @param  array  $node  정리 대상 레이아웃(또는 하위) 배열
      * @return array comment 필드가 제거된 배열
      */
     public function stripDeveloperComments(array $node): array
-    {
-        return $this->stripDeveloperCommentsIn($node, false);
-    }
-
-    /**
-     * stripDeveloperComments 의 재귀 본체.
-     *
-     * @param  array  $node  정리 대상 배열
-     * @param  bool  $isDataSource  `data_sources` 목록의 원소(데이터소스 정의)인지 — 그 `params` 는 요청 데이터다
-     * @return array comment 필드가 제거된 배열
-     */
-    private function stripDeveloperCommentsIn(array $node, bool $isDataSource): array
     {
         unset($node['comment'], $node['_comment']);
 
@@ -1801,24 +1747,9 @@ class LayoutService
         }
 
         foreach ($node as $key => $value) {
-            if (! is_array($value)) {
-                continue;
+            if (is_array($value)) {
+                $node[$key] = $this->stripDeveloperComments($value);
             }
-            if (is_string($key) && in_array($key, self::REQUEST_PAYLOAD_KEYS, true)) {
-                continue;
-            }
-            if ($isDataSource && $key === 'params') {
-                continue;
-            }
-            if ($key === 'data_sources' && array_is_list($value)) {
-                $node[$key] = array_map(
-                    fn ($source) => is_array($source) ? $this->stripDeveloperCommentsIn($source, true) : $source,
-                    $value
-                );
-
-                continue;
-            }
-            $node[$key] = $this->stripDeveloperCommentsIn($value, false);
         }
 
         return $node;

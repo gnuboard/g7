@@ -47,15 +47,18 @@
                                 {
                                     "id": "manage_my_addresses",
                                     "type": "basic",
-                                    "name": "A",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate"
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/mypage/addresses"
+                                            }
                                         }
                                     ],
                                     "props": {
-                                        "href": "/mypage/addresses",
+                                        "type": "button",
                                         "className": "flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
                                     },
                                     "children": [
@@ -79,7 +82,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{user !== undefined && user !== null && (!user?.data?.ecommerce_default_address)}}",
+                            "if": "{{!user?.data?.ecommerce_default_address}}",
                             "props": {
                                 "className": "block text-sm text-gray-500 dark:text-gray-400"
                             },

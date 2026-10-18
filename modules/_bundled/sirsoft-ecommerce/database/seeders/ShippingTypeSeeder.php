@@ -62,7 +62,7 @@ class ShippingTypeSeeder extends Seeder implements TranslatableSeederInterface
      */
     public function run(): void
     {
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.shipping_type.sync_start'));
+        $this->command->info('배송유형 초기 데이터 동기화를 시작합니다.');
 
         $helper = app(GenericEntitySyncHelper::class);
         $types = $this->resolveTranslatedDefaults();
@@ -109,6 +109,6 @@ class ShippingTypeSeeder extends Seeder implements TranslatableSeederInterface
 
         $preserved = count($inUseCodes);
         $count = ShippingType::count();
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.shipping_type.sync_done', ['defined' => count($types), 'count' => $count, 'deleted' => $deleted, 'preserved' => $preserved]));
+        $this->command->info('배송유형 동기화 완료: 정의 '.count($types)."건 / DB {$count}건 / stale 삭제 {$deleted}건 / 사용 중 {$preserved}건 보존");
     }
 }

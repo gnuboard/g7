@@ -64,12 +64,9 @@ class ResourceFieldDescriber
         'update_source' => '업데이트 감지 출처 (github, bundled 등)',
         'latest_version' => '감지된 최신 배포 버전',
         'file_version' => '설치된 파일의 manifest 버전',
-        'stuck_update' => '업데이트가 도중에 멈춰 「업데이트 중」에 남아 있는지 (10분 경과·진행 프로세스 없음)',
         'incompatible_required_version' => '요구 코어 버전 미충족 시 필요한 버전 (호환되면 null)',
         'status_variant_label' => '상태 표시용 라벨/변형',
         'dependencies' => '의존하는 확장 맵 (manifest 파생 — {modules, plugins})',
-        'integrations' => '함께 쓰면 연동되는(선택) 확장 목록 (manifest integrations 파생 — 각 원소 identifier/name/type/is_installed/is_active/required_version/installed_version/is_met, 버전 제약이 없으면 required_version 은 *)',
-        'integrated_by' => '이 확장을 선택 연동으로 선언한 활성 확장 목록 (각 원소 type/identifier/name — 비활성화·제거 안내용)',
         'assets' => '프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략)',
 
         // 관계/연관 객체 (여러 Resource 에서 동일 계약)
@@ -101,8 +98,6 @@ class ResourceFieldDescriber
         'github_changelog_url' => 'GitHub 변경 이력(CHANGELOG) URL (manifest 파생)',
         'changelog' => '변경 이력 텍스트 (원격/파일 CHANGELOG 본문)',
         'current_core_version' => '현재 설치된 코어 버전',
-        'update_dependency_warnings' => '(업데이트가 있는 행에만) 업데이트할 새 버전이 요구하는 의존 확장 중 지금 미설치·꺼짐·버전 미달인 것 (각 원소 type/identifier/name/state/required_version/installed_version/message — 대상 판 manifest 를 모르면 null)',
-        'update_integration_notices' => '(업데이트가 있는 행에만) 업데이트할 새 버전과 함께 쓰면 연동되는 확장 중 지금 미설치·꺼짐·버전 미달인 것 (각 원소 type/identifier/name/state/required_version/installed_version/message — 대상 판 manifest 를 모르면 null)',
         'installed_modules' => '설치된 모듈 집계 객체 (total/active)',
         'installed_templates' => '설치된 템플릿 집계 객체 (total/active)',
         'active_plugins' => '활성 플러그인 집계 객체 (total/active)',

@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsClock;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Models\Analytics\AnalyticsArchiveRun;
@@ -32,8 +31,6 @@ use Illuminate\Support\Carbon;
  */
 class ArchiveCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -46,6 +43,13 @@ class ArchiveCommand extends Command
                             {--force : 이미 확정된 날도 다시 집계}
                             {--dry-run : 집계 표를 바꾸지 않고 대상만 확인}
                             {--scheduled : 스케줄러 등록 실행으로 기록 (없으면 수동 실행으로 기록)}';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '방문자 통계 원장을 시간·일·차원 집계 표로 만듭니다.';
 
     /**
      * 커맨드 실행
@@ -68,7 +72,7 @@ class ArchiveCommand extends Command
         $period = (string) $this->option('period');
 
         if (! in_array($period, ['hour', 'day'], true)) {
-            $this->error(__('analytics.console.archive.invalid_period'));
+            $this->error('집계 단위는 hour 또는 day 여야 합니다.');
 
             return self::FAILURE;
         }
@@ -79,7 +83,7 @@ class ArchiveCommand extends Command
             $closed = $staleRuns->failStale();
 
             if ($closed > 0) {
-                $this->warn(__('analytics.console.archive.stale_closed', ['count' => $closed]));
+                $this->warn(sprintf('끝을 알리지 못하고 멈춘 실행 %d건을 실패로 닫았습니다.', $closed));
             }
         }
 
@@ -127,7 +131,6 @@ class ArchiveCommand extends Command
      */
     private function handleDay(ArchiveService $service, ArchiveCatchUpService $catchUp, bool $dryRun): int
     {
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $yesterday = Carbon::parse(AnalyticsClock::today())->subDay()->toDateString();
 
         $run = $service->archiveDay($yesterday, [
@@ -169,13 +172,13 @@ class ArchiveCommand extends Command
     private function handleRange(ArchiveService $service, string $from, string $to, bool $dryRun): int
     {
         if (strtotime($from) === false || strtotime($to) === false) {
-            $this->error(__('analytics.console.archive.invalid_date'));
+            $this->error('기간은 Y-m-d 형식이어야 합니다.');
 
             return self::FAILURE;
         }
 
         if (strtotime($from) > strtotime($to)) {
-            $this->error(__('analytics.console.archive.range_reversed'));
+            $this->error('시작일이 종료일보다 늦습니다.');
 
             return self::FAILURE;
         }
@@ -188,7 +191,7 @@ class ArchiveCommand extends Command
         ]);
 
         if ($dryRun) {
-            $this->info(__('analytics.console.archive.range_dry_run', ['from' => $from, 'to' => $to]));
+            $this->info("재집계 대상 기간 {$from} ~ {$to} (마른 실행 — 집계 표를 바꾸지 않았습니다)");
 
             return self::SUCCESS;
         }
@@ -203,7 +206,7 @@ class ArchiveCommand extends Command
             }
         }
 
-        $this->info(__('analytics.console.archive.range_done', ['days' => count($runs), 'failed' => $failed]));
+        $this->info(sprintf('재집계 %d일 수행 (실패 %d일)', count($runs), $failed));
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -219,7 +222,7 @@ class ArchiveCommand extends Command
     private function report(?AnalyticsArchiveRun $run, string $date, bool $dryRun): int
     {
         if ($dryRun || $run === null) {
-            $this->info(__('analytics.console.archive.date_dry_run', ['date' => $date]));
+            $this->info("{$date} 집계 대상 확인 (마른 실행 — 집계 표를 바꾸지 않았습니다)");
 
             return self::SUCCESS;
         }
@@ -227,23 +230,24 @@ class ArchiveCommand extends Command
         $status = $this->valueOf($run->status);
 
         if ($status === ArchiveRunStatus::Failed->value) {
-            $this->error(__('analytics.console.archive.date_failed', ['date' => $date, 'error' => $run->error]));
+            $this->error("{$date} 집계 실패: {$run->error}");
 
             return self::FAILURE;
         }
 
         if ($status === ArchiveRunStatus::Skipped->value) {
-            $this->warn(__('analytics.console.archive.date_skipped', ['date' => $date]));
+            $this->warn("{$date} 집계를 건너뛰었습니다 — 같은 기간을 이미 집계 중입니다.");
 
             return self::SUCCESS;
         }
 
-        $this->info(__('analytics.console.archive.date_done', [
-            'date' => $date,
-            'visits' => (int) $run->processed_visits,
-            'actions' => (int) $run->processed_actions,
-            'chunks' => (int) $run->chunks,
-        ]));
+        $this->info(sprintf(
+            '%s 집계 완료 — 방문 %d건, 액션 %d건, 청크 %d개',
+            $date,
+            $run->processed_visits,
+            $run->processed_actions,
+            $run->chunks,
+        ));
 
         return self::SUCCESS;
     }

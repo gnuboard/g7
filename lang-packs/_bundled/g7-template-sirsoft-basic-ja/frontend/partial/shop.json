@@ -155,8 +155,7 @@
     "empty": "このカテゴリに商品がありません。",
     "product_count": "{{count}}個の商品",
     "select": "カテゴリ選択",
-    "all_in": "{{name}}全体",
-    "chips_label": "商品カテゴリ"
+    "all_in": "{{name}}全体"
   },
   "filter": {
     "title": "フィルター",
@@ -241,8 +240,6 @@
     "sort_rating_high": "評価が高い順",
     "sort_rating_low": "評価が低い順",
     "review_image_preview": "レビュー画像",
-    "review_image_open": "レビュー画像 {{n}} を拡大表示",
-    "review_image_open_more": "レビュー画像 {{n}} を拡大表示（ほか {{count}} 枚）",
     "rating_out_of_5": "5点満点·レビュー{{total}}件",
     "filter_all": "全オプション",
     "filter_all_rating": "全体評価",
@@ -252,9 +249,7 @@
     "filter_rating_2": "⭐⭐ 2点",
     "filter_rating_1": "⭐ 1点",
     "filter_reset": "フィルターをリセット",
-    "no_purchasable_option": "現在、購入可能なオプションがない商品です。",
-    "category_path": "カテゴリパス",
-    "buy_sheet_title": "オプション選択"
+    "no_purchasable_option": "現在、購入可能なオプションがない商品です。"
   },
   "cart": {
     "title": "カート",
@@ -277,7 +272,6 @@
     "product_amount": "商品金額",
     "taxable_amount": "課税金額",
     "tax_free_amount": "非課税金額",
-    "zero_rated_amount": "ゼロ税率金額",
     "discount_total": "割引",
     "coupon_discount": "クーポン割引",
     "code_discount": "割引コード割引",
@@ -327,8 +321,7 @@
     "min_qty_item": "最小購入数量は{{limit}}個です。(要望: {{requested}}個)",
     "restricted_item": "購入権限がない商品です。",
     "sold_out": "品切れ",
-    "go_to_cart": "カートに移動",
-    "checkout_with_count": "注文する（{{count}}）"
+    "go_to_cart": "カートに移動"
   },
   "checkout": {
     "title": "注文書作成",
@@ -462,6 +455,8 @@
     "coupon_not_applied": "一部のクーポンを適用できなかったため除外されました。最小注文金額·使用回数·重複使用の条件を確認してください。",
     "order_coupon": "注文割引クーポン",
     "shipping_coupon": "配送料割引クーポン",
+    "exclusive_coupon_title": "重複割引不可クーポン",
+    "exclusive_coupon_message": "重複割引不可クーポンを使用すると、他のクーポンは自動的に解除されます。続行しますか?",
     "coupon_disabled_exclusive": "他のクーポンとの重複使用不可",
     "coupon_disabled_already_applied": "既に適用されています",
     "coupon_min_amount_not_met": "最小注文金額の条件を満たしていません",
@@ -504,8 +499,7 @@
     "refund_bank_account_placeholder": "口座番号(ハイフンなしで入力)",
     "refund_bank_holder_placeholder": "預金者",
     "refund_bank_partial_notice": "3つのいずれかを入力すると、残りも入力する必要があります。",
-    "no_payment_methods": "現在選択できる決済方法がありません。ショップにお問い合わせください。",
-    "mileage_min_product_total": "商品合計 {{amount}} 以上のご購入でマイレージをご利用いただけます。"
+    "no_payment_methods": "現在選択できる決済方法がありません。ショップにお問い合わせください。"
   },
   "order_complete": {
     "page_title": "注文完了",
@@ -592,8 +586,7 @@
     "go_login": "ログイン",
     "confirm_title": "クーポンダウンロード",
     "confirm_message": "このクーポンをダウンロードしますか？",
-    "fetch_failed": "クーポンリストの読み込みに失敗しました。",
-    "download_all": "すべて受け取る"
+    "fetch_failed": "クーポンリストの読み込みに失敗しました。"
   },
   "wishlist": {
     "title": "お気に入りリスト",
@@ -639,35 +632,5 @@
     "page_description": "非会員注文の交換·返品·キャンセル·返金を申請します。",
     "edit_page_title": "非会員申請内容編集"
   },
-  "order_permission_denied": "注文権限がないため注文できません。販売者にお問い合わせください。",
-  "related_products": "こちらの商品はいかがですか？",
-  "product_rail": {
-    "roledescription": "商品カルーセル"
-  },
-  "reviews": {
-    "title": "レビュー一覧",
-    "total_count": "全 {{count}} 件",
-    "photo_only": "写真レビューのみ",
-    "rating_filter": "評価",
-    "rating_all": "すべての評価",
-    "rating_n": "評価 {{n}}点",
-    "rating_one": "評価 1点",
-    "sort": {
-      "latest": "最新順",
-      "oldest": "古い順",
-      "rating_high": "評価が高い順",
-      "rating_low": "評価が低い順"
-    },
-    "empty": "まだ登録されたレビューはありません。",
-    "empty_filtered": "条件に合うレビューはありません。"
-  },
-  "exclude_sold_out": "品切れを除く",
-  "product_card": {
-    "add_to_cart": "カートに追加: {{name}}",
-    "wishlist": "お気に入りに追加: {{name}}"
-  },
-  "quick_option": {
-    "title": "オプション選択",
-    "view_detail": "詳細表示"
-  }
+  "order_permission_denied": "注文権限がないため注文できません。販売者にお問い合わせください。"
 }

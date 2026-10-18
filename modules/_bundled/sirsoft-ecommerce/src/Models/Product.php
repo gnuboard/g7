@@ -6,7 +6,6 @@ use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
 use App\Support\HtmlImageExtractor;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -219,25 +218,7 @@ class Product extends Model implements FulltextSearchable
      */
     public function scopeVisible(Builder $query): Builder
     {
-        // 조인이 붙은 쿼리에서도 모호하지 않게 상품 테이블 소속을 밝힌다
-        return $query->where($this->qualifyColumn('display_status'), ProductDisplayStatus::VISIBLE->value);
-    }
-
-    /**
-     * 품절이 아닌 상품만 남깁니다.
-     *
-     * 품절 판정 기준은 이 스코프 한 곳에 둔다 — 판매상태가 「품절」이거나 활성 옵션의 재고가
-     * 모두 0 이면 품절이다(옵션 없는 상품도 기본 옵션 한 개를 가지므로 같은 식으로 판정된다).
-     * 목록·검색이 이 조건을 각자 적으면 한 곳만 어긋나도 화면마다 품절 상품이 다르게 보인다.
-     *
-     * @param  Builder  $query  대상 쿼리
-     * @return Builder 품절이 아닌 상품으로 좁혀진 쿼리
-     */
-    public function scopeInStock(Builder $query): Builder
-    {
-        return $query
-            ->where($this->qualifyColumn('sales_status'), '!=', ProductSalesStatus::SOLD_OUT->value)
-            ->whereHas('activeOptions', fn (Builder $option) => $option->where('stock_quantity', '>', 0));
+        return $query->where('display_status', ProductDisplayStatus::VISIBLE->value);
     }
 
     /**
@@ -499,7 +480,7 @@ class Product extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $desc = $this->description;
 
-        return LocalizedValue::pick($desc, $locale);
+        return $desc[$locale] ?? $desc[config('app.fallback_locale', 'ko')] ?? $desc[array_key_first($desc)] ?? null;
     }
 
     /**
@@ -589,12 +570,11 @@ class Product extends Model implements FulltextSearchable
      */
     public function calculateOptionStockSum(): int
     {
-        // 옵션 없는 상품도 기본 옵션 한 개가 재고를 갖는다. 옵션 행이 아예 없을 때만 상품 재고 칸을 그대로 쓴다
-        if (! $this->has_options && ! $this->options()->exists()) {
+        if (! $this->has_options) {
             return $this->stock_quantity;
         }
 
-        return (int) $this->options()->where('is_active', true)->sum('stock_quantity');
+        return $this->options()->where('is_active', true)->sum('stock_quantity');
     }
 
     /**

@@ -31,9 +31,8 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 정상 설치·활성화됩니다 — 학습용이 운영 화면에 섞이지 않게 하면서도 실제로 동작해 봐야
 학습이 되기 때문입니다.
 
-**의도적으로 하지 않는 것**: 검색 색인·알림·스케줄·미들웨어·브로드캐스트. 각 축의 사용법은
-그것을 실제로 쓰는 확장(게시판·이커머스)의 문서가 다룹니다. SEO 는 **모듈 소유 화면의 SEO 선언** 하나만
-`user_memo_list` 에 예시로 둡니다(`meta.seo` — 모듈 설정 기반 제목 틀·토글 같은 확장 SEO 는 게시판·이커머스 몫).
+**의도적으로 하지 않는 것**: 검색 색인·SEO·알림·스케줄·미들웨어·브로드캐스트. 각 축의 사용법은
+그것을 실제로 쓰는 확장(게시판·이커머스)의 문서가 다룹니다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -158,9 +157,9 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| Vitest | 4개 | — |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

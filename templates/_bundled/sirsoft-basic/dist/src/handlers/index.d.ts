@@ -1,5 +1,4 @@
-import { quickAddToCartHandler, openQuickOptionHandler, toggleWishlistQuickHandler } from './productQuickActions';
-import { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setNoOptionAdditionalOptionHandler, setBlockAdditionalOptionHandler } from './productOptions';
+import { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler } from './productOptions';
 import { toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler } from './cartHandlers';
 import { findMatchingOptionHandler, initCartOptionSelectionHandler } from './cartOptionChange';
 import { initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler } from './storageHandlers';
@@ -10,7 +9,7 @@ import { setThemeHandler, initThemeHandler } from './setThemeHandler';
 import { redirectToLoginWithReturnHandler } from './redirectToLoginWithReturn';
 import { downloadAttachmentHandler } from './downloadAttachment';
 import { markLocalOnceHandler } from './markLocalOnce';
-import { rememberIdentityClaimHandler, restoreIdentityTargetHandler } from './identityLauncher';
+import { rememberIdentityClaimHandler } from './identityLauncher';
 /**
  * sirsoft-basic 템플릿의 모든 커스텀 핸들러
  *
@@ -35,11 +34,7 @@ export declare const handlers: {
     'sirsoft-basic.updateSelectedItemQuantity': typeof updateSelectedItemQuantityHandler;
     'sirsoft-basic.removeSelectedItem': typeof removeSelectedItemHandler;
     'sirsoft-basic.updateNoOptionQuantity': typeof updateNoOptionQuantityHandler;
-    'sirsoft-basic.setNoOptionAdditionalOption': typeof setNoOptionAdditionalOptionHandler;
     'sirsoft-basic.setBlockAdditionalOption': typeof setBlockAdditionalOptionHandler;
-    'sirsoft-basic.quickAddToCart': typeof quickAddToCartHandler;
-    'sirsoft-basic.openQuickOption': typeof openQuickOptionHandler;
-    'sirsoft-basic.toggleWishlistQuick': typeof toggleWishlistQuickHandler;
     'sirsoft-basic.getDisplayPrice': typeof getDisplayPriceHandler;
     'sirsoft-basic.formatCurrency': typeof formatCurrencyHandler;
     'sirsoft-basic.getCurrencySymbol': typeof getCurrencySymbol;
@@ -51,7 +46,6 @@ export declare const handlers: {
     downloadAttachment: typeof downloadAttachmentHandler;
     'sirsoft-basic.markLocalOnce': typeof markLocalOnceHandler;
     'sirsoft-basic.rememberIdentityClaim': typeof rememberIdentityClaimHandler;
-    'sirsoft-basic.restoreIdentityTarget': typeof restoreIdentityTargetHandler;
     toggleCartItemSelection: typeof toggleCartItemSelectionHandler;
     selectAllCartItems: typeof selectAllCartItemsHandler;
     setCartOption: typeof setCartOptionHandler;
@@ -84,11 +78,7 @@ export declare const handlerMap: {
     'sirsoft-basic.updateSelectedItemQuantity': typeof updateSelectedItemQuantityHandler;
     'sirsoft-basic.removeSelectedItem': typeof removeSelectedItemHandler;
     'sirsoft-basic.updateNoOptionQuantity': typeof updateNoOptionQuantityHandler;
-    'sirsoft-basic.setNoOptionAdditionalOption': typeof setNoOptionAdditionalOptionHandler;
     'sirsoft-basic.setBlockAdditionalOption': typeof setBlockAdditionalOptionHandler;
-    'sirsoft-basic.quickAddToCart': typeof quickAddToCartHandler;
-    'sirsoft-basic.openQuickOption': typeof openQuickOptionHandler;
-    'sirsoft-basic.toggleWishlistQuick': typeof toggleWishlistQuickHandler;
     'sirsoft-basic.getDisplayPrice': typeof getDisplayPriceHandler;
     'sirsoft-basic.formatCurrency': typeof formatCurrencyHandler;
     'sirsoft-basic.getCurrencySymbol': typeof getCurrencySymbol;
@@ -100,7 +90,6 @@ export declare const handlerMap: {
     downloadAttachment: typeof downloadAttachmentHandler;
     'sirsoft-basic.markLocalOnce': typeof markLocalOnceHandler;
     'sirsoft-basic.rememberIdentityClaim': typeof rememberIdentityClaimHandler;
-    'sirsoft-basic.restoreIdentityTarget': typeof restoreIdentityTargetHandler;
     toggleCartItemSelection: typeof toggleCartItemSelectionHandler;
     selectAllCartItems: typeof selectAllCartItemsHandler;
     setCartOption: typeof setCartOptionHandler;
@@ -127,4 +116,4 @@ export declare const handlerMap: {
  * 핸들러 타입 정의 (TypeScript 자동완성용)
  */
 export type SirsoftBasicHandlers = typeof handlers;
-export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setNoOptionAdditionalOptionHandler, setBlockAdditionalOptionHandler, quickAddToCartHandler, openQuickOptionHandler, toggleWishlistQuickHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, markLocalOnceHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler, };
+export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, markLocalOnceHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler, };

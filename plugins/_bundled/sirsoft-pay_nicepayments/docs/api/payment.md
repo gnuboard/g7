@@ -166,7 +166,7 @@ PC 결제창에서 사용자가 결제를 완료하지 않고 창을 닫았을 �
 
 **응답**
 
-JSON 이 아니라 **리다이렉트**다. 성공 시 상점 성공 페이지(`redirect_success_url`)로, 실패 시 실패 페이지(`redirect_fail_url`)로 이동하며 실패 사유를 쿼리스트링(`error` · `orderId`)으로 전달한다. 인증 단계 실패는 쿼리 없이 실패 URL 로만 보낸다(사용자 취소를 에러 토스트로 보이지 않게 하려는 규약).
+JSON 이 아니라 **리다이렉트**다. 성공 시 상점 성공 페이지(`redirect_success_url`)로, 실패 시 실패 페이지(`redirect_fail_url`)로 이동하며(상대 경로 설정값은 사용자 화면 주소(환경설정 「사용자 화면 URL」, 비어 있으면 사이트 주소 `APP_URL`) 기준 절대 URL, 7.2.0) 실패 사유를 쿼리스트링(`error` · `orderId`)으로 전달한다. 인증 단계 실패는 쿼리 없이 실패 URL 로만 보낸다(사용자 취소를 에러 토스트로 보이지 않게 하려는 규약).
 
 고정 `error` 값: `mid_mismatch` · `signature_mismatch` · `order_not_found` · `order_not_payable` · `authorize_failed` · `amount_mismatch` · `invalid_payment_currency`.
 

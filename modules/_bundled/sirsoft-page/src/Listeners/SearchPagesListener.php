@@ -4,13 +4,12 @@ namespace Modules\Sirsoft\Page\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\TotalRelation;
-use App\Helpers\TimezoneHelper;
 use App\Search\SearchCategoryPayload;
 use App\Search\SearchHighlighter;
-use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Page\Services\PageService;
+use Modules\Sirsoft\Page\Support\PageScreenUrl;
 
 /**
  * 통합 검색에 페이지 검색 결과를 제공하는 리스너
@@ -22,9 +21,9 @@ use Modules\Sirsoft\Page\Services\PageService;
 class SearchPagesListener implements HookListenerInterface
 {
     /**
-     * 페이지 검색 리스너를 생성합니다.
+     * 리스너를 생성합니다.
      *
-     * @param  PageService  $pageService  페이지 서비스
+     * @param  PageService  $pageService  페이지 검색을 수행하는 페이지 서비스
      */
     public function __construct(
         private readonly PageService $pageService,
@@ -253,9 +252,8 @@ class SearchPagesListener implements HookListenerInterface
             'title_highlighted' => $this->highlightKeyword($title, $keyword),
             'content_preview' => $contentPreview,
             'content_preview_highlighted' => $this->highlightKeyword($contentPreview, $keyword),
-            // 검색은 웹 요청 — 발행일은 보는 사람 시간대 날짜(UTC 날짜면 새벽 발행분이 전날로 보인다)
-            'published_at' => TimezoneHelper::toUserDateString($page->published_at),
-            'url' => "/page/{$page->slug}",
+            'published_at' => $page->published_at?->format('Y-m-d'),
+            'url' => PageScreenUrl::show($page->slug),
         ];
     }
 
@@ -289,7 +287,10 @@ class SearchPagesListener implements HookListenerInterface
 
         // content가 배열(JSON 다국어)인 경우 현재 로케일 값 추출
         if (is_array($content)) {
-            $text = LocalizedValue::pick($content) ?? '';
+            $locale = app()->getLocale();
+            $text = $content[$locale]
+                ?? $content[config('app.fallback_locale')]
+                ?? (! empty($content) ? array_values($content)[0] : '');
         } else {
             $text = $content;
         }

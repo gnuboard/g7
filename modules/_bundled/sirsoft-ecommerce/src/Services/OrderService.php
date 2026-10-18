@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Notifications\DeliveryReport;
 use App\Notifications\GenericNotification;
 use App\Notifications\GuestNotifiable;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -1023,7 +1023,7 @@ class OrderService
                 'order_number' => $order->order_number,
                 'customer_name' => (string) ($order->getOrdererName() ?? ''),
                 'app_name' => $appName,
-                'site_url' => SiteUrl::absolute('/'),
+                'site_url' => ScreenUrl::userBase(),
             ],
             extensionType: 'module',
             extensionIdentifier: 'sirsoft-ecommerce',

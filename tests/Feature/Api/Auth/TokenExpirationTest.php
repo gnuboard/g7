@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\Api\Auth;
 
-use App\Models\Permission;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -26,11 +24,6 @@ class TokenExpirationTest extends TestCase
      */
     private const TOKEN_LIFETIME = 60;
 
-    /**
-     * 테스트 공통 준비를 합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,7 +35,7 @@ class TokenExpirationTest extends TestCase
     /**
      * JSON 요청 헬퍼 메서드
      *
-     * @return static 헤더를 붙인 테스트 요청
+     * @return static
      */
     private function jsonRequest(): static
     {
@@ -56,7 +49,7 @@ class TokenExpirationTest extends TestCase
      *
      * @param  User  $user  사용자
      * @param  \DateTimeInterface|null  $expiresAt  토큰 만료 시간
-     * @return array{token: string, tokenModel: PersonalAccessToken} 평문 토큰과 토큰 모델
+     * @return array{token: string, tokenModel: PersonalAccessToken}
      */
     private function createTokenWithExpiration(User $user, ?\DateTimeInterface $expiresAt): array
     {
@@ -72,7 +65,7 @@ class TokenExpirationTest extends TestCase
      * 토큰으로 인증된 요청 생성
      *
      * @param  string  $token  Bearer 토큰
-     * @return static 헤더를 붙인 테스트 요청
+     * @return static
      */
     private function authRequest(string $token): static
     {
@@ -88,10 +81,6 @@ class TokenExpirationTest extends TestCase
 
     /**
      * 토큰 만료까지 절반 미만 남았을 때 만료 시간이 갱신됨
-     *
-     * @effects sliding_expiration_extends_below_half
-     *
-     * @return void 반환값 없음
      */
     public function test_token_expiration_is_extended_when_less_than_half_remaining(): void
     {
@@ -127,10 +116,6 @@ class TokenExpirationTest extends TestCase
 
     /**
      * 토큰 만료까지 절반 이상 남았을 때 만료 시간이 유지됨
-     *
-     * @effects sliding_expiration_keeps_above_half
-     *
-     * @return void 반환값 없음
      */
     public function test_token_expiration_is_not_extended_when_more_than_half_remaining(): void
     {
@@ -159,10 +144,6 @@ class TokenExpirationTest extends TestCase
 
     /**
      * 토큰 만료까지 절반보다 약간 더 남았을 때 만료 시간이 유지됨 (경계값 테스트)
-     *
-     * @effects sliding_expiration_keeps_above_half
-     *
-     * @return void 반환값 없음
      */
     public function test_token_expiration_is_not_extended_at_slightly_above_half(): void
     {
@@ -191,10 +172,6 @@ class TokenExpirationTest extends TestCase
 
     /**
      * 만료 시간이 없는 토큰(무한대)은 갱신하지 않음
-     *
-     * @effects token_without_expiry_untouched
-     *
-     * @return void 반환값 없음
      */
     public function test_token_without_expiration_is_not_modified(): void
     {
@@ -217,10 +194,6 @@ class TokenExpirationTest extends TestCase
 
     /**
      * 비인증 요청은 정상 처리됨
-     *
-     * @effects token_without_expiry_untouched
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_request_is_handled_normally(): void
     {
@@ -233,10 +206,6 @@ class TokenExpirationTest extends TestCase
 
     /**
      * 이미 만료된 토큰은 401 반환
-     *
-     * @effects expired_token_rejected
-     *
-     * @return void 반환값 없음
      */
     public function test_expired_token_returns_401(): void
     {
@@ -255,10 +224,6 @@ class TokenExpirationTest extends TestCase
 
     /**
      * 갱신 후 다시 절반 미만이 되면 다시 갱신됨
-     *
-     * @effects sliding_expiration_extends_below_half, sliding_expiration_keeps_above_half
-     *
-     * @return void 반환값 없음
      */
     public function test_token_is_extended_again_when_below_threshold(): void
     {
@@ -294,148 +259,5 @@ class TokenExpirationTest extends TestCase
             $afterSecondRequest->toDateTimeString(),
             '절반 이상 남았을 때는 갱신되지 않아야 합니다.'
         );
-    }
-
-    // ========================================================================
-    // 폐기한 토큰이 슬라이딩 갱신으로 되살아나지 않는다 (KVE-2026-3187)
-    // ========================================================================
-
-    /**
-     * 수명이 절반 미만 남은 토큰으로 로그아웃해도 그 토큰이 다시 통하지 않는다.
-     *
-     * 수정 전: 미들웨어가 컨트롤러 뒤에 같은 토큰 객체를 save() 해 삭제된 행이 INSERT 로 되살아났다.
-     *
-     * @effects revoked_token_not_resurrected
-     *
-     * @return void 반환값 없음
-     */
-    public function test_logout_below_threshold_does_not_resurrect_token(): void
-    {
-        $user = User::factory()->create();
-        $tokenData = $this->createTokenWithExpiration($user, now()->addMinutes(5));
-        $tokenId = $tokenData['tokenModel']->id;
-
-        $this->authRequest($tokenData['token'])->postJson('/api/auth/logout')->assertOk();
-
-        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $tokenId]);
-
-        $this->app['auth']->forgetGuards();
-        $this->authRequest($tokenData['token'])->getJson('/api/auth/user')->assertUnauthorized();
-    }
-
-    /**
-     * 수명이 절반 미만 남은 사용자 토큰을 갱신하면 옛 토큰은 지워진 채로 남는다.
-     *
-     * @effects revoked_token_not_resurrected, refreshed_new_token_works
-     *
-     * @return void 반환값 없음
-     */
-    public function test_refresh_below_threshold_does_not_resurrect_old_token(): void
-    {
-        $user = User::factory()->create();
-        $this->grantUserPermissions($user, ['core.auth.refresh', 'core.auth.user']);
-        $tokenData = $this->createTokenWithExpiration($user, now()->addMinutes(5));
-        $tokenId = $tokenData['tokenModel']->id;
-
-        $response = $this->authRequest($tokenData['token'])->postJson('/api/user/auth/refresh');
-        $response->assertOk();
-        $newToken = $response->json('data.token');
-
-        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $tokenId]);
-
-        $this->app['auth']->forgetGuards();
-        $this->authRequest($tokenData['token'])->getJson('/api/auth/user')->assertUnauthorized();
-
-        $this->app['auth']->forgetGuards();
-        $this->authRequest($newToken)->getJson('/api/auth/user')->assertOk();
-    }
-
-    /**
-     * 관리자 경로 갱신도 옛 토큰을 되살리지 않는다.
-     *
-     * @effects revoked_token_not_resurrected
-     *
-     * @return void 반환값 없음
-     */
-    public function test_admin_refresh_below_threshold_does_not_resurrect_old_token(): void
-    {
-        $admin = $this->createAdminUser();
-        $tokenData = $this->createTokenWithExpiration($admin, now()->addMinutes(5));
-        $tokenId = $tokenData['tokenModel']->id;
-
-        $this->authRequest($tokenData['token'])->postJson('/api/admin/auth/refresh')->assertOk();
-
-        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $tokenId]);
-
-        $this->app['auth']->forgetGuards();
-        $this->authRequest($tokenData['token'])->getJson('/api/admin/auth/user')->assertUnauthorized();
-    }
-
-    /**
-     * 관리자 경로 로그아웃도 옛 토큰을 되살리지 않는다.
-     *
-     * @effects revoked_token_not_resurrected
-     *
-     * @return void 반환값 없음
-     */
-    public function test_admin_logout_below_threshold_does_not_resurrect_token(): void
-    {
-        $admin = $this->createAdminUser();
-        $tokenData = $this->createTokenWithExpiration($admin, now()->addMinutes(5));
-        $tokenId = $tokenData['tokenModel']->id;
-
-        $this->authRequest($tokenData['token'])->postJson('/api/admin/auth/logout')->assertOk();
-
-        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $tokenId]);
-
-        $this->app['auth']->forgetGuards();
-        $this->authRequest($tokenData['token'])->getJson('/api/admin/auth/user')->assertUnauthorized();
-    }
-
-    /**
-     * 회원에게 user 타입 권한을 역할로 부여합니다.
-     *
-     * @param  User  $user  대상 회원
-     * @param  array<int, string>  $identifiers  권한 식별자
-     * @return void 반환값 없음
-     */
-    private function grantUserPermissions(User $user, array $identifiers): void
-    {
-        $role = Role::firstOrCreate(
-            ['identifier' => 'token-expiration-test-user'],
-            ['name' => ['ko' => '토큰 테스트', 'en' => 'Token test'], 'description' => ['ko' => '-', 'en' => '-']]
-        );
-
-        foreach ($identifiers as $identifier) {
-            $permission = Permission::firstOrCreate(
-                ['identifier' => $identifier],
-                ['name' => ['ko' => $identifier, 'en' => $identifier], 'description' => ['ko' => '-', 'en' => '-'], 'type' => 'user']
-            );
-            $role->permissions()->syncWithoutDetaching([$permission->id]);
-        }
-
-        $user->roles()->syncWithoutDetaching([$role->id => ['assigned_at' => now()]]);
-    }
-
-    /**
-     * 관리자 역할을 가진 회원을 만듭니다 (AdminAuthTest 와 같은 최소 구성).
-     *
-     * @return User 관리자
-     */
-    private function createAdminUser(): User
-    {
-        $user = User::factory()->create();
-        $adminRole = Role::firstOrCreate(
-            ['identifier' => 'admin'],
-            ['name' => ['ko' => '관리자', 'en' => 'Administrator'], 'description' => ['ko' => '-', 'en' => '-']]
-        );
-        $permission = Permission::firstOrCreate(
-            ['identifier' => 'admin.test_default'],
-            ['name' => ['ko' => 'admin default', 'en' => 'admin default'], 'description' => ['ko' => '-', 'en' => '-'], 'type' => 'admin']
-        );
-        $adminRole->permissions()->syncWithoutDetaching([$permission->id]);
-        $user->roles()->attach($adminRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
-
-        return $user->fresh();
     }
 }

@@ -7,7 +7,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use App\Services\DriverRegistryService;
-use App\Support\ContentMedia\ContentMediaPolicyRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -17,7 +16,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
-use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesSiteLocale;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
@@ -31,7 +29,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
 use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
-use Modules\Sirsoft\Ecommerce\Support\AuthorNameMasker;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
 /**
@@ -46,7 +43,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
      *
      * @var array<int, string>
      */
-    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
+    private const SECTIONS = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'notification_definitions', 'notifications', 'inquiry', 'mileage', 'privacy_retention'];
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -87,7 +84,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
         }
 
         $changed = $this->fillOmittedManagedExchangeRates($data) || $changed;
-        $changed = $this->dropBlankPlaceholderBankAccounts($data) || $changed;
 
         // 쓸 수 없게 된 공개 자산 디스크 안내는 설정 응답이 화면에 싣는 표시용 값이라 저장하지 않는다
         // (EcommerceSettingsAdminService::withPublicAssetCatalog). 화면은 받은 기본정보를 통째로 돌려보낸다.
@@ -96,103 +92,9 @@ class StoreEcommerceSettingsRequest extends FormRequest
             $changed = true;
         }
 
-        // 본문 미디어 정책: 「직접 정하기」가 꺼져 있으면 비운다(상품 이미지 규칙을 따름), 스위치 문자열은 불리언으로 (#883)
-        if (is_array($data['product_display'] ?? null) && array_key_exists('content_media', $data['product_display'])) {
-            $data['product_display']['content_media'] = ContentMediaPolicyRules::normalizeInput($data['product_display']['content_media']);
-            $changed = true;
-        }
-
         if ($changed) {
             $this->replace($data);
         }
-    }
-
-    /**
-     * 사용 안 함이면서 계좌번호·예금주가 모두 빈 입금 계좌 행을 요청에서 뺍니다.
-     *
-     * 기본값(`config/settings/defaults.json`)은 은행만 골라 둔 「사용 안 함」 빈 행 하나를 싣고, 관리자 화면은
-     * 주문설정 탭을 통째로 돌려보낸다. 그 행을 그대로 검사하면 계좌번호·예금주 필수와 「사용·기본 계좌 하나 이상」에
-     * 걸려 새 설치 사이트는 주문설정의 어떤 값도 저장하지 못했다(7.1.0~, 7.1.1 출시 전 실측). 쓰이지 않는 빈
-     * 자리표시 행이므로 검사와 저장에서 함께 뺀다. 사용 중인 행은 칸이 비어도 빼지 않는다 — 그건 입력 누락이다.
-     *
-     * @param  array<string, mixed>  $data  요청 입력 (참조로 갱신)
-     * @return bool 뺀 행이 있으면 true
-     */
-    private function dropBlankPlaceholderBankAccounts(array &$data): bool
-    {
-        $accounts = $data['order_settings']['bank_accounts'] ?? null;
-        if (! is_array($accounts) || ! array_is_list($accounts)) {
-            return false;
-        }
-
-        $kept = array_values(array_filter($accounts, fn (mixed $account): bool => ! self::isBlankPlaceholderBankAccount($account)));
-        if (count($kept) === count($accounts)) {
-            return false;
-        }
-
-        $data['order_settings']['bank_accounts'] = $kept;
-
-        return true;
-    }
-
-    /**
-     * 입금 계좌 행이 빈 자리표시 행(사용 안 함 + 계좌번호·예금주 모두 빈칸)인지 판정합니다.
-     *
-     * @param  mixed  $account  계좌 행
-     * @return bool 빈 자리표시 행이면 true
-     */
-    private static function isBlankPlaceholderBankAccount(mixed $account): bool
-    {
-        return is_array($account)
-            && empty($account['is_active'])
-            && trim((string) ($account['account_number'] ?? '')) === ''
-            && trim((string) ($account['account_holder'] ?? '')) === '';
-    }
-
-    /**
-     * 비교용으로 계좌 목록을 정규화합니다 — 빈 자리표시 행을 빼고 판정에 쓰는 칸만 같은 모양으로 맞춥니다.
-     *
-     * @param  mixed  $accounts  계좌 목록
-     * @return array<int, array<string, mixed>> 정규화한 목록
-     */
-    private static function normalizeBankAccountsForComparison(mixed $accounts): array
-    {
-        if (! is_array($accounts)) {
-            return [];
-        }
-
-        $rows = [];
-        foreach ($accounts as $account) {
-            if (! is_array($account) || self::isBlankPlaceholderBankAccount($account)) {
-                continue;
-            }
-            $rows[] = [
-                'bank_code' => (string) ($account['bank_code'] ?? ''),
-                'account_number' => trim((string) ($account['account_number'] ?? '')),
-                'account_holder' => trim((string) ($account['account_holder'] ?? '')),
-                'is_active' => ! empty($account['is_active']),
-                'is_default' => ! empty($account['is_default']),
-            ];
-        }
-
-        return $rows;
-    }
-
-    /**
-     * 결제수단 목록에서 무통장입금(dbank)이 켜져 있는지 봅니다.
-     *
-     * @param  mixed  $methods  결제수단 목록
-     * @return bool 켜져 있으면 true
-     */
-    private static function isDbankActive(mixed $methods): bool
-    {
-        foreach (is_array($methods) ? $methods : [] as $method) {
-            if (is_array($method) && ($method['id'] ?? null) === PaymentMethodEnum::DBANK->value && ! empty($method['is_active'])) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -393,9 +295,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.privacy_officer_email' => ['nullable', 'email', 'max:255'],
             'basic_info.mail_order_number' => ['nullable', 'string', 'max:100'],
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
-            // 사용자 화면 푸터의 사업자 정보: 호스팅 제공자(법정 표시 항목) · 표시 여부
-            'basic_info.hosting_provider' => ['nullable', 'string', 'max:255'],
-            'basic_info.show_business_footer' => ['nullable', 'boolean'],
             // 공개 자산 디스크 — 빈 값은 코어 공개 자산 디스크 설정을 따른다.
             // 선택지가 코어 카탈로그 + 플러그인 훅 등록 디스크로 동적이라 정적 in 불가 —
             // 코어 SaveSettingsRequest 와 동일하게 카탈로그 조회 closure 로 검증한다.
@@ -605,20 +504,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // 가 그 섹션을 통째로 버려 응답은 200 인데 아무것도 저장되지 않는다.
             ...$this->claimReasonRulesForAllTypes(),
 
-            // product_display 섹션 — 상품 상세 관련 상품(「이 상품은 어떠세요?」) 단계 안 순서와 고른 목록 캐시 시간(0 이면 캐시 안 함)
-            'product_display' => ['sometimes', 'array'],
-            'product_display.related_order' => ['nullable', 'string', Rule::in(RelatedProductOrder::values())],
-            'product_display.related_cache_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
-            // 본문 미디어 정책 (#883) — 형식은 코어가 정한다. 비우면 상품 이미지 규칙(동영상·오디오는 코어 스위치)
-            ...ContentMediaPolicyRules::settingsRules('product_display.content_media'),
-
             // review_settings 섹션
             'review_settings' => ['sometimes', 'array'],
             'review_settings.write_deadline_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.write_deadline_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.write_deadline_days_max', 365)],
             'review_settings.max_images' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.max_images_min', 0), 'max:'.config('sirsoft-ecommerce.limits.max_images_max', 20)],
             'review_settings.max_image_size_mb' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.max_image_size_mb_min', 1), 'max:'.config('sirsoft-ecommerce.limits.max_image_size_mb_max', 50)],
-            // 공개 후기 작성자 이름 가림 방식 (가운데 가림 / 가리지 않음)
-            'review_settings.author_name_masking' => ['nullable', 'string', 'in:'.AuthorNameMasker::MODE_MIDDLE.','.AuthorNameMasker::MODE_NONE],
 
             // mileage 섹션
             'mileage' => ['sometimes', 'array'],
@@ -646,12 +536,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'mileage.expiry_enabled' => ['nullable', 'boolean'],
             'mileage.expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.expiry_days_max', 3650)],
             'mileage.expiry_notification_enabled' => ['nullable', 'boolean'],
-            // 적립금 정책 (모두 기본 꺼짐): 가입 적립금 · 적립금 쓴 주문 적립 제외 · 사용 가능 최소 상품 합계
-            'mileage.signup_earn_enabled' => ['nullable', 'boolean'],
-            'mileage.signup_earn_amount' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
-            'mileage.no_earn_when_points_used' => ['nullable', 'boolean'],
-            'mileage.min_product_total_for_use_enabled' => ['nullable', 'boolean'],
-            'mileage.min_product_total_for_use' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
             'mileage.expiry_notification_days_before' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.expiry_notification_days_before_min', 1), 'max:'.config('sirsoft-ecommerce.limits.expiry_notification_days_before_max', 365)],
 
             // shipping 섹션
@@ -727,15 +611,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $attributes = __('sirsoft-ecommerce::validation.attributes');
 
         return array_merge(is_array($attributes) ? $attributes : [], [
-            // 7.1.6 에 더한 칸 — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
-            'basic_info.hosting_provider' => __('sirsoft-ecommerce::validation.settings_attributes.hosting_provider'),
-            'basic_info.show_business_footer' => __('sirsoft-ecommerce::validation.settings_attributes.show_business_footer'),
-            'review_settings.author_name_masking' => __('sirsoft-ecommerce::validation.settings_attributes.author_name_masking'),
-            'mileage.signup_earn_enabled' => __('sirsoft-ecommerce::validation.settings_attributes.signup_earn_enabled'),
-            'mileage.signup_earn_amount' => __('sirsoft-ecommerce::validation.settings_attributes.signup_earn_amount'),
-            'mileage.no_earn_when_points_used' => __('sirsoft-ecommerce::validation.settings_attributes.no_earn_when_points_used'),
-            'mileage.min_product_total_for_use_enabled' => __('sirsoft-ecommerce::validation.settings_attributes.min_product_total_for_use_enabled'),
-            'mileage.min_product_total_for_use' => __('sirsoft-ecommerce::validation.settings_attributes.min_product_total_for_use'),
             // 개인정보 보유기간 (이슈 #636) — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
             'privacy_retention' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.section'),
             'privacy_retention.enabled' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.enabled'),
@@ -1198,11 +1073,6 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 없으면 저장값을 기준으로 판정한다(결제수단만 또는 계좌만 보내는 저장도 같은 결과가 되도록).
      * 주문설정을 싣지 않은 다른 탭 저장에는 관여하지 않는다.
      *
-     * 이번 요청이 그 상태를 **새로 만들 때만** 막는다 — 무통장을 이번에 새로 켜거나 계좌 목록을 바꾸는 요청.
-     * 저장된 상태가 이미 「무통장 켜짐 + 사용 중 계좌 0」 이고(새 설치 기본값이 그렇다) 이번 요청이 그 둘을 건드리지
-     * 않으면 다른 값의 저장을 막지 않는다. 막으면 새 설치 사이트는 계좌를 등록하거나 무통장을 끄기 전에는 주문설정의
-     * 어떤 값도 저장하지 못한다(7.1.1 출시 전 실측). 계좌 비교는 빈 자리표시 행을 뺀 정규화 목록으로 한다.
-     *
      * @param  Validator  $validator  Validator 인스턴스
      * @return void 반환값 없음
      */
@@ -1215,10 +1085,16 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $service = app(EcommerceSettingsService::class);
         $saved = $service->getSettings('order_settings');
 
-        $savedDbankActive = self::isDbankActive($saved['payment_methods'] ?? []);
-        $dbankActive = $this->has('order_settings.payment_methods')
-            ? self::isDbankActive($this->input('order_settings.payment_methods'))
-            : $savedDbankActive;
+        $methods = $this->has('order_settings.payment_methods')
+            ? $this->input('order_settings.payment_methods')
+            : ($saved['payment_methods'] ?? []);
+        $dbankActive = false;
+        foreach (is_array($methods) ? $methods : [] as $method) {
+            if (is_array($method) && ($method['id'] ?? null) === PaymentMethodEnum::DBANK->value && ! empty($method['is_active'])) {
+                $dbankActive = true;
+                break;
+            }
+        }
         if (! $dbankActive) {
             return;
         }
@@ -1227,21 +1103,12 @@ class StoreEcommerceSettingsRequest extends FormRequest
             ? $this->input('order_settings.bank_accounts')
             : ($saved['bank_accounts'] ?? []);
 
-        if ($service->hasUsableBankAccount($accounts)) {
-            return;
+        if (! $service->hasUsableBankAccount($accounts)) {
+            $validator->errors()->add(
+                'order_settings.bank_accounts',
+                __('sirsoft-ecommerce::validation.custom.order_settings.bank_accounts.dbank_requires_active_account')
+            );
         }
-
-        $newlyEnabled = ! $savedDbankActive;
-        $accountsChanged = $this->has('order_settings.bank_accounts')
-            && self::normalizeBankAccountsForComparison($accounts) !== self::normalizeBankAccountsForComparison($saved['bank_accounts'] ?? []);
-        if (! $newlyEnabled && ! $accountsChanged) {
-            return;
-        }
-
-        $validator->errors()->add(
-            'order_settings.bank_accounts',
-            __('sirsoft-ecommerce::validation.custom.order_settings.bank_accounts.dbank_requires_active_account')
-        );
     }
 
     /**
@@ -2179,7 +2046,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
     public function validatedSettings(): array
     {
         $validated = $this->validated();
-        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'product_display', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
+        $validCategories = ['basic_info', 'language_currency', 'seo', 'order_settings', 'claim', 'shipping', 'review_settings', 'inquiry', 'notifications', 'mileage', 'privacy_retention'];
 
         return array_filter(
             $validated,

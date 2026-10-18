@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
+            "name": "Div",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기",
@@ -26,9 +26,7 @@
                 }
             ],
             "props": {
-                "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
-                "aria-expanded": "{{_local.ui.commonInfoExpanded !== false}}"
+                "className": "card-header"
             },
             "children": [
                 {
@@ -52,7 +50,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.commonInfoExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.commonInfoExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
             ]
@@ -146,7 +144,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ]
@@ -168,7 +166,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ]
@@ -227,7 +225,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ]
@@ -262,7 +260,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ]
@@ -278,7 +276,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}} px-1.5 py-0.5 rounded text-xs"
+                                        "className": "{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}} px-1.5 py-0.5 rounded text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.common_info.badge_default"
                                 },
@@ -323,7 +321,7 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "hasChanges": true
+                                                        "hasChanges": "{{!!route?.itemCode}}"
                                                     }
                                                 }
                                             ]
@@ -361,7 +359,7 @@
                         {
                             "id": "common_info_detail_header",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "Div",
                             "actions": [
                                 {
                                     "comment": "고른 안내문의 본문을 접고 편다",
@@ -374,9 +372,7 @@
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "w-full text-left flex-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
-                                "aria-expanded": "{{!!(_local.ui.commonInfoDetailExpanded)}}"
+                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
                                 {
@@ -392,7 +388,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "chevron-down",
-                                        "className": "text-xl text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"
+                                        "className": "text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"
                                     }
                                 }
                             ]
@@ -436,25 +432,22 @@
                                             },
                                             "children": [
                                                 {
-                                                    "comment": "본문은 공통정보 관리 화면의 보기 패널과 같은 표시기로 그린다 — HTML 은 정화해 그리고, 텍스트는 줄바꿈을 살린다",
-                                                    "type": "extension_point",
-                                                    "name": "html_content",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode === 'html'}}",
                                                     "props": {
-                                                        "content": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}",
-                                                        "isHtml": "{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}",
-                                                        "className": "prose prose-sm dark:prose-invert max-w-none"
+                                                        "className": "prose prose-sm dark:prose-invert max-w-none",
+                                                        "dangerouslySetInnerHTML": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode !== 'html'}}",
+                                                    "props": {
+                                                        "className": "text-body whitespace-pre-wrap"
                                                     },
-                                                    "default": [
-                                                        {
-                                                            "type": "composite",
-                                                            "name": "HtmlContent",
-                                                            "props": {
-                                                                "content": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}",
-                                                                "isHtml": "{{((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content_mode ?? 'text') === 'html'}}",
-                                                                "className": "prose prose-sm dark:prose-invert max-w-none"
-                                                            }
-                                                        }
-                                                    ]
+                                                    "text": "{{(common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[_local.ui.commonInfoLocale ?? $locale] ?? ''}}"
                                                 }
                                             ]
                                         }
@@ -493,7 +486,7 @@
                     "id": "common_info_empty_state",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{common_infos !== undefined && (common_infos?.data?.unavailable !== true && !(common_infos?.data?.data ?? []).length)}}",
+                    "if": "{{common_infos?.data?.unavailable !== true && !(common_infos?.data?.data ?? []).length}}",
                     "props": {
                         "className": "text-center py-8 text-gray-500 dark:text-gray-400"
                     },

@@ -42,10 +42,10 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| egress_ip | string | `203.0.113.10` | 서버가 외부 통신 시 사용하는 egress IP. KG 이니시스 측에 DEVCBT 접근용 IP 화이트리스트 등록을 요청할 때 알려줄 IP이며, 외부 echo 서비스(ipify 등)를 순차 조회해 얻는다(모두 실패 시 null). 사이트 환경설정에 아웃바운드 프록시가 적용되어 있으면 그 프록시를 거쳐 조회하므로, 실제 결제 요청과 같은 경로의 IP 가 반환된다. |
+| egress_ip | string | `210.90.128.2` | 서버가 외부 통신 시 사용하는 egress IP. KG 이니시스 측에 DEVCBT 접근용 IP 화이트리스트 등록을 요청할 때 알려줄 IP이며, 외부 echo 서비스(ipify 등)를 순차 조회해 얻는다(모두 실패 시 null). 사이트 환경설정에 아웃바운드 프록시가 적용되어 있으면 그 프록시를 거쳐 조회하므로, 실제 결제 요청과 같은 경로의 IP 가 반환된다. |
 | server_ip | string | `127.0.0.1` | `$_SERVER['SERVER_ADDR']` 로 읽은 서버 내부 IP. egress IP와 대조해 NAT/프록시 여부를 가늠하는 참고값이다. |
 | hosts | array | `[{"name":"devcbt.inicis.com","env":"test","dns_resolved_i…` | 진단 대상 호스트별 결과 배열. 각 항목은 호스트명(`devcbt.inicis.com`), 환경(`test`), DNS 해석 IP(`dns_resolved_ip`), TCP 443 도달 여부(`tcp_443_reachable`)와 에러·응답지연(`tcp_443_error`, `tcp_443_latency_ms`)을 담는다. 운영계(`cbt.inicis.com`)는 화이트리스트 제약이 없어 제외된다. 도달 여부는 연결만 수행하고 데이터는 주고받지 않으며, 사이트 환경설정에 아웃바운드 프록시가 적용되어 있으면 그 프록시를 거쳐 확인한다 — 실제 결제 요청이 지나는 경로와 같은 경로를 재기 위함이다. |
-| callback | object | `{"app_url":"https:\/\/example.com","callback_url":"https:\/\/g…` | 결제 콜백 URL 진단 정보. 앱 URL·콜백 URL과 각각의 HTTPS 여부(`app_url_https`, `callback_url_https`)·공인 호스트 여부(`app_url_public`, `callback_url_public`), 그리고 콜백 호스트가 앱 URL 호스트와 일치하는지(`host_matches_app_url`)를 담아 CBT 콜백 수신 가능 여부를 점검한다. |
+| callback | object | `{"app_url":"https:\/\/g7.dev","callback_url":"https:\/\/g…` | 결제 콜백 URL 진단 정보. 앱 URL·콜백 URL과 각각의 HTTPS 여부(`app_url_https`, `callback_url_https`)·공인 호스트 여부(`app_url_public`, `callback_url_public`), 그리고 콜백 호스트가 앱 URL 호스트와 일치하는지(`host_matches_app_url`)를 담아 CBT 콜백 수신 가능 여부를 점검한다. |
 
 **응답 예시**
 
@@ -58,7 +58,7 @@ HTTP/1.1 200
     "success": true,
     "message": "sirsoft-pay_kginicis::messages.cbt_connectivity.checked",
     "data": {
-        "egress_ip": "203.0.113.10",
+        "egress_ip": "59.10.38.149",
         "server_ip": "127.0.0.1",
         "hosts": [
             {
@@ -125,7 +125,7 @@ _단건 응답: `data` 객체의 필드._
 | product_id | integer | `114` | product 식별자 (연관 리소스 참조) |
 | product_code | string | `CBT-TEST-20260712085816` | 생성된 테스트 상품의 상품코드. `CBT-TEST-` 접두사에 생성 시각(YmdHis)을 붙여 자동 부여되며, SKU는 여기에 `KGINICIS-` 접두사를 더해 만들어진다. |
 | admin_url | string | `/admin/ecommerce/products/114/edit` | admin URL |
-| shop_url | string | `/shop/products/114?locale=ja` | 생성된 테스트 상품의 상점 화면 주소. 앞부분은 상점 주소 설정을 따른다 — 기본은 `/shop`, 이커머스 모듈 설정 `basic_info.route_path` 를 바꾸면 그 값(`/store/...`), `basic_info.no_route` 를 켜면 세그먼트 없이 루트에 붙는다(`/products/114?locale=ja`). 예시는 기본 설정 기준. |
+| shop_url | string | `/shop/products/0221GJD53ZA6GA7X?locale=ja` | 생성된 테스트 상품의 상점 화면 주소. 상품 화면과 같은 상품 코드(`product_code`) 주소다(7.2.0 전에는 상품 ID). 앞부분은 상점 주소 설정을 따른다 — 기본은 `/shop`, 이커머스 모듈 설정 `basic_info.route_path` 를 바꾸면 그 값(`/store/...`), `basic_info.no_route` 를 켜면 세그먼트 없이 루트에 붙는다(`/products/0221GJD53ZA6GA7X?locale=ja`). 화면 주소 키 `ecommerce.product` 필터(`core.screen_url.filter_path`)로 바꿀 수 있다. 예시는 기본 설정 기준. |
 
 **응답 예시**
 
@@ -141,7 +141,7 @@ HTTP/1.1 200
         "product_id": 4,
         "product_code": "CBT-TEST-20260708063238",
         "admin_url": "/admin/ecommerce/products/4/edit",
-        "shop_url": "/shop/products/4?locale=ja"
+        "shop_url": "/shop/products/0221GJD53ZA6GA7X?locale=ja"
     }
 }
 ```

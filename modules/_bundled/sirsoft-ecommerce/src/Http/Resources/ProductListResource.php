@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -100,9 +99,6 @@ class ProductListResource extends BaseApiResource
             // 로드하지 않고(`?with_options=1` opt-in), 행을 펼칠 때 배치 엔드포인트로 가져간다.
             'has_options' => $this->has_options,
             'options_count' => $this->resolveActiveOptionCount(),
-            // 카드 단추용 — 공개 목록이 응답당 한 번씩 붙인 값만 싣는다(붙지 않은 문맥은 키 없음)
-            'has_additional_options' => $this->resolveHasAdditionalOptions(),
-            'is_wishlisted' => $this->resolveIsWishlisted(),
             'options_total_count' => $this->resolveTotalOptionCount(),
             'options' => $this->whenLoaded(
                 'options',
@@ -115,7 +111,9 @@ class ProductListResource extends BaseApiResource
                 ->filter(fn ($a) => $a->label && $a->label->is_active)
                 ->sortBy(fn ($a) => $a->label->sort_order)
                 ->map(fn ($a) => [
-                    'name' => LocalizedValue::pick($a->label->name ?? []) ?? '',
+                    'name' => $a->label->name[app()->getLocale()]
+                        ?? $a->label->name[config('app.fallback_locale')]
+                        ?? array_values($a->label->name ?? [])[0] ?? '',
                     'color' => $a->label->color,
                 ])->values()
             ),
@@ -162,42 +160,6 @@ class ProductListResource extends BaseApiResource
         }
 
         return $this->whenLoaded('activeOptions', fn () => (int) $this->activeOptions->sum('stock_quantity'));
-    }
-
-    /**
-     * 추가옵션 그룹이 있는지 반환합니다.
-     *
-     * @return mixed 추가옵션 유무(bool) 또는 집계가 붙지 않았으면 MissingValue
-     */
-    protected function resolveHasAdditionalOptions(): mixed
-    {
-        if ($this->hasAggregateAttribute('has_additional_options')) {
-            return (bool) $this->has_additional_options;
-        }
-
-        return new MissingValue;
-    }
-
-    /**
-     * 보는 회원이 찜한 상품인지 반환합니다.
-     *
-     * 줄마다 다시 묻지 않는다 — 공개 목록이 미리 읽은 관계만 본다. 비회원은 false,
-     * 관계도 집계 문맥(공개 목록)도 아니면 키를 싣지 않는다.
-     *
-     * @return mixed 찜 여부(bool) 또는 판단할 수 없으면 MissingValue
-     */
-    protected function resolveIsWishlisted(): mixed
-    {
-        if ($this->resource->relationLoaded('currentUserWishlist')) {
-            return $this->resource->currentUserWishlist->isNotEmpty();
-        }
-
-        // 공개 목록 문맥(집계가 붙음)인데 찜 관계가 없으면 비회원이다
-        if ($this->hasAggregateAttribute('has_additional_options')) {
-            return false;
-        }
-
-        return new MissingValue;
     }
 
     /**
@@ -299,8 +261,6 @@ class ProductListResource extends BaseApiResource
 
     /**
      * 소유자 필드명을 반환합니다.
-     *
-     * @return string|null 소유자 필드명 (없으면 null)
      */
     protected function ownerField(): ?string
     {

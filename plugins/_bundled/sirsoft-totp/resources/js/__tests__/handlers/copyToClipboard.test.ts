@@ -26,8 +26,6 @@ describe('copyToClipboardHandler', () => {
         stubClipboard(undefined);
     });
 
-    // @scenario clipboard=available,text=present
-    // @effects copies_text_via_clipboard_api
     it('넘겨받은 텍스트를 클립보드에 담는다', async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
         stubClipboard({ writeText });
@@ -40,8 +38,6 @@ describe('copyToClipboardHandler', () => {
         expect(copied).toBe(true);
     });
 
-    // @scenario clipboard=available,text=empty
-    // @effects empty_text_skips_clipboard
     it('텍스트가 비면 클립보드를 건드리지 않는다', async () => {
         const writeText = vi.fn().mockResolvedValue(undefined);
         stubClipboard({ writeText });
@@ -53,8 +49,6 @@ describe('copyToClipboardHandler', () => {
         expect(copied).toBe(false);
     });
 
-    // @scenario clipboard=missing,text=present
-    // @effects falls_back_to_exec_command
     it('클립보드 API 가 없으면 execCommand 폴백으로 복사한다', async () => {
         // 사내망 HTTP 처럼 보안 컨텍스트가 아닌 설치본을 흉내낸다.
         stubClipboard(undefined);
@@ -67,8 +61,6 @@ describe('copyToClipboardHandler', () => {
         expect(copied).toBe(true);
     });
 
-    // @scenario clipboard=rejected,text=present
-    // @effects falls_back_to_exec_command
     it('클립보드 쓰기가 거부되면 폴백으로 내려간다', async () => {
         // 권한 거부는 예외로 온다 — 여기서 멈추면 운영자는 복사된 줄 알고 화면을 닫는다.
         const writeText = vi.fn().mockRejectedValue(new Error('denied'));
@@ -83,8 +75,6 @@ describe('copyToClipboardHandler', () => {
         expect(copied).toBe(true);
     });
 
-    // @scenario clipboard=missing,text=present
-    // @effects returns_false_when_fallback_fails
     it('폴백까지 실패하면 false 를 돌려준다', async () => {
         stubClipboard(undefined);
         (document as unknown as { execCommand: unknown }).execCommand = vi.fn().mockReturnValue(false);

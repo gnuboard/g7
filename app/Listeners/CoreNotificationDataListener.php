@@ -4,6 +4,8 @@ namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 
 /**
  * 코어 알림 데이터 필터 리스너
@@ -72,16 +74,14 @@ class CoreNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
-
         return [
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => "{$baseUrl}/login",
-                'site_url' => $baseUrl,
+                'action_url' => ScreenUrl::absolute('auth.login', '/login'),
+                'site_url' => ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -104,7 +104,6 @@ class CoreNotificationDataListener implements HookListenerInterface
         }
 
         $extra = $args[1] ?? [];
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -112,9 +111,9 @@ class CoreNotificationDataListener implements HookListenerInterface
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => $extra['reset_url'] ?? "{$baseUrl}/reset-password",
+                'action_url' => $extra['reset_url'] ?? ScreenUrl::absolute('auth.reset_password', '/reset-password'),
                 'expire_minutes' => (string) config('auth.passwords.users.expire', 60),
-                'site_url' => $baseUrl,
+                'site_url' => ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -136,16 +135,14 @@ class CoreNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = config('app.url');
-
         return [
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => "{$baseUrl}/login",
-                'site_url' => $baseUrl,
+                'action_url' => ScreenUrl::absolute('auth.login', '/login'),
+                'site_url' => ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -171,7 +168,7 @@ class CoreNotificationDataListener implements HookListenerInterface
         }
 
         $extra = is_array($args[1] ?? null) ? $args[1] : [];
-        $baseUrl = config('app.url');
+        $isAdmin = $user->isAdmin();
 
         return [
             'notifiable' => null,
@@ -179,10 +176,10 @@ class CoreNotificationDataListener implements HookListenerInterface
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => $user->isAdmin()
-                    ? "{$baseUrl}/admin/users/{$user->uuid}/edit"
-                    : "{$baseUrl}/mypage/change-password",
-                'site_url' => $baseUrl,
+                'action_url' => $isAdmin
+                    ? ScreenUrl::absolute('admin.user.edit', '/admin/users/{uuid}/edit', ['uuid' => $user->uuid], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absolute('mypage.change_password', '/mypage/change-password'),
+                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
                 'expires_at' => (string) ($extra['expires_at'] ?? ''),
                 'days_left' => (string) ($extra['days_left'] ?? ''),
             ],
@@ -209,7 +206,7 @@ class CoreNotificationDataListener implements HookListenerInterface
         }
 
         $extra = is_array($args[1] ?? null) ? $args[1] : [];
-        $baseUrl = config('app.url');
+        $isAdmin = $user->isAdmin();
 
         return [
             'notifiable' => null,
@@ -217,8 +214,10 @@ class CoreNotificationDataListener implements HookListenerInterface
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => $user->isAdmin() ? "{$baseUrl}/admin/login" : "{$baseUrl}/login",
-                'site_url' => $baseUrl,
+                'action_url' => $isAdmin
+                    ? ScreenUrl::absolute('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absolute('auth.login', '/login'),
+                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
                 'expired_at' => (string) ($extra['expired_at'] ?? ''),
             ],
             'context' => [

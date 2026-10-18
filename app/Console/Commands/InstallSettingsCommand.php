@@ -2,9 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
-use App\Services\SettingsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -16,8 +14,6 @@ use Illuminate\Support\Facades\File;
  */
 class InstallSettingsCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      *
@@ -28,10 +24,12 @@ class InstallSettingsCommand extends Command
                             {--merge : 기존 설정과 병합합니다 (새 키만 추가)}';
 
     /**
-     * 커맨드를 생성합니다.
+     * The console command description.
      *
-     * @param  ConfigRepositoryInterface  $configRepository  카테고리별 설정을 읽고 저장하는 저장소
+     * @var string
      */
+    protected $description = '환경설정 기본값을 설치합니다 (config/settings/defaults.json → storage/app/settings/)';
+
     public function __construct(
         private ConfigRepositoryInterface $configRepository
     ) {
@@ -39,9 +37,7 @@ class InstallSettingsCommand extends Command
     }
 
     /**
-     * 커맨드를 실행합니다.
-     *
-     * @return int 종료 코드
+     * Execute the console command.
      */
     public function handle(): int
     {
@@ -52,8 +48,8 @@ class InstallSettingsCommand extends Command
 
         // defaults.json 파일 존재 확인
         if (! File::exists($defaultsPath)) {
-            $this->error(__('settings.console.install.defaults_not_found', ['path' => $defaultsPath]));
-            $this->error(__('settings.console.install.defaults_check_hint', ['path' => 'config/settings/defaults.json']));
+            $this->error("기본 설정 파일을 찾을 수 없습니다: {$defaultsPath}");
+            $this->error('config/settings/defaults.json 파일이 존재하는지 확인하세요.');
 
             return Command::FAILURE;
         }
@@ -63,7 +59,7 @@ class InstallSettingsCommand extends Command
         $data = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->error(__('settings.console.install.defaults_parse_failed', ['error' => json_last_error_msg()]));
+            $this->error('기본 설정 파일 JSON 파싱 실패: '.json_last_error_msg());
 
             return Command::FAILURE;
         }
@@ -72,12 +68,12 @@ class InstallSettingsCommand extends Command
         $categories = $data['_meta']['categories'] ?? [];
 
         if (empty($defaults)) {
-            $this->error(__('settings.console.install.defaults_section_missing'));
+            $this->error('기본 설정 파일에 defaults 섹션이 없습니다.');
 
             return Command::FAILURE;
         }
 
-        $this->info(__('settings.console.install.start'));
+        $this->info('환경설정 설치를 시작합니다...');
         $this->newLine();
 
         $installedCount = 0;
@@ -88,7 +84,7 @@ class InstallSettingsCommand extends Command
             $categoryDefaults = $defaults[$category] ?? [];
 
             if (empty($categoryDefaults)) {
-                $this->warn("  [{$category}] ".__('settings.console.install.no_defaults'));
+                $this->warn("  [{$category}] 기본값이 없습니다. 건너뜁니다.");
 
                 continue;
             }
@@ -97,7 +93,7 @@ class InstallSettingsCommand extends Command
             $exists = File::exists($settingsPath);
 
             if ($exists && ! $force && ! $merge) {
-                $this->line("  <comment>[{$category}]</comment> ".__('settings.console.install.already_exists'));
+                $this->line("  <comment>[{$category}]</comment> 이미 존재합니다. 건너뜁니다. (--force 또는 --merge 옵션 사용)");
                 $skippedCount++;
 
                 continue;
@@ -110,10 +106,10 @@ class InstallSettingsCommand extends Command
 
                 if ($this->configRepository->saveCategory($category, $mergedSettings)) {
                     $newKeysCount = count(array_diff_key($categoryDefaults, $existingSettings));
-                    $this->info("  <info>[{$category}]</info> ".__('settings.console.install.merged', ['count' => $newKeysCount]));
+                    $this->info("  <info>[{$category}]</info> 병합 완료 ({$newKeysCount}개 새 키 추가)");
                     $mergedCount++;
                 } else {
-                    $this->error("  [{$category}] ".__('settings.console.install.merge_failed'));
+                    $this->error("  [{$category}] 병합 실패");
                 }
 
                 continue;
@@ -121,29 +117,19 @@ class InstallSettingsCommand extends Command
 
             // 새로 설치 또는 덮어쓰기
             if ($this->configRepository->saveCategory($category, $categoryDefaults)) {
-                $action = $exists ? __('settings.console.install.action_overwritten') : __('settings.console.install.action_installed');
+                $action = $exists ? '덮어씀' : '설치됨';
                 $this->info("  <info>[{$category}]</info> {$action}");
                 $installedCount++;
             } else {
-                $this->error("  [{$category}] ".__('settings.console.install.install_failed'));
-            }
-        }
-
-        // 저장소에 직접 썼으므로 화면 저장과 같은 후처리(캐시·설정 미러·설정 버전)를 탄다 — 빠지면 실행 뒤에도
-        // 캐시가 옛 설정을 돌려준다(7.1.4 F32). 설치 초기처럼 캐시 저장소가 아직 준비되지 않았으면 경고만 남긴다.
-        if ($installedCount + $mergedCount > 0) {
-            try {
-                app(SettingsService::class)->invalidateSettingsCache();
-            } catch (\Throwable $e) {
-                $this->warn(__('settings.console.install.cache_refresh_failed', ['error' => $e->getMessage()]));
+                $this->error("  [{$category}] 설치 실패");
             }
         }
 
         $this->newLine();
-        $this->info(__('settings.console.install.done'));
-        $this->line('  - '.__('settings.console.install.summary_installed', ['count' => $installedCount]));
-        $this->line('  - '.__('settings.console.install.summary_merged', ['count' => $mergedCount]));
-        $this->line('  - '.__('settings.console.install.summary_skipped', ['count' => $skippedCount]));
+        $this->info('환경설정 설치 완료!');
+        $this->line("  - 설치됨: {$installedCount}개");
+        $this->line("  - 병합됨: {$mergedCount}개");
+        $this->line("  - 건너뜀: {$skippedCount}개");
 
         return Command::SUCCESS;
     }

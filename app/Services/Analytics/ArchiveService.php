@@ -129,7 +129,7 @@ class ArchiveService
      *
      * 실행 종류(시간 집계·일 집계·구간 재집계·화면 열 때 집계)를 키에 넣지 않는다 — 모두 같은 날의 일 집계
      * 행을 지우고 다시 쓰므로, 종류별 키였을 때는 같은 날의 시간 집계와 재집계가 서로를 「다른 집계」로 보고
-     * 동시에 돌아 한쪽 결과를 덮을 수 있었다(7.1.0 전수 실측). 같은 날짜는 한 번에 하나만 돈다.
+     * 동시에 돌아 한쪽 결과를 덮을 수 있었다(7.1.0 전수 실측 O-EF1). 같은 날짜는 한 번에 하나만 돈다.
      *
      * @param  string  $date  집계 일자 (Y-m-d, 사이트 표준시 기준)
      * @return string 잠금 키
@@ -200,7 +200,6 @@ class ArchiveService
             $result = $this->collect($date, $periodStart, $periodEnd, $config, $run);
 
             $isFinal = (bool) ($options['is_final'] ?? false);
-            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             $archivedAt = AnalyticsClock::now()->format('Y-m-d H:i:s');
 
             // 확장 집계 기여는 동기 구독(`'sync' => true`)이어야 한다 — 큐로 가면 수집기가 복제돼
@@ -331,14 +330,12 @@ class ArchiveService
         // --force 와 무관하게 건너뛰고 이유를 실행 이력에 남긴다.
         $ledgerFloor = Carbon::parse($today)
             ->subDays(AnalyticsConfig::fromSettings()->effectiveRetentionDays())
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             ->toDateString();
 
         $cursor = Carbon::parse($from);
         $end = Carbon::parse($to);
 
         while ($cursor->lessThanOrEqualTo($end)) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $cursor->toDateString();
 
             if ($date <= $ledgerFloor) {
@@ -1147,7 +1144,6 @@ class ArchiveService
         $slots = [];
 
         while ($cursor->lessThan($end)) {
-            // audit:allow datetime-display-user-timezone reason: DB 시각 원값을 같은 기준의 집계 키로 정규화 — 기계값
             $slots[] = $cursor->format('Y-m-d H:00:00');
             $cursor->addHour();
         }

@@ -37,10 +37,9 @@
 | [api-documentation.md](api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 +... |
 | [api-resources.md](api-resources.md) | API 리소스 | Resource: BaseApiResource 상속 필수 / Collection: B... |
 | [authentication.md](authentication.md) | 인증 및 세션 처리 | Laravel Sanctum 토큰 전용 인증 (Bearer 토큰만 사용) |
-| [benchmark.md](benchmark.md) | 성능 계측 시스템 (Benchmark) | `g7:bench` 가 5축(list/screen/write/batch/boot)을 ... |
+| [benchmark.md](benchmark.md) | 성능 계측 시스템 (Benchmark) | `g7:bench` 가 4축(list/screen/write/batch)을 잰다 — ... |
 | [broadcasting.md](broadcasting.md) | Broadcasting (실시간 이벤트) | Laravel Reverb 사용 (WebSocket) |
 | [console-confirm.md](console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) | 콘솔 커맨드의 yes/no 프롬프트는 $this->unifiedConfirm() 사용... |
-| [content-security-policy.md](content-security-policy.md) | 콘텐츠 보안 정책 (Content Security Policy) | 환경설정 > 보안 > 「콘텐츠 보안 정책(CSP)」 — 스크립트 정책과 스타일 정책을... |
 | [controllers.md](controllers.md) | 컨트롤러 계층 구조 | AdminBaseController / AuthBaseController / Publ... |
 | [core-config.md](core-config.md) | 코어 설정 (config/core.php) | config/core.php = 코어 권한/역할/메뉴/메일템플릿의 SSoT (Sing... |
 | [core-update-system.md](core-update-system.md) | 코어 업데이트 시스템 (Core Update System) | 코어 업그레이드 스텝: upgrades/ 디렉토리 (프로젝트 루트), 네임스페이스 A... |
@@ -52,7 +51,6 @@
 | [identity-messages.md](identity-messages.md) | 본인인증 알림 (Identity Notifications) | 본인인증 메일 문구 = 알림 정의(notification_definitions) 중 ... |
 | [identity-policies.md](identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) | - |
 | [identity-providers.md](identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) | VerificationProviderInterface 구현 + IdentityProv... |
-| [installer-cli.md](installer-cli.md) | 터미널 설치·운영 명령 (installer CLI) | php g7-install(루트 스크립트) = php artisan core:inst... |
 | [language-pack-service.md](language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) | LanguagePackService 가 install/activate/deactiva... |
 | [middleware.md](middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
 | [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |
@@ -64,7 +62,6 @@
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |
-| [server-migration.md](server-migration.md) | 서버 이전 안내 | 옮길 것: DB 덤프 · storage/app (설정 JSON·업로드) · .env ... |
 | [service-provider.md](service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |
 | [service-repository.md](service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈... |

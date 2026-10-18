@@ -4,9 +4,6 @@ namespace App\Console\Commands\Module;
 
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsIntegrationNotices;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\ModuleManager;
@@ -19,9 +16,6 @@ class UninstallModuleCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
-    use LocalizesDescription;
-    use ReportsIntegrationNotices;
-    use ReportsLifecycleWarnings;
 
     /**
      * The name and signature of the console command.
@@ -30,6 +24,11 @@ class UninstallModuleCommand extends Command
         {identifier : 제거할 모듈 식별자}
         {--force : 확인 없이 삭제}
         {--delete-data : 모듈 데이터(테이블, 환경설정) 함께 삭제}';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '모듈을 제거합니다';
 
     /**
      * 모듈 관리자 및 리포지토리
@@ -86,14 +85,14 @@ class UninstallModuleCommand extends Command
                 $this->line(trans_choice('modules.commands.uninstall.confirm_details.layouts', $layoutsCount));
                 $this->line(__('modules.commands.uninstall.confirm_details.data'));
                 if ($this->option('delete-data')) {
-                    $this->warn('⚠️  '.__('modules.commands.uninstall.delete_data_warning'));
+                    $this->warn('⚠️  --delete-data: 마이그레이션 롤백 및 환경설정 파일이 함께 삭제됩니다.');
                 }
                 $this->newLine();
 
                 if (! $this->unifiedConfirm(__('modules.commands.uninstall.confirm_question'), false)) {
                     $this->info(__('modules.commands.uninstall.aborted'));
 
-                    return $this->confirmAbortExitCode();
+                    return Command::SUCCESS;
                 }
             }
 
@@ -115,8 +114,7 @@ class UninstallModuleCommand extends Command
             }
 
             if ($result) {
-                $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.uninstall.success', ['module' => $identifier]));
-                $this->reportIntegratedBy('module', $identifier);
+                $this->info('✅ '.__('modules.commands.uninstall.success', ['module' => $identifier]));
                 $this->info('   - '.trans_choice('modules.commands.uninstall.roles_deleted', $rolesCount));
                 $this->info('   - '.trans_choice('modules.commands.uninstall.permissions_deleted', $permissionsCount));
                 $this->info('   - '.trans_choice('modules.commands.uninstall.menus_deleted', $menusCount));

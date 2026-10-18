@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
-use Tests\PureTestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 배송정책 스냅샷 구조 테스트
@@ -18,16 +18,10 @@ use Tests\PureTestCase;
  * 이 테스트는 구조가 `{items: [...], address: {...}}` 로 분리되어 있고, JSON 왕복 후에도
  * `items` 가 **배열로 유지**되는지 잠근다. 구형 혼합 배열도 정규화로 흡수되어야 한다.
  */
-class ShippingPolicySnapshotShapeTest extends PureTestCase
+class ShippingPolicySnapshotShapeTest extends ModuleTestCase
 {
     /**
      * 신형 스냅샷은 JSON 왕복 후에도 items 가 배열(리스트)로 유지된다.
-     *
-     * @scenario case=modern_snapshot
-     *
-     * @effects items_serialized_as_json_array, address_separated_from_items
-     *
-     * @return void 반환값 없음
      */
     public function test_신형_스냅샷은_json_왕복_후에도_items_가_배열이다(): void
     {
@@ -52,12 +46,6 @@ class ShippingPolicySnapshotShapeTest extends PureTestCase
 
     /**
      * 항목이 없어도 items 는 객체가 아니라 빈 배열이어야 한다.
-     *
-     * @scenario case=empty_snapshot
-     *
-     * @effects items_serialized_as_json_array
-     *
-     * @return void 반환값 없음
      */
     public function test_항목이_없어도_items_는_빈_배열이다(): void
     {
@@ -68,12 +56,6 @@ class ShippingPolicySnapshotShapeTest extends PureTestCase
 
     /**
      * 구형(항목 + address 혼합) 스냅샷도 신형으로 정규화된다.
-     *
-     * @scenario case=legacy_mixed_snapshot
-     *
-     * @effects legacy_mixed_snapshot_normalized, items_serialized_as_json_array, address_separated_from_items
-     *
-     * @return void 반환값 없음
      */
     public function test_구형_혼합_배열은_신형으로_정규화된다(): void
     {
@@ -93,12 +75,6 @@ class ShippingPolicySnapshotShapeTest extends PureTestCase
 
     /**
      * 신형 스냅샷을 다시 정규화해도 형태가 유지된다(멱등).
-     *
-     * @scenario case=modern_snapshot
-     *
-     * @effects normalization_is_idempotent
-     *
-     * @return void 반환값 없음
      */
     public function test_정규화는_멱등이다(): void
     {
@@ -112,12 +88,6 @@ class ShippingPolicySnapshotShapeTest extends PureTestCase
 
     /**
      * 빈 스냅샷/널도 안전하게 빈 구조를 반환한다.
-     *
-     * @scenario case=empty_snapshot
-     *
-     * @effects empty_snapshot_normalized_to_empty_structure
-     *
-     * @return void 반환값 없음
      */
     public function test_빈_스냅샷은_빈_구조를_반환한다(): void
     {
@@ -129,12 +99,6 @@ class ShippingPolicySnapshotShapeTest extends PureTestCase
 
     /**
      * product_option_id 키 맵 변환은 신형/구형 양쪽에서 같은 결과를 낸다.
-     *
-     * @scenario case=legacy_mixed_snapshot
-     *
-     * @effects option_policy_map_same_for_legacy_and_modern
-     *
-     * @return void 반환값 없음
      */
     public function test_옵션_키_맵_변환은_신형_구형_동일_결과(): void
     {

@@ -103,6 +103,7 @@ _단건 응답: `data` 객체의 필드._
 | current_version | string | `7.0.3` | 현재 설치된 코어 버전 (프로세스 환경값이 아니라 설정의 버전 — `config('app.version')`) |
 | latest_version | string | `7.0.3` | GitHub 릴리스에서 조회한 최신 코어 버전 (조회 값이 없으면 현재 버전과 동일) |
 | github_url | string | `https://github.com/gnuboard/g7` | 업데이트 조회 대상 GitHub 저장소 URL (`config('app.update.github_url')`) |
+| custom_preflight | object\|null | `null` | 직전 `core:update` 가 개발자 custom 자리 사전 검사로 시작 전에 멈췄고 그 대상 버전이 `latest_version` 과 같을 때만 실린다 (7.2.0). `to_version`·`checked_at`·`reserved_files`(릴리스에 들어 있던 예약 경로 파일)·`conflicts`(`package`·`installed`·`type`(`constraint`\|`duplicate`)·`core_package`·`core_version`). 그 밖에는 `null` |
 
 > 조회 실패 시(GitHub 접속 불가 등)에는 422 응답이 반환되며, `error` 객체에 `reason`(실패 사유) · `current_version` · `github_url` 이 담깁니다.
 
@@ -116,7 +117,8 @@ _단건 응답: `data` 객체의 필드._
         "update_available": false,
         "current_version": "7.0.3",
         "latest_version": "7.0.3",
-        "github_url": "https://github.com/gnuboard/g7"
+        "github_url": "https://github.com/gnuboard/g7",
+        "custom_preflight": null
     }
 }
 ```

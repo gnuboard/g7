@@ -317,7 +317,7 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
-                                                    "comment": "이 정책에만 쓸 인증 제공자. 첫 항목(빈 값)은 \"지정 안 함 — 모든 수단 인정\" 이고,\n                     저장할 때 빈 값은 `null` 로 바뀌어 나간다.",
+                                                    "comment": "이 정책에만 쓸 인증 제공자. 첫 항목(빈 값)은 \"기본 제공자 사용\" 이고,\n                     저장할 때 빈 값은 `null` 로 바뀌어 나간다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -331,24 +331,6 @@
                                                 "className": "",
                                                 "options": "{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}"
                                             }
-                                        },
-                                        {
-                                            "comment": "지정한 수단으로 받은 인증만 인정한다(정확히 일치). 비우면 어떤 수단의 인증이든 인정한다 — 코어 7.1.6",
-                                            "type": "basic",
-                                            "name": "P",
-                                            "props": {
-                                                "className": "text-hint mt-1"
-                                            },
-                                            "text": "$t:admin.identity.policies.form.provider_id_desc"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.provider_id}}",
-                                            "props": {
-                                                "className": "form-error"
-                                            },
-                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.provider_id?.[0] ?? ''}}"
                                         }
                                     ]
                                 }

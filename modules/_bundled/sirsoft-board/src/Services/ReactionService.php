@@ -21,7 +21,6 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
-use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -190,17 +189,7 @@ class ReactionService
      */
     public function paginateForUser(int $userId, array $filters, int $perPage): LengthAwarePaginator
     {
-        $hookContext = ReadHookContext::make(['subject_user_id' => $userId, 'filters' => $filters]);
-
-        HookManager::doAction('sirsoft-board.reaction.before_user_list', $hookContext);
-
-        $reactions = $this->reactionRepository->paginateByUser($userId, $filters, $perPage);
-
-        $reactions = HookManager::applyFilters('sirsoft-board.reaction.filter_user_list_result', $reactions, $hookContext);
-
-        HookManager::doAction('sirsoft-board.reaction.after_user_list', $reactions, $hookContext);
-
-        return $reactions;
+        return $this->reactionRepository->paginateByUser($userId, $filters, $perPage);
     }
 
     /**

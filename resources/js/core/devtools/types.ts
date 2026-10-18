@@ -55,13 +55,10 @@ export interface ActionLog {
     startTime: number;
     endTime?: number;
     duration?: number;
-    /** `skipped` — 미리보기 모드에서 억제된 액션 (ActionDispatcher.executeAction) */
-    status: 'started' | 'success' | 'error' | 'skipped';
+    status: 'started' | 'success' | 'error';
     result?: any;
     error?: SerializedError;
     children?: ActionLog[];
-    /** 부가 정보 (예: `{ reason: 'preview_mode_suppressed' }`) */
-    metadata?: Record<string, any>;
 }
 
 /** 직렬화된 에러 */

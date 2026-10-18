@@ -191,8 +191,6 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | shipping_discount_formatted | string | `0원` | 배송비 할인 포맷 |
 | taxable_amount | integer | `10000` | 과세 금액 합계 |
 | tax_free_amount | integer | `0` | 면세 금액 합계 |
-| zero_rated_amount | integer | `0` | 영세 금액 합계 — 과세 금액(`taxable_amount`)에 포함된 세율 0% 몫 (1.3.3) |
-| zero_rated_amount_formatted | string | `0원` | 영세 금액 포맷 |
 | points_earning | integer | `0` | 적립 예정 마일리지 합계 |
 | total_mileage | integer | `0` | 적립 예정 마일리지 (별칭 키) |
 | mileage_formatted | string | `0P` | 적립 예정 마일리지 포맷 |
@@ -217,8 +215,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | available | integer | `0` | 사용 가능 마일리지 잔액 |
 | pending | integer | `0` | 적립 대기 중인 마일리지 |
 | expiring_soon | integer | `0` | 곧 소멸 예정 마일리지 |
-| expiring_date | string\|null | `2026-08-31T14:59:59+00:00` | 소멸 예정 시각 (ISO 8601 기계값, 없으면 `null`) |
-| expiring_date_formatted | string\|null | `2026-08-31` | 소멸 예정일 — 보는 사람 시간대 날짜 (표시용, 없으면 `null`) |
+| expiring_date | string\|null | `2026-08-31` | 소멸 예정일 (없으면 `null`) |
 | total_earned | integer | `0` | 누적 적립 마일리지 |
 | total_used | integer | `0` | 누적 사용 마일리지 |
 | by_currency | object | `{}` | 통화별 마일리지 내역 |
@@ -451,7 +448,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutController@store` 가 직접 �
 
 <!-- @generated:end -->
 
-**설명** 장바구니에서 선택한 아이템으로 임시 주문을 생성해 주문서 작성 단계로 진입합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@store`가 `direct_items`가 있으면 `TempOrderService::createTempOrderFromDirectItems()`(바로 구매, 장바구니 미경유), 없으면 `item_ids`로 `createTempOrderFromSelectedItems()`(장바구니 경유)를 호출합니다. 응답에는 임시 주문 ID·계산 결과·만료 시각(`expires_at`)이 포함됩니다. 재고 부족·판매 중지·구매 제한 상품이 있으면 400(cart_unavailable), 빈 장바구니는 400을 반환합니다. 비회원은 `X-Cart-Key`(`ck_`+32자)가 필수이며, 없거나 형식이 틀리면 422(`cart_key`)를 반환합니다 — 조회·연장·삭제와 같은 판정이라 키 없는 요청이 아무도 조회·삭제할 수 없는 임시 주문을 만들지 않습니다.
+**설명** 장바구니에서 선택한 아이템으로 임시 주문을 생성해 주문서 작성 단계로 진입합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@store`가 `direct_items`가 있으면 `TempOrderService::createTempOrderFromDirectItems()`(바로 구매, 장바구니 미경유), 없으면 `item_ids`로 `createTempOrderFromSelectedItems()`(장바구니 경유)를 호출합니다. 응답에는 임시 주문 ID·계산 결과·만료 시각(`expires_at`)이 포함됩니다. 재고 부족·판매 중지·구매 제한 상품이 있으면 400(cart_unavailable), 빈 장바구니는 400을 반환합니다.
 
 마일리지 사용은 보유 잔액뿐 아니라 관리자 설정 사용 정책(최소 사용액 `min_use_amount`, 사용 단위 `use_unit`, 최대 한도 `max_use_percent`/`max_use_value`)까지 서버에서 강제하며, 위반 시 422 를 반환합니다. 한도 초과 응답 메시지에는 사용 가능한 최대 금액이 함께 안내됩니다. 판정 기준 금액은 마일리지 차감 전 결제금액이며, 비회원의 `use_points` 는 예외 없이 0 으로 처리됩니다.
 
@@ -592,7 +589,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
 
 <!-- @generated:end -->
 
-**설명** 주문서 작성 중 쿠폰·마일리지·배송 주소가 변경될 때 임시 주문 금액을 재계산합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@update`가 전송된 프로모션 필드(`item_coupons`·`order_coupon_issue_id`·`shipping_coupon_issue_id`)와 `use_points`만 반영하고 미전송 필드는 `TempOrderService::updateTempOrder()`에서 기존 값을 유지합니다. `zipcode`/`country_code`로 배송 주소를 함께 넘기면 배송비가 다시 계산됩니다. 임시 주문이 만료·미존재면 404, 보유 잔액 초과 또는 사용 정책(최소 사용액·사용 단위·최대 한도) 위반 마일리지는 422를 반환합니다. 비회원은 `X-Cart-Key`(`ck_`+32자)가 필수이며, 없거나 형식이 틀리면 422(`cart_key`)를 반환합니다 — 조회·연장·삭제와 같은 판정이라 키 없는 요청이 아무도 조회·삭제할 수 없는 임시 주문을 만들지 않습니다.
+**설명** 주문서 작성 중 쿠폰·마일리지·배송 주소가 변경될 때 임시 주문 금액을 재계산합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@update`가 전송된 프로모션 필드(`item_coupons`·`order_coupon_issue_id`·`shipping_coupon_issue_id`)와 `use_points`만 반영하고 미전송 필드는 `TempOrderService::updateTempOrder()`에서 기존 값을 유지합니다. `zipcode`/`country_code`로 배송 주소를 함께 넘기면 배송비가 다시 계산됩니다. 임시 주문이 만료·미존재면 404, 보유 잔액 초과 또는 사용 정책(최소 사용액·사용 단위·최대 한도) 위반 마일리지는 422를 반환합니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/checkout/extend
@@ -646,13 +643,3 @@ _단건 응답: `data` 객체의 필드._
 **설명** 임시 주문의 만료 시각을 연장합니다. `optional.sanctum`으로 회원은 `Auth::id()`, 비회원은 cart_key로 대상을 식별하며, `CheckoutController@extend`가 `TempOrderService::extendExpiration()`을 호출해 갱신된 `expires_at`을 반환합니다. 주문서 작성이 길어져 임시 주문이 만료되기 전에 세션을 연장하는 용도이며, 연장할 임시 주문이 이미 만료·미존재면 404를 반환합니다.
 
 
-## 요청 제한 (1.3.5+)
-
-체크아웃 쓰기 라우트와 주문 생성, 결제창을 닫을 때 남기는 결제 취소 기록은 한 제한기(`sirsoft-ecommerce.checkout`, 기본 분당 30회)로 합산한다.
-
-| 대상 | 라우트 |
-| --- | --- |
-| 센다 | `POST /checkout` · `PUT /checkout` · `DELETE /checkout` · `POST /checkout/extend` · `POST /user/orders`(주문 생성) · `POST /orders/{orderNumber}/cancel-payment`(결제 취소 기록) |
-| 세지 않는다 | `GET /checkout` (조회) |
-
-한도는 모듈 설정 `rate_limits`(`config/ecommerce.php`)의 분당 횟수이고, 로그인 회원은 회원 단위로·비회원은 IP 단위로 센다 — 같은 IP 의 회원끼리, 회원과 비회원끼리 서로의 한도를 깎지 않는다. 넘으면 `429` 와 `Retry-After` 헤더(남은 초)를 돌려준다 (문구는 로그인 요청 제한과 같은 `auth.too_many_attempts`).

@@ -6,7 +6,6 @@ use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
-use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
 use App\Support\WorkerSettingsRefresher;
 use Illuminate\Queue\Events\JobProcessing;
@@ -273,8 +272,22 @@ class SettingsServiceProvider extends ServiceProvider
         }
 
         if (is_array($value)) {
-            // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — SEO resolveLocalizedValue 와 같은 SSoT)
-            return LocalizedValue::pick($value, (string) config('app.locale', 'ko')) ?? '';
+            $locale = config('app.locale', 'ko');
+            if (isset($value[$locale]) && is_string($value[$locale])) {
+                return $value[$locale];
+            }
+            $fallback = config('app.fallback_locale', 'en');
+            if (isset($value[$fallback]) && is_string($value[$fallback])) {
+                return $value[$fallback];
+            }
+            // 첫 string 값 폴백
+            foreach ($value as $candidate) {
+                if (is_string($candidate)) {
+                    return $candidate;
+                }
+            }
+
+            return '';
         }
 
         return (string) ($value ?? '');
@@ -493,7 +506,7 @@ class SettingsServiceProvider extends ServiceProvider
     private function injectPublicAssetDiskConfig(JsonConfigRepository $configRepository): void
     {
         // audit:allow env-priority-filter-wiring 이 지점이 drivers 에서 읽는 키는
-        // public_asset_disk·public_asset_extensions 둘뿐이고 둘 다 EnvPriority::EXEMPT 다 (env 대응 없음).
+        // public_asset_disk 하나뿐이고 그 키는 EnvPriority::EXEMPT 다 (env 대응 없음).
         // 여기서 다른 drivers 키를 추가로 읽게 되면 그 키는 잠금을 우회하므로,
         // 그때는 이 면제를 걷어내고 filterLocked('drivers', …) 를 배선해야 한다.
         $driverSettings = $configRepository->getCategory('drivers');
@@ -501,12 +514,6 @@ class SettingsServiceProvider extends ServiceProvider
         $disk = (string) ($driverSettings['public_asset_disk'] ?? '');
 
         Config::set('core.storage.public_asset_disk', $disk === 'none' ? '' : $disk);
-
-        // 공개 디스크로 내보낼 확장자 — 비어 있으면 config/core.php 기본값을 그대로 둔다.
-        $extensions = AllowedExtensions::normalize($driverSettings['public_asset_extensions'] ?? null);
-        if ($extensions !== []) {
-            Config::set('core.storage.public_asset_extensions', $extensions);
-        }
     }
 
     /**
@@ -883,13 +890,6 @@ class SettingsServiceProvider extends ServiceProvider
                 'attachment.allowed_extensions',
                 AllowedExtensions::normalize($uploadSettings['allowed_extensions'])
             );
-        }
-
-        // 레이아웃 첨부 허용 확장자 — 비어 있으면 config/attachment.php 기본값을 그대로 둔다
-        // (빈 목록은 "제한 없음" 이 아니다. 판정은 TemplateLayoutAttachmentPolicy).
-        $layoutExtensions = AllowedExtensions::normalize($uploadSettings['layout_attachment_extensions'] ?? null);
-        if ($layoutExtensions !== []) {
-            Config::set('attachment.layout_attachment_extensions', $layoutExtensions);
         }
 
         // 이미지 축소 한계값·품질 — 픽셀/퍼센트라 단위 변환이 없다.

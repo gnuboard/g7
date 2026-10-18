@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\Analytics\PurgeService;
 use Illuminate\Console\Command;
 
@@ -18,7 +17,6 @@ use Illuminate\Console\Command;
 class PurgeCommand extends Command
 {
     use HasUnifiedConfirm;
-    use LocalizesDescription;
 
     /**
      * 커맨드 이름 및 시그니처
@@ -26,6 +24,13 @@ class PurgeCommand extends Command
      * @var string
      */
     protected $signature = 'analytics:purge {--confirm : 되돌릴 수 없음을 확인}';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '방문자 통계 기록과 집계를 모두 삭제합니다 (되돌릴 수 없음).';
 
     /**
      * 커맨드 실행
@@ -36,25 +41,25 @@ class PurgeCommand extends Command
     public function handle(PurgeService $service): int
     {
         if (! $this->option('confirm')) {
-            $this->error(__('analytics.console.purge.confirm_option_required'));
+            $this->error('전체 삭제는 --confirm 을 붙여야 실행됩니다. 되돌릴 수 없습니다.');
 
             return self::FAILURE;
         }
 
-        if (! $this->unifiedConfirm(__('analytics.console.purge.confirm'))) {
-            $this->info(__('analytics.console.purge.cancelled'));
+        if (! $this->unifiedConfirm('방문자 통계 기록과 집계를 모두 지웁니다. 되돌릴 수 없습니다. 진행할까요?')) {
+            $this->info('취소했습니다.');
 
-            return $this->confirmAbortExitCode();
+            return self::SUCCESS;
         }
 
         $counts = $service->purgeAll();
 
         $this->table(
-            [__('analytics.console.purge.headers.target'), __('analytics.console.purge.headers.deleted')],
+            ['대상', '삭제'],
             array_map(fn (string $key, int $count): array => [$key, $count], array_keys($counts), $counts),
         );
 
-        $this->info(__('analytics.console.purge.done', ['count' => array_sum($counts)]));
+        $this->info(sprintf('방문자 통계 %d건을 삭제했습니다.', array_sum($counts)));
 
         return self::SUCCESS;
     }

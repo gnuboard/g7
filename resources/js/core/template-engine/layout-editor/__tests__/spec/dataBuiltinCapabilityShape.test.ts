@@ -38,16 +38,12 @@ const basic = (basicCaps as any).componentCapabilities ?? (basicCaps as any);
 
 describe('데이터 정의 빌트인 capability 정합', () => {
   describe('단순 배열 부착(8-a (E) #1~#4)', () => {
-    // @scenario aspect=capability_attach, data_surface=single_object_array
-    // @effects data_builtin_capability_attached_to_8a_targets_both_templates
     it('TabNavigationScroll.tabs — nodeEditor:array(tabs)', () => {
       const cap = admin.TabNavigationScroll as Cap;
       expect(cap.nodeEditor?.kind).toBe('array');
       expect(cap.nodeEditor?.params?.arrayProp).toBe('tabs');
     });
 
-    // @scenario aspect=capability_attach, data_surface=single_object_array
-    // @effects data_builtin_capability_attached_to_8a_targets_both_templates
     it('DonutChart.data — nodeEditor:array(data) + number/color 필드', () => {
       const cap = admin.DonutChart as Cap;
       expect(cap.nodeEditor?.kind).toBe('array');
@@ -57,8 +53,6 @@ describe('데이터 정의 빌트인 capability 정합', () => {
       expect(widgets).toContain('color');
     });
 
-    // @scenario aspect=capability_attach, data_surface=flat_typed_array
-    // @effects data_builtin_capability_attached_to_8a_targets_both_templates
     it('DynamicFieldList.columns — nodeEditor:array(columns) + type select', () => {
       const cap = admin.DynamicFieldList as Cap;
       expect(cap.nodeEditor?.kind).toBe('array');
@@ -69,8 +63,6 @@ describe('데이터 정의 빌트인 capability 정합', () => {
       expect((cap.dataProps ?? []).some((d) => d.propKey === 'items')).toBe(true);
     });
 
-    // @scenario aspect=capability_attach, data_surface=primitive_enum_array
-    // @effects data_builtin_capability_attached_to_8a_targets_both_templates
     it('SocialLoginButtons.providers — nodeEditor:array(providers) 원시 enum select (basic)', () => {
       const cap = basic.SocialLoginButtons as Cap;
       expect(cap.nodeEditor?.kind).toBe('array');
@@ -83,8 +75,6 @@ describe('데이터 정의 빌트인 capability 정합', () => {
   });
 
   describe('다중 배열 / 중첩 셀 트리(8-a (E) #5~#6)', () => {
-    // @scenario aspect=capability_attach, data_surface=multi_array
-    // @effects data_builtin_capability_attached_to_8a_targets_both_templates
     it('BarChart — nodeEditor:array-group(labels+datasets), datasets.data=number-list', () => {
       const cap = admin.BarChart as Cap;
       expect(cap.nodeEditor?.kind).toBe('array-group');
@@ -97,8 +87,6 @@ describe('데이터 정의 빌트인 capability 정합', () => {
       expect(dataField?.widget).toBe('number-list');
     });
 
-    // @scenario aspect=capability_attach, data_surface=cell_tree
-    // @effects data_builtin_capability_attached_to_8a_targets_both_templates
     it('CardGrid.cardColumns — nodeEditor:array-cell-tree(idField/cellChildrenProp)', () => {
       const cap = admin.CardGrid as Cap;
       expect(cap.nodeEditor?.kind).toBe('array-cell-tree');
@@ -109,8 +97,6 @@ describe('데이터 정의 빌트인 capability 정합', () => {
   });
 
   describe('newItem shape ↔ 컴포넌트 read shape 정합(1-c-verify-4 결함#7 회귀 가드)', () => {
-    // @scenario aspect=field_widget, data_surface=single_object_array
-    // @effects array_editor_newitem_shape_matches_component_read_shape
     it('DonutChart newItem 은 name/value/color (컴포넌트 read shape)', () => {
       const ni = (admin.DonutChart as Cap).nodeEditor?.params?.newItem;
       expect(ni).toHaveProperty('name');
@@ -118,8 +104,6 @@ describe('데이터 정의 빌트인 capability 정합', () => {
       expect(ni).toHaveProperty('color');
     });
 
-    // @scenario aspect=field_widget, data_surface=multi_array
-    // @effects array_editor_newitem_shape_matches_component_read_shape
     it('BarChart datasets newItem 은 label/data:[]/backgroundColor', () => {
       const groups = (admin.BarChart as Cap).nodeEditor?.params?.groups as any[];
       const ni = groups.find((g) => g.arrayProp === 'datasets')?.newItem;
@@ -128,16 +112,12 @@ describe('데이터 정의 빌트인 capability 정합', () => {
       expect(ni).toHaveProperty('backgroundColor');
     });
 
-    // @scenario aspect=structure_op, data_surface=cell_tree
-    // @effects array_editor_newitem_shape_matches_component_read_shape
     it('CardGrid newItem 은 id + 빈 cellChildren 배열', () => {
       const ni = (admin.CardGrid as Cap).nodeEditor?.params?.newItem;
       expect(ni).toHaveProperty('id');
       expect(Array.isArray(ni.cellChildren)).toBe(true);
     });
 
-    // @scenario aspect=field_widget, data_surface=flat_typed_array
-    // @effects array_editor_newitem_shape_matches_component_read_shape
     it('DynamicFieldList newItem 은 key/type/label/placeholder', () => {
       const ni = (admin.DynamicFieldList as Cap).nodeEditor?.params?.newItem;
       expect(ni).toHaveProperty('key');
@@ -147,8 +127,6 @@ describe('데이터 정의 빌트인 capability 정합', () => {
   });
 
   describe('검토군 판정(8-a (E) #6) — 데이터 편집 비대상 회귀 가드', () => {
-    // @scenario aspect=capability_attach, data_surface=single_object_array
-    // @effects review_group_chipcheckbox_value_covered_by_propcontrol_not_dataprop
     it('ChipCheckbox.value 는 propControl ccValue 로 커버(nodeEditor/dataProps 없음)', () => {
       const cap = admin.ChipCheckbox as Cap;
       expect(cap.propControls).toContain('ccValue');
@@ -182,7 +160,7 @@ const NON_TARGET: Record<string, Set<string>> = {
     'Div', 'Span', 'P', 'H1', 'H2', 'H3', 'H4', 'A', 'Button', 'Img', 'Icon', 'Hr',
     'Container', 'Flex', 'Grid', 'SectionLayout', 'ThreeColumnLayout', 'HtmlContent', 'HtmlEditor',
     'RichTextEditor', 'ExpandableContent', 'FileUploader', 'AvatarUploader', 'Checkbox', 'Label',
-    'Pagination', 'ProductRail', 'ChipRows', 'MobileBuyBar', 'BottomSheet',
+    'Pagination',
   ]),
 };
 
@@ -194,8 +172,6 @@ describe('전 draggable 데이터 편집 누락 0 게이트', () => {
     return !!cap.nodeEditor || optionsList || dataProps;
   };
 
-  // @scenario aspect=capability_attach, data_surface=single_object_array
-  // @effects data_builtin_capability_attached_to_8a_targets_both_templates
   it.each([
     ['admin', admin, '../../../../../../../templates/_bundled/sirsoft-admin_basic/editor-spec/nesting.json'],
     ['basic', basic, '../../../../../../../templates/_bundled/sirsoft-basic/editor-spec/nesting.json'],
@@ -214,8 +190,6 @@ describe('전 draggable 데이터 편집 누락 0 게이트', () => {
     expect(missing).toEqual([]);
   });
 
-  // @scenario aspect=capability_attach, data_surface=single_object_array
-  // @effects data_builtin_capability_attached_to_8a_targets_both_templates
   it.each([
     ['admin', admin],
     ['basic', basic],

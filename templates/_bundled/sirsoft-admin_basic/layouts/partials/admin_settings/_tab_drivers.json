@@ -1,5 +1,5 @@
 {
-    "comment": "드라이버 탭 — 저장소·캐시·세션·큐·웹소켓을 무엇으로 돌릴지 고른다.\n  e2e:allow 7.1.6 보호 규칙 파일 쓰기 실패 경고 한 줄(조건부 Div) 추가 — 쓰기 실패는 서버 파일 권한을 바꿔야 재현돼 E2E 로 만들 수 없다. 레이아웃 Vitest(경고 표시·미표시 3사례)와 리스너 단위 시험(rules_written 기록)이 잠근다\n  이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.\n  판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과\n  지금 값을 견줘 \"바뀐 항목인데 시험 성공 기록이 없다\" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다.\n  큐 카드의 「큐 워커」 구역(#139)은 워커를 돌리는 연결·큐를 등록하고 상태(queueStatus 데이터 소스)를 보여 준다 — 등록 판정·오류는 서버가 한다.",
+    "comment": "드라이버 탭 — 저장소·캐시·세션·큐·웹소켓을 무엇으로 돌릴지 고른다.\n  이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.\n  판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과\n  지금 값을 견줘 \"바뀐 항목인데 시험 성공 기록이 없다\" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다.\n  큐 카드의 「큐 워커」 구역(#139)은 워커를 돌리는 연결·큐를 등록하고 상태(queueStatus 데이터 소스)를 보여 준다 — 등록 판정·오류는 서버가 한다.",
     "meta": {
         "is_partial": true,
         "description": "환경설정 드라이버 탭 콘텐츠"
@@ -658,7 +658,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 's3')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -691,7 +691,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.s3}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {
@@ -837,99 +837,6 @@
                                 "className": "text-sm text-gray-500 dark:text-gray-400 mt-2"
                             },
                             "text": "$t:admin.settings.drivers.public_asset.s3_help"
-                        },
-                        {
-                            "id": "field_public_asset_extensions",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:admin.settings.drivers.public_asset.extensions"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "name": "drivers.public_asset_extensions",
-                                        "placeholder": "jpg,jpeg,png,gif,webp,avif",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "input {{_local.errors?.['drivers.public_asset_extensions'] ? 'input-error' : ''}}"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "form-hint"
-                                    },
-                                    "text": "$t:admin.settings.drivers.public_asset.extensions_hint"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_local.errors?.['drivers.public_asset_extensions']}}",
-                                    "props": {
-                                        "className": "form-error"
-                                    },
-                                    "text": "{{_local.errors?.['drivers.public_asset_extensions']?.[0] ?? ''}}"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "public_disk_hardening_warning",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{_local.form?._meta?.public_disk_hardening?.ok === false}}",
-                            "props": {
-                                "className": "text-warning-soft mt-2",
-                                "data-testid": "public-disk-hardening-warning"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.settings.drivers.public_asset.hardening_warning"
-                                },
-                                {
-                                    "id": "public_disk_hardening_doc_link",
-                                    "type": "basic",
-                                    "name": "A",
-                                    "props": {
-                                        "href": "https://github.com/gnuboard/g7/blob/main/docs/requirements.md",
-                                        "target": "_blank",
-                                        "rel": "noopener noreferrer",
-                                        "className": "ml-1 underline hover:no-underline"
-                                    },
-                                    "text": "docs/requirements.md"
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "규칙 파일을 지금 설정으로 쓰지 못함(권한). 헤더는 옛 규칙으로도 붙으므로 헤더 점검 결과와 따로 보인다.",
-                            "id": "public_disk_rules_write_failed_warning",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{_local.form?._meta?.public_disk_hardening?.rules_written === false}}",
-                            "props": {
-                                "className": "text-warning-soft mt-2",
-                                "data-testid": "public-disk-rules-write-failed-warning"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.settings.drivers.public_asset.hardening_rules_write_failed"
-                                }
-                            ]
                         }
                     ]
                 }
@@ -1408,7 +1315,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -1441,7 +1348,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.redis}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {
@@ -1693,7 +1600,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -1726,7 +1633,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.memcached}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {
@@ -2045,7 +1952,7 @@
                                     "name": "P",
                                     "if": "{{_local.form?.drivers?.session_driver === 'redis'}}",
                                     "props": {
-                                        "className": "flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1"
+                                        "className": "flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1"
                                     },
                                     "children": [
                                         {
@@ -2268,7 +2175,7 @@
                                     "name": "P",
                                     "if": "{{_local.form?.drivers?.queue_driver === 'redis'}}",
                                     "props": {
-                                        "className": "flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1"
+                                        "className": "flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1"
                                     },
                                     "children": [
                                         {
@@ -2309,7 +2216,7 @@
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{settings !== undefined && ((_local.form?.drivers?.queue_driver ?? 'sync') === 'sync')}}",
+                                    "if": "{{(_local.form?.drivers?.queue_driver ?? 'sync') === 'sync'}}",
                                     "props": {
                                         "data-testid": "queue-worker-not-required",
                                         "className": "text-label-subtle"
@@ -2508,7 +2415,6 @@
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "aria-label": "$t:common.row_cell|row={{conn}}|column={{$t('admin.settings.drivers.queue.worker.queues.label')}}",
                                                                         "value": "{{_local.form?.drivers?.queue_names?.[conn] ?? (conn.endsWith('-long') ? ['long'] : ['default'])}}",
                                                                         "creatable": true,
                                                                         "placeholder": "$t:admin.settings.drivers.queue.worker.queues.placeholder",
@@ -2631,7 +2537,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{_global.queueStatusFailed !== true && queueStatus !== undefined && (queueStatus?.data?.rows ?? []).length === 0}}",
+                                            "if": "{{_global.queueStatusFailed !== true && (queueStatus?.data?.rows ?? []).length === 0}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -3766,7 +3672,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -3829,7 +3735,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -3892,7 +3798,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                "className": "text-red-500 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -4364,7 +4270,7 @@
                                                             "type": "basic",
                                                             "name": "Code",
                                                             "props": {
-                                                                "className": "block mt-1 text-xs bg-amber-50 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft"
+                                                                "className": "block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft"
                                                             },
                                                             "text": "php artisan reverb:start"
                                                         }
@@ -4477,7 +4383,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -4510,7 +4416,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.websocket}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {

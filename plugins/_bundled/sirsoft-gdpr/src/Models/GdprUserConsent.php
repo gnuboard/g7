@@ -7,7 +7,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Plugins\Sirsoft\Gdpr\Support\GdprConsentReadMemo;
 
 /**
  * GDPR 사용자 현재 동의 상태 모델 (mutable status)
@@ -107,16 +106,5 @@ class GdprUserConsent extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * 저장·삭제되면 요청 안 동의 조회 메모를 비웁니다 (#860).
-     *
-     * @return void 반환값 없음
-     */
-    protected static function booted(): void
-    {
-        static::saved(fn () => GdprConsentReadMemo::forgetConsentRows());
-        static::deleted(fn () => GdprConsentReadMemo::forgetConsentRows());
     }
 }

@@ -116,8 +116,7 @@ class BoardScopeLedgerListener implements HookListenerInterface
                     "{$r}boards.posts.comments.destroy",
                 ],
                 'paths' => [
-                    // 글 수정 판정은 첨부 업로드(post_id)와 같은 곳에 둔다 — 컨트롤러 canModifyPost 는 위임만 한다 (#883)
-                    "{$sup}PostModifyGate::allows",
+                    "{$ctl}User\\PostController::canModifyPost",
                     "{$svc}CommentService::canUpdate",
                     "{$svc}CommentService::canDelete",
                     "{$trait}checkBoardPermission",
@@ -195,8 +194,6 @@ class BoardScopeLedgerListener implements HookListenerInterface
                     "{$r}boards.attachments.upload",
                     "{$r}boards.attachments.reorder",
                     "{$r}boards.attachments.destroy",
-                    "{$r}boards.content-media.upload",
-                    "{$r}boards.content-media.target",
                 ],
                 'paths' => ["{$svc}AttachmentService::assertAttachmentWithinScope"],
             ],
@@ -206,8 +203,6 @@ class BoardScopeLedgerListener implements HookListenerInterface
                     "{$r}admin.board.attachments.upload",
                     "{$r}admin.board.attachments.reorder",
                     "{$r}admin.board.attachments.destroy",
-                    "{$r}admin.board.content-media.upload",
-                    "{$r}admin.board.content-media.target",
                 ],
                 'paths' => ["{$svc}AttachmentService::assertAttachmentWithinScope"],
             ],
@@ -240,12 +235,10 @@ class BoardScopeLedgerListener implements HookListenerInterface
                 'mode' => ScopedPermissionEnforcement::MODE_SERVICE,
                 'routes' => [
                     "{$r}admin.boards.bulk-members",
-                    "{$r}admin.boards.order",
                     "{$r}admin.settings.bulk-apply",
                 ],
                 'paths' => [
                     "{$svc}BoardService::bulkUpdateBoardMembers",
-                    "{$svc}BoardService::reorderBoards",
                 ],
             ],
 

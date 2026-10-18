@@ -6,10 +6,8 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Concerns\EnsuresPublicProduct;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicReviewListRequest;
-use Modules\Sirsoft\Ecommerce\Http\Resources\PublicProductReviewResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\ProductReviewResource;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
 
@@ -20,13 +18,6 @@ use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
  */
 class ProductReviewController extends PublicBaseController
 {
-    use EnsuresPublicProduct;
-
-    /**
-     * 상품 후기 서비스를 주입받습니다.
-     *
-     * @param  ProductReviewService  $reviewService  상품 후기 서비스
-     */
     public function __construct(
         private ProductReviewService $reviewService
     ) {}
@@ -40,9 +31,6 @@ class ProductReviewController extends PublicBaseController
      */
     public function index(PublicReviewListRequest $request, Product $product): JsonResponse
     {
-        // 숨김·삭제 상품의 후기는 열지 않는다 (상품 상세와 같은 판정)
-        $this->ensurePublicProduct($product);
-
         try {
             $this->logApiUsage('review.index');
             $validated = $request->validated();
@@ -59,20 +47,13 @@ class ProductReviewController extends PublicBaseController
                 'sirsoft-ecommerce',
                 'messages.reviews.fetch_success',
                 [
-                    'reviews' => PublicProductReviewResource::collection($result['reviews'])->response()->getData(true),
+                    'reviews' => ProductReviewResource::collection($result['reviews'])->response()->getData(true),
                     'rating_stats' => $result['rating_stats'],
                     'option_filters' => $result['option_filters'],
                     'total_count' => $result['total_count'],
                 ]
             );
         } catch (Exception $e) {
-            Log::error('review.index failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-                'product_id' => $product->id,
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.reviews.fetch_failed',

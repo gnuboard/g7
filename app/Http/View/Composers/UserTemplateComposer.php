@@ -3,8 +3,6 @@
 namespace App\Http\View\Composers;
 
 use App\Exceptions\TemplateNotFoundException;
-use App\Extension\Consent\ConsentManager;
-use App\Extension\Consent\ConsentSnapshot;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -14,13 +12,8 @@ use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
-use App\Seo\SeoTitleRuleExporter;
-use App\Services\ModuleSettingsService;
-use App\Services\PluginSettingsService;
-use App\Services\SettingsService;
+use App\Services\FrontendConfigService;
 use App\Services\TemplateService;
-use App\Support\EmptyMapChildren;
-use App\Support\SearchScopes;
 use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
@@ -42,21 +35,17 @@ class UserTemplateComposer
      * 서비스 주입
      *
      * @param  TemplateService  $templateService  템플릿 서비스
-     * @param  SettingsService  $settingsService  코어 설정 서비스
-     * @param  ModuleSettingsService  $moduleSettingsService  모듈 설정 서비스
-     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
      * @param  ModuleManager  $moduleManager  모듈 매니저
      * @param  PluginManager  $pluginManager  플러그인 매니저
      * @param  TemplateManager  $templateManager  템플릿 매니저
+     * @param  FrontendConfigService  $frontendConfigService  프론트엔드 공개 설정 조립
      */
     public function __construct(
         private TemplateService $templateService,
-        private SettingsService $settingsService,
-        private ModuleSettingsService $moduleSettingsService,
-        private PluginSettingsService $pluginSettingsService,
         private ModuleManager $moduleManager,
         private PluginManager $pluginManager,
-        private TemplateManager $templateManager
+        private TemplateManager $templateManager,
+        private FrontendConfigService $frontendConfigService,
     ) {}
 
     /**
@@ -73,43 +62,12 @@ class UserTemplateComposer
             $activeTemplate = null;
         }
 
-        // 프론트엔드 전역 변수로 사용할 설정 조회
-        try {
-            $frontendSettings = $this->settingsService->getFrontendSettings();
-        } catch (\Exception $e) {
-            $frontendSettings = [];
-        }
-
-        // 동의 연동 모드 트래커가 「동의를 확인할 곳이 있는가」를 알아야 한다. 코어는 어느 확장이
-        // 답하는지 모르고, 동의 제공자 선택 상태가 none 이 아닌지만 계산해 싣는다(설정이 아니라 계산값).
-        $governsConsent = false;
-        try {
-            $governsConsent = app(ConsentManager::class)->selection()->governsConsent();
-        } catch (\Throwable $e) {
-            $governsConsent = false;
-        }
-
-        if (isset($frontendSettings['analytics']) && is_array($frontendSettings['analytics'])) {
-            $frontendSettings['analytics']['consent_provider'] = $governsConsent;
-        }
-
-        // 코어 동의 런타임의 첫 값 — 회원 토큰은 브라우저 저장소에 있어 이 시점에는 누구의 동의인지 모른다.
-        // 그래서 `ready` 를 싣지 않고, 제공자가 없으면 `none`, 있으면 `unknown` 으로 두고 런타임이 곧바로 조회한다.
-        $consentInitial = $governsConsent ? ConsentSnapshot::unknown()->toArray() : ConsentSnapshot::none()->toArray();
-
-        // 활성화된 플러그인 설정 조회
-        try {
-            $pluginSettings = $this->pluginSettingsService->getAllActiveSettings();
-        } catch (\Exception $e) {
-            $pluginSettings = [];
-        }
-
-        // 활성화된 모듈 설정 조회 (frontend_schema 기반 필터링 적용)
-        try {
-            $moduleSettings = $this->moduleSettingsService->getAllActiveSettings();
-        } catch (\Exception $e) {
-            $moduleSettings = [];
-        }
+        // 프론트엔드 공개 설정 — 공개 설정 API(`GET /api/frontend-config`)와 같은 함수로 조립한다(#792 D8)
+        $bundle = $this->frontendConfigService->settingsBundle(FrontendConfigService::SCOPE_USER);
+        $frontendSettings = $bundle['settings'];
+        $consentInitial = $bundle['consentInitial'];
+        $pluginSettings = $bundle['plugins'];
+        $moduleSettings = $bundle['modules'];
 
         // 활성화된 모듈의 프론트엔드 에셋 정보 수집
         $moduleAssets = $this->collectModuleAssets();
@@ -122,12 +80,8 @@ class UserTemplateComposer
         $activeModulesMeta = $this->collectActiveModulesMeta();
         $activePluginsMeta = $this->collectActivePluginsMeta();
 
-        // 프론트엔드에 노출할 앱 config 값 조회
-        try {
-            $appConfig = $this->settingsService->getAppConfigForFrontend();
-        } catch (\Exception $e) {
-            $appConfig = [];
-        }
+        // 프론트엔드에 노출할 앱 config 값 (공개 설정 API 와 같은 값)
+        $appConfig = $bundle['appConfig'];
 
         // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
         $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
@@ -145,8 +99,7 @@ class UserTemplateComposer
 
         $view->with('activeUserTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
-        // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 보이는 필드가 없는 카테고리(`identity`)도 `[]` 가 아니라 `{}` 로 심는다(7.1.1 출시 전)
-        $view->with('frontendSettings', EmptyMapChildren::asObjects($frontendSettings));
+        $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
@@ -164,25 +117,9 @@ class UserTemplateComposer
         // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
         $view->with('stateContracts', StateContracts::forFrontend());
         $view->with('consentInitial', $consentInitial);
-        // 최근 검색어 범위(범위 id → 보관 개수) — 엔진 G7Core.searchHistory 가 선언 여부·비회원 보관 개수를 판정한다 (7.1.5)
-        $view->with('searchScopes', SearchScopes::forFrontend());
-        // 브라우저 탭 제목 규칙 계산 값 — 엔진이 검색엔진 제목과 같은 규칙으로 document.title 을 정한다 (engine-v1.86.0)
-        $view->with('seoTitle', $this->collectSeoTitleRule());
-    }
-
-    /**
-     * 브라우저 탭 제목 규칙 계산 값을 모읍니다.
-     *
-     * 실패하면 null 을 돌려준다 — 엔진은 값이 없으면 탭 제목을 바꾸지 않는다(종전 동작: 사이트 이름).
-     *
-     * @return array<string, mixed>|null 제목 규칙 계산 값
-     */
-    private function collectSeoTitleRule(): ?array
-    {
-        try {
-            return app(SeoTitleRuleExporter::class)->export();
-        } catch (\Throwable $e) {
-            return null;
-        }
+        // 엔진이 전체 페이지 이동으로 넘길 custom 주소(routes/custom.php, #792 W5) · 실시간 알림 접속정보
+        $view->with('customRoutes', $this->frontendConfigService->customRoutes());
+        $view->with('websocketConfig', $this->frontendConfigService->websocket());
+        $view->with('frontendLocale', $this->frontendConfigService->locale());
     }
 }

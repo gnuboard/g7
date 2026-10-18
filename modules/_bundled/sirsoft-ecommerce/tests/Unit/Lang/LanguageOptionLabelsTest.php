@@ -2,7 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Lang;
 
-use Tests\PureTestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 언어 선택지 라벨 전수 테스트 (S2-D11 회귀 · #599 통합실측 세션2)
@@ -31,7 +31,7 @@ use Tests\PureTestCase;
  * **실패**한다(경로가 바뀌었는데 조용히 지나가면 같은 사고가 되풀이된다 — 자매 테스트
  * `ConfirmPurchaseWarningAccuracyTest` 가 정확히 그 구멍으로 ja 오역을 놓쳤다).
  */
-class LanguageOptionLabelsTest extends PureTestCase
+class LanguageOptionLabelsTest extends ModuleTestCase
 {
     /**
      * 라벨이 있어야 하는 로케일.
@@ -49,7 +49,7 @@ class LanguageOptionLabelsTest extends PureTestCase
      * `modules/sirsoft-ecommerce/tests/Unit/Lang` 는 5단계다. 6단계로 고정하면 활성
      * 사본에서 저장소 **밖**(`htdocs/`)을 가리켜, 언어 파일이 멀쩡한데도
      * `assertFileExists` 가 「파일이 없다」로 터진다 — 가드가 스스로를 무력화한다
-     * (#599 계획서 준수 검증 결함).
+     * (#599 세션2 계획서준수검증 2차 결함3).
      *
      * 그래서 `artisan` 과 `composer.json` 이 **함께** 있는 디렉터리를 만날 때까지
      * 올라간다. 둘 중 하나만 보면 다른 PHP 프로젝트에서도 멈출 수 있어 둘 다 요구한다.
@@ -103,8 +103,6 @@ class LanguageOptionLabelsTest extends PureTestCase
      * @scenario language_labels=all_copies
      *
      * @effects every_supported_locale_has_a_display_label_in_every_copy
-     *
-     * @return void 반환값 없음
      */
     public function test_every_copy_has_a_label_for_every_supported_locale(): void
     {

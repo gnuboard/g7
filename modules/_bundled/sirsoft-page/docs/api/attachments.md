@@ -116,8 +116,6 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
 
 **설명** 페이지 첨부파일을 업로드합니다. `file`(필수)과 함께 이미 저장된 페이지에 귀속시키려면 `page_id`, 아직 저장 전이면 `temp_key`(임시 귀속 후 페이지 저장 시 `store`/`update` 의 `temp_key` 로 확정)를 보냅니다. `collection` 으로 첨부 그룹을 구분합니다. 응답은 FileUploader 컴포넌트 규약(`data.data`)에 맞춰 `PageAttachmentResource` 를 201 로 반환합니다. 권한은 `pages.create` 를 요구합니다. 7.1.0 부터 등록·수정 권한 중 하나만 있어도 됩니다. `page_id` 를 붙이면 그 페이지의 수정 권한과 담당 범위(스코프)를 서비스가 다시 확인하고, 밖이면 403(`auth.scope_denied`)입니다.
 
-허용 형식은 모듈 설정 `attachment.allowed_types`(MIME 목록)이며, **파일 내용(MIME)과 이름 확장자를 둘 다** 봅니다(1.2.3) — 이름 확장자 허용 목록은 같은 MIME 설정에서 파생하므로 새 설정은 없습니다. 내용은 PNG 이고 이름만 `.html` 인 파일은 422 입니다. 저장 파일의 확장자는 올린 이름이 아니라 파일 내용으로 정하고(`stored_filename`·`path`), 내려받는 이름은 `original_filename` 그대로입니다. 텍스트 계열(csv·md 등)은 `.txt` 로 저장됩니다. 다만 허용 형식에 이름 확장자를 알 수 없는 형식(확장자 표에 없는 MIME, `application/octet-stream`)이 하나라도 들어 있으면 이름 확장자는 보지 않고 내용만 봅니다 — 그 형식의 정상 파일이 이름 때문에 거부되지 않게 하기 위해서입니다. 저장 파일명은 어느 경우든 내용 기준입니다.
-
 업로드 정책(최대 개수 · 최대 용량 · 허용 형식)은 모듈 환경설정 `attachment.*` 가 SSoT 입니다. 용량은 `attachment.max_size_mb`(MB), 형식은 `attachment.allowed_types`(MIME 목록)로 판정하며, 형식 목록을 비우면 형식을 제한하지 않습니다(설정 키 자체가 없으면 모듈 기본 목록으로 폴백). 개수는 `attachment.max_count` 를 기준으로 **직접 업로드 · 임시 업로드(`temp_key`) 연결 · 이미 연결된 첨부** 를 합산해 판정하며, 초과 시 `422`(`errors.code = attachment_limit_exceeded`)를 반환하며, 안내 문구(`message`)는 허용 개수와 시도한 개수를 담아 응답 시점의 언어로 만들어집니다. 이 판정은 업로드 엔드포인트뿐 아니라 페이지 생성·수정 저장 시점에도 동일하게 적용됩니다. `max_count` 가 0 이면 개수를 제한하지 않습니다.
 
 
@@ -156,102 +154,6 @@ _단건 응답: FileUploader 컴포넌트 규약에 맞춰 `data.data` 객체에
   }
 }
 ```
-
-### POST /api/modules/sirsoft-page/admin/content-media
-<!-- @generated:start:api.modules.sirsoft-page.admin.content-media.upload -->
-- **라우트명**: `api.modules.sirsoft-page.admin.content-media.upload`
-- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController@upload`
-- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false` · `throttle:60,1`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| file | body | file | 예 | 페이지 본문 미디어 정책 | 본문에 넣을 이미지·동영상·오디오. 형식은 파일 내용으로 판정 |
-| temp_key | body | string | 예 | UUID | 페이지 폼의 임시 키 — 저장 때 같은 키로 본문이 참조한 것만 잇는다 |
-
-**응답 필드** (`data` 내부): `data.id` · `data.hash`(12자) · `data.kind`(`image`·`video`·`audio`) · `data.url`(서명된 서빙 주소, 편집 중 미리보기)
-
-- 상태: `201` · `403` · `422` 정책 밖 파일·임시 키 없음·같은 임시 키 업로드가 문서당 최대 × 2 초과(`errors.code = content_media_limit_exceeded`)
-> **`data.content_media`** (1.2.2) — 편집기 확장점 `html_editor` 의 `mediaUpload` 로 넘길 본문 미디어 업로드 계약(받는 종류가 없으면 `null`). 화면은 `fields.temp_key` 에 폼 임시 키를 더한다.
-
-<!-- @generated:end -->
-
-> 업로드 계약을 받는 표준 길은 아래 `GET admin/content-media/target` 입니다(#887). `GET admin/attachments/settings` 응답의
-> `data.content_media` 는 같은 값을 계속 싣는 호환 별칭이며 폐기 예정입니다.
-
----
-
-### GET /api/modules/sirsoft-page/admin/content-media/target
-
-- **라우트명**: `api.modules.sirsoft-page.admin.content-media.target`
-- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageContentMediaController@target`
-- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false` · `throttle:600,1`
-
-편집기 본문 미디어 업로드 계약을 돌려주는 **표준 계약 엔드포인트**입니다(#887 — 모든 확장이 `…/content-media/target` 한 가지 길로
-계약을 냅니다, 코어 [본문 미디어 계약](../../../../../docs/extension/content-media.md)). 페이지 작성·수정 화면의 데이터 소스
-`contentMediaTarget` 이 읽어 `html_editor` 확장점의 `mediaUpload` 로 넘기고, 화면이 `fields.temp_key` 에 폼 임시 키를 더합니다.
-값은 페이지 모듈 설정 `content_media`(비면 첨부 정책으로 만든 대체 정책)이고, 동영상·오디오는 코어 「본문 콘텐츠」의 업로드 허용
-스위치가 켜졌을 때만 `enabled` 입니다. 권한은 업로드와 같습니다(등록·수정 어느 쪽이든).
-
-요청 파라미터는 없습니다.
-
-**응답 필드**
-
-| 이름 | 타입 | 예시값 | 용도 |
-| --- | --- | --- | --- |
-| data | object\|null | — | 업로드 계약. 지금 받는 종류가 하나도 없으면 `null` |
-| data.version | integer | `1` | 계약 형식 판 |
-| data.endpoint | string | `/api/modules/sirsoft-page/admin/content-media` | 업로드 주소(같은 출처 상대 경로) |
-| data.fileField | string | `file` | 파일 필드 이름 |
-| data.fields | object | `{}` | 함께 보낼 폼 필드 — 화면이 `temp_key` 를 더한다 |
-| data.headers | object | `{}` | 함께 보낼 헤더(허용 목록만) |
-| data.response | object | `{"urlPath": "data.url", "idPath": "data.id", "kindPath": "data.kind"}` | 업로드 응답에서 값을 읽는 점 경로 |
-| data.mediaUrlPattern | string | `/api/modules/sirsoft-page/pages/content-media/(?<hash>[A-Za-z0-9]{12})` | 서빙 주소 정규식 본문(문서당 개수 셀 때) |
-| data.policy | object | — | 종류별(`image`·`video`·`audio`) `enabled`·`maxSizeMb`·`extensions`·`mimeTypes` + `maxPerDocument` |
-
-- 상태: `200` · `401` · `403`(등록·수정 권한 없음 — 화면은 `null` 로 받아 편집기를 종전대로 띄운다)
-
-**응답 예시 (200)**
-
-```json
-{
-  "success": true,
-  "message": "본문 미디어 업로드 계약을 조회했습니다.",
-  "data": {
-    "version": 1,
-    "endpoint": "/api/modules/sirsoft-page/admin/content-media",
-    "fileField": "file",
-    "fields": {},
-    "headers": {},
-    "response": {"urlPath": "data.url", "idPath": "data.id", "kindPath": "data.kind"},
-    "mediaUrlPattern": "/api/modules/sirsoft-page/pages/content-media/(?<hash>[A-Za-z0-9]{12})",
-    "policy": {
-      "image": {"enabled": true, "maxSizeMb": 10, "extensions": ["jpg", "jpeg", "png", "gif", "webp"], "mimeTypes": ["image/jpeg", "image/png", "image/gif", "image/webp"]},
-      "video": {"enabled": false, "maxSizeMb": 10, "extensions": ["mp4", "webm", "ogv"], "mimeTypes": ["video/mp4", "video/webm", "video/ogg"]},
-      "audio": {"enabled": false, "maxSizeMb": 10, "extensions": ["mp3", "m4a", "ogg", "oga", "wav"], "mimeTypes": ["audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav"]},
-      "maxPerDocument": 30
-    }
-  }
-}
-```
-
----
-
-### GET /api/modules/sirsoft-page/pages/content-media/{hash}
-<!-- @generated:start:api.modules.sirsoft-page.pages.content-media.show -->
-- **라우트명**: `api.modules.sirsoft-page.pages.content-media.show`
-- **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\User\PublicPageContentMediaController@show`
-- **인증/권한**: `optional.sanctum` · `throttle:600,1` — 게이트는 「발행 또는 열람권(`sirsoft-page.pages.read`) 또는 서명」
-
-**요청 파라미터**: `hash`(path, `[A-Za-z0-9]{12}`) · `expires`·`signature`(query, 선택) · `Range`(header, 한 구간)
-
-**응답**: 파일 본문(그 행에 기록된 디스크에서 읽는다 — 기본 디스크를 바꾼 뒤에도 옛 행은 제자리에서 서빙, #887). 래스터 이미지는 inline, 동영상·오디오는 정책·코어 후보가 켜졌을 때 inline + `media-src 'self'` CSP, 그 밖에는 다운로드. `nosniff`·`Accept-Ranges: bytes`. 발행 페이지는 `Cache-Control: public, max-age=3600`, 미발행·임시 업로드는 `private, max-age=300`.
-
-- 상태: `200`·`206` · `403` · `404` · `416`
-<!-- @generated:end -->
-
----
 
 ### PATCH /api/modules/sirsoft-page/admin/attachments/reorder
 <!-- @generated:start:api.modules.sirsoft-page.admin.attachments.reorder -->

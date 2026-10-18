@@ -16,33 +16,25 @@ use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\Cache\CoreCacheDriver;
-use App\Extension\Concerns\ChecksDependencyVersions;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
-use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
-use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\GithubHelper;
-use App\Extension\Helpers\IntegrationNotices;
-use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
-use App\Extension\Support\LifecycleWarnings;
-use App\Extension\Support\StatusRestore;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
-use App\Support\BootDeferredLog;
 use App\Support\ExtensionIntegrations;
-use App\Support\LocalizedValue;
 use App\Support\StateContracts;
+use Composer\Semver\Semver;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +48,6 @@ use Illuminate\Support\Facades\Log;
  */
 class TemplateManager implements TemplateManagerInterface
 {
-    use ChecksDependencyVersions;
     use ResolvesExtensionIcons;
     use ResolvesUpdateCoreCompatibility;
     use Traits\CachesTemplateStatus;
@@ -111,11 +102,6 @@ class TemplateManager implements TemplateManagerInterface
      * @var array<string, array>
      */
     protected array $bundledTemplates = [];
-
-    /**
-     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다(#860)
-     */
-    protected bool $pendingAndBundledLoaded = false;
 
     /**
      * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고 (#712 — {@see takeLastLayoutWarnings()})
@@ -277,11 +263,11 @@ class TemplateManager implements TemplateManagerInterface
             }
         }
 
-        // _pending / _bundled 메타는 관리 목록·업데이트 확인처럼 실제로 쓰는 곳이 처음 읽을 때 로드한다 — 부팅마다
-        // 미설치 번들 매니페스트까지 읽지 않게(#860). 다시 load 하면 지연 상태를 처음으로 돌린다.
-        $this->pendingTemplates = [];
-        $this->bundledTemplates = [];
-        $this->pendingAndBundledLoaded = false;
+        // _pending 디렉토리 로드
+        $this->loadPendingTemplates();
+
+        // _bundled 디렉토리 로드
+        $this->loadBundledTemplates();
     }
 
     /**
@@ -298,7 +284,7 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($pending as $identifier => $metadata) {
             // 이미 활성 디렉토리에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
+            if (isset($this->templates[$identifier])) {
                 continue;
             }
 
@@ -320,31 +306,12 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($bundled as $identifier => $metadata) {
             // 이미 활성 디렉토리 또는 pending에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier]) || isset($this->bundledTemplates[$identifier])) {
+            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
                 continue;
             }
 
             $this->bundledTemplates[$identifier] = $metadata;
         }
-    }
-
-    /**
-     * _pending / _bundled 템플릿 메타데이터를 처음 읽힐 때 한 번 로드합니다.
-     *
-     * 읽는 것은 매니페스트 JSON 뿐이다 — 번들 사본의 진입 클래스를 require 하지 않는다(재선언 Fatal 선례).
-     * 이미 메모리에 있는 키는 덮지 않는다(같은 주기에 갱신·재로드된 항목 보존).
-     *
-     * @return void 반환값 없음
-     */
-    protected function ensurePendingAndBundledLoaded(): void
-    {
-        if ($this->pendingAndBundledLoaded) {
-            return;
-        }
-
-        $this->pendingAndBundledLoaded = true;
-        $this->loadPendingTemplates();
-        $this->loadBundledTemplates();
     }
 
     /**
@@ -354,8 +321,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getPendingTemplates(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         return $this->pendingTemplates;
     }
 
@@ -366,8 +331,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getBundledTemplates(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         return $this->bundledTemplates;
     }
 
@@ -423,8 +386,11 @@ class TemplateManager implements TemplateManagerInterface
 
         // 배열인 경우 로케일에 맞는 값 반환
         if (is_array($value)) {
-            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (#148)
-            return LocalizedValue::pick($value, $locale) ?? '';
+            // 요청 언어 → fallback 언어 → 첫 번째 값 → 빈 문자열
+            return $value[$locale]
+                ?? $value[config('app.fallback_locale')]
+                ?? (! empty($value) ? array_values($value)[0] : '')
+                ?? '';
         }
 
         return '';
@@ -474,108 +440,6 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 템플릿 필수 저장 키 선언 항목 형식 — 개인정보 동의 플러그인의 운영자 항목 규칙과 같다(끝 `*` 는 앞부분 매칭).
-     */
-    public const NECESSARY_STORAGE_KEY_PATTERN = '/^[A-Za-z0-9_.:@+\-]+\*?$/';
-
-    /**
-     * 템플릿 필수 저장 키 선언의 저장소 종류.
-     */
-    public const NECESSARY_STORAGE_SCOPES = ['localStorage', 'sessionStorage', 'cookie'];
-
-    /**
-     * 활성 사용자·관리자 템플릿이 template.json `necessary_storage` 로 선언한 필수 브라우저 저장 키의 합집합 (7.1.3)
-     *
-     * 쿠키 동의 플러그인은 동의 전 「필수」 목록 밖의 저장 키를 지운다. 확장이 키를 필수로 올리는 통로는 PHP 필터 훅
-     * 하나라 PHP 리스너가 없는 템플릿은 등록할 수 없었다. 템플릿은 template.json 에 선언하고, 동의 플러그인이 이 함수의
-     * 결과를 제공 목록에 더한다(코어는 동의 플러그인을 모른다 — 의존 방향 유지). 형식이 틀린 항목은 무시한다.
-     *
-     * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
-     */
-    public function getActiveTemplatesNecessaryStorage(): array
-    {
-        $merged = array_fill_keys(self::NECESSARY_STORAGE_SCOPES, []);
-
-        foreach (['user', 'admin'] as $type) {
-            foreach (self::getActiveTemplateIdentifiersByType($type) as $identifier) {
-                $manifestPath = $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json';
-                $manifest = is_file($manifestPath) ? json_decode((string) file_get_contents($manifestPath), true) : null;
-                $declared = self::normalizeNecessaryStorage(is_array($manifest) ? ($manifest['necessary_storage'] ?? null) : null, $identifier);
-
-                foreach (self::NECESSARY_STORAGE_SCOPES as $scope) {
-                    $merged[$scope] = array_values(array_unique([...$merged[$scope], ...$declared[$scope]]));
-                }
-            }
-        }
-
-        return $merged;
-    }
-
-    /**
-     * template.json `necessary_storage` 선언을 검사해 형식이 맞는 항목만 돌려줍니다.
-     *
-     * @param  mixed  $declared  선언값 (`{localStorage: [], sessionStorage: [], cookie: []}`)
-     * @param  string  $identifier  템플릿 식별자 (로그용)
-     * @param  bool  $reportWarnings  설치·업데이트처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
-     * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
-     */
-    public static function normalizeNecessaryStorage(mixed $declared, string $identifier, bool $reportWarnings = false): array
-    {
-        $result = array_fill_keys(self::NECESSARY_STORAGE_SCOPES, []);
-        if ($declared === null) {
-            return $result;
-        }
-
-        // 버린 이유별로 모은다 — 경고 문구가 「무엇을 왜 버렸는지」를 이유마다 한 덩어리로 말한다
-        $invalid = ['not_object' => false, 'invalid_scope' => [], 'invalid_key' => []];
-        if (! is_array($declared)) {
-            $invalid['not_object'] = true;
-        } else {
-            foreach ($declared as $scope => $items) {
-                if (! in_array($scope, self::NECESSARY_STORAGE_SCOPES, true) || ! is_array($items)) {
-                    $invalid['invalid_scope'][] = (string) $scope;
-
-                    continue;
-                }
-                foreach ($items as $item) {
-                    if (is_string($item) && strlen($item) <= 128 && preg_match(self::NECESSARY_STORAGE_KEY_PATTERN, $item) === 1) {
-                        $result[$scope][] = $item;
-                    } else {
-                        $invalid['invalid_key'][] = $scope.':'.(is_scalar($item) ? (string) $item : gettype($item));
-                    }
-                }
-                $result[$scope] = array_values(array_unique($result[$scope]));
-            }
-        }
-
-        $reasons = [];
-        if ($invalid['not_object']) {
-            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_not_object', [], 'necessary_storage');
-        }
-        if ($invalid['invalid_scope'] !== []) {
-            $names = implode(', ', $invalid['invalid_scope']);
-            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_scope', ['names' => $names], $names);
-        }
-        if ($invalid['invalid_key'] !== []) {
-            $items = implode(', ', $invalid['invalid_key']);
-            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_key', ['items' => $items], $items);
-        }
-
-        if ($reasons !== []) {
-            Log::warning('template.json necessary_storage 의 형식이 틀린 항목을 무시합니다', [
-                'template' => $identifier,
-                'invalid' => $invalid,
-            ]);
-            if ($reportWarnings) {
-                // 템플릿이 template.json 에 잘못 적은 값이라 다시 실행해도 같다 — 템플릿 개발자가 고칠 선언으로 표시한다
-                LifecycleWarnings::current()->declaration('necessary_storage', $identifier, implode(' / ', $reasons));
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * 활성화된 템플릿을 반환합니다.
      *
      * @param  string  $type  템플릿 타입 ('admin' 또는 'user')
@@ -608,10 +472,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function installTemplate(string $templateName, ?\Closure $onProgress = null, bool $force = false): bool
     {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'install');
-
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_install', $templateName);
 
@@ -655,9 +515,6 @@ class TemplateManager implements TemplateManagerInterface
 
                 // SEO 설정 검증 (설치 전 seo-config.json 유효성 검사)
                 $this->validateSeoConfig($templateName);
-
-                // 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 틀린 항목은 무시하고 경고로만 알린다(설치는 막지 않음, 7.1.3)
-                self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $templateName, reportWarnings: true);
 
                 // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사) — 7.0 JSON 의 깨진 조각 참조는 경고로 모은다 (#712)
                 $this->lastLayoutWarnings = [];
@@ -746,16 +603,12 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  활성화할 템플릿명 (identifier)
      * @param  bool  $force  필요 의존성이 충족되지 않아도 강제 활성화 여부
-     * @return array{success: bool, warning?: bool, missing_modules?: array, missing_plugins?: array, template_type?: string, current_active_identifier?: string|null, message?: string} 활성화 결과
+     * @return array{success: bool, warning?: bool, missing_modules?: array, missing_plugins?: array, message?: string} 활성화 결과
      *
      * @throws \Exception 활성화 실패 시
      */
     public function activateTemplate(string $templateName, bool $force = false): array
     {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'activate');
-
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_activate', $templateName);
 
@@ -769,14 +622,11 @@ class TemplateManager implements TemplateManagerInterface
             throw new \Exception(__('templates.errors.not_installed', ['template' => $templateName]));
         }
 
-        // 멈춘 업데이트(updating 고착)는 활성화가 정리하고 진행한다(7.1.1 출시 전)
-        if (StuckUpdateRecovery::recover('template', $templateName, $templateRecord, fn (array $attributes) => $this->templateRepository->updateByIdentifier($templateName, $attributes), lockHeld: true) !== null) {
-            self::invalidateTemplateStatusCache();
-            $templateRecord = $this->templateRepository->findByIdentifier($templateName);
-        }
-
         // 상태 가드: 설치·삭제·업데이트가 진행 중이면 차단 (모듈·플러그인 활성화와 같은 가드)
-        StuckUpdateRecovery::assertNotInProgress($templateName, $templateRecord);
+        ExtensionStatusGuard::assertNotInProgress(
+            ExtensionStatus::from($templateRecord->status),
+            $templateName
+        );
 
         // 필터 훅 — 직전 훅 뒤에 돈다(before → filter 순서). 직전 훅과 함께 Manager 로 옮겨 CLI·어드민 UI 공통으로
         // 한 번 발화한다(#138 후속 — 설계 결정). 결과 값은 종전처럼 쓰지 않는다(활성화 상태는 아래에서 정한다).
@@ -805,25 +655,59 @@ class TemplateManager implements TemplateManagerInterface
             is_array($replaced) && isset($replaced['identifier']) ? ['template:'.$replaced['identifier']] : [],
         );
 
-        // 의존성 검증: 필요한 모듈/플러그인이 설치·활성이고 요구 버전을 충족하는지 확인한다. 종전 사본은 버전 제약을 버려
-        // 버전 미달 의존 위에서도 활성화가 통과하고, 직후 런타임 미들웨어가 같은 미달로 화면 전체를 503 으로 내렸다(#152).
-        // 판정은 설치·런타임과 같은 원천(DependencyEnricher)을 쓴다 — 사유: not_installed·inactive·version_mismatch
-        $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
-        $missingModules = $unmet['modules'];
-        $missingPlugins = $unmet['plugins'];
+        // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
+        $missingModules = [];
+        $missingPlugins = [];
+
+        // 모듈 의존성 확인
+        // dependencies.modules는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
+        $requiredModules = $template['dependencies']['modules'] ?? [];
+        foreach ($requiredModules as $requiredModuleIdentifier => $_versionConstraint) {
+            $requiredModule = $this->moduleRepository->findByIdentifier($requiredModuleIdentifier);
+            if (! $requiredModule) {
+                $missingModules[] = [
+                    'identifier' => $requiredModuleIdentifier,
+                    'name' => $requiredModuleIdentifier,
+                    'status' => 'not_installed',
+                ];
+            } elseif ($requiredModule->status !== ExtensionStatus::Active->value) {
+                $missingModules[] = [
+                    'identifier' => $requiredModule->identifier,
+                    'name' => $requiredModule->getLocalizedName(),
+                    'status' => 'inactive',
+                ];
+            }
+        }
+
+        // 플러그인 의존성 확인
+        // dependencies.plugins는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
+        $requiredPlugins = $template['dependencies']['plugins'] ?? [];
+        foreach ($requiredPlugins as $requiredPluginIdentifier => $_versionConstraint) {
+            $requiredPlugin = $this->pluginRepository->findByIdentifier($requiredPluginIdentifier);
+            if (! $requiredPlugin) {
+                $missingPlugins[] = [
+                    'identifier' => $requiredPluginIdentifier,
+                    'name' => $requiredPluginIdentifier,
+                    'status' => 'not_installed',
+                ];
+            } elseif ($requiredPlugin->status !== ExtensionStatus::Active->value) {
+                $missingPlugins[] = [
+                    'identifier' => $requiredPlugin->identifier,
+                    'name' => $requiredPlugin->getLocalizedName(),
+                    'status' => 'inactive',
+                ];
+            }
+        }
 
         $hasMissingDependencies = ! empty($missingModules) || ! empty($missingPlugins);
 
         if ($hasMissingDependencies && ! $force) {
             // 필요한 의존성이 충족되지 않고 강제 활성화가 아닌 경우 경고 반환
-            // template_type·current_active_identifier — 강제 활성화 창이 타입별 503 경고(관리자면 복구 명령)를 고른다
             return [
                 'success' => false,
                 'warning' => true,
                 'missing_modules' => $missingModules,
                 'missing_plugins' => $missingPlugins,
-                'template_type' => (string) ($template['type'] ?? ''),
-                'current_active_identifier' => is_array($replaced) ? ($replaced['identifier'] ?? null) : null,
                 'message' => __('templates.warnings.missing_dependencies'),
             ];
         }
@@ -848,7 +732,6 @@ class TemplateManager implements TemplateManagerInterface
                 $this->refreshTemplateLayouts($templateName, true);
             } catch (\Throwable $e) {
                 Log::error('템플릿 활성화 중 레이아웃 갱신 실패', ['template' => $templateName, 'error' => $e->getMessage()]);
-                LifecycleWarnings::current()->add('layout_refresh', $templateName, $e->getMessage());
             }
 
             // 활성 모듈/플러그인의 레이아웃을 새 템플릿에 **먼저** 등록한다 — 아래 조각 등록의 적용 필터(C10)가 호스트
@@ -927,10 +810,6 @@ class TemplateManager implements TemplateManagerInterface
         ?string $incompatibleRequiredVersion = null,
         ?string &$failureReason = null,
     ): bool {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'deactivate');
-
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_deactivate', $templateName);
 
@@ -972,8 +851,7 @@ class TemplateManager implements TemplateManagerInterface
         // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
         HookManager::doAction('core.templates.after_deactivate', $templateName);
 
-        // 부팅 중 자동 비활성화에서도 불리므로 언어팩 번역 등록 뒤에 남긴다
-        BootDeferredLog::info('templates.messages.template_deactivated', [], [
+        Log::info(__('templates.messages.template_deactivated'), [
             'template' => $templateName,
         ]);
 
@@ -999,10 +877,6 @@ class TemplateManager implements TemplateManagerInterface
         ?array &$preservedBackups = null,
         bool $deleteData = false,
     ): bool {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'uninstall');
-
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_uninstall', $templateName, $deleteData);
 
@@ -1115,27 +989,6 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 템플릿이 선택 연동(`integrations`)으로 선언한 확장을 「식별자 => 버전 제약」 맵으로 반환합니다 (7.1.4).
-     *
-     * 설치된 템플릿을 먼저 보고, 없으면 `_pending`·`_bundled` 의 template.json 을 봅니다(설치 창은 설치 전에 읽는다).
-     * 모듈·플러그인의 `getIntegrationConstraints()` 와 같은 정규화기({@see ExtensionIntegrations::constraints()})를 씁니다.
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
-     */
-    public function getIntegrationConstraints(string $identifier): array
-    {
-        $this->ensurePendingAndBundledLoaded();
-
-        $template = $this->templates[$identifier]
-            ?? $this->pendingTemplates[$identifier]
-            ?? $this->bundledTemplates[$identifier]
-            ?? null;
-
-        return ExtensionIntegrations::constraints(is_array($template) ? ($template['integrations'] ?? []) : []);
-    }
-
-    /**
      * 로드된 모든 템플릿 인스턴스들을 반환합니다.
      *
      * @return array 모든 템플릿 배열
@@ -1152,12 +1005,9 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getUninstalledTemplates(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $uninstalledTemplates = [];
         // 캐시된 설치된 템플릿 identifier 목록 활용
-        // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
-        $installedTemplateIdentifiers = array_values(array_unique([...self::getInstalledTemplateIdentifiers(), ...self::getRecordedTemplateIdentifiers()]));
+        $installedTemplateIdentifiers = self::getInstalledTemplateIdentifiers();
         $locale = app()->getLocale();
 
         // 활성 디렉토리 템플릿 중 미설치
@@ -1172,8 +1022,6 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
                     'dependencies' => $template['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
                     'requires_core' => $template['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'active',
@@ -1197,8 +1045,6 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'pending',
@@ -1222,8 +1068,6 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'bundled',
@@ -1245,8 +1089,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getInstalledTemplatesWithDetails(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $installedTemplates = [];
         $templateRecords = $this->templateRepository->getAllKeyedByIdentifier();
         $locale = app()->getLocale();
@@ -1287,12 +1129,8 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $template['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
                     'requires_core' => $template['g7_version'] ?? null,
                     'status' => $record->status,
-                    // 멈춘 업데이트(updating 이 10분 넘게 남고 잠금이 빔) — 관리자 카드가 정리·활성화 단추를 보인다
-                    'stuck_update' => StuckUpdateRecovery::isStuck('template', $identifier, $record),
                     'update_available' => $updateAvailable,
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
@@ -1302,13 +1140,6 @@ class TemplateManager implements TemplateManagerInterface
                         $record->update_source ?? null,
                         $this->findBundledTemplateManifest($identifier),
                         $template['g7_version'] ?? null
-                    )) : []),
-                    // 업데이트 대상 판이 요구하는 의존·연동 중 지금 못 미치는 것 — 업데이트 창이 실행 전에 알린다(업데이트가 있을 때만).
-                    // 판정은 업데이트 뒤 완료 문구의 경고·안내와 같다. GitHub 출처라 대상 판 manifest 를 모르면 null.
-                    ...($updateAvailable ? $this->buildUpdateTargetRequirementFields($this->resolveUpdateTargetManifest(
-                        $record->update_source ?? null,
-                        $this->findBundledTemplateManifest($identifier),
-                        $latestVersion
                     )) : []),
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
@@ -1362,13 +1193,9 @@ class TemplateManager implements TemplateManagerInterface
             'identifier' => $template['identifier'],
             'vendor' => $template['vendor'],
             'name' => $this->getLocalizedValue($nameJson, $locale),
-            // 판은 DB 기록(설치가 끝난 판)을 앞세운다 — 판 전환이 끝나지 않은 확장(파일은 새 판, 정리가 기록 판을 시작 판으로 되돌림)의
-            // 활성화 응답이 파일 판을 내면 목록·카드(DB 판 + 「업데이트 있음」)와 어긋났다. 파일 판은 file_version 칸으로 따로 낸다.
-            'version' => $templateRecord?->version ?: $template['version'],
-            'file_version' => $template['version'],
-            'latest_version' => $templateRecord?->latest_version ?? ($template['latest_version'] ?? null),
-            'update_available' => (bool) ($templateRecord?->update_available ?? ($template['update_available'] ?? false)),
-            'update_source' => $templateRecord?->update_source,
+            'version' => $template['version'],
+            'latest_version' => $template['latest_version'] ?? null,
+            'update_available' => $template['update_available'] ?? false,
             'type' => $template['type'],
             'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $template['github_url'] ?? null,
@@ -1376,8 +1203,6 @@ class TemplateManager implements TemplateManagerInterface
             'requires_core' => $template['g7_version'] ?? null,
             'dependencies' => $template['dependencies'] ?? [],
             'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
-            // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-            'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
             'externals' => $template['externals'] ?? [],
             'locales' => $template['locales'] ?? [],
             'layouts_count' => $layoutsCount,
@@ -1404,8 +1229,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function getTemplateInfoFromMetadata(string $templateName): ?array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $metadata = $this->pendingTemplates[$templateName] ?? $this->bundledTemplates[$templateName] ?? null;
 
         if (! $metadata) {
@@ -1430,8 +1253,6 @@ class TemplateManager implements TemplateManagerInterface
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $metadata['dependencies'] ?? [],
             'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
-            // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-            'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
             'externals' => $metadata['externals'] ?? [],
             'locales' => $metadata['locales'] ?? [],
             'layouts_count' => 0,
@@ -1658,21 +1479,57 @@ class TemplateManager implements TemplateManagerInterface
             'template'
         );
 
-        // 활성화·런타임과 같은 판정식(DependencyEnricher) — 목록형·빈 제약은 '*', 꺼진 확장은 미충족(#152)
-        $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
+        $dependencies = $template['dependencies'] ?? [];
         $unmetDependencies = [];
 
-        foreach ([...$unmet['modules'], ...$unmet['plugins']] as $item) {
-            $unmetDependencies[] = $item['status'] === DependencyEnricher::STATUS_VERSION_MISMATCH
-                ? __('templates.errors.version_mismatch', [
-                    'dependency' => $item['identifier'],
-                    'required' => $item['required_version'],
-                    'installed' => $item['installed_version'],
-                ])
-                : __('templates.errors.dependency_not_met', [
-                    'dependency' => $item['identifier'],
-                    'type' => __('extensions.dependency_types.'.$item['type']),
-                ]);
+        // 모듈 의존성 확인
+        if (isset($dependencies['modules']) && ! empty($dependencies['modules'])) {
+            foreach ($dependencies['modules'] as $moduleName => $versionConstraint) {
+                // identifier 컬럼으로 활성화된 모듈 조회
+                $module = $this->moduleRepository->findActiveByIdentifier($moduleName);
+                if (! $module) {
+                    $unmetDependencies[] = __('templates.errors.dependency_not_met', [
+                        'dependency' => $moduleName,
+                        'type' => 'module',
+                    ]);
+
+                    continue;
+                }
+
+                // 버전 체크
+                if (! $this->checkVersionConstraint($module->version, $versionConstraint)) {
+                    $unmetDependencies[] = __('templates.errors.version_mismatch', [
+                        'dependency' => $moduleName,
+                        'required' => $versionConstraint,
+                        'installed' => $module->version,
+                    ]);
+                }
+            }
+        }
+
+        // 플러그인 의존성 확인
+        if (isset($dependencies['plugins']) && ! empty($dependencies['plugins'])) {
+            foreach ($dependencies['plugins'] as $pluginName => $versionConstraint) {
+                // identifier 컬럼으로 활성화된 플러그인 조회
+                $plugin = $this->pluginRepository->findActiveByIdentifier($pluginName);
+                if (! $plugin) {
+                    $unmetDependencies[] = __('templates.errors.dependency_not_met', [
+                        'dependency' => $pluginName,
+                        'type' => 'plugin',
+                    ]);
+
+                    continue;
+                }
+
+                // 버전 체크
+                if (! $this->checkVersionConstraint($plugin->version, $versionConstraint)) {
+                    $unmetDependencies[] = __('templates.errors.version_mismatch', [
+                        'dependency' => $pluginName,
+                        'required' => $versionConstraint,
+                        'installed' => $plugin->version,
+                    ]);
+                }
+            }
         }
 
         if (! empty($unmetDependencies)) {
@@ -1681,15 +1538,25 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 버전 제약조건을 검증합니다 — 판정식 원천(DependencyEnricher)에 위임합니다(빈 제약·null = 제약 없음, 예외 없음).
+     * 버전 제약조건을 검증합니다.
      *
-     * @param  string|null  $installedVersion  설치된 버전
-     * @param  mixed  $versionConstraint  요구 버전 제약조건 (예: '>=1.0.0', '^2.0', '~1.2.3')
+     * @param  string  $installedVersion  설치된 버전
+     * @param  string  $versionConstraint  요구 버전 제약조건 (예: '>=1.0.0', '^2.0', '~1.2.3')
      * @return bool 제약조건 충족 여부
      */
-    protected function checkVersionConstraint(?string $installedVersion, mixed $versionConstraint): bool
+    protected function checkVersionConstraint(string $installedVersion, string $versionConstraint): bool
     {
-        return DependencyEnricher::checkVersionConstraint($installedVersion, $versionConstraint);
+        try {
+            return Semver::satisfies($installedVersion, $versionConstraint);
+        } catch (\Exception $e) {
+            Log::warning('Version constraint check failed', [
+                'installed_version' => $installedVersion,
+                'constraint' => $versionConstraint,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
@@ -1907,7 +1774,6 @@ class TemplateManager implements TemplateManagerInterface
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('layout_register', basename((string) $validatedLayout['file']), $e->getMessage());
             }
         }
     }
@@ -1989,7 +1855,6 @@ class TemplateManager implements TemplateManagerInterface
                     'module' => $moduleIdentifier,
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('layout_override_register', $moduleIdentifier, $e->getMessage());
 
                 continue;
             }
@@ -2049,7 +1914,6 @@ class TemplateManager implements TemplateManagerInterface
                         'module' => $moduleIdentifier,
                         'error' => $e->getMessage(),
                     ]);
-                    LifecycleWarnings::current()->add('layout_override_register', basename((string) $validatedLayout['file']), $e->getMessage());
                 }
             }
         }
@@ -2268,8 +2132,7 @@ class TemplateManager implements TemplateManagerInterface
         // 레이아웃 캐시 삭제 (버전 없는 내부 캐시)
         $clearedCount += $this->clearLayoutCaches($templateIdentifier);
 
-        // 부팅 중 자동 비활성화(deactivateTemplate)에서도 불리므로 언어팩 번역 등록 뒤에 남긴다
-        BootDeferredLog::info('templates.info.cache_cleared', [], [
+        Log::info(__('templates.info.cache_cleared'), [
             'template' => $templateIdentifier,
         ]);
 
@@ -2490,7 +2353,7 @@ class TemplateManager implements TemplateManagerInterface
         if (! File::exists($layoutsPath)) {
             Log::info(__('templates.info.no_layouts_directory'), ['template' => $identifier]);
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => [], 'warnings' => LifecycleWarnings::current()->all()];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => []];
         }
 
         // 레이아웃 검증 — 7.0 JSON 의 깨진 조각 참조는 빈 자리로 등록하고 경고로 모은다 (#712)
@@ -2539,7 +2402,6 @@ class TemplateManager implements TemplateManagerInterface
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('layout_refresh', basename((string) $validatedLayout['file']), $e->getMessage());
             }
         }
 
@@ -2597,7 +2459,6 @@ class TemplateManager implements TemplateManagerInterface
             'extensions_refreshed' => $extensionStats['registered'] ?? 0,
             'layout_sync' => $report->toArray(),
             'layout_warnings' => $this->takeLastLayoutWarnings(),
-            'warnings' => LifecycleWarnings::current()->all(),
         ];
     }
 
@@ -2683,7 +2544,6 @@ class TemplateManager implements TemplateManagerInterface
                         'module' => $moduleIdentifier,
                         'error' => $e->getMessage(),
                     ]);
-                    LifecycleWarnings::current()->add('layout_extension_override_register', basename((string) $file), $e->getMessage());
                 }
             }
         }
@@ -2746,35 +2606,68 @@ class TemplateManager implements TemplateManagerInterface
             ];
         }
 
-        // 설치·활성화와 같은 판정식(DependencyEnricher). 런타임만 업데이트 중(updating)인 확장을 활성으로 본다 —
-        // 의존 모듈을 업데이트하는 잠깐 동안 사이트 전체가 503 이 되지 않게 한다(#152 D2).
+        $dependencies = $template['dependencies'] ?? [];
+        $moduleDependencies = $dependencies['modules'] ?? [];
+        $pluginDependencies = $dependencies['plugins'] ?? [];
+
         $moduleStatuses = [];
         $pluginStatuses = [];
         $allMet = true;
 
-        foreach (DependencyEnricher::enrich($template['dependencies'] ?? [], true) as $item) {
+        // 모듈 의존성 확인
+        foreach ($moduleDependencies as $moduleName => $versionConstraint) {
+            // 먼저 설치된 모듈 조회 (활성화 여부와 무관)
+            $module = $this->moduleRepository->findByIdentifier($moduleName);
+            $activeModule = $module && $module->status === ExtensionStatus::Active->value;
+
             $status = [
-                'identifier' => $item['identifier'],
-                'name' => $item['name'],
-                'type' => $item['type'],
-                'status' => $item['status'],
-                'required_version' => $item['required_version'],
-                'installed_version' => $item['installed_version'],
-                'is_active' => $item['is_active'],
-                // 하위 호환 — 꺼졌거나 미설치면 버전 비교 자체를 하지 않았으므로 false
-                'version_met' => $item['is_active'] && $item['status'] !== DependencyEnricher::STATUS_VERSION_MISMATCH,
-                'met' => $item['is_met'],
+                'identifier' => $moduleName,
+                'name' => $module ? $module->getLocalizedName() : $moduleName,
+                'required_version' => $versionConstraint,
+                'installed_version' => $module?->version,
+                'is_active' => $activeModule,
+                'version_met' => false,
+                'met' => false,
             ];
+
+            if ($activeModule) {
+                $status['version_met'] = $this->checkVersionConstraint($module->version, $versionConstraint);
+                $status['met'] = $status['version_met'];
+            }
 
             if (! $status['met']) {
                 $allMet = false;
             }
 
-            if ($item['type'] === 'module') {
-                $moduleStatuses[] = $status;
-            } else {
-                $pluginStatuses[] = $status;
+            $moduleStatuses[] = $status;
+        }
+
+        // 플러그인 의존성 확인
+        foreach ($pluginDependencies as $pluginName => $versionConstraint) {
+            // 먼저 설치된 플러그인 조회 (활성화 여부와 무관)
+            $plugin = $this->pluginRepository->findByIdentifier($pluginName);
+            $activePlugin = $plugin && $plugin->status === ExtensionStatus::Active->value;
+
+            $status = [
+                'identifier' => $pluginName,
+                'name' => $plugin ? $plugin->getLocalizedName() : $pluginName,
+                'required_version' => $versionConstraint,
+                'installed_version' => $plugin?->version,
+                'is_active' => $activePlugin,
+                'version_met' => false,
+                'met' => false,
+            ];
+
+            if ($activePlugin) {
+                $status['version_met'] = $this->checkVersionConstraint($plugin->version, $versionConstraint);
+                $status['met'] = $status['version_met'];
             }
+
+            if (! $status['met']) {
+                $allMet = false;
+            }
+
+            $pluginStatuses[] = $status;
         }
 
         return [
@@ -2918,8 +2811,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function copyToActiveFromSource(string $templateName, ?\Closure $onProgress = null, bool $force = false): void
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
 
         // _pending에서 찾기
@@ -2957,8 +2848,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function reloadTemplate(string $templateName): void
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $directory = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
         $templateFile = $directory.DIRECTORY_SEPARATOR.'template.json';
 
@@ -3030,8 +2919,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function checkTemplateUpdate(string $identifier, ?string $source = null): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
             return $this->buildTemplateUpdateResponse(false, null, null, null, null);
@@ -3122,8 +3009,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function bundledTemplateUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $meta = $this->bundledTemplates[$identifier]
             ?? (ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json')[$identifier] ?? null);
         $version = is_array($meta) ? ($meta['version'] ?? null) : null;
@@ -3337,16 +3222,6 @@ class TemplateManager implements TemplateManagerInterface
         // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
         $operationLock = ExtensionOperationLock::acquire('template', $identifier);
 
-        // 진행 중 하트비트 — 단계마다(30초 간격) 잠금을 늘리고, `updating` 기록 뒤에는 행 `updated_at` 도 갱신한다. 10분 넘게
-        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(#161 D4).
-        $statusUpdating = false;
-        $touch = function () use (&$statusUpdating, $identifier): void {
-            if ($statusUpdating) {
-                $this->templateRepository->updateByIdentifier($identifier, ['updated_at' => now()]);
-            }
-        };
-        $onProgress = $operationLock->wrapProgress($onProgress, $touch);
-
         // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
         HookManager::doAction('core.templates.before_version_update', $identifier);
 
@@ -3355,14 +3230,11 @@ class TemplateManager implements TemplateManagerInterface
             throw new \RuntimeException(__('templates.not_installed', ['template' => $identifier]));
         }
 
-        // 멈춘 업데이트(updating 고착) — --force 면 정리하고 진행한다(7.1.1 출시 전). 업데이트 잠금은 위에서 이미 잡았다.
-        if ($force && StuckUpdateRecovery::recover('template', $identifier, $record, fn (array $attributes) => $this->templateRepository->updateByIdentifier($identifier, $attributes), lockHeld: true) !== null) {
-            self::invalidateTemplateStatusCache();
-            $record = $this->templateRepository->findByIdentifier($identifier);
-        }
-
-        // 상태 가드 (멈춘 업데이트로 보이면 --force 를 안내한다)
-        StuckUpdateRecovery::assertNotInProgress($identifier, $record);
+        // 상태 가드
+        ExtensionStatusGuard::assertNotInProgress(
+            ExtensionStatus::from($record->status),
+            $identifier
+        );
 
         $previousStatus = $record->status;
         $fromVersion = $record->version;
@@ -3449,16 +3321,11 @@ class TemplateManager implements TemplateManagerInterface
         $layoutWarnings = [];
         $recordedColumns = [];
         $filesRestored = false;
-        $journal = null;
 
         try {
             // 1. 백업 생성
             $onProgress?->__invoke('backup', __('extensions.progress.backup'));
             $backupPath = ExtensionBackupHelper::createBackup('templates', $identifier, $onProgress);
-
-            // 진행 기록 — 파일을 바꾼 뒤 DB 판을 적기 전에 프로세스가 죽으면 파일은 새 판·DB 판은 옛 판으로 남는다. 정리가 그 사실을
-            // 알고 알리게 한다. 템플릿은 업그레이드 스텝이 없어 판 기록까지가 판 전환이다.
-            $journal = ExtensionUpdateJournal::begin('template', $identifier, (string) $fromVersion, (string) $toVersion, $updateSource);
 
             // 2. 상태 → updating
             $onProgress?->__invoke('status', __('extensions.progress.status_change'));
@@ -3466,7 +3333,6 @@ class TemplateManager implements TemplateManagerInterface
                 'status' => ExtensionStatus::Updating->value,
                 'updated_at' => now(),
             ]);
-            $statusUpdating = true;
 
             // 3. 스테이징 (소스에 따라 분기) — 템플릿은 composer install 불필요
             $onProgress?->__invoke('staging', __('extensions.progress.staging'));
@@ -3500,7 +3366,6 @@ class TemplateManager implements TemplateManagerInterface
                 $onProgress?->__invoke('files', __('extensions.progress.replace_files'));
                 if ($stagingPath) {
                     $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$identifier;
-                    $journal->markFilesTouched();
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
                 }
             } finally {
@@ -3568,7 +3433,6 @@ class TemplateManager implements TemplateManagerInterface
                 'status' => $previousStatus,
                 'updated_at' => now(),
             ]);
-            $statusUpdating = false;
 
             // 7. 레이아웃 갱신 (이전 상태가 active이고 overwrite 전략이면)
             // refreshTemplateLayouts()는 캐시 초기화 + 캐시 버전 증가를 포함
@@ -3588,7 +3452,6 @@ class TemplateManager implements TemplateManagerInterface
                     $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($record->id);
                 } catch (\Throwable $e) {
                     Log::error('템플릿 업데이트 뒤 확장 조각 재등록 실패', ['template' => $identifier, 'error' => $e->getMessage()]);
-                    LifecycleWarnings::current()->add('layout_extension_reregister', $identifier, $e->getMessage());
                 }
             } elseif ($backupPath !== null) {
                 // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
@@ -3598,9 +3461,6 @@ class TemplateManager implements TemplateManagerInterface
             // 8. 백업 삭제 + 캐시 삭제
             $onProgress?->__invoke('cleanup', __('extensions.progress.cleanup'));
             ExtensionBackupHelper::deleteBackup($backupPath);
-            // 진행 기록을 지운다 — 백업을 지운 뒤에는 파일을 되돌리지 않으므로 파일 판·DB 판이 새 판으로 맞고 돌 스텝도 없다. 그 전에
-            // 죽거나 실패하면 기록이 남아 정리·다시 시도가 끝낸 스텝을 건너뛴다(레이아웃 갱신에서 실패해도 스텝은 이미 끝났다).
-            $journal->finish();
             // 백업을 지운 뒤의 실패(완료 훅·캐시 재생성)는 파일을 되돌릴 수 없다 — 파일이 새 버전이므로 DB 버전 칸도 두어야
             // 둘이 맞는다. catch 가 지워진 백업으로 복원을 시도하지 않게 비운다.
             $backupPath = null;
@@ -3635,22 +3495,9 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_strategy' => $layoutStrategy,
             ]);
 
-            // 새 판의 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 설치와 같이 틀린 항목은 무시하고 경고로만
-            // 알린다. 업데이트로 들어온 선언이 틀려도 로그에만 남고 결과 창·CLI 에는 보이지 않았다 (7.1.5)
-            if (is_array($template)) {
-                self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $identifier, reportWarnings: true);
-            }
-
             // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
             // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.
             $dependencyWarnings = DependencyVersionWarnings::afterUpdate(
-                'template',
-                $identifier,
-                $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json'
-            );
-
-            // 선택 연동(integrations) 안내 — 막지 않고 결과·완료 문구로만 알린다 (7.1.4 D10)
-            $integrationNotices = DependencyVersionWarnings::integrationsAfterUpdate(
                 'template',
                 $identifier,
                 $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json'
@@ -3665,17 +3512,14 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
-                'warnings' => LifecycleWarnings::current()->all(),
                 'dependency_warnings' => $dependencyWarnings,
-                'integration_notices' => $integrationNotices,
-                'message' => IntegrationNotices::appendToMessage(DependencyVersionWarnings::appendToMessage(__('templates.update_success', [
+                'message' => DependencyVersionWarnings::appendToMessage(__('templates.update_success', [
                     'template' => $identifier,
                     'version' => $toVersion,
-                ]), $dependencyWarnings), $integrationNotices),
+                ]), $dependencyWarnings),
             ];
 
         } catch (\Throwable $e) {
-            $statusUpdating = false;
             Log::error('템플릿 업데이트 실패', [
                 'template' => $identifier,
                 'error' => $e->getMessage(),
@@ -3699,21 +3543,16 @@ class TemplateManager implements TemplateManagerInterface
                 }
             }
 
-            // 진행 기록 — 파일을 되돌렸으면 지우고, 못 되돌렸으면 남겨 정리가 알게 한다
-            $journal?->settleAfterFailure($filesRestored);
-
             // 상태 복원 — 새 버전 기록이 이미 저장된 뒤 실패했고 파일을 백업으로 되돌렸으면 버전 칸도 업데이트 전 값으로
             // 되돌린다. 파일은 옛 버전인데 DB 만 새 버전이면 관리자 화면이 설치되지 않은 버전을 보여 주고, "업데이트 없음" 으로
             // 판정돼 같은 업데이트를 다시 시도할 수도 없다. 파일을 되돌리지 못했으면(백업 삭제 뒤 실패·복원 실패) 새 버전
             // 파일에 맞춰 버전 칸을 그대로 둔다 — 반대 방향 불일치를 만들지 않는다. 업그레이드 스텝은 멱등이 규정이라
             // (upgrade-step-guide 원칙 4) 다시 시도할 때 처음부터 돌아도 안전하다.
-            // 이 쓰기가 실패하면(실패 원인이 DB 연결 고갈일 때 흔하다) 확장이 「업데이트 중」에 남고 그 예외가 아래의
-            // 원래 실패를 가린다 — 연결을 다시 맺고 한 번 더 시도하고, 그래도 안 되면 기록만 남기고 원래 예외로 넘어간다.
-            StatusRestore::run(fn () => $this->templateRepository->updateByIdentifier($identifier, [
+            $this->templateRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
                 ...($filesRestored && $recordedColumns !== [] ? Arr::only($record->getRawOriginal(), $recordedColumns) : []),
-            ]), 'template', $identifier);
+            ]);
 
             // 실패 경로도 bump 한다 — 백업 복원이 실패했거나 부분 반영된 디스크가 남을 수
             // 있어, 게시본을 새 버전으로 다시 굽는 쪽이 옛 게시본을 그대로 두는 쪽보다
@@ -3761,8 +3600,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
-        $this->ensurePendingAndBundledLoaded();
-
         if (isset($this->bundledTemplates[$identifier])) {
             return 'bundled';
         }
@@ -3791,8 +3628,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function getBundledVersion(string $identifier): ?string
     {
-        $this->ensurePendingAndBundledLoaded();
-
         if (isset($this->bundledTemplates[$identifier]['version'])) {
             return $this->bundledTemplates[$identifier]['version'];
         }
@@ -3810,8 +3645,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function findBundledTemplateManifest(string $identifier): ?array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         if (isset($this->bundledTemplates[$identifier])) {
             return $this->bundledTemplates[$identifier];
         }

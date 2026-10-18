@@ -1,6 +1,5 @@
 <?php
 
-use App\Support\LocalizedValue;
 use Illuminate\Contracts\Foundation\Application;
 
 /**
@@ -16,7 +15,7 @@ if (! function_exists('localized_label')) {
     /**
      * 다국어 라벨을 활성 locale 기준으로 해석합니다.
      *
-     * 우선순위: nameKey __() > value[locale] > fallbackKey __() > value[사이트 기본 언어 → en] > value 첫 키
+     * 우선순위: nameKey __() > value[locale] > fallbackKey __() > value[fallback_locale] > value 첫 키
      *
      * @param  array<string, string>|null  $value  ['ko' => ..., 'en' => ...] 형태 (settings JSON)
      * @param  string|null  $nameKey  lang key 직접 선언 (registry payload)
@@ -93,17 +92,18 @@ if (! function_exists('localized_label')) {
             }
         }
 
-        // 4. value 의 사이트 기본 언어 → 영어 → 첫 키 (#148 — LocalizedValue 와 같은 순서)
+        // 4. value 의 fallback_locale → 첫 키
         if ($value !== null) {
+            $fallback = 'ko';
             if ($hasLaravelApp()) {
                 try {
-                    return LocalizedValue::pick($value, $locale) ?? '';
+                    $fallback = config('app.fallback_locale', 'ko');
                 } catch (Throwable) {
-                    // Laravel 설정을 못 읽으면 아래 단순 대체로
+                    // 'ko' 유지
                 }
             }
-            if (isset($value['en']) && is_string($value['en']) && $value['en'] !== '') {
-                return $value['en'];
+            if (isset($value[$fallback]) && $value[$fallback] !== '') {
+                return $value[$fallback];
             }
             $first = reset($value);
 

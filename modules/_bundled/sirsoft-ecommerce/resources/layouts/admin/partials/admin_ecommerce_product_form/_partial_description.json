@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
+            "name": "Div",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다",
@@ -26,9 +26,7 @@
                 }
             ],
             "props": {
-                "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
-                "aria-expanded": "{{_local.ui.descriptionExpanded !== false}}"
+                "className": "card-header"
             },
             "children": [
                 {
@@ -52,7 +50,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
             ]
@@ -75,13 +73,10 @@
                     },
                     "children": [
                         {
-                            "comment": "편집기는 처음 세워질 때의 업로드 계약만 쓴다 — 계약을 담은 소스(contentMediaTarget)를 받기(실패 포함) 전에는 세우지 않는다(#883 실측: 먼저 서면 업로드 단추가 끝내 생기지 않음)",
                             "id": "description_editor",
                             "type": "extension_point",
                             "name": "html_editor",
-                            "if": "{{contentMediaTarget !== undefined}}",
                             "props": {
-                                "mediaUpload": "{{contentMediaTarget?.data ? Object.assign({}, contentMediaTarget.data, { fields: Object.assign({}, contentMediaTarget.data.fields ?? {}, { temp_key: _local.ui?.contentMediaTempKey }) }) : null}}",
                                 "multilingual": true,
                                 "value": "{{_local.form?.description ?? ''}}",
                                 "rows": 15,

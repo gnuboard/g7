@@ -1,5 +1,5 @@
 {
-    "comment": "e2e:allow 회원 없이 등록한 후기(다른 쇼핑몰 이관)의 작성자·「이관」·주문 「—」·HTML 본문 표시 — 이관 도구가 넣는 데이터라 조작 흐름이 없고, 소비 계약은 importedReviewDisplay.test.ts, 응답은 PHPUnit ImportedProductReviewTest 가 고정\n  상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다\n  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).\n  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를\n  검색 입력값으로 되돌려 담는다.",
+    "comment": "상품 후기 관리 (운영자) — 후기를 훑고 답글을 달거나 숨기는 화면이다. 답글은 별도 화면으로 넘어가지\n  audit:allow extension-doc-coverage 선택 건수 중복 해소로 `selectedCountText=\"\"` 한 속성만 붙였다 — 확장 표면(라우트·훅·권한·데이터소스) 변화 없음, ext:docgen 재실행 결과 문서 변경 0. 관례 자체는 admin_basic `docs/components.md` 가 소유한다\n  않고 표 행을 펼친 자리에서 바로 쓰고 고친다(한 건 처리하고 목록으로 돌아오는 왕복을 없앴다).\n  조회 조건은 전부 URL 쿼리에 실려 재진입에서 그대로 재현되고, 진입 시 `<init>` 이 그 쿼리를\n  검색 입력값으로 되돌려 담는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_review_index",
     "extends": "_admin_base",
@@ -38,29 +38,10 @@
                     }
                 },
                 "default": {
-                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
-                    "handler": "conditions",
-                    "conditions": [
-                        {
-                            "if": "{{error.refetch}}",
-                            "then": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "$t:core.errors.refresh_failed"
-                                }
-                            }
-                        },
-                        {
-                            "then": {
-                                "handler": "showErrorPage",
-                                "params": {
-                                    "errorCode": "{{error.status}}",
-                                    "target": "content"
-                                }
-                            }
-                        }
-                    ]
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
                 }
             },
             "fallback": {
@@ -255,7 +236,6 @@
                                                 ],
                                                 "props": {
                                                     "name": "searchField",
-                                                    "aria-label": "$t:common.search_field",
                                                     "className": "w-36 text-sm",
                                                     "value": "{{_local.filter.searchField ?? 'product_name'}}",
                                                     "options": [
@@ -318,7 +298,7 @@
                                                         "props": {
                                                             "name": "magnifying-glass",
                                                             "size": "sm",
-                                                            "className": "absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
+                                                            "className": "absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                                                         }
                                                     }
                                                 ]
@@ -1078,7 +1058,7 @@
                                             {
                                                 "comment": "기간 빠른 선택 — 핸들러가 오늘 기준으로 시작·종료일을 계산해 돌려주면 그 값($prev)을 폼에 담는다. 직접 고른 날짜와 섞이지 않도록 어느 쪽을 썼는지도 함께 기록한다",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "Div",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1103,16 +1083,14 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                                    "aria-pressed": "{{_local.filter.dateQuick === 'today'}}"
+                                                    "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.today"
                                             },
                                             {
                                                 "comment": "최근 3일",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "Div",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1137,16 +1115,14 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                                    "aria-pressed": "{{_local.filter.dateQuick === '3days'}}"
+                                                    "className": "{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3days"
                                             },
                                             {
                                                 "comment": "최근 1주일",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "Div",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1171,16 +1147,14 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                                    "aria-pressed": "{{_local.filter.dateQuick === 'week'}}"
+                                                    "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.week"
                                             },
                                             {
                                                 "comment": "최근 1개월",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "Div",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1205,16 +1179,14 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                                    "aria-pressed": "{{_local.filter.dateQuick === 'month'}}"
+                                                    "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.month"
                                             },
                                             {
                                                 "comment": "최근 3개월",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "Div",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1239,16 +1211,14 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                                    "aria-pressed": "{{_local.filter.dateQuick === '3months'}}"
+                                                    "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3months"
                                             },
                                             {
                                                 "comment": "기간 제한 없음 — 날짜 입력을 비운다",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "Div",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -1273,9 +1243,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                                    "aria-pressed": "{{_local.filter.dateQuick === 'all'}}"
+                                                    "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.product_review.filter.date_quick.all"
                                             }
@@ -1473,7 +1441,6 @@
                                         ],
                                         "props": {
                                             "name": "batchAction",
-                                            "aria-label": "$t:sirsoft-ecommerce.admin.product_review.batch.status_change",
                                             "className": "w-48",
                                             "value": "{{_local.batchAction ?? ''}}",
                                             "disabled": "{{reviews.data?.abilities?.can_update !== true}}",
@@ -1522,7 +1489,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                     "disabled": "{{reviews.data?.abilities?.can_update !== true || !_local.batchAction || (_local.selectedReviews ?? []).length === 0}}"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.product_review.batch.apply"
@@ -1540,10 +1507,6 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
-                                "blur_until_loaded": {
-                                    "enabled": true,
-                                    "data_sources": "reviews"
-                                },
                                 "props": {
                                     "className": "text-primary font-bold"
                                 },
@@ -1578,7 +1541,6 @@
                                         ],
                                         "props": {
                                             "name": "sortBy",
-                                            "aria-label": "$t:common.sort_order",
                                             "className": "w-40 text-sm",
                                             "value": "{{query.sort || 'created_at_desc'}}",
                                             "options": [
@@ -1623,7 +1585,6 @@
                                         ],
                                         "props": {
                                             "name": "perPage",
-                                            "aria-label": "$t:common.per_page",
                                             "className": "w-32 text-sm",
                                             "value": "{{query.per_page || '20'}}",
                                             "options": [
@@ -1687,7 +1648,6 @@
                                     }
                                 ],
                                 "props": {
-                                    "rowLabelField": "product.name",
                                     "selectedCountText": "",
                                     "data": "{{reviews.data?.data ?? []}}",
                                     "idField": "id",
@@ -1697,7 +1657,7 @@
                                     "expandable": true,
                                     "expandedRowIds": "{{_local.expandedRows ?? []}}",
                                     "visibleColumns": "{{_local.visibleColumns ?? []}}",
-                                    "emptyMessage": "{{reviews === undefined ? '' : $t('sirsoft-ecommerce.admin.product_review.table.empty')}}",
+                                    "emptyMessage": "$t:sirsoft-ecommerce.admin.product_review.table.empty",
                                     "expandContext": {
                                         "rowId": "{{row.id}}",
                                         "rowHasReply": "{{row.has_reply}}",
@@ -1742,7 +1702,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "image",
-                                                                        "className": "text-lg text-gray-500 dark:text-gray-400"
+                                                                        "className": "text-lg text-gray-400 dark:text-gray-500"
                                                                     }
                                                                 }
                                                             ]
@@ -1781,14 +1741,13 @@
                                             "sortable": false,
                                             "cellChildren": [
                                                 {
-                                                    "comment": "HTML 본문(다른 쇼핑몰에서 이관한 후기)은 태그를 걷어 낸 글자만 한 줄로 보인다",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
                                                         "className": "w-full max-w-[200px] truncate text-primary",
-                                                        "title": "{{row.content_plain ?? row.content ?? ''}}"
+                                                        "title": "{{row.content ?? ''}}"
                                                     },
-                                                    "text": "{{row.content_plain ?? row.content ?? ''}}"
+                                                    "text": "{{row.content ?? ''}}"
                                                 }
                                             ]
                                         },
@@ -1809,7 +1768,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-yellow-700 dark:text-yellow-300"
+                                                                "className": "text-yellow-400 dark:text-yellow-300"
                                                             },
                                                             "text": "{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}"
                                                         },
@@ -1842,17 +1801,19 @@
                                                             "actions": [
                                                                 {
                                                                     "type": "click",
-                                                                    "handler": "navigate"
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/users/{{row.user_id}}"
+                                                                    }
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "href": "/admin/users/{{row.user_id}}",
+                                                                "href": "#",
                                                                 "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                                                             },
                                                             "text": "{{row.user?.name ?? ''}}"
                                                         },
                                                         {
-                                                            "comment": "회원이 없는 후기(다른 쇼핑몰에서 이관) — 저장된 작성자 이름 그대로 + 「이관」 표시",
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "if": "{{!row.user_id}}",
@@ -1863,21 +1824,11 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "text": "{{row.author_name ?? row.user?.name ?? ''}}"
+                                                                    "text": "{{row.user?.name ?? ''}}"
                                                                 },
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
-                                                                    "if": "{{row.is_imported}}",
-                                                                    "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
-                                                                    },
-                                                                    "text": "($t:sirsoft-ecommerce.admin.product_review.table.imported)"
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "if": "{{!row.is_imported}}",
                                                                     "props": {
                                                                         "className": "text-gray-500 dark:text-gray-400 ml-1"
                                                                     },
@@ -1898,22 +1849,11 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "A",
-                                                    "if": "{{!!row.orderOption?.order_number}}",
                                                     "props": {
                                                         "href": "{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}",
                                                         "className": "text-blue-600 hover:underline dark:text-blue-400"
                                                     },
                                                     "text": "{{row.orderOption?.order_number ?? ''}}"
-                                                },
-                                                {
-                                                    "comment": "주문 없이 등록된 후기",
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "if": "{{!row.orderOption?.order_number}}",
-                                                    "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
-                                                    },
-                                                    "text": "—"
                                                 }
                                             ]
                                         },
@@ -2064,7 +2004,7 @@
                                                                                             "name": "Icon",
                                                                                             "props": {
                                                                                                 "name": "image",
-                                                                                                "className": "text-2xl text-gray-500 dark:text-gray-400"
+                                                                                                "className": "text-2xl text-gray-400 dark:text-gray-500"
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -2147,21 +2087,11 @@
                                                                                                 {
                                                                                                     "type": "basic",
                                                                                                     "name": "Span",
-                                                                                                    "text": "{{row.author_name ?? row.user?.name ?? ''}}"
+                                                                                                    "text": "{{row.user?.name ?? ''}}"
                                                                                                 },
                                                                                                 {
                                                                                                     "type": "basic",
                                                                                                     "name": "Span",
-                                                                                                    "if": "{{row.is_imported}}",
-                                                                                                    "props": {
-                                                                                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
-                                                                                                    },
-                                                                                                    "text": "($t:sirsoft-ecommerce.admin.product_review.table.imported)"
-                                                                                                },
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Span",
-                                                                                                    "if": "{{!row.is_imported}}",
                                                                                                     "props": {
                                                                                                         "className": "text-gray-500 dark:text-gray-400 ml-1"
                                                                                                     },
@@ -2172,7 +2102,6 @@
                                                                                     ]
                                                                                 },
                                                                                 {
-                                                                                    "comment": "주문 없이 등록된 후기(다른 쇼핑몰에서 이관)는 주문번호·구매수량·구매일시를 「—」 로",
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "props": {
@@ -2190,21 +2119,11 @@
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "A",
-                                                                                            "if": "{{!!row.orderOption?.order_number}}",
                                                                                             "props": {
                                                                                                 "href": "{{`/admin/ecommerce/orders/${row.orderOption?.order_number}`}}",
                                                                                                 "className": "text-blue-600 hover:underline dark:text-blue-400 font-medium"
                                                                                             },
                                                                                             "text": "{{row.orderOption?.order_number ?? ''}}"
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Span",
-                                                                                            "if": "{{!row.orderOption?.order_number}}",
-                                                                                            "props": {
-                                                                                                "className": "text-gray-500 dark:text-gray-400"
-                                                                                            },
-                                                                                            "text": "—"
                                                                                         }
                                                                                     ]
                                                                                 },
@@ -2226,20 +2145,10 @@
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "Span",
-                                                                                            "if": "{{!!row.orderOption}}",
                                                                                             "props": {
                                                                                                 "className": "text-primary"
                                                                                             },
-                                                                                            "text": "$t:defer:sirsoft-ecommerce.admin.product_review.table.quantity_value|count={{row.orderOption?.quantity ?? ''}}"
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Span",
-                                                                                            "if": "{{!row.orderOption}}",
-                                                                                            "props": {
-                                                                                                "className": "text-gray-500 dark:text-gray-400"
-                                                                                            },
-                                                                                            "text": "—"
+                                                                                            "text": "{{row.orderOption?.quantity ?? ''}} 개"
                                                                                         }
                                                                                     ]
                                                                                 },
@@ -2264,7 +2173,7 @@
                                                                                             "props": {
                                                                                                 "className": "text-primary"
                                                                                             },
-                                                                                            "text": "{{row.orderOption?.created_at ?? '—'}}"
+                                                                                            "text": "{{row.orderOption?.created_at ?? ''}}"
                                                                                         }
                                                                                     ]
                                                                                 }
@@ -2317,7 +2226,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Span",
                                                                                             "props": {
-                                                                                                "className": "text-yellow-700 dark:text-yellow-300"
+                                                                                                "className": "text-yellow-400 dark:text-yellow-300"
                                                                                             },
                                                                                             "text": "{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}"
                                                                                         },
@@ -2344,22 +2253,10 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Div",
-                                                                                    "if": "{{row.content_mode !== 'html'}}",
                                                                                     "props": {
                                                                                         "className": "text-primary mb-4"
                                                                                     },
                                                                                     "text": "{{row.content ?? ''}}"
-                                                                                },
-                                                                                {
-                                                                                    "comment": "HTML 본문(다른 쇼핑몰에서 이관한 후기) — 서버가 저장 때 정화했고 컴포넌트가 한 번 더 정화한다",
-                                                                                    "type": "composite",
-                                                                                    "name": "HtmlContent",
-                                                                                    "if": "{{row.content_mode === 'html'}}",
-                                                                                    "props": {
-                                                                                        "content": "{{row.content ?? ''}}",
-                                                                                        "isHtml": true,
-                                                                                        "className": "text-primary mb-4 prose prose-sm dark:prose-invert max-w-none"
-                                                                                    }
                                                                                 },
                                                                                 {
                                                                                     "comment": "첨부 이미지 레이블",
@@ -2397,7 +2294,7 @@
                                                                                         {
                                                                                             "comment": "이미지 1",
                                                                                             "type": "basic",
-                                                                                            "name": "Button",
+                                                                                            "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length > 0}}",
                                                                                             "actions": [
                                                                                                 {
@@ -2410,11 +2307,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 0,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2427,26 +2324,15 @@
                                                                                                 }
                                                                                             ],
                                                                                             "props": {
-                                                                                                "type": "button",
-                                                                                                "className": "shrink-0 rounded-md",
-                                                                                                "aria-label": "$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title"
-                                                                                            },
-                                                                                            "children": [
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Img",
-                                                                                                    "props": {
-                                                                                                        "src": "{{rowImages[0].download_url}}",
-                                                                                                        "alt": "",
-                                                                                                        "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
+                                                                                                "src": "{{rowImages[0].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            }
                                                                                         },
                                                                                         {
                                                                                             "comment": "이미지 2",
                                                                                             "type": "basic",
-                                                                                            "name": "Button",
+                                                                                            "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length > 1}}",
                                                                                             "actions": [
                                                                                                 {
@@ -2459,11 +2345,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 1,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2476,26 +2362,15 @@
                                                                                                 }
                                                                                             ],
                                                                                             "props": {
-                                                                                                "type": "button",
-                                                                                                "className": "shrink-0 rounded-md",
-                                                                                                "aria-label": "$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title"
-                                                                                            },
-                                                                                            "children": [
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Img",
-                                                                                                    "props": {
-                                                                                                        "src": "{{rowImages[1].download_url}}",
-                                                                                                        "alt": "",
-                                                                                                        "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
+                                                                                                "src": "{{rowImages[1].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            }
                                                                                         },
                                                                                         {
                                                                                             "comment": "이미지 3",
                                                                                             "type": "basic",
-                                                                                            "name": "Button",
+                                                                                            "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length > 2}}",
                                                                                             "actions": [
                                                                                                 {
@@ -2508,11 +2383,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 2,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2525,26 +2400,15 @@
                                                                                                 }
                                                                                             ],
                                                                                             "props": {
-                                                                                                "type": "button",
-                                                                                                "className": "shrink-0 rounded-md",
-                                                                                                "aria-label": "$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title"
-                                                                                            },
-                                                                                            "children": [
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Img",
-                                                                                                    "props": {
-                                                                                                        "src": "{{rowImages[2].download_url}}",
-                                                                                                        "alt": "",
-                                                                                                        "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
+                                                                                                "src": "{{rowImages[2].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            }
                                                                                         },
                                                                                         {
                                                                                             "comment": "이미지 4 (4장 정확히일 때 일반 이미지)",
                                                                                             "type": "basic",
-                                                                                            "name": "Button",
+                                                                                            "name": "Img",
                                                                                             "if": "{{(rowImages ?? []).length == 4}}",
                                                                                             "actions": [
                                                                                                 {
@@ -2557,11 +2421,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 3,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2574,26 +2438,15 @@
                                                                                                 }
                                                                                             ],
                                                                                             "props": {
-                                                                                                "type": "button",
-                                                                                                "className": "shrink-0 rounded-md",
-                                                                                                "aria-label": "$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title"
-                                                                                            },
-                                                                                            "children": [
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Img",
-                                                                                                    "props": {
-                                                                                                        "src": "{{rowImages[3].download_url}}",
-                                                                                                        "alt": "",
-                                                                                                        "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
+                                                                                                "src": "{{rowImages[3].download_url}}",
+                                                                                                "alt": "",
+                                                                                                "className": "w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"
+                                                                                            }
                                                                                         },
                                                                                         {
                                                                                             "comment": "+N 오버레이 (5장 이상일 때 4번째 자리)",
                                                                                             "type": "basic",
-                                                                                            "name": "Button",
+                                                                                            "name": "Div",
                                                                                             "if": "{{(rowImages ?? []).length >= 5}}",
                                                                                             "actions": [
                                                                                                 {
@@ -2606,11 +2459,11 @@
                                                                                                                 "target": "global",
                                                                                                                 "reviewImageIndex": 3,
                                                                                                                 "reviewForModal": {
-                                                                                                                    "userName": "{{row.author_name ?? row.user?.name ?? ''}}",
+                                                                                                                    "userName": "{{row.user?.name ?? ''}}",
                                                                                                                     "rating": "{{row.rating}}",
                                                                                                                     "createdAt": "{{row.created_at}}",
                                                                                                                     "optionValues": "{{row.option_snapshot?.option_values ?? []}}",
-                                                                                                                    "content": "{{row.content_plain ?? row.content ?? ''}}",
+                                                                                                                    "content": "{{row.content ?? ''}}",
                                                                                                                     "images": "{{rowImages ?? []}}"
                                                                                                                 }
                                                                                                             }
@@ -2623,9 +2476,7 @@
                                                                                                 }
                                                                                             ],
                                                                                             "props": {
-                                                                                                "type": "button",
-                                                                                                "className": "relative w-20 h-20 shrink-0 cursor-pointer rounded-md overflow-hidden",
-                                                                                                "aria-label": "$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title"
+                                                                                                "className": "relative w-20 h-20 shrink-0 cursor-pointer rounded-md overflow-hidden"
                                                                                             },
                                                                                             "children": [
                                                                                                 {
@@ -2639,7 +2490,7 @@
                                                                                                 },
                                                                                                 {
                                                                                                     "type": "basic",
-                                                                                                    "name": "Span",
+                                                                                                    "name": "Div",
                                                                                                     "props": {
                                                                                                         "className": "absolute inset-0 bg-black/50 flex items-center justify-center"
                                                                                                     },
@@ -2752,21 +2603,10 @@
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Div",
-                                                                                    "if": "{{row.reply_content_mode !== 'html'}}",
                                                                                     "props": {
                                                                                         "className": "text-primary"
                                                                                     },
                                                                                     "text": "{{rowReplyContent}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "composite",
-                                                                                    "name": "HtmlContent",
-                                                                                    "if": "{{row.reply_content_mode === 'html'}}",
-                                                                                    "props": {
-                                                                                        "content": "{{rowReplyContent ?? ''}}",
-                                                                                        "isHtml": true,
-                                                                                        "className": "text-primary prose prose-sm dark:prose-invert max-w-none"
-                                                                                    }
                                                                                 }
                                                                             ]
                                                                         },
@@ -2780,13 +2620,12 @@
                                                                             },
                                                                             "children": [
                                                                                 {
-                                                                                    "comment": "이관한 답변은 등록 관리자가 없다 — 관리자 이름·이메일 칸을 빼고 답변일만",
                                                                                     "type": "basic",
                                                                                     "name": "Span",
                                                                                     "props": {
                                                                                         "className": "text-secondary text-xs"
                                                                                     },
-                                                                                    "text": "{{`${row.reply_admin ? (row.reply_admin?.name ?? '') + ' (' + (row.reply_admin?.email ?? '') + ') · ' : ''}${row.replied_at ?? ''}${row.reply_updated_at ? ' · ' + $t('sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label') + row.reply_updated_at : ''}`}}"
+                                                                                    "text": "{{`${row.reply_admin?.name ?? ''} (${row.reply_admin?.email ?? ''}) · ${row.replied_at ?? ''}${row.reply_updated_at ? ' · 수정: ' + row.reply_updated_at : ''}`}}"
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
@@ -2844,7 +2683,7 @@
                                                                                             ],
                                                                                             "props": {
                                                                                                 "type": "button",
-                                                                                                "className": "btn btn-sm text-red-700 bg-red-50 border border-red-300 hover:bg-red-100 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                                "className": "btn btn-sm text-red-500 bg-red-50 border border-red-300 hover:bg-red-100 dark:bg-red-900/30 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed",
                                                                                                 "disabled": "{{row.abilities?.can_update !== true}}"
                                                                                             },
                                                                                             "text": "$t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.delete"
@@ -2877,7 +2716,6 @@
                                                                                         }
                                                                                     ],
                                                                                     "props": {
-                                                                                        "aria-label": "$t:defer:common.row_cell|row={{row.product?.name ?? ''}}|column={{$t('sirsoft-ecommerce.admin.product_review.detail.reply_form.title')}}",
                                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder",
                                                                                         "className": "textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600",
                                                                                         "value": "{{_local.editReplyContent ?? ''}}",
@@ -3049,7 +2887,6 @@
                                                                                         }
                                                                                     ],
                                                                                     "props": {
-                                                                                        "aria-label": "$t:defer:common.row_cell|row={{row.product?.name ?? ''}}|column={{$t('sirsoft-ecommerce.admin.product_review.detail.reply_form.title')}}",
                                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder",
                                                                                         "className": "textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600",
                                                                                         "value": "{{_local.replyText ?? ''}}",
@@ -3176,8 +3013,6 @@
                             }
                         ],
                         "props": {
-                            "pageHref": "/admin/ecommerce/reviews?page={page}",
-                            "pageHrefMergeQuery": true,
                             "currentPage": "{{reviews.data?.meta?.current_page ?? 1}}",
                             "totalPages": "{{reviews.data?.meta?.last_page ?? null}}",
                             "hasMorePages": "{{reviews.data?.meta?.has_more_pages ?? false}}",

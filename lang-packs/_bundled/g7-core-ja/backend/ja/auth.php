@@ -6,9 +6,6 @@ return [
     'two_factor_required' => '認証番号を送信しました。受け取った番号を入力してログインを完了してください。',
     'two_factor_failed' => '認証番号が正しくないか、有効期限が過ぎています。',
     'two_factor_invalid_challenge' => '認証リクエストが見つかりません。最初からログインし直してください。',
-    'two_factor_resend_not_supported' => '認証アプリはコードを送信しません。認証アプリに表示されている現在のコードを入力してください。',
-    'two_factor_resend_cooldown' => '先ほど認証番号を送信しました。:seconds秒後に再度リクエストできます。',
-    'password_reconfirm_throttled' => 'パスワードの確認に何度も失敗しました。:seconds秒後に再度お試しください。',
     'register_success' => '会員登録が成功しました。',
     'register_failed' => '会員登録に失敗しました。',
     'logout_success' => 'ログアウトが成功しました。',
@@ -25,6 +22,7 @@ return [
     'layout_guest_permission_denied' => 'ログインが必要なレイアウトです。(必要な権限: :required_permissions)',
     'invalid_permission_type' => '無効な権限タイプです。',
     'role_denied' => '該当するロールがありません。',
+    'email_not_registered' => '登録されていないメールアドレスです。',
     'guest_permission_denied' => '非会員はこの操作を実行できません。ログインが必要です。',
     'scope_denied' => 'このリソースへのアクセス権限がありません。',
     'scope_type_all' => 'すべて',
@@ -43,7 +41,7 @@ return [
     'account_unlocked' => 'アカウントのロックを解除しました。',
     'reset_token_invalid' => '無効なパスワードリセットトークンです。',
     'reset_token_expired' => 'パスワードリセットトークンが有効期限切れです。再度リクエストしてください。',
-    'password_reset_email_sent' => '登録済みのメールアドレスであれば、パスワード再設定リンクを送信しました。メールボックスをご確認ください。',
+    'password_reset_email_sent' => 'パスワードリセットメールが送信されました。',
     'email_send_failed' => 'メール送信に失敗しました。しばらく後に再度お試しください。',
     'two_factor_delivery_failed' => '認証番号を送信できませんでした。管理者にお問い合わせください。',
     'password_change_required' => 'パスワードの使用期間が過ぎました。新しいパスワードを設定してください。',
@@ -57,14 +55,4 @@ return [
     'two_factor_required_app' => '認証アプリの6桁コードを入力してログインを完了してください。',
     'two_factor_enrollment_required' => 'ログインするには認証アプリの登録が必要です。管理者にお問い合わせください。',
     'account_dormant' => '長期間アクセスがないため、休眠状態のアカウントです。本人確認後、利用することができます。',
-    // `auth:process-password-expiry` コマンド出力
-    'console' => [
-        'process_password_expiry' => [
-            'disabled' => 'パスワード有効期限機能が無効のため実行しませんでした。(security.password_expiry_enabled = false)',
-            'locked' => '管理者の職権実行がパスワード有効期限の処理中のため、今回の周期はスキップしました。',
-            'notice' => '有効期限の事前通知: :count 件 (残りの対象 :remaining 件)',
-            'expire' => '有効期限日の処理: :count 件 (残りの対象 :remaining 件)',
-            'stage_failed' => '段階失敗 — :stage: :error',
-        ],
-    ],
 ];

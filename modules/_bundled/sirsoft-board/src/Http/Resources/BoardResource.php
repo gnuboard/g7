@@ -7,13 +7,10 @@ use App\Http\Resources\BaseApiResource;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Support\ContentMedia\ContentMediaPolicyRules;
 use App\Support\GuestRoleResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
-use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -44,7 +41,6 @@ class BoardResource extends BaseApiResource
             'name' => $isFormRequest ? $this->name : $this->getLocalizedName(),
             'slug' => $this->slug,
             'is_active' => $this->is_active,
-            'display_order' => (int) $this->display_order,
             'type' => $this->type,
             'description' => $isFormRequest ? $this->description : $this->getLocalizedDescription(),
 
@@ -96,13 +92,6 @@ class BoardResource extends BaseApiResource
             'max_file_size' => $this->max_file_size,
             'max_file_count' => $this->max_file_count,
             'allowed_extensions' => $this->formatAllowedExtensions(),
-
-            // 본문 미디어 정책 (#883) — 폼 요청에만. 값이 있으면 「직접 정하기」 켬(use_custom), 없으면 null(첨부 정책을 따름).
-            // fallback 은 지금 첨부 설정으로 만든 대체 정책(화면이 「따르는 값」으로 보여 준다)
-            'content_media_policy' => $isFormRequest ? ContentMediaPolicyRules::toFormValue($this->content_media_policy) : null,
-            'content_media_policy_fallback' => $isFormRequest && $this->resource instanceof Board
-                ? app(PostContentMediaService::class)->fallbackPolicy($this->resource)->toArray()
-                : null,
 
             // 관리자 메뉴 등록 여부 (폼 토글 초기값). 폼 요청 시에만 포함.
             // 값은 Controller(getFormData)가 모델에 세팅한 is_in_admin_menu 속성에서 읽음.
@@ -195,7 +184,6 @@ class BoardResource extends BaseApiResource
 
             'type' => $this->getValue('type'),
             'is_active' => (bool) $this->getValue('is_active'),
-            'display_order' => (int) $this->getValue('display_order'),
             'categories' => $this->getValue('categories') ?? [],
 
             // 관리자 목록 화면은 「등록일」 컬럼을 그린다(admin_board_index.json). `toListArray` 에는

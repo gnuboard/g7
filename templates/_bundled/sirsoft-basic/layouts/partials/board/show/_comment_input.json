@@ -39,7 +39,7 @@
                             "comment": "비회원 작성자 정보 입력 (이름/비밀번호)",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
+                            "if": "{{!_global.currentUser?.uuid}}",
                             "props": {
                                 "className": "flex flex-col sm:flex-row gap-3"
                             },
@@ -196,8 +196,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "type": "button",
-                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                                         "disabled": "{{_local.commentSubmitting === true}}"
                                     },
                                     "children": [
