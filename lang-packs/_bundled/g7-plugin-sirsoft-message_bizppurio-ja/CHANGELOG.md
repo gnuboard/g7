@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-10-16
+
+### Added
+
+- 관리자 > 스케줄 관리에 보이는 알림톡 템플릿 검수 상태 동기화 작업의 이름·설명 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 코어 최소 요구 버전을 7.2.0 으로 상향
+
 ## [1.0.1] - 2026-10-10
 
 ### Added

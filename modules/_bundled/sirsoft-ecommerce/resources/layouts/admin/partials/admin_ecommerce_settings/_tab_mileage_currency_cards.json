@@ -237,6 +237,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}",
                                                 "value": "percent",
                                                 "checked": "{{rule.max_use_type === 'percent'}}",
@@ -312,6 +313,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "{{'mileage.currency_rules.' + rule._idx + '.max_use_type'}}",
                                                 "value": "fixed",
                                                 "checked": "{{rule.max_use_type === 'fixed'}}",
@@ -596,6 +598,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "newMileageCurrency.max_use_type",
                                                 "value": "percent",
                                                 "checked": "{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'percent'}}",
@@ -669,6 +672,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "newMileageCurrency.max_use_type",
                                                 "value": "fixed",
                                                 "checked": "{{(_local.form?.newMileageCurrency?.max_use_type ?? 'percent') === 'fixed'}}",

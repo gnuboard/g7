@@ -43,8 +43,12 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * `_partial_filter_section.json` 의 `preset_row` 가 같은 기능을 **데이터소스 전량 반복**으로
      * 이미 제공한다(고아 쪽은 정적 퀵프리셋 2개 + `slice(0, 3)` + 더보기 드롭다운이라 설계가 낡았다).
      * "살아 있는 것 기준, 미사용 건은 삭제" 가 설계 판단이다.
+     *
+     * 634 → **815** — #17(2026-10-16) 실측으로 하한을 현재 모집단에 맞춰 올렸다. 그 사이 늘어난 레이아웃에
+     * 이번 작업분(스케줄 관리 partial 3·큐 탭 partial 6·게시판/이커머스 설정 스케줄 탭 2 추가, 도달 경로가 0인
+     * `admin_module_list/_modal_deactivate_warning` 1 삭제)이 더해진 값이다.
      */
-    private const CORPUS_MINIMUM = 634;
+    private const CORPUS_MINIMUM = 815;
 
     /**
      * 번들 레이아웃 전량이 decompile → compile 왕복에서 항등이고 escape 가 0 인지 확인한다.
@@ -172,6 +176,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_identity_policies.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_notification_definitions.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_report_policy.g7.html',
+        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_schedules.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html',
         'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_spam_security.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-currency-field.g7.html',
@@ -378,6 +383,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_order_settings.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_privacy_retention.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_review_settings.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_schedules.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_seo.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_shipping.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_claim_policy_section.g7.html',
@@ -541,7 +547,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_menu_list.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_view.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_drawer_manifest_preview.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_deactivate_warning.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_detail.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_extension_license.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_force_activate.g7.html',
@@ -567,11 +572,22 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_uninstall.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_update.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_role_list/_modal_delete.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_bulk_status.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_delete.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_duplicate.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_form.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_history.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_queue_confirm.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_queue_job_detail.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_run.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_modal_security.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_partial_filter_section.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_partial_schedule_datagrid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_queue_failed_grid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_queue_logs_grid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_queue_pending_grid.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_status_card.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_tab_queue.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_schedule_list/_tab_schedules.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_cache_delete.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_core_changelog.g7.html',

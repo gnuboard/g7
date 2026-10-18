@@ -9,6 +9,7 @@ use App\Models\LanguagePack;
 use App\Providers\LanguagePackServiceProvider;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
+use Database\Seeders\CoreScheduleSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Foundation\Application;
@@ -39,6 +40,7 @@ class RunSeedersOnLanguagePackLifecycle
     private const CORE_ENTITY_SEEDERS = [
         NotificationDefinitionSeeder::class,
         IdentityPolicySeeder::class,
+        CoreScheduleSeeder::class,
     ];
 
     /**

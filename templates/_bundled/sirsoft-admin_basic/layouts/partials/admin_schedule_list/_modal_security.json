@@ -1,0 +1,759 @@
+{
+    "comment": "스케줄 보안 정책 창 — **읽기 전용**. 헤더 「보안 정책」 버튼이 `GET /api/admin/schedules/security`\n  를 불러 `_global.scheduleSecurity` 에 담고 이 창을 연다(받는 동안 진행 표시, 실패하면 사유).\n  예약 작업으로 무엇을 실행할 수 있는지 — Shell 사용 여부·허용 실행 파일, Artisan 허용 목록(옵션)·거부 목록·거부 접두어,\n  확장 명령 자동 허용, Job 허용 클래스, 내부망 주소 차단 — 과 서버 관리자가 더한 덮어쓰기 파일의 상태를 보인다.\n  각 항목의 출처(코어 기본값 / 덮어쓰기 파일에서 더함 / 확장 훅이 더한 Job 클래스)를 배지로 가른다. 허용 목록에 있어도\n  거부 목록·접두어에 걸려 실제로는 막히는 명령(`denied`)은 「거부됨」으로 표시한다. Shell 은 `.env` 스위치가 켜져 있어도\n  허용 실행 파일이 하나도 없으면 쓸 수 없다(`shell.enabled` = 스위치 그리고 실행 파일 ≥1) — 그 경우를 따로 알린다.\n  이 화면에서는 바꾸지 않는다 — 서버 관리자가 `storage/app/schedule_security.json` 으로 **더하기만** 할 수 있고(코어 거부 목록은 풀 수 없다),\n  Shell 은 `.env` 의 SCHEDULE_SHELL_ENABLED·SCHEDULE_SHELL_ALLOWED_BINARIES 로 정한다. 그 안내를 맨 위에 둔다.",
+    "meta": {
+        "is_partial": true,
+        "description": "스케줄 보안 정책(읽기 전용) 모달",
+        "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_security_modal"
+    },
+    "id": "schedule_security_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.schedules.security.title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label-subtle"
+                    },
+                    "text": "$t:admin.schedules.security.description"
+                },
+                {
+                    "id": "schedule_security_guide",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-info"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-info",
+                                        "className": "text-xl flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.security.guide"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "schedule_security_loading",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.scheduleSecurity && !_global.scheduleSecurityError}}",
+                    "props": {
+                        "className": "flex-center justify-center gap-2 py-8"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:common.loading"
+                        }
+                    ]
+                },
+                {
+                    "id": "schedule_security_error",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.scheduleSecurityError}}",
+                    "props": {
+                        "className": "alert-danger"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-red-600 dark:text-red-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-danger-soft"
+                            },
+                            "text": "{{_global.scheduleSecurityError}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "schedule_security_body",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.scheduleSecurity}}",
+                    "props": {
+                        "className": "space-y-4"
+                    },
+                    "children": [
+                        {
+                            "id": "schedule_security_override",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:admin.schedules.security.override.title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "kv-list gap-y-2 text-sm mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "kv-row"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.schedules.security.override.path"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Code",
+                                                    "props": {
+                                                        "className": "text-xs font-mono text-gray-700 dark:text-gray-300 break-all"
+                                                    },
+                                                    "text": "{{_global.scheduleSecurity?.override_file?.path ?? 'storage/app/schedule_security.json'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "kv-row"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.schedules.security.override.status"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_global.scheduleSecurity?.override_file?.exists && _global.scheduleSecurity?.override_file?.valid !== false}}",
+                                                            "props": {
+                                                                "color": "green",
+                                                                "size": "md",
+                                                                "text": "$t:admin.schedules.security.override.applied"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{!_global.scheduleSecurity?.override_file?.exists}}",
+                                                            "props": {
+                                                                "color": "gray",
+                                                                "size": "md",
+                                                                "text": "$t:admin.schedules.security.override.missing"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_global.scheduleSecurity?.override_file?.exists && _global.scheduleSecurity?.override_file?.valid === false}}",
+                                                            "props": {
+                                                                "color": "red",
+                                                                "size": "md",
+                                                                "text": "$t:admin.schedules.security.override.invalid"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.scheduleSecurity?.override_file?.valid === false}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_global.scheduleSecurity?.override_file?.error ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "schedule_security_shell",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.schedules.security.shell.title"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "props": {
+                                                "color": "{{_global.scheduleSecurity?.shell?.enabled ? 'green' : 'gray'}}",
+                                                "size": "md",
+                                                "text": "{{_global.scheduleSecurity?.shell?.enabled ? $t('admin.schedules.security.shell.enabled') : $t('admin.schedules.security.shell.disabled')}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "schedule_security_shell_no_binaries",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.scheduleSecurity?.shell?.gate_enabled && !_global.scheduleSecurity?.shell?.enabled}}",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.schedules.security.shell.no_binaries"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "kv-list gap-y-2 text-sm mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "kv-row"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.schedules.security.shell.allowed_binaries"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Code",
+                                                            "iteration": {
+                                                                "source": "(_global.scheduleSecurity?.shell?.allowed_binaries ?? [])",
+                                                                "item_var": "bin"
+                                                            },
+                                                            "props": {
+                                                                "className": "text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{bin}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{(_global.scheduleSecurity?.shell?.allowed_binaries ?? []).length === 0}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "$t:admin.schedules.security.none"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "schedule_security_artisan",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.schedules.security.artisan.allowlist"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.schedules.security.count|count={{(_global.scheduleSecurity?.artisan?.allowlist ?? []).length}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "mt-2 max-h-60 overflow-auto divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "(_global.scheduleSecurity?.artisan?.allowlist ?? [])",
+                                                "item_var": "item"
+                                            },
+                                            "props": {
+                                                "className": "px-3 py-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-between gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Code",
+                                                                    "props": {
+                                                                        "className": "text-xs font-mono text-gray-800 dark:text-gray-200 break-all"
+                                                                    },
+                                                                    "text": "{{item.command}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{(item.options ?? []).length > 0}}",
+                                                                    "props": {
+                                                                        "className": "block text-xs font-mono text-gray-500 dark:text-gray-400 break-all"
+                                                                    },
+                                                                    "text": "{{(item.options ?? []).map(o => '--' + o).join(' ')}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-center gap-1 flex-shrink-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "if": "{{item.denied === true}}",
+                                                                    "props": {
+                                                                        "color": "red",
+                                                                        "size": "sm",
+                                                                        "text": "$t:admin.schedules.security.denied"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "props": {
+                                                                        "color": "{{item.source === 'override' ? 'blue' : 'gray'}}",
+                                                                        "size": "sm",
+                                                                        "text": "{{item.source === 'override' ? $t('admin.schedules.security.source.override') : $t('admin.schedules.security.source.core')}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "kv-list gap-y-2 text-sm mt-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "kv-row"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.schedules.security.artisan.allow_extension_commands"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Badge",
+                                                    "props": {
+                                                        "color": "{{_global.scheduleSecurity?.artisan?.allow_extension_commands ? 'green' : 'gray'}}",
+                                                        "size": "md",
+                                                        "text": "{{_global.scheduleSecurity?.artisan?.allow_extension_commands ? $t('admin.schedules.security.allowed') : $t('admin.schedules.security.not_allowed')}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "kv-row"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.schedules.security.artisan.denylist"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "iteration": {
+                                                                "source": "(_global.scheduleSecurity?.artisan?.denylist ?? [])",
+                                                                "item_var": "item"
+                                                            },
+                                                            "props": {
+                                                                "color": "{{item.source === 'override' ? 'blue' : 'red'}}",
+                                                                "size": "sm",
+                                                                "text": "{{item.command}}",
+                                                                "className": "font-mono"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{(_global.scheduleSecurity?.artisan?.denylist ?? []).length === 0}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "$t:admin.schedules.security.none"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "kv-row"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.schedules.security.artisan.denylist_prefixes"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "iteration": {
+                                                                "source": "(_global.scheduleSecurity?.artisan?.denylist_prefixes ?? [])",
+                                                                "item_var": "item"
+                                                            },
+                                                            "props": {
+                                                                "color": "{{item.source === 'override' ? 'blue' : 'red'}}",
+                                                                "size": "sm",
+                                                                "text": "{{item.prefix + '*'}}",
+                                                                "className": "font-mono"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{(_global.scheduleSecurity?.artisan?.denylist_prefixes ?? []).length === 0}}",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                            },
+                                                            "text": "$t:admin.schedules.security.none"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-2"
+                                    },
+                                    "text": "$t:admin.schedules.security.artisan.denylist_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "schedule_security_job",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.schedules.security.job.allowed_classes"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.schedules.security.count|count={{(_global.scheduleSecurity?.job?.allowed_classes ?? []).length}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "mt-2 max-h-48 overflow-auto divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "(_global.scheduleSecurity?.job?.allowed_classes ?? [])",
+                                                "item_var": "item"
+                                            },
+                                            "props": {
+                                                "className": "px-3 py-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-between gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs font-mono text-gray-800 dark:text-gray-200 break-all"
+                                                            },
+                                                            "text": "{{item.class}}"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "props": {
+                                                                "color": "{{item.source === 'override' ? 'blue' : (item.source === 'extension' ? 'teal' : 'gray')}}",
+                                                                "size": "sm",
+                                                                "text": "{{item.source === 'override' ? $t('admin.schedules.security.source.override') : (item.source === 'extension' ? $t('admin.schedules.security.source.extension') : $t('admin.schedules.security.source.core'))}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "schedule_security_url",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.scheduleSecurity?.url !== undefined}}",
+                            "props": {
+                                "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.schedules.security.url.block_private_hosts"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Badge",
+                                            "props": {
+                                                "color": "{{_global.scheduleSecurity?.url?.block_private_hosts ? 'green' : 'gray'}}",
+                                                "size": "md",
+                                                "text": "{{_global.scheduleSecurity?.url?.block_private_hosts ? $t('admin.schedules.security.shell.enabled') : $t('admin.schedules.security.shell.disabled')}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "schedule_security_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "text": "$t:common.close"
+                }
+            ]
+        }
+    ]
+}

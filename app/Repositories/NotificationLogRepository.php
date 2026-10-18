@@ -160,24 +160,34 @@ class NotificationLogRepository implements NotificationLogRepositoryInterface
             $query->byNotificationType($filters['notification_type']);
         }
 
-        if (! empty($filters['status'])) {
-            $status = NotificationLogStatus::tryFrom($filters['status']);
-            if ($status) {
-                $query->byStatus($status);
-            }
+        // 상태·확장 유형은 다중 선택이다(FormRequest 가 배열로 승격). 내부 호출의 스칼라도 받는다.
+        $statuses = array_values(array_filter(array_map(
+            static fn ($value) => NotificationLogStatus::tryFrom((string) $value)?->value,
+            (array) ($filters['status'] ?? [])
+        )));
+
+        if ($statuses !== []) {
+            $query->whereIn('status', $statuses);
         }
 
-        if (! empty($filters['extension_type'])) {
-            $query->where('extension_type', $filters['extension_type']);
+        $extensionTypes = array_values(array_filter((array) ($filters['extension_type'] ?? [])));
+
+        if ($extensionTypes !== []) {
+            $query->whereIn('extension_type', $extensionTypes);
         }
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('recipient_name', 'like', "%{$search}%")
-                    ->orWhere('recipient_identifier', 'like', "%{$search}%")
-                    ->orWhere('subject', 'like', "%{$search}%")
-                    ->orWhere('notification_type', 'like', "%{$search}%");
+            $columns = match ($filters['search_type'] ?? 'all') {
+                'recipient' => ['recipient_name', 'recipient_identifier'],
+                'subject' => ['subject'],
+                default => ['recipient_name', 'recipient_identifier', 'subject', 'notification_type'],
+            };
+
+            $query->where(function ($q) use ($search, $columns) {
+                foreach ($columns as $column) {
+                    $q->orWhere($column, 'like', "%{$search}%");
+                }
             });
         }
 

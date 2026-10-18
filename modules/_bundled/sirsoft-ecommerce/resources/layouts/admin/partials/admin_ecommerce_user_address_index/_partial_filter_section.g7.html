@@ -79,10 +79,11 @@
                    도장한다 — 두 값이 같을 때만 후보를 보인다(마일리지 수동 지급·쿠폰 직접 발급 창과 같은 가드).
                    `$event`·`$args` 로 도장하면 그것은 응답이 도착한 순간의 입력이라, 한 글자가 부른 큰 옛 응답이
                    늦게 와서 지금 검색어의 것으로 둔갑한다. 서버가 검색어를 trim 하므로 지금 값도 trim 해 견준다.
-                   검색칸을 비우거나 공백만 적으면 요청하지 않는다 — 코어 회원 검색은 빈 keyword 를 422 로 거절한다. -->
-              <sequence>
+                   검색칸을 비우거나 공백만 적으면 요청하지 않는다 — 코어 회원 검색은 빈 keyword 를 422 로 거절한다.
+                   입력은 300ms 로 모아 한 번만 찾는다 — debounce 는 이벤트 바로 아래 액션(여기 sequence)에 달아야 먹는다. -->
+              <sequence :debounce="300">
                 <set-state target="local" memberSearchKeyword="{{$args[0] ?? ''}}"/>
-                <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
+                <api-call :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                   <success>
                     <set-state target="local" memberSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}" memberSearchResultsKeyword="{{response?.meta?.keyword ?? ''}}"/>
                   </success>
@@ -182,7 +183,7 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="isDefault" value="all" checked="{{(_local.filter.isDefault || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="isDefault" value="all" checked="{{(_local.filter.isDefault || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 기본 배송지 여부 — 전체. 하나만 고르는 값이라 "전체" 도 값(`all`)이다. -->
                 <set-state target="_local" filter.isDefault="all"/>
@@ -191,7 +192,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="isDefault" value="1" checked="{{_local.filter.isDefault === '1'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="isDefault" value="1" checked="{{_local.filter.isDefault === '1'}}" class="radio">
               <on type="change">
                 <!-- 기본 배송지만. 회원마다 한 건이므로 「회원 수만큼」 이 나온다. -->
                 <set-state target="_local" filter.isDefault="1"/>
@@ -200,7 +201,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default_only</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="isDefault" value="0" checked="{{_local.filter.isDefault === '0'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="isDefault" value="0" checked="{{_local.filter.isDefault === '0'}}" class="radio">
               <on type="change">
                 <!-- 기본 제외. 정리 대상을 고를 때 쓰는 갈래다 — 기본 배송지는 지우면 회원이 다시 골라야 한다. -->
                 <set-state target="_local" filter.isDefault="0"/>

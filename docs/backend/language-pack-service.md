@@ -140,6 +140,8 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 
 **deactivate**: 비활성화 후 슬롯에 다른 후보(`inactive`/`installed`)가 있으면 자동 active 로 승격(`promoteSlotSuccessor`). 보호된 팩(번들 ko/en 등 `is_protected=true`)은 비활성화 거부.
 
+**시드 재실행**: 코어 언어팩이 켜지거나 꺼지면 `RunSeedersOnLanguagePackLifecycle` 이 코어 엔티티 시더(권한·역할·메뉴·알림 정의 등)를 다시 실행해 로케일 키를 붙이거나 뗍니다. 7.2.0 부터 이 목록에 `CoreScheduleSeeder` 가 포함됩니다 — 코어 카탈로그 스케줄의 `label`·`description` 이 `lang-packs/_bundled/g7-core-ja/seed/schedules.json` 으로 채워지고, 운영자가 화면에서 고친 로케일 값은 `user_overrides` 로 보존됩니다. 확장 언어팩의 스케줄 명칭은 확장 선언 동기화 때 `seed.{확장}.schedules.translations` 필터로 채워집니다([language-packs.md](../extension/language-packs.md#시더-통합-hookmanager-필터)).
+
 ## 우회 불가 규칙
 
 | 규칙 | 위반 시 |

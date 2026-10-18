@@ -92552,8 +92552,6 @@ HTTP/1.1 200
                                 "cache_ttl": 7200,
                                 "sitemap_enabled": true,
                                 "sitemap_cache_ttl": 86400,
-                                "sitemap_schedule": "daily",
-                                "sitemap_schedule_time": "02:00",
                                 "sitemap_last_updated_at": "",
                                 "generator_enabled": true,
                                 "generator_content": ""
@@ -188738,8 +188736,6 @@ HTTP/1.1 200
                                 "cache_ttl": 7200,
                                 "sitemap_enabled": true,
                                 "sitemap_cache_ttl": 86400,
-                                "sitemap_schedule": "daily",
-                                "sitemap_schedule_time": "02:00",
                                 "sitemap_last_updated_at": "",
                                 "generator_enabled": true,
                                 "generator_content": ""

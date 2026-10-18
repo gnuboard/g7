@@ -32,6 +32,7 @@ class AllowedArtisanCommand implements ValidationRule
      * @param  string  $attribute  검증 대상 필드명
      * @param  mixed  $value  검증 대상 값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -51,8 +52,17 @@ class AllowedArtisanCommand implements ValidationRule
             return;
         }
 
-        $key = self::REASON_MESSAGES[$verdict['reason']] ?? 'validation.schedule_command.artisan_not_allowlisted';
+        $fail(__(self::messageKey($verdict['reason'])));
+    }
 
-        $fail(__($key));
+    /**
+     * 거부 사유 코드에 맞는 다국어 키를 돌려줍니다 — 저장 검증과 실행 직전 검사가 같은 문구를 쓴다.
+     *
+     * @param  string|null  $reason  거부 사유 코드 (`ScheduleCommandValidator::ARTISAN_REASON_*`)
+     * @return string 다국어 키 (모르는 사유는 「허용 목록에 없음」)
+     */
+    public static function messageKey(?string $reason): string
+    {
+        return self::REASON_MESSAGES[$reason ?? ''] ?? 'validation.schedule_command.artisan_not_allowlisted';
     }
 }

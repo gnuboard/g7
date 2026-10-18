@@ -11,7 +11,6 @@ use App\Services\ScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
@@ -25,6 +24,11 @@ class ScheduleServiceTest extends TestCase
 
     private ScheduleService $scheduleService;
 
+    /**
+     * 서비스를 컨테이너에서 꺼내고 훅 등록을 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +36,11 @@ class ScheduleServiceTest extends TestCase
         HookManager::resetAll();
     }
 
+    /**
+     * 테스트가 등록한 훅을 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::resetAll();
@@ -47,6 +56,12 @@ class ScheduleServiceTest extends TestCase
      *
      * 회귀 배경: LengthAwarePaginator 를 import 하지 않아 반환 타입이
      * App\Services\LengthAwarePaginator 로 해석되어 목록 API 가 500 을 반환했다.
+     *
+     * @scenario case=service_crud
+     *
+     * @effects schedule_service_crud_contract
+     *
+     * @return void 반환값 없음
      */
     public function test_get_paginated_schedules_returns_paginator(): void
     {
@@ -66,6 +81,12 @@ class ScheduleServiceTest extends TestCase
 
     /**
      * 실행 이력이 존재할 때 이력 조회가 TypeError 없이 페이지네이터를 반환하는지 확인
+     *
+     * @scenario case=service_crud
+     *
+     * @effects schedule_service_crud_contract
+     *
+     * @return void 반환값 없음
      */
     public function test_get_history_returns_paginator(): void
     {
@@ -91,18 +112,22 @@ class ScheduleServiceTest extends TestCase
     }
 
     // ========================================================================
-    // runSchedule() - 실행 직전 방어선 (KVE-2026-1653)
+    // runNow() - 실행 직전 방어선 (KVE-2026-1653)
+    //   7.2.0: 즉시 실행이 예약 실행과 같은 디스패처·실행기를 거친다 — 방어선은 실행기에 있고,
+    //   차단된 실행은 예외가 아니라 실패 이력으로 돌아온다(K3).
     // ========================================================================
 
     /**
      * 게이트를 켜고 `bash` 를 등록한 상태라도, DB 에 직접 심어진 `bash -c id` 는
-     * 실행 직전 방어선에서 차단된다 (저장 검증을 우회해 들어온 값 방어).
+     * 즉시 실행(runNow) 경로의 실행 직전 방어선에서 차단된다 (저장 검증을 우회해 들어온 값 방어).
      *
      * @scenario command_class=inline_code, enforcement_point=run
      *
      * @effects run_time_last_line_of_defense_blocks_inline_code
+     *
+     * @return void 반환값 없음
      */
-    public function test_run_schedule_blocks_interpreter_inline_code(): void
+    public function test_run_now_blocks_interpreter_inline_code(): void
     {
         config([
             'schedule_security.shell.enabled' => true,
@@ -118,14 +143,12 @@ class ScheduleServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        try {
-            $this->scheduleService->runSchedule($schedule);
-            $this->fail('인라인 코드 스케줄이 실행됨');
-        } catch (ValidationException) {
-            // 실행 직전 방어선이 차단 — 아래에서 미실행·실패 기록을 확인한다
-        }
+        $history = $this->scheduleService->runNow($schedule);
 
+        // 실행 직전 방어선이 차단 — 프로세스는 돌지 않고 실패 이력·실패 결과가 남는다
         Process::assertNothingRan();
+        $this->assertNotNull($history, '차단된 실행도 실패 이력을 남겨야 한다');
+        $this->assertSame(ScheduleResultStatus::Failed, $history->status);
         $this->assertSame(ScheduleResultStatus::Failed, $schedule->fresh()->last_result);
     }
 
@@ -135,6 +158,12 @@ class ScheduleServiceTest extends TestCase
 
     /**
      * 스케줄 삭제 시 실행 이력이 삭제되는지 확인
+     *
+     * @scenario case=service_crud
+     *
+     * @effects schedule_service_crud_contract
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_schedule_deletes_histories(): void
     {
@@ -166,6 +195,12 @@ class ScheduleServiceTest extends TestCase
 
     /**
      * 스케줄 삭제 시 before_delete/after_delete 훅이 호출되는지 확인
+     *
+     * @scenario case=service_crud
+     *
+     * @effects schedule_service_crud_contract
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_schedule_fires_hooks(): void
     {

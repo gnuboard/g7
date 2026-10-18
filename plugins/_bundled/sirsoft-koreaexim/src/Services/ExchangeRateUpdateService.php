@@ -27,6 +27,7 @@ class ExchangeRateUpdateService
      * @param  KoreaeximApiClient  $client  client 입력값
      * @param  ExchangeRateCalculator  $calculator  calculator 입력값
      * @param  CacheInterface  $cache  cache 입력값
+     * @param  UpdateScheduleResolver  $schedule  정기 갱신 시각 해석기 (코어 스케줄 행 기준)
      */
     public function __construct(
         private RateRunRepositoryInterface $runs,
@@ -34,6 +35,7 @@ class ExchangeRateUpdateService
         private KoreaeximApiClient $client,
         private ExchangeRateCalculator $calculator,
         private CacheInterface $cache,
+        private UpdateScheduleResolver $schedule,
     ) {}
 
     /**
@@ -87,7 +89,9 @@ class ExchangeRateUpdateService
                 || ($run->status === RunStatus::NoData && $run->finished_at !== null
                     && $run->finished_at->copy()->setTimezone('Asia/Seoul')->format('H:i') < '11:00')
             ));
-            if ($now->format('H:i') <= $this->setting('update_time', '11:30') || ! in_array($now->dayOfWeekIso, $days, true)
+            // 오늘 정기 갱신 시각(스케줄 관리의 정기 갱신 행)이 지나기 전·그날 일정이 없으면 재시도하지 않는다.
+            $todayRun = $this->schedule->todayRunAt($now, $this->schedule->schedule());
+            if ($todayRun === null || $now->format('Y-m-d H:i') <= $todayRun->format('Y-m-d H:i') || ! in_array($now->dayOfWeekIso, $days, true)
                 || $blocked || $attempts->isEmpty() || $attempts->count() >= 1 + $retryMax) {
                 return null;
             }

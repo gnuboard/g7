@@ -1,4 +1,4 @@
-<!-- SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.
+<!-- SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다. 사이트맵 생성 주기·시각은 스케줄 관리 화면에서 바꾼다(링크만 둔다).
   저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다). -->
 <partial description="환경설정 SEO 탭 콘텐츠">
   <div data-ref="tab_content_seo" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}">
@@ -8,7 +8,7 @@
       <div class="row-stack">
         <div data-ref="field_meta_title_suffix">
           <label class="form-label">$t:admin.settings.seo.meta_title_suffix</label>
-          <input type="text" name="seo.meta_title_suffix" placeholder=" | 그누보드7" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.meta_title_suffix" placeholder="$t:admin.settings.seo.meta_title_suffix_placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
           <p class="form-hint">$t:admin.settings.seo.meta_title_suffix_hint</p>
         </div>
         <div data-ref="field_meta_description">
@@ -18,7 +18,7 @@
         </div>
         <div data-ref="field_meta_keywords">
           <label class="form-label">$t:admin.settings.seo.meta_keywords</label>
-          <input type="text" name="seo.meta_keywords" placeholder="CMS, 그누보드7, 오픈소스" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.meta_keywords" placeholder="$t:admin.settings.seo.meta_keywords_placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
           <p class="form-hint">$t:admin.settings.seo.meta_keywords_hint</p>
         </div>
       </div>
@@ -175,20 +175,24 @@
           </div>
           <toggle data-type="composite" name="seo.sitemap_enabled" disabled="{{_computed.isReadOnly}}" size="md"/>
         </div>
-        <div data-ref="field_sitemap_schedule">
-          <label class="form-label">$t:admin.settings.seo.sitemap_schedule</label>
-          <select name="seo.sitemap_schedule" disabled="{{_computed.isReadOnly}}" class="w-full">
-            <options>
-              <option value="hourly">$t:admin.settings.seo.sitemap_schedule_hourly</option>
-              <option value="daily">$t:admin.settings.seo.sitemap_schedule_daily</option>
-              <option value="weekly">$t:admin.settings.seo.sitemap_schedule_weekly</option>
-            </options>
-          </select>
-        </div>
-        <div data-ref="field_sitemap_schedule_time" data-if="{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}">
-          <label class="form-label">$t:admin.settings.seo.sitemap_schedule_time</label>
-          <input type="text" name="seo.sitemap_schedule_time" disabled="{{_computed.isReadOnly}}" placeholder="02:00" class=""/>
-          <p class="form-hint">$t:admin.settings.seo.sitemap_schedule_time_hint</p>
+        <!-- 생성 주기·시각 — 코어 스케줄 행(core/sitemap-generate)이 원천이라 여기서는 입력받지 않는다. 스케줄 관리 화면의
+             그 행으로 가는 링크와 다음 실행 일시를 둔다(소유=코어 + 식별자 검색 쿼리를 스케줄 화면이 그대로 필터로 읽는다).
+             안내 상자 모양은 설정 화면의 「스케줄 관리에서 변경」 안내 전부가 같다(아이콘 + 문장 + 다음 실행 + 링크). -->
+        <div data-ref="field_sitemap_schedule_link" class="alert-info">
+          <div class="flex gap-3">
+            <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+            <div class="min-w-0 space-y-1">
+              <p class="text-label-subtle">$t:admin.settings.seo.sitemap_schedule_managed</p>
+              <p data-ref="field_sitemap_schedule_link_next_run" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.is_active !== false &amp;&amp; !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.next_run_at}}" class="text-label-subtle flex-center flex-wrap gap-1">
+                <span>$t:admin.settings.schedule_link.next_run</span>
+                <span class="font-medium">{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.next_run_at | datetime}}</span>
+              </p>
+              <p data-ref="field_sitemap_schedule_link_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
+              <div class="flex-center flex-wrap gap-3">
+                <a data-ref="sitemap_schedule_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=sitemap-generate" class="text-link">$t:admin.settings.schedule_link.change</a>
+              </div>
+            </div>
+          </div>
         </div>
         <div data-ref="field_sitemap_cache_ttl">
           <label class="form-label">$t:admin.settings.seo.sitemap_cache_ttl</label>

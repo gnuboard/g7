@@ -43,7 +43,7 @@
           <span class="block text-heading">{{row.recipient_name ?? row.recipient_identifier ?? '-'}}</span>
           <span data-if="{{row.recipient_name &amp;&amp; row.recipient_identifier}}" class="block text-tertiary">{{row.recipient_identifier}}</span>
         </div>
-        <action-menu data-type="composite" data-if="{{!!row.recipient}}" position="right">
+        <action-menu data-type="composite" data-if="{{!!row.recipient}}" position="right" class="block max-w-full">
           <prop name="items">
             <item id="view_member" label="$t:admin.notification_log.action.view_member" iconName="user"/>
             <item id="search_by_recipient" label="$t:admin.notification_log.action.search_by_recipient" iconName="search"/>
@@ -74,7 +74,7 @@
     <column field="sender" header="$t:admin.notification_log.col_sender" width="150px">
       <cell>
         <span data-if="{{!row.sender}}" class="text-label-subtle italic">$t:admin.notification_log.system_sender</span>
-        <action-menu data-type="composite" data-if="{{!!row.sender}}" position="right">
+        <action-menu data-type="composite" data-if="{{!!row.sender}}" position="right" class="block max-w-full">
           <prop name="items">
             <item id="view_member" label="$t:admin.notification_log.action.view_member" iconName="user"/>
             <item id="search_by_sender" label="$t:admin.notification_log.action.search_by_sender" iconName="search"/>

@@ -106,7 +106,7 @@
               <tbody class="divider-list">
                 <tr data-each="opt, optIdx in {{_local.form.options ?? []}}" class="align-top hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50">
                   <td class="px-3 py-2 text-center">
-                    <input type="radio" name="default_option" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
+                    <input type="radio" :autoBinding="false" name="default_option" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
@@ -245,7 +245,7 @@
           <div data-each="opt, optIdx in {{_local.form.options ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
             <div class="flex-between pb-3 border-b border-gray-100 dark:border-gray-700">
               <div class="flex-center gap-3">
-                <input type="radio" name="default_option_mobile" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
+                <input type="radio" :autoBinding="false" name="default_option_mobile" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
@@ -456,7 +456,7 @@
                     </div>
                     <!-- 기본 선택지 (라디오 — 그룹당 1개). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋(라벨+인풋) baseline 에 정렬 -->
                     <div class="flex-center gap-1 sm:mt-6">
-                      <input type="radio" name="additional_options_{{addIdx}}_default" checked="{{addVal.is_default === true}}" disabled="{{_computed.isReadOnly}}">
+                      <input type="radio" :autoBinding="false" name="additional_options_{{addIdx}}_default" checked="{{addVal.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 그룹에서 처음 골라져 있을 선택지 — 그룹당 하나다 -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="is_default" value="{{$event.target.checked}}"/>

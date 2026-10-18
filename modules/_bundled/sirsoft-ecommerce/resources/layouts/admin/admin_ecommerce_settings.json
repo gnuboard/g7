@@ -171,7 +171,6 @@
                 "page": "{{query.page || 1}}",
                 "per_page": "{{query.per_page || 20}}",
                 "search": "{{query.search}}",
-                "search_type": "{{query.search_type}}",
                 "template_channel": "{{query.channel ?? 'mail'}}"
             },
             "initLocal": {
@@ -211,6 +210,38 @@
                 }
             },
             "comment": "알림 탭에서만 — 어떤 발송 수단(메일·SMS 등)을 켤 수 있는지는 설치된 채널에 달려 있어 서버에서 받아 온다"
+        },
+        {
+            "id": "ecommerceSchedules",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceSchedules",
+            "type": "api",
+            "endpoint": "/api/admin/schedules",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'schedules'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "extension_type": "module",
+                "extension_identifier": "sirsoft-ecommerce",
+                "sort_by": "name",
+                "sort_order": "asc",
+                "per_page": 100
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ecommerceSchedulesLoadError": "forbidden"
+                    }
+                }
+            },
+            "comment": "스케줄 탭 — 이 모듈이 선언한 예약 작업. 코어 목록 API 를 소유 필터로 재사용한다(확장 전용 엔드포인트 없음). 모듈 선언은 많아야 수십 건이라 한 쪽(100)에 다 받는다.\n       코어 스케줄 조회 권한이 없으면(403) 표지를 남긴다 — fallback 빈 목록만으로는 「등록된 작업 없음」으로 보인다"
         },
         {
             "id": "ecommerceIdentityPolicies",
@@ -283,8 +314,7 @@
         "editLang": "ko",
         "previewData": null,
         "notificationDefinitionFilter": {
-            "search": "",
-            "searchType": "all"
+            "search": ""
         },
         "expandedNotificationDefinitionIds": []
     },
@@ -485,6 +515,10 @@
                                 {
                                     "id": "privacy_retention",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.privacy_retention"
+                                },
+                                {
+                                    "id": "schedules",
+                                    "label": "$t:sirsoft-ecommerce.admin.settings.tabs.schedules"
                                 }
                             ]
                         }
@@ -660,6 +694,9 @@
                             },
                             {
                                 "partial": "partials/admin_ecommerce_settings/_tab_privacy_retention.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_settings/_tab_schedules.json"
                             }
                         ]
                     },

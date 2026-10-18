@@ -1,0 +1,456 @@
+{
+    "comment": "큐 Job 상세 창 — 실패 하위 탭(failed)과 처리 기록 하위 탭(log)이 함께 쓴다. 어느 쪽인지는 전역 `queueJobDetailKind`.\n\n  실패 작업은 행 요약으로 먼저 열리고 `GET /queue/failed/{uuid}` 의 예외 전문·payload 요약으로 덮인다\n  (`queueJobDetailLoading` 동안 전문 자리에 진행 표시). 예외·payload 는 **텍스트로만** 그린다 — 직렬화된 객체는\n  서버가 이미 빼고 보낸다. 실패 작업이면 이 창에서 바로 재시도·삭제 확인 창으로 넘어갈 수 있다.\n  표기 순서는 표와 같다 — 큐 · 연결, 시도(최대를 알면 「시도 / 최대」), 일시는 날짜 파이프. 예외는 빨강 계열 상자, payload 는 회색 상자다\n  (즉시 실행 창의 출력 상자와 같은 틀). 재시도 버튼은 큐 탭의 다른 재시도·일괄 적용과 같은 파랑이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "큐 작업 상세 모달",
+        "editor_label": "$t:admin.modal_label.admin_schedule_list.queue_job_detail_modal"
+    },
+    "id": "queue_job_detail_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.schedules.queue.detail.title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 md:grid-cols-2 gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.columns.job"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body font-medium break-all"
+                                    },
+                                    "text": "{{_global.queueJobDetail?.display_name ?? '-'}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 font-mono break-all"
+                                    },
+                                    "text": "{{_global.queueJobDetail?.job_class ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.detail.uuid"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs font-mono text-gray-700 dark:text-gray-300 break-all"
+                                    },
+                                    "text": "{{_global.queueJobDetail?.uuid ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.columns.queue"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body font-mono"
+                                    },
+                                    "text": "{{_global.queueJobDetail?.queue ?? '-'}}{{_global.queueJobDetail?.connection ? ' · ' + _global.queueJobDetail.connection : ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.columns.attempts"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "{{_global.queueJobDetail?.attempts ?? 0}}{{_global.queueJobDetail?.max_tries ? ' / ' + _global.queueJobDetail.max_tries : ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.queueJobDetailKind === 'failed'}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.columns.failed_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.queueJobDetail?.failed_at}}",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "{{_global.queueJobDetail?.failed_at | datetime}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!_global.queueJobDetail?.failed_at}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "-"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.queueJobDetailKind === 'log'}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.columns.result"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "{{_global.queueJobDetail?.status === 'processed' ? $t('admin.schedules.queue.log_status.processed') : $t('admin.schedules.queue.log_status.failed')}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.queueJobDetailKind === 'log'}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.detail.period"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body flex-center flex-wrap gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.queueJobDetail?.started_at}}",
+                                            "text": "{{_global.queueJobDetail?.started_at | datetime('YYYY-MM-DD HH:mm:ss')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!_global.queueJobDetail?.started_at}}",
+                                            "props": {
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "-"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.queueJobDetail?.finished_at}}",
+                                            "text": "{{_global.queueJobDetail?.finished_at | datetime('YYYY-MM-DD HH:mm:ss')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!_global.queueJobDetail?.finished_at}}",
+                                            "props": {
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "-"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.queueJobDetail?.schedule_id}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.schedules.queue.detail.schedule"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body"
+                                    },
+                                    "text": "$t:admin.schedules.queue.schedule_ref|id={{_global.queueJobDetail?.schedule_id}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.queueJobDetailKind === 'failed' || _global.queueJobDetail?.status === 'failed'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:admin.schedules.queue.detail.exception"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.queueJobDetailLoading}}",
+                            "props": {
+                                "className": "flex-center gap-2 py-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:common.loading"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "예외 전문(실패 작업) 또는 예외 클래스·메시지(처리 기록). 길어도 창 안에서 스크롤한다.",
+                            "id": "queue_job_detail_exception",
+                            "type": "basic",
+                            "name": "Pre",
+                            "if": "{{!_global.queueJobDetailLoading}}",
+                            "props": {
+                                "className": "mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-3 rounded-lg"
+                            },
+                            "text": "{{_global.queueJobDetailKind === 'failed' ? (_global.queueJobDetail?.exception ?? _global.queueJobDetail?.exception_summary ?? '') : ((_global.queueJobDetail?.exception_class ?? '') + '\\n' + (_global.queueJobDetail?.exception_message ?? ''))}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.queueJobDetailKind === 'failed' && !_global.queueJobDetailLoading && Object.keys(_global.queueJobDetail?.payload_meta ?? {}).length > 0}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:admin.schedules.queue.detail.payload"
+                        },
+                        {
+                            "id": "queue_job_detail_payload",
+                            "type": "basic",
+                            "name": "Pre",
+                            "props": {
+                                "className": "mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg"
+                            },
+                            "text": "{{JSON.stringify(_global.queueJobDetail?.payload_meta ?? {}, null, 2)}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "queue_job_detail_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "text": "$t:common.close"
+                },
+                {
+                    "id": "queue_job_detail_delete",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{_global.queueJobDetailKind === 'failed'}}",
+                    "actions": [
+                        {
+                            "comment": "상세에서 바로 삭제 — 이 창을 닫고 같은 한 건을 확인 창에 담아 연다(창 두 개를 겹치지 않는다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal",
+                                    "target": "queue_job_detail_modal"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "queueConfirmResults": null,
+                                        "queueConfirmMessage": "",
+                                        "queueConfirm": {
+                                            "action": "delete",
+                                            "uuids": "{{[_global.queueJobDetail?.uuid]}}",
+                                            "single": true,
+                                            "label": "{{_global.queueJobDetail?.display_name}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "queue_confirm_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.queueJobDetail?.abilities?.can_delete !== true}}"
+                    },
+                    "text": "$t:common.delete"
+                },
+                {
+                    "id": "queue_job_detail_retry",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{_global.queueJobDetailKind === 'failed'}}",
+                    "actions": [
+                        {
+                            "comment": "상세에서 바로 재시도 — 삭제와 같이 확인 창으로 넘긴다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal",
+                                    "target": "queue_job_detail_modal"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "queueConfirmResults": null,
+                                        "queueConfirmMessage": "",
+                                        "queueConfirm": {
+                                            "action": "retry",
+                                            "uuids": "{{[_global.queueJobDetail?.uuid]}}",
+                                            "single": true,
+                                            "label": "{{_global.queueJobDetail?.display_name}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "queue_confirm_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-info disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.queueJobDetail?.abilities?.can_retry !== true}}"
+                    },
+                    "text": "$t:admin.schedules.queue.action.retry"
+                }
+            ]
+        }
+    ]
+}

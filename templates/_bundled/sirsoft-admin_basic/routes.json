@@ -351,6 +351,15 @@
       }
     },
     {
+      "path": "*/admin/schedules/queue",
+      "layout": "admin_schedule_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.schedules.page_title",
+        "permission": "core.queue_jobs.read"
+      }
+    },
+    {
       "path": "*/admin/schedules",
       "layout": "admin_schedule_list",
       "auth_required": true,

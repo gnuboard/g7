@@ -18,7 +18,8 @@
     "notification_definitions": "알림 설정",
     "identity_policies": "본인인증 정책",
     "mileage": "마일리지",
-    "privacy_retention": "개인정보 보유기간"
+    "privacy_retention": "개인정보 보유기간",
+    "schedules": "스케줄"
   },
   "save_success": "설정이 저장되었습니다.",
   "save_error": "설정 저장에 실패했습니다.",
@@ -788,6 +789,31 @@
       "queue_failed": "실행을 접수하지 못했습니다.",
       "preview_failed": "대상 건수를 불러오지 못했습니다.",
       "editor_label": "쇼핑몰 개인정보 보유기간 직권 실행"
+    }
+  },
+  "schedules": {
+    "title": "스케줄",
+    "description": "쇼핑몰 모듈이 등록한 스케줄입니다. 여기서는 활성/비활성만 바꿉니다.",
+    "manage_notice": "실행 주기·실행 방식은 스케줄 관리에서 변경합니다.",
+    "manage_link": "스케줄 관리에서 변경",
+    "read_only_notice": "스케줄 수정 권한이 없어 활성/비활성을 바꿀 수 없습니다.",
+    "empty": "등록된 스케줄이 없습니다.",
+    "no_read_permission": "스케줄 조회 권한이 없어 이 모듈의 스케줄을 볼 수 없습니다.",
+    "condition_unmet": "설정에서 꺼짐",
+    "toggle_success": "스케줄 상태가 변경되었습니다.",
+    "toggle_failed": "스케줄 상태 변경에 실패했습니다.",
+    "columns": {
+      "name": "작업명",
+      "frequency": "실행 주기",
+      "next_run": "다음 실행",
+      "last_result": "최근 실행 결과",
+      "status": "상태"
+    },
+    "result": {
+      "success": "성공",
+      "failed": "실패",
+      "running": "실행 중",
+      "never": "미실행"
     }
   }
 }

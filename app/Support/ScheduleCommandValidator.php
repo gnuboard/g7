@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Services\Schedule\ScheduleSecurityPolicy;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command as SymfonyCommand;
 use Symfony\Component\Console\Input\InputDefinition;
 use Throwable;
@@ -22,6 +24,8 @@ use Throwable;
  *  2. Artisan — 기본 차단, 허용목록만 통과. `config/schedule_security.php` 의 허용목록에
  *     명령명이 있고 그 항목이 선언한 옵션만 쓰였을 때 통과한다. 설치된 확장이 소유한 명령은
  *     게이트가 켜져 있으면 자동으로 허용된다. 차단목록은 최종 거부권으로 가장 먼저 평가된다.
+ *     허용·차단 목록은 서버 관리자 덮어쓰기(`storage/app/schedule_security.json`)를 더한 유효 정책이다
+ *     ({@see ScheduleSecurityPolicy} — 더하기만, 코어 차단 항목은 풀 수 없다).
  *
  *     명령 문자열은 엄격 파서로만 해석한다 — 따옴표·백슬래시·단축 옵션이 있으면 거부하고,
  *     호출부는 `resolveArtisanCommand()` 가 돌려준 (명령명, 인자배열) 로 실행해야 한다.
@@ -219,12 +223,6 @@ class ScheduleCommandValidator
     }
 
     /**
-     * shell 정책 배열 설정을 소문자 문자열 목록으로 정규화합니다.
-     *
-     * @param  string  $key  `schedule_security.shell` 하위 키
-     * @return array<int, string>
-     */
-    /**
      * 인터프리터/거부형 분류용으로 바이너리 이름을 정규화합니다.
      *
      * 분류 목록(`script_interpreters`/`reject_binaries`)은 기본 이름만 담는다.
@@ -247,6 +245,12 @@ class ScheduleCommandValidator
         return (string) preg_replace('/[0-9][0-9.]*$/', '', $name);
     }
 
+    /**
+     * shell 설정 목록(소문자·공백 제거)을 읽습니다.
+     *
+     * @param  string  $key  `schedule_security.shell.` 아래 키
+     * @return array<int, string> 정규화된 목록
+     */
     private static function shellList(string $key): array
     {
         return array_values(array_filter(array_map(
@@ -319,8 +323,8 @@ class ScheduleCommandValidator
             return self::artisanVerdict(false, self::ARTISAN_REASON_DENIED, $name);
         }
 
-        $allowlist = (array) config('schedule_security.artisan.allowlist', []);
-        $spec = self::findArtisanAllowlistSpec($allowlist, $name);
+        // ② 허용목록 — 코어 config + 서버 관리자 덮어쓰기(storage/app/schedule_security.json, 더하기만)
+        $spec = self::findArtisanAllowlistSpec(app(ScheduleSecurityPolicy::class)->artisanAllowlist(), $name);
 
         if ($spec !== null) {
             return self::verifyArtisanUsage(
@@ -511,31 +515,14 @@ class ScheduleCommandValidator
     /**
      * 명령명이 차단목록(정확 일치 또는 접두사)에 걸리는지 판정합니다.
      *
+     * 차단목록은 코어 config 에 서버 관리자 덮어쓰기를 **더한** 것이다 — 덮어쓰기로 코어 항목을 풀 수 없다.
+     *
      * @param  string  $name  명령명
      * @return bool 차단 대상이면 true
      */
     private static function isArtisanCommandDenied(string $name): bool
     {
-        $normalized = strtolower($name);
-
-        $denylist = array_map(
-            static fn ($denied): string => strtolower(trim((string) $denied)),
-            (array) config('schedule_security.artisan.denylist', []),
-        );
-
-        if (in_array($normalized, $denylist, true)) {
-            return true;
-        }
-
-        foreach ((array) config('schedule_security.artisan.denylist_prefixes', []) as $prefix) {
-            $prefix = strtolower(trim((string) $prefix));
-
-            if ($prefix !== '' && str_starts_with($normalized, $prefix)) {
-                return true;
-            }
-        }
-
-        return false;
+        return app(ScheduleSecurityPolicy::class)->isArtisanCommandDenied($name);
     }
 
     /**
@@ -608,7 +595,242 @@ class ScheduleCommandValidator
         // 확장 커맨드가 존재하지 않는다. 관리자 화면의 스케줄 저장 검증이 바로 이
         // 문맥이므로, 등록 인스턴스가 없을 때는 활성 프로바이더의 `$commands` 선언을
         // 같은 기준(클래스 네임스페이스 + 실제 명령명 대조)으로 해석한다.
-        return self::resolveProviderDeclaredCommandDefinition($name, $namespaces);
+        $declared = self::resolveProviderDeclaredCommandDefinition($name, $namespaces);
+
+        if ($declared !== null) {
+            return $declared;
+        }
+
+        // 프로바이더가 `$commands` 도 두지 않고 `boot()` 안에서만 등록하는 확장(번들 대부분)은
+        // 활성 프로바이더 옆 명령 디렉터리(`src/Console`, 재귀)에서 같은 기준으로 찾는다.
+        $class = self::resolveExtensionCommandClass($name);
+
+        if ($class === null) {
+            return null;
+        }
+
+        try {
+            /** @var SymfonyCommand $instance */
+            $instance = app()->make($class);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $instance instanceof SymfonyCommand && $instance->getName() === $name
+            ? $instance->getDefinition()
+            : null;
+    }
+
+    /**
+     * 활성 확장의 명령 디렉터리에서 명령명에 해당하는 커맨드 클래스를 찾습니다.
+     *
+     * 웹 요청(관리자 「즉시 실행」·스케줄 저장 검증·웹 크론)에서는 확장 프로바이더가 명령을
+     * 등록하지 않으므로, 로드된(= 활성) 확장 프로바이더 옆 `Console` 디렉터리(재귀)의
+     * 클래스를 훑어 명령명을 대조한다. 소유 판정은 레지스트리 경로와 같다 — 클래스가 확장
+     * 네임스페이스(`schedule_security.artisan.extension_namespaces`)에 있어야 하고, 명령명은
+     * 클래스가 선언한 시그니처(`$signature`/`$name`)와 일치해야 한다. 이름을 읽으려고
+     * 클래스를 인스턴스화하지 않는다.
+     *
+     * @param  string  $name  명령명
+     * @return class-string|null 찾지 못하면 null (fail-closed)
+     */
+    public static function resolveExtensionCommandClass(string $name): ?string
+    {
+        if ($name === '' || ! (bool) config('schedule_security.artisan.allow_extension_commands', true)) {
+            return null;
+        }
+
+        return self::extensionCommandDirectoryIndex()[$name] ?? null;
+    }
+
+    /**
+     * 활성 확장 프로바이더 옆 명령 디렉터리의 「명령명 → 클래스」 색인을 만듭니다.
+     *
+     * 같은 요청 안에서 로드된 프로바이더 구성이 같으면 다시 훑지 않는다.
+     *
+     * @return array<string, class-string> 명령명 → 커맨드 클래스
+     */
+    private static function extensionCommandDirectoryIndex(): array
+    {
+        static $cache = [];
+
+        $namespaces = array_values(array_filter(array_map(
+            static fn ($namespace): string => trim((string) $namespace),
+            (array) config('schedule_security.artisan.extension_namespaces', []),
+        )));
+
+        if ($namespaces === []) {
+            return [];
+        }
+
+        try {
+            $providers = array_keys(app()->getLoadedProviders());
+        } catch (Throwable) {
+            return [];
+        }
+
+        $key = spl_object_id(app()).'|'.implode(',', $namespaces).'|'.count($providers);
+
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+
+        $index = [];
+
+        foreach ($providers as $providerClass) {
+            if (! self::inNamespaces($providerClass, $namespaces)) {
+                continue;
+            }
+
+            foreach (self::commandDirectoriesOf($providerClass) as [$directory, $classPrefix]) {
+                foreach (self::commandClassesIn($directory, $classPrefix) as $class) {
+                    if (! self::inNamespaces($class, $namespaces)) {
+                        continue;
+                    }
+
+                    $commandName = self::declaredCommandName($class);
+
+                    if ($commandName !== null && ! isset($index[$commandName])) {
+                        $index[$commandName] = $class;
+                    }
+                }
+            }
+        }
+
+        return $cache[$key] = $index;
+    }
+
+    /**
+     * 클래스가 허용 확장 네임스페이스 안에 있는지 판정합니다.
+     *
+     * @param  string  $class  클래스명
+     * @param  array<int, string>  $namespaces  확장 네임스페이스 접두사
+     * @return bool 안에 있으면 true
+     */
+    private static function inNamespaces(string $class, array $namespaces): bool
+    {
+        foreach ($namespaces as $namespace) {
+            if (str_starts_with($class, $namespace)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 프로바이더 위치에서 그 확장의 명령 디렉터리 후보를 구합니다.
+     *
+     * 확장 규약은 `src/Providers/*ServiceProvider.php` 옆 `src/Console/`(하위 `Commands/` 포함, 재귀)다
+     * (네임스페이스 `{확장}\Providers` ↔ `{확장}\Console\…`). 비즈뿌리오처럼 `Console/` 바로 아래에 두는 확장도 있다.
+     *
+     * @param  string  $providerClass  프로바이더 클래스
+     * @return array<int, array{0: string, 1: string}> [디렉터리, 클래스 접두사] 목록
+     */
+    private static function commandDirectoriesOf(string $providerClass): array
+    {
+        try {
+            $file = (new \ReflectionClass($providerClass))->getFileName();
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (! is_string($file) || $file === '') {
+            return [];
+        }
+
+        $namespace = substr($providerClass, 0, (int) strrpos($providerClass, '\\'));
+        $providerDir = dirname($file);
+
+        if (str_ends_with($namespace, '\\Providers')) {
+            $base = substr($namespace, 0, -strlen('\\Providers'));
+            $directory = dirname($providerDir).DIRECTORY_SEPARATOR.'Console';
+        } else {
+            $base = $namespace;
+            $directory = $providerDir.DIRECTORY_SEPARATOR.'Console';
+        }
+
+        return is_dir($directory) ? [[$directory, $base.'\\Console']] : [];
+    }
+
+    /**
+     * 명령 디렉터리 아래의 커맨드 클래스를 경로 규약(PSR-4)으로 구합니다.
+     *
+     * @param  string  $directory  명령 디렉터리
+     * @param  string  $classPrefix  그 디렉터리에 대응하는 네임스페이스
+     * @return array<int, class-string> 존재하는 구체 커맨드 클래스
+     */
+    private static function commandClassesIn(string $directory, string $classPrefix): array
+    {
+        $classes = [];
+
+        try {
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS));
+        } catch (Throwable) {
+            return [];
+        }
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($directory) + 1, -4);
+            $class = $classPrefix.'\\'.str_replace(['/', DIRECTORY_SEPARATOR], '\\', $relative);
+
+            try {
+                if (! class_exists($class)) {
+                    continue;
+                }
+
+                $reflection = new \ReflectionClass($class);
+            } catch (Throwable) {
+                continue;
+            }
+
+            if (! $reflection->isAbstract() && $reflection->isSubclassOf(SymfonyCommand::class)) {
+                $classes[] = $class;
+            }
+        }
+
+        return $classes;
+    }
+
+    /**
+     * 커맨드 클래스가 선언한 명령명을 인스턴스화 없이 읽습니다.
+     *
+     * @param  class-string  $class  커맨드 클래스
+     * @return string|null 명령명 (선언이 없으면 null)
+     */
+    private static function declaredCommandName(string $class): ?string
+    {
+        try {
+            $reflection = new \ReflectionClass($class);
+
+            foreach ($reflection->getAttributes(AsCommand::class) as $attribute) {
+                $commandName = $attribute->newInstance()->name;
+
+                if (is_string($commandName) && $commandName !== '') {
+                    return explode('|', $commandName)[0];
+                }
+            }
+
+            $defaults = $reflection->getDefaultProperties();
+        } catch (Throwable) {
+            return null;
+        }
+
+        $signature = trim((string) ($defaults['signature'] ?? ''));
+
+        if ($signature !== '') {
+            $commandName = preg_split('/[\s{]/', $signature, 2)[0] ?? '';
+
+            return $commandName !== '' ? $commandName : null;
+        }
+
+        $commandName = trim((string) ($defaults['name'] ?? ''));
+
+        return $commandName !== '' ? $commandName : null;
     }
 
     /**

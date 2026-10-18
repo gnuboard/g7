@@ -85,14 +85,13 @@
               <span>$t:sirsoft-ecommerce.admin.category.form.name</span>
               <span class="text-required">*</span>
             </label>
-            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.category.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
-            <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.category.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}" error="{{_local.errors?.name?.[0] ?? ''}}"/>
           </div>
         </div>
         <div data-ref="form_description_field">
           <div>
             <label data-ref="form_description_label" class="form-label">$t:sirsoft-ecommerce.admin.category.form.description</label>
-            <multilingual-input data-type="composite" data-ref="form_description_input" name="description" placeholder="$t:sirsoft-ecommerce.admin.category.form.description_placeholder" :multiline="true" :rows="4" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
+            <multilingual-input data-type="composite" data-ref="form_description_input" name="description" placeholder="$t:sirsoft-ecommerce.admin.category.form.description_placeholder" inputType="textarea" :rows="4" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; categories?.data?.abilities?.can_update !== true}}"/>
           </div>
         </div>
         <div data-ref="form_image_field">

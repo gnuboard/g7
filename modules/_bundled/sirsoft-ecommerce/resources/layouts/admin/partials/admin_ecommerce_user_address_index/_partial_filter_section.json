@@ -247,7 +247,7 @@
                                     "name": "SearchableDropdown",
                                     "actions": [
                                         {
-                                            "comment": "응답을 그대로 쓰지 않고 `{value,label,description}` 으로 접는다 — 드롭다운이 그 세 키만 읽는다.\n                   실패하면 이전 결과를 남기지 않고 비운다(방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다).\n                   늦게 온 옛 응답 가드: 지금 검색어를 먼저 담고, 결과에는 **응답이 실어 온 검색어**(`meta.keyword`)를\n                   도장한다 — 두 값이 같을 때만 후보를 보인다(마일리지 수동 지급·쿠폰 직접 발급 창과 같은 가드).\n                   `$event`·`$args` 로 도장하면 그것은 응답이 도착한 순간의 입력이라, 한 글자가 부른 큰 옛 응답이\n                   늦게 와서 지금 검색어의 것으로 둔갑한다. 서버가 검색어를 trim 하므로 지금 값도 trim 해 견준다.\n                   검색칸을 비우거나 공백만 적으면 요청하지 않는다 — 코어 회원 검색은 빈 keyword 를 422 로 거절한다.",
+                                            "comment": "응답을 그대로 쓰지 않고 `{value,label,description}` 으로 접는다 — 드롭다운이 그 세 키만 읽는다.\n                   실패하면 이전 결과를 남기지 않고 비운다(방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다).\n                   늦게 온 옛 응답 가드: 지금 검색어를 먼저 담고, 결과에는 **응답이 실어 온 검색어**(`meta.keyword`)를\n                   도장한다 — 두 값이 같을 때만 후보를 보인다(마일리지 수동 지급·쿠폰 직접 발급 창과 같은 가드).\n                   `$event`·`$args` 로 도장하면 그것은 응답이 도착한 순간의 입력이라, 한 글자가 부른 큰 옛 응답이\n                   늦게 와서 지금 검색어의 것으로 둔갑한다. 서버가 검색어를 trim 하므로 지금 값도 trim 해 견준다.\n                   검색칸을 비우거나 공백만 적으면 요청하지 않는다 — 코어 회원 검색은 빈 keyword 를 422 로 거절한다.\n                   입력은 300ms 로 모아 한 번만 찾는다 — debounce 는 이벤트 바로 아래 액션(여기 sequence)에 달아야 먹는다.",
                                             "event": "onSearch",
                                             "handler": "sequence",
                                             "actions": [
@@ -269,7 +269,6 @@
                                                             "keyword": "{{$args[0]}}"
                                                         }
                                                     },
-                                                    "debounce": 300,
                                                     "onSuccess": {
                                                         "handler": "setState",
                                                         "params": {
@@ -287,7 +286,8 @@
                                                         }
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "debounce": 300
                                         },
                                         {
                                             "comment": "고른 회원은 uuid 로 담는다(동명이인이 있고, 이름을 바꿔도 같은 사람을 가리켜야 한다).\n                   이름표는 지금 화면에 있는 후보(검색 결과 + 이미 고른 칩)에서 골라 따로 남긴다",
@@ -673,6 +673,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "isDefault",
                                                 "value": "all",
                                                 "checked": "{{(_local.filter.isDefault || 'all') === 'all'}}",
@@ -712,6 +713,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "isDefault",
                                                 "value": "1",
                                                 "checked": "{{_local.filter.isDefault === '1'}}",
@@ -751,6 +753,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "isDefault",
                                                 "value": "0",
                                                 "checked": "{{_local.filter.isDefault === '0'}}",

@@ -163,6 +163,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "_bulkApplyAll",
                                                 "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.apply_all",
                                                 "className": "radio",
@@ -216,6 +217,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "_bulkApplyAll",
                                                 "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.apply_selected",
                                                 "className": "radio",

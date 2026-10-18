@@ -23,6 +23,11 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
 
+    /**
+     * 통화 설정과 첨부 저장소 대역을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,6 +41,11 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
         $this->app->when(ClaimAttachmentService::class)->needs(StorageInterface::class)->give(fn () => $storage);
     }
 
+    /**
+     * 테스트 통화 설정을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -45,6 +55,10 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
 
     /**
      * 미귀속(pending) 첨부를 만들고 나이를 조정합니다.
+     *
+     * @param  Order  $order  첨부를 올린 주문
+     * @param  int  $ageDays  첨부가 만들어진 지 지난 일수
+     * @return ClaimImage 만든 첨부
      */
     protected function makePendingImage(Order $order, int $ageDays): ClaimImage
     {
@@ -54,6 +68,15 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
         return $image->fresh();
     }
 
+    /**
+     * 보존 기간이 지난 미귀속 첨부만 지우고 보존 기간 이내·귀속 첨부는 남기는지 확인합니다.
+     *
+     * @scenario command=prune_pending_claim_images, path=prune
+     *
+     * @effects only_stale_orphans_are_cleaned, live_or_recent_rows_are_kept
+     *
+     * @return void 반환값 없음
+     */
     public function test_prunes_only_expired_pending_uploads(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -75,6 +98,15 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
         $this->assertDatabaseHas('ecommerce_claim_images', ['id' => $attached->id]);
     }
 
+    /**
+     * dry-run 은 삭제 대상 건수만 알리고 지우지 않는지 확인합니다.
+     *
+     * @scenario command=prune_pending_claim_images, path=dry_run
+     *
+     * @effects dry_run_changes_nothing
+     *
+     * @return void 반환값 없음
+     */
     public function test_dry_run_counts_targets_without_deleting(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -87,6 +119,15 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
         $this->assertDatabaseHas('ecommerce_claim_images', ['id' => $expired->id]);
     }
 
+    /**
+     * 보존 일수가 1 미만이면 정리를 통째로 건너뛰는지 확인합니다.
+     *
+     * @scenario command=prune_pending_claim_images, path=skip
+     *
+     * @effects non_positive_retention_skips_cleanup
+     *
+     * @return void 반환값 없음
+     */
     public function test_days_below_one_skips_the_prune_entirely(): void
     {
         $order = $this->deliveredClaimOrder();
@@ -99,6 +140,12 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
 
     /**
      * 모듈이 이 커맨드를 스케줄로 등록한다 (등록 누락 회귀 차단).
+     *
+     * @scenario command=prune_pending_claim_images, path=schedule
+     *
+     * @effects command_declared_in_module_schedules
+     *
+     * @return void 반환값 없음
      */
     public function test_command_is_registered_in_module_schedules(): void
     {
@@ -106,6 +153,7 @@ class PrunePendingClaimImagesCommandTest extends ModuleTestCase
             ->firstWhere('command', 'sirsoft-ecommerce:prune-pending-claim-images');
 
         $this->assertNotNull($entry, '임시 첨부 정리 스케줄이 등록되어야 합니다.');
-        $this->assertSame('daily', $entry['schedule']);
+        // 옛 등록(daily)과 같은 시각 — 매일 자정
+        $this->assertSame(['daily', '0 0 * * *'], [$entry['frequency'], $entry['expression']]);
     }
 }

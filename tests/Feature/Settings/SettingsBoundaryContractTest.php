@@ -59,6 +59,7 @@ class SettingsBoundaryContractTest extends TestCase
             'drivers.websocket_port' => 'drivers_websocket_port',
             'drivers.websocket_server_port' => 'drivers_websocket_server_port',
             'drivers.log_days' => 'drivers_log_days',
+            'drivers.queue_record_retention_days' => 'drivers_queue_record_retention_days',
             'identity.challenge_ttl_minutes' => 'identity_challenge_ttl_minutes',
             'identity.max_attempts' => 'identity_max_attempts',
         ];

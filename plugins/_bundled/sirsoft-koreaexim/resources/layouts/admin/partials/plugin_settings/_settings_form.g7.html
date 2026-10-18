@@ -1,8 +1,7 @@
 <partial description="인증키와 자동 갱신 정책 입력">
-<!-- 설정 폼 — 인증키·자동 관리·갱신 시각·환율 종류·재시도·소수 자릿수·조회 소급일·이력 보존일·실패 알림·실행 요일. 입력은 data-key 폼(_local.form)에 묶이고 저장은 상위 레이아웃의 저장 버튼이 한다 -->
+<!-- 설정 폼 — 인증키·자동 관리·갱신 일정(스케줄 관리 링크)·환율 종류·재시도·소수 자릿수·조회 소급일·이력 보관 기간·실패 알림·실행 요일. 입력은 data-key 폼(_local.form)에 묶이고 저장은 상위 레이아웃의 저장 버튼이 한다. e2e:allow 화면 축은 tests/Playwright/specs/exchange-rate-settings.spec.ts 가 지난다 -->
 <div class="admin-card mb-4">
 <h3 class="card-title">$t:sirsoft-koreaexim.settings_tab</h3>
-<p class="form-hint">$t:sirsoft-koreaexim.time_hint</p>
 <div class="grid-2col-responsive">
 <div class="form-group">
 <label class="form-label" htmlFor="koreaexim_auth_key">$t:sirsoft-koreaexim.fields.auth_key</label>
@@ -14,11 +13,25 @@
 <toggle data-type="composite" id="koreaexim_auto_manage" name="auto_manage" disabled="{{_computed.isSettingsReadOnly}}"/>
 <span data-if="{{_local.errors?.['auto_manage']}}" class="form-error">{{_local.errors?.['auto_manage']?.[0] ?? ''}}</span>
 </div>
-<div class="form-group">
-<label class="form-label" htmlFor="koreaexim_update_time">$t:sirsoft-koreaexim.fields.update_time</label>
-<input id="koreaexim_update_time" name="update_time" type="text"  placeholder="11:30"  disabled="{{_computed.isSettingsReadOnly}}"/>
+<!-- 갱신 일정 — 갱신 시각은 코어 스케줄 행(plugin/sirsoft-koreaexim/update-rates)이 원천이라 여기서는 입력받지 않는다. 다음 실행 시각과 스케줄 관리 화면 링크(소유 필터 쿼리)만 보여 준다.
+  2열 격자의 한 칸이 아니라 한 줄 전체를 쓴다(md:col-span-2) — 안내 상자와 경고가 반 칸에 끼면 줄바꿈이 많아진다.
+  「스케줄 관리에서 변경」 안내는 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이고, 11:00 권장 안내는 이 블록에만 둔다 -->
+<div data-ref="koreaexim_schedule_block" class="form-group md:col-span-2">
+<span class="form-label">$t:sirsoft-koreaexim.schedule.title</span>
+<p data-ref="koreaexim_schedule_next_run" class="text-sm">$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at ?? '-'}}</p>
 <p class="form-hint">$t:sirsoft-koreaexim.site_time {{koreaeximStatus?.data?.update_time_site ?? '-'}}</p>
-<span data-if="{{_local.errors?.['update_time']}}" class="form-error">{{_local.errors?.['update_time']?.[0] ?? ''}}</span>
+<p data-ref="koreaexim_schedule_inactive" data-if="{{koreaeximStatus?.data?.schedule?.is_active === false}}" role="status" class="alert-warning">$t:sirsoft-koreaexim.schedule.inactive</p>
+<p data-ref="koreaexim_schedule_missing" data-if="{{!!koreaeximStatus?.data &amp;&amp; !koreaeximStatus?.data?.schedule}}" role="status" class="alert-warning">$t:sirsoft-koreaexim.schedule.missing</p>
+<p class="form-hint">$t:sirsoft-koreaexim.time_hint</p>
+<div data-ref="koreaexim_schedule_notice" class="alert-info">
+<div class="flex gap-3">
+<icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+<div>
+<p class="text-label-subtle">$t:sirsoft-koreaexim.schedule.managed_hint</p>
+<a data-ref="koreaexim_schedule_link" href="/admin/schedules?extension_type=plugin&amp;extension_identifier=sirsoft-koreaexim" class="text-link">$t:sirsoft-koreaexim.schedule.manage_link</a>
+</div>
+</div>
+</div>
 </div>
 <div class="form-group">
 <label class="form-label" htmlFor="koreaexim_rate_type">$t:sirsoft-koreaexim.fields.rate_type</label>
@@ -55,6 +68,7 @@
 <label class="form-label" htmlFor="koreaexim_notify_on_failure">$t:sirsoft-koreaexim.fields.notify_on_failure</label>
 <toggle data-type="composite" id="koreaexim_notify_on_failure" name="notify_on_failure" disabled="{{_computed.isSettingsReadOnly}}"/>
 <span data-if="{{_local.errors?.['notify_on_failure']}}" class="form-error">{{_local.errors?.['notify_on_failure']?.[0] ?? ''}}</span>
+<p class="form-hint">$t:sirsoft-koreaexim.hints.notify_on_failure</p>
 </div>
 <div class="form-group">
 <label class="form-label">$t:sirsoft-koreaexim.fields.run_days</label>

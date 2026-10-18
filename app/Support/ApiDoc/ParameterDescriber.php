@@ -204,6 +204,8 @@ class ParameterDescriber
         'log_driver' => '로그 드라이버 (single/daily/stack)',
         'log_level' => '로그 레벨 (debug/info/warning/error 등)',
         'log_days' => '로그 파일 보관 일수',
+        'queue_job_log_enabled' => '큐 작업 처리 기록(성공·실패) 사용 여부',
+        'queue_record_retention_days' => '큐 처리 기록·실패 작업 공통 보관 기간 (일, 1~90)',
         'search_engine_driver' => '검색 엔진 드라이버 (Scout 엔진 선택)',
         'session_lifetime' => '세션 유효 시간 (분)',
 
@@ -248,8 +250,6 @@ class ParameterDescriber
         'og_image_default_width' => '기본 Open Graph 이미지 너비 (px)',
         'og_image_default_height' => '기본 Open Graph 이미지 높이 (px)',
         'sitemap_enabled' => 'sitemap.xml 생성 사용 여부',
-        'sitemap_schedule' => 'sitemap 자동 생성 주기',
-        'sitemap_schedule_time' => 'sitemap 자동 생성 시각',
         'sitemap_cache_ttl' => 'sitemap 캐시 유효 시간 (초)',
         'bot_detection_enabled' => '검색엔진 봇 감지 사용 여부 (봇 요청에 SEO 렌더링 적용)',
         'bot_detection_library_enabled' => '봇 감지 라이브러리 사용 여부 (User-Agent 목록 대신 라이브러리 판정)',

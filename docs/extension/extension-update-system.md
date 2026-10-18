@@ -939,7 +939,7 @@ class NotificationTemplate extends Model
 | ---- | -------------- | --------- |
 | `App\Models\NotificationTemplate` | `subject`, `body`, `click_url`, `recipients`, `is_active` | 코어 |
 | `App\Models\NotificationDefinition` | `name`, `is_active` | 코어 |
-| `App\Models\Schedule` | `expression`, `command`, `timeout`, `is_active` | 코어 (사전 설계, 시더 미존재) |
+| `App\Models\Schedule` | `expression`, `frequency`, `timeout`, `is_active`, `without_overlapping`, `on_one_server`, `dispatch_mode`, `queue_connection`, `queue_name`, `history_mode`, `notify_on_failure`, `run_in_maintenance` + 다국어 `label`·`description`(로케일 단위) | 코어 (7.2.0 — `CoreScheduleSeeder`·확장 `getSchedules()` 동기화) |
 | `Modules\Sirsoft\Board\Models\BoardType` | `name` | 게시판 모듈 |
 | `Modules\Sirsoft\Ecommerce\Models\ClaimReason` | `name`, `sort_order`, `is_active` | 이커머스 모듈 |
 
@@ -1011,29 +1011,37 @@ class Upgrade_1_3_0 implements UpgradeStepInterface
 - 실패 시: warning 로그만 기록 (예외 전파 안 함)
 - 자동 등록: `CoreServiceProvider::registerCoreHookListeners()` 스캔. **배포 시 `php artisan hooks:cache` 로 훅 캐시를 다시 굽는다** — 캐시(`bootstrap/cache/hooks.php`)는 파일 부재·손상에만 폴백하므로, 굽지 않으면 이전 구독(`sync` 없음)이 그대로 쓰인다
 
-### 확장 스케줄 등록
+### 확장 스케줄 동기화 (7.2.0~)
 
-> 파일: `routes/console.php`
+> 파일: `app/Extension/Helpers/ExtensionScheduleSyncHelper.php` · 상세: [module-schedules.md](module-schedules.md)
 
-활성 모듈/플러그인의 `getSchedules()` 메서드를 읽어 Laravel 스케줄러에 자동 등록합니다.
+7.2.0 부터 `routes/console.php` 는 확장 선언을 직접 읽지 않습니다. 모듈/플러그인의 `getSchedules()` 선언은 선언형 산출물 동기화(`syncDeclarativeArtifacts()`)의 마지막 단계에서 `schedules` 표의 행으로 동기화되고, 코어 스케줄러는 그 행을 읽어 실행합니다([scheduling.md](../backend/scheduling.md)).
 
 ```php
-// module.php에서 정의
+// module.php에서 정의 — 항목 키는 코어 카탈로그(config/core.php schedules)와 같고 name 을 더한다
 public function getSchedules(): array
 {
     return [
         [
+            'name' => 'sync-stock',
+            'type' => 'artisan',
+            'label' => ['ko' => '재고 동기화', 'en' => 'Sync stock'],
             'command' => 'sirsoft-ecommerce:sync-stock',
-            'schedule' => 'hourly',           // 또는 cron: '*/30 * * * *'
-            'description' => '재고 동기화',
-            'enabled_config' => 'sirsoft-ecommerce.stock.auto_sync',
+            'expression' => '0 * * * *',
+            'enabled_condition' => [
+                ['source' => 'module_setting', 'key' => 'stock.auto_sync', 'operator' => 'truthy', 'default' => true],
+            ],
         ],
     ];
 }
 ```
 
-- cron expression vs 메서드명 자동 분기
-- `enabled_config`: 확장 설정값으로 조건부 활성화
+- 행 식별: (`module`|`plugin`, 확장 식별자, `name`). 업데이트 때 새 항목은 생성, 기존 항목은 운영자 수정(`user_overrides`)을 보존하며 갱신, 선언에서 빠진 항목은 이력과 함께 삭제
+- 명령·유형·이름·실행 조건·시간대는 선언이 소유한다(관리자 화면에서 잠김). 주기·실행 방식·명칭은 운영자가 바꾸고 보존된다
+- 빈 선언인데 기존 행이 있으면 정리를 막고 경고만 남긴다(데이터 손실 방어)
+- 비활성 확장의 행은 남지만 실행되지 않는다. 「데이터도 함께 삭제」로 제거하면 행·이력을 지운다
+- 업데이트는 선언 동기화를 업그레이드 스텝보다 먼저 한다 — 업그레이드 스텝이 옛 설정값을 행으로 옮길 수 있다
+- 7.1.x 형식(`schedule`·`enabled_config`·`description` 문자열)은 `normalizeLegacySchedules()` 가 새 형식으로 바꾼다. 이때 `name` 은 명령 문자열에서 만들어진다(`sirsoft-ecommerce:sync-stock` → `sirsoft-ecommerce-sync-stock`)
 
 ---
 
@@ -1046,6 +1054,7 @@ public function getSchedules(): array
 | ExtensionPendingHelper | `app/Extension/Helpers/ExtensionPendingHelper.php` |
 | ExtensionRoleSyncHelper | `app/Extension/Helpers/ExtensionRoleSyncHelper.php` |
 | ExtensionMenuSyncHelper | `app/Extension/Helpers/ExtensionMenuSyncHelper.php` |
+| ExtensionScheduleSyncHelper | `app/Extension/Helpers/ExtensionScheduleSyncHelper.php` |
 | SettingsMigrator | `app/Extension/Helpers/SettingsMigrator.php` |
 | ExtensionUpdateQueueListener | `app/Listeners/ExtensionUpdateQueueListener.php` |
 | UpgradeStepInterface | `app/Contracts/Extension/UpgradeStepInterface.php` |

@@ -1497,7 +1497,8 @@
       "connection": "연결 탭",
       "alimtalk_templates": "알림톡 템플릿 탭",
       "settings": "설정 탭",
-      "history": "실행 이력 탭"
+      "history": "실행 이력 탭",
+      "schedules": "스케줄"
     },
     "extensions_list_view_gallery": "확장 목록 — 갤러리 보기",
     "extensions_list_view_list": "확장 목록 — 목록 보기",
@@ -1771,6 +1772,13 @@
     "analytics_row_trend": "방문자 통계 한 항목 추이",
     "passwordExpiryPreview": "비밀번호 만료 대상 건수",
     "passwordExpiryManualRuns": "비밀번호 만료 직권 실행 상태",
-    "user_check": "회원 등록 권한 확인"
+    "user_check": "회원 등록 권한 확인",
+    "schedule_owners": "스케줄 소유자 목록",
+    "schedule_status": "스케줄러 상태",
+    "queue_status": "큐 등록 현황",
+    "queue_pending": "큐 대기 Job",
+    "queue_failed": "큐 실패 Job",
+    "queue_logs": "큐 처리 기록",
+    "coreSchedules": "코어 예약 작업 목록"
   }
 }

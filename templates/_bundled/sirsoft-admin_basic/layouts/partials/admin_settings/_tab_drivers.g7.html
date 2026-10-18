@@ -2,7 +2,9 @@
   이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.
   판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과
   지금 값을 견줘 "바뀐 항목인데 시험 성공 기록이 없다" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다.
-  큐 카드의 「큐 워커」 구역(#139)은 워커를 돌리는 연결·큐를 등록하고 상태(queueStatus 데이터 소스)를 보여 준다 — 등록 판정·오류는 서버가 한다. -->
+  큐 카드의 「큐 워커」 구역(#139)은 워커를 돌리는 연결·큐를 등록하고 상태(queueStatus 데이터 소스)를 보여 준다 — 등록 판정·오류는 서버가 한다.
+  큐 카드 끝의 「처리 기록」 구역은 Job 처리 기록 켜기와 기록·실패 작업 보관 기간(일)을 고친다. -->
+
 <partial description="환경설정 드라이버 탭 콘텐츠">
   <div data-ref="tab_content_drivers" data-if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}">
     <div data-ref="card_storage_settings" class="admin-card">
@@ -549,6 +551,46 @@
               <span class="text-sm font-medium text-gray-800 dark:text-gray-200">$t:admin.settings.drivers.queue.worker.supervisor.title</span>
               <p class="text-label-subtle">$t:admin.settings.drivers.queue.worker.supervisor.desc</p>
               <code data-each="cmd in queueStatus?.data?.commands ?? []" data-testid="queue-supervisor-command" class="block text-xs bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 px-2 py-1 rounded font-mono break-all">{{cmd.command}}</code>
+            </div>
+          </div>
+        </div>
+        <!-- 처리 기록·보관 기간 — 모든 Job 의 처리 완료·실패를 기록할지와, 그 기록과 실패 작업(failed_jobs)을 며칠 남길지(공통 1개, 기본 7일).
+             지난 기록은 정리 스케줄(queue-prune-records)이 지운다 — 그 다음 실행 일시를 안내 상자에 보인다. 한계값은 설정 응답의 limits 메타가 준다.
+             드라이버와 무관한 값이라 sync 여도 보인다. 기록 자체는 스케줄 관리 > 큐 > 처리 기록에서 본다. -->
+        <div data-ref="queue_record_section" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 row-stack">
+          <h4 class="text-heading">$t:admin.settings.drivers.queue.records.title</h4>
+          <div data-ref="toggle_queue_job_log_enabled" class="flex-between">
+            <div>
+              <span class="text-heading">$t:admin.settings.drivers.queue.records.job_log_enabled</span>
+              <p class="text-label-subtle">$t:admin.settings.drivers.queue.records.job_log_enabled_desc</p>
+            </div>
+            <toggle data-type="composite" name="drivers.queue_job_log_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+          <div data-ref="field_queue_record_retention_days">
+            <label class="form-label" htmlFor="drivers_queue_record_retention_days">$t:admin.settings.drivers.queue.records.retention_days</label>
+            <div class="flex-center gap-2">
+              <input id="drivers_queue_record_retention_days" type="number" name="drivers.queue_record_retention_days" placeholder="7" min="{{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_max ?? 90}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['drivers.queue_record_retention_days'] ? 'input input-w-md input-error' : 'input input-w-md'}}"/>
+              <span class="text-sm text-gray-700 dark:text-gray-300">$t:admin.settings.drivers.queue.records.days_suffix</span>
+            </div>
+            <span data-if="{{_local.errors?.['drivers.queue_record_retention_days']}}" class="form-error">{{_local.errors?.['drivers.queue_record_retention_days']?.[0] ?? ''}}</span>
+            <p class="form-hint">$t:admin.settings.drivers.queue.records.retention_days_hint|min={{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_min ?? 1}}|max={{_local?.form?._meta?.limits?.drivers_queue_record_retention_days_max ?? 90}}</p>
+          </div>
+          <!-- 처리 기록 보기 + 정리 스케줄 안내 — 기록을 보는 곳과 지우는 스케줄을 한 상자에 둔다(예전에는 같은 경로 문구가 토글 설명과 링크에 두 번 있었다). -->
+          <div data-ref="queue_records_schedule_notice" class="alert-info">
+            <div class="flex gap-3">
+              <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+              <div class="min-w-0 space-y-1">
+                <p class="text-label-subtle">$t:admin.settings.drivers.queue.records.schedule_managed</p>
+                <p data-ref="queue_records_schedule_notice_next_run" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.is_active !== false &amp;&amp; !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.next_run_at}}" class="text-label-subtle flex-center flex-wrap gap-1">
+                  <span>$t:admin.settings.schedule_link.next_run</span>
+                  <span class="font-medium">{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.next_run_at | datetime}}</span>
+                </p>
+                <p data-ref="queue_records_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
+                <div class="flex-center flex-wrap gap-3">
+                  <a data-ref="queue_records_link" href="/admin/schedules/queue?view=logs" class="text-link">$t:admin.settings.drivers.queue.records.view_link</a>
+                  <a data-ref="queue_records_schedule_notice_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=queue-prune-records" class="text-link">$t:admin.settings.schedule_link.change</a>
+                </div>
+              </div>
             </div>
           </div>
         </div>

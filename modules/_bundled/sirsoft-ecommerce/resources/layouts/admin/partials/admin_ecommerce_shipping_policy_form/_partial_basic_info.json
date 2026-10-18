@@ -67,17 +67,9 @@
                                         "maxLength": 200,
                                         "required": true,
                                         "layout": "tabs",
-                                        "disabled": "{{_computed.isReadOnly}}"
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "error": "{{_local.errors?.name?.[0] ?? ''}}"
                                     }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_local.errors?.name}}",
-                                    "props": {
-                                        "className": "form-error-xs"
-                                    },
-                                    "text": "{{_local.errors?.name?.[0] ?? ''}}"
                                 }
                             ]
                         }

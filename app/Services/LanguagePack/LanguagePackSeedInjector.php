@@ -98,6 +98,44 @@ class LanguagePackSeedInjector
     }
 
     /**
+     * core.schedules.config 필터 — config('core.schedules') 카탈로그의 label·description 에 locale 키 병합.
+     *
+     * seed/schedules.json 형식: `{ "<스케줄 name>": { "label": "…", "description": "…" } }`.
+     * 카탈로그는 name 을 키로 쓰는 연관 배열이다(CoreScheduleSeeder 가 동기화). 카탈로그에 없는 name 은 무시한다.
+     *
+     * @param  array<string, mixed>  $schedules  스케줄 카탈로그 (name ⇒ 선언)
+     * @return array<string, mixed> locale 키가 보강된 카탈로그
+     *
+     * @since 7.2.0
+     */
+    public function injectCoreSchedules(array $schedules): array
+    {
+        foreach ($this->extraCoreLocales() as $locale) {
+            $seed = $this->loadCoreSeed($locale, 'schedules');
+            if (! $seed) {
+                continue;
+            }
+            foreach ($schedules as $name => $schedule) {
+                if (! is_array($schedule) || ! is_array($seed[$name] ?? null)) {
+                    continue;
+                }
+                foreach (['label', 'description'] as $field) {
+                    $value = $seed[$name][$field] ?? null;
+                    if (! is_string($value) || $value === '') {
+                        continue;
+                    }
+                    if (! is_array($schedules[$name][$field] ?? null)) {
+                        $schedules[$name][$field] = [];
+                    }
+                    $schedules[$name][$field][$locale] = $value;
+                }
+            }
+        }
+
+        return $schedules;
+    }
+
+    /**
      * seed.notifications.translations 필터 — Definition × Template 3-tier 병합.
      *
      * @param  array<int, mixed>  $definitions  알림 정의 배열

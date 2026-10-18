@@ -77,6 +77,23 @@
           <toggle data-type="composite" name="upload.orphan_cleanup_enabled" disabled="{{_computed.isReadOnly}}"/>
           <p class="form-hint">$t:admin.settings.upload.orphan_cleanup_enabled_hint</p>
         </div>
+        <!-- 스케줄로 도는 작업 안내 — 고정 시각 대신 그 작업의 다음 실행 일시(조회 권한이 있을 때)와 스케줄 관리 링크를 보인다. 끈 스케줄이면 그 사실을 알린다. -->
+        <div data-ref="orphan_cleanup_schedule_notice" class="alert-info">
+          <div class="flex gap-3">
+            <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+            <div class="min-w-0 space-y-1">
+              <p class="text-label-subtle">$t:admin.settings.upload.orphan_cleanup_schedule_notice</p>
+              <p data-ref="orphan_cleanup_schedule_notice_next_run" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.is_active !== false &amp;&amp; !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.next_run_at}}" class="text-label-subtle flex-center flex-wrap gap-1">
+                <span>$t:admin.settings.schedule_link.next_run</span>
+                <span class="font-medium">{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.next_run_at | datetime}}</span>
+              </p>
+              <p data-ref="orphan_cleanup_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
+              <div class="flex-center flex-wrap gap-3">
+                <a data-ref="orphan_cleanup_schedule_notice_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=attachments-prune-orphans" class="text-link">$t:admin.settings.schedule_link.change</a>
+              </div>
+            </div>
+          </div>
+        </div>
         <div data-ref="field_orphan_retention_days">
           <label class="form-label">$t:admin.settings.upload.orphan_retention_days</label>
           <input type="number" name="upload.orphan_retention_days" min="{{_local?.form?._meta?.limits?.upload_orphan_retention_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.upload_orphan_retention_days_max ?? 3650}}" disabled="{{_computed.isReadOnly}}" class="input"/>

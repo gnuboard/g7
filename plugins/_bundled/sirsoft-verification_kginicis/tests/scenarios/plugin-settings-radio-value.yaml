@@ -1,0 +1,15 @@
+feature: KG이니시스 본인인증 설정 — 라디오 value 가 폼 자동 바인딩으로 덮이지 않는다
+
+description: |
+  이슈 #17 — 이름 있는 라디오가 폼 자동 바인딩에 값을 빼앗기던 결함군(스케줄 목록 필터에서 처음 확인). `data-key` 카드 아래 이름 있는 라디오는
+  엔진 자동 바인딩이 value 를 현재 상태값으로 덮는다(트러블슈팅 form 사례 4). 라디오는 `:autoBinding="false"` 로 끄고
+  value·checked·change 를 스스로 갖는다.
+
+axes:
+  case: [plugin_settings_duplicate_field]
+
+effects:
+  - radio_value_not_overwritten_by_auto_binding
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/resources/js/__tests__/layouts/plugin-settings-radio-value.test.ts

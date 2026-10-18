@@ -1,5 +1,5 @@
 {
-    "comment": "예약 작업 하나를 지우기 전 되묻는 창. 지울 대상은 **이름과 번호를 따로** 담아 온다 — 화면에는\n  이름을, 요청에는 번호를 쓰기 때문이고, 그래서 이 창은 서버를 다시 부르지 않는다.\n  지나간 실행 이력이 함께 사라지는지는 서버가 정한다. 창은 그 부분을 다루지 않는다.",
+    "comment": "예약 작업을 지우기 전 되묻는 창. 단건(행 메뉴)과 일괄(표 위 선택 삭제)이 함께 쓴다 —\n  `deleteTargetIds` 가 있으면 일괄(`DELETE /bulk`), 없으면 `deleteTargetId` 한 건이다.\n  문장도 두 갈래다 — 한 건이면 「이 스케줄을…」 + 대상 작업명 상자, 여러 건이면 「선택한 N개 스케줄을…」(배송정책 일괄 삭제 창과 같다).\n  되돌릴 수 없다는 사실은 경고 상자로 따로 알린다. 성공 문구도 한 건·여러 건이 다르고, 여러 건은 서버가 준 문장(지운 개수)을 먼저 쓴다.\n  코어·확장이 등록한 작업은 서버가 거절한다(목록에서 이미 잠겨 이 창이 열리지 않는다).",
     "meta": {
         "is_partial": true,
         "description": "스케줄 삭제 확인 모달",
@@ -15,26 +15,72 @@
     "children": [
         {
             "type": "basic",
-            "name": "P",
-            "props": {
-                "className": "text-gray-700 dark:text-gray-300"
-            },
-            "text": "$t:admin.schedules.modals.delete_confirm"
-        },
-        {
-            "type": "basic",
             "name": "Div",
             "props": {
-                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+                "className": "space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
-                    "name": "Span",
+                    "name": "P",
+                    "if": "{{!((_global.deleteTargetIds ?? []).length > 0)}}",
                     "props": {
-                        "className": "text-primary font-medium"
+                        "className": "text-gray-700 dark:text-gray-300"
                     },
-                    "text": "{{_global.deleteTargetName}}"
+                    "text": "$t:admin.schedules.modals.delete_confirm"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{(_global.deleteTargetIds ?? []).length > 0}}",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:admin.schedules.modals.delete_confirm_bulk|count={{(_global.deleteTargetIds ?? []).length}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!((_global.deleteTargetIds ?? []).length > 0)}}",
+                    "props": {
+                        "className": "p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary font-medium"
+                            },
+                            "text": "{{_global.deleteTargetName}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "schedule_delete_warning",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.schedules.modals.delete_warning"
+                        }
+                    ]
                 }
             ]
         },
@@ -56,17 +102,19 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "btn btn-secondary",
                         "disabled": "{{_global.isDeleting}}"
                     },
                     "text": "$t:common.cancel"
                 },
                 {
+                    "id": "schedule_delete_submit",
                     "type": "basic",
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "지운 뒤 담아 뒀던 대상을 비운다 — 이름·번호가 전역이라 남겨 두면 다음에 연 창이 이미 없는 작업을 가리킨다.",
+                            "comment": "지운 뒤 담아 뒀던 대상을 비운다 — 이름·번호가 전역이라 남겨 두면 다음에 연 창이 이미 없는 작업을 가리킨다.\n               성공 문구(한 건/여러 건)는 **비우기 전에** 누른 때의 대상 목록으로 고른다 — 비운 뒤에 고르면 늘 한 건 문구가 된다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -79,32 +127,31 @@
                                 },
                                 {
                                     "handler": "apiCall",
-                                    "target": "/api/admin/schedules/{{_global.deleteTargetId}}",
+                                    "target": "{{(_global.deleteTargetIds ?? []).length > 0 ? '/api/admin/schedules/bulk' : '/api/admin/schedules/' + _global.deleteTargetId}}",
                                     "auth_required": true,
                                     "params": {
-                                        "method": "DELETE"
+                                        "method": "DELETE",
+                                        "body": {
+                                            "ids": "{{(_global.deleteTargetIds ?? []).length > 0 ? _global.deleteTargetIds : undefined}}"
+                                        }
                                     },
                                     "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeleting": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "deleteTargetId": null,
-                                                "deleteTargetName": ""
-                                            }
-                                        },
                                         {
                                             "handler": "toast",
                                             "params": {
                                                 "type": "success",
-                                                "message": "$t:admin.schedules.messages.delete_success"
+                                                "message": "{{(_global.deleteTargetIds ?? []).length > 0 ? (response.message ?? '$t:admin.schedules.messages.bulk_delete_success') : '$t:admin.schedules.messages.delete_success'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isDeleting": false,
+                                                "deleteTargetId": null,
+                                                "deleteTargetIds": null,
+                                                "selectedScheduleIds": [],
+                                                "deleteTargetName": ""
                                             }
                                         },
                                         {
@@ -130,16 +177,18 @@
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.schedules.errors.delete_failed'}}"
+                                                "message": "{{error.errors?.general?.[0] ?? error.message ?? '$t:admin.schedules.errors.delete_failed'}}"
                                             }
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "debounce": 300
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "type": "button",
+                        "className": "btn btn-danger flex-center gap-2",
                         "disabled": "{{_global.isDeleting}}"
                     },
                     "children": [

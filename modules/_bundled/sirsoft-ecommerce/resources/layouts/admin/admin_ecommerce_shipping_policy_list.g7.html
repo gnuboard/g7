@@ -19,7 +19,6 @@
   <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true"/>
   <init-local>
     <field name="filter">
-      <field name="searchType" value="name"/>
       <field name="search" value=""/>
       <field name="shipping_methods" :value="[]"/>
       <field name="charge_policies" :value="[]"/>

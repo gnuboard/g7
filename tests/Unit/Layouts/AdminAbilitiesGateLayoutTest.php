@@ -131,21 +131,31 @@ class AdminAbilitiesGateLayoutTest extends TestCase
         $this->assertCount(1, $add);
         $this->assertSame('{{schedules?.data?.abilities?.can_create !== true}}', $add[0]['props']['disabled'] ?? null);
 
-        $tab = $this->layout('partials/admin_schedule_list/_tab_schedules.json');
+        // 일괄 작업·표는 7.2.0 에서 탭 조각에서 표 조각(`_partial_schedule_datagrid`)으로 옮겨졌다.
+        // 죽은 일괄 「실행」 select(실행 API 없음)는 없어지고 일괄 삭제 버튼(can_delete)이 생겼다.
+        $tab = $this->layout('partials/admin_schedule_list/_partial_schedule_datagrid.json');
 
-        foreach (['bulk_status', 'bulk_action'] as $name) {
-            $select = $this->findNodes($tab, fn (array $n) => ($n['props']['name'] ?? null) === $name);
-            $this->assertCount(1, $select, $name);
-            $this->assertStringContainsString('schedules?.data?.abilities?.can_', $select[0]['props']['disabled'], $name);
-        }
+        $select = $this->findNodes($tab, fn (array $n) => ($n['props']['name'] ?? null) === 'bulk_status');
+        $this->assertCount(1, $select);
+        $this->assertStringContainsString('schedules?.data?.abilities?.can_update !== true', $select[0]['props']['disabled']);
+        $this->assertCount(0, $this->findNodes($tab, fn (array $n) => ($n['props']['name'] ?? null) === 'bulk_action'));
 
         $apply = $this->nodesWithText($tab, 'admin.schedules.bulk.apply');
         $this->assertCount(1, $apply);
         $this->assertStringContainsString('schedules?.data?.abilities?.can_update !== true', $apply[0]['props']['disabled']);
 
+        $delete = $this->findNodes($tab, fn (array $n) => ($n['id'] ?? null) === 'bulk_delete_button');
+        $this->assertCount(1, $delete);
+        $this->assertStringContainsString('schedules?.data?.abilities?.can_delete !== true', $delete[0]['props']['disabled']);
+        // 코어·확장 소유 행이 섞이면 삭제가 잠긴다(서버도 거절)
+        $this->assertStringContainsString('r.is_owned', $delete[0]['props']['disabled']);
+
         $grid = $this->findNodes($tab, fn (array $n) => ($n['id'] ?? null) === 'schedules_data_grid');
         $this->assertCount(1, $grid);
-        $this->assertSame('{{schedules?.data?.abilities?.can_update === true}}', $grid[0]['props']['selectable'] ?? null);
+        $this->assertSame(
+            '{{schedules?.data?.abilities?.can_update === true || schedules?.data?.abilities?.can_delete === true}}',
+            $grid[0]['props']['selectable'] ?? null
+        );
 
         $toggle = $this->findNodes($tab, fn (array $n) => $n['name'] === 'Toggle'
             && ($n['props']['checked'] ?? null) === '{{row.is_active}}');

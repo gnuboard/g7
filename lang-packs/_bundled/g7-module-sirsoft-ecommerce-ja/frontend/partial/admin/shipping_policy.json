@@ -62,10 +62,7 @@
     "is_active_label": "利用有無:",
     "all": "すべて",
     "active": "利用中",
-    "inactive": "未使用",
-    "search_type": {
-      "name": "ポリシー名"
-    }
+    "inactive": "未使用"
   },
   "table": {
     "column": {

@@ -157,6 +157,32 @@
             "comment": "초기 화면 정적 파일 상태 — 일반 탭에서만 받는다. 게시가 켜져 있는지·지금 게시할 수 있는 환경인지·\n    현재 버전·파일 수·마지막 게시 시각·최근 실패·게시 프로세스의 실행 계정을 서버가 판정해 돌려준다.\n    응답이 없으면 fallback 의 publishable=false 로 떨어져 「지금 다시 만들기」 버튼이 잠긴 채 그려진다 —\n    상태를 모르는 채로 재게시를 누르게 두지 않기 위해서다."
         },
         {
+            "id": "coreSchedules",
+            "label_key": "$t:editor.data_source.coreSchedules",
+            "type": "api",
+            "endpoint": "/api/admin/schedules",
+            "method": "GET",
+            "if": "{{['seo', 'drivers', 'security', 'advanced', 'privacy', 'upload'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "extension_type": "core",
+                "per_page": 100
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "comment": "코어 예약 작업 목록 — 설정 탭의 「스케줄로 도는 작업」 안내(사이트맵·처리 기록 정리·활동 로그 파기·비밀번호 만료·GeoIP·\n       개인정보 파기·고아 첨부 정리)가 그 작업의 **다음 실행 일시**를 보이려고 받는다(고정 시각을 적어 두면 운영자가\n       주기를 바꿨을 때 문구가 틀린다). 코어 행은 서른 개 남짓이라 한 번에 받고 각 안내가 식별자로 고른다.\n       스케줄 조회 권한(core.schedules.read)이 없으면 서버가 403 을 주고 조용히 넘긴다 — 안내는 시각 없이 링크만 남는다\n       (데이터소스 조건 문맥에는 사용자 권한이 없어 요청 전에 거를 수 없다)."
+        },
+        {
             "id": "queueStatus",
             "label_key": "$t:editor.data_source.queueStatus",
             "type": "api",
@@ -430,7 +456,6 @@
                 "page": "{{query.page || 1}}",
                 "per_page": "{{query.per_page || 20}}",
                 "search": "{{query.search}}",
-                "search_type": "{{query.search_type}}",
                 "extension_type": "core",
                 "category": "{{query.category}}",
                 "template_channel": "{{query.channel ?? 'mail'}}"
@@ -652,6 +677,7 @@
             "staticCacheStatus",
             "trustedProxy",
             "queueStatus",
+            "coreSchedules",
             "privacyPreview",
             "privacyManualRuns",
             "passwordExpiryPreview",
@@ -683,8 +709,7 @@
                 "filterTarget": "",
                 "scopeLocked": false,
                 "notificationDefinitionFilter": {
-                    "search": "{{query.search || ''}}",
-                    "searchType": "{{query.search_type || 'all'}}"
+                    "search": "{{query.search || ''}}"
                 }
             }
         },

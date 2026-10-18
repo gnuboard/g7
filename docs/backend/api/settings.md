@@ -266,8 +266,6 @@ HTTP/1.1 200
 | seo.cache_ttl | body | integer | 아니오 | min 60, max 86400 | 캐시 유효 시간 (초) |
 | seo.sitemap_enabled | body | boolean | 아니오 | — | sitemap.xml 생성 사용 여부 |
 | seo.sitemap_cache_ttl | body | integer | 아니오 | min 3600, max 604800 | sitemap 캐시 유효 시간 (초) |
-| seo.sitemap_schedule | body | string | 아니오 | — | sitemap 자동 생성 주기 |
-| seo.sitemap_schedule_time | body | string | 아니오 | — | sitemap 자동 생성 시각 |
 | seo.generator_enabled | body | boolean | 아니오 | — | SEO 페이지 생성기 사용 여부 |
 | seo.generator_content | body | string | 아니오 | max 200 | SEO 렌더링 본문 생성 방식 |
 | security.force_https | body | boolean | 아니오 | — | HTTPS 강제 리다이렉트 여부 |
@@ -338,6 +336,8 @@ HTTP/1.1 200
 | drivers.queue_driver | body | string | 아니오 | — | 큐 드라이버 (sync/database/redis) |
 | drivers.queue_connections | body | string[] | 아니오 | 각 원소 `_meta.queue_connection_options` 의 name, 중복 불가, 현재 큐 드라이버 연결 포함 | 이 서버가 워커를 돌리는 큐 연결 (#139). 빈 배열이면 현재 큐 드라이버 연결 하나로 저장된다 |
 | drivers.queue_names | body | object | 아니오 | `{연결: string[]}`, 연결당 1~20개, 큐 이름 `^[A-Za-z0-9][A-Za-z0-9_.-]*$`·64자 이하·연결 안 중복 불가 | 연결별로 워커가 보는 큐 이름 (#139). 키가 없는 등록 연결은 기본값(`*-long` 은 `long`, 그 밖은 `default`)으로 저장되고, 등록하지 않은 연결의 키는 버려진다 |
+| drivers.queue_job_log_enabled | body | boolean | 아니오 | — | 큐 작업 처리 기록(`queue_job_logs`) 사용 여부 (기본 true) — [큐 관리](../queue-management.md) |
+| drivers.queue_record_retention_days | body | integer | 아니오 | min 1, max 90 (`core.settings_limits.drivers_queue_record_retention_days_min/max`) | 큐 처리 기록·실패 작업 공통 보관 기간(일, 기본 7) — 매일 `queue:prune-records` 가 정리 |
 | drivers.websocket_enabled | body | boolean | 아니오 | — | WebSocket 사용 여부 |
 | drivers.websocket_app_id | body | string | 아니오 | max 255 | drivers.websocket app 식별자 |
 | drivers.websocket_app_key | body | string | 아니오 | max 255 | WebSocket 앱 키 |
@@ -467,8 +467,6 @@ Content-Type: application/json
     "seo.sitemap_serve_stale_on_miss": true,
     "seo.sitemap_max_urls_per_contributor": 1,
     "seo.sitemap_hreflang_enabled": true,
-    "seo.sitemap_schedule": "예시값",
-    "seo.sitemap_schedule_time": "예시값",
     "seo.generator_enabled": true,
     "seo.generator_content": "예시 내용입니다.",
     "security.force_https": true,

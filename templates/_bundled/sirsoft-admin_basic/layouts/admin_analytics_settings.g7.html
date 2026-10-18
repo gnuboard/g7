@@ -99,6 +99,21 @@
       </on-code>
     </error-handling>
   </data-source>
+  <!-- 리포트 발송 스케줄(코어 analytics-report-weekly·monthly)의 다음 실행 일시 — 리포트 탭 안내가 고정 요일·시각 대신 보인다.
+       스케줄 조회 권한이 없으면 403 을 조용히 넘기고 안내는 링크만 남는다. 늦게 받아도 되는 값이라 background 다. -->
+  <data-source id="analytics_report_schedules" label_key="$t:editor.data_source.coreSchedules" type="api" endpoint="/api/admin/schedules" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background" if="{{(query.tab || 'collection') === 'reports'}}">
+    <params extension_type="core" search_field="identifier" search_keyword="analytics-report" :per_page="10"/>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 리포트 알림 정의 5건의 활성 여부·채널(리포트 탭). 정의 편집과 같은 출처라 편집 직후 상태가 어긋나지 않는다. -->
   <data-source id="analytics_notification_definitions" label_key="$t:editor.data_source.analytics_notification_definitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background" if="{{(query.tab || 'collection') === 'reports'}}">
     <params extension_type="core" :per_page="100"/>
@@ -696,6 +711,11 @@
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.reports.weekly</span>
                 <span class="form-hint">$t:admin.analytics.settings.reports.weekly_hint</span>
+                <span data-ref="report_weekly_next_run" class="form-hint flex-center flex-wrap gap-x-2">
+                  <span data-if="{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.is_active !== false &amp;&amp; !!(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.next_run_at}}" class="flex-center gap-1"><span>$t:admin.settings.schedule_link.next_run</span><span class="font-medium">{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.next_run_at | datetime}}</span></span>
+                  <span data-if="{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.is_active === false}}">$t:admin.settings.schedule_link.inactive</span>
+                  <a data-ref="report_weekly_schedule_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=analytics-report-weekly" class="text-link">$t:admin.settings.schedule_link.change</a>
+                </span>
               </div>
               <toggle data-type="composite" name="settings.report_weekly_enabled" ariaLabel="$t:admin.analytics.settings.reports.weekly" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>
@@ -703,6 +723,11 @@
               <div>
                 <span class="form-label-block">$t:admin.analytics.settings.reports.monthly</span>
                 <span class="form-hint">$t:admin.analytics.settings.reports.monthly_hint</span>
+                <span data-ref="report_monthly_next_run" class="form-hint flex-center flex-wrap gap-x-2">
+                  <span data-if="{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.is_active !== false &amp;&amp; !!(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.next_run_at}}" class="flex-center gap-1"><span>$t:admin.settings.schedule_link.next_run</span><span class="font-medium">{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.next_run_at | datetime}}</span></span>
+                  <span data-if="{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.is_active === false}}">$t:admin.settings.schedule_link.inactive</span>
+                  <a data-ref="report_monthly_schedule_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=analytics-report-monthly" class="text-link">$t:admin.settings.schedule_link.change</a>
+                </span>
               </div>
               <toggle data-type="composite" name="settings.report_monthly_enabled" ariaLabel="$t:admin.analytics.settings.reports.monthly" size="md" disabled="{{_computed.isReadOnly}}"/>
             </div>

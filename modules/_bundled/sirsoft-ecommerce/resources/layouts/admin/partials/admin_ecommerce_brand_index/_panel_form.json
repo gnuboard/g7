@@ -414,17 +414,9 @@
                                                 "maxLength": 100,
                                                 "required": true,
                                                 "layout": "tabs",
-                                                "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}"
+                                                "disabled": "{{_global.panelMode === 'edit' && brands?.data?.abilities?.can_update !== true}}",
+                                                "error": "{{_local.errors?.name?.[0] ?? ''}}"
                                             }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{_local.errors?.name}}",
-                                            "props": {
-                                                "className": "form-error-xs"
-                                            },
-                                            "text": "{{_local.errors?.name?.[0] ?? ''}}"
                                         }
                                     ]
                                 }

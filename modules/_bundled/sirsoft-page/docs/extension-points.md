@@ -172,7 +172,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-page:prune-temp-attachments` | `daily` | 미연결 임시 페이지 첨부 자동 삭제 |
+| `prune-temp-attachments` | `0 0 * * *` | 임시 페이지 첨부 삭제 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

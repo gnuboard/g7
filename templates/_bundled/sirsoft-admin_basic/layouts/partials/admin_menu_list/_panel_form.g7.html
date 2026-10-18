@@ -76,8 +76,7 @@
               <span>$t:admin.menus.form.name</span>
               <span class="text-red-500 ml-1">*</span>
             </label>
-            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs"/>
-            <span data-if="{{_global.formErrors?.name}}" class="text-red-500 text-xs">{{_global.formErrors?.name?.[0] ?? ''}}</span>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name?.[0] ?? ''}}"/>
           </div>
         </div>
         <div data-ref="form_slug_field">

@@ -276,6 +276,23 @@
             </div>
             <toggle data-type="composite" name="advanced.geoip_auto_update_enabled" size="md" disabled="{{_computed.isReadOnly || _computed.envLocked?.['advanced.geoip_auto_update_enabled'] === true}}"/>
           </div>
+          <!-- 스케줄로 도는 작업 안내 — 고정 시각 대신 그 작업의 다음 실행 일시(조회 권한이 있을 때)와 스케줄 관리 링크를 보인다. 끈 스케줄이면 그 사실을 알린다. -->
+          <div data-ref="geoip_schedule_notice" class="alert-info">
+            <div class="flex gap-3">
+              <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+              <div class="min-w-0 space-y-1">
+                <p class="text-label-subtle">$t:admin.settings.advanced.geoip_schedule_notice</p>
+                <p data-ref="geoip_schedule_notice_next_run" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'geoip-update')?.is_active !== false &amp;&amp; !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'geoip-update')?.next_run_at}}" class="text-label-subtle flex-center flex-wrap gap-1">
+                  <span>$t:admin.settings.schedule_link.next_run</span>
+                  <span class="font-medium">{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'geoip-update')?.next_run_at | datetime}}</span>
+                </p>
+                <p data-ref="geoip_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'geoip-update')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
+                <div class="flex-center flex-wrap gap-3">
+                  <a data-ref="geoip_schedule_notice_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=geoip-update" class="text-link">$t:admin.settings.schedule_link.change</a>
+                </div>
+              </div>
+            </div>
+          </div>
           <div data-ref="geoip_last_updated_block" class="row-stack">
             <span class="text-heading block">$t:admin.settings.advanced.geoip_last_updated_at</span>
             <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-2 md:space-y-0">

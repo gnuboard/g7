@@ -1,0 +1,17 @@
+feature: koreaexim_update_schedule_row
+description: |
+  1.0.1 부터 환율 정기 갱신 시각의 원천은 관리자 > 스케줄 관리의 `update-rates` 행이다(cron + Asia/Seoul).
+  상태 화면의 다음 실행 시각·사이트 시간대 시각 안내·스케줄 요약과 재시도 시작 시각이 그 행을 따른다.
+  행이 없으면(동기화 전) 선언 기본값(한국시간 11:30)을, 비활성이면 다음 실행 시각 없음으로 본다.
+  기준 시각은 2026-09-14(월) 10:00 KST.
+coverage_strategy: full
+axes:
+  schedule_row: [missing, default, operator_changed, inactive]
+  site_timezone: [Asia/Seoul, America/New_York]
+  run_days: [weekdays, empty]
+effects:
+  - status_next_run_follows_schedule_row
+  - retry_waits_for_today_scheduled_time
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Feature/UpdateScheduleRowTest.php
+  - plugins/_bundled/sirsoft-koreaexim/tests/fixtures/UpdateScheduleRowCases.php

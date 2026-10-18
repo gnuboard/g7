@@ -275,6 +275,7 @@ foreach ($config['categories'] as $cat) { ... }
 | `core.permissions.config` | RolePermissionSeeder |
 | `core.roles.config` | RolePermissionSeeder |
 | `core.menus.config` | CoreAdminMenuSeeder |
+| `core.schedules.config` | CoreScheduleSeeder — 코어 스케줄 카탈로그(`config/core.php` `schedules`)의 `label`·`description` 에 로케일 키 병합 (7.2.0~) |
 | `seed.notifications.translations` | NotificationDefinitionSeeder (본인인증 알림 `identity.*` 정의 포함 — type 키) |
 | `seed.{vendor-module}.{entity}.translations` | 모듈 시더 (예: `seed.sirsoft-ecommerce.shipping_types.translations`, `seed.sirsoft-ecommerce.notifications.translations`, `seed.sirsoft-board.board_types.translations`) |
 | `module.{id}.admin_menus.translations` | ModuleManager::createModuleMenus() — 모듈 admin_menus 동기화 시 |
@@ -291,7 +292,15 @@ foreach ($config['categories'] as $cat) { ... }
 - `menus.json` → `module.{target}.admin_menus.translations` 필터 (모듈 전용)
 - `roles.json` → `{scope}.{target}.roles.translations` 필터 (module/plugin)
 - `permissions.json` → `{scope}.{target}.permissions.translations` 필터 (3-레벨 트리: module/categories/permissions)
+- `schedules.json` → `seed.{target}.schedules.translations` 필터 (매칭 키 `name` — 확장 `getSchedules()` 선언을 정규화한 뒤 발화, 7.2.0~)
 - 기타 → `seed.{target}.{entity}.translations` 필터 (단순 entity 시드)
+
+**예약 작업(스케줄) 시드 (7.2.0~)** — `lang-packs/_bundled/g7-plugin-sirsoft-koreaexim-ja/seed/schedules.json` 형식은 `{ "<스케줄 name>": { "label": "…", "description": "…" } }` 입니다.
+
+- 코어 언어팩은 **코어 카탈로그 행만** 채웁니다. 운영자가 직접 등록한 스케줄(소유 없음)은 번역 대상이 아닙니다 — 다른 엔티티의 「코어 또는 소유 없음」 범위와 다릅니다.
+- 확장 언어팩은 그 확장이 선언한 행만 채웁니다.
+- 언어팩을 켜거나 끄면 코어 엔티티 시더 재실행 목록에 `CoreScheduleSeeder` 가 포함되어 코어 행의 명칭이 다시 동기화됩니다. 운영자가 화면에서 고친 로케일 값(`user_overrides`)은 보존됩니다.
+- 자세한 동작은 [예약 작업(스케줄) 시스템](../backend/scheduling.md)·[확장 스케줄 선언](module-schedules.md)을 봅니다.
 
 ### 복원 경로의 언어팩 병합
 

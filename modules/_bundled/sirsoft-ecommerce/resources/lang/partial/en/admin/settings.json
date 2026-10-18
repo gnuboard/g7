@@ -18,7 +18,8 @@
     "notification_definitions": "Notifications",
     "identity_policies": "Identity Policies",
     "mileage": "Mileage",
-    "privacy_retention": "Privacy Retention"
+    "privacy_retention": "Privacy Retention",
+    "schedules": "Schedules"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
@@ -790,6 +791,31 @@
       "queue_failed": "Could not queue the run.",
       "preview_failed": "Could not load the target count.",
       "editor_label": "Shop retention manual run"
+    }
+  },
+  "schedules": {
+    "title": "Schedules",
+    "description": "Schedules registered by the Ecommerce module. You can only activate or deactivate them here.",
+    "manage_notice": "Change the frequency and run mode in Schedule Management.",
+    "manage_link": "Change in Schedule Management",
+    "read_only_notice": "You do not have permission to update schedules, so you cannot activate or deactivate them.",
+    "empty": "No schedules registered.",
+    "no_read_permission": "You do not have permission to view the schedules of this module.",
+    "condition_unmet": "Off in settings",
+    "toggle_success": "Schedule status has been changed.",
+    "toggle_failed": "Failed to change the schedule status.",
+    "columns": {
+      "name": "Task name",
+      "frequency": "Frequency",
+      "next_run": "Next run",
+      "last_result": "Last run result",
+      "status": "Status"
+    },
+    "result": {
+      "success": "Success",
+      "failed": "Failed",
+      "running": "Running",
+      "never": "Not run yet"
     }
   }
 }

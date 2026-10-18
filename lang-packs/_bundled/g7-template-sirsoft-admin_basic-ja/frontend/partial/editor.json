@@ -1423,7 +1423,8 @@
       "connection": "連携タブ",
       "alimtalk_templates": "アルリムトークテンプレートタブ",
       "settings": "設定タブ",
-      "history": "実行履歴タブ"
+      "history": "実行履歴タブ",
+      "schedules": "スケジュール"
     },
     "page_detail_default": "基本",
     "page_detail_attachments_open": "添付を展開",
@@ -1693,7 +1694,14 @@
     "role_menus_tree": "アクセス可能なメニューツリー",
     "passwordExpiryPreview": "パスワード有効期限の対象件数",
     "passwordExpiryManualRuns": "パスワード有効期限の手動実行状態",
-    "user_check": "会員登録権限の確認"
+    "user_check": "会員登録権限の確認",
+    "schedule_owners": "スケジュール所有者一覧",
+    "schedule_status": "スケジューラー状態",
+    "queue_status": "キュー登録状況",
+    "queue_pending": "キュー待機 Job",
+    "queue_failed": "キュー失敗 Job",
+    "queue_logs": "キュー処理記録",
+    "coreSchedules": "コアの予約タスク一覧"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

@@ -1,0 +1,398 @@
+{
+    "comment": "쇼핑몰 설정 — 스케줄 탭. 이 모듈이 선언한 예약 작업(주문 자동 확정·통계 집계 등)만 보고 켜고 끈다.\n  e2e:allow 화면 축(실제 토글 왕복·안내 상자 표시)은 라이브 매트릭스 M20 이 덮는다 — 이 조각의 바뀐 것은 정적 구조·문구다.\n\n  다른 설정 탭과 달리 폼에 담겼다가 저장되는 값이 없다 — 켜고 끄기는 **그 자리에서** 코어 스케줄 API 로 나간다\n  (`PATCH /api/admin/schedules/bulk-status` 에 이 줄 하나만 담아 보낸다 — 확장 전용 창구를 새로 두지 않는다).\n  목록도 코어 목록 API 를 소유 필터로 부른다(`extension_type=module&extension_identifier=sirsoft-ecommerce`) — 권한·응답 형식이\n  스케줄 관리 화면과 같다. 실행 주기·실행 방식 등 나머지 수정은 스케줄 관리 화면에서 하므로 그쪽으로 가는 링크를\n  설정 화면 공통 안내 상자(「스케줄 관리에서 변경」)로 둔다(같은 소유 쿼리를 실어 그 화면이 이 모듈 작업만 걸러 연다).\n  코어 스케줄 수정 권한이 없으면 스위치가 잠기므로 카드 머리에 읽기 전용 안내를 띄운다(목록 응답 abilities.can_update).\n  코어 스케줄 조회 권한(`core.schedules.read`)이 없으면 목록이 403 이다 — 탭 내용 대신 이유를 보인다.\n  넓은 화면은 표, 좁은 화면은 표가 카드로 바뀐다(`responsiveBreakpoint`).",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 스케줄 탭 콘텐츠"
+    },
+    "id": "tab_content_schedules",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab) === 'schedules'}}",
+    "children": [
+        {
+            "id": "ecommerce_schedules_no_permission",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.ecommerceSchedulesLoadError === 'forbidden'}}",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-2 text-tertiary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "lock",
+                                "size": "sm",
+                                "className": "mt-0.5 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.no_read_permission"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "ecommerce_schedules_card",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.ecommerceSchedulesLoadError !== 'forbidden'}}",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.schedules.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.schedules.description"
+                },
+                {
+                    "comment": "코어 스케줄 수정 권한(`core.schedules.update`)이 없으면 스위치가 잠긴다 — 왜 잠겼는지 알린다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다",
+                    "id": "ecommerce_schedules_read_only_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{ecommerceSchedules?.data?.abilities?.can_update === false}}",
+                    "props": {
+                        "className": "alert-warning mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "lock",
+                                "size": "lg",
+                                "className": "text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.read_only_notice"
+                        }
+                    ]
+                },
+                {
+                    "comment": "「스케줄 관리에서 변경」 안내 — 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크). 링크는 같은 소유 쿼리를 실어 그 화면이 이 모듈 작업만 걸러 연다",
+                    "id": "ecommerce_schedules_manage_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-info mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-info",
+                                        "className": "text-xl flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.manage_notice"
+                                        },
+                                        {
+                                            "id": "ecommerce_schedules_manage_link",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "props": {
+                                                "href": "/admin/schedules?extension_type=module&extension_identifier=sirsoft-ecommerce",
+                                                "className": "text-link"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.manage_link"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "ecommerce_schedules_grid",
+                    "type": "composite",
+                    "name": "DataGrid",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "ecommerceSchedules"
+                    },
+                    "props": {
+                        "data": "{{ecommerceSchedules?.data?.data}}",
+                        "pagination": false,
+                        "idField": "id",
+                        "selectable": false,
+                        "showColumnSelector": false,
+                        "responsiveBreakpoint": 768,
+                        "emptyMessage": "$t:sirsoft-ecommerce.admin.settings.schedules.empty",
+                        "columns": [
+                            {
+                                "field": "name",
+                                "header": "$t:sirsoft-ecommerce.admin.settings.schedules.columns.name",
+                                "sortable": false,
+                                "required": true,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-medium text-gray-900 dark:text-white"
+                                                },
+                                                "text": "{{row.label_localized}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5"
+                                                },
+                                                "text": "{{row.name}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{row.description_localized}}",
+                                                "props": {
+                                                    "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                },
+                                                "text": "{{row.description_localized}}"
+                                            },
+                                            {
+                                                "comment": "실행 조건 미충족 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다. 마우스를 올리면 조건 키가 보인다.",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{(row.unmet_conditions ?? []).length > 0}}",
+                                                "props": {
+                                                    "title": "{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}",
+                                                    "className": "block mt-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Badge",
+                                                        "props": {
+                                                            "color": "yellow",
+                                                            "icon": "triangle-exclamation",
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.condition_unmet",
+                                                            "size": "sm"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "frequency",
+                                "header": "$t:sirsoft-ecommerce.admin.settings.schedules.columns.frequency",
+                                "sortable": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-gray-900 dark:text-white"
+                                        },
+                                        "text": "{{row.frequency_label}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.frequency !== 'everyThirtySeconds'}}",
+                                        "props": {
+                                            "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5"
+                                        },
+                                        "text": "{{row.expression}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "next_run_at",
+                                "header": "$t:sirsoft-ecommerce.admin.settings.schedules.columns.next_run",
+                                "sortable": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.is_active && row.next_run_at}}",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "{{row.next_run_at | datetime}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!(row.is_active && row.next_run_at)}}",
+                                        "props": {
+                                            "className": "text-sm text-gray-400 dark:text-gray-500"
+                                        },
+                                        "text": "-"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "last_result",
+                                "header": "$t:sirsoft-ecommerce.admin.settings.schedules.columns.last_result",
+                                "sortable": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{row.last_result === 'success'}}",
+                                        "props": {
+                                            "color": "green",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.result.success",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{row.last_result === 'failed'}}",
+                                        "props": {
+                                            "color": "red",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.result.failed",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{row.last_result === 'running'}}",
+                                        "props": {
+                                            "color": "yellow",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.result.running",
+                                            "size": "sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{row.last_result === 'never' || !row.last_result}}",
+                                        "props": {
+                                            "color": "gray",
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.schedules.result.never",
+                                            "size": "sm"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "is_active",
+                                "header": "$t:sirsoft-ecommerce.admin.settings.schedules.columns.status",
+                                "sortable": false,
+                                "required": true,
+                                "cellChildren": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Toggle",
+                                        "actions": [
+                                            {
+                                                "comment": "줄 하나 켜고 끄기 — 코어 일괄 변경 창구에 이 줄 하나만 담아 보낸다(스케줄 관리 화면의 표와 같은 창구). 성공·실패 모두 목록을 다시 받아 스위치를 서버 값에 맞춘다.",
+                                                "type": "change",
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/schedules/bulk-status",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PATCH",
+                                                    "body": {
+                                                        "ids": [
+                                                            "{{row.id}}"
+                                                        ],
+                                                        "is_active": "{{$event.target.checked}}"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-ecommerce.admin.settings.schedules.toggle_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "ecommerceSchedules"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.settings.schedules.toggle_failed'}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "ecommerceSchedules"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "checked": "{{row.is_active}}",
+                                            "disabled": "{{row.abilities?.can_update !== true}}",
+                                            "size": "sm",
+                                            "ariaLabel": "{{row.label_localized}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -65,10 +65,7 @@
     "is_active_label": "사용여부:",
     "all": "전체",
     "active": "사용",
-    "inactive": "미사용",
-    "search_type": {
-      "name": "정책명"
-    }
+    "inactive": "미사용"
   },
 
   "table": {

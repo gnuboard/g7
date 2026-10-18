@@ -27,6 +27,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\ScopedPermissionEnforcement;
+use Database\Seeders\CoreScheduleSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Dotenv\Dotenv;
@@ -1672,6 +1673,7 @@ class CoreUpdateService
      *   - syncCoreRolesAndPermissions / syncCoreMenus  ← config('core.permissions|roles|menus')
      *   - NotificationDefinitionSeeder                  ← config('core.notification_definitions') (본인인증 알림 포함)
      *   - IdentityPolicySeeder                          ← config('core.identity_policies')
+     *   - CoreScheduleSeeder                            ← config('core.schedules') (7.2.0 — 코어 예약 카탈로그)
      *
      * 모든 시더는 멱등 upsert + user_overrides 보존 패턴이라 정상 환경에서 재실행해도 무해.
      * 각 도메인은 독립 try/catch + Log::warning 으로 격리 — 한 도메인 실패가 다른 도메인을
@@ -1738,6 +1740,15 @@ class CoreUpdateService
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
+        }
+
+        // 코어 예약 카탈로그 — 스키마가 7.2.0 이전이면 헬퍼가 스스로 건너뛴다(업그레이드 마이그레이션 전 구간).
+        try {
+            if (Schema::hasTable('schedules')) {
+                (new CoreScheduleSeeder)->run();
+            }
+        } catch (\Throwable $e) {
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 코어 스케줄 재시딩 실패', ['error' => $e->getMessage()]);
         }
 
         // 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity)로 선언되어 위 NotificationDefinitionSeeder 가

@@ -1,8 +1,8 @@
 {
-    "comment": "예약 작업을 본떠 하나 더 만드는 창. 비슷한 작업을 여러 개 두는 일이 잦아 처음부터 채우는 대신\n  기존 것을 복사하는 길을 뒀다.\n  베낀 것이 **곧바로 돌지는 않는다** — 이름과 켜짐 여부를 서버가 어떻게 정하는지는 아래 안내\n  문구가 알려 준다. 복사된 뒤에는 목록에서 찾아 고쳐 쓴다.",
+    "comment": "예약 작업을 본떠 하나 더 만드는 창(「복사」). 비슷한 작업을 여러 개 두는 일이 잦아 처음부터 채우는 대신\n  기존 것을 복사하는 길을 뒀다.\n  복사한 것이 **곧바로 돌지는 않는다** — 이름과 켜짐 여부를 서버가 어떻게 정하는지는 아래 안내\n  문구가 알려 준다. 복사된 뒤에는 목록에서 찾아 고쳐 쓴다.\n  요약은 라벨 칸을 맞춘 kv 격자이고(콜론 없음), 작업 유형은 표의 배지와 같은 문구(`type.*`)로 보인다.",
     "meta": {
         "is_partial": true,
-        "description": "스케줄 복제 확인 모달",
+        "description": "스케줄 복사 확인 모달",
         "editor_label": "$t:admin.modal_label.admin_schedule_list.schedule_duplicate_modal"
     },
     "id": "schedule_duplicate_modal",
@@ -22,17 +22,18 @@
             "text": "$t:admin.schedules.modals.duplicate_confirm"
         },
         {
+            "id": "schedule_duplicate_summary",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2"
+                "className": "kv-list gap-y-2 text-sm mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "kv-row"
                     },
                     "children": [
                         {
@@ -41,15 +42,15 @@
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "$t:admin.schedules.form.name:"
+                            "text": "$t:admin.schedules.form.label"
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium"
+                                "className": "text-primary font-medium break-all"
                             },
-                            "text": "{{_global.selectedSchedule?.name}}"
+                            "text": "{{_global.selectedSchedule?.label_localized ?? _global.selectedSchedule?.name}}"
                         }
                     ]
                 },
@@ -57,7 +58,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "kv-row"
                     },
                     "children": [
                         {
@@ -66,7 +67,7 @@
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "$t:admin.schedules.form.type:"
+                            "text": "$t:admin.schedules.form.type"
                         },
                         {
                             "type": "basic",
@@ -74,7 +75,7 @@
                             "props": {
                                 "className": "text-primary"
                             },
-                            "text": "{{_global.selectedSchedule?.type_label}}"
+                            "text": "{{_global.selectedSchedule?.type ? $t('admin.schedules.type.' + _global.selectedSchedule.type) : '-'}}"
                         }
                     ]
                 }
@@ -87,6 +88,15 @@
                 "className": "mt-4 text-label-subtle"
             },
             "text": "$t:admin.schedules.modals.duplicate_note"
+        },
+        {
+            "type": "basic",
+            "name": "P",
+            "if": "{{_global.selectedSchedule?.is_owned}}",
+            "props": {
+                "className": "mt-1 text-label-subtle"
+            },
+            "text": "$t:admin.schedules.modals.duplicate_owned_note"
         },
         {
             "type": "basic",
@@ -106,17 +116,19 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "btn btn-secondary",
                         "disabled": "{{_global.isDuplicating}}"
                     },
                     "text": "$t:common.cancel"
                 },
                 {
+                    "id": "schedule_duplicate_submit",
                     "type": "basic",
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "삭제 창과 달리 고른 작업을 비우지 않는다 — 베낀 뒤에도 원본이 목록에 그대로 있고, 이어서 실행이나 이력 창을 열 수 있다.",
+                            "comment": "삭제 창과 달리 고른 작업을 비우지 않는다 — 복사한 뒤에도 원본이 목록에 그대로 있고, 이어서 실행이나 이력 창을 열 수 있다.",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -177,11 +189,13 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "debounce": 300
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "type": "button",
+                        "className": "btn btn-primary flex-center gap-2",
                         "disabled": "{{_global.isDuplicating}}"
                     },
                     "children": [
@@ -206,7 +220,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.actions.duplicate'}}"
+                            "text": "{{_global.isDuplicating ? '$t:admin.schedules.modals.duplicating' : '$t:admin.schedules.action.duplicate'}}"
                         }
                     ]
                 }

@@ -57,9 +57,11 @@
 | [pagination.md](pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relat... |
 | [password-policy.md](password-policy.md) | 비밀번호 정책 (작성 규칙·재사용 금지·만료) | 작성 규칙(길이·특수문자·조합·아이디 포함·반복·연속)은 PasswordPolicy:... |
 | [privacy-retention.md](privacy-retention.md) | 개인정보 보유기간 처리 (Privacy Retention) | 확장은 PrivacyRetentionHandlerInterface 를 구현한 백엔드 ... |
+| [queue-management.md](queue-management.md) | 큐 관리 (Queue Management) | 큐 탭은 세 목록(대기·실패·처리 기록)과 워커 상태 요약을 보여 준다 — 대기 작업... |
 | [response-helper.md](response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
 | [reverse-proxy.md](reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정... |
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
+| [scheduling.md](scheduling.md) | 스케줄 관리 (DB 스케줄 등록부) | 예약 작업은 전부 schedules 행이다 — 코어는 config/core.php 의... |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |
 | [service-provider.md](service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |

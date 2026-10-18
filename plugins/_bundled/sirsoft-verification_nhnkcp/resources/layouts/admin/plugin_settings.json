@@ -72,7 +72,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs verification-nhnkcp-tone-warning"
                                 },
                                 "text": "$t:sirsoft-verification_nhnkcp.plugin_read_only"
                             }
@@ -105,7 +105,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "space-y-1 text-info-soft"
+                                            "className": "space-y-1 text-xs verification-nhnkcp-tone-info"
                                         },
                                         "children": [
                                             {
@@ -278,7 +278,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-semibold text-warning-soft"
+                                                    "className": "text-sm font-semibold verification-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title"
                                             },
@@ -286,7 +286,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "mt-1 text-warning-soft"
+                                                    "className": "mt-1 text-xs verification-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body"
                                             }
@@ -652,8 +652,24 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Input",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다(자동 바인딩은 꺼 두었다)",
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_computed.isPluginReadOnly}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": true,
+                                                                                    "form": {
+                                                                                        "duplicate_field": "di"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ],
                                                                         "props": {
                                                                             "type": "radio",
+                                                                            "autoBinding": false,
                                                                             "name": "duplicate_field",
                                                                             "value": "di",
                                                                             "checked": "{{(_local.form?.duplicate_field ?? 'di') === 'di'}}",
@@ -693,8 +709,24 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Input",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다(자동 바인딩은 꺼 두었다)",
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_computed.isPluginReadOnly}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": true,
+                                                                                    "form": {
+                                                                                        "duplicate_field": "ci"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ],
                                                                         "props": {
                                                                             "type": "radio",
+                                                                            "autoBinding": false,
                                                                             "name": "duplicate_field",
                                                                             "value": "ci",
                                                                             "checked": "{{_local.form?.duplicate_field === 'ci'}}",

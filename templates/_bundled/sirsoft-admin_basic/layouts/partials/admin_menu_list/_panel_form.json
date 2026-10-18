@@ -360,17 +360,9 @@
                                                 "placeholder": "$t:admin.menus.form.name_placeholder",
                                                 "maxLength": 100,
                                                 "required": true,
-                                                "layout": "tabs"
+                                                "layout": "tabs",
+                                                "error": "{{_global.formErrors?.name?.[0] ?? ''}}"
                                             }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{_global.formErrors?.name}}",
-                                            "props": {
-                                                "className": "text-red-500 text-xs"
-                                            },
-                                            "text": "{{_global.formErrors?.name?.[0] ?? ''}}"
                                         }
                                     ]
                                 }

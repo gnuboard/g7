@@ -372,16 +372,16 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-board:aggregate-stats` | `hourly` | 대시보드 게시물 현황 집계 |
-| `sirsoft-board:prune-attachments --scheduled` | `daily` | 방치된 임시 첨부 정리 + 보존기간 경과 삭제 첨부 영구 정리 |
+| `aggregate-stats` | `0 * * * *` | 게시물 현황 집계 |
+| `prune-attachments` | `0 0 * * *` | 게시판 첨부 정리 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
 `prune-attachments` 는 두 가지 서로 다른 작업을 한 스케줄에 묶습니다 — "방치된 임시 첨부
 정리"(업로드했지만 게시글 저장까지 이어지지 않은 파일)는 사용자 파일을 지우지 않으므로 항상
 실행되고, "보존기간 경과 삭제 첨부 영구 정리"(이미 삭제 처리된 첨부의 실제 파일 파기)는
-`attachment_settings.purge_enabled` 로 게이트됩니다 — module.php 의 `enabled_config: null` 은
-스케줄 자체는 끌 수 없다는 뜻이고, 실제 파기 여부만 설정으로 조정됩니다.
+`attachment_settings.purge_enabled` 로 게이트됩니다 — module.php 에 실행 조건(`enabled_condition`)이 없는 것은
+설정으로 스케줄 자체를 끄지 않는다는 뜻이고(운영자는 스케줄 관리의 사용 여부로 끈다), 실제 파기 여부만 설정으로 조정됩니다.
 <!-- @intent END -->
 
 ## 알림 정의

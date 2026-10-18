@@ -1,0 +1,74 @@
+feature: 스케줄 관리 화면·API (7.2.0 DB 등록제) — 검색·필터 전 축, 소유 잠금, 즉시 실행 분기, 상태 카드
+
+description: |
+  #17 화면 결함(검색어 미동작 — 서버가 `search` 를 버림, 모듈 필터 선택지 「전체」뿐 + 서버가 모르는 `module` 키,
+  일괄 「실행」 select 무동작, 초기화가 다른 상태를 지움, 헤더 「초기화」 무동작)을 쿠폰 목록형 필터로 고치고,
+  DB 등록제 필드(다국어 명칭·소유·실행 방식·이력 기록 방식·중복 방지 분)를 목록·수정 창·즉시 실행 창에 연결한다.
+  - 목록 쿼리 키는 화면 data_source params 와 서버 ScheduleListRequest 가 1:1 이다(PHP 가드 LayoutQueryParamGateParityTest).
+  - 코어·확장 소유 행은 이름·유형·명령·조건·시간대가 잠기고 삭제되지 않는다. 복제본은 직접 등록이 된다.
+  - 즉시 실행은 예약 실행과 같은 디스패처를 수동 트리거로 부른다(200 이력 · 202 큐 접수 · 422 소유 확장 꺼짐/실행 중).
+  - 상태 카드는 하트비트(3분 이내 정상)와 큐 요약을 보인다.
+
+axes:
+  case: [filter_axes, keyword_search, owner_filter, row_fields, owners_api, create_label, overlap_bounds, prohibited_fields, owned_lock, duplicate_custom, run_branches, status_heartbeat, owned_delete, screen_filter_submit, screen_tabs, screen_render, form_modal, service_crud, form_modal_save, command_normalize, bulk_delete_message, terminology, next_run_display]
+
+effects:
+  # 저장된 다음 실행이 지났으면 목록·상세가 주기로 다시 계산한 시각을 보인다(비활성 행은 저장값)
+  - schedule_next_run_never_shows_past_time
+  # 목록의 모든 필터 축이 해당 값의 행만 남기고 「전체」는 조건을 걸지 않는다
+  - schedule_list_filter_axes_narrow
+  # 검색대상(명칭·식별자·명령·전체)별로 키워드가 정해진 칸만 보고, LIKE 와일드카드는 글자 그대로다
+  - schedule_keyword_search_scoped_by_field
+  # 소유 필터 custom 은 직접 등록, module+식별자는 그 확장 행만 고른다
+  - schedule_owner_filter_custom_and_extension
+  # 목록 행이 소유자·잠금 필드·분 단위 중복 방지·삭제 능력을 소유 여부대로 준다
+  - schedule_row_exposes_owner_lock_abilities
+  # owners API 가 직접 등록 항목까지 소유자별 스케줄 수를 준다
+  - schedule_owners_api_lists_custom_bucket
+  # 직접 등록은 명칭 필수, 문자열 명칭은 다국어로 승격, 옛 형식(이름만)은 이름으로 채운다
+  - schedule_create_label_required_and_promoted
+  # 중복 방지는 0..10080 분, 옛 boolean true 는 1440 분
+  - schedule_overlap_minutes_bounded
+  # 실행 조건·명령 클래스·소유자는 운영자가 넣을 수 없다
+  - schedule_prohibited_fields_rejected
+  # 소유 행의 잠금 필드는 같은 값이면 통과, 바꾸면 422
+  - schedule_owned_locked_fields_reject_change
+  # 소유 행 복제본은 직접 등록이 된다
+  - schedule_duplicate_becomes_custom
+  # 즉시 실행: sync 200 이력(실패도 이력), queue 202, failures_only 성공 200 이력 없음, 소유 확장 꺼짐 422
+  - schedule_manual_run_branches
+  # 상태 API 가 하트비트 정상(3분 이내)·멈춤과 큐 요약을 준다
+  - schedule_status_heartbeat_health
+  # 코어·확장 소유 행은 단건·일괄 삭제가 422 다
+  - schedule_owned_rows_not_deletable
+  # 화면 필터는 입력만 쌓고 검색 버튼·Enter 에서만 조회하며 초기화는 조건 없는 주소로 간다
+  - schedule_screen_filters_submit_only
+  # 화면 데이터소스가 탭(스케줄/큐 하위 탭)별로만 돌고, 탭을 오가도 각 탭 조건이 유지된다
+  - schedule_screen_tabs_scoped_data_sources
+  # 표·상태 카드·즉시 실행 창이 소유·조건·하트비트·202 분기를 그린다
+  - schedule_screen_renders_registry_fields
+  # 등록·수정 창이 폼에 연결되고 선택 상자·스위치·다국어 입력 값을 전역 상태로 보내며 소유 행 잠금 칸을 비활성화한다
+  - schedule_form_modal_binds_registry_fields
+  # 서비스 목록·이력 조회가 페이지네이터를 돌려주고, 삭제가 실행 이력을 명시적으로 지우며 before/after 훅을 낸다
+  - schedule_service_crud_contract
+  # (E2E) 등록 창에서 명칭·이름·명령을 채워 저장하면 201 로 행이 생기고 목록에 명칭으로 보인다(원복 포함)
+  - schedule_modal_save_creates_row
+  # 작업명이 모든 언어에서 비면 작업명 오류만 내고 식별자 필수 오류는 겹쳐 내지 않는다(#17 K-U4)
+  - schedule_create_blank_label_reports_label_only
+  # 명령의 줄바꿈·연속 공백·앞뒤 공백을 저장 전에 공백 하나로 접는다(여러 줄 입력 칸, 등록·수정 공통)
+  - schedule_command_whitespace_collapsed
+  # 일괄 삭제 성공 응답은 bulk_delete_success 문구를 쓴다
+  - schedule_bulk_delete_success_message
+  # 검증 문구·칸 이름·유형 표기가 화면 용어(식별자·작업명·명령·제한 시간·중복 실행 방지·Artisan/Shell)와 같다
+  - schedule_validation_terms_match_ui
+
+test_files:
+  - tests/Feature/Api/Admin/ScheduleControllerRegistryTest.php
+  - tests/Feature/Api/Admin/ScheduleControllerRunStatusTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-registry-screen.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-live-defects.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-ui-consistency.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-schedule-form-modal-submit.test.tsx
+  - tests/Unit/Services/ScheduleServiceTest.php
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/schedule-form-modal-save.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/schedule-list-filter.spec.ts

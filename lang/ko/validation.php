@@ -994,8 +994,6 @@ return [
         'sitemap_max_urls_per_contributor_integer' => '수집기당 최대 URL 수는 정수여야 합니다.',
         'sitemap_max_urls_per_contributor_min' => '수집기당 최대 URL 수는 0 이상이어야 합니다.',
         'sitemap_hreflang_enabled_boolean' => 'Sitemap 다국어 대체 링크(hreflang) 설정은 true 또는 false 값이어야 합니다.',
-        'sitemap_schedule_invalid' => '유효한 Sitemap 생성 주기를 선택해주세요.',
-        'sitemap_schedule_time_invalid' => 'Sitemap 생성 시각은 00:00~23:59 사이의 HH:mm 형식이어야 합니다.',
 
         // 보안 설정
         'force_https_required' => 'HTTPS 강제 적용 설정을 선택해주세요.',
@@ -1157,6 +1155,11 @@ return [
         'log_days_integer' => '로그 보관 일수는 정수여야 합니다.',
         'log_days_min' => '로그 보관 일수는 1 이상이어야 합니다.',
         'log_days_max' => '로그 보관 일수는 365를 초과할 수 없습니다.',
+        // 큐 작업 처리 기록 (#17)
+        'queue_job_log_enabled_boolean' => '처리 기록 사용 여부는 켜기/끄기 값이어야 합니다.',
+        'queue_record_retention_days_integer' => '처리 기록 보관 기간은 정수(일)여야 합니다.',
+        'queue_record_retention_days_min' => '처리 기록 보관 기간은 :min일 이상이어야 합니다.',
+        'queue_record_retention_days_max' => '처리 기록 보관 기간은 :max일을 넘을 수 없습니다.',
 
         // 공개 자산 디스크 설정
         'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
@@ -1470,8 +1473,6 @@ return [
         'sitemap_serve_stale_on_miss' => '사이트맵 미생성 시 이전 파일 제공',
         'sitemap_max_urls_per_contributor' => '사이트맵 항목별 최대 URL 수',
         'sitemap_hreflang_enabled' => '사이트맵 대체 언어 링크 사용',
-        'sitemap_schedule' => '사이트맵 자동 생성 주기',
-        'sitemap_schedule_time' => '사이트맵 자동 생성 시각',
         'generator_enabled' => 'SEO 페이지 생성기 사용',
         'generator_content' => 'SEO 페이지 생성기 콘텐츠',
         // 보안 설정 (추가)
@@ -1543,6 +1544,8 @@ return [
         'log_driver' => '로그 드라이버',
         'log_level' => '로그 레벨',
         'log_days' => '로그 보관 일수',
+        'queue_job_log_enabled' => '큐 처리 기록 사용',
+        'queue_record_retention_days' => '큐 처리 기록 보관 기간',
         'public_asset_disk' => '공개 자산 디스크',
     ],
 ];

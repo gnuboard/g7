@@ -3,6 +3,7 @@
 namespace Tests\Unit\Listeners;
 
 use App\Enums\ActivityLogType;
+use App\Enums\ScheduleTriggerType;
 use App\Http\Resources\ActivityLogResource;
 use App\Listeners\CoreActivityLogListener;
 use App\Models\ActivityLog;
@@ -1270,7 +1271,7 @@ class CoreActivityLogListenerTest extends TestCase
     public function test_handle_schedule_after_run_logs_activity(): void
     {
         $schedule = $this->createModelMock(7);
-        $history = $this->createModelMock(100);
+        $history = $this->createModelMock(100, ['trigger_type' => ScheduleTriggerType::Manual]);
 
         $this->logChannel->shouldReceive('info')
             ->once()
@@ -1281,6 +1282,26 @@ class CoreActivityLogListenerTest extends TestCase
                     && $context['description_params']['schedule_id'] === 7
                     && isset($context['loggable']);
             });
+
+        $this->listener->handleScheduleAfterRun($schedule, $history);
+    }
+
+    /**
+     * 예약 실행(틱·큐)은 활동 로그에 남기지 않는지 확인합니다 — 30초 주기 작업만으로 하루 수천 건이
+     * 쌓이면 활동 로그가 운영자 행위 기록으로 쓸모를 잃는다(실행 결과는 실행 이력에 있다).
+     *
+     * @scenario request_area=admin
+     *
+     * @effects schedule_run_logged_against_schedule
+     *
+     * @return void 없음
+     */
+    public function test_handle_schedule_after_run_skips_scheduled_runs(): void
+    {
+        $schedule = $this->createModelMock(7);
+        $history = $this->createModelMock(101, ['trigger_type' => ScheduleTriggerType::Scheduled]);
+
+        $this->logChannel->shouldReceive('info')->never();
 
         $this->listener->handleScheduleAfterRun($schedule, $history);
     }

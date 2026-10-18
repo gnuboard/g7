@@ -4,6 +4,7 @@ namespace App\Services\Queue;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\Analytics\QueueStatsRepositoryInterface;
+use App\Support\Queue\ThrottledQueueWarning;
 use Illuminate\Support\Carbon;
 use Throwable;
 
@@ -272,6 +273,48 @@ class QueueWorkerRegistry
         $value = config('queue.connections.'.($connection ?? $this->defaultConnection()).'.retry_after');
 
         return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
+     * timeout 이 연결의 retry_after 이상이면 그 아래로 줄입니다.
+     *
+     * 그대로 두면 실행 중인 잡을 다른 워커가 다시 집어 같은 일을 두 번 한다. 줄인 사례는 카운터와
+     * 스로틀 경고로 남긴다. retry_after 개념이 없는 드라이버(sync 등)는 검사하지 않는다.
+     * 훅 리스너 큐 옵션(ListenerQueueOptions)과 DB 스케줄 큐 실행(ScheduleDispatcher)이 함께 쓴다.
+     *
+     * @param  int  $timeout  선언한 timeout(초)
+     * @param  string|null  $connection  해석된 연결 (null = 기본 연결)
+     * @param  string|null  $queue  해석된 큐 (null = 연결의 기본 큐)
+     * @param  array<string, scalar|null>  $context  경고·카운터 문맥 (예: listener·hook, schedule_id) — 순서대로 경고 스로틀 키에 들어간다
+     * @param  string|null  $warning  경고 문구 (null 이면 일반 문구)
+     * @return int 적용할 timeout(초)
+     */
+    public function clampTimeout(int $timeout, ?string $connection, ?string $queue, array $context = [], ?string $warning = null): int
+    {
+        $retryAfter = $this->retryAfter($connection);
+
+        if ($retryAfter === null || $timeout < $retryAfter) {
+            return $timeout;
+        }
+
+        $applied = max(1, $retryAfter - (int) config('queue.worker_registry.timeout_margin_seconds', 10));
+        $info = [
+            ...$context,
+            'connection' => $connection ?? $this->defaultConnection(),
+            'queue' => $queue ?? 'default',
+            'requested' => $timeout,
+            'applied' => $applied,
+            'retry_after' => $retryAfter,
+        ];
+
+        $this->recordTimeoutClamp($info);
+        ThrottledQueueWarning::warn(
+            'clamp|'.implode('|', array_map(static fn ($value): string => (string) $value, array_values($context))).'|'.$info['connection'],
+            $warning ?? '큐 작업 timeout 이 큐 연결의 retry_after 이상이라 줄여서 보냅니다 — 실행 중인 잡을 다른 워커가 다시 집지 않게 하려면 긴 작업 연결(*-long)을 쓰세요',
+            $info,
+        );
+
+        return $applied;
     }
 
     /**

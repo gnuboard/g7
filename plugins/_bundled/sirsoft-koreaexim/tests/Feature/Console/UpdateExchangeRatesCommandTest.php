@@ -41,7 +41,7 @@ class UpdateExchangeRatesCommandTest extends PluginTestCase
             KoreaeximRateRunItem::where('run_id', '>', $originalMaxId)->delete();
             KoreaeximRateRun::where('id', '>', $originalMaxId)->delete();
             $this->travelTo(Carbon::create(2027, 1, 1, $time === 'before_11' ? 10 : 13, 0, 0, 'Asia/Seoul')->addDays($index));
-            $this->configure(['auto_manage' => $auto === 'on', 'auth_key' => $key === 'set' ? 'fixture-key' : '', 'run_days' => $day === 'run_day' ? [1, 2, 3, 4, 5, 6, 7] : [], 'retry_max' => 3, 'update_time' => '11:30', 'lookback_days' => 0]);
+            $this->configure(['auto_manage' => $auto === 'on', 'auth_key' => $key === 'set' ? 'fixture-key' : '', 'run_days' => $day === 'run_day' ? [1, 2, 3, 4, 5, 6, 7] : [], 'retry_max' => 3, 'lookback_days' => 0]);
             $currency = $original;
             if ($base === 'unsupported') {
                 $currency['currencies'][] = ['code' => 'VND', 'name' => ['ko' => '동'], 'symbol' => 'VND', 'base_unit' => 1, 'exchange_rate' => 20, 'decimal_places' => 0, 'rounding_unit' => 1, 'rounding_method' => 'round'];
@@ -194,7 +194,9 @@ class UpdateExchangeRatesCommandTest extends PluginTestCase
     public function test_before_eleven_no_data_is_retried(): void
     {
         $this->travelTo(now('Asia/Seoul')->setTime(9, 30));
-        $this->configure(['lookback_days' => 0, 'update_time' => '09:30']);
+        $this->configure(['lookback_days' => 0]);
+        // 운영자가 스케줄 관리에서 정기 갱신을 09:30 으로 바꾼 상태 — 재시도는 그 시각 이후에만 돈다
+        $this->useUpdateSchedule('30 9 * * *');
         Http::fake(['*' => Http::response([])]);
         $run = $this->runUpdate();
         $this->assertStringContainsString('11시 이전', $run->message);

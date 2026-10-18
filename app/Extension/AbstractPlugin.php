@@ -8,6 +8,7 @@ use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\PluginCacheDriver;
+use App\Extension\Helpers\ExtensionScheduleSyncHelper;
 use App\Extension\Storage\PluginStorageDriver;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
@@ -497,27 +498,42 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 스케줄 작업 목록 반환
+     * 스케줄 작업 선언 목록을 반환합니다.
      *
-     * 플러그인에서 등록하는 스케줄 작업 목록입니다.
-     * 코어에서 이 메서드를 호출하여 플러그인 스케줄러를 등록합니다.
+     * 7.2.0 부터 코어는 이 선언을 설치·업데이트·활성화 때 schedules 테이블로 동기화하고
+     * (`PluginManager::syncDeclarativeArtifacts()` → `ExtensionScheduleSyncHelper`), 스케줄러는 DB 행을 읽어 실행한다.
+     * 운영자가 관리 화면(스케줄 관리)에서 바꾼 주기·활성 여부 등은 업데이트 때 보존된다(user_overrides).
+     * 선언에서 뺀 항목의 행은 다음 동기화 때 지워지고(선언이 0건이면 실수로 비운 것일 수 있어 정리를 건너뛴다),
+     * "데이터도 함께 삭제" 로 제거하면 모든 행이 지워진다.
+     * 비활성 플러그인의 행은 남지만 실행되지 않는다.
      *
-     * 기본적으로 빈 배열 반환
-     * 플러그인 개발자가 스케줄 작업이 필요한 경우 오버라이드
+     * 기본적으로 빈 배열을 반환한다. 스케줄이 필요한 플러그인만 오버라이드한다.
      *
-     * @return array 스케줄 작업 배열
-     *               [
-     *               [
-     *               'command' => 'artisan:command',
-     *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
-     *               'description' => '작업 설명 (선택)',
-     *               'enabled_config' => 'setting.key' (선택, plugin_setting()으로 조회하여 활성화 여부 결정),
-     *               ],
-     *               ]
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록. 항목 형식(코어 `config/core.php` 의 `schedules` 카탈로그와 같은 키):
+     *                                          [
+     *                                          'name' => 'prune-temp-files',              // 필수 권장 — 플러그인 안에서 고유한 기계 식별자(소문자·숫자·-_.)
+     *                                          'type' => 'artisan',                        // artisan(기본) | job (shell·url 은 선언 불가)
+     *                                          'label' => ['ko' => '…', 'en' => '…'],     // 표시 명칭 (ja 는 언어팩 seed/schedules.json)
+     *                                          'description' => ['ko' => '…', 'en' => '…'],
+     *                                          'command' => 'vendor-plugin:prune-temp-files',                   // artisan 명령(옵션 포함) 또는 job 클래스 FQCN
+     *                                          'expression' => '0 4 * * *',                // cron 식 (사이트 시간대 기준)
+     *                                          'frequency' => 'custom',                    // custom(기본) | everyThirtySeconds
+     *                                          'timezone' => null,                         // 시간대 고정이 필요할 때만 (예: Asia/Seoul)
+     *                                          'without_overlapping' => 0,                 // 중복 실행 방지 잠금 분 (0=끔, 최대 10080)
+     *                                          'on_one_server' => true,                    // 다중 서버에서 한 서버만
+     *                                          'dispatch_mode' => 'sync',                  // sync(스케줄러에서 바로) | queue(큐 Job)
+     *                                          'history_mode' => 'all',                    // all | failures_only (잦은 작업용)
+     *                                          'notify_on_failure' => true,                // 실패 시 관리자 알림 (하루 1회)
+     *                                          'timeout' => null,                          // 초
+     *                                          'enabled_condition' => [                    // 실행 조건 (AND) — 미충족이면 그 틱에 실행하지 않음
+     *                                          ['source' => 'plugin_setting', 'key' => 'cleanup.enabled', 'operator' => 'truthy', 'default' => true],
+     *                                          ],
+     *                                          ]
      *
-     * enabled_config 형식:
-     *   - 'payment.auto_capture' → plugin_setting($identifier, 'payment.auto_capture')
-     *   - 'sirsoft-payment.payment.auto_capture' → identifier 접두사 자동 제거 후 동일하게 조회
+     * 옛 형식(`command`·`schedule`(메서드명|cron)·`description` 문자열·`enabled_config`)도 계속 받는다 —
+     * 동기화 때 name 을 명령에서 만들고 `enabled_config` 를 `plugin_setting` 조건으로 바꾼다(identifier 접두사 자동 제거).
+     *
+     * @see ExtensionScheduleSyncHelper
      */
     public function getSchedules(): array
     {

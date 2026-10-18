@@ -1,0 +1,6 @@
+{
+  "sync-template-status": {
+    "label": "アラートトークテンプレート審査状態の同期",
+    "description": "審査中のBizppurioアラートトークテンプレートのカカオ審査状態を取得します。"
+  }
+}

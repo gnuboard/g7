@@ -18,7 +18,8 @@ import userFilterSection from '../../layouts/partials/admin_user_list/_partial_f
 
 // 스케줄관리 (메인 + 파샬)
 import scheduleList from '../../layouts/admin_schedule_list.json';
-import scheduleTab from '../../layouts/partials/admin_schedule_list/_tab_schedules.json';
+// 스케줄 검색 입력·버튼은 7.2.0 에서 탭 조각에서 필터 조각(`_partial_filter_section`)으로 옮겨졌다
+import scheduleFilterSection from '../../layouts/partials/admin_schedule_list/_partial_filter_section.json';
 
 /** JSON 전체에서 actionRef를 가진 액션을 찾는 유틸리티 */
 function findActionRefs(obj: any, refName: string, results: any[] = []): any[] {
@@ -145,21 +146,24 @@ describe('스케줄관리 named_actions 검증', () => {
         expect(action.params.path).toBe('/admin/schedules');
         expect(action.params.mergeQuery).toBe(true);
         expect(action.params.query.page).toBe(1);
-        expect(action.params.query.search).toBeDefined();
+        // 검색어 키는 쿠폰 규약(search_field + search_keyword)이다 — 옛 `search` 는 서버가 버려 검색이 안 됐다(#17)
+        expect(action.params.query.search_keyword).toBeDefined();
+        expect(action.params.query.search_field).toBeDefined();
+        expect(action.params.query.search).toBeUndefined();
     });
 
     // @scenario filter_axis=status, outcome=narrows
     // @effects admin_list_named_actions_wired
-    it('파샬 탭에서 Enter keypress가 actionRef로 searchSchedules를 참조해야 함', () => {
-        const refs = findActionRefs(scheduleTab, 'searchSchedules');
+    it('필터 조각에서 Enter keypress가 actionRef로 searchSchedules를 참조해야 함', () => {
+        const refs = findActionRefs(scheduleFilterSection, 'searchSchedules');
         const enterRef = refs.find((r: any) => r.type === 'keypress' && r.key === 'Enter');
         expect(enterRef).toBeDefined();
     });
 
     // @scenario filter_axis=status, outcome=narrows
     // @effects admin_list_named_actions_wired
-    it('파샬 탭에서 검색 버튼 click이 actionRef로 searchSchedules를 참조해야 함', () => {
-        const refs = findActionRefs(scheduleTab, 'searchSchedules');
+    it('필터 조각에서 검색 버튼 click이 actionRef로 searchSchedules를 참조해야 함', () => {
+        const refs = findActionRefs(scheduleFilterSection, 'searchSchedules');
         const clickRef = refs.find((r: any) => r.type === 'click');
         expect(clickRef).toBeDefined();
     });
@@ -167,7 +171,7 @@ describe('스케줄관리 named_actions 검증', () => {
     // @scenario filter_axis=status, outcome=narrows
     // @effects admin_list_named_actions_wired
     it('총 2개의 actionRef가 searchSchedules를 참조해야 함', () => {
-        const refs = findActionRefs(scheduleTab, 'searchSchedules');
+        const refs = findActionRefs(scheduleFilterSection, 'searchSchedules');
         expect(refs.length).toBe(2);
     });
 });

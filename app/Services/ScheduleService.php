@@ -4,32 +4,51 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
-use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
-use App\Enums\ScheduleType;
 use App\Exceptions\ScheduleExecutionException;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
-use App\Support\OutboundUrlValidator;
-use App\Support\ScheduleCommandValidator;
+use App\Services\Schedule\ScheduleDispatcher;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\Console\Output\BufferedOutput;
 
 class ScheduleService
 {
+    /**
+     * 저장소와 실행 디스패처를 주입받습니다.
+     *
+     * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 저장소
+     * @param  ScheduleHistoryRepositoryInterface  $historyRepository  실행 이력 저장소
+     * @param  ScheduleDispatcher  $dispatcher  실행 디스패처(즉시 실행용)
+     * @return void 반환값 없음
+     */
     public function __construct(
         private ScheduleRepositoryInterface $scheduleRepository,
-        private ScheduleHistoryRepositoryInterface $historyRepository
+        private ScheduleHistoryRepositoryInterface $historyRepository,
+        private ScheduleDispatcher $dispatcher
     ) {}
+
+    /**
+     * 화면의 「즉시 실행」으로 스케줄을 한 번 실행합니다.
+     *
+     * 예약 실행과 같은 실행기·허용목록을 거친다(수동 트리거). 실행 조건이 미충족이어도 실행한다 —
+     * 화면이 미충족 조건을 미리 경고한다.
+     *
+     * @param  Schedule  $schedule  실행할 스케줄
+     * @param  int|null  $userId  실행한 관리자 ID
+     * @return ScheduleHistory|null 바로 실행이면 이력(실패도 이력으로 온다), 큐로 보냈거나
+     *                              실패만 기록하는 행이 성공했으면 null
+     *
+     * @throws ScheduleExecutionException 소유 확장 비활성·앞선 실행이 아직 도는 중일 때
+     */
+    public function runNow(Schedule $schedule, ?int $userId = null): ?ScheduleHistory
+    {
+        return $this->dispatcher->dispatch($schedule, ScheduleTriggerType::Manual, $userId);
+    }
 
     /**
      * 필터링된 스케줄 목록을 페이지네이션으로 조회합니다.
@@ -157,226 +176,6 @@ class ScheduleService
     public function getScheduleById(int $id): ?Schedule
     {
         return $this->scheduleRepository->findById($id);
-    }
-
-    /**
-     * 스케줄을 즉시 실행합니다.
-     *
-     * @param  Schedule  $schedule  실행할 스케줄
-     * @param  int|null  $triggeredBy  수동 실행자 ID
-     * @return ScheduleHistory 실행 이력
-     *
-     * @throws ValidationException 실행 실패 시
-     */
-    public function runSchedule(Schedule $schedule, ?int $triggeredBy = null): ScheduleHistory
-    {
-        // before_run 훅 실행
-        HookManager::doAction('core.schedule.before_run', $schedule);
-
-        // 실행 이력 생성
-        $history = $this->historyRepository->create([
-            'schedule_id' => $schedule->id,
-            'started_at' => now(),
-            'status' => ScheduleResultStatus::Running,
-            'trigger_type' => $triggeredBy ? ScheduleTriggerType::Manual : ScheduleTriggerType::Scheduled,
-            'triggered_by' => $triggeredBy,
-        ]);
-
-        // 스케줄 상태 업데이트
-        $this->scheduleRepository->update($schedule, [
-            'last_result' => ScheduleResultStatus::Running,
-            'last_run_at' => now(),
-        ]);
-
-        try {
-            $startTime = microtime(true);
-            $memoryStart = memory_get_usage();
-
-            // 타입별 실행
-            $result = match ($schedule->type) {
-                ScheduleType::Artisan => $this->executeArtisanCommand($schedule),
-                ScheduleType::Shell => $this->executeShellCommand($schedule),
-                ScheduleType::Url => $this->executeUrlCall($schedule),
-            };
-
-            $endTime = microtime(true);
-            $memoryEnd = memory_get_usage();
-
-            // 이력 업데이트 (성공)
-            $this->historyRepository->update($history, [
-                'ended_at' => now(),
-                'duration' => (int) ($endTime - $startTime),
-                'status' => ScheduleResultStatus::Success,
-                'exit_code' => 0,
-                'memory_usage' => $memoryEnd - $memoryStart,
-                'output' => $result['output'] ?? null,
-            ]);
-
-            // 스케줄 상태 업데이트 (다음 실행 시각은 모델이 계산, 영속화는 Repository 경유)
-            $schedule->last_result = ScheduleResultStatus::Success;
-            $schedule->calculateNextRunAt();
-            $this->scheduleRepository->update($schedule, [
-                'last_result' => ScheduleResultStatus::Success,
-                'next_run_at' => $schedule->next_run_at,
-            ]);
-
-            // after_run 훅 실행
-            HookManager::doAction('core.schedule.after_run', $schedule, $history);
-
-            return $history->fresh();
-
-        } catch (Exception $e) {
-            // 이력 업데이트 (실패)
-            $this->historyRepository->update($history, [
-                'ended_at' => now(),
-                'status' => ScheduleResultStatus::Failed,
-                'exit_code' => $e->getCode() ?: 1,
-                'error_output' => $e->getMessage(),
-            ]);
-
-            // 스케줄 상태 업데이트 (다음 실행 시각은 모델이 계산, 영속화는 Repository 경유)
-            $schedule->last_result = ScheduleResultStatus::Failed;
-            $schedule->calculateNextRunAt();
-            $this->scheduleRepository->update($schedule, [
-                'last_result' => ScheduleResultStatus::Failed,
-                'next_run_at' => $schedule->next_run_at,
-            ]);
-
-            // 거부 사유는 error 레벨 한 줄만 보는 알림 파이프라인에서도 보여야 한다 —
-            // 별도 warning 로그에만 남기면 그 경로에서는 "왜 막혔는지" 가 유실된다.
-            Log::error('Schedule execution failed', [
-                'schedule_id' => $schedule->id,
-                'type' => $schedule->type->value,
-                'command' => $schedule->command,
-                'reason' => $e instanceof ScheduleExecutionException ? $e->reasonCode : null,
-                'error' => $e->getMessage(),
-            ]);
-
-            throw ValidationException::withMessages([
-                'general' => [__('schedule.run_failed', ['error' => $e->getMessage()])],
-            ]);
-        }
-    }
-
-    /**
-     * Artisan 커맨드를 실행합니다.
-     *
-     * @param  Schedule  $schedule  스케줄
-     * @return array 실행 결과
-     *
-     * @throws ScheduleExecutionException 차단목록에 걸린 명령일 때
-     */
-    private function executeArtisanCommand(Schedule $schedule): array
-    {
-        // 저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값을 방어한다
-        // (isUrlCallAllowed 와 동일 사유 — 실행 직전이 마지막 방어선).
-        $verdict = ScheduleCommandValidator::inspectArtisanCommand($schedule->command);
-
-        if (! $verdict['allowed']) {
-            // 업그레이드 점검 스텝을 두지 않으므로, 거부 사유는 이 로그가 유일한 운영 진단 통로다.
-            Log::warning('Schedule artisan command rejected', [
-                'schedule_id' => $schedule->id,
-                'command' => $schedule->command,
-                'reason' => $verdict['reason'],
-            ]);
-
-            throw ScheduleExecutionException::artisanNotAllowed($verdict['reason']);
-        }
-
-        // 문자열이 아닌 (명령명, 인자배열) 로 넘겨 StringInput 재파싱을 경유하지 않는다 —
-        // parameters 가 비어 있으면 Laravel 이 문자열 전체를 다시 파싱해
-        // 검증한 이름과 다른 명령이 실행될 수 있다.
-        Artisan::call($verdict['name'], $verdict['parameters'], new BufferedOutput);
-
-        return [
-            'output' => Artisan::output(),
-            'exit_code' => 0,
-        ];
-    }
-
-    /**
-     * 쉘 명령을 실행합니다.
-     *
-     * @param  Schedule  $schedule  스케줄
-     * @return array 실행 결과
-     *
-     * @throws ScheduleExecutionException 차단목록에 걸렸거나 실행이 실패했을 때
-     */
-    private function executeShellCommand(Schedule $schedule): array
-    {
-        // 저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값을 방어한다
-        // (isUrlCallAllowed 와 동일 사유 — 실행 직전이 마지막 방어선).
-        $arguments = ScheduleCommandValidator::tokenizeShellCommand($schedule->command);
-
-        if ($arguments === null || ! ScheduleCommandValidator::isShellCommandAllowed($schedule->command)) {
-            throw ScheduleExecutionException::shellNotAllowed();
-        }
-
-        $timeout = $schedule->timeout ?? 60;
-
-        // 문자열이 아닌 인자 배열로 넘겨 `/bin/sh -c` 를 경유하지 않는다 —
-        // 파이프·`;`·`$()` 같은 셸 메타문자가 명령으로 해석될 여지를 없앤다.
-        $result = Process::timeout($timeout)->run($arguments);
-
-        if ($result->failed()) {
-            throw ScheduleExecutionException::shellCommandFailed($result->errorOutput(), $result->exitCode());
-        }
-
-        return [
-            'output' => $result->output(),
-            'exit_code' => $result->exitCode(),
-        ];
-    }
-
-    /**
-     * URL 호출을 실행합니다.
-     *
-     * @param  Schedule  $schedule  스케줄
-     * @return array 실행 결과
-     *
-     * @throws ScheduleExecutionException 내부망 URL 이거나 호출이 실패했을 때
-     */
-    private function executeUrlCall(Schedule $schedule): array
-    {
-        // 저장된 URL 이 그대로 서버의 outbound 목적지가 되므로, 실행 직전에도 내부망 주소를 차단한다
-        // (저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값 방어).
-        if (! $this->isUrlCallAllowed($schedule->command)) {
-            throw ScheduleExecutionException::urlNotPublic();
-        }
-
-        $timeout = $schedule->timeout ?? 30;
-
-        $response = Http::timeout($timeout)->get($schedule->command);
-
-        if ($response->failed()) {
-            throw ScheduleExecutionException::httpRequestFailed($response->status());
-        }
-
-        return [
-            'output' => 'HTTP Status: '.$response->status()."\n".$response->body(),
-            'exit_code' => 0,
-        ];
-    }
-
-    /**
-     * 스케줄의 URL 호출이 허용되는 목적지인지 판정합니다.
-     *
-     * 사설 IP·localhost 등 내부 네트워크 주소는 기본 차단하되, 사내 엔드포인트를 주기 호출하는
-     * 정당한 운영을 위해 `security.allow_internal_outbound_urls` 로 허용할 수 있습니다.
-     * 허용하더라도 userinfo 위장·비 HTTP scheme 은 계속 거부합니다.
-     *
-     * @param  string  $url  스케줄에 저장된 호출 URL
-     * @return bool 호출을 허용하면 true
-     */
-    private function isUrlCallAllowed(string $url): bool
-    {
-        $options = ['schemes' => ['http', 'https']];
-
-        if ((bool) g7_core_settings('security.allow_internal_outbound_urls', false)) {
-            return OutboundUrlValidator::isStructurallySafeUrl($url, $options);
-        }
-
-        return OutboundUrlValidator::isPublicHttpUrl($url, $options);
     }
 
     /**
@@ -519,15 +318,5 @@ class ScheduleService
     public function getActiveSchedules(): Collection
     {
         return $this->scheduleRepository->getActiveSchedules();
-    }
-
-    /**
-     * 실행 대기 중인 스케줄들을 조회합니다.
-     *
-     * @return Collection 실행 대기 중인 스케줄 컬렉션
-     */
-    public function getDueSchedules(): Collection
-    {
-        return $this->scheduleRepository->getDueSchedules();
     }
 }

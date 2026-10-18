@@ -464,6 +464,21 @@
 | `core.privacy.target_list_validation_rules` | filter | 2 |  |
 | `core.privacy.withdrawn_user.after_prune` | action | 2 |  |
 | `core.privacy.withdrawn_user.before_prune` | action | 1 |  |
+| `core.queue_job.after_delete` | action | 2 |  |
+| `core.queue_job.after_delete_many` | action | 2 |  |
+| `core.queue_job.after_prune` | action | 2 |  |
+| `core.queue_job.after_retry` | action | 2 |  |
+| `core.queue_job.after_retry_many` | action | 2 |  |
+| `core.queue_job.before_delete` | action | 1 |  |
+| `core.queue_job.before_delete_many` | action | 1 |  |
+| `core.queue_job.before_prune` | action | 1 |  |
+| `core.queue_job.before_retry` | action | 1 |  |
+| `core.queue_job.before_retry_many` | action | 1 |  |
+| `core.queue_job.bulk_delete_validation_rules` | filter | 2 |  |
+| `core.queue_job.bulk_retry_validation_rules` | filter | 2 |  |
+| `core.queue_job.failed_list_validation_rules` | filter | 2 |  |
+| `core.queue_job.log_list_validation_rules` | filter | 2 |  |
+| `core.queue_job.pending_list_validation_rules` | filter | 2 |  |
 | `core.role.after_create` | action | 1 |  |
 | `core.role.after_delete` | action | 1 |  |
 | `core.role.after_sync_permissions` | action | 3 |  |
@@ -497,10 +512,12 @@
 | `core.schedule.bulk_delete_validation_rules` | filter | 2 |  |
 | `core.schedule.bulk_update_status_validation_rules` | filter | 2 |  |
 | `core.schedule.create_validation_rules` | filter | 2 |  |
+| `core.schedule.filter_allowed_job_classes` | filter | 1 |  |
 | `core.schedule.filter_create_data` | filter | 1 |  |
 | `core.schedule.filter_update_data` | filter | 2 |  |
 | `core.schedule.history_list_validation_rules` | filter | 2 |  |
 | `core.schedule.list_validation_rules` | filter | 2 |  |
+| `core.schedule.run_failed` | action | 3 |  |
 | `core.schedule.update_validation_rules` | filter | 2 |  |
 | `core.screen_url.filter_path` | filter | 4 |  |
 | `core.search.after_search` | action | 1 |  |
@@ -671,12 +688,14 @@
 | `app/Extension/ModuleManager.php` | `module.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.permissions.translations` | 문자열 보간 조립 |
+| `app/Extension/ModuleManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (#17, 7.2.0) |
 | `app/Extension/ModuleManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.admin_menus.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.permissions.translations` | 문자열 보간 조립 |
+| `app/Extension/PluginManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (#17, 7.2.0) |
 | `app/Extension/PluginManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |

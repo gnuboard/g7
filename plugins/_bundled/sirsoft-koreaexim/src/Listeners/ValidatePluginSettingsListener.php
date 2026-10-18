@@ -51,7 +51,6 @@ class ValidatePluginSettingsListener implements HookListenerInterface
             }
         }];
         $rules['auth_key'] = [Rule::requiredIf((bool) $enabled && ! $key), 'nullable', 'string', 'max:200'];
-        $rules['update_time'] = ['sometimes', 'required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/D'];
         $rules['run_days'] = ['sometimes', 'present', 'array', 'max:7'];
         $rules['run_days.*'] = ['integer', 'between:1,7', 'distinct'];
         $rules['rate_type'] = ['sometimes', 'required', Rule::enum(RateType::class)];

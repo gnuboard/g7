@@ -2920,7 +2920,76 @@
             "global": {
               "isDeleting": false,
               "deleteTargetId": 1,
+              "deleteTargetIds": null,
               "deleteTargetName": "샘플 제목"
+            }
+          }
+        },
+        {
+          "id": "modal_bulk",
+          "label": "$t:editor.state.modal_filled",
+          "initialState": {
+            "global": {
+              "isDeleting": false,
+              "deleteTargetId": null,
+              "deleteTargetIds": [1, 2],
+              "deleteTargetName": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "상태 일괄 변경 확인 창이 읽는 전역 상태(selectedScheduleIds, bulkStatusAction) — 표 위 일괄 바가 고른 줄과 방향을 담고 연다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_bulk_status_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedScheduleIds": [1, 2],
+              "bulkStatusAction": "inactive",
+              "isBulkStatusChanging": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "스케줄 보안 정책 창(읽기 전용)이 읽는 전역 상태 — 헤더 「보안 정책」 버튼이 GET /api/admin/schedules/security 응답(data)을 담는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_security_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "scheduleSecurityError": "",
+              "scheduleSecurity": {
+                "override_file": {"path": "storage/app/schedule_security.json", "exists": true, "valid": true, "error_code": null, "error": null},
+                "shell": {"enabled": false, "gate_enabled": false, "allowed_binaries": [], "source": "env"},
+                "artisan": {
+                  "allowlist": [
+                    {"command": "cache:clear", "options": [], "max_arguments": 0, "source": "core", "override_options": [], "denied": false},
+                    {"command": "queue:prune-records", "options": ["days"], "max_arguments": 0, "source": "core", "override_options": [], "denied": false},
+                    {"command": "app:report-daily", "options": ["date"], "max_arguments": 0, "source": "override", "override_options": [], "denied": false}
+                  ],
+                  "denylist": [{"command": "tinker", "source": "core"}, {"command": "db:wipe", "source": "core"}],
+                  "denylist_prefixes": [{"prefix": "make:", "source": "core"}],
+                  "allow_extension_commands": true
+                },
+                "job": {"allowed_classes": [{"class": "App\\Jobs\\GenerateSitemapJob", "source": "core"}]},
+                "url": {"block_private_hosts": true, "source": "settings"}
+              }
             }
           }
         }
@@ -2955,6 +3024,84 @@
       ]
     },
     {
+      "comment": "큐 Job 상세 창이 읽는 전역 상태 — 실패 작업 줄의 상세 버튼이 queueJobDetail(상세 응답)과 종류를 담는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "queue_job_detail_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "queueJobDetailKind": "failed",
+              "queueJobDetail": {
+                "uuid": "00000000-0000-0000-0000-000000000021",
+                "connection": "database",
+                "queue": "default",
+                "display_name": "schedule:3 외부 상태 점검",
+                "job_class": "App\\Jobs\\RunScheduledTaskJob",
+                "schedule_id": 3,
+                "attempts": 1,
+                "max_tries": 1,
+                "exception": "RuntimeException: HTTP 요청 실패 (상태: 503)\n#0 ...",
+                "failed_at": "2026-05-29T09:30:00+09:00",
+                "payload_meta": {
+                  "displayName": "schedule:3 외부 상태 점검",
+                  "maxTries": 1
+                },
+                "abilities": {
+                  "can_retry": true,
+                  "can_delete": true
+                }
+              },
+              "queueJobDetailLoading": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "큐 실패 작업 재시도·삭제 확인 창 — 대상(queueConfirm)과 건별 결과 목록(queueConfirmResults)을 채운다.",
+      "scope": {
+        "kind": "modal",
+        "match": "queue_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "queueConfirm": {
+                "action": "retry",
+                "uuids": [
+                  "00000000-0000-0000-0000-000000000021"
+                ],
+                "single": false,
+                "label": "선택한 작업 1개",
+                "names": {
+                  "00000000-0000-0000-0000-000000000021": "schedule:3 외부 상태 점검"
+                }
+              },
+              "queueConfirmResults": [
+                {
+                  "uuid": "00000000-0000-0000-0000-000000000021",
+                  "ok": true,
+                  "message": "다시 큐에 넣었습니다."
+                }
+              ],
+              "queueConfirmBusy": false,
+              "queueConfirmMessage": null
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(isEditMode, isSubmitting, scheduleForm, selectedSchedule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -2968,22 +3115,108 @@
           "initialState": {
             "global": {
               "selectedSchedule": {
-                "command": "샘플 값",
-                "description": "샘플 설명 문구입니다.",
-                "expression": "샘플 값",
                 "id": 1,
-                "name": "샘플 제목",
-                "timeout": 60,
-                "type_label": "샘플 제목"
+                "name": "sitemap-generate",
+                "label": {
+                  "ko": "사이트맵 생성",
+                  "en": "사이트맵 생성"
+                },
+                "label_localized": "사이트맵 생성",
+                "description": {
+                  "ko": "샘플 설명",
+                  "en": "Sample description"
+                },
+                "description_localized": "샘플 설명",
+                "command": "App\\Jobs\\GenerateSitemapJob",
+                "type": "job",
+                "frequency": "custom",
+                "frequency_label": "사용자 정의",
+                "expression": "0 2 * * *",
+                "owner": {
+                  "type": "core",
+                  "identifier": "core",
+                  "name": "코어"
+                },
+                "is_owned": true,
+                "locked_fields": [
+                  "command",
+                  "type",
+                  "name",
+                  "enabled_condition",
+                  "timezone"
+                ],
+                "overridden_fields": [
+                  "expression"
+                ],
+                "enabled_condition": [
+                  {
+                    "source": "core_setting",
+                    "key": "seo.sitemap_enabled",
+                    "operator": "truthy",
+                    "default": true
+                  },
+                  {
+                    "source": "config",
+                    "key": "app.sitemap_ready",
+                    "operator": "truthy",
+                    "default": true
+                  }
+                ],
+                "unmet_conditions": [
+                  {
+                    "source": "core_setting",
+                    "key": "seo.sitemap_enabled",
+                    "operator": "truthy"
+                  }
+                ],
+                "dispatch_mode": "queue",
+                "history_mode": "all",
+                "without_overlapping": 30,
+                "on_one_server": true,
+                "notify_on_failure": true,
+                "queue_connection": null,
+                "queue_name": null,
+                "timezone": "Asia/Seoul",
+                "run_in_maintenance": false,
+                "timeout": 600,
+                "is_active": true,
+                "last_result": "success",
+                "last_run_at": "2026-05-29T03:00:00+09:00",
+                "last_duration": "1.2초",
+                "next_run_at": "2026-05-30T03:00:00+09:00",
+                "created_at": "2026-05-01",
+                "abilities": {
+                  "can_create": true,
+                  "can_update": true,
+                  "can_delete": false,
+                  "can_run": true
+                },
+                "type_label": "Job 클래스"
               },
               "isEditMode": true,
               "scheduleForm": {
-                "frequency": "샘플 값",
-                "is_active": true,
+                "label": {
+                  "ko": "사이트맵 생성",
+                  "en": "Generate sitemap"
+                },
+                "description": {
+                  "ko": "샘플 설명",
+                  "en": "Sample description"
+                },
+                "type": "job",
+                "frequency": "custom",
+                "overlapEnabled": true,
+                "without_overlapping": 30,
+                "on_one_server": true,
+                "dispatch_mode": "queue",
+                "queue_connection": "database",
+                "queue_name": "long",
+                "history_mode": "all",
+                "notify_on_failure": true,
                 "run_in_maintenance": false,
-                "type": "sample",
-                "without_overlapping": true
+                "is_active": true
               },
+              "scheduleFormErrors": null,
               "isSubmitting": false
             }
           }
