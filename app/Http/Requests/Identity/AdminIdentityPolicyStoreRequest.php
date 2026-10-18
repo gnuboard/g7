@@ -7,8 +7,6 @@ use App\Enums\IdentityPolicyFailMode;
 use App\Enums\IdentityPolicyScope;
 use App\Extension\HookManager;
 use App\Models\IdentityPolicy;
-use App\Rules\IdentityProviderForPurposeRule;
-use App\Rules\RegisteredIdentityPurposeRule;
 use App\Rules\UniquePolicyPriorityPerTarget;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -41,9 +39,8 @@ class AdminIdentityPolicyStoreRequest extends FormRequest
             'key' => ['required', 'string', 'max:120', Rule::unique(IdentityPolicy::class, 'key')],
             'scope' => ['required', Rule::enum(IdentityPolicyScope::class)],
             'target' => ['required', 'string', 'max:255'],
-            'purpose' => ['required', 'string', 'max:64', new RegisteredIdentityPurposeRule(true)],
-            // 지정 수단 = 인정할 수단(정확히 일치, 7.1.6) — 등록돼 있고 그 목적을 지원하는 수단만 저장한다(KVE 동형 B8)
-            'provider_id' => ['nullable', 'string', 'max:64', new IdentityProviderForPurposeRule(fn (): ?string => is_string($this->input('purpose')) ? $this->input('purpose') : null)],
+            'purpose' => ['required', 'string', 'max:64'],
+            'provider_id' => ['nullable', 'string', 'max:64'],
             'grace_minutes' => ['required', 'integer', 'min:0', 'max:43200'],
             'enabled' => ['boolean'],
             // priority 동률 차단 — 같은 scope+target 에 동일 priority 활성 정책이 이미 있으면 거부.

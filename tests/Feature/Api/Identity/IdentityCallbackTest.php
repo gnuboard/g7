@@ -9,7 +9,6 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
@@ -56,11 +55,9 @@ class IdentityCallbackTest extends TestCase
         /** @var IdentityVerificationLogRepositoryInterface $repo */
         $repo = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
 
-        // 같은 주소로 60초 안에 다시 요청하면 재요청 대기(429)에 걸린다 — 한 테스트에서 challenge 를 여러 개 만들므로
-        // 요청마다 다른 주소를 쓴다.
         $request = $this->postJson('/api/identity/challenges', [
             'purpose' => 'sensitive_action',
-            'target' => ['email' => 'user-'.Str::lower(Str::random(8)).'@example.com'],
+            'target' => ['email' => 'user@example.com'],
         ]);
         $id = $request->json('data.id');
 

@@ -3,9 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Models\Plugin;
 use App\Services\PluginService;
 use Illuminate\Console\Command;
@@ -21,17 +19,20 @@ use Illuminate\Support\Facades\Log;
  */
 class RefreshPluginLayoutCommand extends Command
 {
-    use LocalizesDescription;
     use RendersLayoutSyncResult;
-    use ReportsLifecycleWarnings;
     use SelectsLayoutInstallSource;
 
     /**
-     * 커맨드 이름 및 시그니처
+     * The name and signature of the console command.
      */
     protected $signature = 'plugin:refresh-layout
         {identifier? : 특정 플러그인의 식별자 (생략 시 모든 활성 플러그인)}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '플러그인 레이아웃을 갱신합니다 (빌드 없이 레이아웃만 DB에 동기화)';
 
     /**
      * 커맨드를 생성합니다.
@@ -45,7 +46,7 @@ class RefreshPluginLayoutCommand extends Command
     }
 
     /**
-     * 커맨드를 실행합니다.
+     * Execute the console command.
      *
      * @return int 종료 코드
      */
@@ -83,14 +84,14 @@ class RefreshPluginLayoutCommand extends Command
      */
     private function refreshSingle(string $identifier): int
     {
-        $this->info(__('plugins.commands.refresh_layout.refreshing', ['plugin' => $identifier]));
+        $this->info("플러그인 '{$identifier}' 레이아웃 갱신 중...");
 
         $result = $this->pluginService->refreshPluginLayouts($identifier);
 
         if ($result['success'] ?? false) {
-            $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.refresh_layout.success', ['plugin' => $identifier]));
+            $this->info("✅ 플러그인 '{$identifier}' 레이아웃 갱신 완료");
             $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
-            $this->line('   '.__('plugins.commands.refresh_layout.stats', ['created' => $result['created'], 'updated' => $result['updated'], 'deleted' => $result['deleted']]));
+            $this->line("   생성: {$result['created']}, 수정: {$result['updated']}, 삭제: {$result['deleted']}");
             Log::info('플러그인 레이아웃 갱신 완료', [
                 'plugin' => $identifier,
                 'stats' => $result,
@@ -99,7 +100,7 @@ class RefreshPluginLayoutCommand extends Command
             return Command::SUCCESS;
         }
 
-        $this->error('❌ '.__('plugins.commands.refresh_layout.failed', ['plugin' => $identifier]));
+        $this->error("❌ 플러그인 '{$identifier}' 레이아웃 갱신 실패");
 
         return Command::FAILURE;
     }
@@ -114,29 +115,28 @@ class RefreshPluginLayoutCommand extends Command
         $plugins = Plugin::where('status', 'active')->pluck('identifier')->toArray();
 
         if (empty($plugins)) {
-            $this->line(__('plugins.commands.refresh_layout.none_active'));
+            $this->line('활성화된 플러그인이 없습니다.');
 
             return Command::SUCCESS;
         }
 
-        $this->info(__('plugins.commands.refresh_layout.refreshing_all'));
+        $this->info('모든 활성 플러그인 레이아웃 갱신 중...');
 
         $successCount = 0;
         $failCount = 0;
 
         foreach ($plugins as $pluginIdentifier) {
-            $itemMark = $this->lifecycleMark();
-            $this->line('  '.__('plugins.commands.refresh_layout.item_refreshing', ['identifier' => $pluginIdentifier]));
+            $this->line("  {$pluginIdentifier} 갱신 중...");
 
             try {
                 $result = $this->pluginService->refreshPluginLayouts($pluginIdentifier);
 
                 if ($result['success'] ?? false) {
-                    $this->info('  '.$this->lifecycleDoneIcon($itemMark).' '.__('plugins.commands.refresh_layout.item_done', ['identifier' => $pluginIdentifier]));
+                    $this->info("  ✅ {$pluginIdentifier} 완료");
                     $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                     $successCount++;
                 } else {
-                    $this->warn('  ⚠️ '.__('plugins.commands.refresh_layout.item_failed', ['identifier' => $pluginIdentifier]));
+                    $this->warn("  ⚠️ {$pluginIdentifier} 실패");
                     $failCount++;
                 }
             } catch (\Exception $e) {
@@ -146,7 +146,7 @@ class RefreshPluginLayoutCommand extends Command
         }
 
         $this->newLine();
-        $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.refresh_layout.summary', ['success' => $successCount, 'failed' => $failCount]));
+        $this->info("✅ 총 {$successCount}개 성공, {$failCount}개 실패");
 
         Log::info('플러그인 레이아웃 일괄 갱신 완료', [
             'success' => $successCount,

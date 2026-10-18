@@ -79,6 +79,8 @@ return [
         'password_change' => 'パスワード変更',
         'password_change_postpone' => 'パスワード変更の延期',
         'password_expiry_logout' => 'パスワード有効期限切れによるログイン解除',
+
+        // 会員登録・編集でのロール変更 (user.roles_update, #736)
         'roles_update' => 'ロール変更',
         'manual_run_queued' => '個人情報措置職権実行受付',
         'manual_run_finished' => '個人情報措置職権実行終了',
@@ -151,7 +153,6 @@ return [
         'auth_reset_password' => 'パスワードリセット',
         'auth_record_consents' => '利用規約同意記録',
         'auth_login_failed' => 'ログイン失敗 (:email)',
-        'auth_two_factor_failed' => '2段階認証失敗 (:email)',
         'auth_account_locked' => 'アカウントロック (:attempts回失敗、:minutes分ブロック)',
         'auth_account_locked_permanently' => 'アカウント無期限ロック (:attempts回失敗、管理者による解除またはパスワード再設定が必要)',
         'auth_account_unlocked' => 'アカウントロック解除 (:email)',
@@ -259,7 +260,6 @@ return [
         'privacy_manual_run_failed' => '個人情報措置職権実行失敗 (:target)',
         'user_bulk_roles' => 'ユーザーのロール一括変更 (ID: :user_id)',
         'user_roles_update' => 'ユーザーのロール変更 (ID: :user_id, 追加: :added, 解除: :removed)',
-        'auth_reset_password_by_console' => 'システム(CLI)が会員のパスワードを再設定 (ID: :user_id)',
     ],
     'fields' => [
         'name' => '名前',

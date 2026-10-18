@@ -12,12 +12,8 @@ use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
-use App\Seo\SeoTitleRuleExporter;
-use App\Services\ModuleSettingsService;
-use App\Services\PluginSettingsService;
-use App\Services\SettingsService;
+use App\Services\FrontendConfigService;
 use App\Services\TemplateService;
-use App\Support\EmptyMapChildren;
 use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
@@ -34,21 +30,17 @@ class TemplateComposer
      * 서비스 주입
      *
      * @param  TemplateService  $templateService  템플릿 서비스
-     * @param  SettingsService  $settingsService  코어 설정 서비스
-     * @param  ModuleSettingsService  $moduleSettingsService  모듈 설정 서비스
-     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
      * @param  ModuleManager  $moduleManager  모듈 매니저
      * @param  PluginManager  $pluginManager  플러그인 매니저
      * @param  TemplateManager  $templateManager  템플릿 매니저
+     * @param  FrontendConfigService  $frontendConfigService  프론트엔드 공개 설정 조립
      */
     public function __construct(
         private TemplateService $templateService,
-        private SettingsService $settingsService,
-        private ModuleSettingsService $moduleSettingsService,
-        private PluginSettingsService $pluginSettingsService,
         private ModuleManager $moduleManager,
         private PluginManager $pluginManager,
-        private TemplateManager $templateManager
+        private TemplateManager $templateManager,
+        private FrontendConfigService $frontendConfigService,
     ) {}
 
     /**
@@ -65,27 +57,11 @@ class TemplateComposer
             $activeTemplate = null;
         }
 
-        // 프론트엔드 전역 변수로 사용할 설정 조회
-        // SettingsService의 공통 메서드 사용
-        try {
-            $frontendSettings = $this->settingsService->getFrontendSettings();
-        } catch (\Exception $e) {
-            $frontendSettings = [];
-        }
-
-        // 활성화된 플러그인 설정 조회
-        try {
-            $pluginSettings = $this->pluginSettingsService->getAllActiveSettings();
-        } catch (\Exception $e) {
-            $pluginSettings = [];
-        }
-
-        // 활성화된 모듈 설정 조회 (frontend_schema 기반 필터링 적용)
-        try {
-            $moduleSettings = $this->moduleSettingsService->getAllActiveSettings();
-        } catch (\Exception $e) {
-            $moduleSettings = [];
-        }
+        // 프론트엔드 공개 설정 — 관리자 공개 설정 API(`GET /api/admin/frontend-config`)와 같은 함수로 조립한다(#792 D8)
+        $bundle = $this->frontendConfigService->settingsBundle(FrontendConfigService::SCOPE_ADMIN);
+        $frontendSettings = $bundle['settings'];
+        $pluginSettings = $bundle['plugins'];
+        $moduleSettings = $bundle['modules'];
 
         // 활성화된 모듈의 프론트엔드 에셋 정보 수집
         $moduleAssets = $this->collectModuleAssets();
@@ -98,12 +74,8 @@ class TemplateComposer
         $activeModulesMeta = $this->collectActiveModulesMeta();
         $activePluginsMeta = $this->collectActivePluginsMeta();
 
-        // 프론트엔드에 노출할 앱 config 값 조회
-        try {
-            $appConfig = $this->settingsService->getAppConfigForFrontend();
-        } catch (\Exception $e) {
-            $appConfig = [];
-        }
+        // 프론트엔드에 노출할 앱 config 값 (공개 설정 API 와 같은 값)
+        $appConfig = $bundle['appConfig'];
 
         // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
         $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
@@ -121,8 +93,7 @@ class TemplateComposer
 
         $view->with('activeAdminTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
-        // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 보이는 필드가 없는 카테고리(`identity`)도 `[]` 가 아니라 `{}` 로 심는다(7.1.1 출시 전)
-        $view->with('frontendSettings', EmptyMapChildren::asObjects($frontendSettings));
+        $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
@@ -131,7 +102,6 @@ class TemplateComposer
         $view->with('activeModulesMeta', $activeModulesMeta);
         $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
-        $view->with('seoTitle', $this->collectAdminTitle($appConfig['supportedLocales'] ?? null));
         $view->with('templateExternals', $templateExternals);
         // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
         $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
@@ -140,26 +110,9 @@ class TemplateComposer
         $view->with('trustedScriptHosts', $trustedScriptHosts);
         // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
         $view->with('stateContracts', StateContracts::forFrontend());
-    }
-
-    /**
-     * 관리자 화면 브라우저 탭 제목 계산 값을 모읍니다 (`{화면 제목} - {사이트 이름} 관리자`).
-     *
-     * 실패하면 null 을 돌려준다 — 엔진은 값이 없으면 탭 제목을 바꾸지 않는다(종전 동작: 셸 제목).
-     *
-     * @param  mixed  $supportedLocales  프론트 앱 설정의 지원 언어 목록 (없으면 config 값)
-     * @return array<string, mixed>|null 제목 계산 값
-     */
-    private function collectAdminTitle(mixed $supportedLocales): ?array
-    {
-        try {
-            $locales = is_array($supportedLocales) && $supportedLocales !== []
-                ? array_values($supportedLocales)
-                : (array) config('app.supported_locales', [app()->getLocale()]);
-
-            return app(SeoTitleRuleExporter::class)->exportForAdmin($locales);
-        } catch (\Throwable $e) {
-            return null;
-        }
+        // 엔진이 전체 페이지 이동으로 넘길 custom 주소(routes/custom.php, #792 W5) · 실시간 알림 접속정보
+        $view->with('customRoutes', $this->frontendConfigService->customRoutes());
+        $view->with('websocketConfig', $this->frontendConfigService->websocket());
+        $view->with('frontendLocale', $this->frontendConfigService->locale());
     }
 }

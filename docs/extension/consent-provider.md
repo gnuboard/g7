@@ -213,3 +213,4 @@ apply(consent?.getSnapshot());           // 구독을 먼저 걸고 현재 값�
 - [개인정보 API — `GET /api/consent`](../backend/api/privacy.md)
 - [G7Core API — `G7Core.consent`](../frontend/g7core-api.md)
 - [방문자 통계 확장 지점](analytics-extension-points.md)
+- [개발자 화면 가이드 9-3](../custom-development.md#9-3-쿠키-동의) — 엔진 없는 화면·외부 화면의 동의 읽기·저장 API 순서

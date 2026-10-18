@@ -155,7 +155,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-medium text-red-700 dark:text-red-400"
+                                                "className": "font-medium text-red-600 dark:text-red-400"
                                             },
                                             "text": "{{order.data.payment?.vbank_due_at_formatted}}"
                                         }
@@ -179,7 +179,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{order.data.payment?.pg_provider === 'nicepayments' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0 || order.data.total_zero_rated_amount > 0)}}",
+            "if": "{{order.data.payment?.pg_provider === 'nicepayments' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}",
             "props": {
                 "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5"
             },
@@ -265,32 +265,6 @@
                                 "className": "text-gray-900 dark:text-white font-medium"
                             },
                             "text": "{{order.data.total_tax_free_amount_formatted}}"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{order.data.total_zero_rated_amount > 0}}",
-                    "props": {
-                        "className": "flex-between text-sm"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
-                            },
-                            "text": "$t:sirsoft-pay_nicepayments.user.zero_rated_amount"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-gray-900 dark:text-white font-medium"
-                            },
-                            "text": "{{order.data.total_zero_rated_amount_formatted}}"
                         }
                     ]
                 }
@@ -485,7 +459,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline disabled:opacity-50"
+                                        "className": "inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline disabled:opacity-50"
                                     },
                                     "children": [
                                         {
@@ -512,7 +486,7 @@
                                         "href": "{{_local._npMpCashReceiptUrl}}",
                                         "target": "_blank",
                                         "rel": "noopener noreferrer",
-                                        "className": "inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline"
+                                        "className": "inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline"
                                     },
                                     "children": [
                                         {

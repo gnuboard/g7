@@ -30,8 +30,7 @@
         "shop": "Shop",
         "products": "Products",
         "cart": "Cart",
-        "mypage": "My Page",
-        "reviews": "Reviews"
+        "mypage": "My Page"
     },
     "footer": {
         "info": "Info",
@@ -141,8 +140,7 @@
         "checkout_title": "Checkout",
         "order_complete_title": "Order Complete",
         "guest_order_form_title": "Guest Order Lookup",
-        "guest_order_show_title": "Guest Order Detail",
-        "reviews_title": "All Reviews"
+        "guest_order_show_title": "Guest Order Detail"
     },
     "search": {
         "page_title": "Search"
@@ -189,8 +187,8 @@
             "cart_option_change_modal": "Change Cart Option",
             "cart_unavailable_modal": "Unavailable Items",
             "coupon_download_modal": "Download Coupon",
-            "tempOrderNotFoundModal": "Order Not Found",
-            "quick_option_modal": "Product card option picker"
+            "exclusiveCouponConfirm": "Apply Exclusive Coupon",
+            "tempOrderNotFoundModal": "Order Not Found"
         },
         "mypage_orders": {
             "changeAddressModal": "Change Address",

@@ -15,7 +15,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 use Mockery;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -30,7 +29,6 @@ use Tests\TestCase;
  */
 class TemplateControllerTest extends TestCase
 {
-    use FakesGithubReleases;
     use RefreshDatabase;
 
     private User $adminUser;
@@ -49,9 +47,6 @@ class TemplateControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
-        $this->fakeGithubReleases();
 
         // TemplateManager를 Mock하여 파일 시스템 의존성 제거
         $this->mockTemplateManager();

@@ -106,7 +106,6 @@ class CustomAssetService
                 'name' => $file->getFilename(),
                 'extension' => $extension,
                 'size' => $file->getSize(),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'modified_at' => date('c', $file->getMTime()),
                 'editable' => in_array($extension, self::EDITABLE_EXTENSIONS, true),
                 'loaded' => isset($loadedPaths[$relative]),
@@ -193,7 +192,6 @@ class CustomAssetService
         return [
             'path' => $relative,
             'size' => strlen($content),
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'modified_at' => date('c'),
         ];
     }
@@ -242,7 +240,6 @@ class CustomAssetService
         return [
             'path' => $relative,
             'size' => (int) @filesize($absolute),
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'modified_at' => date('c'),
         ];
     }
@@ -292,7 +289,6 @@ class CustomAssetService
         $target = $this->resolveWritable($extensionType, $identifier, $to);
 
         if ($source === $target) {
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             return ['path' => $to, 'size' => (int) @filesize($source), 'modified_at' => date('c')];
         }
 
@@ -325,7 +321,6 @@ class CustomAssetService
             'path' => $to,
             'previous_path' => $from,
             'size' => (int) @filesize($target),
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'modified_at' => date('c'),
         ];
     }

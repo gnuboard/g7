@@ -4,9 +4,9 @@
  *
  * 버그:
  *   1) 언어 전환은 엔진을 다시 띄우고 같은 경로로 재진입한다. 재진입이 레이아웃 init·데이터소스 initLocal 을
- *      다시 돌려, 관리자 페이지 작성 화면에서 입력한 제목·고른 첨부가 사라졌다(7.1.0 실측).
+ *      다시 돌려, 관리자 페이지 작성 화면에서 입력한 제목·고른 첨부가 사라졌다(7.1.0 실측 O-G3-3).
  *   2) 탭을 열 때 받은 목록(auto_fetch=false — 마이페이지 「내 반응」)은 재진입이 다시 받지 않아,
- *      화면 글자는 새 언어인데 서버 문구(반응 유형 이름 등)는 이전 언어로 남았다.
+ *      화면 글자는 새 언어인데 서버 문구(반응 유형 이름 등)는 이전 언어로 남았다(O-K1-3).
  *
  * 수정:
  *   언어 전환 재진입은 전환 직전 `_local` 로 그리고 initLocal 을 적용하지 않는다(데이터소스는 새 언어로 다시 받는다).
@@ -47,7 +47,7 @@ vi.mock('../template-engine', async () => {
       reactRoot: null,
       currentLayoutJson: null,
       currentDataContext: { _global: {} },
-      bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startRenderCycle: vi.fn() },
+      bindingEngine: { invalidateCacheByKeys: vi.fn() },
     }),
   };
 });
@@ -162,23 +162,6 @@ describe('[case:state-global-locale-switch-reentry] TemplateApp 언어 전환 �
     const ctx = lastRenderContext();
     expect(ctx._local?.form?.title).toEqual({ ko: '저장 전 제목' });
     expect(ctx._local?.hasChanges).toBe(true);
-    expect(ctx._localInit).toBeUndefined();
-  });
-
-  /**
-   * 주소만 바꾸는 이동(replaceUrl·navigate replace)이 끝 슬래시 주소를 써 둔 채 언어를 바꿔도, 라우터 재진입은
-   * 정규형 경로로 오므로 인계 상태를 정규형 경로로 비교해야 한다 (engine-v1.84.0, 공개#156).
-   *
-   * @scenario case=unsaved_title_kept
-   * @effects unsaved_local_kept, init_local_not_applied
-   */
-  it('끝 슬래시 주소에서 언어를 바꿔도 정규형 경로 재진입이 전환 직전 _local 을 이어받는다', async () => {
-    window.history.replaceState(null, '', ROUTE.path + '/');
-
-    await app.changeLocale('en');
-
-    const ctx = lastRenderContext();
-    expect(ctx._local?.form?.title).toEqual({ ko: '저장 전 제목' });
     expect(ctx._localInit).toBeUndefined();
   });
 

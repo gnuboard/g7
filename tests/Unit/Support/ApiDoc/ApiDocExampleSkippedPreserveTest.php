@@ -3,19 +3,19 @@
 namespace Tests\Unit\Support\ApiDoc;
 
 use App\Support\ApiDoc\ApiDocScaffolder;
-use Tests\PureTestCase;
+use Tests\TestCase;
 
 /**
  * 실측 제외 엔드포인트의 손으로 쓴 예시 보존 테스트
  *
- * 2026-10-09 실측: `api:docgen --examples-only` 를 CKEditor5 범위로 돌리자 실측이 제외된 엔드포인트
+ * 2026-10-09 실측(O-R2-4): `api:docgen --examples-only` 를 CKEditor5 범위로 돌리자 실측이 제외된 엔드포인트
  * (관리자 목록 403, 이미지 404, 업로드 부수효과 제외)의 `@generated` 블록 안에 사람이 써 둔 요청·응답 예시가
  * 「실측 제외」 마커와 자동 요청 예시로 덮이거나 지워졌다. 실측이 제외된 엔드포인트는 기존 예시를 보존하고,
  * 실측된 엔드포인트와 기계가 넣은 예시는 종전처럼 갱신하는지 고정한다.
  *
  * @scenario-manifest tests/scenarios/apidoc-examples-skipped-preserve.yaml
  */
-class ApiDocExampleSkippedPreserveTest extends PureTestCase
+class ApiDocExampleSkippedPreserveTest extends TestCase
 {
     /** 실측 제외 마커 */
     private const SKIP_MARKER = '<!-- 실측 제외: http-403 — 응답 예시는 사람이 작성하세요. -->';

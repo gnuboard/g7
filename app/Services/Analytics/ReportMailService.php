@@ -117,13 +117,11 @@ class ReportMailService
         if ($period === 'monthly') {
             $start = $today->copy()->subMonthNoOverflow()->startOfMonth();
 
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             return [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()];
         }
 
         $start = $today->copy()->subWeek()->startOfWeek();
 
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         return [$start->toDateString(), $start->copy()->endOfWeek()->toDateString()];
     }
 
@@ -141,9 +139,7 @@ class ReportMailService
         $days = $start->diffInDays($end) + 1;
 
         return [
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $start->copy()->subDays($days)->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $start->copy()->subDay()->toDateString(),
         ];
     }

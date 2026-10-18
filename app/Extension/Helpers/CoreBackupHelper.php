@@ -2,8 +2,6 @@
 
 namespace App\Extension\Helpers;
 
-use App\Helpers\TimezoneHelper;
-use Carbon\Carbon;
 use FilesystemIterator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +32,6 @@ class CoreBackupHelper
      */
     public static function createBackup(array $targets, ?\Closure $onProgress = null, array $excludes = []): string
     {
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = date('Ymd_His');
         $backupRoot = storage_path('app/core_backups');
         $backupPath = $backupRoot.DIRECTORY_SEPARATOR."core_{$timestamp}";
@@ -198,8 +195,7 @@ class CoreBackupHelper
             $backups[] = [
                 'path' => $dir,
                 'name' => basename($dir),
-                // 운영자 콘솔 출력 — 사이트 시간대
-                'created_at' => TimezoneHelper::toSiteDateTimeString(Carbon::createFromTimestamp(filectime($dir))),
+                'created_at' => date('Y-m-d H:i:s', filectime($dir)),
             ];
         }
 
@@ -248,7 +244,8 @@ class CoreBackupHelper
         $protectedSet = self::normalizeProtectedSet($protectedPaths);
         $allowedTargetSet = self::normalizeProtectedSet($targets);
         $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
-        $skipSet = self::normalizeSkipPaths($skipPaths);
+        // custom 예약 자리(#792)는 적용 목록·신규 파일 manifest 어디에도 들어가지 않는다
+        $skipSet = self::normalizeSkipPaths(UpdateReservedPaths::mergeInto($skipPaths));
 
         foreach ($targets as $target) {
             $target = trim($target);
@@ -322,7 +319,6 @@ class CoreBackupHelper
 
         $manifest = [
             'version' => self::MANIFEST_SCHEMA_VERSION,
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'created_at' => date('c'),
             'from_version' => $fromVersion,
             'to_version' => $toVersion,
@@ -404,7 +400,8 @@ class CoreBackupHelper
         $protectedSet = self::normalizeProtectedSet($protectedPaths);
         $allowedTargetSet = self::normalizeProtectedSet($targets);
         $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
-        $skipSet = self::normalizeSkipPaths($skipPaths);
+        // custom 예약 자리(#792)는 적용 목록·신규 파일 manifest 어디에도 들어가지 않는다
+        $skipSet = self::normalizeSkipPaths(UpdateReservedPaths::mergeInto($skipPaths));
 
         foreach ($targets as $target) {
             $target = trim($target);
@@ -592,7 +589,7 @@ class CoreBackupHelper
             }
             $rel = self::normalizeRelative($rel);
 
-            if (self::isWithinProtectedPath($rel, $protectedSet)) {
+            if (self::isWithinProtectedPath($rel, $protectedSet) || UpdateReservedPaths::contains($rel)) {
                 $result['protected_count']++;
 
                 continue;
@@ -630,7 +627,7 @@ class CoreBackupHelper
         foreach ($dirs as $rel) {
             $rel = self::normalizeRelative($rel);
 
-            if (self::isWithinProtectedPath($rel, $protectedSet)) {
+            if (self::isWithinProtectedPath($rel, $protectedSet) || UpdateReservedPaths::contains($rel)) {
                 $result['protected_count']++;
 
                 continue;

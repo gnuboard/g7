@@ -84,15 +84,8 @@ final class ActionMarkupDecompiler
 
         foreach ($node['onComponentEvent'] ?? [] as $entry) {
             $listen = $entry['event'] ?? '';
-            $attributes = [$this->attr('listen', (string) $listen)];
-
-            // 키 한정자는 `<on>` 속성이다(ActionCompiler::applySubscription) — 핸들러 속성으로 내리지 않는다
-            if (isset($entry['key'])) {
-                $attributes[] = $this->attr('key', (string) $entry['key']);
-            }
-
-            unset($entry['event'], $entry['key']);
-            $ons[] = $this->el('on', $attributes, $this->blockBody($entry));
+            unset($entry['event']);
+            $ons[] = $this->el('on', [$this->attr('listen', (string) $listen)], $this->blockBody($entry));
         }
 
         return $ons;

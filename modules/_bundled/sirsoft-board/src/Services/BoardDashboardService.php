@@ -9,7 +9,6 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
-use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -50,7 +49,6 @@ class BoardDashboardService
      */
     public function getOverview(): array
     {
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $today = $this->siteToday()->toDateString();
         $row = $this->boardStatRepository->findByDate($today);
 
@@ -86,24 +84,18 @@ class BoardDashboardService
         $previousEnd = $currentStart->subDay();
 
         $currentRows = $this->boardStatRepository->getByDateRange(
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $currentStart->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $today->toDateString(),
         );
         $previousRows = $this->boardStatRepository->getByDateRange(
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousStart->toDateString(),
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $previousEnd->toDateString(),
         );
 
-        // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
         $indexed = $currentRows->keyBy(fn ($row) => $row->date->toDateString());
 
         $days = [];
         for ($i = 0; $i < $graphDays; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $currentStart->addDays($i)->toDateString();
             $row = $indexed->get($date);
             $days[] = [
@@ -142,10 +134,7 @@ class BoardDashboardService
      */
     public function getRecentPosts(int $limit): Collection
     {
-        return $this->postRepository->getRecentAcrossBoards(
-            $limit,
-            PostQueryExtensions::collect(['admin_dashboard'], ['audience' => 'admin'])
-        );
+        return $this->postRepository->getRecentAcrossBoards($limit);
     }
 
     /**
@@ -186,7 +175,6 @@ class BoardDashboardService
         $result = [];
 
         for ($i = 0; $i < $days; $i++) {
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             $date = $today->subDays($i)->toDateString();
             $postCount = $this->postRepository->countCreatedOnDate($date);
             $commentCount = $this->commentRepository->countCreatedOnDate($date);
@@ -208,7 +196,7 @@ class BoardDashboardService
      *
      * 집계 표(board_stats)는 모든 운영자가 함께 보는 하루 1행이라 보는 사람마다 하루 경계를 달리할 수 없다.
      * 방문자 통계처럼 사이트 표준시의 하루로 행을 만들고 읽는다 — UTC 자정으로 자르면 한국 시간 새벽 0~9시 글이
-     * 전날 행에 들어가고 「오늘」 카드가 아침 9시까지 어제 행을 읽는다(7.1.0).
+     * 전날 행에 들어가고 「오늘」 카드가 아침 9시까지 어제 행을 읽는다(7.1.0 O-CF3).
      *
      * @return CarbonImmutable 사이트 표준시 오늘 0시
      */

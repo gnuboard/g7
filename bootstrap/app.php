@@ -3,11 +3,8 @@
 use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
-use App\Exceptions\ExtensionOperationLockException;
-use App\Exceptions\IdentityPolicyProviderUnavailableException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
-use App\Exceptions\PhpExtensionRequirementException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Analytics\EnsureArchiveFresh;
@@ -15,17 +12,18 @@ use App\Http\Middleware\Analytics\TrackBotHit;
 use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
-use App\Http\Middleware\ContentSecurityPolicy;
+use App\Http\Middleware\Custom\RequireScreenAdmin;
+use App\Http\Middleware\Custom\RequireScreenUser;
 use App\Http\Middleware\DatabaseCredentialGuard;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\EnsureDebugMode;
 use App\Http\Middleware\ExtensionMiddlewareGate;
 use App\Http\Middleware\GzipEncodeResponse;
 use App\Http\Middleware\MaintenanceModePage;
+use App\Http\Middleware\MarkBotRequest;
 use App\Http\Middleware\OptionalSanctumMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RedirectToCanonicalHost;
-use App\Http\Middleware\RedirectToCanonicalPath;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Http\Middleware\RestrictIpAccess;
 use App\Http\Middleware\RoleMiddleware;
@@ -122,10 +120,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', $localeTimezoneMiddleware);
         $middleware->appendToGroup('api', $localeTimezoneMiddleware);
 
-        // 코어 CSP 헤더 (#158) — 관리자 환경설정 > 보안의 모드가 끔이 아니면 web HTML 응답에 붙인다.
-        // web 그룹이라 플러그인 웹 라우트(결제·본인인증 브리지)도 함께 덮는다. 제외 조건은 미들웨어 주석 참조.
-        $middleware->appendToGroup('web', ContentSecurityPolicy::class);
-
         // IP 접근 제한 (인증 불필요, 전역) — 관리자 셸·코어 API·확장 API 전 표면을 한 판정으로 덮는다.
         // prepend 가 아니라 append 인 이유: 신뢰 프록시는 기본 전역 스택의 TrustProxies 가 적용하므로
         // 그보다 앞에서 돌면 프록시 뒤에서 $request->ip() 가 프록시 주소가 된다. append 도 그룹·라우트
@@ -208,8 +202,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'seo' => SeoMiddleware::class,
             // 사이트 주소가 아닌 Host 의 화면 요청 → 사이트 주소로 301 (화면 셸 라우트에만 붙인다)
             'canonical.host' => RedirectToCanonicalHost::class,
-            // 끝·연속 슬래시 화면 요청 → 정규형 경로로 301 (canonical.host 바로 뒤, 화면 셸 라우트에만 붙인다)
-            'canonical.path' => RedirectToCanonicalPath::class,
             'identity.policy' => EnforceIdentityPolicy::class,
             'extension.middleware' => ExtensionMiddlewareGate::class,
             'debug.gate' => EnsureDebugMode::class,
@@ -219,6 +211,19 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'analytics.fallback' => TrackServerVisit::class,
             // 집계 조회 라우트 앞에서 오래된 집계를 다시 계산하고 응답에 신선도를 싣는다(권한 미들웨어 뒤).
             'analytics.archive_on_view' => EnsureArchiveFresh::class,
+            // 개발자 화면(custom 예약 자리, #792) 회원 필수 / 관리자 필수 — routes/custom.php 에서 라우트에 붙인다
+            'custom.auth' => RequireScreenUser::class,
+            'custom.admin' => RequireScreenAdmin::class,
+        ]);
+
+        // 개발자 화면(routes/custom.php, #792) 묶음 — G7 화면 catch-all 과 같은 순서 계약을 따른다:
+        // 정식 주소 이동 → 봇 표식(SEO 렌더 없이 표식만) → 봇 기록 → 서버 폴백 집계(봇 표식이 있으면 세지 않음).
+        // 사용자 템플릿 의존성 검사(template.dependencies)는 넣지 않는다 — 템플릿이 없어도 개발자 화면은 뜬다.
+        $middleware->group('custom.screen', [
+            'canonical.host',
+            MarkBotRequest::class,
+            'analytics.bots',
+            'analytics.fallback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -243,16 +248,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 정책이 지정한 본인인증 수단을 지금 쓸 수 없음 → HTTP 503 (다른 수단으로 대신 발급하지 않는다 — 7.1.6)
-        $exceptions->render(function (IdentityPolicyProviderUnavailableException $e, Request $request) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return ResponseHelper::error($e->getMessage(), 503, [
-                    'failure_code' => 'POLICY_PROVIDER_UNAVAILABLE',
-                    'policy_key' => $e->policyKey,
-                ]);
-            }
-        });
-
         // 등급 상한(rank ceiling) / 권한 상승 차단 예외 → HTTP 403.
         // 컨트롤러 catch 가 우선 처리하지만, 새 호출부가 로컬 catch 없이 이 예외를 던져도
         // 조용한 500 대신 일관된 403 이 되도록 전역 렌더러를 둔다(심층 방어). 메시지는 예외
@@ -274,27 +269,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => $e->getMessage(),
                     'error_code' => 'core_version_mismatch',
-                    'data' => $e->getPayload(),
-                ], 422);
-            }
-        });
-
-        // 확장·언어팩·코어 작업 잠금 거절 → 409(같은 대상 진행 중) / 503(잠금 저장소 오류) (#161)
-        // 컨트롤러가 잡지 않는 진입점(멈춘 업데이트 정리 등)의 안전망 — APP_DEBUG 에서도 trace·서버 경로를 싣지 않는다.
-        $exceptions->render(function (ExtensionOperationLockException $e, Request $request) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return ResponseHelper::error($e->getMessageKey(), $e->getStatusCode(), $e->getErrors(), $e->getMessageParams());
-            }
-        });
-
-        // 확장이 요구하는 PHP 확장(composer.json require.ext-*) 미충족 → HTTP 422 + error_code: 'php_extension_missing'
-        // (확장 install/activate 진입 지점에서 throw — update 는 경고만)
-        $exceptions->render(function (PhpExtensionRequirementException $e, Request $request) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                    'error_code' => 'php_extension_missing',
                     'data' => $e->getPayload(),
                 ], 422);
             }

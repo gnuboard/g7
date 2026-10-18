@@ -34,14 +34,6 @@ Listener (RegisterInicisProviderListener 등)
 `InicisIdentityProvider`가 4개의 협력자(게이트웨이·Repository 2종·캐시)를 생성자 주입받는
 것은 그 각각이 서로 다른 관심사(외부 API 통신, DB 영속, 임시 캐시)이기 때문입니다 — 하나로
 합치면 단위 테스트에서 외부 API 를 모킹할 때 DB/캐시까지 함께 모킹해야 합니다.
-
-**1인 1계정 판정은 두 단계입니다(1.1.4).** 가입 전 리스너(`AssertNoDuplicateInicisIdentity`)는 record·선점표를 조회해
-이미 가입한 명의를 먼저 안내하지만, 가입 트랜잭션 밖이라 같은 명의로 동시에 가입하면 둘 다 통과할 수 있습니다. 그래서
-최종 판정은 코어가 가입 트랜잭션 안에서 발행하는 `core.auth.registering` 의 동기 구독자(`ClaimInicisIdentityOnRegistering`)가
-**선점표(`inicis_identity_claims`, `(hash_type, hash)` 유니크)에 자리를 잡는 것**으로 합니다 — 자리를 못 잡으면 예외로 가입
-전체(회원·동의 이력)가 롤백되고, 「어느 식별값이 겹쳤는지」 감사 기록만 롤백 뒤에 남깁니다. 선점표는 탈퇴·삭제 리스너가
-같은 트랜잭션에서 비워 탈퇴 후 재가입은 그대로 허용됩니다. 본인확인 콜백의 완료 전이는 코어 로그 저장소의 조건부 갱신
-(`markVerifiedIfPending`)이라, 같은 콜백이 동시에 두 번 와도 인증 결과는 하나만 만들어집니다(두 번째는 `ALREADY_CONSUMED`).
 <!-- @intent END -->
 
 ## 디렉토리

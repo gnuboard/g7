@@ -301,7 +301,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce-tone-info-soft text-xs"
+                                "className": "text-info-soft"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_fee_original_policy_notice"
                         }

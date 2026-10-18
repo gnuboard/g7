@@ -356,8 +356,7 @@
   "ProductCard": {
     "label": "$t:editor.component.product_card",
     "propControls": [
-      "pcShopBase",
-      "pcShowActions"
+      "pcShopBase"
     ],
     "styleControls": [
       "paddingAll",
@@ -495,25 +494,6 @@
       }
     ]
   },
-  "RecentSearchCombobox": {
-    "label": "$t:editor.component.recent_search_combobox",
-    "propControls": [
-      "sbPlaceholder",
-      "rscScope",
-      "rscResultPath",
-      "sbShowButton",
-      "rscButtonText",
-      "inputName"
-    ],
-    "styleControls": [
-      "marginAll",
-      "width",
-      "selfAlign"
-    ],
-    "events": [
-      "onSearch"
-    ]
-  },
   "Avatar": {
     "label": "$t:editor.component.avatar",
     "propControls": [
@@ -632,38 +612,6 @@
       "onChange"
     ],
     "rawValueEvents": ["onChange"]
-  },
-  "ChipRows": {
-    "label": "$t:editor.component.chip_rows",
-    "styleControls": [
-      "marginAll",
-      "paddingAll",
-      "width"
-    ]
-  },
-  "MobileBuyBar": {
-    "label": "$t:editor.component.mobile_buy_bar",
-    "styleControls": [
-      "paddingAll"
-    ]
-  },
-  "BottomSheet": {
-    "label": "$t:editor.component.bottom_sheet",
-    "styleControls": [
-      "paddingAll"
-    ]
-  },
-  "ProductRail": {
-    "label": "$t:editor.component.product_rail",
-    "propControls": [
-      "prTitle",
-      "prIcon"
-    ],
-    "styleControls": [
-      "marginAll",
-      "paddingAll",
-      "width"
-    ]
   },
   "ExpandableContent": {
     "label": "$t:editor.component.expandable_content",
@@ -1498,7 +1446,6 @@
       "hdrSiteName",
       "hdrLogo",
       "hdrShopBase",
-      "hdrSearchHistoryScope",
       "hdrMaxBoards",
       "hdrCurrentLocale",
       "hdrNotifTitle",

@@ -451,7 +451,7 @@ class CoreActivityLogListener implements HookListenerInterface
      * 로그인 후 로그 기록 (사용자·관리자 로그인 공통 훅)
      *
      * 같은 훅이 사용자 로그인(`/api/auth/login…`)과 관리자 로그인(`/api/auth/admin/login…`)에서 모두 발화한다.
-     * 설명은 들어온 경로로 고른다 — 사용자 로그인에도 「관리자 로그인」이 찍히던 문제(7.1.0 실측).
+     * 설명은 들어온 경로로 고른다 — 사용자 로그인에도 「관리자 로그인」이 찍히던 문제(7.1.0 실측 O-B3).
      *
      * @param  User  $user  로그인한 사용자
      * @param  array  $loginData  로그인 데이터
@@ -546,23 +546,6 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $source = (string) ($context['source'] ?? '');
         $actorId = $context['actor_id'] ?? $user->id;
-
-        // 서버 터미널의 재설정(`user:reset-password`) — 행위 회원이 없다. 「회원 본인 변경」으로 남기지 않는다.
-        if ($source === 'console') {
-            $this->logActivity('auth.reset_password', [
-                'loggable' => $user,
-                'log_type' => ActivityLogType::System,
-                'description_key' => 'activity_log.description.auth_reset_password_by_console',
-                'description_params' => ['user_id' => $user->uuid],
-                'properties' => [
-                    'source' => $source,
-                    'sessions_revoked' => (int) ($context['sessions_revoked'] ?? 0),
-                ],
-                'user_id' => null,
-            ]);
-
-            return;
-        }
 
         if ($source === 'reset') {
             $this->logActivity('auth.reset_password', [
@@ -689,17 +672,11 @@ class CoreActivityLogListener implements HookListenerInterface
      */
     public function handleAuthLoginFailed(string $email, array $context = []): void
     {
-        // 로그인 2단계 오답은 같은 실패 훅으로 오지만(7.1.6) 문구와 대상 회원을 구분해 남긴다
-        $twoFactor = ($context['stage'] ?? null) === 'two_factor';
-
-        $this->logActivity('auth.login_failed', array_filter([
-            'description_key' => $twoFactor
-                ? 'activity_log.description.auth_two_factor_failed'
-                : 'activity_log.description.auth_login_failed',
+        $this->logActivity('auth.login_failed', [
+            'description_key' => 'activity_log.description.auth_login_failed',
             'description_params' => ['email' => $email],
             'ip_address' => $context['ip_address'] ?? null,
-            'user_id' => $twoFactor && isset($context['user_id']) ? (int) $context['user_id'] : null,
-        ], static fn ($value) => $value !== null));
+        ]);
     }
 
     /**

@@ -5,7 +5,6 @@ namespace Plugins\Sirsoft\VerificationNhnkcp\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityClaimRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityRecordRepositoryInterface;
 
@@ -22,12 +21,10 @@ class CleanKcpRecordOnUserWithdraw implements HookListenerInterface
     /**
      * @param  KcpIdentityRecordRepositoryInterface  $recordRepository  본 plugin record Repository
      * @param  KcpIdentityLogQueryRepositoryInterface  $logQueryRepository  로그 익명화 Repository
-     * @param  KcpIdentityClaimRepositoryInterface|null  $claimRepository  동일인 선점표 (1.1.4, 미주입이면 컨테이너에서 해석)
      */
     public function __construct(
         protected readonly KcpIdentityRecordRepositoryInterface $recordRepository,
         protected readonly KcpIdentityLogQueryRepositoryInterface $logQueryRepository,
-        protected readonly ?KcpIdentityClaimRepositoryInterface $claimRepository = null,
     ) {}
 
     /**
@@ -50,7 +47,6 @@ class CleanKcpRecordOnUserWithdraw implements HookListenerInterface
      * 훅 진입점.
      *
      * @param  mixed  ...$args  [$user]
-     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -69,8 +65,6 @@ class CleanKcpRecordOnUserWithdraw implements HookListenerInterface
         DB::transaction(function () use ($userId) {
             $this->recordRepository->deleteByUserId($userId);
             $this->logQueryRepository->anonymizeUserId($userId);
-            // 동일인 선점도 함께 푼다(1.1.4) — 탈퇴 후 같은 명의로 다시 가입하는 현행 허용을 유지한다.
-            ($this->claimRepository ?? app(KcpIdentityClaimRepositoryInterface::class))->releaseByUserId($userId);
         });
     }
 }

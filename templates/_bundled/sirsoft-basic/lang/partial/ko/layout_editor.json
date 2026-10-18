@@ -177,25 +177,6 @@
     },
     "table": {
       "label": "표"
-    },
-    "product_rail": {
-      "label": "가로 상품 줄",
-      "default_title": "상품 줄 제목",
-      "default_body": "상품 카드를 여기에 넣으세요"
-    },
-    "chip_rows": {
-      "label": "분류 칩 줄",
-      "default_body": "분류 칩(링크)을 여기에 넣으세요"
-    },
-    "mobile_buy_bar": {
-      "label": "하단 구매바",
-      "default_price": "0원",
-      "default_primary": "주문하기"
-    },
-    "bottom_sheet": {
-      "label": "바텀시트",
-      "default_title": "시트 제목",
-      "default_body": "시트 내용을 여기에 넣으세요"
     }
   }
 }

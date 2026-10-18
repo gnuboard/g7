@@ -9,11 +9,6 @@ use App\Extension\Consent\ConsentManager;
 use App\Extension\HookManager;
 use App\Http\Requests\Admin\Analytics\Concerns\HasAnalyticsSettingsRules;
 use App\Models\Attachment;
-use App\Rules\ConnectionEndpointUrl;
-use App\Rules\ConnectionHost;
-use App\Rules\ContentCustomTagsRule;
-use App\Rules\CspSourceHost;
-use App\Rules\EmbedCustomProviderRule;
 use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
@@ -22,12 +17,8 @@ use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
 use App\Support\AllowedExtensions;
 use App\Support\AssetUrl;
-use App\Support\Content\EmbedProviderRegistry;
-use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\IpAccessMatcher;
-use App\Support\PhpExtensionProbe;
-use App\Support\SearchScopes;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -93,11 +84,6 @@ class SaveSettingsRequest extends FormRequest
     private const IP_LIST_MAX = 100;
 
     /**
-     * CSP 추가 허용 호스트 최대 개수 (#158).
-     */
-    private const CSP_HOST_LIST_MAX = 50;
-
-    /**
      * IP 접근 제한 — 라우트별 규칙 최대 개수
      */
     private const IP_RULES_MAX = 50;
@@ -116,8 +102,6 @@ class SaveSettingsRequest extends FormRequest
         'auth_token_lifetime',
         'max_login_attempts',
         'login_lockout_time',
-        'password_reset_rate_limit_per_minute',
-        'register_rate_limit_per_minute',
         // 기존 키지만 비밀번호 정책 카드의 같은 숫자 칸이다 — 빠지면 이 칸만 문자열 '10' 으로 저장된다(#736 S2 실측).
         'password_min_length',
         'password_repeated_chars_length',
@@ -150,6 +134,16 @@ class SaveSettingsRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // 사용자 화면 URL — 앞뒤 공백·끝 슬래시를 떼어 저장한다(주소 헬퍼가 경로를 붙일 때 `//` 가 생기지 않게)
+        $userScreenUrl = $this->input('general.user_screen_url');
+        if (is_string($userScreenUrl)) {
+            $this->merge([
+                'general' => array_merge($this->input('general', []), [
+                    'user_screen_url' => rtrim(trim($userScreenUrl), '/'),
+                ]),
+            ]);
+        }
+
         $siteLogo = $this->input('general.site_logo');
 
         if (is_array($siteLogo)) {
@@ -186,9 +180,7 @@ class SaveSettingsRequest extends FormRequest
         ]);
 
         $this->normalizeAllowedExtensions();
-        $this->normalizeNonEmptyExtensionLists();
         $this->normalizeIpRestrictionLists();
-        $this->normalizeCspHostList();
         $this->normalizePrivacyIntegerFields();
         $this->normalizeSecurityIntegerFields();
         $this->normalizeConsentProvider();
@@ -333,24 +325,6 @@ class SaveSettingsRequest extends FormRequest
             }
         }
 
-        // 최근 검색어 범위 행(`search_history_scopes[*].max_count|retention_days`)도 숫자 입력칸이 문자열로 보낸다 (7.1.5)
-        if (is_array($privacy['search_history_scopes'] ?? null)) {
-            foreach ($privacy['search_history_scopes'] as $index => $row) {
-                if (! is_array($row)) {
-                    continue;
-                }
-
-                foreach (['max_count', 'retention_days'] as $field) {
-                    $value = $row[$field] ?? null;
-
-                    if (is_string($value) && $value !== '' && ctype_digit($value)) {
-                        $privacy['search_history_scopes'][$index][$field] = (int) $value;
-                        $changed = true;
-                    }
-                }
-            }
-        }
-
         if ($changed) {
             $this->merge(['privacy' => $privacy]);
         }
@@ -396,59 +370,6 @@ class SaveSettingsRequest extends FormRequest
 
                 return $rule;
             }, array_values($security['ip_restriction_rules']));
-            $changed = true;
-        }
-
-        if ($changed) {
-            $this->merge(['security' => $security]);
-        }
-    }
-
-    /**
-     * CSP 추가 허용 호스트 목록을 정리합니다 (#158).
-     *
-     * 앞뒤 공백 제거·소문자화·빈 항목 제거·중복 제거(순서 유지). 형식 판정은 규칙
-     * ({@see CspSourceHost})이 맡는다 — 여기서는 같은 호스트가 대소문자만 달라 두 번 저장되지 않게 한다.
-     * 스크립트 호스트와 스타일 호스트(7.1.6) 두 키를 같은 방식으로 다룬다.
-     *
-     * @return void 입력을 제자리에서 고친다
-     */
-    private function normalizeCspHostList(): void
-    {
-        $security = $this->input('security');
-
-        if (! is_array($security)) {
-            return;
-        }
-
-        $changed = false;
-
-        foreach (['csp_extra_script_hosts', 'csp_extra_style_hosts'] as $key) {
-            if (! is_array($security[$key] ?? null)) {
-                continue;
-            }
-
-            $hosts = [];
-
-            foreach ($security[$key] as $host) {
-                if ($host === null) {
-                    continue;
-                }
-
-                if (is_string($host)) {
-                    $host = strtolower(trim($host));
-
-                    if ($host === '') {
-                        continue;
-                    }
-                }
-
-                if (! in_array($host, $hosts, true)) {
-                    $hosts[] = $host;
-                }
-            }
-
-            $security[$key] = $hosts;
             $changed = true;
         }
 
@@ -514,103 +435,6 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
-     * 비울 수 없는 확장자 목록 설정 — 「카테고리.키」 목록
-     *
-     * 일반 허용 확장자(`upload.allowed_extensions`)와 달리 빈 목록이 "제한 없음" 을 뜻하지 않는다.
-     *
-     * @var array<int, string>
-     */
-    private const NON_EMPTY_EXTENSION_LISTS = [
-        'upload.layout_attachment_extensions',
-        'drivers.public_asset_extensions',
-    ];
-
-    /**
-     * 비울 수 없는 확장자 목록 설정을 소문자 확장자 배열로 정규화합니다.
-     *
-     * 화면은 콤마로 구분한 한 줄 텍스트를, API 직접 호출은 배열을 보낸다. 키가 없으면(그 항목을 모르는
-     * 화면의 저장) 건드리지 않는다. null 은 그대로 두고 사후 검사가 판정한다 — 화면에서 칸을 비우면
-     * 빈 문자열이 null 로 바뀌어 들어온다.
-     *
-     * @return void 반환값 없음
-     */
-    private function normalizeNonEmptyExtensionLists(): void
-    {
-        foreach (self::NON_EMPTY_EXTENSION_LISTS as $dotted) {
-            [$category, $key] = explode('.', $dotted, 2);
-            $values = $this->input($category, []);
-
-            if (! is_array($values) || ! array_key_exists($key, $values) || $values[$key] === null) {
-                continue;
-            }
-
-            if (! is_string($values[$key]) && ! is_array($values[$key])) {
-                continue;
-            }
-
-            $values[$key] = AllowedExtensions::normalize($values[$key]);
-
-            $this->merge([$category => $values]);
-        }
-    }
-
-    /**
-     * 비울 수 없는 확장자 목록 설정이 빈 목록으로 저장되지 않게 검사합니다.
-     *
-     * 빈 배열은 `nullable` 규칙에서 검사를 건너뛰므로 사후 검사로 잡는다.
-     *
-     * @param  Validator  $validator  검증기 인스턴스
-     * @return void 검증기에 오류를 직접 더한다
-     */
-    private function validateNonEmptyExtensionLists(Validator $validator): void
-    {
-        foreach (self::NON_EMPTY_EXTENSION_LISTS as $dotted) {
-            [$category, $key] = explode('.', $dotted, 2);
-            $values = $this->input($category, []);
-
-            if (! is_array($values) || ! array_key_exists($key, $values)) {
-                continue;
-            }
-
-            // 칸을 비운 저장은 빈 문자열이 null 로 바뀌어 들어온다. 그 탭을 저장할 때만 빈 값으로 보고,
-            // 다른 탭 저장에 딸려 온 null 은 "그 항목을 모르는 저장" 으로 넘긴다.
-            $empty = $values[$key] === [] || $values[$key] === ''
-                || ($values[$key] === null && $this->input('_tab') === $category);
-
-            if ($empty) {
-                $validator->errors()->add($dotted, __('validation.settings.'.$key.'_required'));
-            }
-        }
-    }
-
-    /**
-     * 비울 수 없는 확장자 목록 설정의 형식 규칙을 반환합니다(문자열 또는 배열, 합쳐서 500자 이하).
-     *
-     * @return array<int, mixed> 검증 규칙 배열
-     */
-    private function getExtensionListRules(): array
-    {
-        return [
-            'nullable',
-            function ($attribute, $value, $fail) {
-                if (is_array($value)) {
-                    $value = implode(',', array_filter($value, 'is_scalar'));
-                }
-
-                if (! is_string($value)) {
-                    $fail(__('validation.settings.allowed_extensions_invalid_type'));
-
-                    return;
-                }
-
-                if (strlen($value) > 500) {
-                    $fail(__('validation.settings.allowed_extensions_max'));
-                }
-            },
-        ];
-    }
-
-    /**
      * advanced 탭의 boolean 필드를 PHP boolean으로 캐스팅합니다.
      *
      * Toggle 컴포넌트가 초기값 미존재(undefined) 상태에서 전환 시
@@ -653,7 +477,7 @@ class SaveSettingsRequest extends FormRequest
         $rules = [
             // 탭 식별자
             // 여기 빠진 탭 이름으로 저장하면 본문이 아무리 올바라도 422 다 — 탭을 신설하면 반드시 함께 넣는다.
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy', 'content'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity', 'analytics', 'privacy'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -667,24 +491,6 @@ class SaveSettingsRequest extends FormRequest
             'identity' => ['sometimes', 'array'],
             'analytics' => ['sometimes', 'array'],
             'privacy' => ['sometimes', 'array'],
-            'content' => ['sometimes', 'array'],
-
-            // 본문 콘텐츠 (#883) — 허용 후보·외부 영상 서비스·운영자 추가 태그·미디어 주소 유효 시간
-            'content.allow_figure_caption' => ['nullable', 'boolean'],
-            'content.allow_uploaded_video' => ['nullable', 'boolean'],
-            'content.allow_uploaded_audio' => ['nullable', 'boolean'],
-            'content.allow_external_embed' => ['nullable', 'boolean'],
-            'content.embed_presets' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail): void {
-                foreach (array_keys(is_array($value) ? $value : []) as $key) {
-                    if (! array_key_exists($key, EmbedProviderRegistry::presets()) && ! str_starts_with((string) $key, 'ext:')) {
-                        $fail(__('validation.settings.embed_preset_unknown', ['id' => $key]));
-                    }
-                }
-            }],
-            'content.embed_presets.*' => ['boolean'],
-            'content.embed_custom_providers' => ['nullable', 'array', new EmbedCustomProviderRule],
-            'content.custom_tags' => ['nullable', 'array', new ContentCustomTagsRule],
-            'content.media_url_ttl_minutes' => ['nullable', 'integer', 'min:5', 'max:1440'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -693,6 +499,8 @@ class SaveSettingsRequest extends FormRequest
             // 일반 설정
             'general.site_name' => $this->getTabRules($tab, 'general', 'string|max:100'),
             'general.site_url' => $this->getTabRules($tab, 'general', 'url|max:255'),
+            // 사용자 화면 URL (#792) — 비우면 사이트 URL. 외부 화면(Next.js 등) 주소. http·https 만(javascript:·ftp: 거부)
+            'general.user_screen_url' => ['nullable', 'string', 'url:http,https', 'max:255'],
             'general.site_description' => ['nullable', 'string', 'max:500'],
             'general.admin_email' => $this->getTabRules($tab, 'general', 'email|max:255'),
             'general.timezone' => $this->getTabRules($tab, 'general', ['timezone']),
@@ -711,14 +519,14 @@ class SaveSettingsRequest extends FormRequest
 
             // 메일 설정
             'mail.mailer' => $this->getTabRules($tab, 'mail', [Rule::in(self::SUPPORTED_MAILERS)]),
-            'mail.host' => $this->getMailerRules($tab, 'smtp', ['string', 'max:255', new ConnectionHost]),
+            'mail.host' => $this->getMailerRules($tab, 'smtp', 'string|max:255'),
             'mail.port' => $this->getMailerRules($tab, 'smtp', 'integer|min:1|max:65535'),
             'mail.username' => ['nullable', 'string', 'max:255'],
             'mail.password' => ['nullable', 'string', 'max:255'],
             'mail.encryption' => ['nullable', Rule::in(self::SUPPORTED_ENCRYPTIONS)],
             'mail.mailgun_domain' => $this->getMailerRules($tab, 'mailgun', 'string|max:255'),
             'mail.mailgun_secret' => $this->getMailerRules($tab, 'mailgun', 'string|max:255'),
-            'mail.mailgun_endpoint' => ['nullable', 'string', 'max:255', new ConnectionHost],
+            'mail.mailgun_endpoint' => ['nullable', 'string', 'max:255'],
             'mail.ses_key' => $this->getMailerRules($tab, 'ses', 'string|max:255'),
             'mail.ses_secret' => $this->getMailerRules($tab, 'ses', 'string|max:255'),
             'mail.ses_region' => $this->getMailerRules($tab, 'ses', 'string|max:255'),
@@ -728,7 +536,6 @@ class SaveSettingsRequest extends FormRequest
             // 업로드 설정
             'upload.max_file_size' => $this->getTabRules($tab, 'upload', 'integer|min:'.config('core.settings_limits.upload_max_file_size_min', 1).'|max:'.config('core.settings_limits.upload_max_file_size_max', 1024)),
             'upload.allowed_extensions' => $this->getAllowedExtensionsRules($tab),
-            'upload.layout_attachment_extensions' => $this->getExtensionListRules(),
             'upload.image_max_width' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_max_width_min', 100), 'max:'.config('core.settings_limits.upload_image_max_width_max', 10000)],
             'upload.image_max_height' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_max_height_min', 100), 'max:'.config('core.settings_limits.upload_image_max_height_max', 10000)],
             'upload.image_quality' => ['nullable', 'integer', 'min:'.config('core.settings_limits.upload_image_quality_min', 1), 'max:'.config('core.settings_limits.upload_image_quality_max', 100)],
@@ -760,8 +567,7 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_cache_ttl' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_cache_ttl_min', 3600), 'max:'.config('core.settings_limits.seo_sitemap_cache_ttl_max', 604800)],
             // 분할 기준. 상한 50000 은 sitemaps.org 프로토콜 제한이며 SitemapWriter 가 동일 값으로 클램프합니다.
             'seo.sitemap_urls_per_file' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_urls_per_file_min', 1000), 'max:'.config('core.settings_limits.seo_sitemap_urls_per_file_max', 50000)],
-            // zlib(gzencode) 없이 gzip 을 켜면 사이트맵 생성이 매번 실패한다 — 저장 시점에 막는다(#151)
-            'seo.sitemap_gzip' => ['nullable', 'boolean', $this->sitemapGzipRequiresZlibRule()],
+            'seo.sitemap_gzip' => ['nullable', 'boolean'],
             'seo.sitemap_serve_stale_on_miss' => ['nullable', 'boolean'],
             'seo.sitemap_max_urls_per_contributor' => ['nullable', 'integer', 'min:0'],
             'seo.sitemap_hreflang_enabled' => ['nullable', 'boolean'],
@@ -777,8 +583,6 @@ class SaveSettingsRequest extends FormRequest
             'security.auth_token_lifetime' => $this->getSecurityTabAuthTokenRules($tab),
             'security.max_login_attempts' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_max_login_attempts_min', 0), 'max:'.config('core.settings_limits.security_max_login_attempts_max', 100)],
             'security.login_lockout_time' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_login_lockout_time_min', 0), 'max:'.config('core.settings_limits.security_login_lockout_time_max', 1440)],
-            'security.password_reset_rate_limit_per_minute' => $this->securityIntegerRules('password_reset_rate_limit_per_minute'),
-            'security.register_rate_limit_per_minute' => $this->securityIntegerRules('register_rate_limit_per_minute'),
             // 비밀번호 정책 — 저장 규칙이 없어 whitelist 에서 탈락하던 고아 설정을 배선.
             // 경계값은 config('core.settings_limits') 가 SSoT — 설정 화면도 같은 값을 받아 쓴다.
             'security.password_min_length' => [
@@ -829,17 +633,6 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_rules.*.ips.*' => [new IpOrCidr],
             'security.ip_restriction_rules.*.memo' => ['nullable', 'string', 'max:'.self::IP_RULE_TEXT_MAX],
             'security.ip_restriction_rules.*.enabled' => ['nullable', 'boolean'],
-            // 콘텐츠 보안 정책(CSP) 헤더 (#158). 미전송(기존 클라이언트)은 기본값 off 유지.
-            // `.env G7_CSP_MODE` 탈출구는 저장값을 바꾸지 않고 적용 시점에만 우선한다(CspPolicyBuilder).
-            'security.csp_mode' => ['nullable', 'string', Rule::in(CspPolicyBuilder::MODES)],
-            'security.csp_extra_script_hosts' => ['nullable', 'array', 'max:'.self::CSP_HOST_LIST_MAX],
-            'security.csp_extra_script_hosts.*' => [new CspSourceHost],
-            // 스타일 정책 (7.1.6). 미전송(옛 화면)은 기본값(끔·basic·빈 목록) 유지.
-            // `.env G7_CSP_STYLE_MODE` 탈출구도 저장값을 바꾸지 않고 적용 시점에만 우선한다.
-            'security.csp_style_mode' => ['nullable', 'string', Rule::in(CspPolicyBuilder::MODES)],
-            'security.csp_style_level' => ['nullable', 'string', Rule::in(CspPolicyBuilder::LEVELS)],
-            'security.csp_extra_style_hosts' => ['nullable', 'array', 'max:'.self::CSP_HOST_LIST_MAX],
-            'security.csp_extra_style_hosts.*' => [new CspSourceHost],
 
             // 캐시 설정 (advanced 탭)
             'advanced.cache_enabled' => $this->getTabRules($tab, 'advanced', 'boolean'),
@@ -885,15 +678,15 @@ class SaveSettingsRequest extends FormRequest
             'drivers.s3_region' => ['nullable', 'string', 'max:64', self::S3_REGION_FORMAT],
             'drivers.s3_access_key' => ['nullable', 'string', 'max:255'],
             'drivers.s3_secret_key' => ['nullable', 'string', 'max:255'],
-            'drivers.s3_url' => ['nullable', 'url', 'max:500', new ConnectionEndpointUrl(allowPath: true)],
-            'drivers.s3_endpoint' => ['nullable', 'url', 'max:500', new ConnectionEndpointUrl],
+            'drivers.s3_url' => ['nullable', 'url', 'max:500'],
+            'drivers.s3_endpoint' => ['nullable', 'url', 'max:500'],
             'drivers.s3_use_path_style' => ['nullable', 'boolean'],
             'drivers.cache_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')]),
-            'drivers.redis_host' => ['nullable', 'string', 'max:255', new ConnectionHost(allowSocketAndTls: true)],
+            'drivers.redis_host' => ['nullable', 'string', 'max:255'],
             'drivers.redis_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_port_min', 1), 'max:'.config('core.settings_limits.drivers_redis_port_max', 65535)],
             'drivers.redis_password' => ['nullable', 'string', 'max:255'],
             'drivers.redis_database' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_redis_database_min', 0), 'max:'.config('core.settings_limits.drivers_redis_database_max', 15)],
-            'drivers.memcached_host' => ['nullable', 'string', 'max:255', new ConnectionHost(allowSocketAndTls: true)],
+            'drivers.memcached_host' => ['nullable', 'string', 'max:255'],
             'drivers.memcached_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_memcached_port_min', 1), 'max:'.config('core.settings_limits.drivers_memcached_port_max', 65535)],
             'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')]),
             'drivers.session_lifetime' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_session_lifetime_min', 1), 'max:'.config('core.settings_limits.drivers_session_lifetime_max', 43200)], // 1분 ~ 30일
@@ -909,11 +702,11 @@ class SaveSettingsRequest extends FormRequest
             'drivers.websocket_app_id' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_key' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_secret' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
-            'drivers.websocket_host' => ['nullable', 'string', 'max:255', new ConnectionHost],
+            'drivers.websocket_host' => ['nullable', 'string', 'max:255'],
             'drivers.websocket_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_port_max', 65535)],
             'drivers.websocket_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.websocket_verify_ssl' => ['nullable', 'boolean'],
-            'drivers.websocket_server_host' => ['nullable', 'string', 'max:255', new ConnectionHost],
+            'drivers.websocket_server_host' => ['nullable', 'string', 'max:255'],
             'drivers.websocket_server_port' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_websocket_server_port_min', 1), 'max:'.config('core.settings_limits.drivers_websocket_server_port_max', 65535)],
             'drivers.websocket_server_scheme' => ['nullable', Rule::in(self::SUPPORTED_WEBSOCKET_SCHEMES)],
             'drivers.search_engine_driver' => ['nullable', Rule::in($this->getSupportedSearchEngineDrivers())],
@@ -923,7 +716,6 @@ class SaveSettingsRequest extends FormRequest
             // 공개 자산 디스크 — 코어 3종(none/public/s3) + 플러그인 훅 등록 디스크.
             // 카탈로그가 동적(플러그인 훅)이라 정적 Rule::in 불가 → 레지스트리 조회 closure
             'drivers.public_asset_disk' => $this->getPublicAssetDiskRules(),
-            'drivers.public_asset_extensions' => $this->getExtensionListRules(),
 
             // 본인인증(IDV) provider 기술 파라미터 — 정책 분기는 IdentityPolicy 로 흡수됨
             'identity.default_provider' => ['nullable', 'string', 'max:100'],
@@ -944,13 +736,6 @@ class SaveSettingsRequest extends FormRequest
             'privacy.dormant_notice_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_dormant_notice_days_min', 1).'|max:'.config('core.settings_limits.privacy_dormant_notice_days_max', 365)),
             'privacy.dormant_withdraw_enabled' => ['nullable', 'boolean'],
             'privacy.dormant_withdraw_days' => $this->getTabRules($tab, 'privacy', 'integer|min:'.config('core.settings_limits.privacy_retention_days_min', 1).'|max:'.config('core.settings_limits.privacy_retention_days_max', 3650)),
-            // 최근 검색어 (7.1.5) — 범위별 행 목록. 범위 id 에 점이 있어 맵이 아니라 목록으로 받는다.
-            'privacy.search_history_enabled' => ['nullable', 'boolean'],
-            'privacy.search_history_scopes' => ['sometimes', 'array'],
-            'privacy.search_history_scopes.*' => ['array'],
-            'privacy.search_history_scopes.*.scope' => ['required', 'string', 'distinct', Rule::in(SearchScopes::keys())],
-            'privacy.search_history_scopes.*.max_count' => ['required', 'integer', 'min:'.config('core.settings_limits.search_history_max_count_min', 1), 'max:'.config('core.settings_limits.search_history_max_count_max', 50)],
-            'privacy.search_history_scopes.*.retention_days' => ['required', 'integer', 'min:0', 'max:'.config('core.settings_limits.privacy_retention_days_max', 3650)],
         ];
 
         // 방문자 통계 설정은 전용 API 와 이 경로 둘 다로 저장될 수 있다 — 규칙을 한
@@ -1170,23 +955,6 @@ class SaveSettingsRequest extends FormRequest
     }
 
     /**
-     * 사이트맵 gzip 을 켤 때 서버에 zlib(gzencode)이 있는지 검사하는 규칙을 반환합니다.
-     *
-     * zlib 은 코어 기준 「선택」 확장이다. 확장이 로드돼 있어도 `disable_functions` 로 함수만 막힌 서버가 있어
-     * 실제로 부를 함수(`gzencode`)로 판정한다.
-     *
-     * @return \Closure 검증 클로저
-     */
-    private function sitemapGzipRequiresZlibRule(): \Closure
-    {
-        return function ($attribute, $value, $fail) {
-            if (filter_var($value, FILTER_VALIDATE_BOOLEAN) && ! app(PhpExtensionProbe::class)->functionAvailable('gzencode')) {
-                $fail(__('validation.settings.sitemap_gzip_requires_zlib'));
-            }
-        };
-    }
-
-    /**
      * 공개 자산 디스크에 대한 검증 규칙을 반환합니다.
      *
      * 선택지가 코어 3종 + 플러그인 훅 등록 디스크로 동적이라 정적 Rule::in 을 쓸 수 없고,
@@ -1239,7 +1007,6 @@ class SaveSettingsRequest extends FormRequest
             $this->validatePrivacyDormantThresholds($validator);
             $this->validatePasswordExpiryThresholds($validator);
             $this->validateQueueWorkers($validator);
-            $this->validateNonEmptyExtensionLists($validator);
         });
     }
 
@@ -1561,6 +1328,8 @@ class SaveSettingsRequest extends FormRequest
             'general.site_url.required' => __('validation.settings.site_url_required'),
             'general.site_url.url' => __('validation.settings.site_url_invalid'),
             'general.site_url.max' => __('validation.settings.site_url_max'),
+            'general.user_screen_url.url' => __('validation.settings.user_screen_url_invalid'),
+            'general.user_screen_url.max' => __('validation.settings.user_screen_url_max'),
             'general.site_description.max' => __('validation.settings.site_description_max'),
             'general.admin_email.required' => __('validation.settings.admin_email_required'),
             'general.admin_email.email' => __('validation.settings.admin_email_invalid'),
@@ -1701,12 +1470,6 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_remind_days.integer' => __('validation.settings.password_policy_integer'),
             'security.password_expiry_remind_days.min' => __('validation.settings.password_policy_min'),
             'security.password_expiry_remind_days.max' => __('validation.settings.password_policy_max'),
-            'security.password_reset_rate_limit_per_minute.integer' => __('validation.settings.rate_limit_per_minute_range'),
-            'security.password_reset_rate_limit_per_minute.min' => __('validation.settings.rate_limit_per_minute_range'),
-            'security.password_reset_rate_limit_per_minute.max' => __('validation.settings.rate_limit_per_minute_range'),
-            'security.register_rate_limit_per_minute.integer' => __('validation.settings.rate_limit_per_minute_range'),
-            'security.register_rate_limit_per_minute.min' => __('validation.settings.rate_limit_per_minute_range'),
-            'security.register_rate_limit_per_minute.max' => __('validation.settings.rate_limit_per_minute_range'),
             'security.password_expiry_batch_size.integer' => __('validation.settings.password_policy_integer'),
             'security.password_expiry_batch_size.min' => __('validation.settings.password_policy_min'),
             'security.password_expiry_batch_size.max' => __('validation.settings.password_policy_max'),
@@ -1730,13 +1493,6 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_rules.*.memo.string' => __('validation.settings.ip_restriction_rule_memo_max', ['max' => self::IP_RULE_TEXT_MAX]),
             'security.ip_restriction_rules.*.memo.max' => __('validation.settings.ip_restriction_rule_memo_max', ['max' => self::IP_RULE_TEXT_MAX]),
             'security.ip_restriction_rules.*.enabled.boolean' => __('validation.settings.ip_restriction_rule_enabled_boolean'),
-            'security.csp_mode.in' => __('validation.settings.csp_mode_in'),
-            'security.csp_extra_script_hosts.array' => __('validation.settings.csp_extra_script_hosts_array'),
-            'security.csp_extra_script_hosts.max' => __('validation.settings.csp_extra_script_hosts_max', ['max' => self::CSP_HOST_LIST_MAX]),
-            'security.csp_style_mode.in' => __('validation.settings.csp_style_mode_in'),
-            'security.csp_style_level.in' => __('validation.settings.csp_style_level_in'),
-            'security.csp_extra_style_hosts.array' => __('validation.settings.csp_extra_style_hosts_array'),
-            'security.csp_extra_style_hosts.max' => __('validation.settings.csp_extra_style_hosts_max', ['max' => self::CSP_HOST_LIST_MAX]),
 
             // 캐시 설정
             'advanced.cache_enabled.required' => __('validation.settings.cache_enabled_required'),
@@ -1889,9 +1645,6 @@ class SaveSettingsRequest extends FormRequest
             'privacy.dormant_withdraw_days.integer' => __('validation.settings.privacy_days_integer'),
             'privacy.dormant_withdraw_days.min' => __('validation.settings.privacy_retention_days_min'),
             'privacy.dormant_withdraw_days.max' => __('validation.settings.privacy_retention_days_max'),
-            // 최근 검색어 범위 행 (7.1.5)
-            'privacy.search_history_scopes.*.scope.in' => __('validation.settings.privacy_search_history_scope_unknown'),
-            'privacy.search_history_scopes.*.scope.distinct' => __('validation.settings.privacy_search_history_scope_distinct'),
         ];
     }
 
@@ -1913,6 +1666,7 @@ class SaveSettingsRequest extends FormRequest
         $attributes = [
             'general.site_name' => __('validation.attributes.site_name'),
             'general.site_url' => __('validation.attributes.site_url'),
+            'general.user_screen_url' => __('validation.attributes.user_screen_url'),
             'general.site_description' => __('validation.attributes.site_description'),
             'general.admin_email' => __('validation.attributes.admin_email'),
             'general.timezone' => __('validation.attributes.timezone'),
@@ -1931,23 +1685,6 @@ class SaveSettingsRequest extends FormRequest
             'privacy.dormant_notice_days' => __('validation.attributes.privacy_dormant_notice_days'),
             'privacy.dormant_withdraw_enabled' => __('validation.attributes.privacy_dormant_withdraw_enabled'),
             'privacy.dormant_withdraw_days' => __('validation.attributes.privacy_dormant_withdraw_days'),
-            'privacy.search_history_enabled' => __('validation.attributes.privacy_search_history_enabled'),
-            'privacy.search_history_scopes' => __('validation.attributes.privacy_search_history_scopes'),
-            'privacy.search_history_scopes.*' => __('validation.attributes.privacy_search_history_scopes'),
-            'privacy.search_history_scopes.*.scope' => __('validation.attributes.privacy_search_history_scope'),
-            'privacy.search_history_scopes.*.max_count' => __('validation.attributes.privacy_search_history_max_count'),
-            'privacy.search_history_scopes.*.retention_days' => __('validation.attributes.privacy_search_history_retention_days'),
-            // 본문 콘텐츠 필드 (#883)
-            'content' => __('validation.attributes.content_settings'),
-            'content.allow_figure_caption' => __('validation.attributes.content_allow_figure_caption'),
-            'content.allow_uploaded_video' => __('validation.attributes.content_allow_uploaded_video'),
-            'content.allow_uploaded_audio' => __('validation.attributes.content_allow_uploaded_audio'),
-            'content.allow_external_embed' => __('validation.attributes.content_allow_external_embed'),
-            'content.embed_presets' => __('validation.attributes.content_embed_presets'),
-            'content.embed_presets.*' => __('validation.attributes.content_embed_presets'),
-            'content.embed_custom_providers' => __('validation.attributes.content_embed_custom_providers'),
-            'content.custom_tags' => __('validation.attributes.content_custom_tags'),
-            'content.media_url_ttl_minutes' => __('validation.attributes.content_media_url_ttl_minutes'),
             // 탭 묶음 자체 — 페이로드가 배열이 아닐 때 "general 필드는 배열이어야 합니다" 로
             // 키가 그대로 노출되던 자리다(운영자 화면 라벨은 한국어인데 문구만 영문 키).
             'general' => __('validation.attributes.settings_tab_general'),
@@ -1969,8 +1706,6 @@ class SaveSettingsRequest extends FormRequest
             'advanced.outbound_proxy_bypass.*' => __('validation.attributes.outbound_proxy_bypass'),
             'security.ip_restriction_rules.*' => __('validation.attributes.ip_restriction_rules'),
             'security.admin_allowed_ips.*' => __('validation.attributes.admin_allowed_ips'),
-            'security.csp_extra_script_hosts.*' => __('validation.attributes.csp_extra_script_hosts'),
-            'security.csp_extra_style_hosts.*' => __('validation.attributes.csp_extra_style_hosts'),
             'security.ip_restriction_rules.*.ips.*' => __('validation.attributes.ip_restriction_rule_ips'),
             '_tab' => __('validation.attributes.settings_tab'),
             // notifications
@@ -2002,7 +1737,6 @@ class SaveSettingsRequest extends FormRequest
             // upload
             'upload.max_file_size' => __('validation.attributes.max_file_size'),
             'upload.allowed_extensions' => __('validation.attributes.allowed_extensions'),
-            'upload.layout_attachment_extensions' => __('validation.attributes.layout_attachment_extensions'),
             'upload.image_max_width' => __('validation.attributes.image_max_width'),
             'upload.image_max_height' => __('validation.attributes.image_max_height'),
             'upload.image_quality' => __('validation.attributes.image_quality'),
@@ -2059,8 +1793,6 @@ class SaveSettingsRequest extends FormRequest
             'security.password_expiry_action' => __('validation.attributes.password_expiry_action'),
             'security.password_expiry_remind_days' => __('validation.attributes.password_expiry_remind_days'),
             'security.password_expiry_batch_size' => __('validation.attributes.password_expiry_batch_size'),
-            'security.password_reset_rate_limit_per_minute' => __('validation.attributes.password_reset_rate_limit_per_minute'),
-            'security.register_rate_limit_per_minute' => __('validation.attributes.register_rate_limit_per_minute'),
             'security.activity_log_retention_days' => __('validation.attributes.activity_log_retention_days'),
             'security.two_factor_auth' => __('validation.attributes.two_factor_auth'),
             'security.two_factor_scope' => __('validation.attributes.two_factor_scope'),
@@ -2068,11 +1800,6 @@ class SaveSettingsRequest extends FormRequest
             'security.ip_restriction_enabled' => __('validation.attributes.ip_restriction_enabled'),
             'security.admin_allowed_ips' => __('validation.attributes.admin_allowed_ips'),
             'security.ip_restriction_rules' => __('validation.attributes.ip_restriction_rules'),
-            'security.csp_mode' => __('validation.attributes.csp_mode'),
-            'security.csp_extra_script_hosts' => __('validation.attributes.csp_extra_script_hosts'),
-            'security.csp_style_mode' => __('validation.attributes.csp_style_mode'),
-            'security.csp_style_level' => __('validation.attributes.csp_style_level'),
-            'security.csp_extra_style_hosts' => __('validation.attributes.csp_extra_style_hosts'),
             'security.ip_restriction_rules.*.pattern' => __('validation.attributes.ip_restriction_rule_pattern'),
             'security.ip_restriction_rules.*.ips' => __('validation.attributes.ip_restriction_rule_ips'),
             'security.ip_restriction_rules.*.memo' => __('validation.attributes.ip_restriction_rule_memo'),
@@ -2137,7 +1864,6 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_level' => __('validation.attributes.log_level'),
             'drivers.log_days' => __('validation.attributes.log_days'),
             'drivers.public_asset_disk' => __('validation.attributes.public_asset_disk'),
-            'drivers.public_asset_extensions' => __('validation.attributes.public_asset_extensions'),
         ];
 
         // 규칙을 더한 확장이 같은 자리에서 라벨도 더한다 (rules() 의 훅과 짝).

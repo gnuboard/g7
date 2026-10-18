@@ -42,11 +42,31 @@
                         }
                     ],
                     "props": {
-                        "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myPostsBoard ?? ''}}",
-                        "className": "w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
-                        "options": "{{[{ value: '', label: '$t:mypage.board_activities.filter.all_boards' }].concat((boards?.data ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}"
-                    }
+                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "$t:mypage.board_activities.filter.all_boards"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "iteration": {
+                                "source": "{{boards?.data ?? []}}",
+                                "item_var": "board"
+                            },
+                            "props": {
+                                "value": "{{board.slug}}"
+                            },
+                            "text": "{{board.name}}"
+                        }
+                    ]
                 },
                 {
                     "comment": "정렬 필터",
@@ -75,24 +95,35 @@
                         }
                     ],
                     "props": {
-                        "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myPostsSort ?? 'latest'}}",
-                        "className": "w-full min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
-                        "options": [
-                            {
-                                "value": "latest",
-                                "label": "$t:mypage.board_activities.sort.latest"
+                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "latest"
                             },
-                            {
-                                "value": "oldest",
-                                "label": "$t:mypage.board_activities.sort.oldest"
+                            "text": "$t:mypage.board_activities.sort.latest"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "oldest"
                             },
-                            {
-                                "value": "views",
-                                "label": "$t:mypage.board_activities.sort.views"
-                            }
-                        ]
-                    }
+                            "text": "$t:mypage.board_activities.sort.oldest"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "views"
+                            },
+                            "text": "$t:mypage.board_activities.sort.views"
+                        }
+                    ]
                 },
                 {
                     "comment": "검색 영역",
@@ -118,7 +149,6 @@
                                 }
                             ],
                             "props": {
-                                "aria-label": "$t:common.search_field",
                                 "value": "{{_global.myPostsSearchField ?? 'title_content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [
@@ -178,7 +208,7 @@
                                 "type": "text",
                                 "placeholder": "$t:mypage.board_activities.search_placeholder",
                                 "value": "{{_global.myPostsSearch ?? ''}}",
-                                "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             }
                         },
                         {
@@ -208,7 +238,6 @@
                                 }
                             ],
                             "props": {
-                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                             },
                             "text": "$t:common.search"
@@ -244,7 +273,6 @@
                                 }
                             ],
                             "props": {
-                                "type": "button",
                                 "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "text": "$t:common.reset"
@@ -334,7 +362,6 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
                         "className": "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm"
                     },
                     "text": "$t:common.reset"
@@ -361,15 +388,17 @@
                     "children": [
                         {
                             "type": "basic",
-                            "name": "A",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate"
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/board/{{post.board_slug}}/{{post.id}}"
+                                    }
                                 }
                             ],
                             "props": {
-                                "href": "/board/{{post.board_slug}}/{{post.id}}",
                                 "className": "w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
                             },
                             "children": [
@@ -407,19 +436,6 @@
                                                     "text": "{{post.title}}"
                                                 },
                                                 {
-                                                    "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
-                                                    "type": "extension_point",
-                                                    "name": "board_post_row_badges",
-                                                    "props": {
-                                                        "className": "contents",
-                                                        "data-extension-point": "board_post_row_badges",
-                                                        "post": "{{post}}",
-                                                        "postId": "{{post.id}}",
-                                                        "boardSlug": "{{post.board_slug}}",
-                                                        "context": "mypage_posts"
-                                                    }
-                                                },
-                                                {
                                                     "comment": "비밀글 아이콘",
                                                     "type": "basic",
                                                     "name": "Icon",
@@ -427,7 +443,7 @@
                                                     "props": {
                                                         "name": "lock",
                                                         "size": "xs",
-                                                        "className": "text-gray-500 dark:text-gray-500 flex-shrink-0"
+                                                        "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
                                                     }
                                                 }
                                             ]
@@ -447,7 +463,7 @@
                                 {
                                     "comment": "게시글 내용 요약 (2줄, HTML 태그 제거된 plain text 사용)",
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "P",
                                     "if": "{{post.content_plain}}",
                                     "props": {
                                         "className": "mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words"
@@ -510,7 +526,7 @@
                     "comment": "게시글 없음",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{myPosts !== undefined && (!myPosts?.data?.data || myPosts.data.data.length === 0)}}",
+                    "if": "{{!myPosts?.data?.data || myPosts.data.data.length === 0}}",
                     "props": {
                         "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
                     },
@@ -521,7 +537,7 @@
                             "props": {
                                 "name": "file-text",
                                 "size": "3x",
-                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
+                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
                             }
                         },
                         {
@@ -545,16 +561,18 @@
                         },
                         {
                             "type": "basic",
-                            "name": "A",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate"
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/boards"
+                                    }
                                 }
                             ],
                             "props": {
-                                "href": "/boards",
-                                "className": "text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                             },
                             "text": "$t:mypage.board_activities.go_boards"
                         }

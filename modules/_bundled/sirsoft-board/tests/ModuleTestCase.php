@@ -14,6 +14,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
 use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
@@ -101,9 +102,6 @@ abstract class ModuleTestCase extends TestCase
         // 테스트 환경에서 module.php 가 선언한 getHookListeners() 의 리스너들을 수동 등록.
         $this->registerBundledModuleInstance();
 
-        // 번역 네임스페이스를 시험 대상 원본(_bundled)의 lang 으로 맞춘다 (쇼핑몰 시험 기반 클래스와 같은 처리)
-        $this->isolateModuleTranslations();
-
         // 설정 미러(`g7_module_settings()` 가 읽는 config)를 이 테스트 시점의 모듈 설정으로 다시 채운다.
         // 미러는 앱 부팅 때 「활성 모듈」만 싣는데, 같은 프로세스에서 코어 시험이 먼저 스키마를 새로 만들어
         // 이 모듈의 등록 행이 없던 DB 로 부팅하면 미러가 비어 게시판 기본 권한(basic_defaults)이 빈다.
@@ -123,30 +121,6 @@ abstract class ModuleTestCase extends TestCase
         // PermissionMiddleware::$guestRoleCache 초기화 — 이전 테스트에서 로드된 guest role/permissions 캐시가
         // DatabaseTransactions 롤백 후에도 남아있어 다음 테스트의 새 permission 설정이 반영되지 않는 문제 회피.
         PermissionMiddleware::clearGuestRoleCache();
-    }
-
-    /**
-     * 모듈 다국어 네임스페이스를 시험 대상 원본(_bundled)의 lang 디렉터리로 다시 등록합니다.
-     *
-     * 앱 부팅 때 등록되는 `sirsoft-board::` 경로는 활성 사본(`modules/sirsoft-board/src/lang`)이라, 원본에 새로 더한 키가
-     * 설치본 반영 전에는 원문 키로 나온다. 또 선행 시험이 활성 사본에서 읽은 그룹이 번역기에 남아 있으면 경로를 바꿔도
-     * 다시 읽지 않으므로, 읽어 둔 그룹도 비운다.
-     *
-     * @return void 반환값 없음
-     */
-    private function isolateModuleTranslations(): void
-    {
-        $langPath = $this->getModuleBasePath().'/src/lang';
-
-        if (is_dir($langPath)) {
-            $translator = $this->app['translator'];
-            $translator->addNamespace('sirsoft-board', $langPath);
-
-            // 이 모듈 네임스페이스로 이미 읽어 둔 그룹만 비운다 (다른 네임스페이스·런타임 추가 문구는 그대로)
-            $loaded = (fn () => $this->loaded)->call($translator);
-            unset($loaded['sirsoft-board']);
-            $translator->setLoaded($loaded);
-        }
     }
 
     /**
@@ -197,18 +171,6 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * 첫 사용 때는 시드 없는 테스트 스키마(잔여 행만 정리한 상태)를 요구하고, 그 뒤에는 현재 상태를 받아들인다.
-     *
-     * 예전에는 프로세스 첫 테스트가 `migrate:fresh` 로 시드까지 지운 DB 에서 시작했다 — 같은 전제를 재사용 스키마에서 재현한다.
-     *
-     * @return string 요구 프로필(none-exact · any)
-     */
-    protected function requiredTestingSchema(): string
-    {
-        return static::$migrated ? 'any' : 'none-exact';
-    }
-
-    /**
      * 스키마를 먼저 끝낸 뒤 시험 트랜잭션을 엽니다.
      *
      * Laravel 은 `parent::setUp()` 안(트레이트 초기화)에서 이 트랜잭션을 연다. 그 뒤 setUp 에서 프로세스 첫
@@ -226,9 +188,7 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * 첫 사용 표시 (프로세스당 한 번)
-     *
-     * 테스트 스키마는 코어 TestCase 가 트레이트 초기화 전에 맞춘다. 첫 사용 여부는 요구 프로필(requiredTestingSchema)이 읽는다.
+     * 모듈 마이그레이션 실행 (필요한 경우에만)
      *
      * 코어 테이블이 없으면 먼저 코어 마이그레이션을 실행하고,
      * 그 후 모듈 마이그레이션을 실행합니다.
@@ -242,8 +202,18 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        // 스키마는 코어 TestCase 의 테스트 스키마 판정(TestingSchemaCache)이 트레이트 초기화 전에 이미 맞췄다 —
-        // 첫 사용이면 시드 없는 상태(none-exact)로 정리돼 있다. 여기서는 첫 사용이 끝났다는 표시만 남긴다.
+        // 매 PHP process 첫 setUp 시 DB 를 완전 초기화 후 코어+모듈 마이그레이션을 처음부터
+        // 실행한다 (board 는 DatabaseTransactions 사용 — RefreshDatabase 가 아니므로 schema
+        // 자동 재구축 없음). 이전 process 의 부분 schema 잔재(예: 컬럼은 추가됐지만 migration
+        // record 누락) 로 인한 "Duplicate column" 등 충돌을 차단한다.
+        $this->artisan('migrate:fresh');
+
+        // 모듈 마이그레이션 실행 (코어 테이블 생성 후)
+        $this->artisan('migrate', [
+            '--path' => $this->getModuleBasePath().'/database/migrations',
+            '--realpath' => true,
+        ]);
+
         static::$migrated = true;
     }
 

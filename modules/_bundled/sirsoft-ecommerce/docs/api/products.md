@@ -87,7 +87,7 @@
 | display_status | query | string | 아니오 | — | 전시상태 필터 (visible 전시 / hidden 숨김) |
 | brand_id | query | integer | 아니오 | — | brand 식별자 |
 | no_brand | query | boolean | 아니오 | — | 브랜드 미지정 상품만 필터 (true 시 브랜드가 없는 상품 조회) |
-| tax_status | query | string | 아니오 | — | 과세여부 필터 (taxable 과세 / tax_free 면세 / zero_rated 영세) — 상품 기본값이 그 값이거나 옵션 중 하나라도 그 값으로 지정한 상품 (1.3.3) |
+| tax_status | query | string | 아니오 | — | 과세여부 필터 (taxable 과세 / tax_free 면세) |
 | price_type | query | string | 아니오 | — | 가격 범위 필터의 기준 가격 종류 (selling_price 판매가 / supply_price 공급가 / list_price 정가) |
 | min_price | query | integer | 아니오 | min 0 | 가격 범위 필터 하한 (price_type 기준 이 값 이상) |
 | max_price | query | integer | 아니오 | min 0 | 가격 범위 필터 상한 (price_type 기준 이 값 이하) |
@@ -262,7 +262,7 @@ HTTP/1.1 200
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 예 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
 | display_status | body | string | 예 | — | 전시상태 (visible 전시 / hidden 숨김) |
-| tax_status | body | string | 예 | — | 과세여부 (taxable 과세 / tax_free 면세 / zero_rated 영세 — 세율 0%, 1.3.3) |
+| tax_status | body | string | 예 | — | 과세여부 (taxable 과세 / tax_free 면세) |
 | tax_rate | body | number | 아니오 | min 0, max 100 | 세율(%) (과세 상품의 부가세 계산 비율) |
 | shipping_policy_id | body | integer | 아니오 | — | shipping policy 식별자 |
 | common_info_id | body | integer | 아니오 | — | common info 식별자 |
@@ -279,7 +279,7 @@ HTTP/1.1 200
 | use_main_image_for_og | body | boolean | 아니오 | — | 대표 이미지를 OG(소셜 공유) 이미지로 사용할지 여부 |
 | has_options | body | boolean | 아니오 | — | options 여부 |
 | option_groups | body | array | 아니오 | — | 옵션 그룹 정의 (예: 색상/사이즈 등 옵션 축과 각 축의 선택값 목록) |
-| options | body | array | 예 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등, 최소 1건 필수). 항목별 `tax_status`(선택, 1.3.3): 비우면(null) 상품 기본값을 따르고 `taxable`·`tax_free`·`zero_rated` 중 하나면 그 옵션만 그 과세 종류 — 다른 값은 `options.N.tax_status` 422 |
+| options | body | array | 예 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등, 최소 1건 필수) |
 | additional_options | body | array | 아니오 | max 5 | 추가옵션 그룹 배열 (각 그룹당 선택지 1~20개, 필수 여부·추가금·직접입력 허용 등 설정) |
 | notice_items | body | array | 아니오 | max 50 | 상품정보제공고시 항목 배열 (각 항목: 항목명·내용 다국어) |
 | label_assignments | body | array | 아니오 | — | 라벨 할당 배열 (label_id + 노출 시작/종료일로 상품에 라벨 부착) |
@@ -397,7 +397,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource`). 성공 시 HTTP 201
 | sales_status_label | string | `판매중` | `sales_status` 의 현지화 라벨 |
 | display_status | string | `visible` | 전시상태 (visible / hidden) |
 | display_status_label | string | `전시` | `display_status` 의 현지화 라벨 |
-| tax_status | string | `taxable` | 과세여부 (taxable / tax_free / zero_rated) — 상품 기본값. 옵션별 지정은 `options[].tax_status` |
+| tax_status | string | `taxable` | 과세여부 (taxable / tax_free) |
 | tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | tax_rate | string | `10.00` | 세율(%) |
 | shipping_policy_id | integer | `null` | 배송정책 식별자 |
@@ -933,7 +933,7 @@ HTTP/1.1 200
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
 | display_status | body | string | 아니오 | — | 전시상태 (visible 전시 / hidden 숨김) |
-| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세 / zero_rated 영세 — 세율 0%, 1.3.3) |
+| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세) |
 | tax_rate | body | number | 아니오 | min 0, max 100 | 세율(%) (과세 상품의 부가세 계산 비율) |
 | shipping_policy_id | body | integer | 아니오 | — | shipping policy 식별자 |
 | common_info_id | body | integer | 아니오 | — | common info 식별자 |
@@ -950,7 +950,7 @@ HTTP/1.1 200
 | use_main_image_for_og | body | boolean | 아니오 | — | 대표 이미지를 OG(소셜 공유) 이미지로 사용할지 여부 |
 | has_options | body | boolean | 아니오 | — | options 여부 |
 | option_groups | body | array | 아니오 | — | 옵션 그룹 정의 (예: 색상/사이즈 등 옵션 축과 각 축의 선택값 목록) |
-| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등). 항목별 `tax_status`(선택, 1.3.3): null = 상품 기본값 따름, `taxable`·`tax_free`·`zero_rated` |
+| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등) |
 | additional_options | body | array | 아니오 | max 5 | 추가옵션 그룹 배열 (각 그룹당 선택지 1~20개, 필수 여부·추가금·직접입력 허용 등 설정) |
 | notice_items | body | array | 아니오 | max 50 | 상품정보제공고시 항목 배열 (각 항목: 항목명·내용 다국어) |
 | label_assignments | body | array | 아니오 | — | 라벨 할당 배열 (label_id + 노출 시작/종료일로 상품에 라벨 부착) |
@@ -1068,7 +1068,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | sales_status_label | string | `판매중` | `sales_status` 의 현지화 라벨 |
 | display_status | string | `visible` | 전시상태 (visible / hidden) |
 | display_status_label | string | `전시` | `display_status` 의 현지화 라벨 |
-| tax_status | string | `taxable` | 과세여부 (taxable / tax_free / zero_rated) — 상품 기본값. 옵션별 지정은 `options[].tax_status` |
+| tax_status | string | `taxable` | 과세여부 (taxable / tax_free) |
 | tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | tax_rate | string | `10.00` | 세율(%) |
 | shipping_policy_id | integer | `null` | 배송정책 식별자 |
@@ -1866,7 +1866,7 @@ HTTP/1.1 200
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
 | display_status | body | string | 아니오 | — | 전시상태 (visible 전시 / hidden 숨김) |
-| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세 / zero_rated 영세 — 세율 0%, 1.3.3) |
+| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세) |
 | tax_rate | body | number | 아니오 | min 0, max 100 | 세율(%) (과세 상품의 부가세 계산 비율) |
 | shipping_policy_id | body | integer | 아니오 | — | shipping policy 식별자 |
 | common_info_id | body | integer | 아니오 | — | common info 식별자 |
@@ -1883,7 +1883,7 @@ HTTP/1.1 200
 | use_main_image_for_og | body | boolean | 아니오 | — | 대표 이미지를 OG(소셜 공유) 이미지로 사용할지 여부 |
 | has_options | body | boolean | 아니오 | — | options 여부 |
 | option_groups | body | array | 아니오 | — | 옵션 그룹 정의 (예: 색상/사이즈 등 옵션 축과 각 축의 선택값 목록) |
-| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등). 항목별 `tax_status`(선택, 1.3.3): null = 상품 기본값 따름, `taxable`·`tax_free`·`zero_rated` |
+| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등) |
 | additional_options | body | array | 아니오 | max 5 | 추가옵션 그룹 배열 (각 그룹당 선택지 1~20개, 필수 여부·추가금·직접입력 허용 등 설정) |
 | notice_items | body | array | 아니오 | max 50 | 상품정보제공고시 항목 배열 (각 항목: 항목명·내용 다국어) |
 | label_assignments | body | array | 아니오 | — | 라벨 할당 배열 (label_id + 노출 시작/종료일로 상품에 라벨 부착) |
@@ -2001,7 +2001,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | sales_status_label | string | `판매중` | `sales_status` 의 현지화 라벨 |
 | display_status | string | `visible` | 전시상태 (visible / hidden) |
 | display_status_label | string | `전시` | `display_status` 의 현지화 라벨 |
-| tax_status | string | `taxable` | 과세여부 (taxable / tax_free / zero_rated) — 상품 기본값. 옵션별 지정은 `options[].tax_status` |
+| tax_status | string | `taxable` | 과세여부 (taxable / tax_free) |
 | tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | tax_rate | string | `10.00` | 세율(%) |
 | shipping_policy_id | integer | `null` | 배송정책 식별자 |
@@ -2334,8 +2334,8 @@ _단건 응답: `data` 객체의 필드._
 | brand_id | integer | `7` | 브랜드 ID |
 | category_ids | array | `[29,30,32]` | category 식별자 배열 (연관 리소스 참조) |
 | primary_category_id | integer | `32` | primary category 식별자 (연관 리소스 참조) |
-| created_at | string | `2026-07-30 14:36:13` | 생성 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
-| updated_at | string | `2026-07-30 14:36:13` | 최종 수정 일시 — 보는 사람 시간대 (`Y-m-d H:i:s`) |
+| created_at | string | `2026-07-30 14:36:13` | 생성 일시 |
+| updated_at | string | `2026-07-30 14:36:13` | 최종 수정 일시 |
 | list_price | string | `5000.00` | 정가 (기본통화 기준) |
 | selling_price | string | `3000.00` | 판매가 (기본통화 기준) |
 | stock_quantity | integer | `26` | 재고 수량 (옵션 있으면 옵션 합계) |
@@ -2617,11 +2617,10 @@ HTTP/1.1 200
 | category_slug | query | string | 아니오 | max 100 | 카테고리 slug 필터 (URL 친화 식별자로 카테고리 지정, category_id 대체 가능) |
 | brand_id | query | integer | 아니오 | — | brand 식별자 |
 | search | query | string | 아니오 | max 200 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
-| sort | query | string | 아니오 | `latest`, `sales`, `reviews`, `price_asc`, `price_desc` | 정렬 기준 (필드명, `-` 접두 시 내림차순) |
+| sort | query | string | 아니오 | `latest`, `sales`, `price_asc`, `price_desc` | 정렬 기준 (필드명, `-` 접두 시 내림차순) |
 | min_price | query | integer | 아니오 | min 0 | 판매가 범위 필터 하한 (판매가가 이 값 이상인 상품) |
 | max_price | query | integer | 아니오 | min 0 | 판매가 범위 필터 상한 (판매가가 이 값 이하인 상품) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| exclude_sold_out | query | string | 아니오 | `0`, `1` | 품절 제외. `1` 이면 판매상태가 「품절」이거나 활성 옵션 재고가 모두 0 인 상품을 뺍니다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.product.public_list_validation_rules`, `sirsoft-ecommerce.product.public_list_validation_messages`).
 
@@ -2741,7 +2740,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 쇼핑몰 프런트용 공개 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPublicList()`가 전시상태 visible이고 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다. 카테고리/브랜드/검색어/가격 범위 필터와 `sort`(latest/sales/reviews/price_asc/price_desc) 정렬을 지원하고(reviews 는 노출 리뷰 수 내림차순, 같으면 최신 등록순) 결과는 `ProductCollection`으로 페이지네이션됩니다. 확장은 `sirsoft-ecommerce.product.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다. 목록의 각 상품에는 카드 단추용 값이 실립니다 — `is_wishlisted`(보는 회원의 찜 여부, 비회원은 `false`), `options_count`(활성 옵션 수), `has_additional_options`(추가옵션 그룹 유무). 인기·신상품·최근 본·관련 상품 응답과 통합검색 상품 결과에도 같은 값이 실립니다.
+**설명** 쇼핑몰 프런트용 공개 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPublicList()`가 전시상태 visible이고 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다. 카테고리/브랜드/검색어/가격 범위 필터와 `sort`(latest/sales/price_asc/price_desc) 정렬을 지원하고 결과는 `ProductCollection`으로 페이지네이션됩니다. 확장은 `sirsoft-ecommerce.product.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/new
@@ -3038,52 +3037,6 @@ HTTP/1.1 200
 **설명** 공개 인기 상품 목록을 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductService::getPopularProducts()`가 최근 30일 판매량 기준으로 정렬한 상품을 `ProductListResource` 컬렉션으로 반환합니다. `limit`(기본 10, 최대 50) 쿼리로 개수를 제한하며, 베스트/인기 상품 위젯에 사용됩니다. 확장은 `sirsoft-ecommerce.product.public_popular_validation_rules` 훅으로 검증 규칙을 확장할 수 있습니다.
 
 
-### GET /api/modules/sirsoft-ecommerce/products/{product}/related
-<!-- @generated:start:api.modules.sirsoft-ecommerce.products.related -->
-- **라우트명**: `api.modules.sirsoft-ecommerce.products.related`
-- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductController@related`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-ecommerce.user-products.read`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| product | path | string | 예 | 상품코드 또는 숫자 ID (`[0-9A-Za-z_-]+`) | 기준 상품 |
-| limit | query | integer | 아니오 | min 1, max 50 | 반환할 최대 항목 수 (기본 8) |
-
-**요청 예시**
-
-```http
-GET /api/modules/sirsoft-ecommerce/products/P-1001/related?limit=8 HTTP/1.1
-Host: api.example.com
-Accept: application/json
-```
-
-**응답 예시**
-
-```json
-{
-  "success": true,
-  "message": "상품 목록을 조회했습니다.",
-  "data": [
-    { "id": 42, "name_localized": "캠핑 의자 (국산)", "selling_price_formatted": "12,000원", "thumbnail_url": "https://cdn.example.com/p/42.jpg", "review_count": 3, "rating_avg": 4.7 }
-  ]
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 404 | Not Found | 기준 상품이 없거나 전시상태가 visible 이 아닌 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-
-<!-- @generated:end -->
-
-**설명** 상품 상세 아래 「이 상품은 어떠세요?」 목록용 관련 상품을 조회합니다. `ProductService::getRelatedProducts()`가 기준 상품의 대표 분류(없으면 첫 분류)와 그 하위 분류 상품을 먼저, 모자라면 상위 분류 → 그 위 분류 순으로 채워 `ProductListResource` 컬렉션으로 반환합니다. 기준 상품·숨긴 상품·앞 단계에서 고른 상품은 다시 고르지 않으며, 분류가 없으면 빈 배열입니다. 단계 안 순서는 환경설정 `product_display.related_order`(`random` 기본, `sales`, `reviews`, `latest`)를 따르고, 고른 상품 ID 는 `product_display.related_cache_hours`(기본 24, 0 이면 캐시 안 함) 동안 코어 캐시 드라이버에 둡니다(태그 `sirsoft-ecommerce.related_products`, 설정 저장 시 비움). 상품 정보 자체는 매번 읽으므로 그 사이 숨긴 상품은 빠집니다. 확장은 `sirsoft-ecommerce.product.related_validation_rules` 로 파라미터를, `before_related_list`·`filter_related_list_result`·`after_related_list` 훅으로 결과를 다룰 수 있습니다. 기준 상품이 숨김·삭제 상태면 `404` 입니다.
-
-
 ### GET /api/modules/sirsoft-ecommerce/products/recent
 <!-- @generated:start:api.modules.sirsoft-ecommerce.products.recent -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.products.recent`
@@ -3221,8 +3174,6 @@ _단건 응답: `data` 객체의 필드._
 | selling_price | integer | `3000` | 판매가 (기본통화 기준) |
 | selling_price_formatted | string | `3,000원` | `selling_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | discount_rate | integer | `40` | 할인율(%) (정가 대비 판매가 할인 비율, (1 - 판매가/정가) × 100) |
-| tax_status | string | `taxable` | 상품 기본 과세 종류 (taxable / tax_free / zero_rated, 1.3.3) — 상품 상세의 면세·영세 표시용 |
-| tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | multi_currency_list_price | object | `{"KRW":{"price":5000,"formatted":"5,000원","is_default":tr…` | 통화별 정가 맵 (통화코드 → {price, formatted, is_default, editable}, 설정된 모든 통화의 환산 정가) |
 | multi_currency_selling_price | object | `{"KRW":{"price":3000,"formatted":"3,000원","is_default":tr…` | 통화별 판매가 맵 (통화코드 → {price, formatted, is_default, editable}, 설정된 모든 통화의 환산 판매가) |
 | stock_quantity | integer | `26` | 재고 수량 (옵션 있으면 옵션 합계) |
@@ -3654,7 +3605,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등)은 `ProductInquiryOperationException` 으로 422 를 반환하며, 예외가 들고 있는 다국어 키로 해석한 사유가 응답 문구에 포함됩니다. 그 밖의 예외는 서버 결함으로 보아 500 입니다. 상품이 숨김·삭제 상태면 본문 검증보다 먼저 `404` 로 답합니다. 회원당 분당 요청 제한(`throttle:sirsoft-ecommerce.inquiry-write`)이 걸려 있어 넘으면 `429` 입니다.
+**설명** 상품에 1:1 문의를 작성합니다. `optional.sanctum` + `sirsoft-ecommerce.user-products.read` 권한이 적용되며(선택적 인증 표면이지만 실제 작성은 인증 사용자를 전제), `ProductInquiryService::createInquiry()`가 게시판 모듈과 연동해 문의 글을 생성하고 성공 시 201과 생성된 `id`를 반환합니다. `content`는 필수, `title`/`category`/`is_secret`은 선택이며, 첨부는 사전 업로드한 `temp_key`로 연결됩니다. 도메인 규칙 위반(문의 게시판 미설정·게시판 모듈 불가 등)은 `ProductInquiryOperationException` 으로 422 를 반환하며, 예외가 들고 있는 다국어 키로 해석한 사유가 응답 문구에 포함됩니다. 그 밖의 예외는 서버 결함으로 보아 500 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/products/{product}/reviews
@@ -3692,7 +3643,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| reviews | object | `{"data":[],"links":{"first":"https:\/\/api.example.com\/api\/mod…` | 리뷰 목록 (data 배열 + 페이지네이션 메타, 공개 상태 리뷰만 정렬/필터 적용해 반환) |
+| reviews | object | `{"data":[],"links":{"first":"https:\/\/g7_2.dev\/api\/mod…` | 리뷰 목록 (data 배열 + 페이지네이션 메타, 공개 상태 리뷰만 정렬/필터 적용해 반환) |
 | rating_stats | object | `{"5":{"count":0,"percent":0},"4":{"count":0,"percent":0},…` | 별점 분포 통계 (별점(1~5)별 count·percent 맵 + avg 평균 별점, 공개 리뷰 기준) |
 | option_filters | array | `[{"key":"색상","values":[{"value":"화이트","count":0},{"value"…` | 옵션 조건 필터 후보 (구매 옵션 키·값별 리뷰 건수 집계, 옵션별 리뷰 필터 UI용) |
 | total_count | integer | `0` | total 개수 (집계) |
@@ -3803,6 +3754,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 상품의 공개 리뷰 목록과 별점 통계를 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductReviewService::getProductReviews()`가 정렬(`sort`)·포토리뷰만(`photo_only`)·별점(`rating`)·옵션(`option_filters`) 필터를 적용해 리뷰를 페이지네이션하고 별점 분포(`rating_stats`)와 선택 가능한 옵션 필터, 총 개수를 함께 반환합니다. `option_filters`는 JSON 문자열로 전달되면 서버에서 배열로 파싱되며, 상품 상세의 리뷰 탭에 사용됩니다. 확장은 `sirsoft-ecommerce.review.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다. 작성자 이름(`author_name`·`user.name`)은 환경설정 「리뷰 설정 → 작성자 이름 가림」이 「가운데 가림」(기본)이면 가려서 싣고, 회원 식별자(`user_id`·`user.uuid`)는 싣지 않습니다. 상품이 숨김·삭제 상태면 `404` 입니다.
+**설명** 상품의 공개 리뷰 목록과 별점 통계를 조회합니다. `optional.sanctum`(회원/비회원 모두 접근) + `sirsoft-ecommerce.user-products.read` 권한이 적용되며, `ProductReviewService::getProductReviews()`가 정렬(`sort`)·포토리뷰만(`photo_only`)·별점(`rating`)·옵션(`option_filters`) 필터를 적용해 리뷰를 페이지네이션하고 별점 분포(`rating_stats`)와 선택 가능한 옵션 필터, 총 개수를 함께 반환합니다. `option_filters`는 JSON 문자열로 전달되면 서버에서 배열로 파싱되며, 상품 상세의 리뷰 탭에 사용됩니다. 확장은 `sirsoft-ecommerce.review.public_list_validation_rules` 훅으로 필터를 추가할 수 있습니다.
 
 

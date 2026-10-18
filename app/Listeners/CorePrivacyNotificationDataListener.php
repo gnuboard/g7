@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
+use App\Support\ScreenUrl;
 
 /**
  * 개인정보(휴면) 알림 데이터 필터 리스너
@@ -75,7 +76,6 @@ class CorePrivacyNotificationDataListener implements HookListenerInterface
         }
 
         $extra = is_array($args[1] ?? null) ? $args[1] : [];
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -83,8 +83,8 @@ class CorePrivacyNotificationDataListener implements HookListenerInterface
             'data' => [
                 'name' => (string) ($user->name ?? ''),
                 'app_name' => config('app.name'),
-                'action_url' => $baseUrl.'/login',
-                'site_url' => $baseUrl,
+                'action_url' => ScreenUrl::absolute('auth.login', '/login'),
+                'site_url' => ScreenUrl::userBase(),
                 // 커맨드가 계산한 값을 그대로 쓴다 — 없으면 빈 문자열로 두고 문구가 날짜 없이
                 // 읽히게 한다. 여기서 임의로 오늘 날짜를 넣으면 사실과 다른 고지가 나간다.
                 'dormant_days' => (string) ($extra['dormant_days'] ?? ''),

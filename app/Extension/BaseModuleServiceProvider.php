@@ -33,8 +33,6 @@ abstract class BaseModuleServiceProvider extends AbstractExtensionServiceProvide
      *
      * Fallback: 테스트 격리 / 모듈 디스커버리 이전 시점에서는 ModuleCacheDriver /
      * ModuleStorageDriver 를 식별자만으로 직접 생성한 어댑터를 반환합니다.
-     *
-     * @return CacheableExtensionInterface 모듈 인스턴스
      */
     protected function resolveExtension(): CacheableExtensionInterface
     {
@@ -49,19 +47,7 @@ abstract class BaseModuleServiceProvider extends AbstractExtensionServiceProvide
     }
 
     /**
-     * 활성 모듈 식별자 목록을 반환합니다 (boot 부수효과 게이트용, 요청 메모 경유).
-     *
-     * @return array<int, string>|null 활성 모듈 식별자 목록
-     */
-    protected function activeIdentifiersForGate(): ?array
-    {
-        return ModuleManager::getActiveModuleIdentifiers();
-    }
-
-    /**
      * Register services.
-     *
-     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -71,8 +57,6 @@ abstract class BaseModuleServiceProvider extends AbstractExtensionServiceProvide
 
     /**
      * Bootstrap services.
-     *
-     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -82,8 +66,6 @@ abstract class BaseModuleServiceProvider extends AbstractExtensionServiceProvide
 
     /**
      * `$moduleIdentifier` 값을 부모의 `$extensionIdentifier` 로 미러링합니다.
-     *
-     * @return void 반환값 없음
      */
     private function ensureIdentifierAlias(): void
     {
@@ -94,8 +76,6 @@ abstract class BaseModuleServiceProvider extends AbstractExtensionServiceProvide
 
     /**
      * @deprecated 7.0.0-beta.7 부모 `loadExtensionMigrations()` 사용 권장.
-     *
-     * @return void 반환값 없음
      */
     protected function loadModuleMigrations(): void
     {
@@ -104,8 +84,6 @@ abstract class BaseModuleServiceProvider extends AbstractExtensionServiceProvide
 
     /**
      * @deprecated 7.0.0-beta.7 부모 `loadExtensionTranslations()` 사용 권장.
-     *
-     * @return void 반환값 없음
      */
     protected function loadModuleTranslations(): void
     {

@@ -47,13 +47,13 @@ class EcommerceUserProfileSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.ecommerce_user_profile.start'));
+        $this->command->info('이커머스 사용자 프로필 더미 데이터 생성을 시작합니다.');
 
         $this->deleteExistingProfiles();
         $this->createProfiles();
 
         $count = EcommerceUserProfile::count();
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.ecommerce_user_profile.done', ['count' => $count]));
+        $this->command->info("이커머스 사용자 프로필 {$count}건이 성공적으로 생성되었습니다.");
     }
 
     /**
@@ -65,7 +65,7 @@ class EcommerceUserProfileSeeder extends Seeder
 
         if ($deletedCount > 0) {
             EcommerceUserProfile::query()->delete();
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.ecommerce_user_profile.purged', ['count' => $deletedCount]));
+            $this->command->warn("기존 사용자 프로필 데이터 {$deletedCount}건을 삭제했습니다.");
         }
     }
 
@@ -87,7 +87,7 @@ class EcommerceUserProfileSeeder extends Seeder
         }
 
         if ($users->isEmpty()) {
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.ecommerce_user_profile.skip_no_users'));
+            $this->command->warn('회원이 없습니다. 사용자 프로필 생성을 건너뜁니다.');
 
             return;
         }
@@ -126,6 +126,6 @@ class EcommerceUserProfileSeeder extends Seeder
             }
         }
 
-        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.ecommerce_user_profile.created', ['count' => $users->count(), 'currency' => $currencyCount, 'shipping' => $shippingCount]));
+        $this->command->line("  - 프로필 {$users->count()}건 생성 (통화 지정 {$currencyCount}건, 배송국가 지정 {$shippingCount}건)");
     }
 }

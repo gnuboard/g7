@@ -2,7 +2,6 @@
 
 namespace Tests\Support;
 
-use Illuminate\Database\Connection;
 use RuntimeException;
 
 /**
@@ -11,7 +10,7 @@ use RuntimeException;
  * `tests/bootstrap.php` 는 `.env` 와 `.env.testing` 의 DB 이름이 같으면 멈추고 config 캐시 경로를 테스트 전용으로 돌린다.
  * 그래도 테스트가 도는 사이 다른 경로로 개발 설정이 실리면(같은 클론에서 확장 반영이 config 캐시를 다시 굽는 등)
  * RefreshDatabase 가 개발 DB 의 모든 테이블을 지우고 다시 만든다(2026-10-08 다른 클론에서 개발 DB 전체 초기화).
- * 테스트가 만든 권한 행이 개발 DB 권한 트리에 남은 것도 같은 경로였다(`admin.access`).
+ * 테스트가 만든 권한 행이 개발 DB 권한 트리에 남은 것도 같은 경로였다(O-D2, `admin.access`).
  * 그래서 설정을 읽은 직후, 서비스 제공자 부팅과 트레이트(RefreshDatabase 등)가 DB 를 만지기 전에 실제 연결 설정의 DB 이름을 확인한다.
  */
 final class TestingDatabaseGuard
@@ -48,38 +47,6 @@ final class TestingDatabaseGuard
             throw new RuntimeException(
                 "테스트 앱이 테스트 전용이 아닌 DB '{$name}'(연결 {$connection})에 붙으려 한다 — 개발 DB 를 지우지 않도록 테스트를 멈춘다. "
                 .'bootstrap/cache/config.php(config 캐시)가 있는지, .env.testing 의 DB 이름을 확인한다.'
-            );
-        }
-    }
-
-    /**
-     * 실제로 붙은 DB 이름이 테스트 전용인지 — write·read 연결 양쪽 모두 — 확인하고, 아니면 예외로 멈춥니다.
-     *
-     * 설정 확인({@see assertConnectionIsTesting()})은 부팅 때 한 번이다. 테스트 스키마를 지우고 다시 만들기 직전에는
-     * 서버에 직접 물어 한 번 더 확인한다 — read 연결이 다른 DB 를 가리키면 지운 쪽과 읽는 쪽이 갈라진다.
-     *
-     * @param  string  $database  write 연결에서 `SELECT DATABASE()` 로 얻은 이름
-     * @param  Connection  $connection  확인할 연결
-     * @return void 반환값 없음
-     *
-     * @throws RuntimeException 테스트 전용이 아니거나 read·write 가 다를 때
-     */
-    public static function assertTestingDatabaseName(string $database, Connection $connection): void
-    {
-        $readPdo = $connection->getReadPdo();
-        $read = $readPdo instanceof \PDO ? (string) $readPdo->query('SELECT DATABASE()')->fetchColumn() : $database;
-
-        foreach (['write' => $database, 'read' => $read] as $side => $name) {
-            if ($name === '' || ! str_contains($name, 'testing')) {
-                throw new RuntimeException(
-                    "테스트 DB 연결({$side})이 테스트 전용이 아닌 DB '{$name}' 에 붙어 있다 — 스키마를 지우지 않도록 테스트를 멈춘다."
-                );
-            }
-        }
-
-        if ($database !== $read) {
-            throw new RuntimeException(
-                "테스트 DB 의 write 연결('{$database}')과 read 연결('{$read}')이 다른 DB 를 가리킨다 — 스키마를 지우지 않도록 테스트를 멈춘다."
             );
         }
     }

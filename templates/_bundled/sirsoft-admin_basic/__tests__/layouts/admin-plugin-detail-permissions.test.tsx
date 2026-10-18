@@ -75,8 +75,7 @@ function buildLayout(section: any, selectedPlugin: Record<string, unknown>) {
   return {
     version: '1.0.0',
     layout_name: 'plugin_detail_permissions_test',
-    // 상세 응답 형태 — metadata 는 상세에만 있는 필드라 「없음」 안내가 상세를 받은 뒤에만 보이는 표지다(#915)
-    initGlobal: { selectedPlugin: { metadata: [], ...selectedPlugin } },
+    initGlobal: { selectedPlugin },
     components: [section],
   };
 }

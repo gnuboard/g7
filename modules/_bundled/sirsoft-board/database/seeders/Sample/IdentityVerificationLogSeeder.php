@@ -51,6 +51,6 @@ class IdentityVerificationLogSeeder extends AbstractIdentityVerificationLogSampl
      */
     protected function scopeLabel(): string
     {
-        return '['.__('sirsoft-board::messages.seeders.identity_verification_log.scope_label').']';
+        return '[게시판]';
     }
 }

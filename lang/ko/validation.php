@@ -598,13 +598,6 @@ return [
 
     // 템플릿 검증 메시지
 
-    // 회원 검색(회원 고르기 창) 칸 표시 이름
-    'user_search' => [
-        'attributes' => [
-            'uuid' => '회원',
-        ],
-    ],
-
     // 메뉴 검증 메시지
     'menu' => [
         // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
@@ -818,6 +811,7 @@ return [
         'email' => [
             'required' => '이메일은 필수입니다.',
             'email' => '올바른 이메일 형식이 아닙니다.',
+            'exists' => '등록되지 않은 이메일입니다.',
             'unique' => '이미 사용 중인 이메일입니다.',
         ],
         'password' => [
@@ -876,7 +870,6 @@ return [
             'max' => '설정 값은 :max자를 초과할 수 없습니다.',
             'array_max' => '설정 값의 크기가 :max자를 초과할 수 없습니다.',
             'server_only' => '이 설정은 서버가 기록하는 값이라 직접 저장할 수 없습니다.',
-            'env_locked' => '이 설정은 .env 가 값을 정하고 있어 여기서 바꿀 수 없습니다. .env 의 :env 를 고치세요.',
         ],
     ],
 
@@ -899,34 +892,14 @@ return [
 
     // 설정 검증 메시지
     'settings' => [
-        // 본문 콘텐츠 (#883)
-        'embed_provider_invalid' => ':index번째 외부 영상 서비스 항목 형식이 올바르지 않습니다.',
-        'embed_provider_too_many' => '외부 영상 서비스는 최대 :max개까지 추가할 수 있습니다.',
-        'embed_provider_id_duplicate' => ':index번째 서비스 식별자(:id)가 기본 서비스나 다른 항목과 겹칩니다.',
-        'embed_provider_id_format' => ':index번째 서비스 식별자는 영문 소문자로 시작하는 2~32자(영문 소문자·숫자·밑줄)여야 합니다.',
-        'embed_provider_name' => ':index번째 서비스 이름은 1~40자로 입력해 주세요.',
-        'embed_provider_patterns_count' => ':index번째 서비스의 주소 형식은 1~5개여야 합니다.',
-        'embed_provider_pattern_format' => ':index번째 서비스의 주소 형식은 https:// 또는 http:// 로 시작하고 {id} 를 정확히 한 번 넣어야 합니다. 호스트의 * 는 맨 앞 하위 도메인 자리(*.example.com)에만 쓸 수 있습니다.',
-        'embed_provider_player_https' => ':index번째 서비스의 플레이어 주소는 https:// 로 시작하고 {id} 를 정확히 한 번 넣어야 합니다.',
-        'embed_provider_player_host' => ':index번째 서비스의 플레이어 주소에 이 사이트 주소나 * 는 쓸 수 없습니다.',
-        'embed_provider_option' => ':index번째 서비스의 :field 값이 허용된 선택지가 아닙니다.',
-        'embed_preset_unknown' => '알 수 없는 외부 영상 서비스입니다: :id',
-        'content_custom_tag_list' => '추가 태그는 최대 :max개까지 입력할 수 있습니다.',
-        'content_custom_tag_format' => '추가 태그 「:tag」 형식이 올바르지 않습니다. 영문 소문자로 시작하는 32자 이내(영문 소문자·숫자·하이픈)로 입력해 주세요.',
-        'content_custom_tag_rejected' => '「:tag」 태그는 추가할 수 없습니다 — :reason',
-        'content_custom_tag_reasons' => [
-            'script' => '스크립트를 실행할 수 있습니다.',
-            'style' => '화면 전체의 모양을 바꾸거나 외부 파일을 불러올 수 있습니다.',
-            'document' => '문서 구조를 바꿔 다른 정화 규칙을 우회할 수 있습니다.',
-            'embed' => '외부 문서·프로그램을 본문 안에 띄웁니다(외부 영상은 「외부 영상 서비스」로 추가하세요).',
-            'form' => '입력 양식으로 개인정보를 가로채는 데 쓰일 수 있습니다.',
-        ],
         // 일반 설정 - 필수 필드
         'site_name_required' => '사이트 이름을 입력해주세요.',
         'site_name_max' => '사이트 이름은 100자를 초과할 수 없습니다.',
         'site_url_required' => '사이트 URL을 입력해주세요.',
         'site_url_invalid' => '올바른 URL 형식이 아닙니다.',
         'site_url_max' => '사이트 URL은 255자를 초과할 수 없습니다.',
+        'user_screen_url_invalid' => 'http:// 또는 https:// 로 시작하는 전체 주소를 입력하세요.',
+        'user_screen_url_max' => '사용자 화면 URL은 255자를 초과할 수 없습니다.',
         'site_description_max' => '사이트 설명은 500자를 초과할 수 없습니다.',
         'admin_email_required' => '관리자 이메일을 입력해주세요.',
         'admin_email_invalid' => '올바른 이메일 형식이 아닙니다.',
@@ -964,12 +937,6 @@ return [
         'allowed_extensions_required' => '허용 확장자를 입력해주세요.',
         'allowed_extensions_max' => '허용 확장자는 500자를 초과할 수 없습니다.',
         'allowed_extensions_invalid_type' => '허용 확장자는 문자열 또는 배열이어야 합니다.',
-        'layout_attachment_extensions_required' => '레이아웃 첨부 허용 확장자를 하나 이상 입력해주세요.',
-        'rate_limit_per_minute_range' => '분당 허용 횟수는 1 이상 1000 이하의 정수로 입력해주세요.',
-        'host_format_invalid' => '호스트명 또는 IP 주소만 입력해주세요. 경로·포트·계정 정보·공백은 넣을 수 없습니다.',
-        'host_blocked' => '허용되지 않는 주소입니다.',
-        'endpoint_path_not_allowed' => '주소에 경로·쿼리를 넣을 수 없습니다. 스킴·호스트·포트까지만 입력해주세요.',
-        'public_asset_extensions_required' => '공개 디스크로 내보낼 확장자를 하나 이상 입력해주세요.',
         'image_max_width_integer' => '이미지 최대 너비는 정수여야 합니다.',
         'image_max_width_min' => '이미지 최대 너비는 100px 이상이어야 합니다.',
         'image_max_width_max' => '이미지 최대 너비는 10000px 이하여야 합니다.',
@@ -1023,7 +990,6 @@ return [
         'sitemap_urls_per_file_min' => 'Sitemap 파일당 URL 수는 최소 1000개 이상이어야 합니다.',
         'sitemap_urls_per_file_max' => 'Sitemap 파일당 URL 수는 최대 50000개를 초과할 수 없습니다.',
         'sitemap_gzip_boolean' => 'Sitemap 압축 설정은 true 또는 false 값이어야 합니다.',
-        'sitemap_gzip_requires_zlib' => '사이트맵 압축(gzip)을 켜려면 서버에 PHP zlib 확장이 필요합니다. 확장을 설치하거나 압축을 끄세요.',
         'sitemap_serve_stale_on_miss_boolean' => '이전 Sitemap 제공 설정은 true 또는 false 값이어야 합니다.',
         'sitemap_max_urls_per_contributor_integer' => '수집기당 최대 URL 수는 정수여야 합니다.',
         'sitemap_max_urls_per_contributor_min' => '수집기당 최대 URL 수는 0 이상이어야 합니다.',
@@ -1038,14 +1004,6 @@ return [
         // IP 접근 제한
         'ip_restriction_enabled_boolean' => 'IP 접근 제한 사용은 true 또는 false 값이어야 합니다.',
         'ip_or_cidr_invalid' => '":value" 값은 IP 주소 또는 CIDR(예: 203.0.113.0/24) 형식이 아닙니다.',
-        'csp_source_host_invalid' => '":value" 값은 허용하지 않는 형식입니다. 호스트(예: cdn.example.com, *.example.com, https://cdn.example.com)만 입력하세요 — 따옴표·세미콜론·공백·unsafe-inline 같은 키워드·data:·*·http:// 는 쓸 수 없습니다.',
-        'csp_mode_in' => '콘텐츠 보안 정책 모드는 끔·점검만·강제 중 하나여야 합니다.',
-        'csp_extra_script_hosts_array' => '추가 스크립트 허용 호스트는 목록이어야 합니다.',
-        'csp_extra_script_hosts_max' => '추가 스크립트 허용 호스트는 최대 :max개까지 입력할 수 있습니다.',
-        'csp_style_mode_in' => '스타일 정책 모드는 끔·점검만·강제 중 하나여야 합니다.',
-        'csp_style_level_in' => '스타일 정책 강도는 기본·엄격 중 하나여야 합니다.',
-        'csp_extra_style_hosts_array' => '추가 스타일 허용 호스트는 목록이어야 합니다.',
-        'csp_extra_style_hosts_max' => '추가 스타일 허용 호스트는 최대 :max개까지 입력할 수 있습니다.',
         'admin_allowed_ips_array' => '관리자 영역 허용 IP 는 목록이어야 합니다.',
         'admin_allowed_ips_max' => '관리자 영역 허용 IP 는 :max개까지 등록할 수 있습니다.',
         'ip_restriction_rules_array' => '라우트별 규칙은 목록이어야 합니다.',
@@ -1237,8 +1195,6 @@ return [
         'privacy_days_integer' => '기간은 일 단위 정수여야 합니다.',
         'privacy_retention_days_min' => '보유기간은 1일 이상이어야 합니다.',
         'privacy_retention_days_max' => '보유기간은 최대 3650일(10년)을 초과할 수 없습니다.',
-        'privacy_search_history_scope_unknown' => '사용할 수 없는 검색 범위입니다. 화면을 새로 고친 뒤 다시 저장하세요.',
-        'privacy_search_history_scope_distinct' => '같은 검색 범위가 두 번 들어 있습니다.',
         'privacy_dormant_days_min' => '휴면 전환 기간은 30일 이상이어야 합니다.',
         'privacy_dormant_notice_days_min' => '사전 통지 기간은 1일 이상이어야 합니다.',
         'privacy_dormant_notice_days_max' => '사전 통지 기간은 최대 365일을 초과할 수 없습니다.',
@@ -1260,9 +1216,6 @@ return [
         'key_required' => '정책 키를 입력해주세요.',
         'key_max' => '정책 키는 120자를 초과할 수 없습니다.',
         'key_unique' => '이미 사용 중인 정책 키입니다.',
-        'purpose_unknown' => '등록되지 않은 인증 목적입니다.',
-        'provider_id_unknown' => '등록되지 않은 본인인증 수단입니다.',
-        'provider_purpose_unsupported' => '선택한 본인인증 수단은 이 목적을 지원하지 않습니다.',
         'scope_required' => 'Scope를 선택해주세요.',
         'scope_invalid' => 'Scope는 route, hook, custom 중 하나여야 합니다.',
         'target_required' => 'Target(라우트 또는 훅 이름)을 입력해주세요.',
@@ -1359,44 +1312,7 @@ return [
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
-        // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
-        'content_settings' => '본문 콘텐츠 설정',
-        'content_allow_figure_caption' => '그림 설명 허용',
-        'content_allow_uploaded_video' => '동영상 업로드 허용',
-        'content_allow_uploaded_audio' => '오디오 업로드 허용',
-        'content_allow_external_embed' => '외부 영상 삽입 허용',
-        'content_embed_presets' => '외부 영상 서비스 사용 여부',
-        'content_embed_custom_providers' => '직접 추가한 외부 영상 서비스',
-        'content_custom_tags' => '추가 허용 태그',
-        'content_media_url_ttl_minutes' => '본문 미디어 주소 유효 시간',
-        // 외부 영상 서비스 예시 주소 확인 (#883)
-        'embed_provider' => '외부 영상 서비스',
-        'embed_provider_url_patterns' => '주소 형식',
-        'embed_provider_player_url' => '플레이어 주소',
-        'embed_provider_id_rule' => 'id 글자 규칙',
-        'embed_provider_sample_url' => '예시 주소',
         'layout_source' => '레이아웃 설치 소스',
-        'layout_meta_icon' => '메뉴 아이콘',
-        'layout_meta_editor_label' => '편집기 표시 이름',
-        'layout_meta_authoring_note' => '작성 도구 표기',
-        'layout_meta_leave_guard' => '이탈 확인 조건',
-        'layout_meta_leave_message' => '이탈 확인 문구',
-        'layout_meta_scroll_restoration' => '스크롤 복원 설정',
-        'layout_meta_scroll_restoration_mode' => '돌아왔을 때 스크롤 동작',
-        'layout_meta_scroll_restoration_on_reload' => '새로고침 때도 적용',
-        'layout_meta_scroll_restoration_wait' => '복원 시점',
-        'layout_meta_scroll_restoration_timeout_ms' => '최대 대기 시간(ms)',
-        'layout_meta_scroll_restoration_containers' => '함께 복원할 스크롤 영역',
-        'layout_meta_scroll_restoration_snapshot' => '더보기 목록 스냅샷 설정',
-        'layout_meta_scroll_restoration_snapshot_enabled' => '더보기 목록 스냅샷 사용',
-        'layout_meta_scroll_restoration_snapshot_ttl_seconds' => '스냅샷 유효 시간(초)',
-        'layout_meta_scroll_restoration_snapshot_revalidate' => '스냅샷 뒤 다시 받기',
-        'layout_meta_scroll_restoration_snapshot_item_key' => '스냅샷 항목 식별 필드',
-        'layout_meta_scroll_restoration_snapshot_state' => '스냅샷과 함께 되돌릴 상태',
-        'layout_seo_title' => 'SEO 제목',
-        'layout_seo_description' => 'SEO 설명',
-        'layout_seo_twitter' => '트위터 카드',
-        'exclude_withdrawn' => '탈퇴 회원 제외',
         'since' => '기준 시각',
         'skip_waiting' => '대기기간 생략',
         'targets' => '조회 대상',
@@ -1413,6 +1329,7 @@ return [
         // 일반 설정 필드
         'site_name' => '사이트 이름',
         'site_url' => '사이트 URL',
+        'user_screen_url' => '사용자 화면 URL',
         'site_description' => '사이트 설명',
         'admin_email' => '관리자 이메일',
         'timezone' => '시간대',
@@ -1431,11 +1348,6 @@ return [
         'privacy_dormant_notice_days' => '휴면 사전 통지 기간',
         'privacy_dormant_withdraw_enabled' => '휴면 계정 자동 탈퇴',
         'privacy_dormant_withdraw_days' => '휴면 후 탈퇴 기간',
-        'privacy_search_history_enabled' => '최근 검색어 사용',
-        'privacy_search_history_scopes' => '최근 검색어 범위 설정',
-        'privacy_search_history_scope' => '검색 범위',
-        'privacy_search_history_max_count' => '보관 개수',
-        'privacy_search_history_retention_days' => '보관 기한',
         // 본인인증 정책 필드
         'identity_policy_key' => '정책 키',
         'identity_policy_scope' => 'Scope',
@@ -1585,8 +1497,6 @@ return [
         'password_expiry_action' => '비밀번호 만료 시 동작',
         'password_expiry_remind_days' => '변경 연기 기간',
         'password_expiry_batch_size' => '1회 실행당 안내 상한',
-        'password_reset_rate_limit_per_minute' => '비밀번호 찾기·재설정 분당 허용 횟수',
-        'register_rate_limit_per_minute' => '회원가입 분당 허용 횟수',
         'activity_log_retention_days' => '활동 로그 보관 기간',
         'password_expiry_policy' => '비밀번호 만료',
         'current_password' => '현재 비밀번호',
@@ -1597,11 +1507,6 @@ return [
         'allow_internal_outbound_urls' => '내부 네트워크 주소 호출 허용',
         'ip_restriction_enabled' => 'IP 접근 제한 사용',
         'admin_allowed_ips' => '관리자 영역 허용 IP',
-        'csp_mode' => '콘텐츠 보안 정책 모드',
-        'csp_extra_script_hosts' => '추가 스크립트 허용 호스트',
-        'csp_style_mode' => '스타일 정책 모드',
-        'csp_style_level' => '스타일 정책 강도',
-        'csp_extra_style_hosts' => '추가 스타일 허용 호스트',
         'ip_restriction_rules' => '라우트별 접근 규칙',
         'ip_restriction_rule_pattern' => '규칙 URI 패턴',
         'ip_restriction_rule_ips' => '규칙 허용 IP',
@@ -1639,7 +1544,5 @@ return [
         'log_level' => '로그 레벨',
         'log_days' => '로그 보관 일수',
         'public_asset_disk' => '공개 자산 디스크',
-        'public_asset_extensions' => '공개 디스크로 내보낼 확장자',
-        'layout_attachment_extensions' => '레이아웃 첨부 허용 확장자',
     ],
 ];

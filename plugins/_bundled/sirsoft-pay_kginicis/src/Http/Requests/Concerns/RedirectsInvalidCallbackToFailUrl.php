@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Http\Requests\Concerns;
 
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Log;
@@ -38,7 +38,7 @@ trait RedirectsInvalidCallbackToFailUrl
         ]);
 
         $settings = plugin_settings('sirsoft-pay_kginicis');
-        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         throw new HttpResponseException(

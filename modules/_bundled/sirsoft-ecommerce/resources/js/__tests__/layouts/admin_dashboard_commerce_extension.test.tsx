@@ -222,10 +222,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
             const badge = findById(commerceExt as any, id);
             const click = (badge.actions ?? []).find((a: any) => a.type === 'click' && a.handler === 'navigate');
             expect(click, `${id} navigate 액션 누락`).toBeDefined();
-            // 배지는 링크다(#757 WP-L) — 주소는 href 에 있고 navigate 는 path 없이 그 href 로 간다
-            expect(badge.name).toBe('A');
-            expect(click.params?.path).toBeUndefined();
-            const path: string = badge.props.href;
+            const path: string = click.params.path;
             expect(path).toContain('/admin/ecommerce/orders');
             expect(path).toContain(filter);
             // 오늘 날짜 필터(동적 표현식) 포함
@@ -296,9 +293,9 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=no_reviews
     // @effects latest_reviews_card_empty_state_when_no_reviews, pending_inquiries_card_empty_state_when_no_inquiries
-    it('빈 상태 메시지는 받은 뒤 length === 0 일 때만 노출된다(받는 중에는 숨김)', () => {
-        expect(findById(commerceExt as any, 'latest_reviews_empty').if).toBe('{{commerce_recent_reviews !== undefined && ((commerce_recent_reviews?.data ?? []).length === 0)}}');
-        expect(findById(commerceExt as any, 'pending_inquiries_empty').if).toBe('{{commerce_pending_inquiries !== undefined && ((commerce_pending_inquiries?.data?.items ?? []).length === 0)}}');
+    it('빈 상태 메시지는 length === 0 조건으로 노출된다', () => {
+        expect(findById(commerceExt as any, 'latest_reviews_empty').if).toBe('{{(commerce_recent_reviews?.data ?? []).length === 0}}');
+        expect(findById(commerceExt as any, 'pending_inquiries_empty').if).toBe('{{(commerce_pending_inquiries?.data?.items ?? []).length === 0}}');
     });
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_reviews
@@ -318,38 +315,7 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
         const item = findById(commerceExt as any, 'pending_inquiry_item_{{i}}');
         const click = actionsOf(item).find((a: any) => a.type === 'click' && a.handler === 'navigate');
-        // 문의 행은 링크다(#757 WP-L) — 주소는 href, navigate 는 path 없이 그 href 로
-        expect(item.name).toBe('A');
-        expect(item.props.href).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
-        expect(click.params?.path).toBeUndefined();
-    });
-
-    // @scenario module_state=active, board_module_state=inactive, user_role=admin_with_dashboard_permission, data_state=has_inquiries
-    // @effects pending_inquiries_card_hidden_when_board_module_inactive
-    it('게시판 모듈이 꺼지면 미답변 문의를 부르지 않고 카드도 숨긴다 (#822)', () => {
-        // 상품 문의는 게시판 글이다 — 게시판(선택 연동)이 꺼진 사이트에는 갈 화면이 없다.
-        const guard = "_global.activeModules?.includes('sirsoft-board') ?? true";
-        const ds = commerceExt.data_sources.find((d: any) => d.id === 'commerce_pending_inquiries') as any;
-        expect(ds.if).toBe(`{{${guard}}}`);
-
-        const card = findById(commerceExt as any, 'pending_inquiries_card');
-        // 활성 목록이 없는 옛 코어에서는 서버가 내려 준 board_active 로 가른다
-        expect(card.if).toBe(`{{(${guard}) && commerce_pending_inquiries !== undefined && commerce_pending_inquiries?.data?.board_active !== false}}`);
-
-        const visible = (scope: Record<string, unknown>) => {
-            const body = card.if.slice(2, -2);
-            // eslint-disable-next-line no-new-func
-            return new Function('_global', 'commerce_pending_inquiries', `return (${body});`)(
-                scope._global,
-                scope.commerce_pending_inquiries,
-            );
-        };
-        // 받는 중(undefined)에는 그리지 않는다 — 게시판이 꺼진 상점에서 카드가 보였다가 사라졌다(#915)
-        expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: undefined })).toBe(false);
-        expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: { data: { board_active: true } } })).toBe(true);
-        expect(visible({ _global: { activeModules: ['sirsoft-ecommerce'] }, commerce_pending_inquiries: undefined })).toBe(false);
-        expect(visible({ _global: {}, commerce_pending_inquiries: { data: { board_active: true } } })).toBe(true);
-        expect(visible({ _global: {}, commerce_pending_inquiries: { data: { board_active: false } } })).toBe(false);
+        expect(click.params.path).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
     });
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders

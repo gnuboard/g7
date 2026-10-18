@@ -128,7 +128,7 @@ describe('admin_page_list.json', () => {
     // @scenario case=list_abilities
     // @effects admin_page_list_actions_follow_abilities
     it('DataGrid의 selectable 은 수정 권한(can_update)일 때만 켜진다', () => {
-        // 일괄 공개·비공개가 수정 권한이라 그 권한이 없으면 행 선택 자체를 그리지 않는다(7.1.0 abilities 게이트)
+        // 일괄 공개·비공개가 수정 권한이라 그 권한이 없으면 행 선택 자체를 그리지 않는다(7.1.0 abilities 게이트 page-hello #5)
         const grids = findComponentsByName(adminPageList, 'DataGrid');
         expect(grids[0].props.selectable).toBe('{{pages?.data?.abilities?.can_update === true}}');
     });
@@ -168,9 +168,7 @@ describe('admin_page_list.json', () => {
         const createBtn = findById(adminPageList, 'add_page_button');
         expect(createBtn).not.toBeNull();
         const navAction = asArray(createBtn?.actions).find((a: any) => a.handler === 'navigate');
-        // 목적지는 링크 href 한 곳(#757 D12) — path 없는 navigate 는 클릭한 링크의 href 로 간다
-        expect(createBtn.name).toBe('A');
-        expect(navAction.params.path ?? createBtn.props.href).toBe('/admin/pages/create');
+        expect(navAction.params.path).toBe('/admin/pages/create');
     });
 
     // @scenario case=list_data_grid
@@ -415,11 +413,11 @@ describe('admin_page_list.json', () => {
         expect(inputChange?.params?.target).not.toBe('global');
     });
 
-    // ─── C2·C5: 시맨틱 클래스 정리 ───
+    // ─── C1·C2·C5: 시맨틱 클래스 정리 ───
 
     // @scenario case=list_styles
     // @effects admin_page_list_buttons_use_semantic_classes
-    it('검색바 안 필드 셀렉트는 pill(select-composite), 툴바 발행/정렬/개수는 테두리(border+bg-white) — 이커머스 목록 관행', () => {
+    it('[C1] 검색바 안 필드 셀렉트는 pill(select-composite), 툴바 발행/정렬/개수는 테두리(border+bg-white) — 이커머스 목록 관행', () => {
         // 관행(이커머스 shipping_policy/order/product 목록): 검색바 내부 필드 셀렉트 = pill,
         // 목록 툴바의 필터/정렬/개수 셀렉트 = 테두리(bg-white border). 위치에 따라 외형이 다름.
         const searchField = findById(adminPageList, 'search_field_select');
@@ -929,22 +927,20 @@ describe('admin_page_form.json', () => {
 
     // @scenario case=form_styles
     // @effects admin_page_form_error_box_and_action_buttons_use_semantic_classes
-    it('[M1-a] 검증에러 제목 클래스가 공백으로 분리됨 (font-medium + page-tone-danger, 병합 클래스 금지)', () => {
+    it('[M1-a] 검증에러 제목 클래스가 공백으로 분리됨 (font-medium + text-danger-soft, 병합 클래스 금지)', () => {
         // 회귀 배경: "font-mediumtext-danger-soft" 처럼 공백 없이 붙으면 두 클래스 모두 무효
         // → 빌드 CSS 에 해당 클래스 부재 → 빨간색/굵기 미적용.
-        // 위험 글자색은 이 확장 CSS 의 page-tone-danger(라이트·다크 짝, 관리자 템플릿 text-danger-soft 와 같은 색)다(#757).
         const errorBox = findById(adminPageForm, 'error_message_box');
         expect(errorBox).not.toBeNull();
         const boxStr = JSON.stringify(errorBox);
         // 병합된 무효 클래스가 없어야 함
         expect(boxStr).not.toContain('font-mediumtext-danger-soft');
-        expect(boxStr).not.toContain('font-mediumpage-tone-danger');
         // 제목 H3 은 두 클래스를 공백으로 분리해서 보유
         const heading = findComponentsByName(errorBox, 'H3')[0];
         expect(heading).toBeDefined();
         const cls = heading.props.className ?? '';
         expect(cls).toContain('font-medium');
-        expect(cls).toContain('page-tone-danger');
+        expect(cls).toContain('text-danger-soft');
     });
 
     // @scenario case=form_styles
@@ -992,8 +988,7 @@ describe('admin_page_form.json', () => {
         expect(action.handler).toBe('navigate');
         expect(action.handler).not.toBe('navigateBack');
         // route.id 분기로 수정=상세 / 등록=목록
-        expect(cancelBtn.name).toBe('A');
-        const path = action.params?.path ?? cancelBtn.props.href ?? '';
+        const path = action.params?.path ?? '';
         expect(path).toContain('/admin/pages');
         expect(path).toContain('route');
     });
@@ -1075,10 +1070,8 @@ describe('admin_page_detail.json', () => {
         const editBtn = findById(adminPageDetail, 'header_edit_button');
         expect(editBtn).not.toBeNull();
         const navAction = asArray(editBtn?.actions).find((a: any) => a.handler === 'navigate');
-        expect(editBtn.name).toBe('A');
-        const dest = navAction.params.path ?? editBtn.props.href;
-        expect(dest).toContain('/admin/pages/');
-        expect(dest).toContain('/edit');
+        expect(navAction.params.path).toContain('/admin/pages/');
+        expect(navAction.params.path).toContain('/edit');
     });
 
     // @scenario case=detail_actions
@@ -1087,8 +1080,7 @@ describe('admin_page_detail.json', () => {
         const backBtn = findById(adminPageDetail, 'header_back_button');
         expect(backBtn).not.toBeNull();
         const navAction = asArray(backBtn?.actions).find((a: any) => a.handler === 'navigate');
-        expect(backBtn.name).toBe('A');
-        expect(navAction.params.path ?? backBtn.props.href).toBe('/admin/pages');
+        expect(navAction.params.path).toBe('/admin/pages');
     });
 
     // @scenario case=detail_actions
@@ -1257,8 +1249,7 @@ describe('admin_page_detail.json', () => {
         // 회귀 배경: "hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50" 는
         // 다크모드에서 hover 가 아닌 기본 상태에 bg-gray-800 을 상시 적용 → admin-card 배경과 중복.
         const attachmentsSection = findById(adminPageDetail, 'attachments_section');
-        // 첨부 카드는 7.1.1 부터 키보드로 누르는 Button 이다 — 이름과 무관하게 hover 배경 카드를 모은다
-        const cards = [...findComponentsByName(attachmentsSection, 'Div'), ...findComponentsByName(attachmentsSection, 'Button')].filter(
+        const cards = findComponentsByName(attachmentsSection, 'Div').filter(
             (n: any) => typeof n.props?.className === 'string' && n.props.className.includes('hover:bg-gray-50'),
         );
         expect(cards.length).toBeGreaterThan(0);

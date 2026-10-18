@@ -13,11 +13,10 @@ use App\Services\PluginService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
- * 확장 설치 창 동반 설치 항목별 권한 검증 (7.1.0 abilities 게이트 점검).
+ * 확장 설치 창 동반 설치 항목별 권한 검증 (R2).
  *
  * 설치 창은 본 확장의 install 권한으로 열리지만, 함께 고른 의존 확장은 설치·활성화까지,
  * 번들 언어팩은 설치·자동 활성화까지 수행된다. 대상 종류의 권한이 없으면 그 항목은
@@ -25,21 +24,8 @@ use Tests\TestCase;
  */
 class CascadeInstallPermissionTest extends TestCase
 {
-    use FakesGithubReleases;
     use MockeryPHPUnitIntegration;
     use RefreshDatabase;
-
-    /**
-     * 설치·업데이트 확인 경로의 GitHub 실제 접속을 막습니다(테스트마다 최대 10초 대기 방지).
-     *
-     * @return void 반환값 없음
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->fakeGithubReleases();
-    }
 
     /**
      * 테스트 종료 시 Mockery 를 정리합니다.
@@ -110,7 +96,7 @@ class CascadeInstallPermissionTest extends TestCase
     private function mockPluginInfo(bool $isInstalled): void
     {
         $pluginService = Mockery::mock(PluginService::class)->makePartial();
-        $pluginService->shouldReceive('getPluginManifestInfo')
+        $pluginService->shouldReceive('getPluginInfo')
             ->with('dep-plugin')
             ->andReturn([
                 'is_installed' => $isInstalled,

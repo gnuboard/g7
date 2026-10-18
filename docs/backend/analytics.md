@@ -23,7 +23,7 @@
 | 경로 | 언제 | 왜 필요한가 |
 | --- | --- | --- |
 | 브라우저 비콘 | 화면을 열거나 이동할 때 | G7 은 SPA 라 서버 로그로는 페이지뷰가 방문당 1건으로만 찍힌다 |
-| 서버 폴백 | SPA 셸 요청을 받을 때 | 자바스크립트가 막힌 환경의 방문자가 통계에서 통째로 사라지지 않게 한다 |
+| 서버 폴백 | SPA 셸 요청, 개발자 화면(`routes/custom.php` 의 `custom.screen` 묶음, 7.2.0+) 요청을 받을 때 | 자바스크립트가 막힌 환경의 방문자가 통계에서 통째로 사라지지 않게 한다. 비콘이 없는 개발자 화면은 이 경로로만 집계된다([개발자 화면 가이드](../custom-development.md)) |
 | 내부 검색 훅 | 사이트 검색 응답 직전 | 검색 결과 건수는 서버만 아는 값이라 비콘으로 남길 수 없다 |
 
 서버 폴백과 첫 비콘이 같은 페이지를 알리면 **같은 행을 채웁니다**. 두 경로가 각자
@@ -439,3 +439,4 @@ SEO 캐시 통계(`seo_cache_stats`)도 봇 요청을 세지만 목적이 다릅
 - 확장 기여 지점: [../extension/analytics-extension-points.md](../extension/analytics-extension-points.md)
 - 브라우저 트래커: [../frontend/analytics-tracker.md](../frontend/analytics-tracker.md)
 - 데이터베이스 규칙: [../database-guide.md](../database-guide.md)
+- 개발자 화면의 방문 집계(서버 폴백·봇 기록): [../custom-development.md](../custom-development.md)

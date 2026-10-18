@@ -3,24 +3,7 @@
     "title": "一緒に使うと連携する拡張機能",
     "hint": "以下の拡張機能がインストールされていると、機能が相互に連携します。なくてもこの拡張機能はそのまま動作します。",
     "not_installed": "未インストール",
-    "inactive": "無効",
-    "required_version": "要求 {{version}}",
-    "installed_version": "インストール済み {{version}}",
-    "version_mismatch": "バージョン不足",
-    "active": "使用中",
-    "install_title": "一緒に使うと連携する拡張機能(任意)",
-    "install_hint": "チェックした拡張機能をこの拡張機能より先にインストール・有効化します。チェックを外してもこの拡張機能はそのままインストールされます。",
-    "cannot_select": "ここではインストールできません",
-    "requires_label": "同時にインストール:",
-    "requires_hint": "— この連携に必要なため先にインストールします",
-    "requires_hint_unselected": "— この連携をチェックすると一緒にインストールされます",
-    "requires_no_permission": "必要な拡張をインストールする権限がありません",
-    "integrated_by_label": "連携中の拡張機能",
-    "deactivate_notice_title": "連携中の拡張機能の確認",
-    "deactivate_notice_body": "{{name}}を無効にすると、以下の拡張機能でこの拡張機能を使っていたメニュー・画面が消えます。以下の拡張機能は引き続き動作します。",
-    "deactivate_confirm": "無効化",
-    "uninstall_notice": "以下の拡張機能がこの拡張機能と連携しています — 削除するとこの拡張機能を使っていたメニュー・画面が消えます。",
-    "notice_toast": "一緒に使うと連携する拡張機能のお知らせ: {{items}}"
+    "inactive": "無効"
   },
   "sidebar": {
     "no_accessible_menus": "アクセス可能なメニューがありません",
@@ -112,8 +95,7 @@
     },
     "refreshed": "ダッシュボードが更新されました。",
     "extension_status": {
-      "more": "もっと見る",
-      "more_count": "他 {{count}} 件"
+      "more": "もっと見る"
     },
     "module_status": {
       "title": "モジュール状態",
@@ -415,8 +397,7 @@
         "profile_memo": "プロフィール/メモ",
         "activity_info": "アクティビティ情報",
         "consent_info": "同意履歴",
-        "notifications_info": "通知ボックス",
-        "search_history_info": "最近の検索語"
+        "notifications_info": "通知ボックス"
       },
       "unlock": "ロック解除",
       "unlock_success": "アカウントのロックを解除しました。",
@@ -442,15 +423,6 @@
         "no": "いいえ",
         "postponed_until": "延期終了",
         "policy": "有効期限の個別設定"
-      },
-      "search_history": {
-        "auto_save": "検索語の自動保存",
-        "auto_save_on": "オン",
-        "auto_save_off": "オフ — 新しい検索語は記録しません",
-        "feature_off": "サイトで最近の検索語機能がオフになっています。保存済みの検索語のみ表示します。",
-        "keywords": "検索語",
-        "count": "{{count}}件",
-        "empty": "保存された検索語はありません。"
       }
     },
     "bulk_status_change": "ステータス変更",
@@ -772,19 +744,14 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
-      "stuck_update": "更新停止",
-      "active_label": "有効化",
-      "version_mismatch": "バージョン不足"
+      "active_label": "有効化"
     },
-    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
-    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したモジュールは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
-      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "refresh_layouts": "レイアウト更新",
@@ -824,7 +791,7 @@
       "dependency_installed_version": "インストール: {{version}}",
       "dependency_not_installed": "未インストール",
       "dependency_met": "満たされています",
-      "dependency_unmet_version": "バージョン不足",
+      "dependency_unmet_version": "バージョン不一致",
       "dependency_inactive": "無効化",
       "permissions": "権限",
       "permissions_count": "{{count}}個の権限が登録されます。",
@@ -965,11 +932,6 @@
     "dependencies": "依存関係: {{deps}}",
     "dependencies_label": "依存関係:",
     "no_dependencies": "依存関係: なし",
-    "dependency_unmet": {
-      "not_installed": "未インストール",
-      "inactive": "無効",
-      "version_mismatch": "バージョン不足 {{installed}} → {{required}}"
-    },
     "no_plugins": "インストール済みプラグインがありません。",
     "pagination_info": "全 {{total}} 件中 {{from}}-{{to}} 件表示",
     "update_available": "アップデート必要",
@@ -995,19 +957,14 @@
       "not_installed": "未インストール",
       "installing": "インストール中",
       "uninstalling": "削除中",
-      "updating": "アップデート中",
-      "stuck_update": "更新停止",
-      "version_mismatch": "バージョン不足"
+      "updating": "アップデート中"
     },
-    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
-    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したプラグインは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
-      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "settings": "設定",
@@ -1053,7 +1010,7 @@
       "dependency_installed_version": "インストール：{{version}}",
       "dependency_not_installed": "未インストール",
       "dependency_met": "満たしている",
-      "dependency_unmet_version": "バージョン不足",
+      "dependency_unmet_version": "バージョン不一致",
       "dependency_inactive": "無効化",
       "permissions": "権限",
       "permissions_description": "このプラグインで登録される権限の一覧です。",
@@ -1255,12 +1212,7 @@
       "delete_title": "メニュー削除",
       "delete_confirm": "このメニューを削除しますか?",
       "delete_core_warning": "コアメニューは削除できません。",
-      "module_menu_notice": "モジュールのデフォルトメニューのモジュールは変更できません。",
-      "editing_title": "編集中の内容があります",
-      "editing_message": "保存していない変更があります。",
-      "editing_confirm_message": "変更を保存せずに別のメニューへ移動しますか？",
-      "editing_discard": "変更を破棄",
-      "editing_continue": "編集を続ける"
+      "module_menu_notice": "モジュールのデフォルトメニューのモジュールは変更できません。"
     },
     "messages": {
       "order_updated": "メニューの順序が変更されました。",
@@ -1579,7 +1531,6 @@
       "general": "一般",
       "mail": "メール",
       "upload": "アップロード",
-      "content": "本文コンテンツ",
       "seo": "SEO",
       "security": "セキュリティ",
       "drivers": "ドライバー",
@@ -1643,7 +1594,9 @@
       "static_cache_republish_confirm_warning": "完了まで少しお時間がかかる場合があります。その間、サイトは正常に動作します。",
       "static_cache_republished": "初期画面静的ファイルを再作成しました。",
       "static_cache_republish_not_publishable": "現在の環境では静的ファイルを作成しません(運用モードではないか、オフになっています)。",
-      "static_cache_republish_failed": "初期画面静的ファイルを再作成できませんでした。下記の失敗理由を確認してください。サイトは正常に動作しています。"
+      "static_cache_republish_failed": "初期画面静的ファイルを再作成できませんでした。下記の失敗理由を確認してください。サイトは正常に動作しています。",
+      "user_screen_url": "ユーザー画面 URL",
+      "user_screen_url_help": "空欄の場合はサイト URL と同じです。別のアドレスで運用する外部画面(例: Next.js)を使う場合のみ入力してください。パスワード再設定・通知メールのリンクと決済後に戻るアドレスに使われ、管理者画面のアドレスは変わりません。"
     },
     "mail": {
       "smtp_settings": "SMTP設定",
@@ -1686,8 +1639,6 @@
       "max_file_size": "最大ファイルサイズ",
       "allowed_extensions": "許可する拡張子",
       "allowed_extensions_hint": "許可するファイル拡張子をカンマで区切って入力してください。",
-      "layout_attachment_extensions": "レイアウト添付の許可拡張子",
-      "layout_attachment_extensions_hint": "レイアウトエディターでアップロードできる形式です。カンマで区切って入力してください。画像以外の形式は、公開ディスクに書き出さない場合はダウンロードとして提供されます。",
       "image_settings": "画像設定",
       "image_settings_desc": "アップロードされた画像の自動リサイズおよび品質設定です。",
       "image_max_width": "最大幅",
@@ -1705,7 +1656,7 @@
       "meta_settings": "メタタグ設定",
       "meta_settings_desc": "検索エンジン最適化のためのメタタグを設定します。",
       "meta_title_suffix": "タイトルサフィックス",
-      "meta_title_suffix_hint": "すべてのページのタイトル(検索エンジンのタイトルと訪問者のブラウザタブのタイトル)の後に追加される文言です。{site_name} はサイト名に置き換えられ、空の場合は ' - サイト名' を追加します。タイトルが既にサイト名で終わる場合は再度追加しません。 (例: ' | {site_name}')",
+      "meta_title_suffix_hint": "すべてのページのタイトルの後に追加される文言です。 (例: ' | Gnuboard7')",
       "meta_description": "デフォルトメタ説明",
       "meta_description_placeholder": "サイトのデフォルトメタ説明を入力してください。",
       "meta_description_hint": "検索結果に表示される説明です。最大160文字を推奨します。",
@@ -1788,9 +1739,7 @@
       "sitemap_progress_phase": "現在処理中: {{phase}}",
       "sitemap_progress_urls": "累積URL: {{count}}個",
       "sitemap_realtime_connected": "リアルタイムで接続されています。",
-      "sitemap_polling": "進行状況を定期的に確認しています。",
-      "meta_title_suffix_placeholder": " | グヌボード7",
-      "meta_keywords_placeholder": "CMS, グヌボード7, オープンソース"
+      "sitemap_polling": "進行状況を定期的に確認しています。"
     },
     "security": {
       "title": "セキュリティ 設定",
@@ -1802,9 +1751,6 @@
       "auth_token_lifetime": "認証トークン 保持時間 (分)",
       "max_login_attempts": "最大ログイン試行 回数",
       "login_lockout_time_full": "ログイン試行回数超過時 ブロック時間 (分)",
-      "password_reset_rate_limit_per_minute": "パスワード検索・再設定の1分あたりの許可回数",
-      "register_rate_limit_per_minute": "会員登録の1分あたりの許可回数",
-      "rate_limit_per_minute_hint": "同じIPから1分間に受け付けるリクエスト数です(1〜1000)。社内ネットワークのように複数の人が1つのIPを使う場合は値を上げてください。",
       "zero_means_unlimited": "0 を入力すると無制限に設定されます。",
       "app_key": "アプリケーション キー 管理",
       "app_key_desc": "暗号化に使用されるアプリケーションキーを管理します。",
@@ -1954,44 +1900,6 @@
         "days_suffix": "日",
         "days_hint": "{{min}}〜{{max}}日。法定の最低期間より短くはできません。",
         "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。"
-      },
-      "csp": {
-        "title": "コンテンツセキュリティポリシー (CSP)",
-        "desc": "サイト画面の応答にスクリプト出所ポリシーヘッダーを付け、許可していない場所のスクリプトやインラインスクリプトが実行されないようにします。Web サーバーで直接ヘッダーを設定している場合はオフのままにしてください。",
-        "mode": "適用モード",
-        "mode_off": "オフ",
-        "mode_report_only": "検査のみ (違反を記録)",
-        "mode_enforce": "強制 (違反をブロック)",
-        "mode_desc": "検査のみはブロックせず、違反をサーバーログ (storage/logs/csp-*.log) に記録します。強制は違反するスクリプトを実行しません。",
-        "enforce_warning": "まず「検査のみ」で storage/logs/csp-*.log に違反がないことを確認してから強制に切り替えてください。違反が残ったまま強制すると、その機能は動作しません。",
-        "override_notice": ".env の G7_CSP_MODE={{mode}} がこの設定より優先されます。変更するには .env を修正してから php artisan config:clear を実行してください。",
-        "extra_hosts": "追加スクリプト許可ホスト (入力後 Enter)",
-        "extra_hosts_placeholder": "cdn.example.com",
-        "extra_hosts_hint": "下の自動で含まれるホスト以外からスクリプトを読み込む場合にのみ追加してください。ホストのみ入力します (例: cdn.example.com, *.example.com, https://cdn.example.com)。",
-        "auto_hosts": "自動で含まれるホスト (有効な拡張機能の宣言)",
-        "auto_hosts_empty": "有効な拡張機能が宣言した外部スクリプトホストはありません。",
-        "preview": "適用されるポリシーのプレビュー",
-        "preview_hint": "保存済みの値に基づきます。モードやホストを変更した場合は保存してから確認してください。",
-        "style": {
-          "title": "スタイルポリシー",
-          "desc": "サイト画面の応答にスタイル出所ポリシーを加え、許可していない場所の CSS やインラインスタイルが適用されないようにします。スクリプトポリシーとは別にオン・オフします。",
-          "mode": "スタイル適用モード",
-          "mode_desc": "検査のみはブロックせず、違反をサーバーログ (storage/logs/csp-*.log) に記録します。強制は違反するスタイルを適用しません。",
-          "level": "ブロックの強度",
-          "level_basic": "基本 — <style> ブロックと許可していない外部 CSS ファイルをブロック",
-          "level_strict": "厳格 — 基本 + タグの style 属性もブロック",
-          "level_desc": "基本ではほとんどの画面がそのまま動作します。厳格では外部ライブラリが直接付ける style 属性までブロックするため、崩れる画面が増えます。",
-          "enforce_warning": "まず「検査のみ」で storage/logs/csp-*.log に違反がないことを確認してから強制に切り替えてください。",
-          "known_issues_basic": "強制すると次の画面が崩れます: タグ入力・複数選択欄 (このカードの許可ホスト入力を含む) — 欄内の配置が乱れ、スクリーンリーダー用の案内文がそのまま表示される; レイアウトコードエディター — 構文の色と背景テーマが失われる; 投稿エディター (CKEditor) のカラーピッカー — 任意の色をドラッグして選ぶパネルが折りたたまれる (色見本と16進数の入力では選べる)。これらの画面を使うサイトは「検査のみ」のままにしてください。",
-          "known_issues_strict": "強制すると次の画面が崩れます: タグ入力・複数選択欄 (このカードの許可ホスト入力を含む) — 欄内の配置が乱れ、スクリーンリーダー用の案内文がそのまま表示される; レイアウトコードエディター — 構文の色・背景テーマ・行の強調表示が失われる; 投稿エディター (CKEditor) のカラーピッカー — 任意の色をドラッグして選ぶパネルが折りたたまれる (色見本と16進数の入力では選べる)。これらの画面を使うサイトは「検査のみ」のままにしてください。",
-          "override_notice": ".env の G7_CSP_STYLE_MODE={{mode}} がこの設定より優先されます。変更するには .env を修正してから php artisan config:clear を実行してください。",
-          "extra_hosts": "追加スタイル許可ホスト (入力後 Enter)",
-          "extra_hosts_placeholder": "fonts.example.com",
-          "extra_hosts_hint": "下の自動で含まれるホスト以外から CSS ファイルを読み込む場合にのみ追加してください。ホストのみ入力します (例: fonts.example.com, *.example.com, https://fonts.example.com)。",
-          "auto_hosts": "自動で含まれるスタイルホスト (有効なテンプレート・拡張機能の宣言)",
-          "auto_hosts_empty": "有効なテンプレート・拡張機能が宣言した外部スタイルシートホストはありません。",
-          "preview": "適用されるスタイルポリシーのプレビュー"
-        }
       }
     },
     "identity": {
@@ -2072,11 +1980,7 @@
         "title": "公開アセットストレージ",
         "desc": "完全公開アセット（商品・カテゴリ・レビュー・エディタ画像、レイアウト背景画像など）を直接URLで配信するディスクを設定します。使用しない場合は既存のストリーミング方式で動作します。有効化後にアップロードしたファイルのみ直接URLが発行され、そのアドレスは保存されたレイアウトにそのまま残ります。",
         "disk": "ディスク",
-        "s3_help": "S3を選択する場合は、上のファイルストレージカードのS3 URL（CDNドメイン）設定が必要です。未設定の場合はストリーミングで動作します。",
-        "extensions": "公開ディスクに書き出す拡張子",
-        "extensions_hint": "この一覧の形式のみ公開ディスクに保存され、直接URLで提供されます。それ以外の形式は既存のディスクに保存され、サーバーを経由して提供されます。画像以外の形式を入れると、直接URLでもダウンロードとしてのみ提供されます。",
-        "hardening_warning": "Webサーバーの保護ルールが適用されていません。/storage の直接URLの応答に保護ヘッダーがありません — インストールガイドのnginx/Apache設定を確認してください。",
-        "hardening_rules_write_failed": "Webサーバーの保護ルールファイルを現在の設定に更新できませんでした。公開ディスクのフォルダー(storage/app/public)とその中の.htaccessファイルにWebサーバーのアカウントが書き込めるか確認してから、もう一度保存してください。"
+        "s3_help": "S3を選択する場合は、上のファイルストレージカードのS3 URL（CDNドメイン）設定が必要です。未設定の場合はストリーミングで動作します。"
       },
       "cache": {
         "title": "キャッシュ",
@@ -2503,10 +2407,6 @@
       "php_extensions_desc": "インストールされたPHP拡張モジュールの状態です。",
       "required_modules": "必須モジュール",
       "optional_modules": "選択モジュール",
-      "requested_modules": "拡張(モジュール・プラグイン)が要求するモジュール",
-      "requested_by_line": "要求: {{names}}",
-      "level_require": "必須",
-      "level_suggest": "推奨",
       "check_update": "アップデート確認",
       "update_check_failed": "アップデート確認に失敗しました。",
       "update_result_title": "アップデート確認結果",
@@ -2523,8 +2423,8 @@
       "update_guide_warning": "コアアップデートはターミナルからのみ実行できます。アップデート前に必ずデータベースをバックアップしてください。",
       "update_guide_desc": "サーバーターミナルに接続して、グヌボード7インストールディレクトリで以下のコマンドを実行してください。",
       "update_guide_note": "アップデート中は自動的にメンテナンスモードが有効化されます。アップデート完了後は自動的に解除されます。",
-      "manual_update_title": "手動アップデート (GitHub から取得できない環境)",
-      "manual_update_desc": "GitHub に接続できない場合や特定のバージョンに上げる場合、リリース ZIP を直接ダウンロードし、解凍したフォルダからアップデートできます。この方法でも PHP zip 拡張などの必須拡張がサーバーに必要です。",
+      "manual_update_title": "手動アップデート (ZIP拡張未インストール環境)",
+      "manual_update_desc": "サーバーにPHP zip拡張やunzipコマンドがない場合、GitHubからリリースZIPを直接ダウンロードしてアップデートできます。",
       "manual_update_step1": "# 1. GitHubリリースページからZIPをダウンロードし、サーバーで解凍",
       "manual_update_step2": "# 2. 解凍されたパスを指定してアップデートを実行",
       "update_guide_cmd_comment": "# 管理者権限での実行を推奨 (Linux/macOS)",
@@ -2536,7 +2436,20 @@
       "opcache_enabled": "有効化",
       "opcache_unknown": "確認不可",
       "opcache_disabled": "無効化 — ページが数倍遅くなります",
-      "opcache_disabled_warning": "OPcacheが無効化されています。この状態では、訪問者がページを開くたびに、サイトのすべてのPHPコードを最初から再度解釈します。同じサーバー、同じ仕様でも応答速度が数倍遅くなり、訪問者が多いほどその差は大きくなります。php.iniでopcache.enable=1を有効にした後、ウェブサーバーを再起動することを強くお勧めします。設定を変更した後でもこの画面に反映されるまで最大1時間かかる場合があります。キャッシュをクリアするを実行すると、即座に反映されます。"
+      "opcache_disabled_warning": "OPcacheが無効化されています。この状態では、訪問者がページを開くたびに、サイトのすべてのPHPコードを最初から再度解釈します。同じサーバー、同じ仕様でも応答速度が数倍遅くなり、訪問者が多いほどその差は大きくなります。php.iniでopcache.enable=1を有効にした後、ウェブサーバーを再起動することを強くお勧めします。設定を変更した後でもこの画面に反映されるまで最大1時間かかる場合があります。キャッシュをクリアするを実行すると、即座に反映されます。",
+      "custom_preflight_title": "アップデートを開始しませんでした",
+      "custom_preflight_desc": "開発者がインストールしたパッケージ(custom/composer.json) {count}件が新しいコア {version} と合いません。ファイルは何も変更されておらず、サイトはそのまま動作します。",
+      "custom_conflict_package": "開発者パッケージ",
+      "custom_conflict_reason": "合わない内容",
+      "custom_conflict_core": "新しいコア",
+      "custom_conflict_installed": "インストール済み {version}",
+      "custom_conflict_constraint": "このパッケージが要求する {requires} のバージョン条件({constraint})を新しいコアが満たしていません",
+      "custom_conflict_duplicate": "コアも同じパッケージを別のバージョンで持っています — 実行時にはコアのバージョンが使われます",
+      "custom_reserved_files": "配布物が開発者専用の custom の場所にファイルを含んでいます:",
+      "custom_fix_title": "解決方法",
+      "custom_fix_step1": "開発者パッケージを新しいコアに合うバージョンに上げます: composer update [パッケージ] -d custom",
+      "custom_fix_step2": "php artisan custom:check で競合がないことを確認してから、再度アップデートします。",
+      "custom_fix_step3": "composer を使えないサーバーの場合は、別の PC で修正してから php artisan custom:vendor-bundle でバンドルを作り直してアップロードします。"
     },
     "modals": {
       "password_confirm_title": "パスワード確認",
@@ -2603,32 +2516,13 @@
         "withdraw_warning": "退会処理されたアカウントは取り戻せません。管理者アカウントは自動退会対象から除外されます。",
         "restore_hint": "休眠会員がログインすると自動的に解除され、別途の申請手続きはありません。"
       },
-      "search_history": {
-        "title": "最近の検索語",
-        "desc": "検索ボックスに入力して送信した検索語を検索範囲ごとに保管します。会員はサーバーに、非会員は訪問者のブラウザに保存され、ログインするとブラウザの一覧が会員の一覧に統合されます。退会すると、その会員の検索語を削除します。",
-        "enabled": "最近の検索語を使用",
-        "enabled_desc": "既定はオン。オフにすると検索ボックスは検索語を記録せず、最近の検索語の一覧も表示されません。保存済みの検索語は下の保管期限に従って削除されます。",
-        "auto_save_notice": "会員と訪問者は検索ボックスの「自動保存をオフ」で自分の記録を止められます。オフにすると記録が止まり一覧が非表示になりますが、保存済みの検索語は削除しません。",
-        "scopes_title": "検索範囲ごとの保管",
-        "scopes_desc": "コアの統合検索と有効な拡張が宣言した検索範囲です。同じ範囲を使う検索ボックス同士で一覧を共有します。拡張を無効にするとその範囲は一覧から外れ、設定値は残ります。",
-        "scope_meta": "{{owner}} · {{scope}}",
-        "max_count": "保管件数",
-        "max_count_aria": "{{scope}} の保管件数",
-        "retention_days": "保管期限 (日)",
-        "retention_days_aria": "{{scope}} の保管期限 (日)",
-        "retention_days_hint": "0 = 期限なし",
-        "retention_desc": "保管期限を1日以上にした範囲は、毎日早朝の個人情報保有期間処理が期限切れの検索語を削除します。対象一覧には検索語の代わりに会員・範囲・件数だけが表示されます。",
-        "target_count": "検索語 {{count}}件",
-        "empty": "宣言された検索範囲がありません。"
-      },
       "targets": {
         "title": {
           "withdrawn": "退会会員残存情報破棄対象",
           "pre_notice": "休眠事前案内対象",
           "convert": "休眠転換対象",
           "withdraw_notice": "休眠退会予告対象",
-          "withdraw": "休眠自動退会対象",
-          "search_history": "保管期限が過ぎた最近の検索語"
+          "withdraw": "休眠自動退会対象"
         },
         "hint": "件数と名簿は保存された設定基準です。機能がオフでも、オンにすれば処理される対象を事前に表示します。",
         "total": "合計 {{count}}件",
@@ -2641,8 +2535,7 @@
           "pre_notice": "休眠転換事前通知",
           "convert": "休眠転換",
           "withdraw_notice": "休眠アカウント退会予定通知",
-          "withdraw": "休眠アカウント退会処理",
-          "search_history": "最近の検索語の保管期限経過"
+          "withdraw": "休眠アカウント退会処理"
         },
         "editor_label": "個人情報措置の対象リスト"
       },
@@ -2678,75 +2571,6 @@
         "preview_failed": "対象件数を読み込むことができませんでした。",
         "editor_label": "個人情報措置の職権実行"
       }
-    },
-    "content": {
-      "candidates": {
-        "title": "許可する機能",
-        "description": "投稿・ページ・商品説明の本文で使える機能をオン・オフします。動画・音声はオンにするとエディタでファイルをアップロードできます。オフの機能の要素は表示時と保存時に削除されます。",
-        "figure_caption": "画像キャプション",
-        "figure_caption_hint": "画像の下の説明(figure・figcaption)を残します。",
-        "uploaded_video": "動画アップロードの許可",
-        "uploaded_video_hint": "エディタで動画ファイル(mp4 など)を本文にアップロードして再生できるようにします。掲示板・ショップで本文メディアルールを個別に設定している場合は、そのルールでも動画をオンにする必要があります。このサイトにアップロードしたファイルのみ再生されます。",
-        "uploaded_audio": "音声アップロードの許可",
-        "uploaded_audio_hint": "エディタで音声ファイル(mp3 など)を本文にアップロードして再生できるようにします。掲示板・ショップで本文メディアルールを個別に設定している場合は、そのルールでも音声をオンにする必要があります。このサイトにアップロードしたファイルのみ再生されます。",
-        "external_embed": "外部動画の埋め込み",
-        "external_embed_hint": "エディタの「メディア挿入」で入れた外部動画を、下で有効にしたサービスのプレーヤーで表示します。オフにするとリンクで表示されます。"
-      },
-      "custom_tags": {
-        "title": "運営者追加タグ",
-        "description": "上の候補にないタグを追加します(例: details、summary、svg)。",
-        "warning": "セキュリティ上の注意: 追加したタグはそのまま本文に残ります。スクリプト・外部文書・入力フォームのタグは追加できませんが、svg・math なども悪用される恐れがあるため、本当に必要なものだけ追加してください。イベント属性(on…)と javascript: アドレスは常に削除されます。",
-        "placeholder": "タグ名を入力して Enter"
-      },
-      "embed": {
-        "title": "外部動画サービス",
-        "description": "「メディア挿入」で入れられるサービスです。アドレスから取り出した動画 id で決まったプレーヤー URL だけを作り、他の HTML や任意の iframe は入れません。",
-        "presets": "既定のサービス",
-        "extension": "拡張機能が提供するサービス",
-        "extension_hint": "インストールした拡張機能が追加した外部動画サービスです。最初はオフで、オンにしたサービスだけが本文でプレーヤーとして表示されます。",
-        "custom": "追加したサービス",
-        "custom_empty": "追加したサービスはありません。",
-        "add": "サービスを追加",
-        "enabled": "使用",
-        "preset_names": {
-          "youtube": "YouTube",
-          "vimeo": "Vimeo",
-          "tiktok": "TikTok"
-        },
-        "modal": {
-          "create_title": "外部動画サービスを追加",
-          "edit_title": "外部動画サービスを編集",
-          "trust_notice": "信頼できるサービスのみ追加してください。プレーヤー URL のサイトが本文内(隔離された領域)に表示されます。",
-          "required": "名前・識別子・URL 形式・プレーヤー URL をすべて入力してください。",
-          "name": "名前",
-          "name_placeholder": "例: チジジク クリップ",
-          "id": "識別子",
-          "id_hint": "英小文字で始まる2〜32文字(英小文字・数字・アンダースコア)。既定のサービスと重複できません。",
-          "url_patterns": "URL 形式",
-          "url_patterns_hint": "1行に1つ(最大5つ)。* は / 以外の任意の文字、{id} は動画 id の位置です。ホストの * は先頭のサブドメイン位置(*.example.com)にのみ使えます。",
-          "player_url": "プレーヤー URL",
-          "player_url_hint": "https:// で始め、{id} を1回入れます。固定のクエリは付けられます。",
-          "id_rule": "id の文字規則",
-          "id_rules": {
-            "alnum_dash": "英字・数字・-・_",
-            "alnum": "英字・数字",
-            "digits": "数字のみ"
-          },
-          "aspect": "画面比率",
-          "allow": "許可する権限",
-          "sample": "例のアドレスを確認",
-          "sample_check": "確認",
-          "preview_id": "取り出した id: {{id}}",
-          "preview_player": "作られるプレーヤー URL: {{url}}",
-          "preview_no_match": "URL 形式と一致しません。",
-          "apply": "適用"
-        }
-      },
-      "ttl": {
-        "title": "メディア URL の有効時間",
-        "description": "秘密投稿・公開前のページなど閲覧できる人が限られる本文メディアは、短時間だけ有効な URL で配信します。画面を長く開いたままにすると、この時間を過ぎた後は再読み込みが必要です。",
-        "unit": "分 (5〜1440)"
-      }
     }
   },
   "templates": {
@@ -2763,10 +2587,6 @@
     "dependencies": "依存関係: {{deps}}",
     "dependencies_label": "依存関係:",
     "no_dependencies": "依存関係: なし",
-    "force_activate": {
-      "warning_user_503": "強制的に有効にすると、条件を満たすまでユーザー画面が「サービス一時停止(503)」の案内に切り替わります。",
-      "warning_admin_503": "強制的に有効にすると管理画面が503の案内に切り替わり、この画面から元に戻せません。復旧: php artisan template:activate {{identifier}}"
-    },
     "available": "利用可能",
     "no_templates": "インストールされたテンプレートはありません。",
     "pagination_info": "合計 {{total}}個中 {{from}}-{{to}}個を表示",
@@ -2820,18 +2640,14 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
-      "stuck_update": "更新停止",
       "update_available": "アップデート必要"
     },
-    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
-    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したテンプレートは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
-      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "refresh_layouts": "レイアウト更新",
@@ -2937,7 +2753,7 @@
       "dependency_required_version": "要件：{{version}}",
       "dependency_installed_version": "インストール：{{version}}",
       "dependency_not_installed": "未インストール",
-      "dependency_unmet_version": "バージョン不足",
+      "dependency_unmet_version": "バージョン不一致",
       "dependency_inactive": "無効",
       "required_modules": "必須モジュール",
       "required_plugins": "必須プラグイン",
@@ -3493,8 +3309,7 @@
         "purpose": "認証目的",
         "purpose_help": "このポリシーがどのような種類の本人認証を要求するかを選択します。",
         "provider_id": "認証手段",
-        "use_default_provider": "（指定なし — すべての手段を受け入れる）",
-        "provider_id_desc": "手段を指定すると、その手段で完了した本人認証のみ受け付けます。空欄の場合はどの手段の認証でも受け付け、認証画面はデフォルトの手段で開始します。",
+        "use_default_provider": "（デフォルト認証手段を使用）",
         "grace_minutes": "再要求周期（分）— 0：毎回要求",
         "grace_minutes_help": "この時間内に本人認証を完了した場合、再度要求しません。0に設定すると、毎回本人認証を要求します。",
         "applies_to": "適用対象",
@@ -3611,7 +3426,6 @@
       "extension_license_modal": "拡張ライセンス全文",
       "module_force_activate_modal": "モジュール強制有効化",
       "module_force_deactivate_modal": "モジュール強制無効化",
-      "module_deactivate_integrations_modal": "モジュール無効化の連携案内",
       "module_install_modal": "モジュールインストール",
       "module_manual_install_modal": "モジュール手動インストール",
       "module_reactivate_language_packs_modal": "言語パック一括有効化",
@@ -3632,13 +3446,11 @@
       "plugin_extension_license_modal": "プラグインライセンス全文",
       "plugin_force_activate_modal": "プラグイン強制有効化",
       "plugin_force_deactivate_modal": "プラグイン強制無効化",
-      "plugin_deactivate_integrations_modal": "プラグイン無効化の連携案内",
       "plugin_install_modal": "プラグインインストール確認",
       "plugin_manifest_preview_drawer": "プラグイン マニフェスト プレビュー"
     },
     "admin_settings": {
       "identity_policy_delete_modal": "本人認証ポリシー削除確認",
-      "embed_provider_form_modal": "外部動画サービスの追加・編集",
       "identity_policy_form_modal": "本人認証ポリシー編集",
       "modal_notification_channel_off_confirm": "メールチャネルのオフ確認",
       "modal_notification_definition_reset": "通知定義デフォルト復元",
@@ -3733,8 +3545,7 @@
       "reaggregate_modal": "期間再集計",
       "subject_delete_modal": "情報主体記録削除確認",
       "row_trend_modal": "項目の推移"
-    },
-    "lifecycle_warnings_modal": "拡張機能の操作警告ウィンドウ"
+    }
   },
   "member_notification": {
     "page_title": "会員通知ボックス",
@@ -4503,72 +4314,6 @@
       "unit_downgraded": "項目別の集計は日単位のため、時間単位ではなく日単位で表示します。",
       "empty": "この期間の記録はありません。",
       "error": "推移を読み込めませんでした。しばらく経ってからもう一度開いてください。"
-    }
-  },
-  "brand_name": "グヌボード7",
-  "default_user_name": "管理者",
-  "template_partial_test": {
-    "title": "テンプレート Partial システムテスト",
-    "meta_description": "sirsoft-admin_basic テンプレートの Partial システムの動作確認",
-    "description": "sirsoft-admin_basic テンプレートのレイアウト Partial 機能をテストします",
-    "checklist_title": "テスト項目",
-    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
-    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
-    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (Composite コンポーネント)",
-    "check_basic": "✅ Basic コンポーネントのレンダリング",
-    "check_dark": "✅ ダークモード対応",
-    "success_title": "🎉 Partial システム正常動作",
-    "success_description": "上のすべてのセクションが正しく表示されれば、テンプレート Partial システムは正常に動作しています。",
-    "level1_title": "Level 1 Partial: コンテンツセクション",
-    "level1_description": "このファイルは下の Level 2 partial ファイルを含みます",
-    "after_title": "Partial の後の追加コンテンツ",
-    "after_description": "Partial ファイルの後にも好きなだけコンテンツを追加できます。",
-    "header_title": "Level 2 Include: ヘッダーセクション読み込み完了",
-    "header_description": "このファイルは templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html です",
-    "card_title": "✨ Composite コンポーネント Include テスト",
-    "card_content": "この Card は partials/template_partial_test/_info_card.g7.html から include されました。\n\n📌 Include システムの特徴:\n• モジュールとテンプレートの両方に対応\n• 無制限のネスト深さ(depth 上限 10)\n• 循環参照の自動検出\n• Basic と Composite コンポーネントの両方を使用可能"
-  },
-  "extensions": {
-    "lifecycle_warnings": {
-      "title": "一部の項目が失敗しました",
-      "summary": "完了しましたが、一部の項目が失敗しました（{{count}}件）",
-      "description": "操作自体は完了しました。以下の項目のみ反映されていません。理由を確認してから、該当する操作（レイアウトの更新など）を再度実行してください。",
-      "toggle": "詳細を表示",
-      "notice_title": "確認すべきお知らせがあります",
-      "notice_summary": "完了しました — 確認すべきお知らせ {{count}} 件",
-      "notice_description": "すべて反映されました。以下のお知らせを確認してください。",
-      "declaration_title": "拡張機能の宣言に誤った値があります",
-      "declaration_summary": "完了しましたが、拡張機能が誤って宣言した値 {{count}} 件を破棄しました",
-      "declaration_description": "作業自体は完了しました。以下の項目は拡張機能が設定ファイル(manifest)に誤って宣言した値のため破棄しました — 再実行しても変わらないため、拡張機能の開発者に知らせてください。",
-      "declaration_hint": "拡張機能の開発者が直す宣言です — 再実行しても変わりません",
-      "steps": {
-        "dependents": "依存する拡張機能",
-        "extract": "展開",
-        "php_extension_missing": "PHP拡張",
-        "autoload": "オートロード",
-        "cleanup": "後片付け",
-        "composer_install": "Composerパッケージのインストール",
-        "core_resync": "コアの再同期",
-        "hook_cache": "フックキャッシュ",
-        "language_pack": "言語パック",
-        "language_pack_check_updates": "言語パックの更新確認",
-        "language_pack_provision": "言語パックの準備",
-        "language_pack_seed": "言語パックの初期データ",
-        "layout_register": "レイアウト登録",
-        "layout_refresh": "レイアウト更新",
-        "layout_override_register": "レイアウト上書き登録",
-        "layout_extension_register": "レイアウト拡張の登録",
-        "layout_extension_override_register": "レイアウト拡張の上書き登録",
-        "layout_extension_reregister": "レイアウト拡張の再登録",
-        "layout_extension_restore": "レイアウト拡張の復元",
-        "layout_extension_unregister": "レイアウト拡張の解除",
-        "menu_role": "メニュー権限",
-        "necessary_storage": "必須ブラウザ保存項目",
-        "operation_lock": "作業ロック",
-        "reseed": "初期データの再投入",
-        "search_scopes": "最近の検索語の範囲宣言",
-        "seeder": "初期データ作成"
-      }
     }
   }
 }

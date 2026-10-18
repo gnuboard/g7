@@ -109,7 +109,7 @@
                     "name": "P",
                     "if": "{{_local.claimEstimate?.shipping_fee?.redelivery_changed === true}}",
                     "props": {
-                        "className": "text-xs text-amber-700 dark:text-amber-400 mt-2"
+                        "className": "text-xs text-amber-600 dark:text-amber-400 mt-2"
                     },
                     "text": "$t:claim.apply.redelivery_fee_recalculated"
                 },
@@ -187,7 +187,6 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "aria-label": "$t:claim.apply.recipient_name",
                                         "maxLength": 50,
                                         "value": "{{_local.claimRedelivery?.recipient_name ?? ''}}",
                                         "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -223,7 +222,6 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "aria-label": "$t:claim.apply.recipient_phone",
                                         "maxLength": 20,
                                         "value": "{{_local.claimRedelivery?.phone ?? ''}}",
                                         "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -261,7 +259,6 @@
                             ],
                             "props": {
                                 "type": "text",
-                                "aria-label": "$t:claim.apply.zipcode",
                                 "maxLength": 20,
                                 "value": "{{_local.claimRedelivery?.zipcode ?? ''}}",
                                 "className": "w-40 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -297,7 +294,6 @@
                             ],
                             "props": {
                                 "type": "text",
-                                "aria-label": "$t:claim.apply.address1",
                                 "maxLength": 255,
                                 "value": "{{_local.claimRedelivery?.address1 ?? ''}}",
                                 "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -333,7 +329,6 @@
                             ],
                             "props": {
                                 "type": "text",
-                                "aria-label": "$t:claim.apply.address2",
                                 "maxLength": 255,
                                 "value": "{{_local.claimRedelivery?.address2 ?? ''}}",
                                 "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -385,7 +380,6 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "aria-label": "$t:claim.apply.city",
                                         "maxLength": 100,
                                         "value": "{{_local.claimRedelivery?.city ?? ''}}",
                                         "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -421,7 +415,6 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "aria-label": "$t:claim.apply.state",
                                         "maxLength": 100,
                                         "value": "{{_local.claimRedelivery?.state ?? ''}}",
                                         "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -496,7 +489,7 @@
             "name": "P",
             "if": "{{!!_local.claimFieldErrors?.redelivery}}",
             "props": {
-                "className": "text-xs text-red-600 dark:text-red-400 mt-2"
+                "className": "text-xs text-red-500 dark:text-red-400 mt-2"
             },
             "text": "{{_local.claimFieldErrors?.redelivery ?? ''}}"
         }

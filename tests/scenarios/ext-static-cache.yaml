@@ -8,7 +8,7 @@ description: |
   rewrite 전에 직접 서빙한다. 병합 입력이 바뀌는 수명주기 이벤트마다
   `incrementExtensionCacheVersion()` 단일 지점의 terminating 예약으로 재게시되고,
   누락 시 blade 렌더의 자가 치유가 보충한다. 미게시/부분게시/GC 직후에는 프론트
-  fetch 계층(fetchStaticFirst)과 태그 계층(셸 head 스크립트 g7-shell-head.js — 종전 asset-url-recovery 파샬)이 종전 API 로
+  fetch 계층(fetchStaticFirst)과 태그 계층(asset-url-recovery 파샬)이 종전 API 로
   폴백한다.
 
   핵심 동작:
@@ -139,34 +139,9 @@ effects:
   - status_command_warns_root_and_hints_web_account
   - publish_command_warns_root_but_continues
   - status_command_consumes_service_report
-  # #148 — 언어팩 설치 규칙(BCP 47)의 세 글자·문자 표기 로케일(fil·zh-Hant)도 lang 게시 대상이다
-  - published_lang_covers_bcp47_pack_locales
-  # #158 — 태그 계층 복구기가 셸 head 스크립트(public/assets/core/js/g7-shell-head.js)로 옮겨진 뒤에도
-  # 자산 URL 모드 불변식·변환 규칙 동등성이 유지된다
-  - asset_url_mode_switch_one_way
-  - asset_url_mode_client_never_writes_settings
-  - asset_url_mode_cache_key_versioned
-  - shell_head_converter_matches_ts_builder
-  - installer_probe_checks_mime_and_token
-  - engine_layer_never_probes_asset_mode
-  - convert_to_current_mode_shapes
-  # ClearsTemplateCaches — 게시 예약의 단일 지점인 확장 캐시 버전 카운터 계약
-  - extension_cache_version_is_timestamp_and_monotonic
-  - missing_cache_version_regenerates_valid_version
-  - extension_cache_version_uses_core_namespace
-  - legacy_template_cache_clear_is_no_op
-  # 게시 실패 경로의 원자성·복원·락·권한 — ExtensionStaticCacheServiceTest
-  - manifest_failure_cleans_final_directory
-  - rename_failure_restores_previous_published_version
-  - cleanup_excludes_failed_deletions_from_count
-  - lock_contention_skips_without_failure_marker
-  - lock_provider_failure_recorded_in_marker
-  - published_tree_is_group_writable
-  - publish_failure_backoff_is_scoped_to_version
 
 test_files:
   - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
-  - tests/Feature/Services/ExtensionStaticCacheBcp47LocaleTest.php
   - tests/Feature/Api/Public/PublicComponentsCachingTest.php
   - tests/Feature/Template/PublicTemplateControllerTest.php
   - tests/Feature/Template/TemplateAssetServingTest.php
@@ -200,7 +175,7 @@ notes: |
   게시·게이트·폴백은 리소스 무관 공통 메커니즘이고, 리소스별 형상 차이는
   published_* effects (payload/봉투/소스맵 제외) 가 각각 단언한다.
   environment=dev 축은 PHPUnit(환경 분기 케이스)과 AssetUrl 게이트 단위가 담당한다 —
-  E2E 대상 개발 사이트는 평소 local 이라, 브라우저 실측은 실측 창 동안만 `.env` 를
+  E2E 대상 사이트(g7_2.dev)는 평소 local 이라, 브라우저 실측은 실측 창 동안만 `.env` 를
   production 으로 전환해 수행하고 끝나면 원본을 복구한다(md5 대조). dev 축 자체는 브라우저로
   실측하지 않는다.
   관리자 수동 복구(상태 GET + 재게시 POST + 카드·모달·알림 버튼)는 축이 다르므로 별도

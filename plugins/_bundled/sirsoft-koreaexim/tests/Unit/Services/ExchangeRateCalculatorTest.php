@@ -5,10 +5,10 @@ namespace Plugins\Sirsoft\Koreaexim\Tests\Unit\Services;
 use Plugins\Sirsoft\Koreaexim\Enums\RateType;
 use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
 use Plugins\Sirsoft\Koreaexim\Services\ExchangeRateCalculator;
-use Tests\PureTestCase;
+use Plugins\Sirsoft\Koreaexim\Tests\PluginTestCase;
 
 /** @effects cross_rates, preserve_invalid_rates */
-class ExchangeRateCalculatorTest extends PureTestCase
+class ExchangeRateCalculatorTest extends PluginTestCase
 {
     /**
      * 기본통화와 환율 종류 및 값과 정밀도 조합별 환산 결과를 검증합니다.

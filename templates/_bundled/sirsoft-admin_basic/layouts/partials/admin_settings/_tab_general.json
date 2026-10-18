@@ -68,7 +68,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400 ml-1"
+                                                        "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -91,7 +91,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "general.site_name",
-                                                "placeholder": "$t:admin.brand_name",
+                                                "placeholder": "그누보드7",
                                                 "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['general.site_name'] === true}}",
                                                 "className": "input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"
                                             }
@@ -128,7 +128,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400 ml-1"
+                                                        "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -166,6 +166,56 @@
                                             "text": "{{_local.errors?.['general.site_url']?.[0] ?? ''}}"
                                         }
                                     ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "사용자 화면 URL — 외부 화면(Next.js 등)을 다른 주소에서 운영할 때만. 비밀번호 재설정·알림 메일 링크와\n     결제 뒤 돌아가는 주소의 베이스가 된다(관리자 화면 주소는 그대로). 비우면 사이트 URL 과 같다.",
+                            "id": "field_user_screen_url",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.general.user_screen_url"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "url",
+                                        "name": "general.user_screen_url",
+                                        "placeholder": "https://www.example.com",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input {{_local.errors?.['general.user_screen_url'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['general.user_screen_url']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['general.user_screen_url']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:admin.settings.general.user_screen_url_help"
                                 }
                             ]
                         },
@@ -216,7 +266,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                "className": "text-red-500 ml-1"
                                             },
                                             "text": "*"
                                         }
@@ -412,7 +462,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400 ml-1"
+                                                        "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -473,7 +523,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400 ml-1"
+                                                        "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -569,7 +619,6 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "general.asset_url_mode",
-                                                "aria-label": "$t:admin.settings.general.asset_url_mode",
                                                 "className": "w-full",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "options": [
@@ -627,7 +676,7 @@
                             "name": "P",
                             "if": "{{_local.asset_url_mode_detect_status === 'extension'}}",
                             "props": {
-                                "className": "mt-2 text-sm text-green-700 dark:text-green-400"
+                                "className": "mt-2 text-sm text-green-600 dark:text-green-400"
                             },
                             "text": "$t:admin.settings.general.asset_url_mode_detect_extension"
                         },
@@ -637,7 +686,7 @@
                             "name": "P",
                             "if": "{{_local.asset_url_mode_detect_status === 'extensionless'}}",
                             "props": {
-                                "className": "mt-2 text-sm text-amber-700 dark:text-amber-400"
+                                "className": "mt-2 text-sm text-amber-600 dark:text-amber-400"
                             },
                             "text": "$t:admin.settings.general.asset_url_mode_detect_extensionless"
                         },
@@ -779,10 +828,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "blur_until_loaded": {
-                                                "enabled": true,
-                                                "data_sources": "staticCacheStatus"
-                                            },
                                             "props": {
                                                 "className": "text-heading"
                                             },
@@ -809,10 +854,6 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "blur_until_loaded": {
-                                                "enabled": true,
-                                                "data_sources": "staticCacheStatus"
-                                            },
                                             "props": {
                                                 "className": "text-heading"
                                             },
@@ -850,7 +891,7 @@
                                             "id": "static_cache_published_at_never",
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{staticCacheStatus !== undefined && (!staticCacheStatus?.data?.published_at)}}",
+                                            "if": "{{!staticCacheStatus?.data?.published_at}}",
                                             "props": {
                                                 "className": "text-heading"
                                             },
@@ -907,7 +948,7 @@
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
                                                 "aria-disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                                             },
                                             "text": "$t:admin.settings.general.static_cache_republish_now"
                                         }

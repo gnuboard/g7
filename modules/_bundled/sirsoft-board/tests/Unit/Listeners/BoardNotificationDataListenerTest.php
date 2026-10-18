@@ -61,6 +61,9 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     {
         parent::setUp();
 
+        // 회원 알림의 {site_url} 은 사용자 화면 URL, 운영자 알림은 사이트 주소 (#792)
+        config(['app.url' => 'https://site.example.test', 'g7_settings.core.general.user_screen_url' => 'https://front.example.test']);
+
         $this->boardRepository = Mockery::mock(BoardRepositoryInterface::class);
         $this->postRepository = Mockery::mock(PostRepositoryInterface::class);
         $this->commentRepository = Mockery::mock(CommentRepositoryInterface::class);
@@ -164,6 +167,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'new_comment', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('테스트 게시글', $result['data']['post_title']);
@@ -333,6 +337,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->commentRepository->shouldReceive('find')->with('test-board', 1)->andReturn($parentComment);
 
         $result = $this->listener->extractData([], 'reply_comment', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals(20, $result['context']['trigger_user_id']);
@@ -429,6 +434,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($originalPost);
 
         $result = $this->listener->extractData([], 'post_reply', [$replyPost, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('원본 게시글', $result['data']['post_title']);
@@ -515,6 +521,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
 
         $result = $this->listener->extractData([], 'post_action', [$post, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -630,6 +637,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'post_action', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -804,6 +812,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
 
         $result = $this->listener->extractData([], 'report_action', [$post, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('action_type', $result['data']);
@@ -852,6 +861,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'report_action', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -890,6 +900,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
 
         $result = $this->listener->extractData([], 'report_action', [$post, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('action_type', $result['data']);
@@ -936,6 +947,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'report_action', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -1031,6 +1043,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
             ->andReturn($role->users()->get());
 
         $result = $this->listener->extractData([], 'new_post_admin', [$post, 'test-board']);
+        $this->assertSame('https://site.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('새 게시글', $result['data']['post_title']);
@@ -1142,6 +1155,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
             ->andReturn(new Collection);
 
         $result = $this->listener->extractData([], 'report_received_admin', [$report]);
+        $this->assertSame('https://site.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('신고된 게시글', $result['data']['post_title']);

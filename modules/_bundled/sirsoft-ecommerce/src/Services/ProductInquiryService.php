@@ -14,10 +14,9 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ProductInquiryOperationException;
 use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductInquiryRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Support\AuthorNameMasker;
 use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
  * 상품 1:1 문의 서비스
@@ -376,7 +375,7 @@ class ProductInquiryService
                     'name' => $inquiry->product->getLocalizedName(),
                     'thumbnail_url' => $inquiry->product->getThumbnailUrl(),
                     // 주소 없이 운영하는 상점(no_route)까지 반영해야 실제 상품 화면을 가리킨다 (공개 #85)
-                    'url' => ShopPathResolver::path('products/'.$inquiry->product->product_code),
+                    'url' => EcommerceScreenUrl::product((string) $inquiry->product->product_code),
                 ] : null,
                 'product_name' => $this->localizeProductName($inquiry->product_name_snapshot),
                 'is_answered' => $inquiry->is_answered,
@@ -665,8 +664,19 @@ class ProductInquiryService
             return $name;
         }
 
-        // 가림 규칙은 상품 후기와 같은 함수 한 곳에 둔다
-        return AuthorNameMasker::mask($name);
+        $chars = mb_str_split($name);
+        $len = count($chars);
+
+        if ($len === 1) {
+            return $name;
+        }
+
+        if ($len === 2) {
+            return $chars[0].'*';
+        }
+
+        // 3자 이상: 첫 글자 + 중간 전체 마스킹 + 마지막 글자
+        return $chars[0].str_repeat('*', $len - 2).$chars[$len - 1];
     }
 
     /**

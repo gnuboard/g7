@@ -44,13 +44,13 @@ class CartSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.cart.start'));
+        $this->command->info('장바구니 더미 데이터 생성을 시작합니다.');
 
         $this->deleteExistingCarts();
         $this->createCarts();
 
         $count = Cart::count();
-        $this->command->info(__('sirsoft-ecommerce::messages.seeders.cart.done', ['count' => $count]));
+        $this->command->info("장바구니 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
     }
 
     /**
@@ -62,7 +62,7 @@ class CartSeeder extends Seeder
 
         if ($deletedCount > 0) {
             Cart::query()->delete();
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.cart.purged', ['count' => $deletedCount]));
+            $this->command->warn("기존 장바구니 데이터 {$deletedCount}건을 삭제했습니다.");
         }
     }
 
@@ -87,7 +87,7 @@ class CartSeeder extends Seeder
             ->get();
 
         if ($productOptions->isEmpty()) {
-            $this->command->error(__('sirsoft-ecommerce::messages.seeders.cart.no_options'));
+            $this->command->error('판매 가능한 상품 옵션이 없습니다. ProductSeeder를 먼저 실행해주세요.');
 
             return;
         }
@@ -100,12 +100,12 @@ class CartSeeder extends Seeder
             fn ($option) => $option->product->shipping_policy_id === null
         );
 
-        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.cart.options_found', ['count' => $productOptions->count()]));
-        $this->command->line('    - '.__('sirsoft-ecommerce::messages.seeders.cart.with_shipping', ['count' => $optionsWithShipping->count()]));
-        $this->command->line('    - '.__('sirsoft-ecommerce::messages.seeders.cart.without_shipping', ['count' => $optionsWithoutShipping->count()]));
+        $this->command->line("  - 판매 가능한 상품 옵션 {$productOptions->count()}개를 찾았습니다.");
+        $this->command->line("    - 배송비 부여: {$optionsWithShipping->count()}개");
+        $this->command->line("    - 배송비 없음: {$optionsWithoutShipping->count()}개");
 
         if ($optionsWithShipping->isEmpty()) {
-            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.cart.no_shipping_policy'));
+            $this->command->warn('배송정책이 있는 상품이 없습니다. 모든 상품으로 장바구니를 생성합니다.');
             $optionsWithShipping = $productOptions;
             $optionsWithoutShipping = collect();
         }
@@ -131,11 +131,11 @@ class CartSeeder extends Seeder
         $users = User::take($userCount)->get();
 
         if ($users->isEmpty()) {
-            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.cart.creating_users', ['count' => $userCount]));
+            $this->command->line("  - 사용자가 없어 {$userCount}명 생성합니다.");
             $users = User::factory()->count($userCount)->create();
         }
 
-        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.cart.member_creating'));
+        $this->command->line('  - 회원 장바구니 생성 중...');
 
         $totalItems = 0;
         foreach ($users as $user) {
@@ -157,7 +157,7 @@ class CartSeeder extends Seeder
             }
         }
 
-        $this->command->line('    - '.__('sirsoft-ecommerce::messages.seeders.cart.member_done', ['count' => $totalItems]));
+        $this->command->line("    - 회원 장바구니 {$totalItems}건 생성 완료");
     }
 
     /**
@@ -168,7 +168,7 @@ class CartSeeder extends Seeder
      */
     private function createGuestCarts($optionsWithShipping, $optionsWithoutShipping, int $guestCount): void
     {
-        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.cart.guest_creating'));
+        $this->command->line('  - 비회원 장바구니 생성 중...');
 
         $totalItems = 0;
         for ($i = 0; $i < $guestCount; $i++) {
@@ -190,7 +190,7 @@ class CartSeeder extends Seeder
             }
         }
 
-        $this->command->line('    - '.__('sirsoft-ecommerce::messages.seeders.cart.guest_done', ['count' => $totalItems]));
+        $this->command->line("    - 비회원 장바구니 {$totalItems}건 생성 완료");
     }
 
     /**

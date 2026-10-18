@@ -12,8 +12,6 @@
 3. 입력 규칙: empty=default, yes/y=true, no/n=false, 그 외=재질문 루프
 4. --no-interaction 또는 콘솔 없는 STDIN: default 즉시 반환 (파괴적 확인의 default 는 false 여야 한다)
 5. upgrade step / Symfony 외부 환경: \App\Console\Helpers\ConsoleConfirm::ask() FQN 직접 호출
-6. 트레이트를 쓰는 명령은 --yes(-y) 를 자동으로 받는다 — 묻지 않고 진행. 시그니처에 --yes 를 따로 두지 않는다
-7. 확인을 거절해 끝낼 때는 return $this->confirmAbortExitCode() — 묻지 못해 거절된 실행은 경고 + 종료코드 1
 ```
 
 ---
@@ -43,7 +41,7 @@ Laravel `Command::confirm()` (Symfony `ConfirmationQuestion`) 의 기본 동작�
 - 입력을 trim + 소문자 정규화
 - `yes`/`y` 만 true, `no`/`n` 만 false
 - empty → default
-- 그 외 입력 → "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문 루프 (안내 문구는 사이트 언어를 따른다 — Laravel 이 부팅되지 않은 단순 PHP 스크립트에서는 이 원문)
+- 그 외 입력 → "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문 루프
 - `--no-interaction` 또는 비TTY 환경 → default 즉시 반환
 
 ---
@@ -77,60 +75,23 @@ class UninstallFooCommand extends Command
 ### 시그니처
 
 ```php
-protected function unifiedConfirm(string $question, bool $default = false, bool $optional = false): bool
+protected function unifiedConfirm(string $question, bool $default = false): bool
 ```
 
 | 파라미터 | 설명 |
 |---------|------|
 | `$question` | 질문 메시지 (말미 `(yes/no) [yes\|no]:` 자동 부여) |
 | `$default` | 기본값 — true=`[yes]` 표시 / false=`[no]` 표시 |
-| `$optional` | 진행 여부가 아니라 **부가 선택**을 묻는 질문이면 true. `--yes`·비대화 실행에서 기본값을 그대로 쓰고, 경고·실패 처리도 하지 않는다 (예: 「검색 색인도 다시 만들까요?」) |
 
 ### 동작
 
 | 환경 | 동작 |
 |------|------|
-| `--yes`(`-y`) 옵션 | 묻지 않고 `true` (부가 선택 질문은 `$default`) |
-| `--no-interaction` 옵션 | `$default` 즉시 반환. `$default` 가 false 이고 부가 선택이 아니면 「`--yes` 를 붙이세요」 경고 |
-| 콘솔 없는 STDIN (CI·스케줄러·에이전트) | 위와 같음 |
+| `--no-interaction` 옵션 | `$default` 즉시 반환 |
+| 콘솔 없는 STDIN (CI·스케줄러·에이전트) | `$default` 즉시 반환 |
 | 대화형 + 유효 입력 | 정규화 후 즉시 반환 |
 | 대화형 + 잘못된 입력 | "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문 |
 | 대화형 + empty 입력 | `$default` 반환 |
-
-### `--yes` 옵션과 거절 종료코드 (7.1.6+)
-
-트레이트가 Symfony `configure()` 로 `--yes`(`-y`) 옵션을 더하므로, 트레이트를 쓰는 명령은 시그니처에 적지 않아도
-이 옵션을 받는다. **시그니처에 `{--yes}` 를 따로 두면 생성 시 「이미 있는 옵션」 오류가 난다.**
-명령이 `configure()` 를 직접 재정의해야 하면 `parent::configure()` 가 아니라 트레이트 메서드를 별칭으로 불러야 한다.
-
-터미널 없는 실행(스케줄러·배포 스크립트·`-n`)에서 확인 질문은 기본값 「아니오」로 떨어진다. 종전에는 이때 명령이
-**아무 일도 하지 않고 성공(0)** 으로 끝나 실패를 알 수 없었다. 지금은:
-
-- 트레이트가 「확인이 필요한 작업이라 실행하지 않았습니다 — `--yes` 를 붙이세요」 경고를 낸다.
-- 명령은 거절 갈래에서 `SUCCESS` 를 직접 돌려주지 않고 `confirmAbortExitCode()` 를 돌려준다 — 묻지 못해 거절됐으면
-  `FAILURE`(1), 사람이 직접 「아니오」라고 답했으면 `SUCCESS`(0).
-
-```php
-if (! $this->unifiedConfirm('Foo 를 삭제하시겠습니까?', false)) {
-    $this->info('취소되었습니다.');
-
-    return $this->confirmAbortExitCode();
-}
-```
-
-`--yes` 는 「진행하시겠습니까?」 류의 확인에만 「예」로 답한다. 부가 선택 질문(`$optional = true`)과 선택·입력 질문은
-기본값으로 진행한다 — `--yes` 가 「검색 색인도 다시 만들까요? [no]」 까지 「예」로 바꾸면 운영 중인 사이트에서
-원하지 않은 무거운 작업이 따라 돈다.
-
-### 선택·입력 질문 — `unifiedChoice()` / `unifiedAsk()`
-
-`$this->choice()`·`$this->ask()` 를 직접 부르면 콘솔 없는 실행에서 오지 않을 답을 기다린다(위 「비TTY 판정」과 같은 이유).
-확인 질문과 섞어 쓰는 선택·입력은 트레이트의 두 메서드로 부른다 — 물을 수 없거나 `--yes` 면 기본값을 곧바로 돌려준다.
-
-```php
-$strategy = $this->unifiedChoice('레이아웃 전략', ['overwrite' => '덮어쓰기', 'keep' => '유지'], 'overwrite');
-$targets = $this->unifiedAsk('대상(쉼표로 구분)', '');
-```
 
 #### 비TTY 판정을 Symfony 에 맡기지 않는 이유
 
@@ -152,8 +113,6 @@ posix 확장 없이 Windows 를 포함해 동작하므로 이 판정의 근거�
 ## ConsoleConfirm helper (Symfony 비의존)
 
 `HasUnifiedConfirm` 은 Symfony QuestionHelper 를 거치므로 Laravel Command 외부 (예: upgrade step, 단순 PHP CLI 스크립트) 에서는 사용할 수 없다. 그런 경우 `ConsoleConfirm::ask()` 를 직접 호출한다.
-
-터미널 설치(`php g7-install`, 7.1.4)의 예/아니오 질문(`g7_cli_confirm()`)도 이 헬퍼를 쓴다 — 설치기는 vendor 없이 도는 순수 PHP 라 파일을 경로로 직접 `require_once` 한다(오토로더 없음). 설치기에 별도 예/아니오 해석을 두지 않는다.
 
 ### 사용법
 

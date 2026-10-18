@@ -9,18 +9,11 @@
       <og type="website"/>
     </seo>
   </meta>
-  <!-- 헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 꺼져 있으면 부르지 않고(if), 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다.
-    활성 목록이 없는 옛 코어에서는 가드가 늘 참이라 꺼진 모듈에도 요청이 나가므로 404 는 삼킨다(토스트 없음).
-    메뉴는 보는 사람이 열람할 수 있는 게시판만 돌려주므로 로그인했으면 토큰을 함께 보낸다(auth_mode optional — 빠지면 회원에게도 비회원 메뉴가 나온다). -->
-  <data-source id="boards" label_key="$t:editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/boards/board-menu" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
+  <!-- 헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다. -->
+  <data-source id="boards" label_key="$t:editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/boards/board-menu" method="GET" :auto_fetch="true" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
-    <error-handling>
-      <on-code code="404">
-        <suppress/>
-      </on-code>
-    </error-handling>
   </data-source>
   <!-- 로그인 사용자 — initGlobal 로 _global.currentUser 에 올라가 헤더·드로어·본문의 로그인 분기가 전부 이 값을 본다. 비회원도 매 페이지 호출하며 401 은 아래에서 정상 흐름으로 삼킨다. -->
   <data-source id="current_user" label_key="$t:editor.data_source.current_user" type="api" endpoint="/api/auth/user" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" initGlobal="currentUser">
@@ -29,9 +22,9 @@
     </fallback>
     <success>
       <!-- 로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유. -->
-      <action handler="sirsoft-ecommerce.initPreferredCurrency" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" accountCurrency="{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}" defaultCurrency="{{_global.defaultCurrency}}"/>
+      <action handler="sirsoft-ecommerce.initPreferredCurrency" accountCurrency="{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}" defaultCurrency="{{_global.defaultCurrency}}"/>
       <!-- 로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다. -->
-      <action handler="sirsoft-ecommerce.initPreferredShippingCountry" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" accountCountry="{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+      <action handler="sirsoft-ecommerce.initPreferredShippingCountry" accountCountry="{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     </success>
     <error-handling>
       <on-code code="401">
@@ -40,9 +33,8 @@
       </on-code>
     </error-handling>
   </data-source>
-  <!-- 헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다.
-    쇼핑몰 모듈이 꺼져 있으면 부르지 않는다(if). 옛 코어에서 꺼진 모듈로 나간 요청의 404 는 삼킨다. -->
-  <data-source id="cart" label_key="$t:editor.data_source.cart" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/count" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}">
+  <!-- 헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다. -->
+  <data-source id="cart" label_key="$t:editor.data_source.cart" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/count" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <headers X-Cart-Key="{{_global.cartKey}}"/>
     <init-global>
       <field name="key" value="cartCount"/>
@@ -53,11 +45,6 @@
         <field name="count" :value="0"/>
       </field>
     </fallback>
-    <error-handling>
-      <on-code code="404">
-        <suppress/>
-      </on-code>
-    </error-handling>
   </data-source>
   <!-- 알림 배지 숫자만 따로 받는다 — 목록(notifications)은 드롭다운을 열 때 쓰는 무거운 응답이라 배지 갱신마다 그것을 다시 부르지 않기 위해 분리했다. 읽음 처리·삭제·웹소켓 수신이 이것만 refetch 한다. -->
   <data-source id="notification_unread_count" label_key="$t:editor.data_source.notification_unread_count" type="api" endpoint="/api/user/notifications/unread-count" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
@@ -117,16 +104,15 @@
   </transition-overlay>
   <init>
     <action handler="initTheme"/>
-    <!-- 장바구니 키 발급 — 쇼핑몰 모듈이 꺼져 있으면 발급 API 를 부르지 않는다. -->
-    <action handler="initCartKey" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}"/>
+    <action handler="initCartKey"/>
     <!-- 기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값. -->
     <set-state target="global" defaultCurrency="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"/>
     <!-- 선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값). -->
-    <action handler="sirsoft-ecommerce.initPreferredCurrency" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" defaultCurrency="{{_global.defaultCurrency}}"/>
+    <action handler="sirsoft-ecommerce.initPreferredCurrency" defaultCurrency="{{_global.defaultCurrency}}"/>
     <!-- 셀렉터 통화 목록 주입 (A1-①). is_default 또는 환율>0 인 통화만 (U11-B 미설정 통화 숨김, 백엔드 buildMultiCurrencyPrices 규칙과 1:1 일치). -->
     <set-state target="global" availableCurrencies="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0)}}"/>
     <!-- 선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작. -->
-    <action handler="sirsoft-ecommerce.initPreferredShippingCountry" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    <action handler="sirsoft-ecommerce.initPreferredShippingCountry" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     <!-- 헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트). 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선. -->
     <set-state target="global" availableShippingCountries="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code), flag_class: ('fi fi-' + (c.code ?? '').toLowerCase()) }))}}"/>
     <!-- 비회원 주문 조회 토큰 (30분 유효) — 커스텀 핸들러가 localStorage 의 g7_guest_order_token 을 G7Core.state.set 으로 _global.guestOrderToken 에 직접 저장. 표준 loadFromLocalStorage 는 context.setState 를 통해 _local 에만 영향을 주므로 _global 에 토큰이 안 들어가는 문제 회피. initCartKey 패턴 동일. -->
@@ -142,7 +128,7 @@
   <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
     <on type="keydown" key="Escape">
       <!-- 모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.
-           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 실측. -->
+           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 N O-N6. -->
       <conditions>
         <when if="{{_global.mobileMenuOpen}}">
           <set-state target="global" :mobileMenuOpen="false"/>
@@ -164,21 +150,21 @@
     <div data-ref="mobile_header" class="hidden">
       <responsive on="portable" class="flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30"/>
       <!-- 모바일 헤더 좌측 - 로고. 이름이 길어도 우측 단추를 밀지 않도록 이 칸이 줄어들고(min-w-0 flex-1) 이름은 한 줄 … 로 자른다(#143 — 공백 없는 23자 이름에서 414px 까지 메뉴 단추가 화면 밖, 공백·한글 긴 이름은 4줄로 접혀 h-14 헤더를 위아래로 넘쳤다). -->
-      <a href="/" data-ref="mobile_header_left" class="justify-start flex items-center min-w-0 flex-1 cursor-pointer">
+      <button data-ref="mobile_header_left" class="justify-start flex items-center min-w-0 flex-1 cursor-pointer">
         <on type="click">
-          <navigate/>
+          <navigate path="/"/>
         </on>
         <div data-if="{{_global.settings?.general?.site_logo_url}}" class="min-w-0">
-          <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" class="h-8 w-auto max-w-full object-contain object-left"/>
+          <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? 'Site'}}" class="h-8 w-auto max-w-full object-contain object-left"/>
         </div>
-        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate">{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}</span>
-      </a>
+        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate">{{_global.settings?.general?.site_name ?? 'Site'}}</span>
+      </button>
       <!-- 모바일 헤더 우측 - 액션 버튼들 -->
       <div data-ref="mobile_header_right" class="flex items-center gap-1 shrink-0">
         <!-- 다크모드 전환 -->
         <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
         <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
-        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
+        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
           <on event="onClose">
             <!-- 드로어 알림 드롭다운을 닫을 때 그 사이 노출된 알림들을 일괄 읽음 처리한다 — 항목을 누르지 않고 훑어본 것도 읽은 것으로 본다. 배지만 다시 받고 목록은 그대로 둔다. -->
             <sequence>
@@ -196,7 +182,7 @@
           <on event="onNotificationClick">
             <!-- 모바일 알림 클릭 — 이동과 읽음 처리를 병렬로 낸다(데스크톱 헤더는 읽음을 끝낸 뒤 이동하는 순차). url 이 없는 알림은 알림함으로 보낸다. -->
             <parallel>
-              <navigate path="{{$args[0].url ?? '/mypage/notifications'}}" fallbackPath="/mypage/notifications"/>
+              <navigate path="{{$args[0].url ?? '/mypage/notifications'}}"/>
               <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}/read" method="PATCH">
                 <success>
                   <refetch-data-source dataSourceId="notification_unread_count"/>
@@ -264,26 +250,22 @@
             </sequence>
           </on>
         </notification-center>
-        <!-- 장바구니 — PC와 동일 순서 (알림 → 장바구니). 쇼핑몰 모듈이 꺼져 있으면 그리지 않는다. -->
-        <a href="{{_global.shopBase}}/cart" data-ref="mobile_cart_btn" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" aria-label="$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}" class="inline-flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
+        <!-- 장바구니 — PC와 동일 순서 (알림 → 장바구니) -->
+        <button data-ref="mobile_cart_btn" type="button" aria-label="$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
           <on type="click">
-            <navigate/>
+            <navigate path="{{_global.shopBase}}/cart"/>
           </on>
           <icon name="shopping-cart" size="md"/>
           <!-- 수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝). -->
-          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-600 dark:bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
-        </a>
-        <!-- 사용자 정보를 받는 동안 — 링크 없는 같은 크기 자리. 받는 중을 비회원으로 읽어 회원에게 로그인 링크를 주지 않는다(#915). -->
-        <span data-ref="mobile_user_btn_loading" data-if="{{_global.currentUser === undefined}}" role="status" aria-label="$t:common.loading" class="inline-flex items-center justify-center p-2 text-gray-300 dark:text-gray-600 rounded-lg">
-          <icon name="user" size="md"/>
-        </span>
-        <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다. 비회원은 엔진이 실패 대체값 [] 를 넣으므로 uuid 로 가른다. -->
-        <a data-if="{{_global.currentUser !== undefined}}" href="{{_global.currentUser?.uuid ? '/mypage' : '/login'}}" aria-label="{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="inline-flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
+        </button>
+        <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다. -->
+        <button type="button" aria-label="{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
-            <navigate/>
+            <navigate path="{{_global.currentUser ? '/mypage' : '/login'}}"/>
           </on>
           <icon name="user" size="md"/>
-        </a>
+        </button>
         <!-- 햄버거 메뉴 버튼 -->
         <button type="button" aria-label="$t:user.menu" aria-expanded="{{!!_global.mobileMenuOpen}}" data-ref="mobile_menu_toggle" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <on type="click">
@@ -301,7 +283,7 @@
       <!-- 드로어 헤더 - 닫기 버튼 -->
       <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <span class="font-semibold text-gray-900 dark:text-white">$t:user.menu</span>
-        <button data-ref="mobile_drawer_close_btn" type="button" aria-label="$t:nav.close_menu" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <button data-ref="mobile_drawer_close_btn" type="button" aria-label="$t:nav.close_menu" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <on type="click">
             <!-- 드로어 닫기 — 열림 여부는 전역이라 오버레이 클릭·메뉴 이동도 같은 값을 내린다. -->
             <set-state target="global" :mobileMenuOpen="false"/>
@@ -309,20 +291,22 @@
           <icon name="x" size="md"/>
         </button>
       </div>
-      <!-- 검색바 — 검색 공급자(게시판·쇼핑몰·페이지)가 모두 꺼졌을 때만 숨긴다(데스크톱 머리글 검색칸과 같은 기준). -->
-      <div data-ref="mobile_drawer_search" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" class="p-4">
-        <!-- 최근 검색어 검색창 — 머리글 검색칸·통합검색 화면과 같은 범위(core.site)라 목록을 함께 쓴다. 빈 칸에 초점을 두면 최근 검색어가 펼쳐지고, 제출할 때 검색창이 기록한다(기다리지 않음). -->
-        <recent-search-combobox data-type="composite" data-ref="mobile_drawer_search_box" scope="core.site" name="q" resultPath="/search" placeholder="$t:user.search_placeholder" inputClassName="w-full min-h-[44px] pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
-          <on event="onSearch">
-            <!-- 드로어 검색 — 제출에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다. -->
-            <sequence>
-              <set-state target="global" :mobileMenuOpen="false"/>
-              <navigate path="/search">
-                <query q="{{$args[0]}}"/>
-              </navigate>
-            </sequence>
-          </on>
-        </recent-search-combobox>
+      <!-- 검색바 -->
+      <div class="p-4">
+        <div class="relative">
+          <icon name="search" size="sm" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"/>
+          <input type="text" name="q" placeholder="$t:user.search_placeholder" class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+            <on type="keydown" key="Enter">
+              <!-- 드로어 검색 — 엔터에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/search">
+                  <query q="{{$event.target.value}}"/>
+                </navigate>
+              </sequence>
+            </on>
+          </input>
+        </div>
       </div>
       <!-- 언어/통화 선택 — 회원·비회원 공통. 헤더 우측 그룹에서 이동(모바일 오버플로 해소). 통화는 이커머스 모듈이 header_currency 슬롯에 주입하므로 SlotContainer 만 배치(모듈 비활성 시 자동 미렌더). -->
       <div data-ref="mobile_drawer_prefs" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
@@ -337,7 +321,7 @@
             <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
               <!-- 접힘 상태 요약 = 현재 언어명 -->
               <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
-              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-500 dark:text-gray-500 transition-transform duration-200"/>
+              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
             </span>
           </button>
           <!-- 펼침 영역 — 사용자 정보 아코디언과 동일한 max-h/opacity 트랜지션. overflow-hidden 이라 접힘 시 칩이 잘려 사라진다. -->
@@ -360,55 +344,55 @@
       <!-- 로그인된 사용자 정보 - 아코디언 토글. 위 설정 묶음의 구분선과 카드 사이에도 좌우·하단과 같은 여백(p-4)을 둔다. -->
       <div data-if="{{_global.currentUser?.uuid}}" class="p-4 border-b border-gray-200 dark:border-gray-700">
         <!-- 사용자 프로필 버튼 (아코디언 토글) -->
-        <button type="button" class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
+        <button class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
           <on type="click">
             <set-state target="global" mobileUserMenuOpen="{{!_global.mobileUserMenuOpen}}"/>
           </on>
           <avatar data-type="composite" avatar="{{_global.currentUser?.avatar}}" name="{{_global.currentUser?.name ?? '?'}}" size="md"/>
           <div class="flex-1 min-w-0 text-left">
             <div class="font-medium text-gray-900 dark:text-white truncate">{{_global.currentUser?.name}}</div>
-            <div class="text-sm text-gray-600 dark:text-gray-300 truncate">{{_global.currentUser?.email}}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 truncate">{{_global.currentUser?.email}}</div>
           </div>
           <!-- 아코디언 화살표 아이콘 -->
-          <icon name="chevron-down" size="md" class="{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-500 dark:text-gray-300 transition-transform duration-200"/>
+          <icon name="chevron-down" size="md" class="{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
         </button>
         <!-- 아코디언 펼침 영역 - 부드러운 애니메이션 -->
         <div class="overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileUserMenuOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}">
           <div class="overflow-hidden min-h-0 py-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
             <!-- 관리자 메뉴 (is_admin일 때만) - 하이퍼링크로 전체 페이지 새로고침 -->
-            <a data-if="{{_global.currentUser?.is_admin}}" href="/admin" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-blue-700 dark:text-blue-200 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium">
+            <a data-if="{{_global.currentUser?.is_admin}}" href="/admin" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium">
               <icon name="settings" size="sm"/>
               <span>$t:common.admin_menu</span>
             </a>
             <!-- 마이페이지 -->
-            <a href="/mypage" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+            <button class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
               <on type="click">
                 <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
                 <navigate path="/mypage"/>
               </on>
               <icon name="user" size="sm"/>
               <span>$t:common.mypage</span>
-            </a>
-            <!-- 주문 내역 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
-            <a href="/mypage/orders" data-ref="mobile_drawer_orders_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+            </button>
+            <!-- 주문 내역 -->
+            <button class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
               <on type="click">
                 <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
                 <navigate path="/mypage/orders"/>
               </on>
               <icon name="shopping-bag" size="sm"/>
               <span>$t:mypage.tabs.orders</span>
-            </a>
-            <!-- 위시리스트 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
-            <a href="/mypage/wishlist" data-ref="mobile_drawer_wishlist_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+            </button>
+            <!-- 위시리스트 -->
+            <button class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
               <on type="click">
                 <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
                 <navigate path="/mypage/wishlist"/>
               </on>
               <icon name="heart" size="sm"/>
               <span>$t:mypage.tabs.wishlist</span>
-            </a>
+            </button>
             <!-- 로그아웃 버튼 -->
-            <button type="button" class="justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
+            <button class="justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
               <on type="click">
                 <logout>
                   <success>
@@ -422,10 +406,10 @@
           </div>
         </div>
       </div>
-      <!-- 비로그인 상태 - 로그인/회원가입 버튼. 사용자 정보를 받는 동안(undefined)은 그리지 않는다 — 회원에게 잠깐 보였다(#915). -->
-      <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" class="p-4 border-b border-gray-200 dark:border-gray-700">
+      <!-- 비로그인 상태 - 로그인/회원가입 버튼 -->
+      <div data-if="{{!_global.currentUser?.uuid}}" class="p-4 border-b border-gray-200 dark:border-gray-700">
         <div class="flex gap-2">
-          <a href="/login" class="inline-block flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer">
+          <button class="flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer">
             <on type="click">
               <!-- 로그인으로 — 드로어는 라우트가 바뀌어도 살아 있으므로 이동 전에 직접 닫는다. -->
               <sequence>
@@ -434,8 +418,8 @@
               </sequence>
             </on>
             $t:auth.login
-          </a>
-          <a href="/register" class="inline-block flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer">
+          </button>
+          <button class="flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer">
             <on type="click">
               <!-- 회원가입으로 — 드로어를 닫고 이동한다. -->
               <sequence>
@@ -444,21 +428,21 @@
               </sequence>
             </on>
             $t:auth.register_link
-          </a>
+          </button>
         </div>
-        <!-- 비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav). 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
-        <a href="/login?redirect=/mypage/orders" data-ref="mobile_drawer_guest_order_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+        <!-- 비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav) -->
+        <button class="block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
           <on type="click">
             <set-state target="global" :mobileMenuOpen="false"/>
             <!-- 주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름. -->
             <navigate path="/login?redirect=/mypage/orders"/>
           </on>
           $t:shop.guest_order_form.nav_link
-        </a>
+        </button>
       </div>
       <!-- 메뉴 섹션 - 홈 -->
       <div class="p-4">
-        <a href="/" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer">
+        <button class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer">
           <on type="click">
             <!-- 홈으로 — 드로어를 닫고 이동한다. -->
             <sequence>
@@ -468,8 +452,8 @@
           </on>
           <icon name="home" size="md"/>
           <span>$t:user.nav.home</span>
-        </a>
-        <a href="/boards/popular" data-ref="mobile_drawer_popular_link" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        </button>
+        <button class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <!-- 인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다. -->
             <sequence>
@@ -477,15 +461,15 @@
               <navigate path="/boards/popular"/>
             </sequence>
           </on>
-          <icon name="flame" size="md" class="text-orange-600 dark:text-orange-500"/>
+          <icon name="flame" size="md" class="text-orange-500"/>
           <span>$t:user.nav.popular</span>
-        </a>
+        </button>
       </div>
-      <!-- 메뉴 섹션 - 게시판 (제목 + 목록). 게시판 모듈이 꺼져 있으면 제목까지 통째로 숨긴다. -->
-      <div data-ref="mobile_drawer_boards_section" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="px-4 pb-4">
+      <!-- 메뉴 섹션 - 게시판 -->
+      <div class="px-4 pb-4">
         <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.boards</div>
         <div data-each="board in {{boards.data ?? []}}">
-          <a href="/board/{{board.slug}}" class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+          <button class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
             <on type="click">
               <!-- 그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록). -->
               <sequence>
@@ -494,14 +478,14 @@
               </sequence>
             </on>
             <span class="min-w-0 truncate">{{board.name}}</span>
-            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-600 dark:text-gray-300 shrink-0">{{board.post_count}}</span>
-          </a>
+            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{board.post_count}}</span>
+          </button>
         </div>
       </div>
-      <!-- 메뉴 섹션 - 쇼핑. 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
-      <div data-ref="mobile_drawer_shop_section" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <!-- 메뉴 섹션 - 쇼핑 -->
+      <div class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.shop</div>
-        <a href="{{_global.shopBase}}/products" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        <button class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <!-- 상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다. -->
             <sequence>
@@ -511,19 +495,8 @@
           </on>
           <icon name="shopping-bag" size="md"/>
           <span>$t:user.nav.products</span>
-        </a>
-        <a href="{{_global.shopBase}}/reviews" data-ref="mobile_drawer_reviews_link" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
-          <on type="click">
-            <!-- 리뷰 모아보기로 — 서랍을 닫고 이동한다 -->
-            <sequence>
-              <set-state target="global" :mobileMenuOpen="false"/>
-              <navigate path="{{_global.shopBase}}/reviews"/>
-            </sequence>
-          </on>
-          <icon name="star" size="md"/>
-          <span>$t:user.nav.reviews</span>
-        </a>
-        <a href="{{_global.shopBase}}/cart" class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        </button>
+        <button class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <!-- 장바구니로 — 옆 배지 수량은 cart 데이터소스가 채우므로 비회원도 담은 것이 보인다. -->
             <sequence>
@@ -535,15 +508,15 @@
             <icon name="shopping-cart" size="md"/>
             <span>$t:user.nav.cart</span>
           </div>
-          <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-600 dark:bg-red-600 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
-        </a>
+          <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-500 dark:bg-red-500 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
+        </button>
       </div>
-      <!-- 메뉴 섹션 - 정보/정책. 여섯 링크 모두 페이지 모듈 문서라 페이지 모듈이 꺼져 있으면 묶음째 숨긴다. -->
-      <div data-ref="mobile_drawer_info_section" data-if="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+      <!-- 메뉴 섹션 - 정보/정책 -->
+      <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-2 gap-x-4">
           <div>
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.info</div>
-            <a href="/page/about" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다. -->
                 <sequence>
@@ -552,8 +525,8 @@
                 </sequence>
               </on>
               $t:user.footer.about
-            </a>
-            <a href="/page/faq" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 자주 묻는 질문 문서로. -->
                 <sequence>
@@ -562,8 +535,8 @@
                 </sequence>
               </on>
               $t:user.footer.faq
-            </a>
-            <a href="/page/contact" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 문의 안내 문서로 — 문의 폼이 아니라 페이지 모듈 문서다. -->
                 <sequence>
@@ -572,11 +545,11 @@
                 </sequence>
               </on>
               $t:user.footer.contact
-            </a>
+            </button>
           </div>
           <div>
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.policy</div>
-            <a href="/page/terms" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각). -->
                 <sequence>
@@ -585,8 +558,8 @@
                 </sequence>
               </on>
               $t:user.footer.terms
-            </a>
-            <a href="/page/privacy" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 개인정보처리방침 문서로. -->
                 <sequence>
@@ -595,8 +568,8 @@
                 </sequence>
               </on>
               $t:user.footer.privacy
-            </a>
-            <a href="/page/refund" class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
               <on type="click">
                 <!-- 환불·교환 정책 문서로 — 주문 화면의 실제 취소/환불 흐름과는 무관한 안내 문서다. -->
                 <sequence>
@@ -605,15 +578,13 @@
                 </sequence>
               </on>
               $t:user.footer.refund
-            </a>
+            </button>
           </div>
         </div>
       </div>
     </div>
-    <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===
-         shopProductsHref 는 봇 화면(seo-config header_nav)의 「쇼핑」 링크 전용이다 — 값과 글자가 섞인 attrs 패턴({shopBase}/products)을
-         옛 코어(7.1.3 이하)의 봇 렌더가 치환하지 못해 완성된 주소 하나를 prop 으로 넘긴다. 컴포넌트는 이 prop 을 읽지 않는다. -->
-    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" userLoading="{{_global.currentUser === undefined}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" shopReviewsHref="{{_global.shopBase ?? '/shop'}}/reviews" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" searchHistoryScope="core.site" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
@@ -643,7 +614,7 @@
               <toast type="error" message="{{error.message}}"/>
             </fail>
           </api-call>
-          <navigate if="{{$args[0].url}}" path="{{$args[0].url ?? '/mypage/notifications'}}" fallbackPath="/mypage/notifications"/>
+          <navigate if="{{$args[0].url}}" path="{{$args[0].url ?? '/mypage/notifications'}}"/>
         </sequence>
       </on>
       <on event="onNotificationMarkAllRead">
@@ -710,7 +681,7 @@
       </container>
     </div>
     <!-- === 푸터 (Footer 컴포넌트) === -->
-    <footer data-type="composite" data-ref="footer" businessInfo="{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.basic_info?.show_business_footer !== false ? (_global.modules?.['sirsoft-ecommerce']?.basic_info ?? null) : null}}" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}">
+    <footer data-type="composite" data-ref="footer" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? '그누보드7'}}">
       <prop name="socialLinks">
         <field name="github" value="{{_global.settings?.social?.github}}"/>
         <field name="twitter" value="{{_global.settings?.social?.twitter}}"/>
@@ -726,6 +697,4 @@
   <modal src="partials/_identity_challenge_modal.g7.html"/>
   <!-- 알림 전체 삭제 확인 창 — 헤더와 모바일 드로어의 알림센터가 공유한다(둘 다 onDeleteAll 에서 이 이름을 연다). -->
   <modal src="partials/_modal_notification_delete_all_confirm.g7.html"/>
-  <!-- 상품 카드의 옵션 선택 창 — 카드가 목록·검색·가로 상품 줄 등 여러 화면에 나오므로 상속원에 한 번만 둔다(쇼핑몰이 꺼져 있으면 창 본문을 그리지 않는다). -->
-  <modal src="partials/shop/_modal_quick_option.g7.html"/>
 </layout>

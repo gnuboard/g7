@@ -82,7 +82,7 @@
                                         "props": {
                                             "name": "flame",
                                             "size": "lg",
-                                            "className": "text-orange-600"
+                                            "className": "text-orange-500"
                                         }
                                     },
                                     {
@@ -112,16 +112,18 @@
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=today"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/boards/popular?period=today",
-                                    "className": "inline-flex items-center justify-center {{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
+                                    "className": "{{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
                                 "children": [
                                     {
@@ -142,16 +144,18 @@
                             },
                             {
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=week"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/boards/popular?period=week",
-                                    "className": "inline-flex items-center justify-center {{(query.period ?? 'week') === 'week' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
+                                    "className": "{{(query.period ?? 'week') === 'week' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
                                 "children": [
                                     {
@@ -172,16 +176,18 @@
                             },
                             {
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=month"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/boards/popular?period=month",
-                                    "className": "inline-flex items-center justify-center {{(query.period ?? 'week') === 'month' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
+                                    "className": "{{(query.period ?? 'week') === 'month' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
                                 "children": [
                                     {
@@ -202,16 +208,18 @@
                             },
                             {
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=year"
+                                        }
                                     }
                                 ],
                                 "props": {
-                                    "href": "/boards/popular?period=year",
-                                    "className": "inline-flex items-center justify-center {{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
+                                    "className": "{{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
                                 "children": [
                                     {

@@ -42,6 +42,8 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 - 컴포넌트 재사용성 극대화
 - 다국어 및 권한 기반 렌더링
 
+> 템플릿 엔진을 쓰지 않고 Blade·Twig·HTML+jQuery·외부 프레임워크(Next.js 등)로 화면을 직접 만들려면 템플릿이 아니라 custom 예약 자리를 쓴다 — `routes/custom.php` 에 등록한 주소만 개발자 화면이 그리고 나머지는 템플릿이 그대로 그린다(7.2.0+). [개발자 화면 가이드](../custom-development.md)
+
 ---
 
 ## 확장 컴포넌트 오버라이드
@@ -275,60 +277,8 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 템플릿도 다른 확장이 읽으라고 내놓는 전역 값을 `state_contracts` 로 선언하고(예: 기본 템플릿의 `shopBase` — 쇼핑몰 경로),
 있으면 연동되는 확장을 `integrations` 로 선언합니다. 형식과 규칙은 플러그인과 같습니다 —
 [전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts),
-[선택 연동](plugin-development.md#선택-연동-integrations). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
+[선택 연동](plugin-development.md#2-의존성-dependency). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
 교체될 템플릿의 선언이 충돌 검사에서 빠집니다.
-
-#### 사용자 템플릿이 모듈 화면을 품을 때 (코어 7.1.4+)
-
-게시판·쇼핑몰처럼 사이트가 골라 쓰는 모듈의 화면을 사용자 템플릿이 함께 제공한다면, 그 모듈을 `dependencies` 가 아니라
-`integrations` 에 버전 제약으로 선언합니다. `dependencies` 에 두면 그 모듈을 켜지 않은 사이트는 템플릿을 설치할 수 없고, 이미 쓰던
-사이트는 모듈 하나만 꺼도 사용자 화면 전체가 「서비스 이용 불가」(503)가 됩니다.
-
-```json
-"dependencies": { "modules": {}, "plugins": {} },
-"integrations": {
-    "modules": { "sirsoft-board": ">=1.2.1", "sirsoft-ecommerce": ">=1.3.0", "sirsoft-page": ">=1.2.0" },
-    "plugins": { "sirsoft-daum_postcode": ">=1.0.0" }
-}
-```
-
-선택 연동으로 선언했으면 그 모듈이 꺼진 사이트에서 화면이 깨지지 않게 세 곳을 함께 가립니다.
-
-| 대상 | 방법 |
-| --- | --- |
-| 모듈 화면 라우트 | `routes.json` 라우트에 `"requires": {"modules": ["sirsoft-board"]}` — 모듈이 꺼지면 라우트·사이트맵·검색봇 화면에서 빠진다 ([템플릿 라우팅 — requires](template-routing.md)) |
-| 공통 화면의 데이터소스 | `"if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}"` + `"errorHandling": {"404": {"handler": "suppress"}}` — 헤더·홈·마이페이지처럼 어느 라우트에서든 쓰이는 레이아웃이 대상이다 |
-| 메뉴·링크·단추·컴포넌트 속성 | 같은 식을 노드 `if` 나 컴포넌트 속성(예: 헤더의 게시판 탭 표시 여부)에 쓴다. 플러그인은 `_global.activePlugins` |
-
-식은 한 모양만 씁니다 — `?? true` 를 빼면 이 값이 없는 옛 코어(7.1.3 이하)에서 화면이 사라집니다. 식의 규칙은
-[전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)에 있습니다. 정적 검사는 템플릿 레이아웃의 데이터소스가
-선택 연동 모듈의 API 를 이 가드 없이 부르면 오류로 봅니다 — 그 레이아웃을 쓰는 라우트가 모두 `requires` 로 그 모듈을 거는 경우만 예외입니다.
-
-옛 코어(7.1.3 이하)는 `requires` 와 `_global.activeModules` 를 모르므로 모든 화면을 「모두 켜짐」으로 그립니다. 그래서
-`g7_version` 을 올리지 않아도 기존 사이트의 화면은 그대로이고, 모듈을 골라 쓰는 단독 사용은 코어 7.1.4 이상에서 동작한다고
-CHANGELOG 에 적습니다.
-
-### 필수 브라우저 저장 키 (necessary_storage) — 7.1.3+
-
-템플릿 화면이 동의와 무관하게 써야 하는 브라우저 저장 키(색 모드, 사이드바 접힘 등)를 선언하는 **선택 필드**입니다. 쿠키 동의 플러그인은 동의 전 「필수」 목록 밖의 저장 키를 지우므로, 선언하지 않은 키는 동의 전에 지워질 수 있습니다. 코어는 활성 사용자·관리자 템플릿의 선언을 합쳐 `TemplateManager::getActiveTemplatesNecessaryStorage()` 로 내놓고, 동의 플러그인이 이를 자기 제공 목록에 더합니다(PHP 리스너가 없는 템플릿도 키를 등록할 수 있는 통로).
-
-```json
-"necessary_storage": {
-    "localStorage": ["g7_color_scheme", "g7_admin_sidebar_collapsed", "g7_filters_*"],
-    "sessionStorage": ["g7_dismissed_warnings"],
-    "cookie": []
-}
-```
-
-| 항목 | 규칙 |
-|------|------|
-| 저장소 키 | `localStorage` · `sessionStorage` · `cookie` (각각 문자열 배열, 생략 가능) |
-| 키 문자 | 영문·숫자와 `_` `.` `:` `@` `+` `-` |
-| 와일드카드 | 끝의 `*` 하나만 — 앞부분이 같은 키 모두와 매칭 (`g7_filters_*`) |
-| 길이 | 128자 이하 |
-| 틀린 항목 | 그 항목만 무시하고 경고 로그를 남긴다. 설치는 막지 않으며, 설치·업데이트 때는 결과의 생명주기 경고 목록(`warnings`)에도 실린다 |
-
-활성 템플릿의 선언만 반영됩니다 — 템플릿을 바꾸면 이전 템플릿이 선언한 키는 목록에서 빠집니다.
 
 ### 외부 리소스 (externals)
 
@@ -380,33 +330,6 @@ CHANGELOG 에 적습니다.
 `externals`는 페이지 최초 진입에 항상 필요한 리소스만 선언합니다. 라우트별 조건부 스크립트나 액션 실행 중 동적 로딩은 layout `scripts`와 `loadScript` 책임입니다.
 
 세 경로 모두 **같은 출처 정책**을 받습니다 — same-origin 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 상세: [module-assets.md](module-assets.md#trusted_script_hosts--외부-스크립트-신뢰-호스트) · [frontend/security.md](../frontend/security.md#외부-스크립트-신뢰-출처-허용목록)
-
-### 뒤로가기·새로고침 스크롤 기본값 (scroll_restoration) — engine-v1.85.0+
-
-뒤로/앞으로 가기·새로고침으로 화면에 돌아왔을 때의 스크롤 동작을 템플릿 전체에 거는 **선택 필드**입니다. 사용자·관리자 템플릿 모두 씁니다. 엔진은 앱 시작 때 `/api/templates/{identifier}/config.json`(이 파일을 그대로 내보낸다)으로 읽어 엔진 기본값 위에 깝니다.
-
-```json
-"scroll_restoration": {
-  "mode": "restore",
-  "on_reload": true,
-  "wait": "height",
-  "timeout_ms": 5000,
-  "containers": [],
-  "snapshot": { "enabled": true, "ttl_seconds": 600, "revalidate": true, "item_key": "id", "state": [] }
-}
-```
-
-키·값·기본값은 레이아웃 `meta.scroll_restoration` 과 같습니다 — [layout-json.md](../frontend/layout-json.md#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원). 모든 키가 선택이고, 적지 않은 키는 엔진 기본값을 씁니다. 관리자 템플릿처럼 본문이 창이 아닌 안쪽 영역에서 스크롤되면 그 선택자를 `containers` 에 적습니다.
-
-| 단계 (뒤가 우선) | 어디서 정하나 |
-| --- | --- |
-| 엔진 기본값 | 코어 |
-| `template.json` `scroll_restoration` | 템플릿 제작자 — 배포 초깃값. 읽기 전용이며 템플릿을 업데이트하면 새 판으로 덮인다 |
-| 베이스 레이아웃 `meta.scroll_restoration` | 운영자 — 레이아웃 편집기에서 베이스 레이아웃(`_user_base`·`_admin_base` 등)의 [페이지 설정 → 스크롤] 탭. 「템플릿 기본값」으로 보인다 |
-| 화면 레이아웃 `meta.scroll_restoration` | 운영자 — 화면의 [페이지 설정 → 스크롤] 탭 |
-| `navigate` 의 `returnScroll` | 그 이동으로 떠난 화면에 뒤로 가기로 돌아올 때만 ([actions-handlers-navigation.md](../frontend/actions-handlers-navigation.md#returnscroll-옵션)) |
-
-운영자가 사이트에 맞게 고치는 값은 `template.json` 이 아니라 베이스 레이아웃에 둡니다 — `template.json` 은 업데이트 때 덮이고 쓰기 화면이 없습니다.
 
 ---
 
@@ -828,3 +751,4 @@ SEO 페이지 생성기가 컴포넌트를 HTML로 변환할 때 사용하는 �
 - [template-caching.md](./template-caching.md) - 템플릿 캐싱 전략
 - [template-commands.md](./template-commands.md) - 템플릿 Artisan 커맨드
 - [extension-update-system.md](./extension-update-system.md) - 확장 업데이트 시스템
+- [custom-development.md](../custom-development.md) - 템플릿 엔진 대신 개발자가 직접 만든 화면(custom 예약 자리)

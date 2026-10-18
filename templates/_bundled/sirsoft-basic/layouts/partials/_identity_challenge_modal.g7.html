@@ -54,9 +54,9 @@
         <!-- 재전송 — 코어 mail/SMS 등 코드/링크 발송형 provider 에서만 노출. 외부 plugin (inicis 등 팝업/SDK 호출형) 은 재전송 개념 없음. 가드 패턴: provider_id 미지정 또는 코어 mail 인 경우만 노출. -->
         <button data-if="{{!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail'}}" type="button" disabled="{{(_global.identityChallenge?.resendCooldown ?? 0) > 0 || (_global.identityChallenge?.resending ?? false) || (_global.identityChallenge?.verifying ?? false)}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed">
           <on type="click">
-            <!-- 다시 보내기 — 새 인증 건이 발급되므로 건 번호·만료·시도 횟수를 응답값으로 갈아 끼우고 앞서 친 코드도 비운다(옛 코드가 남아 있으면 새 코드와 헷갈린다). 60초 대기(서버의 재요청 제한과 같은 값)는 응답을 기다리지 않고 먼저 걸어 연타를 막되, 실패하면 곧바로 풀어 다시 누를 수 있게 한다. -->
+            <!-- 다시 보내기 — 새 인증 건이 발급되므로 건 번호·만료·시도 횟수를 응답값으로 갈아 끼우고 앞서 친 코드도 비운다(옛 코드가 남아 있으면 새 코드와 헷갈린다). 30초 대기는 응답을 기다리지 않고 먼저 걸어 연타를 막되, 실패하면 곧바로 풀어 다시 누를 수 있게 한다. -->
             <sequence>
-              <set-state target="global" :identityChallenge.resending="true" :identityChallenge.resendCooldown="60" :identityChallenge.error="null" identityChallenge.code=""/>
+              <set-state target="global" :identityChallenge.resending="true" :identityChallenge.resendCooldown="30" :identityChallenge.error="null" identityChallenge.code=""/>
               <api-call target="/api/identity/challenges" method="POST">
                 <success>
                   <set-state target="global" :identityChallenge.resending="false" identityChallenge.challenge_id="{{response.data.id}}" identityChallenge.expires_at="{{response.data.expires_at}}" identityChallenge.render_hint="{{response.data.render_hint ?? _global.identityChallenge?.render_hint ?? 'text_code'}}" :identityChallenge.attempts="0" identityChallenge.code=""/>

@@ -36,7 +36,7 @@
 | lock_state | query | string | 아니오 | `all`, `locked`, `unlocked` | 계정 잠금 (locked = 영구 잠금 또는 해제 시각이 미래) |
 | start_date | query | date | 아니오 | — | 가입일 시작 (그날 0시부터) |
 | end_date | query | date | 아니오 | ≥ start_date | 가입일 종료 (그날 끝까지 포함) |
-| date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정). week·month 의 기본 기간은 보는 사람 시간대의 오늘로 끝난다 |
+| date_filter | query | string | 아니오 | `all`, `week`, `month`, `custom` | 가입 기간 프리셋 (all: 전체, week: 최근 1주, month: 최근 1개월, custom: start_date/end_date 로 직접 지정) |
 | last_login_start | query | date | 아니오 | — | 최근 로그인 시작 |
 | last_login_end | query | date | 아니오 | ≥ last_login_start | 최근 로그인 종료 |
 | never_logged_in | query | boolean | 아니오 | `true`, `false`, `1`, `0` | 로그인 이력이 없는 회원만 (참이면 최근 로그인 기간은 무시) |
@@ -678,7 +678,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `admin@example.com` | 이메일 주소 |
+| email | string | `heuristing@gmail.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -717,7 +717,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "admin@example.com",
+        "email": "heuristing@gmail.com",
         "avatar": null,
         "language": "ko",
         "language_label": "한국어",
@@ -900,14 +900,8 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | keyword | query | string | 아니오 | max 255 | 검색 키워드 (부분 일치) |
 | uuid | query | uuid | 아니오 | — | 특정 사용자 UUID 로 단건 조회 (지정 시 keyword 무시하고 해당 UUID 사용자만 반환) |
-| exclude_withdrawn | query | boolean | 아니오 | `1`·`0`·`true`·`false` | 키워드 검색에서 탈퇴 회원(`withdrawn_at` 있음 또는 상태 `withdrawn`)을 뺀다. 차단·비활성·휴면 회원은 빼지 않는다. uuid 단건 조회에는 적용하지 않는다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.search_validation_rules`).
-
-**`exclude_withdrawn` 을 실어야 하는 자리** — 회원을 「고르는」 창. 관리자 알림 문안 편집 창(코어 환경설정·게시판·이커머스·GDPR·수출입은행 플러그인)의
-「특정 회원」 수신자 검색이 이 값을 싣는다(7.1.1). 탈퇴 회원은 연락처가 익명화되고 바깥 채널 발송이 막혀 수신자로 골라도
-받지 못한다. 반대로 활동 로그·주문·쿠폰·배송지 목록의 「회원」 필터처럼 **기록을 찾는** 자리는 싣지 않는다 — 탈퇴 회원의
-기록도 찾아야 하기 때문이다(기본값은 종전처럼 탈퇴 회원 포함).
 
 **응답 메타 — `meta.keyword`**
 
@@ -924,7 +918,7 @@ HTTP/1.1 200
 응답 도착 시점의 입력칸을 다시 읽어 도장을 찍으면 한 글자가 부른 가장 큰 응답(전체 회원)이
 가장 늦게 와서 현재 키워드의 것으로 둔갑합니다 — 2026-09-22 실측에서 `MEAS599T-S2` 를 친
 관리자 마일리지 수동 지급 모달에 전체 회원 83행이 떴고, 그 목록에서 고르면 **엉뚱한 회원에게
-돈이 지급됩니다**(#599 실측).
+돈이 지급됩니다**(#599 3차 실측 T2-D1).
 
 **요청 예시**
 
@@ -1195,7 +1189,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `admin@example.com` | 이메일 주소 |
+| email | string | `heuristing@gmail.com` | 이메일 주소 |
 | avatar | null | `null` | 프로필 아바타 이미지 URL (미설정 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -1250,13 +1244,6 @@ _단건 응답: `data` 객체의 필드._
 | password_status.change_required | boolean | `false` | 다음 로그인 때 비밀번호를 바꿔야 하는지 (관리자가 정해 준 비밀번호) |
 | password_status.postponed_until | string\|null | `null` | '다음에 변경' 연기 종료 일시 (연기 중일 때만) |
 | password_status.days_left | integer\|null | `3` | 만료까지 남은 날수 (적용되지 않으면 null) |
-| search_history | object | `{"enabled":true, …}` | 최근 검색어 — 상세 응답에만 실린다(목록은 회원마다 범위 조회가 들어 제외, 코어 7.1.5) |
-| search_history.enabled | boolean | `true` | 사이트가 최근 검색어 기능을 쓰는지 (`privacy.search_history_enabled`). 꺼도 저장된 검색어는 아래에 실린다 |
-| search_history.auto_save | boolean | `true` | 회원의 검색어 자동 저장 여부 (꺼도 저장된 검색어는 지우지 않는다) |
-| search_history.scopes | object | `{"core.site": {…}}` | 범위 id → 그 범위의 검색어. **지금 선언된 범위만**(코어 `core.site` + 활성 모듈·플러그인 선언). 확장을 끄면 그 범위는 빠진다(행은 남음). 코어 화면은 `core.site`, 확장 탭은 자기 범위를 키로 꺼내 그린다 |
-| search_history.scopes.*.owner | string | `core` | 범위 소유자 (`core` · `module:{id}` · `plugin:{id}`) |
-| search_history.scopes.*.label | string | `통합 검색` | 범위 이름 (지금 언어) |
-| search_history.scopes.*.items | array | `[{"keyword":"등산화","searched_at":"2026-11-04 19:00:00"}]` | 검색어와 마지막 검색 일시(사용자 시간대), 최신순, 범위마다 최대 50건 |
 | notify_post_complete | boolean | `false` | 게시글 작성 완료 알림 수신 여부 (게시판 모듈 알림 설정) |
 | notify_post_reply | boolean | `false` | 내 게시글 답글 알림 수신 여부 |
 | notify_comment | boolean | `false` | 내 게시글 댓글 알림 수신 여부 |
@@ -1302,7 +1289,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "admin@example.com",
+        "email": "heuristing@gmail.com",
         "avatar": null,
         "language": "ko",
         "language_label": "한국어",
@@ -1633,7 +1620,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `admin@example.com` | 이메일 주소 |
+| email | string | `heuristing@gmail.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -1672,7 +1659,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "admin@example.com",
+        "email": "heuristing@gmail.com",
         "avatar": null,
         "language": "ko",
         "language_label": "한국어",

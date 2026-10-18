@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit;
 use Modules\Sirsoft\Ecommerce\Listeners\AssignDefaultCurrencyOnRegisterListener;
 use Modules\Sirsoft\Ecommerce\Listeners\UserCurrencyInfoListener;
 use Modules\Sirsoft\Ecommerce\Module;
-use Tests\PureTestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 유저별 통화 설치 게이트 검증 (A5)
@@ -15,7 +15,7 @@ use Tests\PureTestCase;
  * - 관리자 통화 필드는 모듈 layout_extension 주입(미설치 시 코어 회원폼에 부재).
  * - 마이페이지/관리자 UI 는 ecommerce_preferred_currency 키 게이트(미설치 시 키 부재).
  */
-class InstallGateCurrencyTest extends PureTestCase
+class InstallGateCurrencyTest extends ModuleTestCase
 {
     /**
      * 가입 시 기본 통화 부여·회원 응답 통화 주입 리스너가 모듈 훅 리스너 목록에 들어 있어, 모듈이 꺼지면 함께 빠지는지 확인한다.

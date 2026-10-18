@@ -94,7 +94,6 @@ class SaltRepository implements SaltRepositoryInterface
     public function deleteOlderThan(Carbon $before): int
     {
         return AnalyticsSalt::query()
-            // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
             ->where('salt_date', '<', $before->toDateString())
             ->delete();
     }
@@ -108,7 +107,6 @@ class SaltRepository implements SaltRepositoryInterface
     public function countOlderThan(Carbon $before): int
     {
         return AnalyticsSalt::query()
-            // audit:allow datetime-display-user-timezone reason: UTC DB 질의값 — 기계값
             ->where('salt_date', '<', $before->toDateString())
             ->count();
     }

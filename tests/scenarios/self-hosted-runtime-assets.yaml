@@ -40,11 +40,6 @@ effects:
   - template_external_asset_field_resolves_to_asset_url
   - template_external_same_origin_ignores_preconnect_and_crossorigin
   - template_external_invalid_url_is_logged_not_silently_dropped
-  - template_external_attributes_normalized
-  - template_external_invalid_declarations_filtered
-  - template_external_hints_deduplicated
-  # #158 — 실패 신호는 인라인 onerror 가 아니라 표식 속성(셸 캡처 리스너가 받는다)
-  - template_external_failure_marker_not_inline
   - bot_render_path_uses_same_origin_asset
   - layout_script_retries_before_failing
   - layout_script_url_converted_to_current_mode
@@ -78,7 +73,6 @@ test_files:
   - resources/js/core/modules/__tests__/ModuleAssetLoader.test.ts
   - resources/js/core/template-engine/__tests__/networkResilience.stylesheet.test.ts
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-fallback.test.tsx
-  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/checkout-address-manual-entry.spec.ts
   - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/ckeditorGlobal.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.scriptGate.test.tsx
   - tests/Playwright/specs/layout-editor/preview-wysiwyg-single-load.spec.ts

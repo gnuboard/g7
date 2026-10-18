@@ -30,12 +30,11 @@ effects:
   - dot_path_resolves_nested_value
   - optional_chaining_yields_value_or_empty
   - null_coalescing_falls_back_only_on_missing_or_null
-  - string_concat_follows_js_plus   # engine-v1.84.0 — `'/' + x` 문자열 잇기·수 더하기 (#822)
   - array_index_access_resolves_or_renders_empty
   - missing_path_renders_empty_string
   - scalar_values_rendered_as_strings
   - text_without_binding_passes_through
-  - localized_object_picks_current_then_site_locale   # #148 D7 — 대체 언어는 사이트 기본 언어(app.site_locale)
+  - localized_object_picks_current_then_fallback_locale
   - translation_prefix_resolves_key
   # 비교·논리
   - comparison_operators_render_true_or_false
@@ -54,10 +53,6 @@ effects:
   - unknown_inline_translation_renders_empty
   - defer_translation_prefix_resolves_like_t
   - translation_params_resolve_bound_expressions
-  - seo_translation_param_value_kept_verbatim   # 인자 값의 & | = 를 구분자로 읽지 않음
-  - seo_translation_param_expression_not_split   # 인자 식 안의 || · 파이프로 인자를 자르지 않음
-  - literal_operator_text_kept   # 바인딩 없는 / · - 와 비지 않은 바인딩 값은 고립 연산자 정리 대상이 아니다, URL 자리는 정리하지 않는다
-  - seo_translation_empty_param_renders_empty   # 빈 인자 값은 빈 글자(봇 화면은 자리표시자 {{name}} 를 싣지 않는다 — 브라우저는 남김, 의도된 차이)
   - translation_literal_or_absent_params_accepted
   - translation_placeholders_replaced_in_both_formats
   - translation_count_selects_plural_variant
@@ -142,7 +137,6 @@ effects:
 
 test_files:
   - tests/Unit/Seo/ExpressionEvaluatorTest.php
-  - tests/Unit/Seo/ExpressionEvaluatorTranslationParamTest.php
 
 notes: |
   테스트 250건 전부가 `@effects` 를 갖고, 평가 호출이 모두 한 칸(같은 진입점·같은 입력 모양)에

@@ -59,7 +59,7 @@ class TemplateLayoutVersionSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info(__('common.console.seeders.template_layout_version.start'));
+        $this->command->info('템플릿 레이아웃 버전 시더 생성을 시작합니다.');
 
         // 기존 버전 데이터 삭제
         $this->deleteExistingVersions();
@@ -68,7 +68,7 @@ class TemplateLayoutVersionSeeder extends Seeder
         $layouts = TemplateLayout::all();
 
         if ($layouts->isEmpty()) {
-            $this->command->warn(__('common.console.seeders.template_layout_version.no_layouts'));
+            $this->command->warn('레이아웃이 없습니다. TemplateSeeder를 먼저 실행해주세요.');
 
             return;
         }
@@ -77,7 +77,7 @@ class TemplateLayoutVersionSeeder extends Seeder
         $adminUser = User::where('is_super', true)->first();
 
         if (! $adminUser) {
-            $this->command->warn(__('common.console.seeders.template_layout_version.no_admin'));
+            $this->command->warn('관리자 사용자가 없습니다. AdminUserSeeder를 먼저 실행해주세요.');
 
             return;
         }
@@ -87,7 +87,7 @@ class TemplateLayoutVersionSeeder extends Seeder
             $this->createVersionsForLayout($layout, $adminUser);
         }
 
-        $this->command->info(__('common.console.seeders.template_layout_version.done'));
+        $this->command->info('템플릿 레이아웃 버전 시더가 성공적으로 생성되었습니다.');
     }
 
     /**
@@ -100,7 +100,7 @@ class TemplateLayoutVersionSeeder extends Seeder
         $deletedCount = TemplateLayoutVersion::query()->where('changes_summary->is_sample', true)->delete();
 
         if ($deletedCount > 0) {
-            $this->command->warn(__('common.console.seeders.template_layout_version.cleaned', ['count' => $deletedCount]));
+            $this->command->warn("기존 샘플 레이아웃 버전 {$deletedCount}건을 삭제했습니다.");
         }
     }
 
@@ -134,7 +134,7 @@ class TemplateLayoutVersionSeeder extends Seeder
                 'created_by' => $adminUser->id,
             ]);
 
-            $this->command->info(__('common.console.seeders.template_layout_version.version_created', ['layout' => $layout->name, 'version' => $version->version]));
+            $this->command->info("레이아웃 '{$layout->name}'의 버전 {$version->version}이 생성되었습니다.");
         }
     }
 }

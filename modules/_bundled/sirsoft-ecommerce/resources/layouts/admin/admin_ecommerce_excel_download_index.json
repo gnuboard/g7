@@ -53,7 +53,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "file-excel",
-                                            "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
+                                            "className": "text-xl icon-muted"
                                         }
                                     },
                                     {
@@ -118,7 +118,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-down",
-                                                            "className": "select-trigger-icon text-gray-500 dark:text-gray-400"
+                                                            "className": "select-trigger-icon"
                                                         }
                                                     }
                                                 ]
@@ -208,7 +208,7 @@
                                     {
                                         "comment": "처리 상태를 가리지 않고 모두",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "Div",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -220,15 +220,13 @@
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
-                                            "aria-pressed": "{{_local.statusFilter === ''}}"
+                                            "className": "{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.filter.all"
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "Div",
                                         "actions": [
                                             {
                                                 "comment": "완료 — 파일이 만들어져 아직 보관기한 안에 있는 건",
@@ -241,9 +239,7 @@
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
-                                            "aria-pressed": "{{_local.statusFilter === 'completed'}}"
+                                            "className": "{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}"
                                         },
                                         "children": [
                                             {
@@ -263,7 +259,7 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "Div",
                                         "actions": [
                                             {
                                                 "comment": "생성중 — 아직 파일이 없어 내려받기를 걸 수 없는 건",
@@ -276,9 +272,7 @@
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
-                                            "aria-pressed": "{{_local.statusFilter === 'processing'}}"
+                                            "className": "{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}"
                                         },
                                         "children": [
                                             {
@@ -298,7 +292,7 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "Div",
                                         "actions": [
                                             {
                                                 "comment": "실패 — 생성 도중 끊긴 건. 다시 요청해야 한다",
@@ -311,9 +305,7 @@
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
-                                            "aria-pressed": "{{_local.statusFilter === 'failed'}}"
+                                            "className": "{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}"
                                         },
                                         "children": [
                                             {
@@ -333,7 +325,7 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "Div",
                                         "actions": [
                                             {
                                                 "comment": "만료 — 보관기한이 지나 파일이 지워진 건. 이력은 남지만 내려받을 수 없다",
@@ -346,9 +338,7 @@
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
-                                            "aria-pressed": "{{_local.statusFilter === 'expired'}}"
+                                            "className": "{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'}}"
                                         },
                                         "children": [
                                             {
@@ -400,7 +390,6 @@
                                         ],
                                         "props": {
                                             "name": "categoryFilter",
-                                            "aria-label": "$t:sirsoft-ecommerce.admin.excel_download.filter.category",
                                             "className": "w-40",
                                             "value": "{{_local.categoryFilter}}",
                                             "options": [
@@ -450,7 +439,6 @@
                                         "name": "Select",
                                         "props": {
                                             "name": "dateType",
-                                            "aria-label": "$t:sirsoft-ecommerce.admin.excel_download.filter.date_search",
                                             "className": "w-32",
                                             "value": "{{_local.dateType}}",
                                             "options": [
@@ -481,7 +469,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
+                                                            "className": "text-base icon-muted"
                                                         }
                                                     },
                                                     {
@@ -500,7 +488,6 @@
                                                         ],
                                                         "props": {
                                                             "type": "date",
-                                                            "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.excel_download.filter.start_date",
                                                             "className": "input w-36",
                                                             "value": "{{_local.startDate}}"
@@ -528,7 +515,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
+                                                            "className": "text-base icon-muted"
                                                         }
                                                     },
                                                     {
@@ -547,7 +534,6 @@
                                                         ],
                                                         "props": {
                                                             "type": "date",
-                                                            "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.excel_download.filter.end_date",
                                                             "className": "input w-36",
                                                             "value": "{{_local.endDate}}"
@@ -597,7 +583,6 @@
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "sortBy",
-                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-44",
                                                     "value": "{{_local.sortBy}}",
                                                     "options": [
@@ -624,7 +609,6 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
-                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-24",
                                                     "value": "{{_local.perPage}}",
                                                     "options": [
@@ -679,7 +663,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
+                                                                        "text": "현재 검색 조건"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -791,7 +775,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.times|count=3"
+                                                                                "text": "3회"
                                                                             }
                                                                         ]
                                                                     },
@@ -841,7 +825,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.admin"
+                                                                                "text": "관리자"
                                                                             }
                                                                         ]
                                                                     }
@@ -887,7 +871,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
+                                                                        "text": "현재 검색 조건"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1049,7 +1033,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
+                                                                                "text": "이영희"
                                                                             }
                                                                         ]
                                                                     }
@@ -1077,7 +1061,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
+                                                                        "text": "현재 검색 조건"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1239,7 +1223,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
+                                                                                "text": "김철수"
                                                                             }
                                                                         ]
                                                                     }
@@ -1267,7 +1251,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.misc.selected_products"
+                                                                        "text": "선택한 상품"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1429,7 +1413,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
+                                                                                "text": "이영희"
                                                                             }
                                                                         ]
                                                                     }
@@ -1574,7 +1558,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
                                                         },
                                                         "children": [
                                                             {
@@ -1599,7 +1583,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
+                                                                "text": "현재 검색 조건"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1675,7 +1659,7 @@
                                                                                         "props": {
                                                                                             "className": "text-primary font-medium"
                                                                                         },
-                                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.people.admin"
+                                                                                        "text": "관리자"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
@@ -1730,27 +1714,27 @@
                                                                                         "params": {
                                                                                             "target": "_local",
                                                                                             "selectedItem": {
-                                                                                                "file_content": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition",
-                                                                                                "category_name": "$t:sirsoft-ecommerce.admin.sample.misc.product_management",
+                                                                                                "file_content": "현재 검색 조건",
+                                                                                                "category_name": "상품관리",
                                                                                                 "status": "completed",
                                                                                                 "created_date": "2025-10-27 14:30:00",
                                                                                                 "expire_date": "2025-11-12 14:30:00",
                                                                                                 "download_count": 3,
                                                                                                 "download_history": [
                                                                                                     {
-                                                                                                        "user_name": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee",
+                                                                                                        "user_name": "이영희",
                                                                                                         "user_id": "leeyh",
                                                                                                         "downloaded_at": "2025-10-29 11:45:00",
                                                                                                         "sequence": 3
                                                                                                     },
                                                                                                     {
-                                                                                                        "user_name": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu",
+                                                                                                        "user_name": "김철수",
                                                                                                         "user_id": "kimcs",
                                                                                                         "downloaded_at": "2025-10-28 09:20:00",
                                                                                                         "sequence": 2
                                                                                                     },
                                                                                                     {
-                                                                                                        "user_name": "$t:sirsoft-ecommerce.admin.sample.people.admin",
+                                                                                                        "user_name": "관리자",
                                                                                                         "user_id": "admin",
                                                                                                         "downloaded_at": "2025-10-27 14:35:00",
                                                                                                         "sequence": 1
@@ -1770,7 +1754,7 @@
                                                                             "type": "button",
                                                                             "className": "btn btn-outline btn-sm"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.times|count=3"
+                                                                        "text": "3회"
                                                                     }
                                                                 ]
                                                             },
@@ -1788,7 +1772,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
                                                         },
                                                         "children": [
                                                             {
@@ -1813,7 +1797,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.sample.misc.selected_orders"
+                                                                "text": "선택한 주문서"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1889,7 +1873,7 @@
                                                                                         "props": {
                                                                                             "className": "text-primary font-medium"
                                                                                         },
-                                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
+                                                                                        "text": "김철수"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
@@ -1937,7 +1921,7 @@
                                                                             "type": "button",
                                                                             "className": "btn btn-outline btn-sm"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.times|count=5"
+                                                                        "text": "5회"
                                                                     }
                                                                 ]
                                                             },
@@ -1955,7 +1939,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
                                                         },
                                                         "children": [
                                                             {
@@ -1980,7 +1964,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
+                                                                "text": "현재 검색 조건"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2049,7 +2033,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
+                                                                                "text": "이영희"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2093,7 +2077,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
                                                         },
                                                         "children": [
                                                             {
@@ -2118,7 +2102,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
+                                                                "text": "현재 검색 조건"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2187,7 +2171,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
+                                                                                "text": "김철수"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2231,7 +2215,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
                                                         },
                                                         "children": [
                                                             {
@@ -2256,7 +2240,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "$t:sirsoft-ecommerce.admin.sample.misc.selected_products"
+                                                                "text": "선택한 상품"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2325,7 +2309,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
+                                                                                "text": "이영희"
                                                                             },
                                                                             {
                                                                                 "type": "basic",

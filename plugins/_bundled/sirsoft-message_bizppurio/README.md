@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.4-0066FF?style=flat-square" alt="version 1.1.4">
+  <img src="https://img.shields.io/badge/version-1.1.1-0066FF?style=flat-square" alt="version 1.1.1">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -98,9 +98,8 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.1` |
+| 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
-| PHP 확장(필수) | `json` |
 <!-- @generated:requirements END -->
 
 ## 설치
@@ -250,10 +249,10 @@ https://your-domain.com/api/plugins/sirsoft-message_bizppurio/webhook
 
 **함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
 
-| 확장 | 유형 | 버전 제약 | 번들 |
-|---|---|---|---|
-| `sirsoft-board` | 모듈 | `*` | ✅ |
-| `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
+| 확장 | 유형 | 번들 |
+|---|---|---|
+| `sirsoft-board` | 모듈 | ✅ |
+| `sirsoft-ecommerce` | 모듈 | ✅ |
 <!-- @generated:integrations END -->
 
 ## 문서

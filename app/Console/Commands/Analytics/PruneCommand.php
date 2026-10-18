@@ -3,8 +3,6 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsConfig;
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\Analytics\PruneService;
 use Illuminate\Console\Command;
 
@@ -21,9 +19,6 @@ use Illuminate\Console\Command;
  */
 class PruneCommand extends Command
 {
-    use LocalizesDescription;
-    use ParsesDaysOption;
-
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -34,6 +29,13 @@ class PruneCommand extends Command
                             {--dry-run : 삭제 없이 대상 건수만 확인}';
 
     /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '보존 기간이 지난 방문자 통계 원장을 정리합니다.';
+
+    /**
      * 커맨드 실행
      *
      * @param  PruneService  $service  정리 서비스
@@ -41,24 +43,19 @@ class PruneCommand extends Command
      */
     public function handle(PruneService $service): int
     {
-        $days = $this->parseDaysOption();
-
-        if ($days === false) {
-            return self::FAILURE;
-        }
-
+        $days = $this->option('days') !== null ? (int) $this->option('days') : null;
         $dryRun = (bool) $this->option('dry-run');
 
         $counts = $service->prune(AnalyticsConfig::fromSettings(), $days, $dryRun);
 
         $this->table(
-            [__('analytics.console.prune.headers.target'), $dryRun ? __('analytics.console.prune.headers.to_delete') : __('analytics.console.prune.headers.deleted')],
+            ['대상', $dryRun ? '삭제 대상' : '삭제'],
             array_map(fn (string $key, int $count): array => [$key, $count], array_keys($counts), $counts),
         );
 
         $this->info($dryRun
-            ? __('analytics.console.prune.dry_run')
-            : __('analytics.console.prune.done', ['count' => array_sum($counts)]));
+            ? '마른 실행 — 아무것도 지우지 않았습니다.'
+            : sprintf('방문자 통계 %d건을 정리했습니다.', array_sum($counts)));
 
         return self::SUCCESS;
     }

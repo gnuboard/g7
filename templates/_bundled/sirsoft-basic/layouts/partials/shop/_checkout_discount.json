@@ -74,29 +74,15 @@
                     "if": "{{_global.currentUser?.uuid}}",
                     "actions": [
                         {
-                            "comment": "창 상태는 창 고유 전역 이름 공간에 비운 뒤 다시 쓴다 — 창은 영구 마운트라 페이지 _local 에 넣으면 창이 앞서 쥔\n               목록(더보기로 늘어난 장수·받음 표시)에 가린다(7.1.1). 첫 페이지를 다시 받아 창을 연다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
                                     "handler": "setState",
                                     "params": {
-                                        "target": "global",
-                                        "couponDownloadModal": null
-                                    }
-                                },
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "couponDownloadModal": {
-                                            "coupons": null,
-                                            "loading": true,
-                                            "loadingMore": false,
-                                            "downloadingCouponId": null,
-                                            "scope": "all",
-                                            "downloadingAll": false
-                                        }
+                                        "target": "local",
+                                        "downloadableCouponsLoading": true,
+                                        "downloadableCouponsPage": 1
                                     }
                                 },
                                 {
@@ -110,9 +96,9 @@
                                         {
                                             "handler": "setState",
                                             "params": {
-                                                "target": "global",
-                                                "couponDownloadModal.coupons": "{{response.data}}",
-                                                "couponDownloadModal.loading": false
+                                                "target": "local",
+                                                "downloadableCoupons": "{{response.data}}",
+                                                "downloadableCouponsLoading": false
                                             }
                                         },
                                         {
@@ -124,8 +110,8 @@
                                         {
                                             "handler": "setState",
                                             "params": {
-                                                "target": "global",
-                                                "couponDownloadModal.loading": false
+                                                "target": "local",
+                                                "downloadableCouponsLoading": false
                                             }
                                         },
                                         {
@@ -142,7 +128,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        "className": "flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                     },
                     "children": [
                         {
@@ -261,11 +247,32 @@
                     ],
                     "props": {
                         "name": "order_coupon_issue_id",
-                        "aria-label": "$t:shop.checkout.order_coupon_select",
                         "value": "{{_local.checkout?.order_coupon_issue_id ?? ''}}",
-                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
-                        "options": "{{[{ value: '', label: (checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available' }].concat((checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'order_amount').map(coupon => ({ value: String(coupon.id), label: '[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')' })))}}"
-                    }
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "iteration": {
+                                "source": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}",
+                                "item_var": "coupon",
+                                "index_var": "couponIdx"
+                            },
+                            "props": {
+                                "value": "{{coupon.id}}"
+                            },
+                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
+                        }
+                    ]
                 },
                 {
                     "comment": "적용된 주문 쿠폰 정보",
@@ -273,7 +280,7 @@
                     "name": "Div",
                     "if": "{{_local.checkout?.order_coupon_issue_id && (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}",
                     "props": {
-                        "className": "mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1"
+                        "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1"
                     },
                     "children": [
                         {
@@ -392,11 +399,32 @@
                     ],
                     "props": {
                         "name": "shipping_coupon_issue_id",
-                        "aria-label": "$t:shop.checkout.shipping_coupon_select",
                         "value": "{{_local.checkout?.shipping_coupon_issue_id ?? ''}}",
-                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
-                        "options": "{{[{ value: '', label: (checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available' }].concat((checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').map(coupon => ({ value: String(coupon.id), label: '[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')' })))}}"
-                    }
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "iteration": {
+                                "source": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}",
+                                "item_var": "coupon",
+                                "index_var": "couponIdx"
+                            },
+                            "props": {
+                                "value": "{{coupon.id}}"
+                            },
+                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
+                        }
+                    ]
                 },
                 {
                     "comment": "적용된 배송비 쿠폰 정보",
@@ -404,7 +432,7 @@
                     "name": "Div",
                     "if": "{{_local.checkout?.shipping_coupon_issue_id && (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}",
                     "props": {
-                        "className": "mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1"
+                        "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1"
                     },
                     "children": [
                         {
@@ -466,7 +494,6 @@
                                 }
                             ],
                             "props": {
-                                "aria-label": "$t:shop.checkout.discount_code",
                                 "type": "text",
                                 "name": "discount_code",
                                 "value": "{{_local.checkout?.discount_code ?? ''}}",
@@ -535,7 +562,7 @@
                     "name": "Div",
                     "if": "{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}",
                     "props": {
-                        "className": "mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1"
+                        "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1"
                     },
                     "children": [
                         {

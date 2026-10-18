@@ -15,7 +15,7 @@ import imageCompression from 'browser-image-compression';
 
 import type { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from './types';
 import { formatFileSize, extractErrorMessage, t } from './utils';
-import { isDirectAssetUrl } from '../assetOrigin';
+import { isCrossOriginAssetUrl } from '../assetOrigin';
 import { secretContentHeaders } from '../../../support/secretContentHeaders';
 
 /** 동봉한 browser-image-compression 버전 */
@@ -277,7 +277,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
       for (const file of filesToAdd) {
         // 빈 파일(0바이트) — 서버가 받지 않으므로(코어 AttachmentFileContent) 고르는 자리에서 걸러 안내한다.
-        // 종전에는 목록에 「0.00 B」 로 올라가 제출 때에야 거부됐다(7.1.0 실측).
+        // 종전에는 목록에 「0.00 B」 로 올라가 제출 때에야 거부됐다(7.1.0 N O-N7).
         if (file.size === 0) {
           onUploadError?.(t('attachment.empty_file', { name: file.name }), file);
           continue;
@@ -807,7 +807,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
         // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 공개 자산이므로 XHR 없이 직접 사용한다.
         // (CORS 미설정 CDN 에서의 실패 방지 + 제3자 origin 으로의 토큰 노출 차단)
-        if (isDirectAssetUrl(file.download_url)) {
+        if (isCrossOriginAssetUrl(file.download_url)) {
           authenticatedImageUrlsRef.current.set(file.id, file.download_url);
           setAuthenticatedImageUrls(new Map(authenticatedImageUrlsRef.current));
           continue;

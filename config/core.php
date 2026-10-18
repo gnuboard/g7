@@ -51,11 +51,6 @@ return [
         'security_max_login_attempts_max' => 100,
         'security_login_lockout_time_min' => 0,
         'security_login_lockout_time_max' => 1440,
-        // 같은 IP 의 분당 요청 한도 — 0(끄기)은 받지 않는다
-        'security_password_reset_rate_limit_per_minute_min' => 1,
-        'security_password_reset_rate_limit_per_minute_max' => 1000,
-        'security_register_rate_limit_per_minute_min' => 1,
-        'security_register_rate_limit_per_minute_max' => 1000,
         // 비밀번호 정책 (#736) — 판독부(PasswordPolicy·PasswordExpiryService)도 이 값으로 양쪽 클램프한다
         'security_password_repeated_chars_length_min' => 3,
         'security_password_repeated_chars_length_max' => 6,
@@ -112,11 +107,6 @@ return [
         'privacy_dormant_days_min' => 30,
         'privacy_dormant_notice_days_min' => 1,
         'privacy_dormant_notice_days_max' => 365,
-
-        // 최근 검색어 범위별 보관 개수 (개인정보 탭 「최근 검색어」 카드 · 확장 manifest search_scopes.max_count, 7.1.5)
-        // 보관 기한(일)은 위 privacy_retention_days_max 를 상한으로 쓰고 하한은 0(기한 없음)이다.
-        'search_history_max_count_min' => 1,
-        'search_history_max_count_max' => 50,
 
         // 목록 한계값 (0 = 무제한)
         'advanced_pagination_result_cap_min' => 0,
@@ -183,23 +173,6 @@ return [
     */
     'static_cache' => [
         'enabled' => env('G7_STATIC_CACHE', true),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | 콘텐츠 보안 정책(CSP) 헤더 탈출구 (#158)
-    |--------------------------------------------------------------------------
-    | `.env` 의 G7_CSP_MODE 가 off | report_only | enforce 중 하나면 관리자 환경설정 > 보안의
-    | CSP 모드를 무시하고 그 값을 씁니다. 강제 모드로 관리자 화면까지 막혔을 때 G7_CSP_MODE=off 로
-    | 빠져나옵니다. config:cache 를 쓰는 서버는 .env 수정 뒤 `php artisan config:clear` 가 필요합니다.
-    | 비워 두면(기본) 화면 설정을 따릅니다.
-    |
-    | 스타일 정책(7.1.6)의 탈출구는 G7_CSP_STYLE_MODE 로 따로 둡니다(값은 같은 세 가지). 두 탈출구는
-    | 서로 독립입니다 — G7_CSP_MODE=off 가 스타일 정책을 끄지 않고, 그 반대도 같습니다.
-    */
-    'csp' => [
-        'mode_override' => env('G7_CSP_MODE'),
-        'style_mode_override' => env('G7_CSP_STYLE_MODE'),
     ],
 
     /*
@@ -310,11 +283,6 @@ return [
     */
     'storage' => [
         'public_asset_disk' => '',
-
-        // 공개 자산 디스크로 내보낼 확장자 (소문자, 점 없이). 이 목록 밖의 파일은 공개 디스크에
-        // 저장하지 않고 기존 디스크에 두어 서버를 거쳐 내려보낸다. 값은 관리자 환경설정
-        // (drivers.public_asset_extensions)에서 주입한다.
-        'public_asset_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
     ],
 
     /*
@@ -840,9 +808,7 @@ return [
         [
             'slug' => 'admin-analytics',
             'name' => ['ko' => '방문자 통계', 'en' => 'Analytics'],
-            // 부모는 경로를 두지 않는다 — 하위 메뉴가 있는 다른 부모(게시판 관리·이커머스)와 같은 펼침 전용 표시로
-            // 맞춘다. 개요 화면은 첫 하위 메뉴(admin-analytics-overview)가 연다.
-            'url' => null,
+            'url' => '/admin/analytics',
             'icon' => 'fas fa-chart-line',
             'parent_id' => null,
             'order' => 2,

@@ -386,7 +386,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-gray-400 dark:text-gray-500"
                                                         },
                                                         "text": "~"
                                                     },
@@ -613,10 +613,6 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
-                                "blur_until_loaded": {
-                                    "enabled": true,
-                                    "data_sources": "carts"
-                                },
                                 "props": {
                                     "className": "text-primary font-bold"
                                 },
@@ -664,7 +660,6 @@
                                             }
                                         ],
                                         "props": {
-                                            "aria-label": "$t:common.sort_order",
                                             "className": "w-40 text-sm",
                                             "value": "{{query.sort || 'created_at_desc'}}",
                                             "options": [
@@ -713,7 +708,6 @@
                                             }
                                         ],
                                         "props": {
-                                            "aria-label": "$t:common.per_page",
                                             "className": "w-32 text-sm",
                                             "value": "{{query.per_page || '20'}}",
                                             "options": [
@@ -815,9 +809,6 @@
                             }
                         ],
                         "props": {
-                            "pageHref": "/admin/ecommerce/carts?page={page}",
-                            "pageHrefMergeQuery": true,
-                            "rowLabelField": "product.name",
                             "data": "{{carts?.data?.data}}",
                             "pagination": true,
                             "alwaysShowPagination": true,
@@ -832,7 +823,7 @@
                             "idField": "id",
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
-                            "emptyMessage": "{{carts === undefined ? '' : $t('sirsoft-ecommerce.admin.carts.table.empty')}}",
+                            "emptyMessage": "$t:sirsoft-ecommerce.admin.carts.table.empty",
                             "actionsColumnHeader": "$t:common.actions",
                             "selectedCountText": "",
                             "rowActions": [
@@ -844,7 +835,6 @@
                                 },
                                 {
                                     "id": "go_to_member",
-                                    "href": "/admin/users/{{row.member?.uuid}}",
                                     "label": "$t:sirsoft-ecommerce.admin.carts.actions.view_member",
                                     "iconName": "user"
                                 }
@@ -884,17 +874,19 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "A",
+                                                            "name": "Span",
                                                             "if": "{{!!row.member?.uuid}}",
                                                             "actions": [
                                                                 {
                                                                     "comment": "회원 이름을 누르면 그 회원 상세로 간다 — 지우기 전에 \"누구인가\" 를 확인하는 자리다",
                                                                     "type": "click",
-                                                                    "handler": "navigate"
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/users/{{row.member?.uuid}}"
+                                                                    }
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "href": "/admin/users/{{row.member?.uuid}}",
                                                                 "className": "font-medium text-gray-900 dark:text-white cursor-pointer hover:underline"
                                                             },
                                                             "text": "{{row.member?.name}}"
@@ -904,7 +896,7 @@
                                                             "name": "Span",
                                                             "if": "{{!row.member}}",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-gray-400 dark:text-gray-500"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.carts.badges.guest"
                                                         },

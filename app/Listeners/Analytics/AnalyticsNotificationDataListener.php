@@ -4,6 +4,7 @@ namespace App\Listeners\Analytics;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\Analytics\ArchiveRunType;
+use App\Support\ScreenUrl;
 
 /**
  * 방문자 통계 알림 데이터 필터 리스너
@@ -185,7 +186,8 @@ class AnalyticsNotificationDataListener implements HookListenerInterface
      */
     private function adminUrl(string $path): string
     {
-        return rtrim((string) config('app.url'), '/').$path;
+        // 관리자 화면 주소는 화면 주소 헬퍼의 관리자 범위(베이스 = 사이트 주소)로 만든다(#792 F1-20)
+        return ScreenUrl::absolute('admin.analytics', $path, [], ScreenUrl::SCOPE_ADMIN);
     }
 
     /**

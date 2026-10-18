@@ -86,7 +86,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.date",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('date')}}"
                             }
@@ -124,7 +123,6 @@
                                         }
                                     ],
                                     "props": {
-                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.claim.filter.date')}}",
                                         "type": "date",
                                         "name": "startDate",
                                         "value": "{{_local.filter.startDate || ''}}",
@@ -157,7 +155,6 @@
                                         }
                                     ],
                                     "props": {
-                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.claim.filter.date')}}",
                                         "type": "date",
                                         "name": "endDate",
                                         "value": "{{_local.filter.endDate || ''}}",
@@ -204,8 +201,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                        "aria-pressed": "{{_local.filter.dateQuick === 'today'}}"
+                                        "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.filter.date_quick.today"
                                 },
@@ -239,8 +235,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                        "aria-pressed": "{{_local.filter.dateQuick === 'week'}}"
+                                        "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.filter.date_quick.week"
                                 },
@@ -274,8 +269,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                        "aria-pressed": "{{_local.filter.dateQuick === 'month'}}"
+                                        "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.filter.date_quick.1_month"
                                 },
@@ -309,8 +303,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                        "aria-pressed": "{{_local.filter.dateQuick === '3months'}}"
+                                        "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.filter.date_quick.3_months"
                                 },
@@ -344,8 +337,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                        "aria-pressed": "{{_local.filter.dateQuick === '6months'}}"
+                                        "className": "{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.filter.date_quick.6_months"
                                 },
@@ -379,8 +371,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
-                                        "aria-pressed": "{{_local.filter.dateQuick === '1year'}}"
+                                        "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.filter.date_quick.1_year"
                                 }
@@ -422,7 +413,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.claim_status",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('claimStatus')}}"
                             }
@@ -1337,7 +1327,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.fault_type",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('faultType')}}"
                             }
@@ -1508,7 +1497,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.charge_method",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('chargeMethod')}}"
                             }
@@ -1678,7 +1666,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.reason",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('reasonCode')}}"
                             }
@@ -1750,7 +1737,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.requester_type",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('requesterType')}}"
                             }
@@ -1835,7 +1821,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.amount",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('amount')}}"
                             }
@@ -1974,7 +1959,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('chargePaymentMethod')}}"
                             }
@@ -2080,7 +2064,6 @@
                             ],
                             "props": {
                                 "type": "checkbox",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.claim_flags",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('claimFlags')}}"
                             }
@@ -2226,7 +2209,7 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "actions": [
                         {
                             "type": "click",
@@ -2235,7 +2218,6 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
                         "className": "flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
                     },
                     "children": [
@@ -2261,7 +2243,7 @@
                     "comment": "저장된 조건 세트로 입력칸과 주소를 통째로 갈아끼우고, 프리셋이 저장된 유형이 지금 탭과 다르면 그 유형 탭으로 옮긴다. 기간은 빠른 버튼으로 저장했어도 저장 당시 계산된 날짜로 고정돼 걸린다.",
                     "id": "preset_buttons_dynamic_{{presetIdx}}",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "iteration": {
                         "source": "presets.data || []",
                         "item_var": "preset",
@@ -2342,9 +2324,7 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}",
-                        "aria-pressed": "{{query.preset_id === String(preset.id)}}"
+                        "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"
                     },
                     "text": "{{preset.name}}"
                 }
@@ -2392,7 +2372,6 @@
                             ],
                             "props": {
                                 "name": "searchField",
-                                "aria-label": "$t:common.search_field",
                                 "className": "w-80 shrink-0",
                                 "value": "{{_local.filter.searchField || 'claim_number'}}",
                                 "options": [
@@ -2476,7 +2455,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "search",
-                                        "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
+                                        "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                                     }
                                 }
                             ]

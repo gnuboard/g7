@@ -185,7 +185,6 @@
     "points_used": "マイレージ使用",
     "points_earning": "積立予定",
     "view_detail": "詳細表示",
-    "status_filter_label": "注文ステータス",
     "empty": "注文履歴がありません",
     "go_shopping": "ショッピングへ",
     "status": {
@@ -194,8 +193,7 @@
       "shipped": "配送中",
       "delivered": "配送完了",
       "cancelled": "キャンセル"
-    },
-    "track_shipping": "配送追跡"
+    }
   },
   "order_detail": {
     "back": "注文履歴",
@@ -509,7 +507,6 @@
     "reports": {
       "filter": {
         "all_statuses": "すべてのステータス",
-        "status_label": "処理状態",
         "all_targets": "すべての対象"
       },
       "status": {

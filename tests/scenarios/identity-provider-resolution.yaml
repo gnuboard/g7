@@ -20,12 +20,9 @@ description: |
     - signup_after_create 정책에 inicis 매핑해도 항상 mail fallback 발생
     - 결과: 프론트 모달은 KG이니시스 UI 인데 백엔드는 mail challenge 를 만들어 검증 불일치
 
-  명시 provider 를 쓸 수 없을 때 (7.1.6, KVE 동형 B9 — 종전 silent fallback 을 바꿈):
-    - 명시 provider 가 미등록 / purpose 미지원이면 다른 수단으로 바꾸지 않고 IdentityProviderUnavailableException 으로 거부한다.
-      정책이 지정한 수단 대신 메일로 발급되면 정책 결박이 무력화되기 때문이다.
-    - provider_id 를 명시하지 않으면(null) 종전 우선순위(설정 purpose_providers → default → 목적 지원 수단)를 그대로 따른다.
-
-  Manager 레지스트리(등록·해제·조회·필터 훅 병합)는 해석의 전제라 같은 Unit 테스트가 함께 지킨다.
+  fallback 보장:
+    - 명시 provider 가 미등록 / purpose 미지원 시 silent fallback (예외 throw X)
+    - 운영자가 정책에 plugin provider 를 지정했지만 plugin 이 비활성화된 상태에서도 가입 흐름이 막히면 안 됨
 
 axes:
   call_mode: [mode_a_explicit, mode_b_policy]
@@ -39,20 +36,14 @@ exclusions:
 effects:
   - explicit_provider_id_takes_precedence_over_settings_purpose_providers
   - explicit_provider_id_takes_precedence_over_default_provider
-  # 7.1.6 — 종전 silent fallback 효과 2건(unregistered_…/registered_…_silently_falls_back)과
-  # log_provider_id_falls_back_to_legacy_when_explicit_unavailable 을 거부 효과로 바꿨다.
-  - unregistered_explicit_provider_id_is_rejected               # 미등록 명시 수단 → IdentityProviderUnavailableException, 메일로 바꾸지 않음
-  - explicit_provider_id_not_supporting_purpose_is_rejected     # 등록됐지만 목적 미지원 명시 수단 → 같은 예외
+  - unregistered_provider_id_silently_falls_back_to_legacy_priority
+  - registered_provider_id_not_supporting_purpose_silently_falls_back
   - null_provider_id_preserves_legacy_priority_chain
   - policy_provider_id_propagates_through_listener_to_manager
   - log_provider_id_matches_explicit_provider_when_resolution_succeeds
-  - disabled_after_register_policy_skips_challenge              # signup_after_create 정책이 꺼져 있으면 challenge 로그를 만들지 않음
+  - log_provider_id_falls_back_to_legacy_when_explicit_unavailable
   - policy_render_hint_fallback_passes_provider_id_to_manager
   - policy_render_hint_first_branch_short_circuits_when_provider_registered
-  # Manager 레지스트리 — 해석의 전제
-  - provider_registry_registers_and_unregisters_by_id           # register 뒤 has/get 이 같은 인스턴스, unregister 뒤 has false
-  - unknown_provider_lookup_throws                              # 미등록 ID get → InvalidArgumentException
-  - registered_providers_merged_through_filter_hook              # all() 이 core.identity.registered_providers 필터 결과를 합침
 
 test_files:
   - tests/Unit/Extension/IdentityVerification/IdentityVerificationManagerTest.php

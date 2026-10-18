@@ -28,7 +28,6 @@
 |----------|----------|----------|
 | **SSH/CLI 직접 실행** | 사용자 = 파일 소유자 → 모든 코어 파일 쓰기 가능 | ✅ 정상 사용 (권장) |
 | **웹 인스톨러 (`public/install/`)** | PHP-FPM 사용자 (www-data 등) — 권한 제한적 | ⚠️ vendor 번들 모드로만 신규 설치 가능. 코어 업데이트는 미지원 |
-| **터미널 설치 (`php g7-install`, 7.1.4)** | 실행한 셸 사용자 — root 면 `--web-user` 필수(끝나면 쓰기 폴더 소유권을 웹서버 계정으로 넘김) | ✅ 최초 설치·재설치(`--reinstall`). 설치 뒤 업데이트는 `core:update` |
 | **www-data 로 CLI 실행** | 코어 파일 소유자와 다를 수 있음 | ⚠️ 비권장 — 권한 거부 가능 |
 
 ### 권한 거부 발생 시 대처
@@ -122,21 +121,6 @@
 └─ Step 11: 마무리 (.env 버전 갱신, 캐시 클리어, _pending 삭제, 유지보수 해제)
 ```
 
-### 동시 실행 차단 (7.1.5+)
-
-`core:update` 는 시작하자마자(옵션 검사·유지보수 진입보다 앞) 코어 작업 잠금(`core-update`, 30분)을 잡는다. 두 곳에서 동시에 돌리면 먼저 끝난 쪽이 유지보수 모드를 풀어 교체 중인 사이트가 열리고 스텝이 두 번 돌던 문제를 막는다.
-
-| 상황 | 동작 |
-|---|---|
-| 다른 `core:update` 가 진행 중 | 「다른 코어 업데이트가 진행 중」 안내 후 실패 종료 — 직전 실행이 비정상 종료됐다면 잠금 만료(30분) 뒤 다시 실행 |
-| 잠금 저장소(캐시) 오류 | 「잠금 저장소를 쓸 수 없다」 안내 후 실패 종료 — 원본 오류는 error 로그에만 |
-| 진행 중 | 진행 콜백(30초 간격)·진행 막대 단계마다 잠금을 늘리고, 캐시 비우기 직후와 번들 일괄 업데이트 직전에는 바로 늘리거나 다시 잡는다(redis·memcached 의 flush 는 잠금까지 지운다) |
-
-- 자식 프로세스(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)는 코어 잠금을 잡지 않는다 — 부모와 소유자가 달라 스스로 막힌다.
-- file 캐시의 잠금은 `storage/framework/cache/locks` 에 있어 `cache:clear` 가 지우지 않는다.
-- 번들 일괄 업데이트는 잠금 저장소 장애를 만나면 첫 항목에서 멈추고 남은 항목 수를 한 번 알린다(docs/extension/extension-update-system.md 「작업 잠금」).
-- 적용 시점: 업데이트를 실행하는 것은 **설치된(이전) 판의 명령**이다. 7.1.4 → 7.1.5 업데이트에는 이 차단이 없고, 7.1.5 에서 그다음 판으로 올릴 때부터 적용된다.
-
 ### Step 1: 업데이트 확인
 
 | 모드 | 동작 |
@@ -146,7 +130,6 @@
 | `--zip={path}` | 지정된 ZIP 파일을 추출하여 소스로 사용 (GitHub 스킵). 추출 후 `config/app.php` 에서 버전 자동 판별. ZIP 구조가 GitHub zipball 의 `owner-repo-hash/` 래퍼이든 평탄 루트이든 모두 지원 |
 | `--local` | 현재 코드베이스를 소스로 사용 (GitHub 스킵) |
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 실행 |
-| `--yes`(`-y`) | 확인 질문에 「예」로 답하고 진행한다(7.1.6+). 터미널 없는 실행(배포 스크립트·스케줄러)은 이 옵션이 없으면 「`--yes` 를 붙이세요」 경고와 함께 종료 코드 1 로 끝난다. 번들 확장 일괄 업데이트의 선택 질문(레이아웃 전략·확장별 전략·검색 색인 재생성)은 기본값으로 진행한다. `--force` 와 뜻이 다르다 — `--force` 는 버전 비교를 건너뛰는 옵션이고 확인을 대신하지 않는다 |
 | `--vendor-mode=auto\|composer\|bundled` | vendor 설치 모드 지정 (기본 `auto` — composer 가능 시 composer, 불가 시 vendor-bundle.zip 추출). `bundled` 강제 시 공유 호스팅에서도 설치 가능 |
 | `--bundled-sources=none\|all\|식별자,…` | 설치되지 않았고 이 프로젝트에도 없는 공식 번들을 어떻게 할지 미리 정한다(7.1.1+). `none` 배치하지 않음, `all` 모두 배치, 식별자 목록은 그것만 배치(유형이 겹치면 `plugin:식별자`). 미지정 시 대화형은 묻고, 비대화형(`--force`·`--no-interaction`·응답 불가)은 `none`. 배포본에 없는 식별자·알 수 없는 유형은 유지보수 모드 전에 실패 |
 
@@ -169,23 +152,6 @@
 
 > **효력 시점**: Step 7 은 업데이트를 실행하는 쪽(이전 버전)의 코드로 돈다. 그래서 이 판정은 **7.1.1 로 올린 뒤의 업데이트부터** 적용되고, 7.1.0 → 7.1.1 업데이트는 7.1.0 코드가 돌려 지금까지처럼 모두 배치한다. 이미 깔린 쓰지 않는 번들은 `php artisan core:bundled-sources prune` 으로 정리한다(아래 「사후 관리 명령」).
 
-### PHP 확장 사전점검 (7.1.4+)
-
-새 배포본의 코어 요구 목록(`app/Support/Requirements/php-extensions.json` — 필수·선택 확장의 SSoT)을 읽어, 새 코어의 **필수**
-확장이 이 서버에 없으면 업데이트를 시작하지 않는다(공개 #151). 파일을 적용한 뒤에야 부팅이 깨지는 것보다 시작 전에 멈추는 편이 사이트가 온전하다.
-
-| 소스 | 판정 시점 | 미충족 시 |
-|------|----------|----------|
-| `--source` | 공식 번들 배치 판정 직후, 유지보수 모드 전 | 오류 출력 + FAILURE. 사이트·파일 변화 없음 |
-| `--zip` | 같은 시점 — zip 을 풀지 않고 목록 파일만 읽는다(읽지 못하면 추출 직후로 미룬다) | 같음 |
-| GitHub 다운로드 | Step 4 다운로드 직후(유지보수 중), 백업 전 | 받은 `_pending` 삭제 → 유지보수 해제 → 업데이트 로그 저장 → FAILURE (공식 번들 선택 오류와 같은 모양) |
-| `--local` | 판정하지 않음 (현재 코드 그대로) | — |
-
-- 새 배포본에 목록 파일이 없으면(이 체계 도입 전 판) 코어 판정은 건너뛰고 로그만 남긴다.
-- 같은 시점에 「이번에 함께 갱신될 설치된 번들 확장」의 새 `composer.json` `require.ext-*` 도 계산해 **경고만** 출력한다 — 확장 업데이트는 막지 않는다(번들 일괄 업데이트 단계도 `php_extension_missing` 생명주기 경고만 남긴다).
-- 판정은 JSON 만 읽는다. 새 배포본의 PHP 클래스를 `require` 하면 이미 로드된 같은 이름 클래스와 충돌하기 때문이다.
-- 서비스: `App\Services\Core\PhpRequirementPreflight`(`inspectDirectory`·`inspectZip`). 회귀: `tests/Feature/Console/CoreUpdatePhpRequirementPreflightTest.php`.
-
 ### 사후 관리 명령: core:bundled-sources (7.1.1+)
 
 ```bash
@@ -204,10 +170,9 @@ php artisan core:bundled-sources prune --force --include-modified  # 배포본�
 ### Step 4: 다운로드 및 추출
 
 ```text
-추출 (SafeArchiveExtractor, 7.1.3+):
-- ZipArchive (PHP zip 확장) 필수 — 없으면 추출 실패. unzip 명령 폴백 없음 (7.1.3 에서 제거)
-- 항목 이름의 \ 를 / 로 정규화한 뒤, 압축 밖 경로(..)·절대 경로·드라이브·UNC·널 문자·심볼릭 링크
-  항목이 하나라도 있으면 아무것도 풀지 않고 전체 거부
+추출 전략 (폴백 체인):
+1. ZipArchive (PHP zip 확장) → class_exists(ZipArchive::class)
+2. unzip CLI 명령어 → ZipArchive 미사용 시 폴백
 
 v접두사 자동 감지 (resolveGithubArchiveUrl):
 1. "v{version}" 태그로 HEAD 요청 시도 (예: v7.0.0-alpha.15)
@@ -451,26 +416,6 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 4. 업데이트 로그 저장: storage/logs/core_update_failed_YYYYMMDD_HHMMSS.log
 5. 유지보수 모드 유지 (수동으로 php artisan up 필요)
 ```
-
-### 확정 뒤 실패 (복원하지 않는다, 7.1.6+)
-
-Step 11 에서 새 버전을 기록하고 백업을 지운 시점부터는 「확정」이다. 그 뒤의 마무리 단계(유지보수 해제 · 설정/라우트/훅 캐시 재생성 · 업데이트 기록 저장 · 번들 확장 일괄 업데이트 · 소유권 정리)에서 난 오류는 되돌릴 것이 없으므로 위 롤백 흐름을 타지 않는다.
-
-```text
-1. Exception 발생 (확정 뒤)
-2. 파일 복원 · 번들 배치 기록 되돌림 · 실패 보고서/실패 기록을 하지 않는다
-3. 안내: 「업데이트는 {버전} 으로 적용됐습니다. 마무리 단계({단계})에서 오류가 나 나머지를 끝내지 못했습니다: {오류}」
-4. 남은 일을 끝내는 명령 출력:
-   php artisan config:cache / route:cache / hooks:cache
-   php artisan {module|plugin|template}:update <identifier> --source=bundled
-5. 유지보수 모드가 아직 켜져 있으면 해제 (새 버전으로 사이트를 연다)
-6. 업데이트 기록을 아직 남기지 못했으면 성공 기록으로 남긴다 (실패 기록을 겹쳐 남기지 않는다)
-7. 종료 코드 1
-```
-
-종전에는 이 구간의 오류도 롤백 흐름으로 가, 이미 지운 백업을 대상으로 「백업에서 복원되었습니다」 라고 안내하고(복원 대상 0건), 번들 배치 기록을 업데이트 전 상태로 되돌리고, 성공 기록과 실패 기록을 둘 다 남겼다. 진행 막대를 만들기 전(확인 질문 이전)에 난 오류가 정의되지 않은 막대를 건드려 원래 오류를 가리던 것도 함께 고쳤다.
-
-확정 전 실패에서 백업 경로는 있는데 디렉토리가 없으면(직접 지웠거나 생성 도중 실패) 「복원할 백업이 없어 복원을 건너뜁니다」 로 알리고 복원을 시도하지 않는다.
 
 ### 롤백 실패 시
 
@@ -795,7 +740,7 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `checkForUpdates()` | `(): array` | GitHub API로 최신 릴리스 조회 |
 | `getChangelog()` | `(?string $from, ?string $to): array` | CHANGELOG.md 파싱, 버전 범위 필터 |
-| `checkSystemRequirements()` | `(): array` | 추출 도구 검증 (ZipArchive — 7.1.3 부터 unzip 폴백 없음) |
+| `checkSystemRequirements()` | `(): array` | 추출 도구 검증 (ZipArchive/unzip) |
 | `validatePendingPath()` | `(): array` | _pending 디렉토리 존재/권한 확인 |
 
 ### 다운로드 및 소스 준비
@@ -865,13 +810,12 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 ### core:update
 
 ```bash
-php artisan core:update [--force] [--yes] [--no-backup] [--prune] [--no-maintenance] [--local] [--source={path}]
+php artisan core:update [--force] [--no-backup] [--prune] [--no-maintenance] [--local] [--source={path}]
 ```
 
 | 옵션 | 설명 |
 |------|------|
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 업데이트 |
-| `--yes`(`-y`) | 확인 질문에 「예」로 답하고 진행 (터미널 없는 실행용, 7.1.6+) |
 | `--no-backup` | 백업 생성 스킵 (Step 5). 증분 적용 불가 → 전체 덮어쓰기로 회귀 |
 | `--prune` | 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용(3-way)하고 나머지는 보존 |
 | `--no-maintenance` | 유지보수 모드 스킵 (Step 3) |
@@ -934,6 +878,20 @@ php artisan core:check-updates
 
 `.env` 에서 `G7_UPDATE_EXCLUDES` · `G7_UPDATE_TARGETS` · `G7_UPDATE_PROTECTED_PATHS` · `G7_UPDATE_RESTORE_OWNERSHIP` · `G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE` 로 재정의할 수 있다. 재정의 값은 기본 목록을 **통째로 대체**하므로 전체 목록을 다시 적는다 — 예를 들어 `G7_UPDATE_EXCLUDES` 에서 `build/ext` 가 빠지면 `--prune` 업데이트가 정적 게시본을 지운다. 기본값은 `.env.example` 에 주석으로 실려 있다.
 
+### 예약 경로 (custom, 7.2.0)
+
+`update.reserved_paths`(`G7_UPDATE_RESERVED_PATHS`, 기본 `routes/custom.php,app/Custom,resources/views/custom,public/custom,lang/custom,config/custom.php,database/migrations/custom,custom`)는
+업데이트 대상 폴더 **안쪽**이라도 코어 업데이트가 덮지도 지우지도 않는 경로다. 파일 복사·orphan 정리(`--prune`)·신규 파일 manifest·롤백 정리·자동 발견 폴백이 모두 건너뛴다(`UpdateReservedPaths`).
+코어 배포본은 이 자리에 파일을 싣지 않는다 — 릴리스 준비(`prepare-release.sh` 의 `check-release-reserved-paths.cjs`)가 검사하고, 받은 패키지에 실려 있으면 업데이트를 시작하지 않는다.
+
+### custom 패키지 사전 검사 (7.2.0)
+
+`--source`·`--zip` 은 유지보수 모드 진입 전에, 그 밖의 모드는 새 코어를 `_pending` 에 받은 직후에 `CustomUpdatePreflight` 가 새 코어 `composer.lock` 과
+`custom/composer.lock` 을 정적으로 비교한다(요구 제약 불만족 `constraint`, 같은 패키지 다른 버전 `duplicate`). 하나라도 걸리거나 예약 경로 파일이 실려 있으면
+업데이트를 시작하지 않고 표를 출력하며, 결과를 `storage/app/core_update/custom_preflight.json` 에 남겨 관리자 업데이트 확인 창(`check-for-updates` 응답의 `custom_preflight`)이 같은 표를 보여 준다.
+검사를 통과하면 기록을 지운다. 업데이트 마지막에는 `custom/vendor` 를 맞춘다(`CustomVendorService::ensureInstalled()` — Composer 또는 `custom/vendor-bundle.zip`, 실패는 경고만).
+개발자 안내는 [개발자 화면 가이드](../custom-development.md#4-개발자-패키지custom-composer).
+
 ---
 
 ## 12. 에러 처리 및 로깅
@@ -941,8 +899,8 @@ php artisan core:check-updates
 ### 시스템 요건 검증
 
 ```text
-- ZipArchive (PHP zip 확장) 필요 — 7.1.3 부터 unzip 명령 폴백 없음
-- 미충족 시 커맨드 실패 (EXIT 1) + 안내 출력
+- ZipArchive 또는 unzip 명령어 중 하나 이상 필요
+- 미충족 시 커맨드 실패 (EXIT 1) + 사용 가능 방법 목록 출력
 ```
 
 ### _pending 검증
@@ -996,19 +954,6 @@ URL: https://example.com/{secret}
 → 쿠키 발급 → 유지보수 모드에서도 접근 가능
 ```
 
-### vendor 교체 구간의 응답 (7.1.5+)
-
-Step 8 은 운영 `vendor/` 를 비운 뒤 새 vendor 를 복사한다(수십 초). 유지보수 화면은 미들웨어(`MaintenanceModePage`)가 만드므로 이 구간에는 프레임워크를 실을 수 없다. `public/index.php` 가 vendor 를 싣기 전에 직접 최소 응답을 만든다.
-
-| 상황 | 응답 |
-|------|------|
-| `vendor/autoload.php` 없음 + 유지보수 표식(`storage/framework/down`) 있음 | 503 + `Retry-After`(down 파일의 `retry`, 없으면 60) + `Refresh`(down 파일의 `refresh`). API·JSON 요청은 `{"success":false,"message":…}` |
-| 유지보수 중 vendor 복사 도중 치명 오류(autoload 는 있으나 그것이 부르는 파일이 아직 없음) | 같은 503 — 유지보수 중에는 프레임워크 부팅 전 `display_errors` 를 끄고 종료 처리기가 치명 오류를 503 으로 바꾼다 |
-| `vendor/autoload.php` 없음 + 유지보수 아님 | 500 (일시 장애가 아니라 설치 손상 — `composer install` 또는 vendor 복구 필요). 오류 경로·스택은 본문에 싣지 않는다 |
-| 유지보수 중 + vendor 온전 | 진입점은 끼어들지 않는다 — 종전대로 유지보수 미들웨어의 다국어 화면·JSON |
-
-bypass 쿠키가 있는 관리자도 vendor 교체 구간에는 503 을 받는다(프레임워크가 없어 쿠키를 검증할 수 없다). Step 7(파일 적용)이 Step 8 보다 먼저 새 `public/index.php` 를 놓으므로, 이 처리가 없는 판에서 올리는 업데이트에도 그 업데이트의 vendor 교체 구간부터 적용된다.
-
 ### 해제
 
 ```text
@@ -1024,7 +969,7 @@ bypass 쿠키가 있는 관리자도 vendor 교체 구간에는 503 을 받는�
 | 항목 | 코어 | 모듈/플러그인 | 템플릿 |
 |------|------|-------------|--------|
 | **소스** | GitHub releases (zipball) | GitHub 또는 _bundled | GitHub 또는 _bundled |
-| **추출** | SafeArchiveExtractor (ZipArchive 필수, 위험 항목 전체 거부) | SafeArchiveExtractor (GitHub zip) / ExtensionPendingHelper | SafeArchiveExtractor (GitHub zip) / ExtensionPendingHelper |
+| **추출** | 폴백 체인 (ZipArchive → unzip) | ExtensionPendingHelper | ExtensionPendingHelper |
 | **백업** | CoreBackupHelper (선택) | ExtensionBackupHelper (선택) | ExtensionBackupHelper (선택) |
 | **유지보수 모드** | 전체 앱 down (secret 토큰) | 없음 | 없음 |
 | **Composer** | MD5 비교 → 변경 시만 실행 | 확장별 독립 vendor/ | 해당 없음 |

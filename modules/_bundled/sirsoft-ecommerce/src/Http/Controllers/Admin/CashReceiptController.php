@@ -39,8 +39,8 @@ class CashReceiptController extends AdminBaseController
         $blocker = $this->cashReceiptService->resolveIssueBlocker($order);
 
         if ($blocker !== null) {
-            // 이미 발급됨·다른 발급 처리 중은 409 로 구분한다 (중복 발급 방지, KVE-2026-3191).
-            $status = $this->cashReceiptService->isConflictBlocker($blocker) ? 409 : 422;
+            // 이미 발급된 주문에 대한 재발급 요청은 409 로 구분한다 (중복 발급 방지).
+            $status = $blocker === 'ALREADY_ISSUED' ? 409 : 422;
             $messageKey = $this->cashReceiptService->describeIssueBlocker($blocker);
 
             return ResponseHelper::error($messageKey, $status, ['error_code' => $blocker]);
@@ -52,15 +52,6 @@ class CashReceiptController extends AdminBaseController
             $request->getIdentifier(),
             $request->getIdentifierType(),
         );
-
-        if ($receipt->isInProgress()) {
-            // 가드 통과 뒤 겹친 요청이 먼저 발급 슬롯을 예약했다 — 가드의 ISSUE_IN_PROGRESS 와 같은 409 로 답한다.
-            return ResponseHelper::error(
-                'sirsoft-ecommerce::cash_receipt.errors.issue_in_progress',
-                409,
-                ['error_code' => CashReceiptService::BLOCKER_ISSUE_IN_PROGRESS]
-            );
-        }
 
         if (! $receipt->isCompletedIssue()) {
             // 프로바이더가 준 상세 사유는 errors 로 내려보내고, 메시지는 다국어 키를 쓴다.
@@ -98,15 +89,6 @@ class CashReceiptController extends AdminBaseController
         }
 
         if (! $this->cashReceiptService->cancelAll($order)) {
-            // 다른 화면의 취소가 아직 처리 중이면 실패가 아니라 처리 중으로 안내한다(409)
-            if ($this->cashReceiptService->hasCancelInProgress($order)) {
-                return ResponseHelper::error(
-                    'sirsoft-ecommerce::cash_receipt.errors.cancel_in_progress',
-                    409,
-                    ['error_code' => 'CANCEL_IN_PROGRESS']
-                );
-            }
-
             return ResponseHelper::error(
                 'sirsoft-ecommerce::cash_receipt.errors.cancel_failed',
                 422,

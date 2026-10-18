@@ -4,7 +4,6 @@ namespace Plugins\Sirsoft\Marketing\Services;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
-use App\Support\LocalizedValue;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsent;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsentHistory;
@@ -205,7 +204,7 @@ class MarketingConsentService
      * 채널 라벨을 주어진 로케일로 해석합니다.
      *
      * `label_key` 가 SSoT 다 — 저장된 `label` 맵은 언어팩 미설치 환경 보호용 폴백이고, 저장 시점의
-     * 지원 로케일만 담는다. 그 로케일에 번역이 있으면 번역을, 없으면 저장 맵(→ 사이트 기본 언어 → 영어 → 키)을 쓴다.
+     * 지원 로케일만 담는다. 그 로케일에 번역이 있으면 번역을, 없으면 저장 맵(→ 폴백 로케일 → ko → 키)을 쓴다.
      *
      * @param  array<string, mixed>  $channel  채널 정의
      * @param  string  $locale  로케일
@@ -230,7 +229,7 @@ class MarketingConsentService
             return $label;
         }
 
-        return LocalizedValue::pick($label, $locale, anyAsLast: false) ?? (string) ($channel['key'] ?? '');
+        return $label[$locale] ?? $label[config('app.fallback_locale', 'ko')] ?? $label['ko'] ?? (string) ($channel['key'] ?? '');
     }
 
     /**
@@ -272,9 +271,8 @@ class MarketingConsentService
     /**
      * 동의 상태를 업데이트합니다.
      *
-     * marketing_consent 철회 시 모든 채널을 자동 철회합니다(법적 동의는 그대로).
+     * marketing_consent 철회 시 모든 채널을 자동 철회합니다.
      * 채널 동의 시 marketing_consent를 자동 활성화합니다.
-     * 상태가 그대로면(기록 없음 = 동의 안 함) 행·이력·훅 없이 건너뜁니다.
      *
      * @param  int  $userId  사용자 ID
      * @param  string  $consentKey  동의 항목 키
@@ -286,9 +284,8 @@ class MarketingConsentService
     {
         $existing = $this->repository->findByUserAndKey($userId, $consentKey);
 
-        // 상태가 바뀌지 않으면 아무것도 쓰지 않는다(이력 중복 방지). 기록이 없는 항목은 「동의 안 함」이다 —
-        // 동의 칸을 끈 채 저장해 기록 없이 false 가 오면 철회할 동의가 없으므로 행·이력·훅을 모두 건너뛴다.
-        if ((bool) ($existing?->is_consented ?? false) === $value) {
+        // 이미 같은 상태면 중복 처리 방지 (이력 중복 기록 방지)
+        if ($existing && (bool) $existing->is_consented === $value) {
             return;
         }
 
@@ -310,15 +307,11 @@ class MarketingConsentService
         // 이력 기록
         $this->recordHistory($userId, $consentKey, $value ? 'granted' : 'revoked', $source);
 
-        // 정합성 규칙: marketing_consent 철회 시 실제 동의 레코드 기준으로 모든 채널 자동 철회.
-        // 사용중지한 채널의 남은 동의도 철회한다. 법적 동의(LEGAL_KEYS)는 채널이 아니라 전체 동의와 따로 받으므로
-        // 대상이 아니다 — 함께 철회하면 같은 저장이 다시 동의로 기록해 일어나지 않은 「철회 → 동의」가 남는다.
+        // 정합성 규칙: marketing_consent 철회 시 실제 동의 레코드 기준으로 모든 채널 자동 철회
         if ($consentKey === MarketingConsent::MASTER_KEY && ! $value) {
             $userConsents = $this->repository->getAllByUserId($userId);
             foreach ($userConsents as $userConsent) {
-                if ($userConsent->consent_key !== MarketingConsent::MASTER_KEY
-                    && ! in_array($userConsent->consent_key, MarketingConsent::LEGAL_KEYS, true)
-                    && $userConsent->is_consented) {
+                if ($userConsent->consent_key !== MarketingConsent::MASTER_KEY && $userConsent->is_consented) {
                     $this->updateConsent($userId, $userConsent->consent_key, false, $source);
                 }
             }

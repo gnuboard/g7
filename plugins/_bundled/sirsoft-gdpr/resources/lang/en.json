@@ -241,8 +241,7 @@
                 "close": "Close",
                 "open_policy_page": "Open policy page",
                 "no_policy_url": "No privacy policy address registered.",
-                "legacy_slug_note": "Recorded in the previous format (page slug \"{slug}\"). Showing the address the link pointed to at the time.",
-                "load_failed": "Could not load this policy version. Please try again in a moment."
+                "legacy_slug_note": "Recorded in the previous format (page slug \"{slug}\"). Showing the address the link pointed to at the time."
             },
             "not_found": "Policy version not found.",
             "history_page_summary": "{total} total · page {current} / {last}",
@@ -348,8 +347,7 @@
     },
     "common": {
         "loading": "Loading...",
-        "refresh": "Refresh",
-        "list_load_failed": "Could not load the list. Please try again in a moment."
+        "refresh": "Refresh"
     },
     "banner": {
         "re_appear_reason": "The cookie policy has been updated to version {version}. Please review your consent.",

@@ -8,7 +8,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Modules\Sirsoft\Board\Enums\TriggerType;
-use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -139,14 +138,12 @@ class ReportDetailResource extends BaseApiResource
     {
         if ($targetType === 'post') {
             $createdAtRaw = $reportable['created_at'] ?? null;
-            $contentMode = $reportable['content_mode'] ?? 'text';
-            $content = $reportable['content'] ?? ($firstSnapshot['content'] ?? '');
 
             return [
                 'id' => $report->target_id,
                 'title' => $reportable['title'] ?? ($firstSnapshot['title'] ?? null),
-                'content' => $this->presentContentMedia($content, $contentMode, $report->board?->slug),
-                'content_mode' => $contentMode,
+                'content' => $reportable['content'] ?? ($firstSnapshot['content'] ?? ''),
+                'content_mode' => $reportable['content_mode'] ?? 'text',
                 'created_at' => $createdAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($createdAtRaw)) : null,
                 'author' => $this->buildAuthorInfo($reportable, $firstSnapshot['author_name'] ?? ''),
             ];
@@ -185,28 +182,6 @@ class ReportDetailResource extends BaseApiResource
     }
 
     /**
-     * 게시글 본문(HTML)의 본문 미디어 정식 주소를 서명 주소로 바꿉니다.
-     *
-     * `<img>`·`<video>` 요청에는 인증 헤더가 없어, 비밀글·회원 전용 게시판의 본문 미디어를 정식 주소로 두면 신고 상세에서
-     * 403 으로 깨진다. 신고 조회 권한이 본문을 볼 자격이므로 게시글 응답(`PostResource`)과 같은 서명으로 위임한다.
-     *
-     * @param  string|null  $content  본문
-     * @param  string  $contentMode  본문 형식 (html 일 때만 바꾼다)
-     * @param  string|null  $slug  게시판 슬러그
-     * @return string|null 서명 주소로 바꾼 본문
-     */
-    private function presentContentMedia(?string $content, string $contentMode, ?string $slug): ?string
-    {
-        if ($content === null || $content === '' || $contentMode !== 'html' || $slug === null || $slug === '') {
-            return $content;
-        }
-
-        // 신고 상세는 관리자 전용 화면이다 — 신고된 글(삭제·비밀 포함)의 증거 미디어를 관리자가 `<img>`·`<video>` 로
-        // 볼 수 있도록 본문의 이 게시판 본문 미디어를 모두 서명한다(#883 검수 동작 유지, #887).
-        return app(PostContentMediaService::class)->presentContent($content, $slug, signAll: true);
-    }
-
-    /**
      * 댓글 정보를 구성합니다.
      *
      * @param  mixed  $report  신고 모델
@@ -241,19 +216,14 @@ class ReportDetailResource extends BaseApiResource
     private function buildAuthorInfo(?array $reportable, string $snapshotName): array
     {
         $authorId = $reportable['author_id'] ?? null;
-        $name = ($reportable['author_name'] ?? '') ?: ($snapshotName ?: null);
-
-        // 계정이 남지 않은 회원(하드 삭제)은 케이스 author_id 가 비워져도 비회원이 아니다 —
-        // 비회원 배지·「비회원」 이름 대신 이름(없으면 null → 화면이 「알 수 없음」)만 싣는다
-        $isMember = $authorId !== null || ! empty($reportable['author_is_member']);
 
         return [
             'uuid' => $reportable['author_uuid'] ?? null,
-            'name' => $isMember ? $name : ($name ?? __('sirsoft-board::messages.common.guest')),
+            'name' => $reportable['author_name'] ?? $snapshotName ?: __('sirsoft-board::messages.common.guest'),
             'email' => $this->canExposeMemberEmail(null, $authorId !== null ? (int) $authorId : null)
                 ? ($reportable['author_email'] ?? null)
                 : null,
-            'is_guest' => ! $isMember,
+            'is_guest' => $authorId === null,
         ];
     }
 

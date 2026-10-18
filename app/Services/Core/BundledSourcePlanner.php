@@ -8,7 +8,6 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\FilePermissionHelper;
-use App\Support\ExtensionIntegrations;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -90,7 +89,6 @@ class BundledSourcePlanner
             $entries[BundledInventory::key('language_pack', (string) $identifier)] = $this->makeEntry('language_pack', (string) $identifier, $manifest);
         }
 
-        $entries = self::inheritHiddenFromTargets($entries);
         ksort($entries, SORT_STRING);
 
         $configPath = $root.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
@@ -158,7 +156,6 @@ class BundledSourcePlanner
                 $entries[BundledInventory::key($type, $m[2])] = $this->makeEntry($type, $m[2], $data);
             }
 
-            $entries = self::inheritHiddenFromTargets($entries);
             ksort($entries, SORT_STRING);
 
             $config = $zip->getFromName($prefix.'config/app.php');
@@ -249,47 +246,6 @@ class BundledSourcePlanner
         }
 
         return $entry;
-    }
-
-    /**
-     * 숨김 확장(샘플 등)을 대상으로 하는 확장 언어팩도 숨김으로 표시합니다.
-     *
-     * 언어팩 manifest 에는 `hidden` 이 없어 본체(hello 샘플)는 숨기면서 그 언어팩만 미배치 안내에 나왔다(7.1.1 출시 전).
-     * 대상이 같은 배포본에 있고 숨김일 때만 따른다 — 코어 팩·대상이 배포본에 없는 팩은 그대로 둔다.
-     *
-     * @param  array<string, array<string, mixed>>  $entries  인벤토리 항목
-     * @return array<string, array<string, mixed>> 언어팩 숨김을 보정한 항목
-     */
-    private static function inheritHiddenFromTargets(array $entries): array
-    {
-        foreach ($entries as $key => $entry) {
-            $targetKey = self::languagePackTargetKey($entry);
-            if ($targetKey !== null && ! $entry['hidden'] && ! empty($entries[$targetKey]['hidden'])) {
-                $entries[$key]['hidden'] = true;
-            }
-        }
-
-        return $entries;
-    }
-
-    /**
-     * 확장 언어팩 항목의 대상 확장 키를 돌려줍니다.
-     *
-     * @param  array<string, mixed>  $entry  인벤토리 항목
-     * @return string|null `{type}:{identifier}` (확장 언어팩이 아니거나 대상이 없으면 null — 코어 팩 포함)
-     */
-    private static function languagePackTargetKey(array $entry): ?string
-    {
-        if (($entry['type'] ?? null) !== 'language_pack' || ($entry['target_identifier'] ?? null) === null) {
-            return null;
-        }
-
-        $targetType = self::normalizeType((string) ($entry['scope'] ?? ''));
-        if ($targetType === null || $targetType === 'language_pack') {
-            return null;
-        }
-
-        return BundledInventory::key($targetType, (string) $entry['target_identifier']);
     }
 
     /**
@@ -465,13 +421,6 @@ class BundledSourcePlanner
         }
         foreach ($selectedKeys as $key) {
             $add($key, 'selected');
-        }
-        // 고른 확장 언어팩의 대상 확장(본체)이 배치·설치되지 않았으면 함께 배치한다(7.1.1 출시 전 — place 와 같은 규칙)
-        foreach ($selectedKeys as $key) {
-            $targetKey = self::languagePackTargetKey((array) $inventory->get($key));
-            if ($targetKey !== null && $inventory->has($targetKey) && ! isset($installed[$targetKey]) && $add($targetKey, 'pack_target', $key)) {
-                $selectedKeys[] = $targetKey;
-            }
         }
         $this->closeDependencies($inventory, array_values(array_filter($selectedKeys, fn ($k) => ! str_starts_with($k, 'language_pack:'))), $add);
 
@@ -696,58 +645,6 @@ class BundledSourcePlanner
         return $out;
     }
 
-    /**
-     * 활성 확장이 선택 연동(`integrations`)으로 선언한 확장의 키와 그 선언 확장 목록을 돌려줍니다 (7.1.4 D11).
-     *
-     * 정리(prune)는 이 대상을 보존한다 — 지우면 나중에 연동 확장을 번들에서 설치할 수 없다. 배치 폐포
-     * ({@see closeDependencies()})에는 넣지 않는다(연동은 강제 배치하지 않는다). 활성 manifest 를 읽으며, 설치 정보를
-     * 읽지 못하면 보존 없이 빈 목록을 돌려준다(의존 보존과 달리 정리를 막는 근거가 아니라 덤이다).
-     *
-     * @return array<string, array<int, string>> `{type}:{identifier}` => 연동으로 선언한 활성 확장 키 목록
-     */
-    public function activeIntegrationKeys(): array
-    {
-        try {
-            $active = [];
-            foreach ($this->modules->getActiveModuleIdentifiers() as $id) {
-                $active[] = ['module', (string) $id];
-            }
-            foreach ($this->plugins->getActivePluginIdentifiers() as $id) {
-                $active[] = ['plugin', (string) $id];
-            }
-            foreach ($this->templates->getActive() as $template) {
-                $active[] = ['template', (string) $template->identifier];
-            }
-        } catch (\Throwable $e) {
-            Log::warning('번들 정리 판정: 활성 확장을 읽지 못해 연동 대상 보존을 건너뜁니다', ['error' => $e->getMessage()]);
-
-            return [];
-        }
-
-        $out = [];
-        foreach ($active as [$type, $identifier]) {
-            [$domain, $manifestName] = self::EXTENSION_DOMAINS[$type];
-            $manifestPath = base_path($domain.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.$manifestName);
-            if (! is_file($manifestPath)) {
-                continue;
-            }
-
-            $manifest = json_decode((string) file_get_contents($manifestPath), true);
-            if (! is_array($manifest)) {
-                continue;
-            }
-
-            $owner = BundledInventory::key($type, $identifier);
-            foreach (ExtensionIntegrations::normalize($manifest['integrations'] ?? []) as $pluralType => $ids) {
-                foreach ($ids as $id) {
-                    $out[BundledInventory::key(rtrim($pluralType, 's'), $id)][] = $owner;
-                }
-            }
-        }
-
-        return $out;
-    }
-
     // ────────────────────────────────────────────────────────────────
     // core:bundled-sources place / prune
     // ────────────────────────────────────────────────────────────────
@@ -780,20 +677,6 @@ class BundledSourcePlanner
                 $add($key, 'selected');
             }
         }
-
-        // 확장 언어팩만 골랐으면 디스크에 없는 대상 확장(본체)도 함께 배치한다 — 종전에는 본체 없이 언어팩만 남아
-        // 설치할 수 없는 팩이 생겼다(7.1.1 출시 전). 본체의 의존 번들은 아래 의존 폐포가 이어 붙인다.
-        foreach (array_keys($out) as $key) {
-            $targetKey = self::languagePackTargetKey((array) $inventory->get($key));
-            if ($targetKey === null || ! $inventory->has($targetKey)) {
-                continue;
-            }
-            $target = (array) $inventory->get($targetKey);
-            if (! $this->isOnDisk((string) $target['type'], (string) $target['identifier'])) {
-                $add($targetKey, 'pack_target', $key);
-            }
-        }
-
         $this->closeDependencies($inventory, array_values(array_filter(array_keys($out), fn ($k) => ! str_starts_with($k, 'language_pack:'))), $add);
 
         foreach ($inventory->all() as $key => $entry) {
@@ -816,7 +699,7 @@ class BundledSourcePlanner
     /**
      * 정리(prune) 대상을 판정합니다.
      *
-     * 대상 = 인벤토리 ∩ 디스크 − 설치됨 − 설치된 확장의 의존 대상 − 활성 확장의 연동 대상(7.1.4) − 남는 번들의 의존 대상(반복 축소).
+     * 대상 = 인벤토리 ∩ 디스크 − 설치됨 − 설치된 확장의 의존 대상 − 남는 번들의 의존 대상(반복 축소).
      * 식별자를 주면 그 안에서만 고른다. 확장 언어팩은 팩이 미설치이고 대상 확장 소스가 정리되거나
      * 이미 없을 때 함께 정리한다(core 팩 제외). 인벤토리에 없는 사용자 자체 `_bundled/{id}` 는 대상이 아니다.
      *
@@ -833,12 +716,10 @@ class BundledSourcePlanner
     {
         $installed = $this->installedKeys();
         $installedDeps = $this->installedDependencyKeys($inventory);
-        $integrationTargets = $this->activeIntegrationKeys();
         $requested = $keys === null ? null : array_flip($keys);
 
         $candidates = [];
         $protected = [];
-        $protectedIntegrations = [];
         $modified = [];
         $unverifiable = false;
         $keepModified = function (string $key, array $entry) use ($inventory, $includeModified, &$modified, &$unverifiable): bool {
@@ -872,12 +753,6 @@ class BundledSourcePlanner
             }
             if (isset($installedDeps[$key])) {
                 $protected[$key] = ['installed'];
-
-                continue;
-            }
-            // 활성 확장이 연동으로 선언한 번들은 남긴다 — 지우면 그 연동 확장을 번들에서 설치할 수 없다(D11)
-            if (isset($integrationTargets[$key])) {
-                $protectedIntegrations[$key] = array_values(array_unique($integrationTargets[$key]));
 
                 continue;
             }
@@ -936,7 +811,7 @@ class BundledSourcePlanner
 
         $notTarget = [];
         foreach ((array) $keys as $key) {
-            if (! isset($candidates[$key]) && ! isset($protected[$key]) && ! isset($protectedIntegrations[$key]) && ! isset($modified[$key])) {
+            if (! isset($candidates[$key]) && ! isset($protected[$key]) && ! isset($modified[$key])) {
                 $notTarget[] = $key;
             }
         }
@@ -948,8 +823,6 @@ class BundledSourcePlanner
         return [
             'candidates' => $candidates,
             'protected' => $protected,
-            // 활성 확장의 연동 대상이라 남긴 번들 => 연동으로 선언한 활성 확장 키 (7.1.4)
-            'protected_integrations' => $protectedIntegrations,
             'modified' => $modified,
             'not_target' => $notTarget,
             'unverifiable' => $unverifiable,
@@ -1018,32 +891,6 @@ class BundledSourcePlanner
         sort($diff, SORT_STRING);
 
         return $diff;
-    }
-
-    /**
-     * 다른 파일 목록 중 배포본에 아예 없는 파일만 골라 돌려줍니다.
-     *
-     * 기본(비-prune) 업데이트는 새 판에서 지워진 파일을 지우지 않는다. 그래서 운영자가 손대지 않은 번들도 이전 판의 남은
-     * 파일 때문에 「수정됨」으로 보인다 — prune 안내가 「내용이 다른 파일」과 「배포본에 없는 파일만」을 가르는 데 쓴다
-     * (7.1.1 출시 전). 보존 판정은 바꾸지 않는다.
-     *
-     * @param  BundledInventory  $inventory  릴리스 인벤토리 (root 가 있어야 비교 가능)
-     * @param  array<string, mixed>  $entry  인벤토리 항목
-     * @param  array<int, string>  $files  {@see modifiedFiles()} 가 돌려준 번들 폴더 기준 상대경로
-     * @return array<int, string> 배포본에 없는 파일 (비교할 배포본이 없으면 빈 배열)
-     */
-    public function filesMissingFromRelease(BundledInventory $inventory, array $entry, array $files): array
-    {
-        if ($inventory->root === null) {
-            return [];
-        }
-
-        $releaseDir = $inventory->root.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, (string) $entry['path']);
-
-        return array_values(array_filter(
-            $files,
-            fn (string $relative): bool => ! is_file($releaseDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative)),
-        ));
     }
 
     // ────────────────────────────────────────────────────────────────

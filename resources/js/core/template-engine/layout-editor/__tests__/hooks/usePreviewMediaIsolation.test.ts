@@ -11,12 +11,9 @@ import { renderHook } from '@testing-library/react';
 import {
   usePreviewMediaIsolation,
   rescanPreviewMediaIsolation,
-  MEDIA_ISOLATION_STYLE_KEY,
 } from '../../hooks/usePreviewMediaIsolation';
-import { getCssText } from '../../../../style/RuntimeStyleSheet';
 
-// 표식 요소 — 생성형 시트 환경은 <meta>, 폴백(jsdom)은 <style>. 태그를 가리지 않고 속성으로 찾는다.
-const containerStyle = () => document.head.querySelector('[data-g7le-media-isolation]');
+const containerStyle = () => document.head.querySelector('style[data-g7le-media-isolation]');
 
 describe('usePreviewMediaIsolation', () => {
   const originalCSS = (globalThis as any).CSS;
@@ -42,17 +39,14 @@ describe('usePreviewMediaIsolation', () => {
    * @scenario css_api=present, lifecycle=mount
    * @effects preview_media_isolation_container_declared_while_mounted
    */
-  it('마운트 때 컨테이너 규칙을 붙이고 계측값을 노출, 언마운트 때 지운다', () => {
+  it('마운트 때 컨테이너 <style> 을 넣고 계측값을 노출, 언마운트 때 지운다', () => {
     (globalThis as any).CSS = { supports: vi.fn(() => true) };
     const { result, unmount } = renderHook(() => usePreviewMediaIsolation());
 
     const style = containerStyle();
     expect(style).not.toBeNull();
-    expect(style!.id).toBe(MEDIA_ISOLATION_STYLE_KEY);
-    expect(style!.hasAttribute('data-g7le-no-media-isolation')).toBe(true);
-    const css = getCssText(MEDIA_ISOLATION_STYLE_KEY);
-    expect(css).toContain('.g7le-preview-frame');
-    expect(css).toContain('container:g7le-preview / inline-size');
+    expect(style!.textContent).toContain('.g7le-preview-frame');
+    expect(style!.textContent).toContain('container:g7le-preview / inline-size');
     expect((window as any).__g7lePreviewMediaIsolation).toMatchObject({
       sheets: expect.any(Number),
       converted: expect.any(Number),
@@ -67,7 +61,6 @@ describe('usePreviewMediaIsolation', () => {
 
     unmount();
     expect(containerStyle()).toBeNull();
-    expect(getCssText(MEDIA_ISOLATION_STYLE_KEY)).toBeNull();
     expect((window as any).__g7lePreviewMediaIsolation).toBeUndefined();
   });
 });

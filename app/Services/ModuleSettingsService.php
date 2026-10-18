@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
-use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\TemplateManager;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
@@ -102,8 +101,8 @@ class ModuleSettingsService
         // 기본값 로드
         $defaults = $moduleInstance->getConfigValues();
 
-        // 저장된 설정 파일 로드 — 계산값 키는 파일에 남아 있어도 무시하고 늘 실시간 값(기본값)을 쓴다 (7.1.3)
-        $savedSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), ComputedSettingKeys::of($moduleInstance));
+        // 저장된 설정 파일 로드
+        $savedSettings = $this->loadSettingsFromFile($identifier);
 
         // 기본값과 저장된 설정 병합
         $settings = array_merge($defaults, $savedSettings);
@@ -135,7 +134,7 @@ class ModuleSettingsService
      * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
      * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
      */
-    public function resolveModuleService(string $identifier): ?ModuleSettingsInterface
+    private function resolveModuleService(string $identifier): ?ModuleSettingsInterface
     {
         // 캐시 확인 (false = 검색 완료 + 미발견)
         if (array_key_exists($identifier, $this->moduleServiceCache)) {
@@ -257,10 +256,9 @@ class ModuleSettingsService
         $schema = $moduleInstance->getSettingsSchema();
         $settings = $this->encryptSensitiveFields($settings, $schema);
 
-        // 기존 설정과 병합 — 계산값 키는 요청에서도 기존 파일에서도 빼고 쓴다 (7.1.3)
-        $computedKeys = ComputedSettingKeys::of($moduleInstance);
-        $existingSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), $computedKeys);
-        $mergedSettings = array_merge($existingSettings, ComputedSettingKeys::strip($settings, $computedKeys));
+        // 기존 설정과 병합
+        $existingSettings = $this->loadSettingsFromFile($identifier);
+        $mergedSettings = array_merge($existingSettings, $settings);
 
         // 파일에 저장
         $result = $this->saveSettingsToFile($identifier, $mergedSettings);
@@ -404,12 +402,6 @@ class ModuleSettingsService
 
             // frontend_schema 기반으로 expose: true인 필드만 필터링
             $settings = $this->filterByFrontendSchema($settings, $frontendSchema);
-
-            // 확장이 공개 설정에서 키를 더 뺄 수 있는 지점 (배열이 아닌 반환값은 버린다)
-            $filtered = HookManager::applyFilters('core.module_settings.filter_frontend_settings', $settings, $identifier);
-            if (is_array($filtered)) {
-                $settings = $filtered;
-            }
 
             // 필터링 후 설정이 있는 경우만 결과에 포함
             if (! empty($settings)) {

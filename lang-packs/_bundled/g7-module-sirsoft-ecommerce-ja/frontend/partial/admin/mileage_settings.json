@@ -81,17 +81,5 @@
     "template_status_hint": "チャネル別発送可否·テンプレート·受信者は通知設定メニューで管理します。"
   },
   "save": "保存",
-  "cancel": "キャンセル",
-  "policy": {
-    "signup_earn": "会員登録積立金",
-    "signup_earn_hint": "会員が自分で登録した場合に一度だけ付与します。本人認証待ちの登録は、認証が完了して有効化されたときに付与し、管理者が作成した会員には付与しません。有効期限は下記の有効期限設定に従います。",
-    "signup_earn_amount": "会員登録積立金の金額",
-    "point_unit": "点",
-    "no_earn_when_points_used": "マイレージを使用した注文は購入積立なし",
-    "no_earn_when_points_used_hint": "オンにすると、マイレージを1点でも使用した注文には購入積立を行いません。すでに受け付けた注文は受付時点の設定に従います。",
-    "min_product_total_for_use": "商品合計が基準未満の場合は利用不可",
-    "min_product_total_for_use_hint": "オンにすると、商品合計（販売価格 × 数量、クーポン・配送料の適用前）が基準金額未満の注文ではマイレージを使用できません。",
-    "min_product_total_for_use_amount": "利用可能な最低商品合計",
-    "min_product_total_for_use_suffix": "以上のご購入で利用可能（基本通貨基準）"
-  }
+  "cancel": "キャンセル"
 }

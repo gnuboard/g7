@@ -1,0 +1,8 @@
+<!-- 리뷰 목록의 반복 안에서만 쓰는 아바타 조각 — 바깥 반복이 주는 `review` 변수를 그대로 읽으므로
+     혼자서는 그릴 것이 없다. -->
+<partial description="리뷰 작성자 아바타 (sm 사이즈, iteration 내부 review 변수 사용)">
+  <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+    <img data-if="{{review?.author?.avatar}}" src="{{review.author.avatar}}" alt="{{review.author.name}}" class="w-full h-full object-cover"/>
+    <div data-if="{{!review?.author?.avatar}}" class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">{{(review?.author?.name ?? '?').charAt(0).toUpperCase()}}</div>
+  </div>
+</partial>

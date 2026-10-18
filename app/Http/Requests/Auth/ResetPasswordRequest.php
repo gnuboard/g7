@@ -6,12 +6,13 @@ use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Http\Requests\Concerns\ChecksPasswordReuse;
+use App\Models\User;
 use App\Rules\PasswordPolicy;
-use App\Services\AuthService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class ResetPasswordRequest extends FormRequest
 {
@@ -36,8 +37,7 @@ class ResetPasswordRequest extends FormRequest
     {
         $rules = [
             'token' => 'required|string',
-            // 가입 여부는 검증하지 않는다 — 가입되지 않은 주소는 토큰이 틀린 것과 같은 응답을 받는다.
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required', 'email', Rule::exists(User::class, 'email')],
             'password' => ['required', 'string', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
         ];
 
@@ -82,15 +82,7 @@ class ResetPasswordRequest extends FormRequest
 
         $record = app(PasswordResetTokenRepositoryInterface::class)->findByEmail($email);
 
-        // 토큰 기록이 없는 주소(가입되지 않은 주소 포함)도 같은 횟수의 해시 비교를 한다 —
-        // 비교를 건너뛰면 응답 시간으로 토큰 기록(= 가입) 여부를 가를 수 있다.
-        if ($record === null) {
-            Hash::check($token, app(AuthService::class)->resetTokenDecoyHash());
-
-            return false;
-        }
-
-        if (! Hash::check($token, $record->token)) {
+        if ($record === null || ! Hash::check($token, $record->token)) {
             return false;
         }
 
@@ -122,6 +114,7 @@ class ResetPasswordRequest extends FormRequest
             'token.required' => __('validation.auth.token.required'),
             'email.required' => __('validation.auth.email.required'),
             'email.email' => __('validation.auth.email.email'),
+            'email.exists' => __('validation.auth.email.exists'),
             'password.required' => __('validation.auth.password.required'),
             'password.min' => __('validation.auth.password.min'),
             'password.confirmed' => __('validation.auth.password.confirmed'),

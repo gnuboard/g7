@@ -4,7 +4,6 @@ namespace App\Support\ExtensionDoc;
 
 use App\Extension\AbstractModule;
 use App\Extension\AbstractPlugin;
-use App\Extension\Helpers\ExtensionEntrySource;
 use ReflectionClass;
 use Throwable;
 
@@ -79,7 +78,6 @@ class DeclarativeSurfaceCollector
         'getCacheStore' => '캐시 스토어',
         // 메타
         'getDependencies' => '의존 확장',
-        'getIntegrations' => '연동 확장(선택)',
         'getRequiredCoreVersion' => '코어 최소 버전',
         'getLicense' => '라이선스',
         'getGithubUrl' => 'GitHub URL',
@@ -238,12 +236,21 @@ class DeclarativeSurfaceCollector
      */
     private function evalFreshEntry(array $record): ?object
     {
+        $content = @file_get_contents((string) $record['entryFile']);
+        if ($content === false) {
+            return null;
+        }
+
         $short = (string) $record['entryClassShort'];
         $uid = '_extdoc_'.bin2hex(random_bytes(6));
 
-        // 클래스명 치환·여는 태그 제거, __DIR__·__FILE__ 은 진입 파일 위치로 (#159)
-        $renamed = ExtensionEntrySource::forEval((string) $record['entryFile'], $short, $short.$uid);
-        if ($renamed === null) {
+        $renamed = preg_replace('/\bclass\s+'.preg_quote($short, '/').'\b/', 'class '.$short.$uid, $content, 1);
+        if (! is_string($renamed)) {
+            return null;
+        }
+
+        $renamed = preg_replace('/^<\?php\s*/', '', $renamed);
+        if (! is_string($renamed)) {
             return null;
         }
 

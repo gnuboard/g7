@@ -19,18 +19,6 @@
     "earn_delay_days": "Earn delay (days)",
     "earn_trigger_hint": "Default = Purchase Confirmed / Delivered selectable"
   },
-  "policy": {
-    "signup_earn": "Signup bonus",
-    "signup_earn_hint": "Granted once when a member signs up on their own. Members who sign up pending identity verification receive it when they are activated. Members created by an administrator do not receive it. Expiry follows the expiry setting below.",
-    "signup_earn_amount": "Signup bonus amount",
-    "point_unit": "points",
-    "no_earn_when_points_used": "No purchase earning on orders that use mileage",
-    "no_earn_when_points_used_hint": "When on, orders that use even one point of mileage earn nothing. Orders already placed follow the setting at the time they were placed.",
-    "min_product_total_for_use": "Block use below a product total",
-    "min_product_total_for_use_hint": "When on, mileage cannot be used on orders whose product total (price × quantity, before coupons and shipping) is below the threshold.",
-    "min_product_total_for_use_amount": "Minimum product total for use",
-    "min_product_total_for_use_suffix": "or more required to use (base currency)"
-  },
   "currency": {
     "title": "Usage Rules by Currency",
     "add": "Add Currency",

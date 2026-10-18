@@ -63,7 +63,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "ecommerce-tone-error-strong text-sm font-medium"
+                                                        "className": "text-error-strong"
                                                     },
                                                     "text": "{{_global.identity_policy_form_modal?.errors?.message ?? '$t:common.validation_error'}}"
                                                 },
@@ -83,7 +83,7 @@
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "ecommerce-tone-error-soft text-xs"
+                                                                "className": "text-danger-soft"
                                                             },
                                                             "text": "{{msg}}"
                                                         }
@@ -330,24 +330,6 @@
                                                 "className": "",
                                                 "options": "{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}"
                                             }
-                                        },
-                                        {
-                                            "comment": "지정한 수단으로 받은 인증만 인정한다(정확히 일치). 비우면 어떤 수단의 인증이든 인정한다 — 코어 7.1.6",
-                                            "type": "basic",
-                                            "name": "P",
-                                            "props": {
-                                                "className": "text-hint mt-1"
-                                            },
-                                            "text": "$t:admin.identity.policies.form.provider_id_desc"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.provider_id}}",
-                                            "props": {
-                                                "className": "form-error"
-                                            },
-                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.provider_id?.[0] ?? ''}}"
                                         }
                                     ]
                                 }
@@ -674,7 +656,7 @@
                             "name": "Div",
                             "if": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
                             "props": {
-                                "className": "alert-warning ecommerce-tone-warning-soft text-xs"
+                                "className": "alert-warning text-warning-soft"
                             },
                             "text": "$t:admin.identity.policies.form.declared_policy_notice"
                         }

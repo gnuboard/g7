@@ -5,7 +5,7 @@ namespace App\Seo;
 use App\Contracts\Repositories\SitemapUrlRepositoryInterface;
 use App\Enums\SitemapChangeFreq;
 use App\Extension\HookManager;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 
 /**
  * 사이트맵 리소스 색인기
@@ -170,7 +170,7 @@ class SitemapIndexer
         }
 
         if (isset($entry['url']) && is_string($entry['url']) && $entry['url'] !== '') {
-            return SiteUrl::absolute($entry['url']);
+            return ScreenUrl::toAbsolute($entry['url']);
         }
 
         return null;

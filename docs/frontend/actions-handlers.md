@@ -52,7 +52,6 @@
 9. [appendDataSource](actions-handlers-state.md#appenddatasource) - 데이터 소스 병합 (무한스크롤)
 10. [remount](actions-handlers-state.md#remount) - 컴포넌트 리마운트
     - `refreshConsent` (engine-v1.78.0) - 방문자 동의 스냅샷 다시 읽기 — 설명은 [g7core-api.md](g7core-api.md#방문자-동의-g7coreconsent)
-    - `recordSearchKeyword` (engine-v1.87.0) - 검색창 제출 검색어를 최근 검색어에 기록 — 설명은 [g7core-api.md](g7core-api.md#최근-검색어-g7coresearchhistory)
 11. [onSuccess/onError 후속 액션](actions-handlers-state.md#onsuccessonerror-후속-액션)
 12. [API 데이터 바인딩 규칙](actions-handlers-state.md#api-데이터-바인딩-규칙)
 13. [에러 핸들링 시스템](actions-handlers-state.md#에러-핸들링-시스템-errorhandling)
@@ -99,8 +98,8 @@
 
 | 핸들러 | 필수 속성 | 선택 속성 |
 |--------|----------|----------|
-| `navigate` | `params.path` — 링크(`<a href>`) 클릭에서 시작한 액션이면 생략 가능: path·target 키가 없으면 클릭한 링크의 같은 출처 `href` 로 이동(engine-v1.80.1, [링크로 쓰는 법](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801)) | `params.query`, `params.mergeQuery`, `params.replace`, `params.fallback` (engine-v1.40.0+, 미등록 경로 fallback, 기본 `openWindow` 같은 탭 `_self`), `params.fallbackPath` (engine-v1.80.1+, 이동 주소가 비었거나 거부될 때 갈 경로 — [fallbackPath 옵션](actions-handlers-navigation.md#fallbackpath-옵션-engine-v1801)) |
-| `openWindow` | `params.path` (또는 최상위 `target`) | `params.query`, `params.target` (`_blank` 기본/`_self`), `params.bypassLeaveGuard` |
+| `navigate` | `params.path` | `params.query`, `params.mergeQuery`, `params.replace`, `params.fallback` (engine-v1.40.0+, 미등록 경로 fallback, 기본 `openWindow`) |
+| `openWindow` | `params.path` | - |
 | `replaceUrl` | - | `params.path`, `params.query`, `params.mergeQuery` |
 | `apiCall` | `target` | `params.method`, `params.body`, `params.contentType`, `auth_required`, `onSuccess`, `onError` |
 | `setState` | `params.*` | `params.target` (global/local/isolated) |

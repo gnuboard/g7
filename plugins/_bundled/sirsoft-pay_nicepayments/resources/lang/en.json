@@ -114,8 +114,7 @@
         "test_mode_settings_warning_title": "Warning: NicePayments is currently set to test mode.",
         "test_mode_settings_warning_body": "Test payments do not create real payments. If the shop is live, switch this plugin to live payment mode before operating.",
         "test_mode_settings_warning_action": "Switch to live mode",
-        "test_mode_orders_in_list": "Test payment orders included",
-        "vbank_noti_count_value": "{{count}}"
+        "test_mode_orders_in_list": "Test payment orders included"
     },
     "easy_pay": {
         "section_title": "Easy Pay"
@@ -131,7 +130,6 @@
         "supply_amount": "Supply Amount",
         "vat_amount": "VAT",
         "tax_free_amount": "Tax-Free Amount",
-        "zero_rated_amount": "Zero-rated Amount",
         "vbank_deposit_info": "Virtual Account Deposit Guide",
         "vbank_bank": "Bank",
         "vbank_account": "Account Number",

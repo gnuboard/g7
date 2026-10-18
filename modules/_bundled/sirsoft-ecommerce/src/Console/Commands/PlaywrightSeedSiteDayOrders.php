@@ -76,14 +76,14 @@ class PlaywrightSeedSiteDayOrders extends Command
     {
         // ① CLI 한정
         if (php_sapi_name() !== 'cli') {
-            $this->error(__('sirsoft-ecommerce::playwright.guard.cli_only'));
+            $this->error('CLI 전용 커맨드입니다.');
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error(__('sirsoft-ecommerce::playwright.guard.bypass_required'));
+            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
 
             return self::FAILURE;
         }
@@ -97,7 +97,7 @@ class PlaywrightSeedSiteDayOrders extends Command
             $this->purge($retention);
             $option = ProductOption::query()->whereHas('product')->orderBy('id')->first();
             if (! $option) {
-                $this->error(__('sirsoft-ecommerce::playwright.seed_site_day_orders.no_product_options'));
+                $this->error('상품 옵션이 하나도 없어 주문 옵션을 붙일 수 없습니다.');
 
                 return self::FAILURE;
             }
@@ -133,7 +133,6 @@ class PlaywrightSeedSiteDayOrders extends Command
 
         return [
             'site_timezone' => TimezoneHelper::getSiteTimezone() ?: 'UTC',
-            // audit:allow datetime-display-user-timezone reason: 이미 사이트 시간대 기준(AnalyticsClock·siteToday)으로 만든 날짜 키 — 기계값
             'site_today' => $siteToday->toDateString(),
             'inside' => $this->order('IN', $inside, $option),
             'inside_multi' => $this->order('IN2', $inside, $option, 2),
@@ -154,7 +153,6 @@ class PlaywrightSeedSiteDayOrders extends Command
      */
     private function order(string $tag, CarbonImmutable $orderedAt, ProductOption $option, int $quantity = 1): string
     {
-        // audit:allow datetime-display-user-timezone reason: E2E·API 문서 시드 식별자 — 기계값
         $number = self::ORDER_PREFIX.$tag.'-'.now()->format('His');
 
         // 비회원 주문으로 만든다 — 팩토리 기본값은 회원을 새로 만들어, 정리 뒤에도 개발 DB 에 회원이 쌓인다.

@@ -22,9 +22,6 @@ return [
         'max_attempts' => 'Too many attempts. Please request a new code.',
         'invalid_code' => 'The verification code is incorrect.',
         'invalid_verification_token' => 'Invalid verification token.',
-        'provider_policy_mismatch' => 'This action can only be verified with the designated verification method.',
-        'policy_provider_unavailable' => 'The verification method required for this action is currently unavailable. Please contact the site administrator.',
-        'purpose_unknown' => 'Unknown verification purpose.',
         'missing_target' => 'A verification target (email or phone) is required.',
         'claim_denied' => 'The verification result cannot be retrieved. Please start verification again.',
         'claim_already_used' => 'This verification has already been used. Please start verification again.',
@@ -33,7 +30,6 @@ return [
         'purpose_not_supported' => 'The selected provider does not support this purpose.',
         'provider_unavailable' => 'Identity verification provider is not available.',
         'challenge_dispatch_failed' => 'We could not send the verification code. Please try again shortly or use another verification method.',
-        'challenge_cooldown' => 'A verification email was just sent. You can request again in :seconds second.|A verification email was just sent. You can request again in :seconds seconds.',
         'generic' => 'Identity verification failed.',
         'missing_scope_or_target' => 'Both scope and target are required to resolve a policy.',
         'admin_policy_has_no_default' => 'Admin-created policies do not have a declared default.',
@@ -117,12 +113,6 @@ return [
             'module' => 'Module',
             'plugin' => 'Plugin',
             'admin' => 'Admin',
-        ],
-    ],
-    // `identity:expire-challenges` command output
-    'console' => [
-        'expire_challenges' => [
-            'done' => 'Expired :count identity verification challenges.',
         ],
     ],
 ];

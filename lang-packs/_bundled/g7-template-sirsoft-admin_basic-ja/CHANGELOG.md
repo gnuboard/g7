@@ -4,80 +4,21 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.5] - 2026-11-15
+## [1.2.0] - 2026-10-17
 
 ### Added
 
-- 관리자 기본 템플릿 1.1.6 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 카드 「스타일 정책」 구획 문구(`admin.settings.security.csp.style.*` 18개 — 「スタイルポリシー」·적용 모드·차단 강도(「基本」·「厳格」)·강제 경고·강제 시 깨지는 화면 안내·`.env` 우선 안내·추가 허용 호스트·자동 포함 호스트·정책 미리보기)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 구획 문구가 키 그대로 보입니다.
-- 관리자 기본 템플릿 1.1.6 의 환경설정 새 입력칸 문구(`admin.settings.upload.layout_attachment_extensions`·`_hint`, `admin.settings.drivers.public_asset.extensions`·`extensions_hint`·`hardening_warning`·`hardening_rules_write_failed`, `admin.settings.security.password_reset_rate_limit_per_minute`·`register_rate_limit_per_minute`·`rate_limit_per_minute_hint`)의 일본어 번역을 추가했습니다.
+- 환경설정 → 일반 탭 「사용자 화면 URL」 칸의 이름·도움말과, 코어 업데이트 확인 창의 custom 사전 검사 중단 영역(충돌 표·예약 파일·해결 순서) 문구의 일본어 번역을 추가했습니다.
 
-- 관리자 기본 템플릿 1.1.6 의 본인인증 정책 편집 창 「인증 수단」 안내(`admin.identity.policies.form.provider_id_desc` — 지정한 수단으로 받은 인증만 인정하고, 비우면 모든 수단을 인정한다는 설명)의 일본어 번역을 추가했습니다.
-
-### Changed
-
-- 관리자 비밀번호 찾기 성공 안내(`auth.forgot_password.success`)를 관리자 기본 템플릿 1.1.6 의 새 문구에 맞췄습니다.
-- 본인인증 정책 편집 창의 인증 수단 빈 선택지(`admin.identity.policies.form.use_default_provider`)를 「（指定なし — すべての手段を受け入れる）」로 바꿨습니다(관리자 기본 템플릿 1.1.6 원문 변경).
-- 스타일 정책 강제 경고(`admin.settings.security.csp.style.known_issues_basic`·`known_issues_strict`)의 글쓰기 편집기 항목을 관리자 기본 템플릿 1.1.6 의 원문에 맞춰 고쳤습니다 — 편집 화면 서식은 이제 보이므로 빼고, 색상 선택기가 접힌다는 안내(「投稿エディター (CKEditor) のカラーピッカー …」)로 바꿨습니다.
-- 「자동으로 포함되는 스타일 호스트」 안내(`admin.settings.security.csp.style.auto_hosts`·`auto_hosts_empty`)를 원문에 맞춰 「有効なテンプレート・拡張機能の宣言」으로 고쳤습니다 — 확장이 선언한 스타일 호스트도 자동으로 들어갑니다.
-
-## [1.1.4] - 2026-11-10
-
-### Added
-
-- 관리자 기본 템플릿 1.1.5 의 레이아웃 편집기 상태 이름 「상품 진열 탭」(`editor.state.tab.product_display` 「商品陳列タブ」)의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.5 의 환경설정 > 개인정보 「최근 검색어」 카드 문구(`admin.settings.privacy.search_history.*`, 대상 행·창 제목 `targets.rows|title.search_history`)와 확장 경고 단계 이름(`search_scopes`)의 일본어 번역을 추가했습니다.
-- 회원 상세·수정 「최근 검색어」 구획 문구(`users.detail.tabs.search_history_info`·`users.detail.search_history.*` 「最近の検索語」 등)의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.5 의 확장 작업 경고 결과 창에서 확장 선언 오류를 알리는 문구(`admin.extensions.lifecycle_warnings.declaration_title`·`declaration_summary`·`declaration_description`·`declaration_hint`)의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.5 의 모듈·플러그인·템플릿 업데이트 창 「새 버전이 요구하는 확장을 먼저 확인하세요」 경고 상자 문구(`extensions.update_modal.requirements_*`)의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.5 의 사진 확대 창 화면 읽기 이름(`common.lightbox.*` — 창 이름 「画像の拡大表示」·닫기·이전·다음·확대·전체 화면·「{total}枚中{index}枚目」)의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.5 의 환경설정 「본문 콘텐츠」 탭 문구(`admin.settings.tabs.content` 「本文コンテンツ」·`admin.settings.content.*` — 허용 기능(「許可する機能」 — 「動画アップロードの許可」·「音声アップロードの許可」 등)·추가 태그·외부 영상 서비스·서비스 추가 창·주소 유효 시간, 레이아웃 편집기 모달 이름 `admin.modal_label.admin_settings.embed_provider_form_modal` 「外部動画サービスの追加・編集」)의 일본어 번역을 추가했습니다.
-
-### Changed
-
-- 관리자 기본 템플릿 1.1.5 의 환경설정 > SEO 「타이틀 접미사」 안내(`admin.settings.seo.meta_title_suffix_hint`) 일본어 문구를 코어 7.1.5 제목 규칙(검색엔진·브라우저 탭 공통, `{site_name}`, 빈 값이면 「 - サイト名」)에 맞게 고쳤습니다.
-
-## [1.1.3] - 2026-11-01
-
-### Added
-
-- 관리자 기본 템플릿 1.1.4 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 카드 문구(`admin.settings.security.csp.*` 16개 — 적용 모드·추가 허용 호스트·자동 포함 호스트·정책 미리보기·강제 경고·`.env` 우선 안내)의 일본어 번역을 추가했습니다.
-- 템플릿 1.1.4 의 「함께 쓰면 연동되는 확장」 문구 — 상세 창의 요구·설치 버전과 「버전 미달」, 설치 창의 「함께 쓰면 연동되는 확장(선택)」 목록, 모듈·플러그인 끄기와 삭제·템플릿 끄기 창의 「연동 중인 확장」 안내, 설치·활성화 결과의 연동 안내 알림, 새 안내 창 이름의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.4 의 강제 활성화 창 「버전 미달」 표시(모듈·플러그인 2건)의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.4 의 PHP 확장 표시 일본어 번역을 추가했습니다 — 모듈·플러그인 목록 배지(「PHP 拡張が必要」·「推奨 PHP 拡張」)와 상세 창 「必要な PHP 拡張」 절(`extensions.php_extensions.*`), 환경설정 > 정보 탭의 「拡張(モジュール・プラグイン)が要求するモジュール」 목록(`admin.settings.info.requested_modules`·`requested_by_line`·`level_require`·`level_suggest`)입니다.
-- 관리자 기본 템플릿 1.1.4 의 템플릿 강제 활성화 창 503 경고(사용자·관리자 템플릿), 목록 카드 미충족 의존 사유, 503 안내 화면의 항목별 사유 문구의 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.4 설치 창의 연동 확장 「함께 설치」 줄(`admin.extension_integrations.requires_label`·`requires_hint`·`requires_hint_unselected`·`requires_no_permission`) 일본어 번역을 추가했습니다.
-- 관리자 기본 템플릿 1.1.4 의 확장 작업 결과 창 「자세히 보기」 단계 이름(`admin.extensions.lifecycle_warnings.steps.*`, 25개) 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 `dependents` 같은 단계 키가 그대로 보입니다.
-- 관리자 기본 템플릿 1.1.4 대시보드 확장 상태 칸의 「외 N개 더 있음」 문구(`admin.dashboard.extension_status.more_count`) 일본어 번역을 추가했습니다.
-
-### Changed
-
-- 환경설정 > 정보 > [코어 업데이트 안내] 창의 수동 업데이트 제목·설명(`admin.settings.info.manual_update_title`·`manual_update_desc`) 번역을 템플릿 1.1.4 문구에 맞춰 「zip 확장 미설치 환경」에서 「GitHub 에서 받기 어려운 환경 — 이 방법도 zip 확장 필요」로 바꿨습니다.
-- 503 안내 화면의 제목·안내 일본어 문구를 「필요한 확장 기능의 조건이 맞지 않습니다」·「설치·활성화하거나 업데이트해 주세요」 뜻으로 바꿨습니다(종전 「활성화되지 않았습니다」).
-- 모듈·플러그인·템플릿 상세·설치 창의 의존 확장 버전 배지(`dependency_unmet_version`) 번역을 템플릿 1.1.4 문구에 맞춰 「バージョン不一致」에서 「バージョン不足」로 바꿨습니다.
-
-## [1.1.2] - 2026-10-23
-
-### Added
-
-- 확장 작업 결과 창의 「일부 항목이 실패했습니다」 경고 목록 문구(제목·요약·설명·자세히 보기)와 안내만 있을 때의 문구(제목·요약·설명), 그 창 이름의 일본어 번역을 추가했습니다.
-
-### Changed
-
-- 환경설정 > 코어 업데이트의 수동 업데이트 안내 번역을 템플릿 1.1.3 문구에 맞춰 「PHP zip 확장이나 unzip 명령어가 없는 경우」에서 「PHP zip 확장이 없는 경우」로 바꿨습니다.
-
-## [1.1.1] - 2026-10-21
+## [1.1.1] - 2026-10-11
 
 ### Added
 
 - 확장(템플릿·모듈·플러그인) 설치·업데이트·레이아웃 갱신 창의 「詳細設定」(레이아웃 설치 소스 — 自動(推奨) / 元の JSON を優先(トラブルシューティング用)) 문구의 일본어 번역을 추가했습니다.
 - 모듈·플러그인·템플릿 관리 화면과 환경설정 > 언어팩 탭의 「배치하지 않은 공식 번들」 안내 문구(제목 4종·설명·배치 명령 이름·닫기 단추)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 한국어로 보입니다.
-- 환경설정 → 드라이버 탭 「큐 워커」 구역의 문구(연결·큐 등록, 큐별 상태 표, 경고 배지, 긴 작업 전용 워커, Supervisor 실행 명령, 기본값으로 대신 보낸 작업 안내 — 40건)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 구역이 한국어로 보입니다. (#139 @glitter-gim 님께서 건의해주셨습니다.)
+- 환경설정 → 드라이버 탭 「큐 워커」 구역의 문구(연결·큐 등록, 큐별 상태 표, 경고 배지, 긴 작업 전용 워커, Supervisor 실행 명령, 기본값으로 대신 보낸 작업 안내 — 40건)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다(#139). 없으면 일본어 화면에서 이 구역이 한국어로 보입니다.
 - 역할 수정 화면에서 비회원 역할의 권한 범위를 고를 수 없는 이유를 알리는 안내(`admin.roles.form.guest_scope_unsupported_hint`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 한국어로 보입니다.
 - 권한 관리(역할 목록) 화면 「구분」 선택 상자 문구(`admin.roles.filters.*` 6건 — 区分·すべての区分·システム·モジュール·プラグイン·直接追加)의 일본어 번역을 추가했습니다.
-- 화면 읽기 프로그램이 읽는 입력칸 이름(「{{row}} {{column}}」·「{{n}}行目」·「{{n}}行目を選択」·「{{name}}をすべて選択」·「{{name}} 使用」·「{{name}}の適用範囲」·「並び順」·「1ページの表示件数」·「検索対象」·「{{label}}（{{language}}）」·「言語」·「セクション移動」)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 이름들이 한국어로 읽힙니다.
-- 멈춘 업데이트 카드의 「업데이트 멈춤」 표시·「정리 후 다시 업데이트」 단추·안내 문구 12개(`admin.{modules,plugins,templates}.status.stuck_update`·`actions.recover_update`·`stuck_update_hint`·`stuck_update_reactivate_hint`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 한국어로 보입니다.
-- 메뉴 관리 편집 중 다른 메뉴를 고를 때 뜨는 확인 창 문구 5개(`admin.menus.modals.editing_*`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 창이 한국어로 보입니다.
-- 관리자 템플릿 1.1.1 에서 번역 문구로 바뀐 화면 문구의 일본어 번역을 추가했습니다 — 사이트 이름을 정하지 않았을 때의 이름(`admin.brand_name`)과 이름이 없는 관리자의 표시 이름(`admin.default_user_name`), 환경설정 SEO 입력칸 예시(`admin.settings.seo.meta_title_suffix_placeholder`·`meta_keywords_placeholder`), 템플릿 조각 확인 화면 문구(`admin.template_partial_test.*`). 종전에는 일본어 화면에서도 한국어로 보였습니다.
 
 ## [1.1.0] - 2026-10-10
 

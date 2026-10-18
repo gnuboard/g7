@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
+            "name": "Div",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기",
@@ -26,9 +26,7 @@
                 }
             ],
             "props": {
-                "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
-                "aria-expanded": "{{!!(_local.ui.basicInfoExpanded ?? true)}}"
+                "className": "card-header"
             },
             "children": [
                 {
@@ -52,7 +50,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{(_local.ui.basicInfoExpanded ?? true) ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon transition-transform duration-200 {{(_local.ui.basicInfoExpanded ?? true) ? 'rotate-180' : ''}}"
                     }
                 }
             ]
@@ -108,7 +106,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-red-600 dark:text-red-400"
+                                                "className": "text-sm text-red-500 dark:text-red-400"
                                             },
                                             "text": "*"
                                         },
@@ -192,7 +190,7 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "Div",
                                                             "actions": [
                                                                 {
                                                                     "comment": "분류 1단 고르기. 고른 값을 폼이 아니라 이 구획만의 격리 상태에 담는 것은, 여기서 고르는 것이 아직 「후보」이고 아래 「선택 추가」를 눌러야 상품의 분류가 되기 때문이다",
@@ -205,10 +203,8 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "type": "button",
-                                                                "className": "w-full text-left category-item",
-                                                                "data-selected": "{{_isolated.selectedCategories[0]?.id === cat1.id}}",
-                                                                "aria-pressed": "{{_isolated.selectedCategories[0]?.id === cat1.id}}"
+                                                                "className": "category-item",
+                                                                "data-selected": "{{_isolated.selectedCategories[0]?.id === cat1.id}}"
                                                             },
                                                             "children": [
                                                                 {
@@ -264,7 +260,7 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "Div",
                                                             "actions": [
                                                                 {
                                                                     "comment": "2단 고르기 — 아래 단은 위 단의 자식만 세우므로 위를 바꾸면 아래 선택이 함께 풀린다",
@@ -277,10 +273,8 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "type": "button",
-                                                                "className": "w-full text-left category-item",
-                                                                "data-selected": "{{_isolated.selectedCategories[1]?.id === cat2.id}}",
-                                                                "aria-pressed": "{{_isolated.selectedCategories[1]?.id === cat2.id}}"
+                                                                "className": "category-item",
+                                                                "data-selected": "{{_isolated.selectedCategories[1]?.id === cat2.id}}"
                                                             },
                                                             "children": [
                                                                 {
@@ -306,7 +300,7 @@
                                                     "name": "Div",
                                                     "if": "{{!_isolated.selectedCategories[0]}}",
                                                     "props": {
-                                                        "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                        "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.category.select_prev"
                                                 },
@@ -315,7 +309,7 @@
                                                     "name": "Div",
                                                     "if": "{{_isolated.selectedCategories[0] && !(_isolated.selectedCategories[0]?.children?.length > 0)}}",
                                                     "props": {
-                                                        "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                        "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.category.no_subcategory"
                                                 }
@@ -354,7 +348,7 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "Div",
                                                             "actions": [
                                                                 {
                                                                     "comment": "3단 고르기",
@@ -367,10 +361,8 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "type": "button",
-                                                                "className": "w-full text-left category-item",
-                                                                "data-selected": "{{_isolated.selectedCategories[2]?.id === cat3.id}}",
-                                                                "aria-pressed": "{{_isolated.selectedCategories[2]?.id === cat3.id}}"
+                                                                "className": "category-item",
+                                                                "data-selected": "{{_isolated.selectedCategories[2]?.id === cat3.id}}"
                                                             },
                                                             "children": [
                                                                 {
@@ -396,7 +388,7 @@
                                                     "name": "Div",
                                                     "if": "{{!_isolated.selectedCategories[1]}}",
                                                     "props": {
-                                                        "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                        "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.category.select_prev"
                                                 },
@@ -405,7 +397,7 @@
                                                     "name": "Div",
                                                     "if": "{{_isolated.selectedCategories[1] && !(_isolated.selectedCategories[1]?.children?.length > 0)}}",
                                                     "props": {
-                                                        "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                        "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.category.no_subcategory"
                                                 }
@@ -444,7 +436,7 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "Div",
                                                             "actions": [
                                                                 {
                                                                     "comment": "4단 고르기",
@@ -457,10 +449,8 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "type": "button",
-                                                                "className": "w-full text-left category-item",
-                                                                "data-selected": "{{_isolated.selectedCategories[3]?.id === cat4.id}}",
-                                                                "aria-pressed": "{{_isolated.selectedCategories[3]?.id === cat4.id}}"
+                                                                "className": "category-item",
+                                                                "data-selected": "{{_isolated.selectedCategories[3]?.id === cat4.id}}"
                                                             },
                                                             "children": [
                                                                 {
@@ -477,7 +467,7 @@
                                                     "name": "Div",
                                                     "if": "{{!_isolated.selectedCategories[2]}}",
                                                     "props": {
-                                                        "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                        "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.category.select_prev"
                                                 },
@@ -486,7 +476,7 @@
                                                     "name": "Div",
                                                     "if": "{{_isolated.selectedCategories[2] && !(_isolated.selectedCategories[2]?.children?.length > 0)}}",
                                                     "props": {
-                                                        "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                        "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.category.no_subcategory"
                                                 }
@@ -529,7 +519,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "tab text-gray-600 flex-1 {{(_isolated.categoryStep ?? 1) === 1 ? 'active' : ''}}"
+                                                "className": "tab flex-1 {{(_isolated.categoryStep ?? 1) === 1 ? 'active' : ''}}"
                                             },
                                             "children": [
                                                 {
@@ -543,7 +533,7 @@
                                                     "if": "{{_isolated.selectedCategories[0]}}",
                                                     "props": {
                                                         "name": "check",
-                                                        "className": "ml-1 text-base text-green-700 dark:text-green-400"
+                                                        "className": "ml-1 text-base text-green-500 dark:text-green-400"
                                                     }
                                                 }
                                             ]
@@ -564,7 +554,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "tab text-gray-600 flex-1 {{(_isolated.categoryStep ?? 1) === 2 ? 'active' : ''}}"
+                                                "className": "tab flex-1 {{(_isolated.categoryStep ?? 1) === 2 ? 'active' : ''}}"
                                             },
                                             "children": [
                                                 {
@@ -578,7 +568,7 @@
                                                     "if": "{{_isolated.selectedCategories[1]}}",
                                                     "props": {
                                                         "name": "check",
-                                                        "className": "ml-1 text-base text-green-700 dark:text-green-400"
+                                                        "className": "ml-1 text-base text-green-500 dark:text-green-400"
                                                     }
                                                 }
                                             ]
@@ -599,7 +589,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "tab text-gray-600 flex-1 {{(_isolated.categoryStep ?? 1) === 3 ? 'active' : ''}}"
+                                                "className": "tab flex-1 {{(_isolated.categoryStep ?? 1) === 3 ? 'active' : ''}}"
                                             },
                                             "children": [
                                                 {
@@ -613,7 +603,7 @@
                                                     "if": "{{_isolated.selectedCategories[2]}}",
                                                     "props": {
                                                         "name": "check",
-                                                        "className": "ml-1 text-base text-green-700 dark:text-green-400"
+                                                        "className": "ml-1 text-base text-green-500 dark:text-green-400"
                                                     }
                                                 }
                                             ]
@@ -634,7 +624,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "tab text-gray-600 flex-1 {{(_isolated.categoryStep ?? 1) === 4 ? 'active' : ''}}"
+                                                "className": "tab flex-1 {{(_isolated.categoryStep ?? 1) === 4 ? 'active' : ''}}"
                                             },
                                             "children": [
                                                 {
@@ -648,7 +638,7 @@
                                                     "if": "{{_isolated.selectedCategories[3]}}",
                                                     "props": {
                                                         "name": "check",
-                                                        "className": "ml-1 text-base text-green-700 dark:text-green-400"
+                                                        "className": "ml-1 text-base text-green-500 dark:text-green-400"
                                                     }
                                                 }
                                             ]
@@ -674,7 +664,7 @@
                                                 {
                                                     "comment": "좁은 화면 1단 고르기 — 고른 뒤 다음 단계 탭으로 넘겨 주는 것이 넓은 화면과 다르다",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "Div",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -686,10 +676,8 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "type": "button",
-                                                        "className": "flex w-full justify-start text-left category-item-mobile",
-                                                        "data-selected": "{{_isolated.selectedCategories[0]?.id === cat.id}}",
-                                                        "aria-pressed": "{{_isolated.selectedCategories[0]?.id === cat.id}}"
+                                                        "className": "category-item-mobile",
+                                                        "data-selected": "{{_isolated.selectedCategories[0]?.id === cat.id}}"
                                                     },
                                                     "text": "{{$localized(cat.name)}}"
                                                 }
@@ -707,7 +695,7 @@
                                                 {
                                                     "comment": "좁은 화면 2단 고르기",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "Div",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -719,10 +707,8 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "type": "button",
-                                                        "className": "flex w-full justify-start text-left category-item-mobile",
-                                                        "data-selected": "{{_isolated.selectedCategories[1]?.id === cat.id}}",
-                                                        "aria-pressed": "{{_isolated.selectedCategories[1]?.id === cat.id}}"
+                                                        "className": "category-item-mobile",
+                                                        "data-selected": "{{_isolated.selectedCategories[1]?.id === cat.id}}"
                                                     },
                                                     "text": "{{$localized(cat.name)}}"
                                                 }
@@ -733,7 +719,7 @@
                                             "name": "Div",
                                             "if": "{{(_isolated.categoryStep ?? 1) === 2 && !_isolated.selectedCategories[0]}}",
                                             "props": {
-                                                "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.category.select_prev"
                                         },
@@ -742,7 +728,7 @@
                                             "name": "Div",
                                             "if": "{{(_isolated.categoryStep ?? 1) === 2 && _isolated.selectedCategories[0] && !(_isolated.selectedCategories[0]?.children?.length > 0)}}",
                                             "props": {
-                                                "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.category.no_subcategory"
                                         },
@@ -758,7 +744,7 @@
                                                 {
                                                     "comment": "좁은 화면 3단 고르기",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "Div",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -770,10 +756,8 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "type": "button",
-                                                        "className": "flex w-full justify-start text-left category-item-mobile",
-                                                        "data-selected": "{{_isolated.selectedCategories[2]?.id === cat.id}}",
-                                                        "aria-pressed": "{{_isolated.selectedCategories[2]?.id === cat.id}}"
+                                                        "className": "category-item-mobile",
+                                                        "data-selected": "{{_isolated.selectedCategories[2]?.id === cat.id}}"
                                                     },
                                                     "text": "{{$localized(cat.name)}}"
                                                 }
@@ -784,7 +768,7 @@
                                             "name": "Div",
                                             "if": "{{(_isolated.categoryStep ?? 1) === 3 && !_isolated.selectedCategories[1]}}",
                                             "props": {
-                                                "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.category.select_prev"
                                         },
@@ -793,7 +777,7 @@
                                             "name": "Div",
                                             "if": "{{(_isolated.categoryStep ?? 1) === 3 && _isolated.selectedCategories[1] && !(_isolated.selectedCategories[1]?.children?.length > 0)}}",
                                             "props": {
-                                                "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.category.no_subcategory"
                                         },
@@ -809,7 +793,7 @@
                                                 {
                                                     "comment": "좁은 화면 4단 고르기",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "Div",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -821,10 +805,8 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "type": "button",
-                                                        "className": "flex w-full justify-start text-left category-item-mobile",
-                                                        "data-selected": "{{_isolated.selectedCategories[3]?.id === cat.id}}",
-                                                        "aria-pressed": "{{_isolated.selectedCategories[3]?.id === cat.id}}"
+                                                        "className": "category-item-mobile",
+                                                        "data-selected": "{{_isolated.selectedCategories[3]?.id === cat.id}}"
                                                     },
                                                     "text": "{{$localized(cat.name)}}"
                                                 }
@@ -835,7 +817,7 @@
                                             "name": "Div",
                                             "if": "{{(_isolated.categoryStep ?? 1) === 4 && !_isolated.selectedCategories[2]}}",
                                             "props": {
-                                                "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.category.select_prev"
                                         },
@@ -844,7 +826,7 @@
                                             "name": "Div",
                                             "if": "{{(_isolated.categoryStep ?? 1) === 4 && _isolated.selectedCategories[2] && !(_isolated.selectedCategories[2]?.children?.length > 0)}}",
                                             "props": {
-                                                "className": "p-4 text-sm text-gray-500 dark:text-gray-400 text-center"
+                                                "className": "p-4 text-sm text-gray-400 dark:text-gray-500 text-center"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.category.no_subcategory"
                                         }
@@ -912,7 +894,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
-                                                "source": "((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || $localized(c.name) })))",
+                                                "source": "((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || c.name?.ko || '' })))",
                                                 "item_var": "catInfo",
                                                 "index_var": "catIdx"
                                             },
@@ -944,7 +926,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "ml-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400",
+                                                        "className": "ml-2 text-gray-400 hover:text-red-500 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400",
                                                         "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                                     },
                                                     "children": [
@@ -1105,7 +1087,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-outline hover:text-red-600 dark:hover:text-red-400",
+                                        "className": "admin-card",
                                         "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                     },
                                     "children": [
@@ -1149,7 +1131,6 @@
                                     ],
                                     "props": {
                                         "name": "brand_id",
-                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.brand",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.brand",
                                         "options": "{{(brands?.data?.data ?? brands?.data ?? []).map(b => ({ value: b.id, label: $localized(b.name) }))}}",
                                         "disabled": "{{_computed.isReadOnly}}"
@@ -1208,7 +1189,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                        "className": "text-sm text-red-500 dark:text-red-400"
                                     },
                                     "text": "*"
                                 }
@@ -1227,7 +1208,6 @@
                                     "props": {
                                         "type": "text",
                                         "name": "product_code",
-                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.product_code",
                                         "className": "{{_local.errors?.product_code ? 'input input-error flex-1' : 'input flex-1'}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.product_code",
                                         "disabled": "{{!!route.itemCode || _computed.isReadOnly}}"
@@ -1292,7 +1272,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-red-600 dark:text-red-400"
+                                                "className": "text-sm text-red-500 dark:text-red-400"
                                             },
                                             "text": "*"
                                         }
@@ -1303,7 +1283,6 @@
                                     "name": "MultilingualInput",
                                     "props": {
                                         "name": "name",
-                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.product.fields.name",
                                         "layout": "tabs",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.name",
                                         "maxLength": 200,

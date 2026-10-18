@@ -144,8 +144,6 @@ storage/app/modules/{vendor-module}/settings/
 }
 ```
 
-> **계산값 키 (7.1.3+)**: 요청마다 계산하는 값(다른 확장의 훅 결과 등)은 `defaults` 에 두더라도 모듈 클래스의 `getComputedSettingKeys()` 에 선언한다. 선언한 키는 설치 때 설정 파일에 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 `getConfigValues()` 의 실시간 값을 쓴다 — [플러그인 개발 가이드 — 계산값 키](plugin-development.md#계산값-키-getcomputedsettingkeys-713).
-
 ### 3.4 frontend_schema 섹션
 
 프론트엔드에 노출할 필드를 제어합니다.
@@ -603,28 +601,6 @@ if ($result) {
 단건 저장 경로(dot-key)는 payload 를 카테고리 하위 구조로 되돌려 벌크 저장과 같은 형태로
 맞춘다(`Arr::set($payload, $key, $value)`). 구독 리스너가 카테고리 기준으로 관심 키를 찾으므로,
 평탄한 dot-key 를 그대로 넘기면 그 리스너들이 아무것도 감지하지 못한다.
-
-### 8.6 터미널 설정 지정 지원 (선택, 코어 7.1.4)
-
-코어 `php artisan settings:set --module=<모듈> <범주.항목> <값>` 은 모듈 설정 서비스에 **선택 메서드**
-`settingsSaveRequestClass(): string` 이 있을 때만 그 모듈을 지원한다. 이 메서드는 관리자 화면 저장에 쓰는
-FormRequest 클래스 이름을 돌려주고, 코어는 그 FormRequest 로 화면 저장과 같은 규칙을 검증한 뒤(권한 검사
-`authorize()` 는 부르지 않는다 — 셸 접근이 곧 권한) 서비스의 `saveSettings()` 로 저장하고 8.5 의 훅을 발화한다.
-`defaults.json` 의 `defaults` 에 선언된 키만 받는다.
-
-```php
-// 설정 서비스 (선택 — 인터페이스 메서드가 아니다)
-public function settingsSaveRequestClass(): string
-{
-    return \Modules\Vendor\Module\Http\Requests\StoreModuleSettingsRequest::class;
-}
-```
-
-번들 모듈 중 게시판(`sirsoft-board`)과 이커머스(`sirsoft-ecommerce`)가 이 메서드를 둔다. 제3자 모듈은 이
-메서드를 구현하지 않아도 된다 — 코어는 `method_exists` 로만 판정하며, 메서드가 없는 모듈은
-`settings:set --module` 이 「이 모듈은 터미널 설정 지정을 지원하지 않음」으로 거부할 뿐 관리자 화면 저장과
-다른 기능에는 영향이 없다. 인터페이스(`ModuleSettingsInterface`)에 넣지 않았으므로 옛 코어에서도 모듈이
-깨지지 않는다.
 
 ---
 

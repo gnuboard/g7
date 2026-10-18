@@ -4,8 +4,86 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ config('app.name', '그누보드7') }} - {{ __('maintenance.title') }}</title>
-        {{-- 스타일은 정적 파일(g7-standalone.css)에 있다 — 엄격한 스타일 정책에서 뷰 안 스타일 블록이 막힌다(#163) --}}
-        @include('partials.core-styles', ['sheet' => 'standalone'])
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+            .maintenance-container {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                background-color: #f9fafb;
+                padding: 1rem;
+            }
+            .maintenance-card {
+                max-width: 32rem;
+                width: 100%;
+                background-color: #ffffff;
+                border-radius: 0.75rem;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                padding: 3rem 2rem;
+                text-align: center;
+            }
+            .maintenance-icon {
+                margin-bottom: 1.5rem;
+            }
+            .maintenance-icon svg {
+                width: 5rem;
+                height: 5rem;
+                color: #3b82f6;
+                animation: spin 3s linear infinite;
+            }
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+            .maintenance-title {
+                font-size: 1.75rem;
+                font-weight: 700;
+                color: #111827;
+                margin-bottom: 0.75rem;
+            }
+            .maintenance-message {
+                font-size: 1.05rem;
+                color: #4b5563;
+                margin-bottom: 0.5rem;
+                line-height: 1.625;
+            }
+            .maintenance-description {
+                font-size: 0.875rem;
+                color: #6b7280;
+                line-height: 1.625;
+            }
+            @media (prefers-color-scheme: dark) {
+                .maintenance-container {
+                    background-color: #111827;
+                }
+                .maintenance-card {
+                    background-color: #1f2937;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+                }
+                .maintenance-icon svg {
+                    color: #60a5fa;
+                }
+                .maintenance-title {
+                    color: #ffffff;
+                }
+                .maintenance-message {
+                    color: #9ca3af;
+                }
+                .maintenance-description {
+                    color: #6b7280;
+                }
+            }
+        </style>
     </head>
     <body>
         <div class="maintenance-container">

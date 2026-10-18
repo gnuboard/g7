@@ -2,11 +2,14 @@
 
 namespace App\Seo;
 
+use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Extension\HookManager;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\LayoutEmptyObjects;
+use Illuminate\Support\Facades\Log;
 
 /**
  * SEO 선언 수집기
@@ -17,18 +20,20 @@ use App\Support\LayoutEmptyObjects;
 class SeoDeclarationCollector
 {
     /**
-     * 수집에 필요한 서비스와 라우트 레이아웃 해석기를 주입합니다.
+     * 수집에 필요한 서비스와 확장 관리자를 주입합니다.
      *
      * @param  TemplateService  $templateService  템플릿 서비스 (활성 템플릿 조회)
      * @param  LayoutService  $layoutService  레이아웃 서비스 (병합 레이아웃 로드)
      * @param  TemplateManagerInterface  $templateManager  템플릿 관리자
-     * @param  TemplateRouteResolver  $routeResolver  라우트 레이아웃 이름 해석기 (봇 렌더와 같은 판별)
+     * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
+     * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
      */
     public function __construct(
         private readonly TemplateService $templateService,
         private readonly LayoutService $layoutService,
         private readonly TemplateManagerInterface $templateManager,
-        private readonly TemplateRouteResolver $routeResolver,
+        private readonly ModuleManagerInterface $moduleManager,
+        private readonly PluginManagerInterface $pluginManager,
     ) {}
 
     /**
@@ -36,10 +41,8 @@ class SeoDeclarationCollector
      *
      * @return array<int, array{
      *     layoutName: string,
-     *     storedLayoutName: string,
      *     templateIdentifier: string,
      *     moduleIdentifier: string|null,
-     *     pluginIdentifier: string|null,
      *     seo: array,
      *     routePath: string|null
      * }>
@@ -72,18 +75,29 @@ class SeoDeclarationCollector
             if ($route['guest_only'] ?? false) {
                 continue;
             }
-            // 코어가 덧붙이는 시스템 라우트(미리보기 등)는 템플릿 레이아웃이 아니다 — 읽으면 매번 실패해 오류 보고만 쌓인다
-            if ($route['meta']['is_system_route'] ?? false) {
-                continue;
-            }
 
             $layoutName = $route['layout'] ?? '';
             if (empty($layoutName)) {
                 continue;
             }
 
-            // 확장 식별자·전체 이름 해석 — 봇 렌더(TemplateRouteResolver::resolve)와 같은 판별을 쓴다
-            $described = $this->routeResolver->describeRouteLayout($layoutName);
+            // 확장 식별자 추출 (레이아웃명에 '.' 포함 시)
+            $moduleIdentifier = null;
+            $pluginIdentifier = null;
+            $actualLayoutName = $layoutName;
+            if (str_contains($layoutName, '.')) {
+                [$extensionId, $actualLayoutName] = explode('.', $layoutName, 2);
+
+                // 모듈/플러그인 판별
+                if ($this->moduleManager->getModule($extensionId) !== null) {
+                    $moduleIdentifier = $extensionId;
+                } elseif ($this->pluginManager->getPlugin($extensionId) !== null) {
+                    $pluginIdentifier = $extensionId;
+                } else {
+                    // fallback: 기존 동작 유지 (모듈로 간주)
+                    $moduleIdentifier = $extensionId;
+                }
+            }
 
             try {
                 $layout = LayoutEmptyObjects::toArrays($this->layoutService->getLayout($templateIdentifier, $layoutName));
@@ -94,17 +108,18 @@ class SeoDeclarationCollector
                 }
 
                 $declarations[] = [
-                    'layoutName' => $described['layoutName'],
-                    'storedLayoutName' => $described['storedLayoutName'],
+                    'layoutName' => $actualLayoutName,
                     'templateIdentifier' => $templateIdentifier,
-                    'moduleIdentifier' => $described['moduleIdentifier'],
-                    'pluginIdentifier' => $described['pluginIdentifier'],
+                    'moduleIdentifier' => $moduleIdentifier,
+                    'pluginIdentifier' => $pluginIdentifier,
                     'seo' => $seo,
                     'routePath' => $route['path'] ?? null,
                 ];
-            } catch (\Throwable $e) {
-                // 오류로 보고하고 그 라우트만 건너뛴다 — 사이트맵·봇 화면의 나머지 선언 수집은 계속한다(#155)
-                report(new \RuntimeException('[SEO] SeoDeclarationCollector layout load failed: '.$layoutName, 0, $e));
+            } catch (\Exception $e) {
+                Log::warning('[SEO] 레이아웃 로드 실패 (SeoDeclarationCollector)', [
+                    'layout' => $layoutName,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 

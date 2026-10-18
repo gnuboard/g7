@@ -33,23 +33,6 @@ class CashReceiptService
     use MasksSensitiveResponse;
 
     /**
-     * 처리 중(IN_PROGRESS) 예약 행을 「오래됐다」 고 보는 기준 (분)
-     *
-     * 이보다 오래된 처리 중 행은 PG 응답을 끝내 받지 못한 것으로 보고 실패(IN_PROGRESS_STALE)로 정리한다.
-     * 자동 재발급은 하지 않는다 — PG 에서는 실제로 발급됐을 수 있고 KG이니시스 발급 API 에는 멱등키가 없다.
-     */
-    public const IN_PROGRESS_STALE_MINUTES = 10;
-
-    /** 오래된 처리 중 행을 실패로 정리할 때 남기는 에러코드 */
-    public const STALE_ERROR_CODE = 'IN_PROGRESS_STALE';
-
-    /** 같은 주문의 다른 발급이 처리 중일 때의 발급 불가 사유 코드 */
-    public const BLOCKER_ISSUE_IN_PROGRESS = 'ISSUE_IN_PROGRESS';
-
-    /** 409(충돌)로 응답할 발급 불가 사유 코드 */
-    private const CONFLICT_BLOCKERS = ['ALREADY_ISSUED', self::BLOCKER_ISSUE_IN_PROGRESS];
-
-    /**
      * 현금영수증 서비스를 생성합니다.
      *
      * @param  OrderCashReceiptRepositoryInterface  $repository  현금영수증 이력 Repository
@@ -67,16 +50,11 @@ class CashReceiptService
     /**
      * 현금영수증을 발급합니다.
      *
-     * 동시성(KVE-2026-3191): PG 를 부르기 전에 처리 중(IN_PROGRESS) 발급 행을 먼저 INSERT 해 주문의 발급 슬롯을
-     * 예약한다. 슬롯은 DB 유니크(`active_issue_order_key`)가 지키므로 겹친 요청은 예약에 실패하고 PG 를 부르지
-     * 않는다 — 그 요청에는 슬롯을 쥔 행(완료 또는 처리 중)이 돌아간다. PG 호출은 트랜잭션 밖에서 하고, 결과는
-     * 「처리 중일 때만」 조건부로 기록한다.
-     *
      * @param  Order  $order  주문 모델
      * @param  CashReceiptType  $type  발급 용도
      * @param  string  $identifier  식별번호 원본 (하이픈 제거)
      * @param  CashReceiptIdentifierType|null  $identifierType  식별번호 종류 (미지정 시 추론)
-     * @return OrderCashReceipt 발급 이력 (실패 시 issue_status=FAILED, 다른 요청이 처리 중이면 그 처리 중 행)
+     * @return OrderCashReceipt 생성된 발급 이력 (실패 시 issue_status=FAILED)
      */
     public function issue(
         Order $order,
@@ -143,41 +121,18 @@ class CashReceiptService
             );
         }
 
-        // 과세 몫에 든 부가세 — 공급가액·부가세를 나눠 받는 프로바이더(KG이니시스)가 쓴다.
-        // 받지 않는 프로바이더(토스)는 무시한다. 세율이 섞이거나 영세가 든 주문에서 /11 고정 분할이 틀린다(#612 ②).
-        $vatAmount = $this->calculateIssuableVatAmount($order, $target, strict: true);
-
-        // 발급 슬롯 예약 — 겹친 요청은 여기서 갈린다(KVE-2026-3191). 예약에 실패하면 PG 를 부르지 않는다.
-        $reserved = $this->repository->reserveIssue([
-            'order_id' => $order->id,
-            'order_payment_id' => $payment?->id,
-            'provider' => $provider,
-            'receipt_key' => null,
-            'receipt_type' => $type->value,
-            'amount' => $target['amount'],
-            'tax_free_amount' => $target['tax_free_amount'],
-            'identifier_masked' => $this->maskIdentifier($identifier),
-        ]);
-
-        if ($reserved === null) {
-            return $this->resolveIssueSlotConflict($order, $type, $identifier, $provider);
-        }
-
         $payload = [
             'type' => $type->value,
             'identifier' => $identifier,
             'identifier_type' => ($identifierType ?? $this->inferIdentifierType($identifier))?->value,
             'amount' => $target['amount'],
-            // 면세 금액 = 면세 + 영세(#612 P2) — 영세는 부가세가 없으므로 PG 에는 면세로 넘긴다
             'tax_free_amount' => $target['tax_free_amount'],
-            'vat_amount' => $vatAmount,
             'order_name' => $this->buildOrderName($order),
             'order_number' => $order->order_number,
             // 이번 발급의 회차 (1부터). 프로바이더가 발급 요청 식별자를 회차로 구분할 때 사용한다.
             // 토스는 동일 orderId 재사용을 중복 거부하므로 "{order_number}-cr{seq}" 로 접미한다.
             // 프로바이더 종속 문자열 조립은 리스너가 하고, 코어는 숫자만 제공한다.
-            // 예약 행까지의 발급 이력 수로 정한다 — 겹친 요청이 같은 회차를 받지 않는다.
-            'issue_sequence' => $this->repository->countIssuesUpTo($order, (int) $reserved->id),
+            'issue_sequence' => $this->repository->countIssues($order) + 1,
         ];
 
         // 프로바이더 예외도 실패 결과로 받는다(B1) — 예외가 그대로 올라가면 이력이 생기지 않아 관리자 화면에 재발급 버튼이
@@ -196,10 +151,17 @@ class CashReceiptService
         }
 
         $succeeded = (bool) ($result['success'] ?? false);
-        $receiptKey = $result['receipt_key'] ?? null;
 
-        $attributes = [
-            'receipt_key' => $receiptKey,
+        $receipt = $this->repository->create([
+            'order_id' => $order->id,
+            'order_payment_id' => $payment?->id,
+            'provider' => $provider,
+            'receipt_key' => $result['receipt_key'] ?? null,
+            'transaction_type' => CashReceiptTransactionType::ISSUE->value,
+            'receipt_type' => $type->value,
+            'amount' => $target['amount'],
+            'tax_free_amount' => $target['tax_free_amount'],
+            'identifier_masked' => $this->maskIdentifier($identifier),
             'receipt_url' => $result['receipt_url'] ?? null,
             'issue_number' => $result['issue_number'] ?? null,
             'issue_status' => $succeeded
@@ -209,41 +171,7 @@ class CashReceiptService
             'error_message' => $succeeded ? null : ($result['error_message'] ?? null),
             'issued_at' => $succeeded ? now() : null,
             'raw_response' => $this->sanitizeResponse($result['raw_response'] ?? null),
-        ];
-
-        // 영수증 키 없이 성공한 발급은 취소 대상을 특정할 수 없어 활성으로 보지 않는다(filterActive).
-        // 그 행이 슬롯을 계속 쥐면 다시 발급할 수 없으므로 놓는다.
-        if ($succeeded && ($receiptKey === null || $receiptKey === '')) {
-            $attributes['slot_released_at'] = now();
-
-            Log::warning('[cash_receipt] 영수증 키 없이 발급 성공 — 슬롯 해제, PG 화면 대조 필요', [
-                'order_id' => $order->id,
-                'receipt_id' => $reserved->id,
-                'provider' => $provider,
-            ]);
-        }
-
-        $updated = $this->repository->updateIfStatus(
-            (int) $reserved->id,
-            CashReceiptIssueStatus::IN_PROGRESS,
-            $attributes,
-        );
-
-        $receipt = $reserved->fresh() ?? $reserved;
-
-        if ($updated === 0) {
-            // PG 응답이 늦어 다른 요청이 이 예약 행을 오래된 처리 중으로 보고 실패로 정리한 경우다.
-            // 결과를 덮어쓰면 그사이 잡힌 새 예약과 슬롯이 겹칠 수 있어 기록하지 않고 대조를 요청한다.
-            Log::error('[cash_receipt] 발급 결과를 기록하지 못함 — 예약 행이 이미 처리 중이 아님, PG 화면 대조 필요', [
-                'order_id' => $order->id,
-                'receipt_id' => $reserved->id,
-                'provider' => $provider,
-                'pg_succeeded' => $succeeded,
-                'receipt_key' => $receiptKey,
-            ]);
-
-            return $receipt;
-        }
+        ]);
 
         if ($succeeded) {
             $this->syncPaymentSummary($payment, $receipt, $type, $identifier, $identifierType);
@@ -263,11 +191,6 @@ class CashReceiptService
      *
      * 부분취소 API 는 사용하지 않는다 (취소 금액 파라미터 없음).
      *
-     * 동시성(U1): 활성 영수증마다 PG 취소 전에 처리 중(IN_PROGRESS) 취소 행을 먼저 INSERT 해 예약한다. 발급 행당
-     * 열린 취소 1건은 DB 유니크(`open_cancel_target_key`)가 지키므로, 겹친 취소 요청은 예약에 실패하고 PG 를
-     * 부르지 않는다. 그때는 열린 취소의 상태로 판정한다 — 완료면 성공으로 보고, 처리 중이면 미완료로 둔다.
-     * 취소가 완료되면 같은 트랜잭션에서 발급 행의 슬롯을 놓아 재발급 예약이 가능해진다.
-     *
      * @param  Order  $order  주문 모델
      * @param  string|null  $reason  취소 사유
      * @return bool 활성 영수증 전부가 취소 성공했는지 여부 (취소 대상 없으면 true)
@@ -282,28 +205,10 @@ class CashReceiptService
 
         $payment = $order->payment;
         $allSucceeded = true;
-        $cancelledHere = false;
 
         foreach ($activeReceipts as $active) {
             $provider = $active->provider;
             $receiptKey = (string) $active->receipt_key;
-
-            $cancel = $this->repository->reserveCancel($active, [
-                'order_payment_id' => $payment?->id,
-                'provider' => $provider,
-                'receipt_key' => $receiptKey,
-                'receipt_type' => $active->receipt_type->value,
-                'amount' => (int) $active->amount,
-                'tax_free_amount' => (int) $active->tax_free_amount,
-                'identifier_masked' => $active->identifier_masked,
-            ]);
-
-            if ($cancel === null) {
-                // 다른 요청이 이미 이 영수증을 취소하고 있거나 끝냈다 — PG 를 다시 부르지 않는다.
-                $allSucceeded = $this->resolveCancelSlotConflict($active) && $allSucceeded;
-
-                continue;
-            }
 
             // 프로바이더 예외도 실패 결과로 받아 FAILED 취소 이력을 남긴다(B2) — 이력이 있어야 운영자가 재시도한다.
             try {
@@ -320,200 +225,43 @@ class CashReceiptService
             }
 
             $succeeded = (bool) ($result['success'] ?? false);
-            $rawResponse = $this->sanitizeResponse($result['raw_response'] ?? null);
+            $allSucceeded = $allSucceeded && $succeeded;
 
-            if ($succeeded) {
-                // 취소 완료 + 발급 행 슬롯 해제를 한 트랜잭션으로 기록한다.
-                $succeeded = $this->repository->completeCancel($cancel, $active, [
-                    'receipt_key' => $result['receipt_key'] ?? $receiptKey,
-                    'raw_response' => $rawResponse,
-                ]);
+            $this->repository->create([
+                'order_id' => $order->id,
+                'order_payment_id' => $payment?->id,
+                'provider' => $provider,
+                'receipt_key' => $result['receipt_key'] ?? $receiptKey,
+                'transaction_type' => CashReceiptTransactionType::CANCEL->value,
+                'receipt_type' => $active->receipt_type->value,
+                'amount' => (int) $active->amount,
+                'tax_free_amount' => (int) $active->tax_free_amount,
+                'identifier_masked' => $active->identifier_masked,
+                'receipt_url' => null,
+                'issue_number' => null,
+                'issue_status' => $succeeded
+                    ? CashReceiptIssueStatus::COMPLETED->value
+                    : CashReceiptIssueStatus::FAILED->value,
+                'error_code' => $succeeded ? null : ($result['error_code'] ?? null),
+                'error_message' => $succeeded ? null : ($result['error_message'] ?? $reason),
+                'issued_at' => null,
+                'raw_response' => $this->sanitizeResponse($result['raw_response'] ?? null),
+            ]);
 
-                if (! $succeeded) {
-                    // PG 응답이 늦어 다른 요청이 이 예약 행을 오래된 처리 중으로 보고 실패로 정리한 경우다.
-                    Log::error('[cash_receipt] 취소 결과를 기록하지 못함 — 예약 행이 이미 처리 중이 아님, PG 화면 대조 필요', [
-                        'order_id' => $order->id,
-                        'receipt_id' => $active->id,
-                        'cancel_id' => $cancel->id,
-                        'provider' => $provider,
-                    ]);
-                } else {
-                    $cancelledHere = true;
-                }
-            } else {
-                $this->repository->updateIfStatus((int) $cancel->id, CashReceiptIssueStatus::IN_PROGRESS, [
-                    'issue_status' => CashReceiptIssueStatus::FAILED->value,
-                    'error_code' => $result['error_code'] ?? null,
-                    'error_message' => $result['error_message'] ?? $reason,
-                    'raw_response' => $rawResponse,
-                ]);
-
+            if (! $succeeded) {
                 Log::warning('[cash_receipt] 취소 실패', [
                     'order_id' => $order->id,
                     'provider' => $provider,
                     'error_code' => $result['error_code'] ?? null,
                 ]);
             }
-
-            $allSucceeded = $allSucceeded && $succeeded;
         }
 
-        // 요약은 이 호출이 실제로 취소를 끝냈을 때만 비운다. 겹친 요청이 이미 끝낸 취소를 성공으로 본 경우까지
-        // 비우면, 그 요청이 이어서 재발급하며 채운 요약을 늦게 온 이쪽이 지워 버린다.
-        if ($allSucceeded && $cancelledHere) {
+        if ($allSucceeded) {
             $this->clearPaymentSummary($payment);
         }
 
         return $allSucceeded;
-    }
-
-    /**
-     * 처리 중 예약 행이 오래됐는지(PG 응답을 끝내 받지 못했는지) 판정합니다.
-     *
-     * @param  OrderCashReceipt  $receipt  이력 행
-     * @return bool 처리 중이면서 예약 시각이 IN_PROGRESS_STALE_MINUTES 분보다 오래됐으면 true
-     */
-    public function isStaleInProgress(OrderCashReceipt $receipt): bool
-    {
-        if (! $receipt->isInProgress() || $receipt->created_at === null) {
-            return false;
-        }
-
-        return $receipt->created_at->lt(now()->subMinutes(self::IN_PROGRESS_STALE_MINUTES));
-    }
-
-    /**
-     * 발급 불가 사유가 409(충돌)로 응답할 사유인지 판정합니다.
-     *
-     * 이미 발급됨·다른 발급 처리 중은 요청 자체의 오류가 아니라 주문 상태와의 충돌이라 422 와 구분한다.
-     *
-     * @param  string  $blocker  발급 불가 사유 코드
-     * @return bool 409 로 응답해야 하면 true
-     */
-    public function isConflictBlocker(string $blocker): bool
-    {
-        return in_array($blocker, self::CONFLICT_BLOCKERS, true);
-    }
-
-    /**
-     * 발급 슬롯 예약에 실패했을 때 돌려줄 행을 정합니다.
-     *
-     * - 슬롯 보유 행이 완료면 그 행 (이미 발급됨 — 중복 발급하지 않는다)
-     * - 오래된 처리 중이면 실패(IN_PROGRESS_STALE)로 정리하고 그 행 — 자동 재발급은 하지 않는다. PG 에서는
-     *   실제로 발급됐을 수 있고 KG이니시스에는 멱등키가 없어, 관리자가 PG 화면을 확인한 뒤 재발급한다.
-     * - 그 외 처리 중이면 그 행 (호출부는 409 ISSUE_IN_PROGRESS 로 응답)
-     *
-     * @param  Order  $order  주문 모델
-     * @param  CashReceiptType  $type  발급 용도 (이력을 찾지 못할 때의 실패 기록용)
-     * @param  string  $identifier  식별번호 원본 (이력을 찾지 못할 때의 실패 기록용 — 마스킹해 저장)
-     * @param  string  $provider  프로바이더 ID
-     * @return OrderCashReceipt 슬롯 보유 행 (그사이 슬롯이 비었으면 가장 최근 발급 이력)
-     */
-    private function resolveIssueSlotConflict(
-        Order $order,
-        CashReceiptType $type,
-        string $identifier,
-        string $provider,
-    ): OrderCashReceipt {
-        $holder = $this->repository->findSlotHolder($order);
-
-        if ($holder === null) {
-            // 예약 실패 직후 상대가 끝나 슬롯이 빈 경우 — 이번 요청은 재시도하지 않고 최근 이력을 보여 준다.
-            $latest = $this->repository->findActiveReceipt($order)
-                ?? $this->repository->findByOrder($order)->first(fn (OrderCashReceipt $row) => $row->isIssue());
-
-            // 상대 행이 사라지는 경로는 없지만(행 삭제 없음), 남은 이력이 없으면 충돌 사실을 실패 이력으로 남긴다.
-            return $latest ?? $this->recordFailure(
-                $order,
-                $order->payment,
-                CashReceiptTransactionType::ISSUE,
-                $type,
-                self::BLOCKER_ISSUE_IN_PROGRESS,
-                __('sirsoft-ecommerce::cash_receipt.errors.issue_in_progress'),
-                $identifier,
-                $provider,
-            );
-        }
-
-        if ($this->isStaleInProgress($holder)) {
-            $this->failStaleInProgress($holder);
-
-            return $holder->fresh() ?? $holder;
-        }
-
-        return $holder;
-    }
-
-    /**
-     * 활성 영수증 가운데 다른 요청이 아직 처리 중인(10분이 지나지 않은) 취소가 있는지 봅니다.
-     *
-     * 관리자가 두 화면에서 동시에 전액 취소를 누르면 진 쪽은 취소를 예약하지 못한다 — 그때 「취소 실패」가 아니라
-     * 「처리 중」으로 안내하기 위한 판정이다.
-     *
-     * @param  Order  $order  대상 주문
-     * @return bool 처리 중인 취소가 있으면 true
-     */
-    public function hasCancelInProgress(Order $order): bool
-    {
-        foreach ($this->repository->findActiveReceipts($order) as $active) {
-            $open = $this->repository->findOpenCancel($active);
-
-            if ($open !== null
-                && $open->issue_status === CashReceiptIssueStatus::IN_PROGRESS
-                && ! $this->isStaleInProgress($open)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 취소 예약에 실패했을 때 열린 취소의 상태로 이번 취소의 성패를 정합니다.
-     *
-     * @param  OrderCashReceipt  $issue  취소하려던 발급 행
-     * @return bool 열린 취소가 완료면 true, 처리 중이거나(오래된 것은 실패로 정리) 그사이 사라졌으면 false
-     */
-    private function resolveCancelSlotConflict(OrderCashReceipt $issue): bool
-    {
-        $open = $this->repository->findOpenCancel($issue);
-
-        if ($open === null) {
-            // 상대 취소가 그사이 실패로 끝났다 — 이번 호출은 미완료로 두고 다음 시도에 맡긴다.
-            return false;
-        }
-
-        if ($open->issue_status === CashReceiptIssueStatus::COMPLETED) {
-            return true;
-        }
-
-        if ($this->isStaleInProgress($open)) {
-            $this->failStaleInProgress($open);
-        }
-
-        return false;
-    }
-
-    /**
-     * 오래된 처리 중 행을 실패(IN_PROGRESS_STALE)로 정리합니다.
-     *
-     * @param  OrderCashReceipt  $receipt  처리 중 이력 행
-     * @return void 반환값 없음
-     */
-    private function failStaleInProgress(OrderCashReceipt $receipt): void
-    {
-        $this->repository->updateIfStatus((int) $receipt->id, CashReceiptIssueStatus::IN_PROGRESS, [
-            'issue_status' => CashReceiptIssueStatus::FAILED->value,
-            'error_code' => self::STALE_ERROR_CODE,
-            'error_message' => __('sirsoft-ecommerce::cash_receipt.errors.in_progress_stale'),
-        ]);
-
-        Log::warning('[cash_receipt] 오래된 처리 중 이력을 실패로 정리 — 자동 재시도 없음, PG 화면 대조 필요', [
-            'order_id' => $receipt->order_id,
-            'receipt_id' => $receipt->id,
-            'transaction_type' => $receipt->transaction_type?->value,
-            'provider' => $receipt->provider,
-        ]);
     }
 
     /**
@@ -524,10 +272,6 @@ class CashReceiptService
      *
      * 실패해도 예외를 던지지 않는다 — 환불 트랜잭션을 롤백시킬 사유가 아니기 때문이다.
      * 실패는 이력 테이블에 FAILED 로 남아 관리자 화면에 노출되고 수동 재발급으로 복구된다.
-     *
-     * 겹친 호출(U1): 취소는 cancelAll() 의 취소 예약이, 재발급은 issue() 의 발급 슬롯 예약이 막는다. 두 번째 호출은
-     * 상대 취소가 처리 중이면 재발급하지 않고 끝나며, 상대가 끝낸 뒤라면 재발급 예약에서 상대의 행을 돌려받는다 —
-     * 대체 발급은 1건만 생긴다.
      *
      * @param  Order  $order  주문 모델
      * @param  string|null  $reason  변동 사유 (취소 이력에 기록)
@@ -589,8 +333,6 @@ class CashReceiptService
 
     /**
      * "취소 성공 + 재발급 실패" 중간 상태를 복구합니다. (관리자 수동 재발급)
-     *
-     * 겹친 호출 방어는 issue()·cancelAll() 의 예약 행이 맡는다 — 이 메서드는 그 보호를 그대로 상속한다.
      *
      * syncFromOrder() 는 활성 영수증이 있을 때만 동작한다 — 재발급이 실패해 활성 영수증이
      * 사라진 상태는 그 메서드의 관심사가 아니다. 이 메서드가 그 구멍을 메운다:
@@ -663,9 +405,6 @@ class CashReceiptService
      * total_amount / total_tax_free_amount 를 잔여분 기준으로 갱신하므로, 본 메서드는
      * "지금 이 주문이 얼마짜리인가"만 읽으면 된다.
      *
-     * 면세액은 결제사·국세청에 「부가세 없는 금액」으로 넘길 몫이라 영세(세율 0%)를 포함한다
-     * (`Order::pgTaxFreeAmount()`, #612). 이력 행의 `tax_free_amount` 도 이 의미다.
-     *
      * 현금성 금액(total_cash_equivalent_amount)은 무통장 주문의 실입금액이며,
      * 마일리지 사용분은 현금이 아니므로 제외되어 있다.
      *
@@ -683,8 +422,8 @@ class CashReceiptService
             return ['amount' => 0, 'tax_free_amount' => 0];
         }
 
-        $taxFree = $this->toPaymentCurrencyAmount($order, $order->pgTaxFreeAmount(), $strict);
-        $taxable = $this->toPaymentCurrencyAmount($order, $order->pgTaxableAmount(), $strict);
+        $taxFree = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_free_amount, $strict);
+        $taxable = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_amount, $strict);
         $classified = $taxFree + $taxable;
 
         // 과세/면세 분류 합이 현금성 금액과 다르면(마일리지 사용, 할인 등) 면세 비율로 안분한다.
@@ -703,33 +442,6 @@ class CashReceiptService
             'amount' => $cashEquivalent,
             'tax_free_amount' => $taxFreeShare,
         ];
-    }
-
-    /**
-     * 발급액의 과세 몫에 든 부가세를 계산합니다.
-     *
-     * 과세 몫(발급액 − 면세 몫)을 주문의 「과세 금액(영세 제외) 대비 부가세」 비율로 나눈다 — 옵션별 세율로
-     * 합산한 주문 부가세를 쓰므로 5% 세율 상품·영세 상품이 섞여도 맞는다. 과세 몫을 넘지 않는다.
-     *
-     * @param  Order  $order  주문 모델
-     * @param  array{amount: int, tax_free_amount: int}  $target  calculateIssuableAmount() 결과
-     * @param  bool  $strict  환산 실패 시 예외를 던질지
-     * @return int 부가세 (결제 통화)
-     *
-     * @throws CashReceiptConversionException $strict 이고 결제 통화로 환산할 수 없을 때
-     */
-    public function calculateIssuableVatAmount(Order $order, array $target, bool $strict = false): int
-    {
-        $taxableShare = max(0, (int) $target['amount'] - (int) $target['tax_free_amount']);
-        $pgTaxable = $this->toPaymentCurrencyAmount($order, $order->pgTaxableAmount(), $strict);
-
-        if ($taxableShare <= 0 || $pgTaxable <= 0) {
-            return 0;
-        }
-
-        $vat = $this->toPaymentCurrencyAmount($order, (float) $order->total_vat_amount, $strict);
-
-        return min($taxableShare, (int) round($taxableShare * $vat / $pgTaxable));
     }
 
     /**
@@ -831,14 +543,6 @@ class CashReceiptService
 
         if ($this->repository->findActiveReceipt($order) !== null) {
             return 'ALREADY_ISSUED';
-        }
-
-        // 같은 주문의 다른 발급이 PG 응답을 기다리는 중이면 겹쳐 발급하지 않는다(KVE-2026-3191).
-        // 오래된 처리 중은 막지 않는다 — 발급 시도가 그 행을 실패로 정리하고 관리자 확인을 기다린다.
-        $inProgress = $this->repository->findInProgressIssue($order);
-
-        if ($inProgress !== null && ! $this->isStaleInProgress($inProgress)) {
-            return self::BLOCKER_ISSUE_IN_PROGRESS;
         }
 
         if ($this->calculateIssuableAmount($order)['amount'] <= 0) {

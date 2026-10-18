@@ -7,7 +7,7 @@
 ```text
 1. PHP 8.2+ 필수
 2. MySQL 8.0+ 또는 MariaDB 10.3+ (utf8mb4, utf8mb4_unicode_ci)
-3. PHP 확장: 필수 16개 + 기능별 선택 17개 (설치 단계가 필수 16개를 모두 자동 검사) — 확장이 요구하는 확장은 §1.8
+3. PHP 확장: 필수 16개 + 기능별 선택 17개 (설치 단계 자동 검사는 그중 14개)
 4. 하드웨어: 최소 2 vCPU·2GB / 권장 4 vCPU·8GB, 디스크: 설치 검사 기준 500MB, 권장 2GB+
 5. 프로덕션: HTTPS 필수(설치는 차단하지 않고 경고), Redis 권장, 큐 워커/스케줄러/Reverb 데몬 필요
 ```
@@ -32,57 +32,6 @@
 
 - Laravel은 `public/index.php`를 진입점으로 사용
 - Apache 사용 시 `.htaccess` 파일이 URL 리라이팅 처리
-
-#### 1.2.1 `/storage` 와 S3 공개 디스크 하드닝
-
-공개 디스크의 파일(`storage/app/public` → `/storage/…`, 또는 S3 공개 버킷·CDN)은 PHP 를 거치지 않고 웹서버·객체 저장소가 직접 내려보낸다. 그 응답에는 애플리케이션이 헤더를 붙일 수 없으므로, 웹서버·CDN 이 다음을 보장해야 한다.
-
-| 보호 | 내용 |
-| --- | --- |
-| 형식 추측 금지 | 모든 응답에 `X-Content-Type-Options: nosniff` |
-| 비이미지 내려받기 강제 | 래스터 이미지(jpg·jpeg·png·gif·webp·avif) 외의 파일은 `Content-Disposition: attachment` + `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` |
-| 실행 차단 | `/storage` 아래의 `.php`·`.phtml`·`.phar`·`.pht` 는 실행도 응답도 하지 않는다 |
-
-애플리케이션 쪽 방어는 이것과 별개로 동작한다 — 업로드한 파일의 저장 확장자는 파일 내용으로 정하고, 환경설정 > 드라이버의 「공개 디스크로 내보낼 확장자」 밖의 파일은 공개 디스크에 저장하지 않는다(서버를 거치는 주소로 제공).
-
-**Apache (2.4+)** — 별도 작업이 필요 없다. 공개 디스크 루트에 규칙 파일 `storage/app/public/.htaccess` 가 자동으로 만들어진다(코어 업데이트 시, 환경설정 > 드라이버 저장 시). 전제 조건:
-
-- 사이트 디렉터리에 `AllowOverride All`(최소 `FileInfo`)이 허용돼 있어야 한다([INSTALL.md](../INSTALL.md) 의 가상 호스트 예시). 규칙 파일은 `Header`·`RewriteRule` 만 쓰므로 사이트의 `public/.htaccess` 가 이미 요구하는 범위를 넘지 않는다.
-- `mod_headers` 가 켜져 있어야 헤더가 붙는다. 꺼져 있으면 규칙 파일이 비이미지 파일의 직접 접근을 403 으로 막는다(이미지는 그대로 제공). 이 403 과 PHP 파일 차단은 `mod_rewrite` 규칙으로 낸다.
-- 이 파일은 자동 생성물이다. 직접 고치면 설정 저장 때 다시 만들어진다(손으로 만든 기존 파일은 `.htaccess.g7-backup` 으로 보관).
-- 웹서버 계정이 `storage/app/public` 폴더에 쓸 수 있어야 설정 저장 때 이 파일을 다시 만든다. 코어 업데이트를 root(sudo)로 실행해도 파일은 그 폴더의 소유자·그룹으로 맞춰진다. 다시 만들지 못하면 드라이버 탭에 「웹서버 보호 규칙 파일을 지금 설정으로 바꾸지 못했습니다」 경고가 뜬다.
-
-**Nginx** — `.htaccess` 를 읽지 않으므로 서버 블록에 같은 규칙을 넣는다.
-
-```nginx
-location ^~ /storage/ {
-    # PHP 실행·응답 차단
-    location ~* \.(php\d?|phtml|phar|pht)$ {
-        return 403;
-    }
-
-    # 래스터 이미지는 그대로
-    location ~* \.(jpe?g|png|gif|webp|avif)$ {
-        add_header X-Content-Type-Options "nosniff" always;
-    }
-
-    # 그 밖의 파일은 내려받기로만
-    location ~* ^/storage/.+$ {
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header Content-Disposition "attachment" always;
-        add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox" always;
-    }
-}
-```
-
-`^~` 를 빼지 않는다 — 없으면 `.php` 요청을 PHP-FPM 으로 넘기는 서버 수준의 `location ~ \.php$` 블록이 `/storage/` 보다 먼저 일치해 그 안의 PHP 파일이 실행된다. 「공개 디스크로 내보낼 확장자」 에서 이미지 형식을 빼거나 더했다면 두 번째 블록의 목록도 같이 맞춘다.
-
-**S3 공개 버킷·CDN** — 업로드할 때 객체에 `Content-Type`(파일 내용 기준)이 기록되고, 이미지가 아닌 파일에는 `Content-Disposition: attachment` 가 함께 기록된다. `X-Content-Type-Options` 와 `Content-Security-Policy` 는 객체 메타데이터로 줄 수 없으므로 CDN 응답 헤더 정책으로 건다.
-
-- CloudFront: 「응답 헤더 정책」 을 만들어 배포의 동작(behavior)에 연결한다. 보안 헤더에서 `X-Content-Type-Options` 를 켜고, 사용자 지정 헤더에 `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` 를 추가한다. 이미지에도 같은 CSP 가 붙지만 이미지 표시에는 영향이 없다.
-- 다른 CDN·프록시도 같은 두 헤더를 응답에 덧붙이는 기능을 쓴다.
-
-**적용 확인** — 공개 자산 디스크를 로컬 공개 디스크(`public`)로 두고 환경설정 > 드라이버를 저장하면 `/storage` 직접 주소의 응답 헤더를 자동으로 점검한다. 보호 헤더가 없으면 드라이버 탭에 경고가 표시된다(저장은 그대로 된다). 서버가 자기 사이트 주소에 접속할 수 없는 환경에서는 점검 결과가 표시되지 않는다.
 
 ### 1.3 PHP
 
@@ -129,7 +78,7 @@ FcgidOutputBufferSize 0
 | 필수 | `session` | 세션 관리 |
 | 필수 | `tokenizer` | PHP 토큰 파싱 |
 | 필수 | `xml` | XML 파서 |
-| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 — `unzip` 명령 폴백 없음(7.1.3) |
+| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 |
 | 선택 | `gd` | 이미지 처리 (썸네일, 리사이징) — `imagick` 과 택일 |
 | 선택 | `imagick` | 고급 이미지 처리 (ImageMagick) — `gd` 와 택일 |
 | 선택 | `exif` | 이미지 메타데이터 읽기 |
@@ -148,12 +97,12 @@ FcgidOutputBufferSize 0
 | 선택 | `zlib` | 데이터 압축 (gzip 응답 압축) |
 | 선택 | `ldap` | LDAP 연동 확장을 사용할 때 (코어 기본 기능은 사용하지 않음) |
 
-설치 프로그램은 위 필수 확장 16개를 설치 단계에서 모두 자동 검사하고 하나라도 없으면 진행을
-막는다. 관리자 환경설정 > 정보 탭과 코어 업데이트 사전점검도 같은 목록을 쓴다 — 목록은 코어의
-한 곳(`app/Support/Requirements/php-extensions.json`)에서 나온다. 선택 확장은 해당 기능을
-사용하는 시점에 필요하며, 없으면 그 기능만 안내와 함께 멈추거나 대체 동작으로 넘어간다(예: 사이트맵
-gzip 압축은 `zlib` 이 없으면 저장 단계에서, GeoIP 데이터베이스 갱신은 `zlib`·`phar` 가 없으면 실행할 때 안내). 자동 검사 항목과
-운영자가 직접 확인해야 하는 항목의 전체 구분은 §9 를 참조한다.
+설치 프로그램은 위 필수 확장 중 14개(`pdo`, `mbstring`, `openssl`, `tokenizer`, `xml`,
+`ctype`, `json`, `fileinfo`, `curl`, `dom`, `filter`, `hash`, `pcre`, `session`)를 설치
+단계에서 자동 검사하고 하나라도 없으면 진행을 막는다. `pdo_mysql` 과 `zip` 은 자동 검사
+대상이 아니지만 각각 데이터베이스 접속과 확장·언어팩 설치에 반드시 필요하므로 필수로
+분류한다. 선택 확장은 해당 기능을 사용하는 시점에 필요하며, 자동 검사 항목과 운영자가
+직접 확인해야 하는 항목의 전체 구분은 §9 를 참조한다.
 
 ### 1.5 PHP 설정 권장값 (php.ini)
 
@@ -229,34 +178,6 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 옵션 없는 `composer install` 은 개발용 패키지까지 설치하며, 그 상태로 운영하면
 이후 코어 업데이트가 vendor 를 교체할 때 이전 패키지 목록 캐시와 어긋나 부팅이 깨진다.
 개발용 패키지가 섞여 있으면 설치 마법사의 「설치 환경 확인」 단계가 경고한다.
-
-### 1.8 확장(모듈·플러그인)이 요구하는 PHP 확장
-
-모듈·플러그인은 자기 `composer.json` 에 필요한 PHP 확장을 선언한다. 코어 목록(§1.4)에 없는 확장(`soap` 등)도
-선언할 수 있다.
-
-```json
-{
-    "require": { "php": "^8.2", "ext-soap": "*" },
-    "suggest": { "ext-soap": "모바일 결제(SmartPhone Pay) 승인키 발급에 필요" }
-}
-```
-
-| 선언 | 뜻 | 서버에 없을 때 |
-|------|----|----------------|
-| `require.ext-<이름>` | 필수 — 없으면 확장이 동작하지 않는다 | 설치·활성화를 막는다(오류 안내). 업데이트(코어 업데이트의 번들 일괄 업데이트 포함)는 막지 않고 경고만 남긴다 |
-| `suggest.ext-<이름>` | 권장 — 일부 기능에만 필요하다. 값은 그 이유 | 막지 않는다. 관리자 화면에 「권장 PHP 확장: 이름(미설치)」 배지만 표시한다 |
-
-검사 지점은 다음과 같다.
-
-- 설치 프로그램의 확장 선택 단계: 필수 미충족 확장은 고를 수 없고, 권장 미충족은 경고 문구를 표시한다.
-- 관리자 화면·`module:install`·`plugin:install`: 필수 미충족이면 설치를 막는다.
-- 활성화: 필수 미충족이면 막는다. 강제 활성화와 코어 업데이트 중 활성화는 경고만 남긴다.
-- 업데이트(`module:update`·`plugin:update`·관리자 화면·번들 일괄 업데이트): 막지 않고 경고만 남긴다.
-- 코어 업데이트(`core:update`): 새 코어의 필수 확장(§1.4)이 없으면 업데이트를 시작하지 않는다. 함께 갱신될 확장의 필수 확장 미충족은 경고로 알린다.
-- 이미 켜져 있는 확장은 나중에 서버에서 확장이 빠져도 자동으로 끄지 않는다. 관리자 모듈·플러그인 목록과 환경설정 > 정보 탭에서 표시로 알린다.
-
-확장 README 의 요구사항 표에도 선언한 PHP 확장이 표시된다.
 
 ---
 
@@ -400,8 +321,7 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 
 | 패키지 | 현재 | 보류 사유 | 최소 보안 버전 |
 |---|---|---|---|
-| `guzzlehttp/guzzle` | 7.16.x | 8.x 는 `aws/aws-sdk-php` · `laravel/framework` · `pusher/pusher-php-server` 의 제약이 막는다. 상위 패키지가 8.x 를 지원하기 전에는 올릴 수 없다 | **7.15.2** |
-| `maxmind-db/reader` | 1.13.x | 1.14.0 부터 PHP `maxminddb` 확장 1.14 미만과 충돌을 선언해, 그 확장 1.13.x 가 켜진 서버에서 코어 업데이트의 Composer 설치가 거부된다. 루트 `composer.json` 의 `conflict` 로 1.14 미만에 고정한다. 서버 배포판의 확장이 1.14 이상으로 올라온 뒤 푼다 | 보안 권고 없음 |
+| `guzzlehttp/guzzle` | 7.15.x | 8.x 는 `aws/aws-sdk-php` · `laravel/framework` · `pusher/pusher-php-server` 의 제약이 막는다. 상위 패키지가 8.x 를 지원하기 전에는 올릴 수 없다 | **7.15.2** |
 | `ckeditor5` | 43.3.1 | 다섯 개 메이저를 건너뛰는 상향이라 초기화 설정·툴바 재구성과 글쓰기/이미지 업로드 전 경로 재검수를 수반한다. 별도 작업으로 분리한다. CDN 의존은 이미 자체 서빙으로 해소되어 있다 | 상향 작업에서 확정 |
 | `monaco-editor` 내장 `dompurify` | 3.4.8 | monaco 가 자기 배포 번들에 정화기를 인라인하므로 소비자가 버전을 고를 수 없다. 배포된 최신본(0.56.0)이 담은 것이 3.4.8 이다. 상류가 새 정화기를 담은 판을 내면 함께 올린다 | **3.4.13** (상류 대기) |
 | `vite` (확장 빌드 툴체인) | 5.4.x | 8.x 는 메이저 상향이며 확장 스물넷의 빌드 설정을 동시에 옮겨야 한다. 빌드 도구라 배포 산출물에 실리지 않아 최종 사용자 노출면이 없다 | **8.2.2** |
@@ -420,7 +340,6 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 |---------|--------|----------|
 | 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` (환경설정 → 드라이버 → 「큐 워커」 등록대로. 큐 드라이버가 `sync` 면 등록·워커 모두 필요 없음) | Supervisor 등 |
 | 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | Supervisor 등 (`numprocs=1`) |
-| 사이트맵 워커 | `php artisan queue:work {연결} --queue=sitemap --timeout=1800` (사이트맵 생성 전용 큐 — 등록과 무관하게 늘 필요, 큐 드라이버가 `sync` 면 불필요) | Supervisor 등 (`numprocs=1`) |
 | 스케줄러 | `php artisan schedule:run` | cron (매분 실행) |
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 
@@ -502,7 +421,7 @@ Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작
 | 항목 | 기준 | 미충족 시 |
 |------|------|----------|
 | PHP 버전 | 8.2 이상 | 설치 차단 |
-| PHP 확장 | §1.4 필수 확장 16개 | 설치 차단 |
+| PHP 확장 | §1.4 필수 확장 중 14개 | 설치 차단 |
 | 차단 함수 | `exec`·`proc_open`·`shell_exec` 사용 가능 | 설치 차단 |
 | 디스크 여유 공간 | 500MB | 설치 차단 |
 | 디렉토리 쓰기 권한 | `storage/`, `bootstrap/cache`, `vendor`, 확장 디렉토리 등 | 설치 차단 |
@@ -513,9 +432,7 @@ Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작
 | OPcache | 활성화 여부 | 안내만 (설치 진행) |
 | HTTPS | 사용 여부 | 안내만 (설치 진행) |
 
-선택 확장은 설치를 막지 않으며 설치 단계에 표시하지도 않는다 — 설치 뒤 관리자 환경설정 > 정보 탭에서
-설치 여부를 확인한다. 설치 단계의 확장 선택 화면은 번들 확장이 요구하는 PHP 확장(§1.8)이 없으면 그 확장을
-고를 수 없게 하거나(필수) 경고를 표시한다(권장).
+`gd`·`imagick`·`redis`·`intl`·`zlib` 은 설치 단계에서 상태를 표시하지만 설치를 막지 않는다.
 
 ### 9.2 운영자 확인 필요 — 자동 검사 없음
 

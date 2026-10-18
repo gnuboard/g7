@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\AssertNoDuplicateKcpIdentity;
-use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ClaimKcpIdentityOnRegistering;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CompleteKcpRecordAfterRegister;
@@ -42,7 +41,7 @@ abstract class PluginTestCase extends TestCase
     /**
      * 플러그인 마이그레이션을 포함하여 DB 를 초기화한다.
      *
-     * @return array<string, mixed> migrate:fresh 에 넘길 옵션(번들 확장 마이그레이션 경로 포함)
+     * @return array<string, mixed>
      */
     protected function migrateFreshUsing(): array
     {
@@ -65,11 +64,6 @@ abstract class PluginTestCase extends TestCase
         ];
     }
 
-    /**
-     * 플러그인 스토리지 격리·오토로드·다국어·서비스 프로바이더·인스턴스·라우트·훅 리스너를 등록합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -112,11 +106,6 @@ abstract class PluginTestCase extends TestCase
         $this->registerPluginHookListeners();
     }
 
-    /**
-     * 격리했던 플러그인 스토리지를 지우고 기본 정리를 합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         $this->restorePluginStorage();
@@ -128,8 +117,6 @@ abstract class PluginTestCase extends TestCase
      * 검사 대상 플러그인 경로 (프로젝트 루트 기준 상대경로).
      *
      * 활성 설치본이 있으면 그것을, 없으면 _bundled 소스를 사용한다.
-     *
-     * @return string 프로젝트 루트 기준 플러그인 상대경로
      */
     protected function pluginRelativePath(): string
     {
@@ -145,8 +132,6 @@ abstract class PluginTestCase extends TestCase
      *
      * 설정 저장 테스트가 실제 로컬 런타임 설정 파일을 덮어써 운영 모드/자격증명이 오염되는 것을
      * 막는다 (RefreshDatabase 는 DB 만 롤백하고 파일시스템은 되돌리지 않는다).
-     *
-     * @return void 반환값 없음
      */
     private function isolatePluginStorage(): void
     {
@@ -163,8 +148,6 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 격리 임시 디렉토리를 제거한다.
-     *
-     * @return void 반환값 없음
      */
     private function restorePluginStorage(): void
     {
@@ -179,8 +162,6 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * Plugin 의 hook listener 들을 코어 HookManager 에 등록한다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerPluginHookListeners(): void
     {
@@ -192,7 +173,6 @@ abstract class PluginTestCase extends TestCase
             CleanKcpRecordOnUserWithdraw::class,
             CleanKcpRecordOnUserDelete::class,
             AssertNoDuplicateKcpIdentity::class,
-            ClaimKcpIdentityOnRegistering::class,
             ValidateKcpSettingsListener::class,
         ] as $listener) {
             HookListenerRegistrar::register($listener, $source);
@@ -201,8 +181,6 @@ abstract class PluginTestCase extends TestCase
 
     /**
      * 플러그인 src/ PSR-4 오토로드를 등록한다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerPluginAutoload(): void
     {
@@ -239,8 +217,6 @@ abstract class PluginTestCase extends TestCase
      * PluginSettingsService::get()/save() 와 UpdatePluginSettingsRequest 는 PluginManager 가
      * 반환하는 플러그인 인스턴스(기본값/스키마)를 전제로 동작한다. 테스트 환경에서는 플러그인
      * 디스커버리가 돌지 않으므로 설치·활성 상태와 동형이 되도록 수동 등록한다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerPluginInstance(): void
     {
@@ -259,8 +235,6 @@ abstract class PluginTestCase extends TestCase
      *
      * 실 환경: `/plugins/sirsoft-verification_nhnkcp/{path}` (web),
      *          `/api/plugins/sirsoft-verification_nhnkcp/{path}` (api)
-     *
-     * @return void 반환값 없음
      */
     protected function registerPluginRoutes(): void
     {

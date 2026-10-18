@@ -8,6 +8,13 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
     "children": [
         {
             "id": "section_notification",
@@ -100,7 +107,6 @@
                                             "type": "composite",
                                             "name": "Toggle",
                                             "props": {
-                                                "ariaLabel": "$t:sirsoft-board.admin.settings.fields.notify_author",
                                                 "name": "basic_defaults.notify_author",
                                                 "className": "flex-shrink-0",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -178,7 +184,6 @@
                                             "type": "composite",
                                             "name": "Toggle",
                                             "props": {
-                                                "ariaLabel": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_post",
                                                 "name": "basic_defaults.notify_admin_on_post",
                                                 "className": "flex-shrink-0",
                                                 "disabled": "{{_computed.isReadOnly}}"

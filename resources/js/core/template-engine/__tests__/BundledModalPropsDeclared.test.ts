@@ -95,20 +95,6 @@ function isAdminLayout(path: string): boolean {
   return afterLayouts.startsWith('admin/') || afterLayouts.startsWith('admin_');
 }
 
-/** 번들 전체 정적 검사의 시험 한도 — 동시 실행 부하 대비. 전역 한도는 그대로 두고 이 시험에만 명시한다. */
-const STATIC_SCAN_TIMEOUT_MS = 60_000;
-
-/** 검사 대상 레이아웃 — 수집 단계에서 한 번 읽고 파싱한다(시험 한도 밖). */
-const BUNDLED_FILES: string[] = [];
-for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), BUNDLED_FILES);
-const BUNDLED_LAYOUTS: Array<{ file: string; layout: unknown }> = BUNDLED_FILES.flatMap((file) => {
-  try {
-    return [{ file, layout: JSON.parse(readFileSync(file, 'utf-8')) as unknown }];
-  } catch {
-    return [];
-  }
-});
-
 describe('번들 레이아웃 창 속성 선언', () => {
   // @scenario template=admin_basic
   // @effects undeclared_modal_prop_is_reported
@@ -138,14 +124,22 @@ describe('번들 레이아웃 창 속성 선언', () => {
     expect(adminAllowed.has('title'), '관리자 템플릿 Modal 선언을 읽지 못했습니다.').toBe(true);
     expect(userAllowed.has('title'), '사용자 템플릿 Modal 선언을 읽지 못했습니다.').toBe(true);
 
-    expect(BUNDLED_FILES.length, '검사 대상 레이아웃이 없습니다(경로 해석 확인).').toBeGreaterThan(100);
+    const files: string[] = [];
+    for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), files);
+    expect(files.length, '검사 대상 레이아웃이 없습니다(경로 해석 확인).').toBeGreaterThan(100);
 
     const violations: string[] = [];
-    for (const { file, layout } of BUNDLED_LAYOUTS) {
+    for (const file of files) {
+      let layout: unknown;
+      try {
+        layout = JSON.parse(readFileSync(file, 'utf-8'));
+      } catch {
+        continue;
+      }
       const props = undeclaredModalProps(layout, isAdminLayout(file) ? adminAllowed : userAllowed);
       if (props.length) violations.push(`${relative(ROOT, file).split(sep).join('/')}: ${props.join(', ')}`);
     }
 
     expect(violations).toEqual([]);
-  }, STATIC_SCAN_TIMEOUT_MS);
+  });
 });

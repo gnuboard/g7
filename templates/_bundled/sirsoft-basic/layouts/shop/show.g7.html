@@ -9,13 +9,12 @@
       </extensions>
       <data-sources>
         <item>product</item>
-        <item>relatedProducts</item>
         <item>popularProducts</item>
         <item>reviews</item>
         <item>qna</item>
       </data-sources>
-      <vars product_name="{{$localized(product.data.meta_title) || $localized(product.data.name) || ''}}" product_description="{{$localized(product.data.meta_description) || $localized(product.data.short_description) || $localized(product.data.description) || ''}}" site_name="$core_settings:general.site_name" shopBase="$module_settings:sirsoft-ecommerce:basic_info.route_path"/>
-      <og type="product" title="{{_seo.product.title || $localized(product.data.meta_title) || $localized(product.data.name) || ''}}" description="{{_seo.product.description || $localized(product.data.meta_description) || $localized(product.data.description) || ''}}"/>
+      <vars product_name="{{$localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}" product_description="{{$localized(product.data.meta_description) ?? $localized(product.data.short_description) ?? $localized(product.data.description) ?? ''}}" site_name="$core_settings:general.site_name" shopBase="$module_settings:sirsoft-ecommerce:basic_info.route_path"/>
+      <og type="product" title="{{_seo.product.title ?? $localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}" description="{{_seo.product.description ?? $localized(product.data.meta_description) ?? $localized(product.data.description) ?? ''}}"/>
     </seo>
   </meta>
   <!-- 상품 본체(옵션 조합·재고·가격 포함). 없거나 볼 수 없는 상품이면 토스트가 아니라 본문 자리를
@@ -77,9 +76,8 @@
     </fallback>
   </data-source>
   <!-- 상품 문의 탭. 응답의 `meta` 가 이 상품의 문의 게시판 설정(비밀글 허용·첨부 한도·글자수 제한)을
-       함께 실어 오고, 문의 작성 창의 검증이 그 값을 그대로 쓴다 — 그래서 목록과 설정이 한 소스다.
-       문의는 게시판 글로 저장되므로 게시판 모듈이 꺼져 있으면 부르지 않는다(탭도 숨는다) -->
-  <data-source id="qna" label_key="$t:editor.data_source.qna" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/inquiries" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
+       함께 실어 오고, 문의 작성 창의 검증이 그 값을 그대로 쓴다 — 그래서 목록과 설정이 한 소스다 -->
+  <data-source id="qna" label_key="$t:editor.data_source.qna" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/inquiries" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <params page="{{_local.qnaPage ?? 1}}" :per_page="10" exclude_secret="{{_local.qnaExcludeSecret ?? false}}"/>
     <fallback>
       <field name="items" :value="[]"/>
@@ -110,19 +108,14 @@
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
-  <!-- 「이 상품은 어떠세요?」 줄 — 지금 보는 상품과 관련된 상품이다 -->
-  <data-source id="relatedProducts" label_key="$t:editor.data_source.relatedProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/related?limit=8" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
-    <fallback :data="[]"/>
-  </data-source>
   <!-- 상세 아래에 붙는 인기 상품 줄 — 지금 보는 상품과 무관한 고정 추천이다 -->
   <data-source id="popularProducts" label_key="$t:editor.data_source.popularProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/popular?limit=8" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
   </data-source>
+  <computed name="popularItems">{{popularProducts?.data ?? []}}</computed>
   <computed name="optionChoices">{{(product.data?.option_groups ?? []).map((g, gi) => (g.values_localized ?? []).map(v => { const combos = (product.data?.options ?? []).filter(o => o.option_values_localized?.[g.name_localized] === v &amp;&amp; (product.data?.option_groups ?? []).slice(0, gi).every(ug => !_local.currentSelection?.[ug.name_localized] || o.option_values_localized?.[ug.name_localized] === _local.currentSelection[ug.name_localized])); const soldOut = combos.length > 0 &amp;&amp; combos.every(o => o.is_sold_out || (o.stock_quantity ?? 0) &lt;= 0 || !o.is_active); return { value: v, label: soldOut ? v + ' ' + $t('shop.product.sold_out_suffix') : v, disabled: soldOut }; }))}}</computed>
-  <computed name="purchaseNeedsSelection">{{(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (_local.selectedOptionItems ?? []).length === 0) || (_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id])) || (_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; })) || (!(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !_local.noOptionAdditionalSelections?.[g.id])) || (!(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; (product.data?.additional_options ?? []).some(g => { const sel = _local.noOptionAdditionalSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (_local.noOptionAdditionalCustomTexts?.[g.id] ?? '').trim() === ''; })) || ((product.data?.additional_options ?? []).length > 0 &amp;&amp; !_local.buySheetSeen)}}</computed>
-  <computed name="purchaseQuantityOutOfRange">{{((product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) &lt; (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}</computed>
   <permissions/>
   <error-handling>
     <on-code code="401">
@@ -134,141 +127,6 @@
       <show-error-page :errorCode="403" target="content"/>
     </on-code>
   </error-handling>
-  <!-- 장바구니 담기 — 본문 구매 카드·바텀시트·하단 구매바가 같이 부른다. 고르지 않은 것이 있으면 안내하고, 다 골랐으면 담는다 -->
-  <action name="purchaseAddToCart">
-    <conditions>
-      <!-- 배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증) -->
-      <when if="{{product.data?.is_shippable_to_selected_country === false}}">
-        <toast type="warning" message="$t:shop.shippability.not_shippable"/>
-      </when>
-      <when if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}">
-        <toast type="warning" message="$t:shop.product.please_select_options"/>
-      </when>
-      <!-- 필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증) -->
-      <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id])) || (!(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !_local.noOptionAdditionalSelections?.[g.id]))}}">
-        <!-- 「눌러 봤음」 을 남겨 구매 옵션 칸마다 사유 줄을 보인다 — 토스트만으로는 어느 칸인지 모른다 -->
-        <sequence>
-          <set-state target="local" :purchaseAttempted="true"/>
-          <toast type="warning" message="$t:shop.additional_option_required"/>
-        </sequence>
-      </when>
-      <!-- 직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증) -->
-      <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; })) || (!(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; (product.data?.additional_options ?? []).some(g => { const sel = _local.noOptionAdditionalSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (_local.noOptionAdditionalCustomTexts?.[g.id] ?? '').trim() === ''; }))}}">
-        <!-- 「눌러 봤음」 을 남겨 구매 옵션 칸마다 사유 줄을 보인다 — 토스트만으로는 어느 칸인지 모른다 -->
-        <sequence>
-          <set-state target="local" :purchaseAttempted="true"/>
-          <toast type="warning" message="$t:shop.additional_option_custom_text_required"/>
-        </sequence>
-      </when>
-      <else>
-        <sequence>
-          <set-state target="local" :isAddingToCart="true"/>
-          <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/cart" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { product_id: product.data?.id, items: (_local.selectedOptionItems ?? []).map(item => ({ product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { product_id: product.data?.id, items: [{ quantity: _local.noOptionQuantity ?? 1, additional_option_selections: Object.entries(_local.noOptionAdditionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: _local.noOptionAdditionalCustomTexts?.[Number(gid)] })) }] }}}">
-            <success>
-              <!-- 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) -->
-              <set-state target="local" :currentSelection="null" :additionalOptions="null" :noOptionAdditionalSelections="null" :noOptionAdditionalCustomTexts="null" :noOptionAdditionalMultiCurrencyTotal="null"/>
-              <set-state target="local" :isAddingToCart="false" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :noOptionAdditionalSelections="{}" :noOptionAdditionalCustomTexts="{}" :noOptionAdditionalTotal="0" :noOptionTotalMultiCurrency="null" :purchaseAttempted="false"/>
-              <set-state target="global" cartCount="{{response.data.cart_count}}"/>
-              <set-state target="local" :buySheetOpen="false"/>
-              <open-modal target="cart_added_modal"/>
-            </success>
-            <fail>
-              <set-state target="local" :isAddingToCart="false"/>
-              <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
-            </fail>
-            <field name="headers">
-              <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
-            </field>
-          </api-call>
-        </sequence>
-      </else>
-    </conditions>
-  </action>
-  <!-- 바로구매 — 장바구니를 거치지 않고 주문서로 간다. 본문 구매 카드·바텀시트·하단 구매바가 같이 부른다 -->
-  <action name="purchaseBuyNow">
-    <conditions>
-      <!-- 배송 불가 차단 (B8 클라 가드 — 선택 배송국가로 배송 불가, 서버도 422 재검증) -->
-      <when if="{{product.data?.is_shippable_to_selected_country === false}}">
-        <toast type="warning" message="$t:shop.shippability.not_shippable"/>
-      </when>
-      <when if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 &amp;&amp; (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}">
-        <toast type="warning" message="$t:shop.product.please_select_options"/>
-      </when>
-      <!-- 필수 추가옵션 미선택 차단 (D9/D12 클라 가드 — 서버도 422 재검증) -->
-      <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !item.additionalOptionSelections?.[g.id])) || (!(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; (product.data?.additional_options ?? []).filter(g => g.is_required).some(g => !_local.noOptionAdditionalSelections?.[g.id]))}}">
-        <!-- 「눌러 봤음」 을 남겨 구매 옵션 칸마다 사유 줄을 보인다 — 토스트만으로는 어느 칸인지 모른다 -->
-        <sequence>
-          <set-state target="local" :purchaseAttempted="true"/>
-          <toast type="warning" message="$t:shop.additional_option_required"/>
-        </sequence>
-      </when>
-      <!-- 직접입력 허용 선택지 선택 시 텍스트 미입력 차단 (Q-E1 클라 가드 — 서버도 422 재검증) -->
-      <when if="{{(_local.selectedOptionItems ?? []).some(item => (product.data?.additional_options ?? []).some(g => { const sel = item.additionalOptionSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (item.additionalOptionCustomTexts?.[g.id] ?? '').trim() === ''; })) || (!(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; (product.data?.additional_options ?? []).some(g => { const sel = _local.noOptionAdditionalSelections?.[g.id]; const v = (g.values ?? []).find(x => x.id === sel); return g.is_required &amp;&amp; v?.allow_custom_text === true &amp;&amp; (_local.noOptionAdditionalCustomTexts?.[g.id] ?? '').trim() === ''; }))}}">
-        <!-- 「눌러 봤음」 을 남겨 구매 옵션 칸마다 사유 줄을 보인다 — 토스트만으로는 어느 칸인지 모른다 -->
-        <sequence>
-          <set-state target="local" :purchaseAttempted="true"/>
-          <toast type="warning" message="$t:shop.additional_option_custom_text_required"/>
-        </sequence>
-      </when>
-      <else>
-        <sequence>
-          <set-state target="local" :isOrdering="true"/>
-          <!-- 바로 구매: 장바구니 미경유 — direct_items 로 바로 체크아웃(장바구니 오염 없음) -->
-          <api-call auth_mode="optional" target="/api/modules/sirsoft-ecommerce/checkout" method="POST" body="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1 ? { direct_items: (_local.selectedOptionItems ?? []).map(item => ({ product_id: product.data?.id, product_option_id: item.optionId, quantity: item.quantity, additional_option_selections: Object.entries(item.additionalOptionSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: item.additionalOptionCustomTexts?.[Number(gid)] })) })) } : { direct_items: [{ product_id: product.data?.id, quantity: _local.noOptionQuantity ?? 1, additional_option_selections: Object.entries(_local.noOptionAdditionalSelections ?? {}).filter(([, vid]) => vid != null).map(([gid, vid]) => ({ additional_option_id: Number(gid), value_id: Number(vid), custom_text: _local.noOptionAdditionalCustomTexts?.[Number(gid)] })) }] }}}">
-            <success>
-              <!-- 로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨 -->
-              <conditions>
-                <when if="{{_global.currentUser?.uuid}}">
-                  <!-- audit:allow layout-list-context-navigate-merge-query 주문서로 이동 — 상품 목록/상세와 다른 클러스터(주문 흐름)로 나가는 이동이다. -->
-                  <navigate path="{{_global.shopBase}}/checkout"/>
-                </when>
-                <else>
-                  <navigate path="/login">
-                    <query redirect="{{_global.shopBase}}/checkout"/>
-                  </navigate>
-                </else>
-              </conditions>
-            </success>
-            <fail>
-              <set-state target="local" :isOrdering="false"/>
-              <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
-            </fail>
-            <field name="headers">
-              <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
-            </field>
-          </api-call>
-        </sequence>
-      </else>
-    </conditions>
-  </action>
-  <!-- 찜 켜고 끄기 — 제목 옆 찜 단추와 하단 구매바가 같이 부른다 -->
-  <action name="toggleProductWishlist">
-    <conditions>
-      <!-- 비회원: 로그인 필요 안내 -->
-      <when if="{{!_global.currentUser?.uuid}}">
-        <toast type="warning" message="$t:shop.wishlist_login_required"/>
-      </when>
-      <!-- 회원: 찜하기 토글 -->
-      <else>
-        <sequence>
-          <!-- 낙관적 UI: 즉시 아이콘 토글 + 로딩 상태 -->
-          <set-state target="local" :wishlistLoading="true" isWishlisted="{{!(_local.isWishlisted ?? product.data?.is_wishlisted)}}"/>
-          <api-call auth_mode="required" target="/api/modules/sirsoft-ecommerce/wishlist/toggle" method="POST">
-            <success>
-              <set-state target="local" :wishlistLoading="false" isWishlisted="{{response.data.added}}"/>
-              <refetch-data-source dataSourceId="product"/>
-              <toast type="success" message="{{response.data.added ? '$t:shop.wishlist_added' : '$t:shop.wishlist_removed'}}"/>
-            </success>
-            <fail>
-              <!-- 실패 시 원래 상태로 복원 -->
-              <set-state target="local" :wishlistLoading="false" isWishlisted="{{product.data?.is_wishlisted}}"/>
-            </fail>
-            <body product_id="{{product.data?.id}}"/>
-          </api-call>
-        </sequence>
-      </else>
-    </conditions>
-  </action>
   <init>
     <load-from-local-storage key="recentProductIds" :defaultValue="[]">
       <field name="resultTo">
@@ -280,24 +138,23 @@
     <close-modal/>
     <!-- 장바구니 이동 로딩 상태 초기화 -->
     <set-state target="global" :isNavigatingToCart="false"/>
-    <!-- 옵션 선택 상태 초기화 — 같은 레이아웃(상품 → 상품) SPA 이동은 _local 을 유지한다. 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1). 종전에는 앞 상품의 상품평 필터 「블랙」·구매 옵션 선택이 다음 상품에 남았다. -->
-    <set-state target="local" :currentSelection="null" :additionalOptions="null" :reviewOptionFilters="null" :noOptionAdditionalSelections="null" :noOptionAdditionalCustomTexts="null" :noOptionAdditionalMultiCurrencyTotal="null" :noOptionTotalMultiCurrency="null" :purchaseAttempted="null"/>
-    <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :noOptionAdditionalSelections="{}" :noOptionAdditionalCustomTexts="{}" :noOptionAdditionalTotal="0" :wishlistLoading="false" :isOrdering="false" :selectedCouponForDownload="null" :reviewsPage="1" :reviewsLoading="false" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
+    <!-- 옵션 선택 상태 초기화 -->
+    <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :wishlistLoading="false" :isOrdering="false" :downloadableCoupons="null" :downloadableCouponsLoading="false" :downloadingMore="false" :downloadingCouponId="null" :selectedCouponForDownload="null" :reviewsPage="1" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
   </init>
   <slot name="content">
     <container data-type="layout" class="py-4">
       <responsive on="desktop" class="py-8"/>
       <!-- 뒤로가기 버튼 -->
-      <a href="{{_global.shopBase}}/products" :mergeQuery="true" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer">
+      <button class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer">
         <responsive on="desktop" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 cursor-pointer"/>
         <on type="click">
-          <navigate :mergeQuery="true">
+          <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
             <query/>
           </navigate>
         </on>
         <icon name="chevron-left" size="sm"/>
         <span>$t:shop.back</span>
-      </a>
+      </button>
       <!-- 상품 정보 영역 - PC: 2열, 모바일: 1열 -->
       <div class="flex flex-col mb-8">
         <blur-until-loaded sources="product"/>
@@ -333,11 +190,11 @@
         </div>
       </div>
       <!-- 탭 네비게이션 -->
-      <tab-navigation data-type="composite" :tabHrefMergeQuery="true" hiddenTabIds="{{(_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)) ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
+      <tab-navigation data-type="composite" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
         <prop name="tabs">
-          <item id="info" href="{{route.path}}?tab=info" label="$t:shop.tabs.detail_info" iconName="file-text"/>
-          <item id="reviews" href="{{route.path}}?tab=reviews" label="$t:shop.tabs.reviews" badge="{{reviews.data?.total_count ?? 0}}" iconName="star"/>
-          <item id="qna" href="{{route.path}}?tab=qna" label="$t:shop.tabs.qna" badge="{{qna.data.meta.total ?? 0}}" iconName="comment"/>
+          <item id="info" label="$t:shop.tabs.detail_info" iconName="file-text"/>
+          <item id="reviews" label="$t:shop.tabs.reviews" badge="{{reviews.data?.total_count ?? 0}}" iconName="star"/>
+          <item id="qna" label="$t:shop.tabs.qna" badge="{{qna.data.meta.total ?? 0}}" iconName="comment"/>
         </prop>
         <on event="onTabChange">
           <set-state target="local" activeTab="{{$args[0]}}"/>
@@ -350,83 +207,10 @@
       <include src="partials/shop/detail/_tab_detail.g7.html"/>
       <include src="partials/shop/detail/_tab_reviews.g7.html"/>
       <include src="partials/shop/detail/_tab_qna.g7.html"/>
-      <!-- 이 상품은 어떠세요(관련 상품) + 인기 상품 줄 -->
+      <!-- 인기 상품 섹션 -->
       <div class="mt-12">
-        <include src="partials/shop/list/_related_products.g7.html"/>
         <include src="partials/shop/list/_popular_products.g7.html"/>
       </div>
-      <!-- === 좁은 화면 바텀시트 — 하단 구매바에서 아직 다 고르지 않았을 때 올라온다. 화면 안에 그대로 두는 컨테이너라
-           안쪽 옵션 영역이 본문 구매 카드와 같은 화면 상태를 쓴다(창 조각으로 두면 다시 열 때 앞 값이 남는다). 넓은 화면에서는 보이지 않는다 === -->
-      <bottom-sheet data-type="composite" data-ref="buy_sheet" data-if="{{product.data?.sales_status === 'on_sale'}}" open="{{!!_local.buySheetOpen}}" title="$t:shop.product.buy_sheet_title">
-        <on event="onClose">
-          <set-state target="local" :buySheetOpen="false"/>
-        </on>
-        <include src="partials/shop/detail/_purchase_options.g7.html"/>
-        <!-- 합계와 단추는 시트 바닥에 붙여 둔다 — 옵션이 길어도 스크롤하지 않고 담을 수 있게. 시트 본문의 안쪽 여백(16px)만큼 바깥으로 넓혀 바닥·좌우에 틈이 없게 한다 -->
-        <div data-testid="sheet-footer" class="sticky -bottom-4 z-10 -mx-4 -mb-4 px-4 pb-4 pt-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          <!-- 총 금액 (옵션 선택형 상품 - 2개 이상) -->
-          <div data-if="{{product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="flex justify-between items-center mb-4">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.total_amount ({{(_local.selectedOptionItems ?? []).reduce((sum, item) => sum + item.quantity, 0)}}$t:shop.count_unit)</span>
-            <span data-testid="sheet-purchase-total" class="text-xl font-bold text-gray-900 dark:text-white">{{(_local.selectedOptionItems ?? []).length === 0 ? '-' : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')}}</span>
-          </div>
-          <!-- 총 금액 (옵션 없거나 기본 옵션 1개뿐인 상품) -->
-          <div data-if="{{!product.data?.has_options || (product.data?.options?.length ?? 0) <= 1}}" class="flex justify-between items-center mb-4">
-            <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.product.total_amount ({{_local.noOptionQuantity ?? 1}}$t:shop.product.count_unit)</span>
-            <span data-testid="sheet-purchase-total" class="text-xl font-bold text-gray-900 dark:text-white">{{_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? ''}}</span>
-          </div>
-          <!-- 누른 단추(장바구니·바로구매)를 주 단추로 보인다. 잠금 식은 본문 구매 카드의 두 단추와 같다 -->
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" data-testid="sheet-add-to-cart" class="{{_local.buySheetMode === 'buy' ? 'w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{_local.isAddingToCart || _local.isOrdering || (Array.isArray(product.data?.options) &amp;&amp; product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}">
-              <on type="click">
-                <action-ref name="purchaseAddToCart"/>
-              </on>
-              <icon data-if="{{!_local.isAddingToCart}}" name="shopping-cart" size="lg"/>
-              <icon data-if="{{_local.isAddingToCart}}" name="spinner" size="lg" class="animate-spin"/>
-              <span>$t:shop.product.add_to_cart</span>
-            </button>
-            <button type="button" data-testid="sheet-buy-now" class="{{_local.buySheetMode === 'buy' ? 'w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{(_local.isOrdering || (Array.isArray(product.data?.options) &amp;&amp; product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) &amp;&amp; ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 &amp;&amp; (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))) || product.data?.abilities?.can_order !== true}}">
-              <on type="click">
-                <action-ref name="purchaseBuyNow"/>
-              </on>
-              <icon data-if="{{_local.isOrdering}}" name="spinner" :spin="true" size="md"/>
-              <span data-if="{{!_local.isOrdering}}">$t:shop.product.buy_now</span>
-              <span data-if="{{_local.isOrdering}}">$t:shop.product.ordering</span>
-            </button>
-          </div>
-        </div>
-      </bottom-sheet>
-      <!-- === 좁은 화면 하단 구매바 — 가격·찜·장바구니·바로구매를 늘 손 닿는 자리에 둔다. 동작은 본문 단추와 같은 이름 붙은 액션이다.
-           바 단추는 진행 중·구매 불가·배송 불가일 때만 잠근다 — 옵션·수량을 아직 맞추지 않았으면 잠그는 대신 바텀시트를 열어 고르게 한다.
-           「아직 다 고르지 않음」(계산 purchaseNeedsSelection): ① 옵션을 골라야 하는데 줄이 없음 ② 필수 추가옵션이 빈 줄 ③ 직접 입력이 빈 줄
-           ④ 추가옵션이 있는데 시트를 한 번도 열지 않음(고를 기회를 준다 — 옵션 하나 상품도 같다). ②③ 은 옵션 하나 상품이면 상품 하나의 선택(noOptionAdditional*)으로 판정한다. 「수량이 한도 밖」(계산 purchaseQuantityOutOfRange)은
-           구매 카드 단추를 잠그는 것과 같은 판정이다 === -->
-      <mobile-buy-bar data-type="composite" data-ref="mobile_buy_bar" data-if="{{!!product.data?.id}}" variant="product" priceText="{{(product.data?.has_options &amp;&amp; (product.data?.options?.length ?? 0) > 1) ? ((_local.selectedOptionItems ?? []).length === 0 ? (product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? '') : (_local.selectedTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? _local.selectedOptionItems[0]?.totalPriceFormatted ?? '')) : (_local.noOptionTotalMultiCurrency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted ?? '')}}" wished="{{!!(_local.isWishlisted ?? product.data?.is_wishlisted)}}" soldOutLabel="{{product.data?.sales_status !== 'on_sale' ? (product.data?.sales_status_label ?? '') : ''}}" cartDisabled="{{!!(_local.isAddingToCart || _local.isOrdering || (Array.isArray(product.data?.options) &amp;&amp; product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false)}}" buyDisabled="{{!!(_local.isOrdering || (Array.isArray(product.data?.options) &amp;&amp; product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || product.data?.abilities?.can_order !== true)}}" busy="{{!!_local.isOrdering}}">
-        <on event="onWish">
-          <action-ref name="toggleProductWishlist"/>
-        </on>
-        <on event="onCart">
-          <!-- 아직 다 고르지 않았거나 수량이 한도 밖이면 담지 않고 선택 시트를 연다(장바구니 모드) -->
-          <conditions>
-            <when if="{{$computed.purchaseNeedsSelection || $computed.purchaseQuantityOutOfRange}}">
-              <set-state target="local" :buySheetOpen="true" buySheetMode="cart" :buySheetSeen="true"/>
-            </when>
-            <else>
-              <action-ref name="purchaseAddToCart"/>
-            </else>
-          </conditions>
-        </on>
-        <on event="onBuy">
-          <!-- 아직 다 고르지 않았거나 수량이 한도 밖이면 주문하지 않고 선택 시트를 연다(바로 구매 모드) -->
-          <conditions>
-            <when if="{{$computed.purchaseNeedsSelection || $computed.purchaseQuantityOutOfRange}}">
-              <set-state target="local" :buySheetOpen="true" buySheetMode="buy" :buySheetSeen="true"/>
-            </when>
-            <else>
-              <action-ref name="purchaseBuyNow"/>
-            </else>
-          </conditions>
-        </on>
-      </mobile-buy-bar>
     </container>
   </slot>
   <!-- 장바구니에 담은 직후 — 계속 둘러볼지 장바구니로 갈지 고르게 한다 -->

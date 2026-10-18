@@ -14,14 +14,11 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\ExtensionManager;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
-use App\Extension\PluginManager;
-use App\Extension\TemplateManager;
 use App\Models\Module;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Facades\File;
 use Mockery;
 use ReflectionMethod;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -33,8 +30,6 @@ use Tests\TestCase;
  */
 class ExtensionUpdateCheckSourceTest extends TestCase
 {
-    use FakesGithubReleases;
-
     private const ID = 'test-srccheck-mod';
 
     private string $bundledDir;
@@ -47,9 +42,6 @@ class ExtensionUpdateCheckSourceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
-        $this->fakeGithubReleases();
 
         $this->bundledDir = base_path('modules/_bundled/'.self::ID);
         File::ensureDirectoryExists($this->bundledDir);
@@ -138,7 +130,7 @@ class ExtensionUpdateCheckSourceTest extends TestCase
             $this->assertStringContainsString($call, (string) file_get_contents(base_path($file)), "{$file} 의 확인 단계가 --source 를 넘기지 않는다");
         }
 
-        foreach ([[ModuleManager::class, 'checkModuleUpdate'], [PluginManager::class, 'checkPluginUpdate'], [TemplateManager::class, 'checkTemplateUpdate']] as [$class, $method]) {
+        foreach ([[ModuleManager::class, 'checkModuleUpdate'], [\App\Extension\PluginManager::class, 'checkPluginUpdate'], [\App\Extension\TemplateManager::class, 'checkTemplateUpdate']] as [$class, $method]) {
             $params = (new ReflectionMethod($class, $method))->getParameters();
             $this->assertSame('source', $params[1]->getName() ?? null, "{$class}::{$method} 가 소스 인자를 받지 않는다");
         }
@@ -159,7 +151,19 @@ class ExtensionUpdateCheckSourceTest extends TestCase
         $module->shouldReceive('getGithubUrl')->andReturn('https://github.com/acme/'.self::ID);
         $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
 
-        $manager = new class(extensionManager: Mockery::mock(ExtensionManager::class), moduleRepository: $repository, permissionRepository: Mockery::mock(PermissionRepositoryInterface::class), roleRepository: Mockery::mock(RoleRepositoryInterface::class), menuRepository: Mockery::mock(MenuRepositoryInterface::class), templateRepository: Mockery::mock(TemplateRepositoryInterface::class), pluginRepository: Mockery::mock(PluginRepositoryInterface::class), layoutRepository: Mockery::mock(LayoutRepositoryInterface::class), layoutExtensionService: Mockery::mock(LayoutExtensionService::class), layoutRowSynchronizer: app(LayoutRowSynchronizer::class), layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class)) extends ModuleManager
+        $manager = new class(
+            extensionManager: Mockery::mock(ExtensionManager::class),
+            moduleRepository: $repository,
+            permissionRepository: Mockery::mock(PermissionRepositoryInterface::class),
+            roleRepository: Mockery::mock(RoleRepositoryInterface::class),
+            menuRepository: Mockery::mock(MenuRepositoryInterface::class),
+            templateRepository: Mockery::mock(TemplateRepositoryInterface::class),
+            pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
+            layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
+            layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
+            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
+            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
+        ) extends ModuleManager
         {
             /** @var string|null 가짜 GitHub 최신 버전 */
             public ?string $fakeLatest = null;

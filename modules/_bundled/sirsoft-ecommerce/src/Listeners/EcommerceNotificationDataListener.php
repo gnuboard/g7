@@ -4,11 +4,10 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\ModuleManager;
-use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationRecipientCapability;
-use App\Support\LocalizedValue;
+use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -17,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCancelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Support\CountryNames;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 
 /**
@@ -224,9 +224,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'account_number' => $payment?->dbank_account ?? '',
                 'account_holder' => $payment?->dbank_holder ?? '',
                 'depositor_name' => $payment?->depositor_name ?? '',
-                // 알림 변수 날짜는 사이트 시간대 — 요청자(관리자·고객) 시간대가 끼어들지 않게 고정.
-                // 형식(Y-m-d H:i)은 기존 알림 템플릿 호환을 위해 유지한다.
-                'deposit_due_at' => $dueAt ? $dueAt->copy()->setTimezone(TimezoneHelper::getSiteTimezone())->format('Y-m-d H:i') : '',
+                'deposit_due_at' => $dueAt ? $dueAt->format('Y-m-d H:i') : '',
             ]),
             'context' => $this->buildOrderContext($order),
         ];
@@ -437,7 +435,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'product_name' => $product?->getLocalizedName() ?? ($inquiry->product_name_snapshot[app()->getLocale()] ?? ''),
                 'customer_name' => $inquiry->user?->name ?? '',
                 'inquiry_content' => mb_substr($inquiry->inquirable?->content ?? '', 0, 200),
-                'inquiry_url' => "{$baseUrl}/admin/ecommerce/product-inquiries",
+                'inquiry_url' => EcommerceScreenUrl::admin('ecommerce.admin.inquiries', '/admin/ecommerce/product-inquiries', [], absolute: true),
                 'site_url' => $baseUrl,
             ],
             'context' => [
@@ -464,7 +462,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = SiteUrl::base();
+        $baseUrl = ScreenUrl::userBase();
 
         return [
             'notifiable' => null,
@@ -474,7 +472,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'product_name' => $inquiry->product?->getLocalizedName() ?? ($inquiry->product_name_snapshot[app()->getLocale()] ?? ''),
                 'inquiry_content' => mb_substr($inquiry->inquirable?->content ?? '', 0, 200),
-                'inquiry_url' => "{$baseUrl}/mypage/inquiries",
+                'inquiry_url' => EcommerceScreenUrl::mypageInquiries(absolute: true),
                 'site_url' => $baseUrl,
             ],
             'context' => [
@@ -518,7 +516,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     private function buildOrderData(Order $order, array $extra = []): array
     {
-        $baseUrl = SiteUrl::base();
+        $baseUrl = ScreenUrl::userBase();
 
         $name = $order->isGuestOrder()
             ? ($order->getOrdererName() ?? '')
@@ -571,11 +569,10 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     private function customerOrderUrl(Order $order): string
     {
-        $baseUrl = SiteUrl::base();
-
+        // 사람이 여는 화면 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
         return $order->isGuestOrder()
-            ? $baseUrl.ShopPathResolver::path(self::GUEST_ORDER_LOOKUP_SUFFIX)
-            : "{$baseUrl}/mypage/orders/{$order->order_number}";
+            ? EcommerceScreenUrl::guestOrders(absolute: true)
+            : EcommerceScreenUrl::mypageOrderDetail((string) $order->order_number, absolute: true);
     }
 
     /**
@@ -614,7 +611,9 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $data;
         }
 
-        $data['order_url'] = SiteUrl::absolute("/admin/ecommerce/orders/{$orderNumber}");
+        // 운영자에게 가는 알림의 사이트 주소는 관리자 화면 기준(사이트 주소)이다 — 회원 기본값은 사용자 화면 URL(#792).
+        $data['site_url'] = SiteUrl::base();
+        $data['order_url'] = EcommerceScreenUrl::admin('ecommerce.admin.order', '/admin/ecommerce/orders/{order_number}', ['order_number' => $orderNumber], absolute: true);
 
         return $data;
     }
@@ -635,7 +634,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         // 코어 사전에 없는 언어(일본어 등)는 상점 배송국가 설정 이름으로 채운다 (S4-D17)
         $names = CountryNames::forCode($code);
 
-        return LocalizedValue::pick($names, anyAsLast: false) ?? $code;
+        return $names[app()->getLocale()] ?? $names[config('app.fallback_locale')] ?? $code;
     }
 
     /**
@@ -693,7 +692,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         $currency = (string) ($args[2] ?? 'KRW');
         $expiresDate = (string) ($args[3] ?? '');
         $balance = (float) ($args[4] ?? 0);
-        $baseUrl = SiteUrl::base();
+        $baseUrl = ScreenUrl::userBase();
 
         return [
             'notifiable' => null,
@@ -705,7 +704,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'currency' => $currency,
                 'expires_date' => $expiresDate,
                 'balance' => number_format($balance),
-                'mileage_url' => "{$baseUrl}/mypage/mileage",
+                'mileage_url' => EcommerceScreenUrl::mypageMileage(absolute: true),
                 'site_url' => $baseUrl,
             ],
             'context' => [

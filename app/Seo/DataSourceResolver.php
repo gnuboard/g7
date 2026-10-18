@@ -3,19 +3,11 @@
 namespace App\Seo;
 
 use App\Support\OutboundUrlValidator;
-use App\Support\SiteLoopback;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class DataSourceResolver
 {
-    /**
-     * 마지막 resolve() 에서 일시 장애(시간 초과·연결 오류·5xx)로 대체값을 쓴 데이터 소스 id.
-     *
-     * @var list<string>
-     */
-    private array $degraded = [];
-
     /**
      * 레이아웃의 data_sources를 서버에서 호출하여 데이터를 로드합니다.
      *
@@ -30,15 +22,11 @@ class DataSourceResolver
     public function resolve(array $dataSources, array $seoDataSourceIds, array $routeParams, string $locale, array $queryParams = [], array $extraContext = []): array
     {
         $context = [];
-        // 싱글턴이라 앞 렌더의 기록을 비운다
-        $this->degraded = [];
 
         $evalContext = array_merge($extraContext, [
             'route' => array_merge($extraContext['route'] ?? [], $routeParams),
             'query' => $queryParams,
         ]);
-
-        $conditionMapper = null;
 
         foreach ($dataSources as $ds) {
             $dsId = $ds['id'] ?? '';
@@ -46,25 +34,6 @@ class DataSourceResolver
             // seo.data_sources에 명시된 ID만 호출
             if (! in_array($dsId, $seoDataSourceIds)) {
                 continue;
-            }
-
-            // 같은 id 의 조건부 판은 조건을 만족하는 첫 판만 쓴다 — 엔진 `DataSourceManager.filterByCondition` 과 같은 규칙.
-            // 종전에는 조건을 보지 않아 두 판을 다 부르고 뒤 판 결과가 앞 판을 덮었다(7.1.1). 조건 평가는 봇 화면의
-            // 렌더 조건 평가(ComponentHtmlMapper — 엔진 evaluateRenderCondition 동형)를 그대로 쓴다.
-            if (array_key_exists($dsId, $context)) {
-                continue;
-            }
-
-            $condition = array_filter(
-                ['if' => $ds['if'] ?? null, 'conditions' => $ds['conditions'] ?? null],
-                fn ($value) => $value !== null,
-            );
-
-            if ($condition !== []) {
-                $conditionMapper ??= new ComponentHtmlMapper;
-                if (! $conditionMapper->isRenderable($condition, $evalContext, app(ExpressionEvaluator::class))) {
-                    continue;
-                }
             }
 
             $endpoint = $ds['endpoint'] ?? '';
@@ -84,20 +53,6 @@ class DataSourceResolver
         }
 
         return $context;
-    }
-
-    /**
-     * 마지막 resolve() 에서 일시 장애로 대체값을 쓴 데이터 소스 id 를 돌려줍니다.
-     *
-     * 그 렌더는 데이터 없는 화면(상품명 없는 제목·본문)이라 SEO 캐시에 넣으면 캐시 수명 동안 봇에게 계속 나간다 —
-     * 저장 경로(SeoMiddleware·SeoCacheRegenerator)가 이 값으로 저장을 건너뛴다. 4xx·사이트 밖 주소 거부는 다시
-     * 불러도 같은 결과라 넣지 않는다.
-     *
-     * @return list<string> 데이터 소스 id 목록 (없으면 빈 배열)
-     */
-    public function degradedDataSources(): array
-    {
-        return $this->degraded;
     }
 
     /**
@@ -232,19 +187,12 @@ class DataSourceResolver
                 'status' => $response->status(),
             ]);
 
-            if ($response->serverError()) {
-                $this->degraded[] = (string) ($ds['id'] ?? $endpoint);
-            }
-
             return $fallback;
         } catch (\Throwable $e) {
             Log::warning('[SEO] DataSource API error', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);
-
-            // 시간 초과·연결 오류 — 다음 렌더에서는 데이터가 올 수 있다
-            $this->degraded[] = (string) ($ds['id'] ?? $endpoint);
 
             return $fallback;
         }
@@ -308,6 +256,50 @@ class DataSourceResolver
      */
     private function loopbackTransport(string $fullUrl): array
     {
-        return SiteLoopback::transportOptions($fullUrl);
+        $parts = parse_url($fullUrl);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if ($host === '') {
+            return [];
+        }
+
+        $literal = trim($host, '[]');
+        if (filter_var($literal, FILTER_VALIDATE_IP) !== false) {
+            return $this->isLoopbackIp($literal) ? ['verify' => false] : [];
+        }
+
+        $addresses = gethostbynamel($host);
+        if (! is_array($addresses) || $addresses === []) {
+            return [];
+        }
+
+        foreach ($addresses as $address) {
+            if (! $this->isLoopbackIp($address)) {
+                return [];
+            }
+        }
+
+        $ports = array_unique(array_filter([$parts['port'] ?? null, 80, 443]));
+
+        return [
+            'verify' => false,
+            'curl' => [
+                CURLOPT_RESOLVE => array_map(
+                    static fn (int $port): string => "{$host}:{$port}:{$addresses[0]}",
+                    $ports,
+                ),
+            ],
+        ];
+    }
+
+    /**
+     * IP 가 루프백 대역(127.0.0.0/8, ::1)인지 판정합니다.
+     *
+     * @param  string  $ip  IP 주소
+     * @return bool 루프백이면 true
+     */
+    private function isLoopbackIp(string $ip): bool
+    {
+        return $ip === '::1' || str_starts_with($ip, '127.');
     }
 }

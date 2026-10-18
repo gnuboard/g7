@@ -13,55 +13,23 @@ return [
         'language_pack' => '언어팩',
     ],
 
-    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (#153)
-    'dependency_types' => [
-        'module' => '모듈',
-        'plugin' => '플러그인',
-        'template' => '템플릿',
-    ],
-
-    // 멈춘 업데이트 정리 안내 (7.1.1)
-    'stuck_update_recovered' => '멈춘 업데이트를 정리했습니다(되돌린 상태: :status): :name — 업데이트가 도중에 끝나 「업데이트 중」에 남아 있던 상태를 되돌렸습니다.',
-    'stuck_update_activate_hint' => '정리한 확장은 비활성 상태입니다. 다시 켜려면: :command',
-    // 업데이트가 판 전환(파일·DB 판·업그레이드 스텝)을 끝내지 못한 채 멈춘 경우 (7.1.1)
-    'stuck_update_unfinished_hint' => '이 업데이트(:from → :to)는 끝나지 않았습니다 — 파일은 새 판으로 바뀌었을 수 있어 기록 판을 :from 으로 되돌렸습니다. 업데이트를 다시 실행하면 못 끝낸 단계만 이어서 마칩니다: :command',
-
     'errors' => [
         'state_contract_conflict' => "':name' 상태 계약은 이미 :owner 확장이 소유하고 있어 :extension 확장에서 같은 이름을 선언할 수 없습니다.",
         'core_version_mismatch' => ':extension (:type)에는 그누보드7 코어 버전 :required 이상이 필요합니다. (현재: :installed)',
-        'php_extension_missing' => ':name 확장을 쓰려면 서버에 PHP 확장(:extensions) 설치가 필요합니다. 설치 후 다시 시도하세요.',
         'version_check_failed' => '버전 검증에 실패했습니다.',
         'operation_in_progress' => '":name"에 대해 진행 중인 작업(:status)이 있어 요청을 처리할 수 없습니다.',
-        'operation_stuck' => '":name" 확장이 :minutes분 넘게 「업데이트 중」에 멈춰 있습니다. 업데이트가 도중에 끝난 경우라면 --force 로 다시 업데이트하면 정리한 뒤 업데이트를 마저 끝내고, 활성화하면 정리만 하고 켭니다(끝나지 않은 업데이트는 다시 실행하라고 안내합니다).',
         'update_already_running' => '":name" 업데이트가 이미 진행 중입니다. 끝난 뒤 다시 확인하세요.',
-        'operation_already_running' => '":name"에 다른 작업(설치·업데이트·활성화 등)이 진행 중입니다. 끝난 뒤 다시 시도하세요.',
-        'operation_lock_unavailable' => '작업 잠금 저장소(캐시)를 쓸 수 없어 ":name" 작업을 시작하지 않았습니다. 환경설정 > 드라이버의 캐시 상태를 확인한 뒤 다시 시도하세요.',
         'zip_missing_manifest' => 'ZIP 내부에서 :file 매니페스트를 찾을 수 없습니다: :zip',
         'zip_invalid_manifest' => 'ZIP 내부의 :file 매니페스트를 JSON 으로 해석할 수 없습니다.',
         'zip_identifier_mismatch' => 'ZIP 매니페스트의 식별자가 대상 확장과 일치하지 않습니다. (기대: :expected, 실제: :actual)',
         'zip_missing_version' => 'ZIP 내부의 :file 매니페스트에 version 필드가 없습니다.',
         'not_found' => '확장(:identifier) 을 찾을 수 없습니다.',
         'cascade_dependency_failed' => '동반 설치할 :type (:identifier) 의 설치에 실패했습니다: :message',
-        'unknown_error' => '알 수 없는 오류가 발생했습니다.',
-        'cascade_dependency_activation_failed' => '의존 확장 :identifier 활성화에 실패했습니다: :reason',
-        'cascade_dependencies_kept' => '함께 설치·활성화한 의존 확장은 되돌리지 않고 남겨 두었습니다: :list',
-        'cascade_dependency_unmet_list' => '필요한 의존 확장이 충족되지 않았습니다 — :list',
-        'cascade_dependency_cycle' => '의존 관계가 순환합니다: :cycle',
-        'cascade_dependency_not_found' => ':required_by 에 필요한 의존 확장(:identifier)을 찾을 수 없습니다.',
-        'cascade_dependency_version' => ':required_by 에 필요한 :identifier 의 버전(:required)을 현재 버전(:version)이 충족하지 않습니다.',
-        'cascade_permission_denied' => '함께 설치할 :type(:identifier)을 설치하거나 활성화할 권한이 없습니다.',
+        'cascade_permission_denied' => '함께 설치할 :type (:identifier) 을(를) 설치하거나 활성화할 권한이 없습니다.',
         'invalid_type' => '유효하지 않은 확장 타입입니다.',
         'not_auto_deactivated' => '이 확장은 코어 버전 호환성 문제로 자동 비활성화된 상태가 아닙니다.',
-        'recover_dependencies_unmet' => '복구하지 못했습니다 — 필요한 확장이 조건에 맞지 않습니다: :list',
-        'recover_failed' => '복구하지 못했습니다 — :reason',
         'hidden_extension' => '내부용(hidden) 확장은 사용자 노출 대상이 아닙니다.',
         'internal_error' => '서버 내부 오류가 발생했습니다. 자세한 내용은 서버 로그를 확인하세요.',
-        'seeder_failed' => '기본 데이터 생성(:seeder)에 실패해 설치를 취소했습니다: :message',
-        'seeder_class_not_found' => '시더 클래스를 찾을 수 없습니다',
-        'upgrade_step_class_missing' => '업그레이드 단계 :file 의 클래스 :class 를 찾을 수 없어 업데이트를 중단했습니다',
-        'upgrade_step_interface_missing' => '업그레이드 단계 :file 의 클래스 :class 가 :interface 를 구현하지 않아 업데이트를 중단했습니다',
-        'entry_class_missing_on_update' => '새 버전 :file 의 클래스 :class 를 찾을 수 없어 업데이트를 중단했습니다',
-        'unsafe_archive_entry' => '압축 파일에 허용되지 않는 경로가 있습니다: :entry',
     ],
 
     'warnings' => [
@@ -72,71 +40,6 @@ return [
         'dependency_not_installed' => ':identifier :required 버전이 필요한데 설치되어 있지 않습니다',
         'dependency_inactive' => ':identifier 확장이 꺼져 있습니다(필요 버전 :required)',
         'dependency_summary' => '단, 의존 확장이 요구 조건에 못 미칩니다 — :list. 해당 확장도 업데이트하거나 켜세요.',
-        'dependent_unmet' => ':dependent_type(":dependent")이 요구하는 ":identifier" :required 를 이제 충족하지 못합니다(현재 :state).',
-        'dependent_template_503' => '이 템플릿을 쓰는 화면이 503 안내로 바뀝니다.',
-        'archive_backslash_normalized' => '역슬래시(\\) 경로 :count개를 / 로 정규화해 풀었습니다',
-        'seeder_class_name_mismatch' => '시더 파일 :file 은 있지만 추론한 클래스 :class 를 찾을 수 없어 건너뛰었습니다',
-        'storage_cleanup_incomplete' => '확장 저장 폴더를 모두 지우지 못했습니다 — 서버 파일 권한을 확인한 뒤 남은 파일을 직접 지우세요',
-        'completed_with_warnings' => '⚠️ 완료했지만 일부 항목이 실패했습니다 (경고 :count건)',
-        'completed_with_notices' => 'ℹ️ 완료했습니다 — 확인할 안내 :count건',
-        'column_step' => '단계',
-        'column_target' => '대상',
-        'column_message' => '사유',
-        'composer_install_failed' => 'Composer 의존성 설치에 실패했습니다 — 확장 폴더에서 composer install 을 수동으로 실행하세요',
-        'php_extension_missing' => '서버에 이 확장이 필요로 하는 PHP 확장(:extensions)이 없습니다 —해당 기능이 동작하지 않을 수 있으니 설치하세요',
-        'search_scopes_not_object' => 'search_scopes 선언이 객체 모양이 아니라 전부 무시했습니다',
-        'search_scopes_invalid_name' => '범위 이름 형식이 틀려 버렸습니다(영문 소문자로 시작, 소문자·숫자·_·- 50자 이내): :names',
-        'search_scopes_invalid_definition' => '범위 선언이 객체가 아니라 버렸습니다: :names',
-        'search_scopes_max_count_out_of_range' => '보관 개수가 :min~:max 사이 정수가 아니라 무시하고 기본값을 씁니다: :items',
-        'search_scopes_retention_days_out_of_range' => '보관 기한이 :min~:max일 사이 정수가 아니라 무시하고 기본값을 씁니다: :items',
-        'necessary_storage_not_object' => 'necessary_storage 선언이 객체 모양이 아니라 전부 무시했습니다',
-        'necessary_storage_invalid_scope' => '저장소 종류가 localStorage·sessionStorage·cookie 가 아니거나 키 목록이 배열이 아니라 버렸습니다: :names',
-        'necessary_storage_invalid_key' => '저장 키 형식이 틀려 버렸습니다(영문·숫자·_ . : @ + - 로 128자 이내, 앞부분 맞춤은 끝에 * 하나): :items',
-        'declaration_hint' => '확장이 선언한 값이 틀린 것이라 다시 실행해도 바뀌지 않습니다 — 확장 개발자에게 알리세요',
-    ],
-
-    // 필수 의존(dependencies) 미충족 사유 — 복구 실패·연쇄 설치 실패·CLI 가 같은 문장을 쓴다 (7.1.4)
-    'dependency_status' => [
-        'label' => ':name(:identifier)',
-        'not_installed' => '미설치',
-        'inactive' => '꺼짐',
-        'version_mismatch' => '버전 미달 :installed → :required',
-    ],
-
-    // 선택 연동(integrations) 안내 — 막지 않고 알리기만 한다 (7.1.4)
-    'integrations' => [
-        'notice_not_installed' => ':name 미설치',
-        'notice_inactive' => ':name 꺼짐',
-        'notice_version_mismatch' => ':name :required 버전 필요(지금 :installed)',
-        'notice_summary' => '함께 쓰면 연동되는 확장 중 연동이 꺼진 것이 있습니다 — :list. 설치·활성화·업데이트하면 연동됩니다.',
-        'cascade_failed' => '함께 설치·활성화하지 못해 건너뛴 확장(:name): :message',
-        'requires_no_permission' => '이 연동에 필요한 확장(:identifier)을 설치하거나 활성화할 권한이 없습니다',
-        'states' => [
-            'not_installed' => '미설치',
-            'inactive' => '비활성',
-            'version_mismatch' => '버전 미달',
-        ],
-        'console' => [
-            'notices_title' => '함께 쓰면 연동되는 확장 안내 — 없어도 이 확장은 동작하고, 설치·활성화·업데이트하면 연동됩니다',
-            'integrated_by_title' => '이 확장과 연동 중인 확장 — 그 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다',
-            'column_type' => '유형',
-            'column_extension' => '확장',
-            'column_state' => '상태',
-            'column_required' => '요구 버전',
-            'column_installed' => '설치 버전',
-        ],
-    ],
-
-    // 설치 요청 동반 항목의 검증 필드 이름 (7.1.4)
-    'install_fields' => [
-        'dependencies' => '함께 설치할 의존 확장',
-        'dependency_type' => '의존 확장 종류',
-        'dependency_identifier' => '의존 확장 식별자',
-        'integrations' => '함께 설치할 연동 확장',
-        'integration_type' => '연동 확장 종류',
-        'integration_identifier' => '연동 확장 식별자',
-        'language_packs' => '함께 설치할 언어팩',
-        'language_pack' => '언어팩 식별자',
     ],
 
     'alerts' => [
@@ -180,20 +83,6 @@ return [
     ],
 
     'commands' => [
-        // 설치 명령의 연쇄 설치 옵션 (--with-dependencies · --with-language-packs)
-        'cascade' => [
-            'dependency_unmet' => '의존 확장 미충족: :identifier (필요 :required, 현재 :state)',
-            'use_with_dependencies' => '--with-dependencies 로 함께 설치·활성화할 수 있습니다.',
-            'state_install_activate' => '미설치',
-            'state_activate' => '비활성',
-            'dependency_step' => '의존 확장 :identifier — :action 상태라 함께 처리합니다 (필요: :required_by)',
-            'dependencies_done' => '의존 확장 처리 완료 — 설치 :installed건, 활성화 :activated건',
-            'language_pack_failed' => '언어팩 :identifier 설치 실패: :reason',
-            'language_pack_skipped' => '언어팩을 건너뜁니다(:identifier): :reason',
-            'language_pack_awaiting' => '언어팩(:identifier)은 대상 확장을 활성화할 때 함께 켜집니다.',
-            'language_packs_done' => '언어팩 :count건 설치',
-            'language_pack_not_candidate' => '함께 설치할 수 있는 언어팩이 아닙니다: :list',
-        ],
         'clear_cache_success' => '확장 버전 검증 캐시가 삭제되었습니다.',
 
         // module:update · plugin:update · template:update 공통 옵션 검증·ZIP 안내
@@ -214,7 +103,6 @@ return [
 
         // core:update 의 번들 확장 일괄 업데이트 프롬프트 · core:execute-bundled-updates
         'bundled_update' => [
-            'lock_unavailable_aborted' => '작업 잠금 저장소(캐시)를 쓸 수 없어 일괄 업데이트를 중단했습니다 — 남은 :count건을 건너뛰었습니다. 캐시 상태를 확인한 뒤 다시 실행하세요.',
             'up_to_date' => '활성 확장이 최신 번들과 일치합니다.',
             'detected' => '번들에 새 버전이 포함된 확장이 감지되었습니다:',
             'detected_items' => [
@@ -225,7 +113,6 @@ return [
             ],
             'confirm_proceed' => '일괄 업데이트를 진행하시겠습니까?',
             'skipped' => '일괄 업데이트를 건너뜁니다.',
-            'dependency_cycle' => '의존 관계가 순환합니다 — 이 구간은 원래 순서로 업데이트합니다: :cycle',
             'strategy_question' => '전역 레이아웃 전략을 선택하세요',
             'strategy_options' => [
                 'overwrite' => '모든 레이아웃을 번들로 덮어쓰기',
@@ -256,128 +143,10 @@ return [
             'manifest_parse_failed' => '매니페스트 JSON 파싱 실패: :path',
             'lang_pack_phase_in_process' => '언어팩 단계를 새 프로세스로 분리하지 못해 이 프로세스에서 진행합니다 — 확장 데이터의 번역이 비면 끝난 뒤 php artisan language-pack:update <팩> --force 를 실행하세요.',
         ],
-        // `extension:composer-install`·`extension:update-autoload`·vendor 번들 명령 공통 출력
-        'composer_install' => [
-            'start' => '모든 확장의 Composer 의존성 설치 시작',
-            'section_modules' => '모듈',
-            'section_plugins' => '플러그인',
-            'done' => '모든 확장의 Composer 의존성 설치 완료',
-            'partial_failure' => '일부 확장의 Composer 의존성 설치에 실패했습니다.',
-        ],
-        'update_autoload' => [
-            'generating' => '확장 오토로드 파일을 생성합니다...',
-            'generated' => '오토로드 파일이 성공적으로 생성되었습니다.',
-            'hooks_cache_regenerated' => '정적 훅 매핑 캐시가 재생성되었습니다.',
-            'failed' => '오토로드 파일 생성 중 오류가 발생했습니다: :error',
-        ],
-        'vendor_bundle_action' => [
-            'no_build_targets' => '빌드 대상이 없습니다.',
-            'no_verify_targets' => '검증 대상이 없습니다.',
-            'output_path_missing' => ':label: 출력 경로 없음',
-            'bundle_missing' => ':label: 번들 없음 (스킵)',
-            'verify_failed' => '검증 실패: :count 개',
-            'verify_passed' => '모든 번들이 무결성 검증을 통과했습니다.',
-            'building' => ':label 빌드 중...',
-            'skipped_no_dependencies' => ':label: 스킵 (외부 composer 의존성 없음)',
-            'skipped_not_installed' => ':label: 스킵 (확장이 설치되지 않음 — 먼저 module:install / plugin:install 필요)',
-            'skipped_reason' => ':label: 스킵 (:reason, :size, :count packages)',
-            'path_missing' => ':label: 경로 없음 (:path)',
-            'check_skipped_no_composer' => ':label: SKIPPED (composer.json 없음)',
-            'check_skipped_no_dependencies' => ':label: SKIPPED (외부 composer 의존성 없음)',
-            'stale' => ':label: STALE — 재빌드 필요',
-        ],
-        // `ext-static:*`·`ext-bundles:cleanup` 명령 출력
-        'ext_static_status' => [
-            'title' => '부트스트랩 리소스 정적 게시 상태',
-            'labels' => [
-                'process_user' => '실행 계정      :',
-                'version' => '현재 캐시 버전 :',
-                'base' => '게시 루트      :',
-                'tree_write' => '트리 쓰기      :',
-                'publish_state' => '게시 상태      :',
-                'manifest_files' => 'manifest 파일  :',
-                'published_at' => '게시 시각      :',
-                'retained_versions' => '잔존 버전      :',
-                'failure_reason' => '사유       :',
-                'failure_version' => '버전       :',
-                'failure_at' => '시각       :',
-                'failure_count' => '연속 실패  :',
-                'failure_message' => '상세       :',
-            ],
-            'values' => [
-                'enabled_on' => '활성 (게시함)',
-                'enabled_off' => '비활성 (게시 안 함)',
-                'writable_yes' => '가능',
-                'writable_no' => '불가',
-                'published' => '완료',
-                'not_published' => '미게시',
-                'files_count' => ':count건',
-                'failure_count' => ':count회',
-                'none' => '(없음)',
-            ],
-            'root_warning' => 'root 로 실행 중 — 이 계정으로 게시하면 캐시 폴더가 root 소유가 될 수 있습니다. 웹 계정으로 실행하세요: :command',
-            'kill_switch_off' => 'kill-switch 가 꺼져 있어 게시 상태는 점검하지 않습니다 (core.static_cache.enabled).',
-            'failure_title' => '최근 게시 실패',
-            'problems' => [
-                'tree_not_writable' => '게시 트리에 쓸 수 없습니다 (:path, owner=:owner, perms=:perms). 웹 계정이 재게시할 수 없어 모든 요청이 API 폴백으로 동작합니다.',
-                'manifest_empty' => 'manifest 에 기록된 파일이 0건입니다 — 게시가 비어 있습니다.',
-                'not_published' => '현재 버전(:version)이 게시되지 않았습니다. 다음 웹 렌더의 자가 치유가 시도하며, 즉시 게시하려면 웹 계정으로 `:command` 를 실행하거나 관리자 > 환경설정 > 일반 의 「지금 다시 만들기」를 사용하세요.',
-                'failure_marker' => '게시 실패 마커가 남아 있습니다 (사유: :reason).',
-                'versions_accumulated' => '게시 버전이 :count개 누적됐습니다 (정상은 현재+직전 2개). 삭제가 실패하고 있을 수 있습니다 — 소유권/권한을 확인하세요.',
-            ],
-            'ok' => '이상 없음.',
-            'publish_hint_unknown_web' => 'sudo -u <웹서버계정> :command (웹서버 계정은 storage 디렉토리 소유자로 확인)',
-            'hints' => [
-                'parent_not_writable' => '게시 트리 권한 문제입니다. CLI 계정과 웹 계정이 그룹을 공유하고 `public/build` 가 그룹 쓰기(g+w)인지 확인하세요. 수동 게시는 웹 계정으로: :command',
-                'write_failed' => '쓰기 도중 실패했습니다. 디스크 여유 공간과 quota 를 확인하세요.',
-                'lock_unavailable' => '캐시 락을 얻지 못했습니다. 캐시 저장소(파일 캐시 디렉토리 권한 등)를 확인하세요.',
-                'default' => '상세 메시지를 확인하세요.',
-            ],
-        ],
-        'ext_static_publish' => [
-            'disabled' => '정적 게시가 비활성화되어 있습니다 (G7_STATIC_CACHE=false). 게시를 건너뜁니다.',
-            'root_warning' => 'root 로 실행 중입니다 — 이 계정으로 게시하면 캐시 폴더·병합 번들이 root 소유가 되어 이후 웹 요청이 실패할 수 있습니다.',
-            'run_as_web' => '웹 계정으로 실행하세요: :command',
-            'failed' => '정적 게시에 실패했습니다. 로그를 확인하세요 — 사이트는 API 폴백으로 정상 동작합니다.',
-            'done' => '부트스트랩 리소스 정적 게시가 완료되었습니다.',
-        ],
-        'ext_static_cleanup' => [
-            'done' => '오래된 정적 게시 디렉토리 :count건이 삭제되었습니다.',
-        ],
-        'ext_bundles_cleanup' => [
-            'done' => '오래된 확장 번들 :count건이 삭제되었습니다. (현재 version: :version)',
-        ],
-        // `ext:docgen` 명령 출력
-        'ext_docgen' => [
-            'conflict_check_dry_run' => '--check 와 --dry-run 은 함께 쓸 수 없습니다 (dry-run 은 검사를 수행하지 않습니다).',
-            'conflict_init_dry_run' => '--init 과 --dry-run 은 함께 쓸 수 없습니다 (dry-run 은 파일을 만들지 않습니다).',
-            'conflict_init_check' => '--init 과 --check 는 함께 쓸 수 없습니다 (check 는 파일을 만들지 않습니다).',
-            'no_extensions' => '범위 \':scope\' 에 해당하는 번들 확장이 없습니다.',
-            'dry_run_header' => ':count개 확장 (scope=:scope)',
-            'documents' => '문서 :count종: :list',
-            'surface' => '선언형 표면: :reason',
-            'created' => ':label 생성: :list',
-            'updated' => ':label 갱신: :list',
-            'missing_documents' => ':label 문서 없음: :list',
-            'missing_blocks' => ':label 자동 생성 블록 없음: :list',
-            'missing_sections' => ':label 필수 섹션 없음: :list',
-            'drifted_blocks' => ':label 블록 드리프트(코드 실측과 불일치): :list',
-            'orphan_blocks' => ':label 갱신 대상이 아닌 자동 생성 블록(고아): :list',
-            'unfilled' => ':label 미채움 마커 :total건: :list',
-            'surface_error' => ':label 선언형 표면 수집 실패 :getter(): :message',
-            'malformed' => '[:type] :id — :manifest 를 읽지 못해 검사 대상에서 빠졌습니다 (:reason). "확장이 없음" 이 아니라 "읽지 못함" 입니다.',
-            'summary' => ':count개 확장 처리 (scope=:scope, mode=:mode) — 이슈 :issues건',
-            'check_hint' => '`php artisan ext:docgen --init` 으로 골격을 만들고, `php artisan ext:docgen` 으로 블록을 갱신하세요.',
-        ],
-        // module:build · plugin:build · template:build 공통 빌드 산출물 정리 안내
-        'prune_build_output' => [
-            'active_dir_skipped' => '활성 디렉토리 빌드 — 이전 산출물을 정리하지 않습니다 (정리하면 빌드 완료까지 서빙이 끊깁니다). stale 산출물이 누적될 수 있으니 개발은 _bundled 에서 하고 활성 반영은 update 커맨드로 하세요.',
-        ],
     ],
 
     // 확장 설치·제거·업데이트 진행 표시 (매니저 onProgress 콜백 단계 문구)
     'progress' => [
-        'starting' => '시작 중...',
         'move_blocked_in_place' => '디렉토리 이동이 차단되어 파일 단위 제자리 교체로 전환합니다...',
         'move_blocked_copy' => '디렉토리 이동이 차단되어 파일 단위 복사로 전환합니다...',
         'vendor_copy_keep' => 'vendor 디렉토리 복사 중 (기존 유지)...',

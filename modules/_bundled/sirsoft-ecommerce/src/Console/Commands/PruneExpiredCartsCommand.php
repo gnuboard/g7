@@ -35,11 +35,6 @@ class PruneExpiredCartsCommand extends Command
      */
     protected $description = '보관기간이 지난 장바구니 항목을 자동 삭제합니다.';
 
-    /**
-     * 커맨드를 생성합니다.
-     *
-     * @param  CartRepositoryInterface  $cartRepository  보관기간이 지난 장바구니 항목을 삭제하는 저장소
-     */
     public function __construct(
         protected CartRepositoryInterface $cartRepository
     ) {
@@ -57,7 +52,7 @@ class PruneExpiredCartsCommand extends Command
 
         // 보관기간 미설정/0 이하 → 만료 비활성 정책 (전체 삭제 사고 차단)
         if ($days < 1) {
-            $this->info(__('sirsoft-ecommerce::messages.console.prune_expired_carts.disabled'));
+            $this->info('장바구니 보관기간이 비활성화되어 있습니다. (cart_expiry_days < 1)');
 
             return Command::SUCCESS;
         }
@@ -69,14 +64,14 @@ class PruneExpiredCartsCommand extends Command
 
         if ($isDryRun) {
             $targetCount = Cart::where('updated_at', '<', $threshold)->count();
-            $this->info('[DRY RUN] '.__('sirsoft-ecommerce::messages.console.prune_expired_carts.dry_run', ['days' => $days, 'count' => $targetCount]));
+            $this->info("[DRY RUN] 보관기간({$days}일) 만료 대상 장바구니 항목: {$targetCount}건");
 
             return Command::SUCCESS;
         }
 
         $deleted = $this->cartRepository->pruneExpiredItems($days, $limit > 0 ? $limit : null);
 
-        $this->info(__('sirsoft-ecommerce::messages.console.prune_expired_carts.done', ['days' => $days, 'count' => $deleted]));
+        $this->info("보관기간({$days}일) 만료 장바구니 항목 {$deleted}건을 삭제했습니다.");
 
         Log::info('PruneExpiredCartsCommand: 장바구니 만료 항목 정리 완료', [
             'days' => $days,

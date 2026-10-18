@@ -1,12 +1,11 @@
 {
-    "comment": "문서 결과 묶음 — 전체 탭에서는 다섯 건 미리보기 + «전체보기», 문서 탭에서는 전부를 펼친다. 한 파일이 두 쓰임을 겸한다. 페이지 모듈이 꺼져 있으면 묶음째 숨긴다.",
+    "comment": "문서 결과 묶음 — 전체 탭에서는 다섯 건 미리보기 + «전체보기», 문서 탭에서는 전부를 펼친다. 한 파일이 두 쓰임을 겸한다.",
     "meta": {
         "is_partial": true,
         "description": "페이지 섹션 (전체 탭: 5개 미리보기, 페이지 탭: 전체 목록)"
     },
     "type": "basic",
     "name": "Div",
-    "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
     "props": {
         "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
     },
@@ -57,7 +56,7 @@
                 {
                     "comment": "전체보기 버튼",
                     "type": "basic",
-                    "name": "A",
+                    "name": "Button",
                     "if": "{{(searchResults?.data?.pages_count ?? 0) > 0}}",
                     "actions": [
                         {
@@ -65,6 +64,7 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
+                                "path": "/search",
                                 "mergeQuery": true,
                                 "query": {
                                     "type": "pages",
@@ -76,8 +76,6 @@
                         }
                     ],
                     "props": {
-                        "href": "/search?type=pages&board_slug=&page=&cursor=",
-                        "mergeQuery": true,
                         "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                     },
                     "children": [
@@ -119,29 +117,22 @@
                     }
                 },
                 {
-                    "comment": "카드 전체가 링크다 — 하이라이트 HTML 을 링크 밖에 두려고 빈 링크가 카드를 덮는다(이름은 일반 글자 제목). 초점 테두리는 안쪽(ring-inset) — 바깥 목록 상자가 overflow:hidden 이라 바깥 테두리는 잘린다",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(페이지) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{page.url}}"
+                            }
+                        }
+                    ],
                     "props": {
-                        "className": "relative block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                        "className": "block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                     },
                     "children": [
-                        {
-                            "type": "basic",
-                            "name": "A",
-                            "actions": [
-                                {
-                                    "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(페이지) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
-                                    "type": "click",
-                                    "handler": "navigate"
-                                }
-                            ],
-                            "props": {
-                                "href": "{{page.url}}",
-                                "aria-label": "{{page.title ?? ''}}",
-                                "className": "absolute inset-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
-                            }
-                        },
                         {
                             "type": "composite",
                             "name": "HtmlContent",
@@ -222,7 +213,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                        "className": "mt-1 text-xs text-gray-400 dark:text-gray-500"
                     },
                     "text": "$t:search.failed.suggestion"
                 }

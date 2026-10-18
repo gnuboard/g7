@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use App\Models\Role;
 use App\Models\User;
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 
 class NotificationTemplateResource extends BaseApiResource
@@ -69,8 +68,9 @@ class NotificationTemplateResource extends BaseApiResource
                     ->keyBy('identifier');
 
                 $labels = array_map(
-                    static fn (string $identifier): string => LocalizedValue::pick($names->get($identifier)?->name, $locale, anyAsLast: false)
-                        ?? $identifier,
+                    static fn (string $identifier): string => ($names[$identifier]->name[$locale]
+                        ?? $names[$identifier]->name['ko']
+                        ?? $identifier),
                     $identifiers,
                 );
 

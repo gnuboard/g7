@@ -8,10 +8,6 @@ export type ExtensionViewMode = 'gallery' | 'list';
 export interface ExtensionDependency {
     type?: string;
     name?: string;
-    /** 지금 상태로 이 의존을 충족하지 못함(미설치·꺼짐·버전 미달) — 빨간 글자·경고 아이콘으로 그린다 */
-    unmet?: boolean;
-    /** 미충족 사유 문구 — 툴팁(`title`)과 보조기기 이름에 쓴다 (예: 「버전 미달 0.1.0 → >=9.9.9」) */
-    reason?: string;
 }
 /** 확장 배지 한 건 — 상태·호환성처럼 이름 옆에 붙는 표식. */
 export interface ExtensionBadgeSpec {
@@ -53,35 +49,14 @@ export interface ExtensionCardItem {
         variant?: 'solid' | 'outline';
         disabled?: boolean;
         title?: string;
-        /**
-         * 주 단추가 옮겨 가는 주소(예: 활성 템플릿의 시각 편집기) — 있으면 `<a href>` 로 그린다(#757). 보통 클릭은 onPrimaryAction,
-         * `target: '_blank'` 면 보통 클릭도 브라우저가 새 창으로 열고 onPrimaryAction 은 부르지 않는다(종전 openWindow 대체).
-         * 설치처럼 옮기지 않는 단추는 비워 둔다.
-         */
-        href?: string;
-        /** 링크를 여는 창 — `_blank` 면 새 창(`rel="noopener noreferrer"`) */
-        target?: string;
     };
     secondaryAction?: {
         label: string;
         icon?: IconName;
         disabled?: boolean;
         title?: string;
-        /**
-         * 보조 단추가 옮겨 가는 주소(예: 레이아웃 편집) — 있으면 `<a href>` 로 그려 새 탭으로 열 수 있다(#757).
-         * 보통 클릭은 지금처럼 onSecondaryAction. 비활성이면 종전 단추다.
-         */
-        href?: string;
-        /** 링크를 여는 창 — `_blank` 면 새 창(`rel="noopener noreferrer"`) */
-        target?: string;
     };
     actions?: ActionMenuItem[];
-    /**
-     * 카드 이동 주소 — 있으면 카드를 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
-     * 보통 클릭은 종전처럼 onItemClick(없으면 SPA 이동), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
-     * 없으면 종전처럼 `role="button"` 카드다.
-     */
-    href?: string;
 }
 export interface ExtensionCardGridProps {
     items?: ExtensionCardItem[];
@@ -103,12 +78,6 @@ export interface ExtensionCardGridProps {
     alwaysShowPagination?: boolean;
     paginationInfoText?: string;
     onPageChange?: (page: number) => void;
-    /**
-     * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/modules?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
-     */
-    pageHref?: string;
-    /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
-    pageHrefMergeQuery?: boolean;
     onItemClick?: (row: any) => void;
     onToggle?: (checked: boolean, row: any) => void;
     onPrimaryAction?: (row: any) => void;
@@ -119,12 +88,6 @@ export interface ExtensionCardGridProps {
      * 서버가 토글을 거절해 원래 값이 그대로 돌아오는 경로(실패·의존 충돌 창 취소)에서 화면이 올려 준다.
      */
     resyncKey?: string | number;
-    /**
-     * 누른 스위치의 진행 표시를 재동기 신호(`resyncKey`)가 올 때까지 둔다 — 서버 값이 바뀌어도 끄지 않는다.
-     * 성공 뒤에도 후속 작업(확장 화면 파일 받기 등)이 이어지는 목록이 켜고, 그 작업이 끝난 뒤 신호를 올린다.
-     * 기본 false(서버 값이 바뀌면 끔).
-     */
-    holdUntilResync?: boolean;
     loading?: boolean;
     skeletonCount?: number;
     className?: string;

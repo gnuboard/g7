@@ -4,14 +4,11 @@ namespace App\Http\Middleware;
 
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
-use App\Exceptions\IdentityPolicyProviderUnavailableException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Models\IdentityPolicy;
 use App\Services\IdentityPolicyService;
-use App\Services\IdentityTokenAcceptanceService;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -44,13 +41,11 @@ class EnforceIdentityPolicy
      * @param  IdentityPolicyService  $policyService  정책 유스케이스 Service
      * @param  IdentityPolicyRepositoryInterface  $policyRepository  정책 Repository
      * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 이력 Repository (하위 호환 — 판정은 Service 로 옮겼다)
-     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  본인인증 결과 인정 서비스 (실패한 작업의 소비 되돌림 — 7.1.6)
      */
     public function __construct(
         protected IdentityPolicyService $policyService,
         protected IdentityPolicyRepositoryInterface $policyRepository,
         protected IdentityVerificationLogRepositoryInterface $logRepository,
-        protected IdentityTokenAcceptanceService $tokenAcceptance,
     ) {}
 
     /**
@@ -67,34 +62,11 @@ class EnforceIdentityPolicy
     {
         $policies = $this->resolvePolicies($request, $policyKey);
 
-        try {
-            foreach ($policies as $policy) {
-                $this->enforcePolicy($policy, $request);
-            }
-
-            $response = $next($request);
-        } catch (\Throwable $e) {
-            // 정책·작업이 예외로 끝나면 이 요청이 소비한 본인인증 결과를 돌려준다 — 고쳐서 다시 보낼 수 있게(7.1.6, D2).
-            // 뒤 정책이 지정 수단 사용 불가(503)로 끝난 경우도 같다 — 수단이 복구된 뒤 처음부터 다시 인증하지 않게.
-            if ($e instanceof IdentityVerificationRequiredException
-                || $e instanceof IdentityPolicyProviderUnavailableException
-                || $e instanceof ValidationException) {
-                $this->tokenAcceptance->releaseAccepted($request);
-            }
-
-            throw $e;
+        foreach ($policies as $policy) {
+            $this->enforcePolicy($policy, $request);
         }
 
-        // 작업이 입력 오류(422)나 다른 본인인증 요구(428)로 끝나면 결과를 돌려준다 — 작업 1건에 1번만 인정하되
-        // 실패한 작업은 작업으로 세지 않는다. 컨트롤러 안 훅 정책이 지정 수단 사용 불가(503)로 끝난 경우도
-        // 같다 — 라우터 파이프라인이 `$next` 안 예외를 응답으로 바꿔 위 catch 에 닿지 않으므로 응답에 붙은 예외로 판정한다(V5).
-        $responseException = $response->exception ?? null;
-        if (in_array($response->getStatusCode(), [422, 428], true)
-            || $responseException instanceof IdentityPolicyProviderUnavailableException) {
-            $this->tokenAcceptance->releaseAccepted($request);
-        }
-
-        return $response;
+        return $next($request);
     }
 
     /**

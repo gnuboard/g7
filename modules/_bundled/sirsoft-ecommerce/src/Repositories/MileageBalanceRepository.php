@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
-use App\Helpers\TimezoneHelper;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +17,19 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInt
  */
 class MileageBalanceRepository implements MileageBalanceRepositoryInterface
 {
+    /**
+     * 적립(잔액 증가) 유형 값 목록
+     *
+     * @var array<int, string>
+     */
+    private const EARN_TYPES = [
+        'purchase_earn',
+        'admin_earn',
+        'refund_restore',
+        'order_cancel_restore',
+        'refund_credit',
+    ];
+
     /**
      * 취소 상태 값 목록 (pending 집계 제외 대상)
      *
@@ -45,10 +57,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
                 'total_earned' => (float) $row->total_earned,
                 'total_used' => (float) $row->total_used,
                 'expiring_soon' => (float) $row->expiring_soon,
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'expiring_date' => $row->expiring_date?->toIso8601String(),
-                // 마이페이지 카드 표시용 — 보는 사람 날짜
-                'expiring_date_formatted' => TimezoneHelper::toUserDateString($row->expiring_date),
             ];
         }
 
@@ -69,9 +78,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
                 $earliest = $row->expiring_date;
             }
         }
-        // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
         $summary['expiring_date'] = $earliest?->toIso8601String();
-        $summary['expiring_date_formatted'] = TimezoneHelper::toUserDateString($earliest);
         $summary['by_currency'] = $byCurrency;
 
         return $summary;
@@ -90,7 +97,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
 
             $totalEarned = (float) MileageTransaction::query()
                 ->forUserCurrency($userId, $cur)
-                ->whereIn('type', MileageTransactionTypeEnum::earningValues())
+                ->whereIn('type', self::EARN_TYPES)
                 ->sum('amount');
 
             $totalUsed = (float) abs((float) MileageTransaction::query()
@@ -221,7 +228,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
                 $q->select(DB::raw(1))
                     ->from("{$transactionsTable} as tx")
                     ->whereColumn('tx.order_option_id', 'opt.id')
-                    ->whereIn('tx.type', MileageTransactionTypeEnum::earningValues());
+                    ->whereIn('tx.type', self::EARN_TYPES);
             })
             ->sum('opt.subtotal_earned_points_amount');
     }
@@ -295,7 +302,6 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
             'total_used' => 0.0,
             'expiring_soon' => 0.0,
             'expiring_date' => null,
-            'expiring_date_formatted' => null,
         ];
     }
 

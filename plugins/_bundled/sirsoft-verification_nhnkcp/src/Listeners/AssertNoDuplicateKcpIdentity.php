@@ -3,13 +3,9 @@
 namespace Plugins\Sirsoft\VerificationNhnkcp\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use App\Services\IdentityPolicyService;
-use App\Services\IdentityTokenAcceptanceService;
-use Illuminate\Auth\Access\AuthorizationException;
 use Plugins\Sirsoft\VerificationNhnkcp\Enums\KcpDuplicateField;
 use Plugins\Sirsoft\VerificationNhnkcp\Exceptions\IdentityDuplicateException;
 use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
-use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityClaimRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityLogQueryRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpDuplicateIdentityChecker;
 
@@ -17,12 +13,9 @@ use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpDuplicateIdentityChecker;
  * 가입 직전 동일인 중복 가입 차단 listener (권위 게이트).
  *
  * 흐름 (core.auth.before_register):
- *  1. 코어 AssertIdentityVerifiedBeforeRegister (priority 10) 가 토큰 검증 + 1회 인정(정책이 있을 때)
- *  2. 본 listener (priority 20) 가 같은 토큰을 「KCP 결과·가입 이메일」 결박으로 인정받아(같은 요청에서 이미 인정됐으면
- *     그 결과를 돌려받는다, 1.1.4) metadata 의 di_hash/ci_hash 회수 → 동일 hash record·선점이 있으면 IdentityDuplicateException
- *  3. 실제 선점은 가입 트랜잭션 안의 ClaimKcpIdentityOnRegistering 이 한다(동시 가입 경합 차단 — KVE-2026-3192)
- *
- * 가입 정책이 KCP 를 지정했는데 다른 수단의 결과가 오면 거부한다(fail-closed, KVE-2026-3188 동형 — 1.1.4).
+ *  1. 코어 AssertIdentityVerifiedBeforeRegister (priority 10) 가 토큰 검증 + consume
+ *  2. 본 listener (priority 20) 가 같은 토큰으로 로그를 재조회 → metadata 의 di_hash/ci_hash 회수
+ *     → 동일 hash record 가 있으면 IdentityDuplicateException
  *
  * 인증 시점(KcpIdentityProvider::verify)에도 동일 판정을 수행해 사용자에게 조기 안내하지만,
  * 실제 가입을 막는 최종 게이트는 본 listener 다. 두 지점은 KcpDuplicateIdentityChecker 를
@@ -40,18 +33,12 @@ class AssertNoDuplicateKcpIdentity implements HookListenerInterface
     protected const PLUGIN_IDENTIFIER = 'sirsoft-verification_nhnkcp';
 
     /**
-     * @param  KcpIdentityLogQueryRepositoryInterface  $logQueryRepository  감사 metadata 기록
+     * @param  KcpIdentityLogQueryRepositoryInterface  $logQueryRepository  consumed_at 무관 verified 로그 조회
      * @param  KcpDuplicateIdentityChecker  $duplicateChecker  동일인 판정 Service
-     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  본인인증 결과 1회 인정(코어, 1.1.4)
-     * @param  IdentityPolicyService  $policyService  가입 정책 해석(코어)
-     * @param  KcpIdentityClaimRepositoryInterface  $claimRepository  동일인 선점표(1.1.4)
      */
     public function __construct(
         protected readonly KcpIdentityLogQueryRepositoryInterface $logQueryRepository,
         protected readonly KcpDuplicateIdentityChecker $duplicateChecker,
-        protected readonly IdentityTokenAcceptanceService $tokenAcceptance,
-        protected readonly IdentityPolicyService $policyService,
-        protected readonly KcpIdentityClaimRepositoryInterface $claimRepository,
     ) {}
 
     /**
@@ -75,36 +62,29 @@ class AssertNoDuplicateKcpIdentity implements HookListenerInterface
     /**
      * core.auth.before_register 훅 핸들러.
      *
-     * @param  mixed  ...$args  [0]=array $data 가입 요청 데이터, [1]=array 문맥
-     * @return void 반환값 없음
+     * @param  mixed  ...$args  [0]=array $data 가입 요청 데이터
      *
      * @throws IdentityDuplicateException 동일 DI/CI hash 매칭 시
-     * @throws AuthorizationException 가입 정책이 KCP 를 지정했는데 KCP 결과가 아닐 때
      */
     public function handle(...$args): void
     {
+        if (! (bool) g7_plugin_settings(self::PLUGIN_IDENTIFIER, 'duplicate_block_enabled', true)) {
+            return;
+        }
+
         $data = $args[0] ?? [];
         if (! is_array($data)) {
             return;
         }
-        $context = is_array($args[1] ?? null) ? $args[1] : [];
 
         $token = (string) ($data['verification_token'] ?? '');
-        $email = (string) ($data['email'] ?? '');
-        $targetHash = $email !== '' ? hash('sha256', mb_strtolower($email)) : null;
-
-        // KCP 결과·가입 이메일 결박으로만 인정한다 — 다른 수단의 결과·다른 이메일로 받은 결과는 null
-        $log = $token !== ''
-            ? $this->tokenAcceptance->accept($token, 'signup', KcpIdentityProvider::PROVIDER_ID, $targetHash)
-            : null;
-
+        $log = $this->logQueryRepository->findVerifiedLogForToken($token, 'signup');
         if ($log === null) {
-            $this->assertPolicyDoesNotRequireKcp($context);
-
             return;
         }
 
-        if (! (bool) g7_plugin_settings(self::PLUGIN_IDENTIFIER, 'duplicate_block_enabled', true)) {
+        // 본 plugin 책임 영역 분기 — 다른 provider 의 verify 는 통과시킨다.
+        if ((string) $log->provider_id !== KcpIdentityProvider::PROVIDER_ID) {
             return;
         }
 
@@ -120,11 +100,7 @@ class AssertNoDuplicateKcpIdentity implements HookListenerInterface
             return;
         }
 
-        $conflictColumn = $this->duplicateChecker->findConflictColumn($duplicateField, $hash)
-            // records 가 아직 없는 가입 직후(경합 창)라도 선점표에 있으면 조기 안내한다(1.1.4)
-            ?? ($this->claimRepository->findHolderId($duplicateField->value, $hash) !== null
-                ? $this->duplicateChecker->columnFor($duplicateField)
-                : null);
+        $conflictColumn = $this->duplicateChecker->findConflictColumn($duplicateField, $hash);
 
         if ($conflictColumn === null) {
             return;
@@ -142,30 +118,6 @@ class AssertNoDuplicateKcpIdentity implements HookListenerInterface
         }
 
         throw new IdentityDuplicateException($conflictColumn);
-    }
-
-    /**
-     * 가입 정책이 KCP 를 지정했는데 KCP 결과를 인정하지 못했으면 거부한다 (fail-closed).
-     *
-     * 코어 7.1.6 의 `AssertIdentityVerifiedBeforeRegister` 도 같은 판정을 한다 — 코어 listener 가 다른 구독자에 의해
-     * 빠지거나 순서가 바뀌어도 KCP 지정 가입이 다른 수단의 결과로 통과하지 못하게 이중으로 막는다.
-     *
-     * @param  array<string, mixed>  $context  훅 문맥
-     * @return void 반환값 없음
-     *
-     * @throws AuthorizationException 정책 지정 수단이 KCP 일 때
-     */
-    protected function assertPolicyDoesNotRequireKcp(array $context): void
-    {
-        $policy = $this->policyService->resolve(
-            scope: 'route',
-            target: 'api.auth.register',
-            context: array_merge($context, ['signup_stage' => 'before_submit']),
-        );
-
-        if ($policy && $policy->enabled && $this->policyService->requiredProviderId($policy) === KcpIdentityProvider::PROVIDER_ID) {
-            throw new AuthorizationException(__('identity.errors.invalid_verification_token'));
-        }
     }
 
     /**

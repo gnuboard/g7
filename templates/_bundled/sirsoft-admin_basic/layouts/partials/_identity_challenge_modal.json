@@ -239,7 +239,7 @@
                                             "params": {
                                                 "target": "global",
                                                 "identityChallenge.resending": true,
-                                                "identityChallenge.resendCooldown": 60,
+                                                "identityChallenge.resendCooldown": 30,
                                                 "identityChallenge.error": null,
                                                 "identityChallenge.code": ""
                                             }

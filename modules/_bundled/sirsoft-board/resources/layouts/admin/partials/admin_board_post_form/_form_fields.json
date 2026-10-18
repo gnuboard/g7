@@ -7,6 +7,13 @@
     "id": "post_form_fields",
     "type": "basic",
     "name": "Div",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
     "children": [
         {
             "id": "main_form_card",
@@ -310,12 +317,32 @@
                             "name": "Select",
                             "props": {
                                 "name": "category",
-                                "aria-label": "$t:sirsoft-board.admin.posts.form.category",
                                 "value": "{{_local.form?.category ?? ''}}",
-                                "options": "{{[{ value: '', label: $t('sirsoft-board.admin.posts.form.select_category') }].concat((form_meta?.data?.board?.categories ?? []).map(category => ({ value: category, label: category })))}}",
                                 "disabled": "{{_computed.isReadOnly || !!_local.form?.parent_id}}",
                                 "className": "text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                            }
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": ""
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.form.select_category"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "iteration": {
+                                        "source": "form_meta?.data?.board?.categories ?? []",
+                                        "item_var": "category"
+                                    },
+                                    "props": {
+                                        "value": "{{category}}"
+                                    },
+                                    "text": "{{category}}"
+                                }
+                            ]
                         }
                     ]
                 },
@@ -363,13 +390,10 @@
                             ]
                         },
                         {
-                            "comment": "편집기는 처음 세워질 때의 업로드 계약만 쓴다 — 계약을 담은 소스(표준 계약 엔드포인트 content_media_target, #887)와 form_meta 를 받기(실패 포함) 전에는 세우지 않는다(#883 실측: 먼저 서면 업로드 단추가 끝내 생기지 않음)",
                             "id": "content_section",
                             "type": "extension_point",
                             "name": "html_editor",
-                            "if": "{{form_meta !== undefined && content_media_target !== undefined}}",
                             "props": {
-                                "mediaUpload": "{{content_media_target?.data ? Object.assign({}, content_media_target.data, { fields: Object.assign({}, content_media_target.data.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}",
                                 "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
                                 "label": "$t:sirsoft-board.admin.posts.form.content",
                                 "rows": 15,

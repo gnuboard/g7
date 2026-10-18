@@ -56,7 +56,7 @@ final class ActionHandlerManifest
         // storage
         'saveToLocalStorage', 'loadFromLocalStorage',
         // i18n / event / script / reload
-        'setLocale', 'emitEvent', 'refreshConsent', 'recordSearchKeyword', 'loadScript', 'callExternal', 'callExternalEmbed',
+        'setLocale', 'emitEvent', 'refreshConsent', 'loadScript', 'callExternal', 'callExternalEmbed',
         'reloadExtensions', 'reloadRoutes', 'refresh', 'remount', 'reloadTranslations',
         'reloadModuleHandlers', 'reloadPluginHandlers',
     ];
@@ -79,9 +79,6 @@ final class ActionHandlerManifest
     private const TARGET_TOP_LEVEL_HANDLERS = [
         'apiCall', 'openModal', 'closeModal', 'setLocale', 'login', 'loginTwoFactor', 'loginTwoFactorResend',
         'loginPasswordChange', 'loginPasswordChangePostpone', 'logout',
-        // 엔진이 최상위 action.target 만 읽는다 — params 로 구우면 setError 는 대상을 잃고 showAlert 는
-        // `target.startsWith` TypeError 가 난다(7.1.3, 번들 사용 0 의 잠재 결함)
-        'setError', 'showAlert',
     ];
 
     /**
@@ -125,10 +122,6 @@ final class ActionHandlerManifest
         // engine-v1.68.0 — 진입점 액션에서 `event.stopPropagation()` 을 부른다.
         // 종전에는 엔진 소비처가 없어 죽은 키였고(S16 F4), 그래서 매니페스트에도 없었다.
         'stopPropagation',
-        // engine-v1.80.1 — 진입점 액션의 기본 동작 차단 방식. 생략 = 자동(실제 주소 `<a href>` 를
-        // 수정키·가운데 버튼 등 보통 클릭이 아니게 누르면 막지도 실행하지도 않아 새 탭으로 열린다),
-        // `true` = 언제나 막고 실행, `false` = 막지 않고 실행. 소비처: ActionDispatcher::createHandler.
-        'preventDefault',
     ];
 
     /**

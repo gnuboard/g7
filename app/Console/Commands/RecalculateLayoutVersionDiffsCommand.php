@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use Illuminate\Console\Command;
 
@@ -15,12 +14,15 @@ use Illuminate\Console\Command;
  */
 class RecalculateLayoutVersionDiffsCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'layout-versions:recalculate-diffs';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '레이아웃 버전의 변경 요약을 현재 라인 단위 알고리즘으로 재계산합니다';
 
     /**
      * Execute the console command.
@@ -30,11 +32,11 @@ class RecalculateLayoutVersionDiffsCommand extends Command
      */
     public function handle(LayoutVersionRepositoryInterface $repository): int
     {
-        $this->info(__('layouts.console.versions_recalculate_diffs.start'));
+        $this->info('레이아웃 버전 변경 요약 재계산을 시작합니다...');
 
         $updated = $repository->recalculateAllChangeSummaries();
 
-        $this->info(__('layouts.console.versions_recalculate_diffs.done', ['count' => $updated]));
+        $this->info("버전 {$updated}건의 변경 요약을 재계산했습니다.");
 
         return self::SUCCESS;
     }

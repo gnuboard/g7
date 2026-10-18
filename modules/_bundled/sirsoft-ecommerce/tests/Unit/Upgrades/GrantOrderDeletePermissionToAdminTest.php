@@ -9,10 +9,9 @@ use App\Models\Role;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Psr\Log\AbstractLogger;
-use Tests\Support\UpgradeFiles;
 
 /**
- * 1.3.0 업그레이드 — 「주문 삭제」 권한을 admin 역할에 붙이는 데이터 마이그레이션 테스트 (7.1.0 abilities 게이트)
+ * 1.3.0 업그레이드 — 「주문 삭제」 권한을 admin 역할에 붙이는 데이터 마이그레이션 테스트 (7.1.0 R4)
  *
  * 기존 설치본의 admin 역할이 새 권한을 갖게 되는지, 운영자가 직접 뺀 기록은 존중하는지,
  * 두 번 돌려도 같은 결과인지를 본다.
@@ -34,8 +33,8 @@ class GrantOrderDeletePermissionToAdminTest extends ModuleTestCase
     {
         parent::setUp();
 
-        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/15_GrantOrderDeletePermissionToAdmin.php');
+        require_once dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/15_GrantOrderDeletePermissionToAdmin.php';
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\GrantOrderDeletePermissionToAdmin';
         $this->migration = new $class;

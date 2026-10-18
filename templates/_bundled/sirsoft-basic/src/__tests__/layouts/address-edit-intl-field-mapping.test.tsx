@@ -10,8 +10,6 @@
  *       마이페이지 목록과 체크아웃 배송지 관리 모달의 "수정" 진입만 누락돼 있었다.
  *
  * @vitest-environment jsdom
- *
- * @scenario-manifest tests/scenarios/checkout-address-modal-real-structure.yaml
  */
 
 import { describe, it, expect } from 'vitest';
@@ -48,13 +46,7 @@ function collectNodes(node: unknown, predicate: (value: Record<string, unknown>)
   return found;
 }
 
-/**
- * editingAddress 를 객체로 설정하는 setState 액션을 찾는다.
- * 주문서 배송지 관리 창은 7.1.1 부터 창 고유 전역 이름 공간(`checkoutAddressModal.editing`, 점 경로 쓰기)에 쓴다 — 둘 다 같은 편집 대상으로 본다.
- */
-const editingOf = (params: Record<string, unknown>): unknown =>
-  params.editingAddress ?? params['checkoutAddressModal.editing'] ?? (params.checkoutAddressModal as Record<string, unknown> | undefined)?.editing;
-
+/** editingAddress 를 객체로 설정하는 setState 액션을 찾는다 */
 function findEditingAddressAssignments(layout: unknown): Record<string, unknown>[] {
   return collectNodes(layout, (node) => {
     if (node.handler !== 'setState') {
@@ -63,9 +55,7 @@ function findEditingAddressAssignments(layout: unknown): Record<string, unknown>
 
     const params = node.params as Record<string, unknown> | undefined;
 
-    const editing = params ? editingOf(params) : null;
-
-    return Boolean(editing && typeof editing === 'object');
+    return Boolean(params && typeof params.editingAddress === 'object' && params.editingAddress !== null);
   });
 }
 
@@ -77,13 +67,11 @@ function findEditingAddressAssignments(layout: unknown): Record<string, unknown>
  */
 function findEditAssignments(layout: unknown): Record<string, string>[] {
   return findEditingAddressAssignments(layout)
-    .map((assignment) => editingOf(assignment.params as Record<string, unknown>) as Record<string, string>)
+    .map((assignment) => (assignment.params as Record<string, unknown>).editingAddress as Record<string, string>)
     .filter((editingAddress) => typeof editingAddress.intl_city === 'string');
 }
 
 describe('배송지 수정 진입 — 해외 주소 필드 매핑', () => {
-  // @scenario close=none
-  // @effects edit_open_maps_intl_fields
   it('마이페이지 목록의 수정 액션이 intl_* 키를 city/state/postal_code 에서 채운다', () => {
     const editAssignments = findEditAssignments(mypageListPartial);
 
@@ -96,8 +84,6 @@ describe('배송지 수정 진입 — 해외 주소 필드 매핑', () => {
     expect(editingAddress.intl_postal_code).toContain('address.postal_code');
   });
 
-  // @scenario close=none
-  // @effects edit_open_maps_intl_fields
   it('마이페이지 목록의 수정 액션이 폼이 요구하는 나머지 키도 함께 채운다', () => {
     const editingAddress = findEditAssignments(mypageListPartial)[0];
 
@@ -111,8 +97,6 @@ describe('배송지 수정 진입 — 해외 주소 필드 매핑', () => {
     );
   });
 
-  // @scenario close=none
-  // @effects edit_open_maps_intl_fields
   it('체크아웃 배송지 관리 모달의 수정 액션도 동일하게 매핑한다', () => {
     const editAssignments = findEditAssignments(checkoutAddressModal);
 

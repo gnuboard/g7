@@ -35,6 +35,7 @@ effects:
   - deleted_board_and_posts_are_deindexed
   - post_hook_does_not_reindex_under_inactive_or_missing_board
   - incremental_store_matches_full_contributor
+  - incremental_index_follows_screen_url_filter
   - batch_deindex_removes_only_given_ids
   - batch_index_replaces_rows_and_keeps_per_resource_filter
   - reactivation_reindexes_in_batches

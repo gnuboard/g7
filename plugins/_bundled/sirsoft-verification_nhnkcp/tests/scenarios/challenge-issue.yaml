@@ -21,7 +21,6 @@ effects:
   - live_mode_uses_live_host_and_prefixed_site_cd
   - res_cd_error_raises_remote_call_exception_without_challenge_row
   - http_error_raises_remote_call_exception_without_challenge_row
-  - remote_failure_answers_503_with_retry_message
   - oversized_field_is_rejected_before_remote_call
   - identifier_recovered_from_url_encoded_key
 

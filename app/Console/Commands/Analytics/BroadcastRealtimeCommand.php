@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsConfig;
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\HookManager;
 use App\Services\Analytics\RealtimeService;
 use Illuminate\Console\Command;
@@ -21,14 +20,19 @@ use Illuminate\Console\Command;
  */
 class BroadcastRealtimeCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * 커맨드 이름 및 시그니처
      *
      * @var string
      */
     protected $signature = 'analytics:broadcast-realtime';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '현재 접속자 현황을 관리자 채널로 브로드캐스트합니다.';
 
     /**
      * 커맨드 실행
@@ -45,7 +49,7 @@ class BroadcastRealtimeCommand extends Command
             'data' => $snapshot,
         ]);
 
-        $this->info(__('analytics.console.broadcast_realtime.done', ['count' => $snapshot['count']]));
+        $this->info(sprintf('현재 접속자 %d명을 브로드캐스트했습니다.', $snapshot['count']));
 
         return self::SUCCESS;
     }

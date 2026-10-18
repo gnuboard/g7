@@ -16,13 +16,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface
  */
 class CategoryService
 {
-    /**
-     * 카테고리 서비스를 생성합니다.
-     *
-     * @param  CategoryRepositoryInterface  $repository  카테고리 저장소
-     * @param  CategoryImageRepositoryInterface  $imageRepository  카테고리 이미지 저장소
-     * @param  CategoryImageService  $categoryImageService  카테고리 이미지 서비스
-     */
     public function __construct(
         protected CategoryRepositoryInterface $repository,
         protected CategoryImageRepositoryInterface $imageRepository,
@@ -45,7 +38,7 @@ class CategoryService
 
         // hierarchical 플래그가 true이면 전체 트리 구조 반환
         if (! empty($filters['hierarchical'])) {
-            $categories = $this->repository->getTree(null, $filters['is_active'] ?? false);
+            $categories = Category::getTree(null, $filters['is_active'] ?? false);
         } elseif (! empty($filters['flat'])) {
             // flat 플래그가 true이면 평면 리스트 반환 (TagInput 등에 사용)
             $categories = $this->repository->getFlatList($filters, ['images']);
@@ -73,8 +66,7 @@ class CategoryService
     {
         HookManager::doAction('sirsoft-ecommerce.category.before_public_list');
 
-        // 상품 수는 공개 상품 목록과 같은 기준(전시 상품)으로 센다 — 숨긴 상품이 메뉴 숫자에 남지 않게
-        $categories = $this->repository->getTree(null, true, visibleProductsOnly: true);
+        $categories = Category::getTree(null, true);
 
         $categories = HookManager::applyFilters('sirsoft-ecommerce.category.filter_public_list_result', $categories);
 
@@ -93,8 +85,12 @@ class CategoryService
     {
         HookManager::doAction('sirsoft-ecommerce.category.before_public_show', $slug);
 
-        // 상품 수는 전시 상품만(자신·자식), 자식 수는 연결된 자식 전부(7.1.0 과 같음) — 집계 기준은 저장소가 갖는다
-        $category = $this->repository->findPublicBySlug($slug);
+        $category = $this->repository->findBySlug($slug, [
+            'activeChildren' => function ($query) {
+                $query->withCount('products')->orderBy('sort_order');
+            },
+            'images',
+        ], withCounts: true);
 
         if ($category && ! $category->is_active) {
             return null;
@@ -321,9 +317,6 @@ class CategoryService
 
     /**
      * 카테고리의 path를 업데이트합니다 (ID 포함).
-     *
-     * @param  Category  $category  path 를 갱신할 카테고리
-     * @return void 반환값 없음
      */
     private function updatePath(Category $category): void
     {
@@ -346,7 +339,6 @@ class CategoryService
      *
      * @param  Category  $category  기준 카테고리
      * @param  array<int, bool>  $visited  방문한 카테고리 ID 집합 (재귀 내부 전달용)
-     * @return void 반환값 없음
      */
     private function updateDescendantsPaths(Category $category, array $visited = []): void
     {
@@ -400,7 +392,6 @@ class CategoryService
      * 카테고리 순서 변경
      *
      * @param  array  $orders  순서 변경 데이터 [['id' => 1, 'parent_id' => null, 'sort_order' => 0], ...]
-     * @return void 반환값 없음
      */
     public function reorder(array $orders): void
     {

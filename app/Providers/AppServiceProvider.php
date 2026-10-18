@@ -130,7 +130,6 @@ class AppServiceProvider extends ServiceProvider
         // 로그인 라우트 per-IP 백업 throttle — 보안 환경설정의 per-account 잠금과 2중 방어.
         // 존재하지 않는 계정에 대한 brute-force / 동일 IP 의 다른 계정 시도까지 차단.
         $this->configureLoginRateLimiter();
-        $this->configureAccountRateLimiters();
     }
 
     /**
@@ -237,55 +236,6 @@ class AppServiceProvider extends ServiceProvider
                     )->withHeaders($headers);
                 });
         });
-    }
-
-    /**
-     * 비밀번호 찾기·재설정·회원가입 엔드포인트의 per-IP RateLimiter 를 등록합니다.
-     *
-     * - `auth-password-reset`: 비밀번호 찾기
-     * - `auth-password-reset-verify`: 재설정·토큰 확인 (찾기와 같은 설정값을 쓰되 따로 센다)
-     * - `auth-register`: 회원가입
-     *
-     * 허용량은 보안 환경설정(`security.password_reset_rate_limit_per_minute`·
-     * `security.register_rate_limit_per_minute`, 분당·1~1000)을 따른다. 설정 조회 실패·범위 밖 값은
-     * 기본값 10 으로 폴백한다 — 부팅 안전성 (마이그레이션 전 진입) 확보.
-     *
-     * 로그인 리미터(`auth-login`)와 카운터를 공유하지 않는다.
-     *
-     * @return void 반환값 없음
-     */
-    private function configureAccountRateLimiters(): void
-    {
-        $limiters = [
-            'auth-password-reset' => 'security.password_reset_rate_limit_per_minute',
-            'auth-password-reset-verify' => 'security.password_reset_rate_limit_per_minute',
-            'auth-register' => 'security.register_rate_limit_per_minute',
-        ];
-
-        foreach ($limiters as $name => $settingKey) {
-            RateLimiter::for($name, function (Request $request) use ($settingKey) {
-                try {
-                    $maxPerMinute = (int) g7_core_settings($settingKey, 10);
-                } catch (\Throwable $e) {
-                    $maxPerMinute = 10;
-                }
-
-                if ($maxPerMinute < 1 || $maxPerMinute > 1000) {
-                    $maxPerMinute = 10;
-                }
-
-                return Limit::perMinute($maxPerMinute)
-                    ->by($request->ip())
-                    ->response(function (Request $request, array $headers) {
-                        return ResponseHelper::error(
-                            'auth.too_many_attempts',
-                            429,
-                            null,
-                            ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
-                        )->withHeaders($headers);
-                    });
-            });
-        }
     }
 
     /**

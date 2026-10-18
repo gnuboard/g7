@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Concerns;
 
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -65,7 +65,7 @@ trait HandlesClaimPaymentCallbacks
             // 필터(이 플러그인 승인 리스너의 `voidApproval()`)가 맡아, API 승인 경로와 같은 한 구현이 된다.
             return ClaimPaymentCallback::approveAndRedirect($payment, $callback);
         } catch (LockTimeoutException) {
-            return redirect(SiteUrl::absolute($this->busyClaimCallbackRedirectUrl($payment)));
+            return redirect(ScreenUrl::toAbsolute($this->busyClaimCallbackRedirectUrl($payment)));
         } finally {
             $this->releaseOrderCallbackLock($lock);
         }

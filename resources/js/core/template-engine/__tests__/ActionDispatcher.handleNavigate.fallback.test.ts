@@ -27,7 +27,7 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn<(path: string, options?: unknown) => void>>;
+  let mockNavigate: ReturnType<typeof vi.fn>;
   let mockMatch: ReturnType<typeof vi.fn>;
   let mockWindowOpen: ReturnType<typeof vi.fn>;
   let mockLocationAssign: ReturnType<typeof vi.fn>;
@@ -35,7 +35,7 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
   let originalLocationAssign: typeof window.location.assign;
 
   beforeEach(() => {
-    mockNavigate = vi.fn<(path: string, options?: unknown) => void>();
+    mockNavigate = vi.fn();
     dispatcher = new ActionDispatcher({ navigate: mockNavigate });
     Logger.getInstance().setDebug(false);
 
@@ -73,8 +73,6 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     vi.clearAllMocks();
   });
 
-  // @scenario route=matched, fallback=default
-  // @effects matched_route_navigates_in_app
   it('라우트 매칭 성공 시 정상 navigate — fallback 미호출', async () => {
     mockMatch.mockReturnValue({ route: { path: '/admin/users' }, params: {} });
 
@@ -89,8 +87,6 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 
-  // @scenario route=unmatched, fallback=default
-  // @effects unmatched_route_defaults_to_same_tab_window
   it('라우트 매칭 실패 + fallback 미지정 → 기본 openWindow target=_self → window.location.assign 호출 (admin↔user 교차 이동 흐름 보존)', async () => {
     mockMatch.mockReturnValue(null);
 
@@ -107,8 +103,6 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 
-  // @scenario route=unmatched, fallback=disabled
-  // @effects fallback_false_forces_in_app_navigate
   it('라우트 매칭 실패 + fallback: false → 기존 동작(navigate 강행)', async () => {
     mockMatch.mockReturnValue(null);
 
@@ -122,8 +116,6 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     expect(mockWindowOpen).not.toHaveBeenCalled();
   });
 
-  // @scenario route=unmatched, fallback=handler_name
-  // @effects fallback_handler_receives_path
   it('라우트 매칭 실패 + fallback: string → 해당 핸들러로 분기', async () => {
     mockMatch.mockReturnValue(null);
 
@@ -134,11 +126,9 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
-    expect(mockWindowOpen).toHaveBeenCalledWith('/shop/orders/123', '_blank', 'noopener');
+    expect(mockWindowOpen).toHaveBeenCalledWith('/shop/orders/123', '_blank');
   });
 
-  // @scenario route=unmatched, fallback=handler_object
-  // @effects fallback_handler_receives_path
   it('라우트 매칭 실패 + fallback: { handler, params } → 상세 지정 동작', async () => {
     mockMatch.mockReturnValue(null);
 
@@ -152,11 +142,9 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
-    expect(mockWindowOpen).toHaveBeenCalledWith('/shop/orders/123', '_blank', 'noopener');
+    expect(mockWindowOpen).toHaveBeenCalledWith('/shop/orders/123', '_blank');
   });
 
-  // @scenario route=unmatched, fallback=default
-  // @effects route_match_uses_pathname_only
   it('쿼리 파라미터가 있는 경로도 fallback pathname만 매칭 → _self 기본값으로 location.assign 호출', async () => {
     mockMatch.mockReturnValue(null);
 
@@ -179,8 +167,6 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     expect(openedUrl).toContain('tab=detail');
   });
 
-  // @scenario route=replace_only, fallback=default
-  // @effects replace_navigation_skips_fallback
   it('replace: true 경로는 fallback 미적용 (쿼리 갱신 전용)', async () => {
     mockMatch.mockReturnValue(null);
     (window as any).G7Core = {
@@ -200,8 +186,6 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     delete (window as any).G7Core;
   });
 
-  // @scenario route=router_missing, fallback=default
-  // @effects missing_router_navigates_in_app
   it('router를 가져올 수 없으면 fallback 미적용 (정상 navigate)', async () => {
     (window as any).__templateApp = undefined;
 

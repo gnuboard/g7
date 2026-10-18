@@ -168,57 +168,6 @@
   "sampleData": {
     "comment": "실제 모듈 레이아웃 data_source ID(admin: products/categories/orders/order/reviews 등) + 사용자 페이지(템플릿이 렌더, /api/modules/sirsoft-ecommerce/* 호출) byEndpointPattern. 계획서 추정과 실제 ID 차이 반영(데이터소스가 SSoT).",
     "byDataSourceId": {
-      "contentMediaTarget": {
-        "data": {
-          "data": {
-            "version": 1,
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/content-media",
-            "fileField": "file",
-            "fields": {
-              "owner_type": "product"
-            },
-            "headers": {},
-            "response": {
-              "urlPath": "data.url",
-              "idPath": "data.id",
-              "kindPath": "data.kind"
-            },
-            "mediaUrlPattern": "/api/modules/sirsoft-ecommerce/content-media/(?<hash>[A-Za-z0-9]{12})",
-            "policy": {
-              "image": {
-                "enabled": true,
-                "maxSizeMb": 10,
-                "extensions": [
-                  "jpg",
-                  "jpeg",
-                  "png",
-                  "gif",
-                  "webp"
-                ],
-                "mimeTypes": [
-                  "image/jpeg",
-                  "image/png",
-                  "image/gif",
-                  "image/webp"
-                ]
-              },
-              "video": {
-                "enabled": false,
-                "maxSizeMb": 10,
-                "extensions": [],
-                "mimeTypes": []
-              },
-              "audio": {
-                "enabled": false,
-                "maxSizeMb": 10,
-                "extensions": [],
-                "mimeTypes": []
-              },
-              "maxPerDocument": 30
-            }
-          }
-        }
-      },
       "wishlists": {
         "data": {
           "data": [
@@ -1311,12 +1260,10 @@
           "total_deposit_used_amount_formatted": "0원",
           "total_earned_points_amount": 710,
           "total_earned_points_amount_formatted": "710원",
-          "total_tax_amount": 68500,
-          "total_tax_amount_formatted": "68,500원",
-          "total_vat_amount": 4591,
-          "total_vat_amount_formatted": "4,591원",
-          "total_zero_rated_amount": 18000,
-          "total_zero_rated_amount_formatted": "18,000원",
+          "total_tax_amount": 6318,
+          "total_tax_amount_formatted": "6,318원",
+          "total_vat_amount": 6318,
+          "total_vat_amount_formatted": "6,318원",
           "total_list_price": 82000,
           "total_list_price_formatted": "82,000원",
           "total_quantity": 3,
@@ -1417,14 +1364,6 @@
               "list_price_formatted": "32,000원",
               "final_amount": 50500,
               "final_amount_formatted": "50,500원",
-              "tax_status": "taxable",
-              "tax_status_label": "과세",
-              "subtotal_tax_amount": 50500,
-              "subtotal_tax_amount_formatted": "50,500원",
-              "subtotal_zero_rated_amount": 0,
-              "subtotal_zero_rated_amount_formatted": "0원",
-              "subtotal_vat_amount": 4591,
-              "subtotal_vat_amount_formatted": "4,591원",
               "product_coupon_discount_amount": 5000,
               "product_coupon_discount_amount_formatted": "5,000원",
               "order_coupon_discount_amount": 2500,
@@ -1520,14 +1459,6 @@
               "list_price_formatted": "18,000원",
               "final_amount": 18000,
               "final_amount_formatted": "18,000원",
-              "tax_status": "zero_rated",
-              "tax_status_label": "영세",
-              "subtotal_tax_amount": 18000,
-              "subtotal_tax_amount_formatted": "18,000원",
-              "subtotal_zero_rated_amount": 18000,
-              "subtotal_zero_rated_amount_formatted": "18,000원",
-              "subtotal_vat_amount": 0,
-              "subtotal_vat_amount_formatted": "0원",
               "product_coupon_discount_amount": 0,
               "product_coupon_discount_amount_formatted": "0원",
               "order_coupon_discount_amount": 0,
@@ -3874,11 +3805,11 @@
             ]
           },
           "seo": {
-            "meta_category_title": "{category_name}",
+            "meta_category_title": "{commerce_name} - {category_name}",
             "meta_category_description": "",
-            "meta_search_title": "{keyword_name}",
+            "meta_search_title": "{commerce_name} - {keyword_name}",
             "meta_search_description": "",
-            "meta_product_title": "{product_name}",
+            "meta_product_title": "{commerce_name} - {product_name}",
             "meta_product_description": "",
             "meta_shop_index_title": "{commerce_name}",
             "meta_shop_index_description": "",
@@ -3891,10 +3822,6 @@
             "write_deadline_days": 90,
             "max_images": 5,
             "max_image_size_mb": 10
-          },
-          "product_display": {
-            "related_order": "random",
-            "related_cache_hours": 24
           },
           "inquiry": {
             "board_slug": null
@@ -4454,8 +4381,6 @@
               "shipping_fee_formatted": "10,000원",
               "subtotal_formatted": "10,000원",
               "tax_free_amount": 10000,
-              "zero_rated_amount": 0,
-              "zero_rated_amount_formatted": "0원",
               "taxable_amount": 10000,
               "total_discount": 10000,
               "total_shipping": 10000
@@ -4508,8 +4433,6 @@
               "shipping_discount_formatted": "10,000원",
               "subtotal_formatted": "10,000원",
               "tax_free_amount": 10000,
-              "zero_rated_amount": 0,
-              "zero_rated_amount_formatted": "0원",
               "taxable_amount": 10000,
               "total_discount": 10000,
               "total_discount_formatted": "10,000원",
@@ -5771,8 +5694,6 @@
                     "min_purchase_qty": 1,
                     "max_purchase_qty": 10,
                     "sales_status": "on_sale",
-                    "tax_status": "taxable",
-                    "tax_status_label": "과세",
                     "sales_status_label": "판매중",
                     "brand_name": "코지홈",
                     "labels": [
@@ -5940,8 +5861,6 @@
                       {
                         "id": 7001,
                         "option_code": "OPT-BLK-S",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -6018,8 +5937,6 @@
                       {
                         "id": 7002,
                         "option_code": "OPT-BLK-M",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -6096,8 +6013,6 @@
                       {
                         "id": 7003,
                         "option_code": "OPT-WHT-L",
-                        "tax_status": "zero_rated",
-                        "tax_status_label": "영세",
                         "option_values": [
                           {
                             "key": {
@@ -6263,8 +6178,6 @@
                     "list_price": 29000,
                     "list_price_formatted": "29,000원",
                     "selling_price": 23200,
-                    "tax_status": "taxable",
-                    "tax_status_label": "과세",
                     "selling_price_formatted": "23,200원",
                     "discount_rate": 20,
                     "multi_currency_list_price": {
@@ -6468,8 +6381,6 @@
                       {
                         "id": 7001,
                         "option_code": "OPT-BLK-S",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -6546,8 +6457,6 @@
                       {
                         "id": 7002,
                         "option_code": "OPT-BLK-M",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -6624,8 +6533,6 @@
                       {
                         "id": 7003,
                         "option_code": "OPT-WHT-L",
-                        "tax_status": "zero_rated",
-                        "tax_status_label": "영세",
                         "option_values": [
                           {
                             "key": {
@@ -6791,8 +6698,6 @@
                     "list_price": 29000,
                     "list_price_formatted": "29,000원",
                     "selling_price": 23200,
-                    "tax_status": "taxable",
-                    "tax_status_label": "과세",
                     "selling_price_formatted": "23,200원",
                     "discount_rate": 20,
                     "multi_currency_list_price": {
@@ -6996,8 +6901,6 @@
                       {
                         "id": 7001,
                         "option_code": "OPT-BLK-S",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -7074,8 +6977,6 @@
                       {
                         "id": 7002,
                         "option_code": "OPT-BLK-M",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -7152,8 +7053,6 @@
                       {
                         "id": 7003,
                         "option_code": "OPT-WHT-L",
-                        "tax_status": "zero_rated",
-                        "tax_status_label": "영세",
                         "option_values": [
                           {
                             "key": {
@@ -7319,8 +7218,6 @@
                     "list_price": 29000,
                     "list_price_formatted": "29,000원",
                     "selling_price": 23200,
-                    "tax_status": "taxable",
-                    "tax_status_label": "과세",
                     "selling_price_formatted": "23,200원",
                     "discount_rate": 20,
                     "multi_currency_list_price": {
@@ -7524,8 +7421,6 @@
                       {
                         "id": 7001,
                         "option_code": "OPT-BLK-S",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -7602,8 +7497,6 @@
                       {
                         "id": 7002,
                         "option_code": "OPT-BLK-M",
-                        "tax_status": null,
-                        "tax_status_label": null,
                         "option_values": [
                           {
                             "key": {
@@ -7680,8 +7573,6 @@
                       {
                         "id": 7003,
                         "option_code": "OPT-WHT-L",
-                        "tax_status": "zero_rated",
-                        "tax_status_label": "영세",
                         "option_values": [
                           {
                             "key": {
@@ -8118,42 +8009,6 @@
         ]
       },
       {
-        "comment": "shop/reviews — 리뷰 모아보기. 후기 유무에 따라 목록과 빈 상태 안내가 갈린다.",
-        "scope": {
-          "kind": "route",
-          "match": "/*?/reviews"
-        },
-        "items": [
-          {
-            "id": "with_data",
-            "label": "$t:editor.state.with_data",
-            "default": true
-          },
-          {
-            "id": "empty_data",
-            "label": "$t:editor.state.empty_data",
-            "sampleDataOverrides": {
-              "byDataSourceId": {
-                "reviewFeed": {
-                  "data": {
-                    "reviews": {
-                      "data": [],
-                      "meta": {
-                        "current_page": 1,
-                        "last_page": 1,
-                        "per_page": 10,
-                        "total": 0,
-                        "has_more_pages": false
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        ]
-      },
-      {
         "comment": "shop/cart — 담긴 상품 유무 + 주문 처리 중(_local.isOrdering 시 오버레이 잠금, 본문 line 115).",
         "scope": {
           "kind": "route",
@@ -8352,14 +8207,6 @@
                         "list_price_formatted": "32,000원",
                         "final_amount": 53000,
                         "final_amount_formatted": "53,000원",
-                        "tax_status": "taxable",
-                        "tax_status_label": "과세",
-                        "subtotal_tax_amount": 53000,
-                        "subtotal_tax_amount_formatted": "53,000원",
-                        "subtotal_zero_rated_amount": 0,
-                        "subtotal_zero_rated_amount_formatted": "0원",
-                        "subtotal_vat_amount": 4818,
-                        "subtotal_vat_amount_formatted": "4,818원",
                         "thumbnail_url": null,
                         "mc_unit_price": {
                           "KRW": {
@@ -8413,14 +8260,6 @@
                         "list_price_formatted": "18,000원",
                         "final_amount": 18000,
                         "final_amount_formatted": "18,000원",
-                        "tax_status": "zero_rated",
-                        "tax_status_label": "영세",
-                        "subtotal_tax_amount": 18000,
-                        "subtotal_tax_amount_formatted": "18,000원",
-                        "subtotal_zero_rated_amount": 18000,
-                        "subtotal_zero_rated_amount_formatted": "18,000원",
-                        "subtotal_vat_amount": 0,
-                        "subtotal_vat_amount_formatted": "0원",
                         "thumbnail_url": null,
                         "mc_unit_price": {
                           "KRW": {
@@ -8589,14 +8428,6 @@
                         "list_price_formatted": "32,000원",
                         "final_amount": 53000,
                         "final_amount_formatted": "53,000원",
-                        "tax_status": "taxable",
-                        "tax_status_label": "과세",
-                        "subtotal_tax_amount": 53000,
-                        "subtotal_tax_amount_formatted": "53,000원",
-                        "subtotal_zero_rated_amount": 0,
-                        "subtotal_zero_rated_amount_formatted": "0원",
-                        "subtotal_vat_amount": 4818,
-                        "subtotal_vat_amount_formatted": "4,818원",
                         "thumbnail_url": null,
                         "mc_unit_price": {
                           "KRW": {
@@ -8650,14 +8481,6 @@
                         "list_price_formatted": "18,000원",
                         "final_amount": 18000,
                         "final_amount_formatted": "18,000원",
-                        "tax_status": "zero_rated",
-                        "tax_status_label": "영세",
-                        "subtotal_tax_amount": 18000,
-                        "subtotal_tax_amount_formatted": "18,000원",
-                        "subtotal_zero_rated_amount": 18000,
-                        "subtotal_zero_rated_amount_formatted": "18,000원",
-                        "subtotal_vat_amount": 0,
-                        "subtotal_vat_amount_formatted": "0원",
                         "thumbnail_url": null,
                         "mc_unit_price": {
                           "KRW": {
@@ -9386,18 +9209,6 @@
             }
           },
           {
-            "id": "tab_product_display",
-            "label": "$t:editor.state.tab.product_display",
-            "initialState": {
-              "query": {
-                "tab": "product_display"
-              },
-              "global": {
-                "activeEcommerceSettingsTab": "product_display"
-              }
-            }
-          },
-          {
             "id": "tab_notification_definitions",
             "label": "$t:editor.state.tab.notification_definitions",
             "initialState": {
@@ -9680,8 +9491,6 @@
                     "total_tax_amount_formatted": "6,318원",
                     "total_vat_amount": 6318,
                     "total_vat_amount_formatted": "6,318원",
-                    "total_zero_rated_amount": 18000,
-                    "total_zero_rated_amount_formatted": "18,000원",
                     "total_list_price": 82000,
                     "total_list_price_formatted": "82,000원",
                     "total_quantity": 3,
@@ -9782,14 +9591,6 @@
                         "list_price_formatted": "32,000원",
                         "final_amount": 50500,
                         "final_amount_formatted": "50,500원",
-                        "tax_status": "taxable",
-                        "tax_status_label": "과세",
-                        "subtotal_tax_amount": 50500,
-                        "subtotal_tax_amount_formatted": "50,500원",
-                        "subtotal_zero_rated_amount": 0,
-                        "subtotal_zero_rated_amount_formatted": "0원",
-                        "subtotal_vat_amount": 4591,
-                        "subtotal_vat_amount_formatted": "4,591원",
                         "product_coupon_discount_amount": 5000,
                         "product_coupon_discount_amount_formatted": "5,000원",
                         "order_coupon_discount_amount": 2500,
@@ -9885,14 +9686,6 @@
                         "list_price_formatted": "18,000원",
                         "final_amount": 18000,
                         "final_amount_formatted": "18,000원",
-                        "tax_status": "zero_rated",
-                        "tax_status_label": "영세",
-                        "subtotal_tax_amount": 18000,
-                        "subtotal_tax_amount_formatted": "18,000원",
-                        "subtotal_zero_rated_amount": 18000,
-                        "subtotal_zero_rated_amount_formatted": "18,000원",
-                        "subtotal_vat_amount": 0,
-                        "subtotal_vat_amount_formatted": "0원",
                         "product_coupon_discount_amount": 0,
                         "product_coupon_discount_amount_formatted": "0원",
                         "order_coupon_discount_amount": 0,
@@ -11772,25 +11565,6 @@
         ]
       },
       {
-        "comment": "창 본문이 읽는 메일 본문(emailMessage) — 창을 연 화면 로컬에 두고 글자 수 안내가 번역 인자로 읽는다. 편집기는 입력하지 않으므로 빈 본문(0자)으로 담는다.",
-        "scope": {
-          "kind": "modal",
-          "match": "modal_send_email"
-        },
-        "items": [
-          {
-            "id": "modal_filled",
-            "label": "$t:editor.state.modal_filled",
-            "default": true,
-            "initialState": {
-              "local": {
-                "emailMessage": ""
-              }
-            }
-          }
-        ]
-      },
-      {
         "comment": "모달 본문이 읽는 전역 상태(isSending) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
         "scope": {
           "kind": "modal",
@@ -11804,9 +11578,6 @@
             "initialState": {
               "global": {
                 "isSending": false
-              },
-              "local": {
-                "smsMessage": ""
               }
             }
           }

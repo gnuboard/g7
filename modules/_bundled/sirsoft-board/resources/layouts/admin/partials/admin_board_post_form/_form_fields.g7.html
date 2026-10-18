@@ -1,6 +1,10 @@
 <!-- 글 작성 폼의 입력 칸 전부(글쓴이·분류·제목·본문과 공지·비밀 같은 스위치)를 한 카드에 담는다. 본문 편집기는 확장점이라 위지윅 플러그인이 깔려 있으면 그것으로 갈리고, 없으면 기본 편집기가 선다 -->
 <partial description="Post Form - All Form Fields in One Card">
   <div data-ref="post_form_fields">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
     <div data-ref="main_form_card" class="admin-card">
       <div class="row-stack">
         <div data-ref="author_section" data-if="{{route?.id &amp;&amp; form_meta?.data?.author}}" class="">
@@ -52,7 +56,10 @@
       </div>
       <div data-ref="category_section" data-if="{{form_meta?.data?.board?.categories &amp;&amp; form_meta.data.board.categories.length > 0}}" class="pb-6">
         <label class="form-label">$t:sirsoft-board.admin.posts.form.category</label>
-        <select name="category" aria-label="$t:sirsoft-board.admin.posts.form.category" value="{{_local.form?.category ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-board.admin.posts.form.select_category') }].concat((form_meta?.data?.board?.categories ?? []).map(category => ({ value: category, label: category })))}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"/>
+        <select name="category" value="{{_local.form?.category ?? ''}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed">
+          <option value="">$t:sirsoft-board.admin.posts.form.select_category</option>
+          <option data-each="category in form_meta?.data?.board?.categories ?? []" value="{{category}}">{{category}}</option>
+        </select>
       </div>
       <div class="row-stack">
         <div data-ref="title_section" class="">
@@ -61,8 +68,7 @@
             <input type="text" name="title" value="{{_local.form?.title ?? ''}}" disabled="{{_computed.isReadOnly}}" placeholder="$t:sirsoft-board.admin.posts.form.title_placeholder" class="block focus:ring-1 dark:focus:ring-blue-400"/>
           </div>
         </div>
-        <!-- 편집기는 처음 세워질 때의 업로드 계약만 쓴다 — 계약을 담은 소스(표준 계약 엔드포인트 content_media_target, #887)와 form_meta 를 받기(실패 포함) 전에는 세우지 않는다(#883 실측: 먼저 서면 업로드 단추가 끝내 생기지 않음) -->
-        <extension-point name="html_editor" data-if="{{form_meta !== undefined &amp;&amp; content_media_target !== undefined}}" data-ref="content_section" mediaUpload="{{content_media_target?.data ? Object.assign({}, content_media_target.data, { fields: Object.assign({}, content_media_target.data.fields ?? {}, { temp_key: _local.tempKey }) }) : null}}" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :rows="15" :showHtmlModeToggle="true">
+        <extension-point name="html_editor" data-ref="content_section" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :rows="15" :showHtmlModeToggle="true">
           <prop name="name">"content"</prop>
           <default>
             <html-editor data-type="composite" name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" disabled="{{_computed.isReadOnly}}" readOnly="{{_computed.isReadOnly}}" :rows="15" placeholder="$t:sirsoft-board.admin.posts.form.content_placeholder" label="$t:sirsoft-board.admin.posts.form.content" :showHtmlModeToggle="true">

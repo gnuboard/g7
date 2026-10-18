@@ -148,14 +148,14 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 1개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 6개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 3개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 알림 정의 | 0개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -192,7 +192,6 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 - [ ] 평문 시크릿·백업 코드를 내려주는 응답을 추가·변경했다면 "1회 노출" 계약이 깨지지 않는지 확인 — 조회 경로로는 절대 내려가지 않습니다
 - [ ] 프론트 핸들러를 추가했다면 `resources/js/handlers/index.ts` 의 `handlerMap` 에 넣는다 — 부팅 등록과 로케일 전환 뒤 재등록(`window.__SirsoftTotp.initPlugin()`)이 모두 이 맵을 읽는다. `initPlugin()` 에는 QR 관측자 같은 1회성 부팅 작업을 넣지 않는다
 - [ ] `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 후 `dist/js/plugin.iife.js` 를 함께 커밋 (`sourceMappingURL` 잔존 금지)
-- [ ] 레이아웃의 뜻이 있는 글자색(경고 등)은 템플릿 의미 클래스(`text-warning-soft` 등)가 아니라 `resources/css/main.css` 의 `totp-tone-*`(다크 모드 짝 포함)를 쓴다. 이 파일을 고쳤다면 `php artisan plugin:build --production` 후 `dist/css/plugin.css` 를 함께 커밋
 
 ## 6. 금지 패턴
 
@@ -215,7 +214,6 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | provider 설정을 `config()` 로 읽기 | `PluginSettingsService::get('sirsoft-totp')` 로 매 요청 직접 조회 | 코어 `PluginSettingsService::save()` 는 인메모리 캐시만 비우므로 `config()` 로 읽으면 변경된 설정이 다음 요청에 반영되지 않는다 |
 | `dispatcher.registerHandler` 를 변수로 떼어 수신자 없이 호출 | `register.call(dispatcher, …)` 로 수신자를 붙인다 | `registerHandler` 는 내부에서 `this.customHandlers` 를 쓴다. 수신자 없이 부르면 예외가 나고, 그 예외가 부팅 함수를 끊어 QR 관측자까지 설치되지 않았다 |
 | `window.__SirsoftTotp` 를 지우거나 `initPlugin` 이름을 바꾸기 | 전역 `{ identifier, initPlugin }` 을 그대로 둔다 | 로케일 전환 뒤 코어는 `__` 로 시작하는 전역에서 `initPlugin()` 을 찾아 부른다. 없으면 언어를 바꾼 뒤 「전체 복사」가 동작하지 않는다 |
-| QR SVG 문자열(`resources/js/qr.ts`)에 `style="…"` 로 크기·배치 싣기 | 클래스 `totp-qr-svg` 만 달고 규칙은 `resources/css/main.css` 에 둔다 | 엄격한 스타일 보안 정책(`style-src-attr 'none'`)은 HTML 문자열의 `style` 속성을 막는다 — QR 이 220px 로 줄지 않고 가운데에 오지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -223,10 +221,10 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 16개 | `plugins/_bundled/sirsoft-totp/tests` |
-| Vitest | 19개 | `vitest.config.ts` |
+| PHPUnit | 8개 | `plugins/_bundled/sirsoft-totp/tests` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 6개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

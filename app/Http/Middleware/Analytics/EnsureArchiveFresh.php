@@ -8,7 +8,6 @@ use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use stdClass;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -51,15 +50,13 @@ class EnsureArchiveFresh
         }
 
         try {
-            // 객체로 푼다 — 연관 배열로 풀었다 다시 싸면 응답 안의 빈 맵 `{}`(행 `extra` 등)이
-            // 모두 빈 목록 `[]` 으로 바뀐다(#758, 7.1.1 출시 전).
-            $payload = $response->getData();
+            $payload = $response->getData(true);
 
-            if (! $payload instanceof stdClass || ($payload->success ?? false) !== true || ! ($payload->data ?? null) instanceof stdClass) {
+            if (! is_array($payload) || ($payload['success'] ?? false) !== true || ! is_array($payload['data'] ?? null)) {
                 return $response;
             }
 
-            $payload->data->freshness = $this->freshness->describe($outcome);
+            $payload['data']['freshness'] = $this->freshness->describe($outcome);
 
             return $response->setData($payload);
         } catch (Throwable $e) {

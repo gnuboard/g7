@@ -62,7 +62,6 @@ return [
         'extend_expiry' => 'Expiry Extended',
         'adjust' => 'Earning Edited',
         'refund_credit' => 'Refund credit',
-        'signup_earn' => 'Signup bonus',
         // Claims (exchange / return / refund / additional payment / attachment)
         'request' => 'Request Received',
         'option_status_change' => 'Item Status Change',
@@ -255,7 +254,6 @@ return [
         'mileage_deletion_expire' => 'Mileage forfeited on account deletion (:amount)',
         'mileage_earn_cancel' => 'Mileage earn canceled (:amount)',
         'mileage_admin_earn' => 'Admin granted mileage (:amount)',
-        'mileage_signup_earn' => 'Signup bonus mileage granted (:amount)',
         'mileage_admin_deduct' => 'Admin deducted mileage (:amount)',
         'mileage_extend_expiry' => 'Mileage expiry extended (:days day)|Mileage expiry extended (:days days)',
         'mileage_adjust' => 'Mileage earning edited (:amount)',

@@ -6,9 +6,6 @@ return [
         'order_not_found' => '注文が見つかりません。',
         'cbt_failed' => '海外決済の処理に失敗しました。',
         'payment_failed' => '決済処理に失敗しました。しばらく後にもう一度お試しください。',
-        'escrow_in_progress' => 'この注文のエスクロー要求は別の場所で処理中です。しばらく後にもう一度お試しください。',
-        'escrow_delivery_already_registered' => 'エスクロー配送登録はすでに完了しています。画面を再読み込みしてから変更として登録してください。',
-        'escrow_deny_already_confirmed' => '購入拒否確認はすでに完了しています。',
     ],
     'refund' => [
         'missing_tid' => 'トランザクション ID（TID）がないため、返金を進めることができません。',

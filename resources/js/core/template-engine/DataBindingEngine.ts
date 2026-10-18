@@ -13,11 +13,9 @@ import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
 import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
-import { findTranslationParamZones, isInTranslationParamZone, wrapTranslationParamValue } from './translationParamValues';
 import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { getCompiledExpression } from './ExpressionCompileCache';
-import { pickLocalized } from '../support/localeTag';
 import { getEngineFlags } from './EngineFlags';
 
 const logger = createLogger('DataBindingEngine');
@@ -67,46 +65,6 @@ function getDevTools(): G7DevToolsInterface | undefined {
 }
 
 /**
- * 영구 캐시(키 = 경로 글자, 30초)에 담으면 안 되는 경로인지 판정한다.
- *
- * 상태 루트(`_global`·`_local`·`_isolated`·`$parent`)와 화면 주소 루트(`route`·`query`)는
- * 값이 바뀌어도 같은 경로 글자로 남는다. 종전에는 `route`·`query` 가 영구 캐시를 타서
- * 글 보기(`/board/notice/226`) → SPA 로 다른 게시판 목록 이동 시 `{{route.slug}}` 가
- * 30초 동안 직전 화면 값(notice)으로 그려졌다. 렌더 사이클 캐시만 쓴다.
- * `route`·`query` 는 루트 이름이 정확히 일치할 때만 해당한다(`routes` 같은 데이터소스는 제외).
- *
- * @since engine-v1.82.1
- */
-function isDynamicCachePath(path: string): boolean {
-  return path.startsWith('_global') ||
-    path.startsWith('_local') ||
-    path.startsWith('_isolated') ||
-    path.startsWith('$parent') ||
-    isRootPath(path, 'route') ||
-    isRootPath(path, 'query');
-}
-
-/**
- * 어떤 캐시에도 담으면 안 되는 식인지 판정한다 — 같은 렌더 사이클 안에서도 컴포넌트마다 값이 다른 루트를 읽는다.
- *
- * `_computed`·`$computed` 는 컴포넌트 범위로 다시 계산되고(트러블슈팅 cache 사례 13), `extensionPointProps` 는
- * 확장 지점 인스턴스마다 다르다. 종전에는 단일 바인딩 prop 만 렌더러가 캐시를 건너뛰어, 문자열 보간·배열·중첩 객체
- * props(예: 통계 화면 탭 `href="...?tab=x{{_computed.tabQuery}}"`)는 기간을 바꿔도 30초 동안 옛 값이었고, 형제 확장 지점은
- * 먼저 그린 인스턴스 값을 받았다. 식 안 어디에 있든 해당한다.
- *
- * @since engine-v1.82.1
- */
-function isUncacheablePath(expr: string): boolean {
-  return UNCACHEABLE_ROOT_PATTERN.test(expr);
-}
-
-const UNCACHEABLE_ROOT_PATTERN = /(^|[^\w$.])(_computed|\$computed|extensionPointProps)(?![\w$])/;
-
-function isRootPath(path: string, root: string): boolean {
-  return path === root || path.startsWith(`${root}.`) || path.startsWith(`${root}[`) || path.startsWith(`${root}?`);
-}
-
-/**
  * 바인딩 컨텍스트 인터페이스
  *
  * 데이터 바인딩 시 사용되는 컨텍스트 객체
@@ -152,17 +110,6 @@ export interface BindingOptions {
    * 반복 렌더링(DataGrid의 cellChildren 등)에서 같은 경로가 다른 값을 가져야 할 때 사용
    */
   skipCache?: boolean;
-
-  /**
-   * `$t:키|이름={{값}}` 의 인자 자리에 넣는 값을 보호 표식으로 감쌀지 여부 (`resolveBindings` 전용)
-   *
-   * 결과를 곧바로 번역 엔진(`TranslationEngine.resolveTranslations`)에 넘기는 렌더·액션 경로만 켠다 —
-   * 번역 엔진이 인자를 나눈 뒤 표식 안 글자를 그대로 치환하고 표식을 걷는다. 값에 든 `&`·`|`·`=`·끝 ` /` 가
-   * 인자 구분자·문장 꼬리로 읽히지 않는다. 번역하지 않는 경로에 켜면 표식이 결과에 남는다.
-   *
-   * @since engine-v1.80.1
-   */
-  protectTranslationParams?: boolean;
 }
 
 /**
@@ -435,8 +382,8 @@ export class DataBindingEngine {
           let value: any;
           let fromCache = false;
 
-          // skipCache가 아니면 렌더 사이클 캐시 사용 (컴포넌트마다 값이 다른 루트를 읽는 식은 제외 — engine-v1.82.1)
-          if (!opts.skipCache && !isUncacheablePath(effectivePath)) {
+          // skipCache가 아니면 렌더 사이클 캐시 사용
+          if (!opts.skipCache) {
             const exprCacheKey = `expr:${effectivePath}`;
             const exprCached = this.getFromRenderCycleCache(exprCacheKey);
             if (exprCached !== undefined) {
@@ -475,8 +422,8 @@ export class DataBindingEngine {
         }
       }
 
-      // skipCache 옵션이면 모든 캐시 사용 안 함 (컴포넌트마다 값이 다른 루트 포함 — engine-v1.82.1)
-      if (opts.skipCache || isUncacheablePath(effectivePath)) {
+      // skipCache 옵션이면 모든 캐시 사용 안 함
+      if (opts.skipCache) {
         const startTime = devTools?.isEnabled() ? performance.now() : 0;
         const value = this.resolvePath(effectivePath, extendedContext, opts);
 
@@ -502,7 +449,10 @@ export class DataBindingEngine {
       }
 
       // 동적 경로 여부 판단
-      const isDynamicPath = isDynamicCachePath(effectivePath);
+      const isDynamicPath = effectivePath.startsWith('_global') ||
+        effectivePath.startsWith('_local') ||
+        effectivePath.startsWith('_isolated') ||
+        effectivePath.startsWith('$parent');
 
       const startTime = devTools?.isEnabled() ? performance.now() : 0;
       let value: any;
@@ -557,22 +507,11 @@ export class DataBindingEngine {
     const bindings = scanBindings(template);
     if (bindings.length === 0) return template;
 
-    // `$t:키|이름={{값}}` 의 인자 자리 값 보호 — 번역 엔진이 인자를 나눈 뒤 글자 그대로 치환한다(engine-v1.80.1).
-    // 평가에 실패해 원본 `{{…}}` 를 돌려준 자리는 감싸지 않는다(종전처럼 번역 엔진이 다시 평가한다).
-    // 빈 값도 감싸지 않는다 — 종전처럼 그 인자가 빠져 자리표시자가 남는다(빈 인자 진단 단서 유지).
-    const zones = opts.protectTranslationParams && template.includes('$t:')
-      ? findTranslationParamZones(template, bindings)
-      : null;
-
     let output = '';
     let cursor = 0;
     for (const binding of bindings) {
       output += template.slice(cursor, binding.start);
-      const matchText = template.slice(binding.start, binding.end);
-      const replaced = replaceBinding(matchText, binding.expr);
-      output += zones && replaced !== '' && replaced !== matchText && isInTranslationParamZone(zones, binding.start)
-        ? wrapTranslationParamValue(replaced)
-        : replaced;
+      output += replaceBinding(template.slice(binding.start, binding.end), binding.expr);
       cursor = binding.end;
     }
     return output + template.slice(cursor);
@@ -622,9 +561,12 @@ export class DataBindingEngine {
     let fromCache = false;
     const isBaseExpression = isComplexExpression(baseExpr);
     // 동적 경로 여부 판단
-    const isDynamicPipeBase = isDynamicCachePath(baseExpr);
+    const isDynamicPipeBase = baseExpr.startsWith('_global') ||
+      baseExpr.startsWith('_local') ||
+      baseExpr.startsWith('_isolated') ||
+      baseExpr.startsWith('$parent');
 
-    if (opts.skipCache || isUncacheablePath(baseExpr)) {
+    if (opts.skipCache) {
       // skipCache: 모든 캐시 무시
       if (isBaseExpression) {
         value = this.evaluateExpression(baseExpr, extendedContext);
@@ -664,9 +606,7 @@ export class DataBindingEngine {
     }
 
     // 파이프 체인 실행
-    const result = executePipeChain(value, pipes, {
-      locale: typeof extendedContext.$locale === 'string' ? extendedContext.$locale : undefined,
-    });
+    const result = executePipeChain(value, pipes);
 
     // DevTools: 파이프 표현식 평가 추적
     if (devTools?.isEnabled()) {
@@ -713,8 +653,7 @@ export class DataBindingEngine {
     const startTime = devTools?.isEnabled() ? performance.now() : 0;
 
     // skipCache 옵션이 true면 모든 캐시 사용 안 함 (반복 렌더링에서 같은 경로가 다른 값을 가져야 할 때)
-    // 컴포넌트마다 값이 다른 루트도 같다 (engine-v1.82.1)
-    if (opts.skipCache || isUncacheablePath(path)) {
+    if (opts.skipCache) {
       const value = this.resolvePath(path, context, opts);
 
       // DevTools: 표현식 평가 추적
@@ -737,9 +676,9 @@ export class DataBindingEngine {
     }
 
     // 동적 경로 여부 판단
-    // - _global, _local, _isolated, $parent, route, query: 동적으로 변경되므로 영구 캐시 사용 안 함
+    // - _global, _local, _isolated, $parent: 동적으로 자주 변경되므로 영구 캐시 사용 안 함
     // - 단, 같은 렌더 사이클 내에서는 렌더 사이클 캐시 사용 (성능 최적화)
-    const isDynamicPath = isDynamicCachePath(path);
+    const isDynamicPath = path.startsWith('_global') || path.startsWith('_local') || path.startsWith('_isolated') || path.startsWith('$parent');
     let fromCache = false;
 
     // 1. 렌더 사이클 캐시 확인 (동적 경로용)
@@ -1366,9 +1305,9 @@ export class DataBindingEngine {
         if (typeof value === 'string') {
           return value;
         }
-        // 1. 객체의 활성 로케일 키 (빈 칸·공백만 있는 값은 건너뜀 — 백엔드 LocalizedValue 와 같다)
-        if (value && typeof value === 'object' && pickLocalized({ [locale]: value[locale] }, locale, false) !== null) {
-          return String(value[locale]);
+        // 1. 객체의 활성 로케일 키
+        if (value && typeof value === 'object' && value[locale]) {
+          return value[locale];
         }
         // 2. fallbackKey 가 있으면 $t() 로 lang pack 보강 시도
         if (fallbackKey && typeof fallbackKey === 'string') {
@@ -1377,9 +1316,9 @@ export class DataBindingEngine {
             return translated;
           }
         }
-        // 3. 사이트 기본 언어 → en → 첫 번째 값 (engine-v1.81.0 — 종전 ko 고정)
+        // 3. 객체의 ko / en / 첫 번째 값
         if (value && typeof value === 'object') {
-          return pickLocalized(value, locale) ?? '';
+          return value.ko || value.en || Object.values(value)[0] || '';
         }
         if (value == null) {
           return '';
@@ -1408,25 +1347,18 @@ export class DataBindingEngine {
       // $t 헬퍼 함수 추가
       // 번역 키를 사용하여 다국어 텍스트를 반환
       // 사용법: $t('admin.settings.info.write_only') - 번역된 텍스트 반환
-      //         $t('common.row_n', {n: index + 1}) - 인자 치환(값은 글자 그대로)
       //
       // templateId / locale 은 위에서 해석된 값을 그대로 사용한다($localized 와 공유).
-      //
-      // @since engine-v1.80.1 두 번째 인자(객체) — 종전에는 인자를 버렸다. 객체가 아닌 값(배열 포함)은
-      //   인자 없는 호출과 같다.
       const translationContext = {
         templateId: templateId || '',
         locale,
       };
-      extendedContext.$t = (key: string, params?: unknown): string => {
+      extendedContext.$t = (key: string): string => {
         if (!key || typeof key !== 'string') {
           return '';
         }
         try {
           const translationEngine = TranslationEngine.getInstance();
-          if (params !== null && typeof params === 'object' && !Array.isArray(params)) {
-            return translationEngine.translate(key, translationContext, params as Record<string, unknown>);
-          }
           return translationEngine.translate(key, translationContext);
         } catch (error) {
           logger.warn('$t() translation failed for key:', key, error);

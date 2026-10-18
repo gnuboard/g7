@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 59개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 58개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 59개 |
+| `admin` | 58개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -24,7 +24,6 @@
 | `admin_board_scraps_index` | `admin` | 화면 | `_admin_base` |
 | `admin_board_settings` | `admin` | 화면 | `_admin_base` |
 | `_board_type_manage_modal` | `admin` | partial | - |
-| `_content_media_policy` | `admin` | partial | - |
 | `_tab_basic` | `admin` | partial | - |
 | `_tab_list` | `admin` | partial | - |
 | `_tab_notification` | `admin` | partial | - |
@@ -94,8 +93,6 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="boardIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, blocking·initLocal)까지 다시 받아 고친 설정 값과 「변경 있음」을 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `boardIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-board-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 G2 실측).
 
 이 탭의 목록·켜고 끄기·추가·수정·삭제는 모듈 경로(`/api/modules/sirsoft-board/admin/identity-policies`)를 쓰고, 모듈 권한 `sirsoft-board.identity.policies.read`/`.update` 로 동작합니다(7.1.0~). 목록이 403 이면 데이터소스 `error_handling` 이 `_local.identityPoliciesLoadError='forbidden'` 을 남기고, computed `identityPoliciesNoReadPermission` 이 탭 내용 대신 「권한 없음」 안내(`identity_policies_no_permission`)를 띄웁니다. 수정 권한은 목록 응답 `abilities.can_update`·`can_delete` 로 읽어 읽기 전용 안내(`identity_policies_read_only_notice`)와 추가·토글·편집·삭제, 정책 창 [저장]·삭제 창 [삭제]를 잠급니다. 인증 제공자 선택지(`identityProviders`)는 권한이 필요 없는 공개 목록 `/api/identity/providers` 에서 받습니다. 잠금: `admin-board-identity-policy-gate.test.ts`.
-
-정책 창(`_modal_identity_policy_form`)의 「인증 수단」은 **인정할 수단**입니다(코어 7.1.6~) — 지정하면 그 수단으로 받은 본인인증만 인정하고, 비우면 어떤 수단이든 인정합니다. 선택 상자 아래에 관리자 템플릿 키 `admin.identity.policies.form.provider_id_desc` 안내를 두고, 서버가 지원하지 않는 수단을 422 로 거부하면 `_global.identity_policy_form_modal.errors.errors.provider_id[0]` 을 그 아래 `form-error` 로 보입니다(코어 정책 창과 같은 구조).
 
 반복되는 카드·박스 목록은 **간격을 스스로 갖지 않습니다.** 좁은 화면 카드(`excel-card`)는 바깥 여백이 없고
 테두리 박스에 준 `p-3` 같은 안쪽 여백은 이웃과의 거리가 아니므로, 목록을 감싸는 쪽이 `stack-tight`(세로 gap)를

@@ -7,6 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Laravel\Sanctum\PersonalAccessToken;
 
 interface UserRepositoryInterface
 {
@@ -82,10 +83,9 @@ interface UserRepositoryInterface
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
      *
      * @param  string  $keyword  검색할 키워드
-     * @param  bool  $excludeWithdrawn  탈퇴 회원을 뺄지 여부 — 알림 수신자처럼 고르는 자리는 true, 기록을 찾는 목록 필터는 false(기본)
      * @return Collection 검색된 사용자 컬렉션
      */
-    public function searchByKeyword(string $keyword, bool $excludeWithdrawn = false): Collection;
+    public function searchByKeyword(string $keyword): Collection;
 
     /**
      * 최근 등록된 사용자들을 조회합니다.
@@ -270,32 +270,36 @@ interface UserRepositoryInterface
     public function deleteTokensByUserIds(array $ids): int;
 
     /**
-     * 인증 토큰의 만료 시각을 조건부 UPDATE 로 늦춥니다.
+     * 회원의 인증 토큰 하나를 ID 로 찾습니다 (다른 회원의 토큰이면 null).
      *
-     * 토큰 행이 이미 지워졌으면(로그아웃·갱신 직후) 아무것도 하지 않는다 — INSERT 경로가 없어
-     * 폐기한 토큰을 되살리지 않는다.
+     * @param  User  $user  회원
+     * @param  int|string  $tokenId  토큰 ID
+     * @return PersonalAccessToken|null 토큰
      *
-     * @param  int  $tokenId  토큰 ID
-     * @param  \DateTimeInterface  $expiresAt  새 만료 시각
-     * @return bool 행이 있어 갱신했으면 true
-     *
-     * @since 7.1.6
+     * @since 7.2.0
      */
-    public function extendTokenExpiration(int $tokenId, \DateTimeInterface $expiresAt): bool;
+    public function findAccessTokenFor(User $user, int|string $tokenId): ?PersonalAccessToken;
 
     /**
-     * 회원들의 web 세션을 지웁니다.
+     * 인증 토큰의 만료 시각을 바꿉니다.
      *
-     * 세션 드라이버가 database 일 때만 세션 행을 지울 수 있다. 다른 드라이버(file·redis 등)는 회원별로
-     * 세션을 찾을 수 없어 아무것도 하지 않고 0 을 돌려준다.
+     * @param  PersonalAccessToken  $token  토큰
+     * @param  \DateTimeInterface  $expiresAt  새 만료 시각
+     * @return void 반환값 없음
      *
-     * @param  array<int, int>  $ids  회원 ID 목록
-     * @param  string|null  $exceptSessionId  남겨 둘 세션 ID (본인 비밀번호 변경 시 지금 쓰는 세션)
-     * @return int 지운 세션 수
-     *
-     * @since 7.1.6
+     * @since 7.2.0
      */
-    public function deleteSessionsByUserIds(array $ids, ?string $exceptSessionId = null): int;
+    public function updateAccessTokenExpiry(PersonalAccessToken $token, \DateTimeInterface $expiresAt): void;
+
+    /**
+     * 인증 토큰 하나를 삭제합니다.
+     *
+     * @param  PersonalAccessToken  $token  토큰
+     * @return void 반환값 없음
+     *
+     * @since 7.2.0
+     */
+    public function deleteAccessToken(PersonalAccessToken $token): void;
 
     /**
      * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.

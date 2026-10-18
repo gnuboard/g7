@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Sirsoft\Ecommerce\Support;
 
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
@@ -48,8 +48,9 @@ final class ClaimPaymentCallback
                 voidOnReject: $onAmountMismatch === null,
             );
 
-            // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 사이트 주소로 만든다.
-            return redirect(SiteUrl::absolute(ClaimPaymentRedirect::success($paid)));
+            // 보안: 상대 경로를 redirect() 에 넘기면 요청 Host 로 절대화된다 — 설정 주소로 만든다.
+            // 결제 뒤 사람이 돌아가는 화면이라 「사용자 화면 URL」(비면 사이트 주소)을 베이스로 쓴다(#792 W15).
+            return redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::success($paid)));
         } catch (OrderClaimException $e) {
             Log::warning('[claim.payment] 콜백 승인 거절', [
                 'payment_number' => $payment->payment_number,
@@ -64,7 +65,7 @@ final class ClaimPaymentCallback
                 $onAmountMismatch($e);
             }
 
-            return redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, self::errorCode($e))));
+            return redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::fail($payment, self::errorCode($e))));
         } catch (\Exception $e) {
             Log::error('[claim.payment] 콜백 승인 처리 중 예외', [
                 'payment_number' => $payment->payment_number,
@@ -72,7 +73,7 @@ final class ClaimPaymentCallback
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect(SiteUrl::absolute(ClaimPaymentRedirect::fail($payment, 'approve_failed')));
+            return redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::fail($payment, 'approve_failed')));
         }
     }
 
@@ -87,7 +88,7 @@ final class ClaimPaymentCallback
      * 그래서 **파라미터가 코드를 들고 있으면 그쪽이 이긴다.** 키 조각만 보면
      * `OrderClaimException::paymentFailed('PG_API_ERROR')` 가 `failed` 로 뭉개진다 — 그 키의
      * 마지막 조각이 상수 `failed` 이고 진짜 코드는 치환 파라미터에 따로 실려 있기 때문이다.
-     * 그러면 서로 다른 PG 거절이 전부 같은 토큰으로 수렴한다(2026-09-22 #599 실측:
+     * 그러면 서로 다른 PG 거절이 전부 같은 토큰으로 수렴한다(2026-09-22 #599 3차 실측 F-5:
      * 결제행에는 `PG_API_ERROR` 와 한국어 사유가 남았는데 화면은 「실패 코드 failed」였다).
      *
      * 파라미터가 없는 예외는 기존대로 키의 마지막 조각을 쓴다 — `claim_payment_amount_mismatch`

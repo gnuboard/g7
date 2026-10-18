@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Contracts\Extension\ConsentProviderInterface;
-use App\Exceptions\PhpExtensionUnavailableException;
 use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use App\Http\Requests\Settings\EmbedProviderPreviewRequest;
 use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
 use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
@@ -25,12 +23,8 @@ use App\Services\ExtensionStaticCacheService;
 use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
 use App\Services\Queue\QueueWorkerRegistry;
-use App\Services\SearchHistoryService;
 use App\Services\SettingsService;
-use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
-use App\Support\PublicDiskHardeningProbe;
-use App\Support\SearchScopes;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -55,7 +49,6 @@ class SettingsController extends AdminBaseController
      * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (#139)
-     * @param  SearchHistoryService  $searchHistoryService  최근 검색어 서비스 (개인정보 탭 범위 메타, 7.1.5)
      */
     public function __construct(
         private SettingsService $settingsService,
@@ -66,8 +59,7 @@ class SettingsController extends AdminBaseController
         private PrivacyRetentionManager $privacyRetentionManager,
         private DormantAccountService $dormantAccountService,
         private PasswordExpiryService $passwordExpiryService,
-        private QueueWorkerRegistry $queueWorkerRegistry,
-        private SearchHistoryService $searchHistoryService
+        private QueueWorkerRegistry $queueWorkerRegistry
     ) {
         parent::__construct();
     }
@@ -84,10 +76,6 @@ class SettingsController extends AdminBaseController
      * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
-     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (#158, 스타일 3키는 7.1.6)
-     * - `search_scopes`: 최근 검색어 범위 `[{scope, owner, owner_label, label, default_max_count, default_retention_days}]` (개인정보 탭, 7.1.5)
-     * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
-     * - `public_disk_hardening`: `/storage` 직접 주소 보호 헤더 점검 결과 `{ok, nosniff, disposition, status, checked_at, rules_written}` 또는 null (드라이버 탭 경고, 7.1.6 — `rules_written=false` 는 규칙 파일을 지금 설정으로 쓰지 못함)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -109,36 +97,6 @@ class SettingsController extends AdminBaseController
             )),
             'consent_selection' => $consent->selection()->toArray(),
             'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
-            'csp' => $this->buildCspMeta(),
-            'search_scopes' => $this->searchHistoryService->settingsMeta(),
-            'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
-            'public_disk_hardening' => PublicDiskHardeningProbe::cached(),
-        ];
-    }
-
-    /**
-     * 보안 탭 「콘텐츠 보안 정책」 섹션이 읽는 메타를 만듭니다 (#158).
-     *
-     * - `override`: `.env G7_CSP_MODE` 탈출구 값 (없으면 null) — 있으면 화면의 모드 선택을 잠근다
-     * - `preview`: 지금 저장값으로 붙을 정책 문자열 (모드가 끔이어도 미리 보여 준다)
-     * - `auto_hosts`: 활성 확장 선언에서 자동 합산된 호스트
-     * - `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값 (없으면 null) — 있으면 스타일 모드 선택을 잠근다 (7.1.6)
-     * - `style_preview`: 지금 저장값으로 붙을 스타일 정책 문자열 (모드가 끔이어도 미리 보여 준다)
-     * - `style_auto_hosts`: 활성 템플릿의 외부 스타일시트와 켜진 확장의 `trusted_style_hosts` 선언에서 자동 합산된 호스트
-     *
-     * @return array{override: string|null, preview: string, auto_hosts: array<int, string>, style_override: string|null, style_preview: string, style_auto_hosts: array<int, string>} CSP 메타
-     */
-    private function buildCspMeta(): array
-    {
-        $builder = app(CspPolicyBuilder::class);
-
-        return [
-            'override' => $builder->modeOverride(),
-            'preview' => $builder->build(),
-            'auto_hosts' => $builder->autoHosts(),
-            'style_override' => $builder->styleModeOverride(),
-            'style_preview' => $builder->buildStyle(),
-            'style_auto_hosts' => $builder->styleAutoHosts(),
         ];
     }
 
@@ -155,11 +113,6 @@ class SettingsController extends AdminBaseController
     {
         if (isset($settings['drivers']) && is_array($settings['drivers'])) {
             $settings['drivers']['queue_names'] = (object) (is_array($settings['drivers']['queue_names'] ?? null) ? $settings['drivers']['queue_names'] : []);
-        }
-
-        // 최근 검색어 범위 행(7.1.5) — 지금 선언된 범위마다 한 행, 선언 순서, 적용값으로 채운다(새로 켠 확장은 선언값).
-        if (isset($settings['privacy']) && is_array($settings['privacy'])) {
-            $settings['privacy'][SearchScopes::SETTINGS_ROWS_KEY] = SearchScopes::presentRows($settings['privacy'][SearchScopes::SETTINGS_ROWS_KEY] ?? []);
         }
 
         $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
@@ -294,26 +247,6 @@ class SettingsController extends AdminBaseController
     public function trustedProxy(): JsonResponse
     {
         return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
-    }
-
-    /**
-     * 외부 영상 서비스 추가 창의 예시 주소 확인 — 꺼낸 id 와 만들어질 플레이어 주소 (#883).
-     *
-     * 저장하지 않는다. 형식이 틀리면(검증 위반) 필드별 문구도 함께 돌려줘 창이 저장 전에 알려 줄 수 있게 한다.
-     *
-     * @param  EmbedProviderPreviewRequest  $request  검증된 요청
-     * @return JsonResponse `{matched, id, player_url, errors}`
-     */
-    public function embedProviderPreview(EmbedProviderPreviewRequest $request): JsonResponse
-    {
-        $preview = $this->settingsService->previewEmbedProvider((array) $request->validated('provider'), (string) $request->validated('sample_url'));
-
-        return $this->success('common.success', [
-            'matched' => $preview['matched'],
-            'id' => $preview['id'],
-            'player_url' => $preview['player_url'],
-            'errors' => (object) $preview['errors'],
-        ]);
     }
 
     /**
@@ -528,9 +461,6 @@ class SettingsController extends AdminBaseController
             return $this->success('settings.backup_success', [
                 'backup_path' => $backupPath,
             ]);
-        } catch (PhpExtensionUnavailableException $e) {
-            // 선택 확장(zip) 부재는 서버 장애가 아니라 환경 조건이다 — 원인을 알리는 422 (#151)
-            return $this->error($e->messageKey, 422, null, ['extension' => $e->extension]);
         } catch (\Exception $e) {
             return $this->error('settings.backup_failed', 500, $e->getMessage());
         }
@@ -554,8 +484,6 @@ class SettingsController extends AdminBaseController
             }
 
             return $this->error('settings.restore_failed');
-        } catch (PhpExtensionUnavailableException $e) {
-            return $this->error($e->messageKey, 422, null, ['extension' => $e->extension]);
         } catch (\Exception $e) {
             return $this->error('settings.restore_error', 500, $e->getMessage());
         }

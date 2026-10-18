@@ -64,14 +64,6 @@
   "page_n": "ページ {{n}}",
   "currency_unit": "ウォン",
   "select_all": "すべて選択",
-  "select_item": "{{name}}を選択",
-  "select_row_n": "{{n}}行目を選択",
-  "row_cell": "{{row}} {{column}}",
-  "row_n": "{{n}}行目",
-  "sort_order": "並び順",
-  "per_page": "1ページの表示件数",
-  "search_field": "検索対象",
-  "field_in_language": "{{label}}（{{language}}）",
   "file_input": {
     "clear": "ファイルを削除",
     "browse": "ファイルを選択",
@@ -87,24 +79,5 @@
   "quantity_increase": "数量を増やす",
   "close_menu": "メニューを閉じる",
   "page_transitioning": "ページ切り替え中",
-  "page_loading": "ページ読み込み中",
-  "lightbox": {
-    "dialog": "画像の拡大表示",
-    "carousel": "画像の切り替え表示",
-    "photo_gallery": "フォトギャラリー",
-    "slide": "写真",
-    "slide_position": "{total}枚中{index}枚目",
-    "previous": "前の写真",
-    "next": "次の写真",
-    "close": "閉じる",
-    "zoom_in": "拡大",
-    "zoom_out": "縮小",
-    "enter_fullscreen": "全画面表示",
-    "exit_fullscreen": "全画面表示を終了",
-    "play": "スライドショーを開始",
-    "pause": "スライドショーを一時停止",
-    "thumbnails": "サムネイル一覧",
-    "show_thumbnails": "サムネイル一覧を表示",
-    "hide_thumbnails": "サムネイル一覧を非表示"
-  }
+  "page_loading": "ページ読み込み中"
 }

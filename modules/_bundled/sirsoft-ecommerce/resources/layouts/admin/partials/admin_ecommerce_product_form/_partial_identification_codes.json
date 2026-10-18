@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
+            "name": "Div",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기",
@@ -26,9 +26,7 @@
                 }
             ],
             "props": {
-                "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
-                "aria-expanded": "{{_local.ui.identificationExpanded !== false}}"
+                "className": "card-header"
             },
             "children": [
                 {
@@ -52,7 +50,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.identificationExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.identificationExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
             ]
@@ -121,7 +119,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ],
@@ -161,7 +159,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ],
@@ -210,7 +208,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ],
@@ -259,7 +257,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": true
+                                                "hasChanges": "{{!!route?.itemCode}}"
                                             }
                                         }
                                     ],

@@ -47,14 +47,9 @@ describe('좁은 화면 고정 줄', () => {
    * @effects document_no_horizontal_overflow
    */
   it.each(['partials/shop/list/_search_filter_bar.json', 'shop/category.json'])('%s 상품 검색 입력칸은 flex-1 min-w-0', (file) => {
-    // 검색줄은 최근 검색어 검색창(RecentSearchCombobox, showButton)이다 — 입력칸 자리(flex-1 min-w-0)는 컴포넌트가 그린다
-    const boxes = findAll(loadLayout(file), (n) => n.name === 'RecentSearchCombobox' && n.props?.name === 'keyword');
-    expect(boxes.length).toBe(1);
-    expect(boxes[0].props.showButton).toBe(true);
-    expect(String(boxes[0].props.inputClassName).split(/\s+/)).toContain('w-full');
-    const source = fs.readFileSync(path.resolve(__dirname, '../../src/components/composite/RecentSearchCombobox.tsx'), 'utf-8');
-    expect(source).toContain('<Div className="relative flex-1 min-w-0">');
-    expect(source).toMatch(/showButton \? 'flex gap-2' : ''/);
+    const inputs = findAll(loadLayout(file), (n) => n.name === 'Input' && n.props?.name === 'keyword');
+    expect(inputs.length).toBe(1);
+    expect(tokens(inputs[0])).toEqual(expect.arrayContaining(['flex-1', 'min-w-0']));
   });
 
   /**
@@ -72,7 +67,7 @@ describe('좁은 화면 고정 줄', () => {
    * @effects document_no_horizontal_overflow
    */
   it('인기글 기간 단추 줄은 flex-wrap', () => {
-    const rows = findAll(loadLayout('board/popular.json'), (n) => (n.children ?? []).filter((c: Node) => c.name === 'A' && String(c.props?.href ?? '').includes('/boards/popular?period=')).length >= 3);
+    const rows = findAll(loadLayout('board/popular.json'), (n) => (n.children ?? []).filter((c: Node) => c.name === 'Button' && JSON.stringify(c.actions ?? []).includes('/boards/popular?period=')).length >= 3);
     expect(rows.length).toBe(1);
     expect(tokens(rows[0])).toContain('flex-wrap');
   });

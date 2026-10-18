@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
+            "name": "Div",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기",
@@ -26,9 +26,7 @@
                 }
             ],
             "props": {
-                "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
-                "aria-expanded": "{{_local.ui.noticeExpanded !== false}}"
+                "className": "card-header"
             },
             "children": [
                 {
@@ -60,7 +58,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
             ]
@@ -146,12 +144,33 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "w-full",
-                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.notice_template",
+                                        "className": "select w-full",
                                         "value": "{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}",
-                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.product.placeholders.notice_template') }].concat((notice_templates?.data?.data ?? []).map(template => ({ value: template.id, label: $localized(template.name) })))}}",
                                         "disabled": "{{_computed.isReadOnly}}"
-                                    }
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": ""
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.product.placeholders.notice_template"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "iteration": {
+                                                "source": "{{notice_templates?.data?.data ?? []}}",
+                                                "item_var": "template",
+                                                "index_var": "tplIdx"
+                                            },
+                                            "props": {
+                                                "value": "{{template.id}}"
+                                            },
+                                            "text": "{{$localized(template.name)}}"
+                                        }
+                                    ]
                                 },
                                 {
                                     "comment": "고시 템플릿 조회 권한이 없어 선택지가 비었을 때의 안내 — 고시 항목은 아래에서 직접 채울 수 있다",

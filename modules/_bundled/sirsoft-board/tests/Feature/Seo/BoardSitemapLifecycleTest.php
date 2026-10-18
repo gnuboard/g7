@@ -2,11 +2,13 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature\Seo;
 
+use App\Extension\HookManager;
 use App\Jobs\GenerateSitemapJob;
 use App\Models\SitemapUrl;
 use App\Models\User;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheRegenerator;
+use App\Support\ScreenUrl;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -287,6 +289,56 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
         $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
         $this->assertSame($this->contributorLocs(), $this->storedLocs(), '재활성 직후 증분·전체 집합이 달라서는 안 됩니다.');
+    }
+
+    /**
+     * 개발자가 화면 주소 필터로 게시판 주소를 바꿔 두면 증분 색인(글 저장·게시판 수정·재활성 묶음)도 전체 재생성과
+     * 같은 필터 주소를 쓴다 (#792 W17) — 필터 전 주소가 섞이면 글을 저장할 때마다 사이트맵이 옛 주소로 덮인다.
+     *
+     * @scenario lifecycle=reactivate
+     *
+     * @effects incremental_index_follows_screen_url_filter
+     *
+     * @return void 반환값 없음
+     */
+    public function test_incremental_index_follows_screen_url_filter(): void
+    {
+        HookManager::addFilter(ScreenUrl::FILTER, fn (string $path, string $key, array $params) => match ($key) {
+            'board.list' => '/community/'.$params['slug'],
+            'board.post' => '/community/'.$params['slug'].'/'.$params['id'],
+            default => $path,
+        });
+
+        try {
+            $snapshot = $this->board->fresh()->toArray();
+            $this->board->update(['is_active' => false]);
+            $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
+            $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
+
+            $snapshot = $this->board->fresh()->toArray();
+            $this->board->update(['is_active' => true]);
+            $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
+            $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
+            $this->listener->onPostUpdate(Post::find($this->posts['public_a']), $this->board->slug);
+
+            $prefix = '/community/'.$this->board->slug;
+            $stored = SitemapUrl::where(fn ($q) => $q->where('resource_type', 'board')->where('resource_id', (string) $this->board->id))
+                ->orWhere(fn ($q) => $q->where('resource_type', 'board_post')->whereIn('resource_id', [(string) $this->posts['public_a'], (string) $this->posts['public_b']]))
+                ->pluck('loc')->sort()->values()->all();
+            $expected = [];
+            foreach (app(BoardSitemapContributor::class)->getUrlsLazy() as $entry) {
+                $url = (string) ($entry['url'] ?? '');
+                if ($url === $prefix || str_starts_with($url, $prefix.'/')) {
+                    $expected[] = ScreenUrl::toAbsolute($url);
+                }
+            }
+            sort($expected);
+
+            $this->assertCount(3, $expected, '필터를 탄 기여자 주소(게시판 1 + 공개 글 2)가 있어야 합니다.');
+            $this->assertSame($expected, $stored, '증분 색인 주소가 필터를 탄 전체 재생성 주소와 달라서는 안 됩니다.');
+        } finally {
+            HookManager::clearFilter(ScreenUrl::FILTER);
+        }
     }
 
     /**

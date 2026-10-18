@@ -85,7 +85,7 @@ describe('basic 호출부 — count 가 아닌 수 인자도 count 로 넘긴다
     ['layouts/partials/mypage/claims/_apply_reason.g7.html', '$t:claim.apply.images_hint|count={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}'],
     ['layouts/partials/mypage/claims/_detail_progress.g7.html', '$t:claim.detail.collection_overdue|count={{claim.data?.collection_lane?.overdue_days ?? 0}}'],
     ['layouts/partials/mypage/claims/_detail_shipping.g7.html', '$t:claim.detail.collection_overdue|count={{claim.data?.claim?.collection_overdue_days ?? 0}}'],
-    ['layouts/partials/shop/detail/_purchase_options.g7.html', '$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}'],
+    ['layouts/partials/shop/detail/_purchase_card.g7.html', '$t:shop.max_purchase_qty_notice|count={{product.data?.max_purchase_qty}}'],
     ['layouts/partials/shop/detail/_tab_reviews.g7.html', '$t:shop.product.rating_out_of_5|count={{reviews.data?.total_count ?? 0}}'],
     ['layouts/partials/shop/_checkout_payment.g7.html', '$t:shop.checkout.vbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}'],
     ['layouts/partials/shop/_checkout_payment.g7.html', '$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}'],

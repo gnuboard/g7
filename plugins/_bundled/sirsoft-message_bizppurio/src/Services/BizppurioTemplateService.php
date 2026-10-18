@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\MessageBizppurio\Services;
 
-use App\Helpers\TimezoneHelper;
 use App\Services\PluginSettingsService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Client\ConnectionException;
@@ -88,21 +87,14 @@ class BizppurioTemplateService
                 'template_code' => $template->template_code,
                 'status' => $template->status->value,
                 'has_content' => (bool) $template->getAttribute('has_content'),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'requested_at' => $template->requested_at?->toIso8601String(),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'approved_at' => $template->approved_at?->toIso8601String(),
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'last_synced_at' => $template->last_synced_at?->toIso8601String(),
-                // 화면 표시용 — 보는 사람 날짜(ISO 를 잘라 쓰면 UTC 날짜가 보인다)
-                'requested_at_date_formatted' => TimezoneHelper::toUserDateString($template->requested_at),
-                'approved_at_date_formatted' => TimezoneHelper::toUserDateString($template->approved_at),
-                'last_synced_at_date_formatted' => TimezoneHelper::toUserDateString($template->last_synced_at),
                 'inspection_detail' => $template->inspection_detail,
                 'fallback_sms_enabled' => $template->fallback_sms_enabled,
                 'sms_body' => $template->sms_body,
                 // 본문 유무·미리보기는 모델이 판정한다 — 화면이 로케일 맵을 직접 훑으면 발송 게이트
-                // (hasSmsBody: 공백 제거 후 비교, 폴백은 LocalizedValue 대체 순서)와 규칙이 갈려
+                // (hasSmsBody: 공백 제거 후 비교, 폴백은 config('app.fallback_locale'))와 규칙이 갈려
                 // "화면엔 본문 있음 / 실제로는 미발송" 이 된다. 판정 한 벌만 둔다.
                 'has_sms_body' => $template->hasSmsBody(),
                 'sms_body_preview' => $template->getLocalizedSmsBody(),

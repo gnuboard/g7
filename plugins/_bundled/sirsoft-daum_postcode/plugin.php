@@ -35,33 +35,17 @@ class Plugin extends AbstractPlugin
     public function getSettingsSchema(): array
     {
         return [
-            // 표시 방식은 기기별로 고른다(1.2.0) — 기기는 클릭 시점 화면 폭으로 가른다(엔진 반응형
-            // portable 상한 1023px 이하 = 모바일·태블릿). 1.1.x 의 단일 display_mode 는 1.2.0 업그레이드 스텝이 PC 칸으로 옮긴다.
-            'display_mode_pc' => [
+            'display_mode' => [
                 'type' => 'enum',
-                'options' => ['popup', 'layer', 'inline'],
+                'options' => ['popup', 'layer'],
                 'default' => 'layer',
                 'label' => [
-                    'ko' => 'PC 표시 방식',
-                    'en' => 'Display Mode (PC)',
+                    'ko' => '표시 방식',
+                    'en' => 'Display Mode',
                 ],
                 'hint' => [
-                    'ko' => 'PC(화면 폭 1024px 이상)에서 주소 검색 창을 띄우는 방식입니다.',
-                    'en' => 'How the address search opens on PC (screen width 1024px or more).',
-                ],
-                'required' => false,
-            ],
-            'display_mode_mobile' => [
-                'type' => 'enum',
-                'options' => ['inline', 'fullscreen'],
-                'default' => 'inline',
-                'label' => [
-                    'ko' => '모바일 표시 방식',
-                    'en' => 'Display Mode (Mobile)',
-                ],
-                'hint' => [
-                    'ko' => '휴대폰·태블릿(화면 폭 1023px 이하)에서 주소 검색 창을 띄우는 방식입니다.',
-                    'en' => 'How the address search opens on phones and tablets (screen width 1023px or less).',
+                    'ko' => '주소 검색 창을 표시하는 방식을 선택합니다.',
+                    'en' => 'Select how to display the address search window.',
                 ],
                 'required' => false,
             ],
@@ -73,12 +57,12 @@ class Plugin extends AbstractPlugin
                 'min' => 100,
                 'max' => 2000,
                 'label' => [
-                    'ko' => 'PC 레이어·팝업 너비 (px)',
-                    'en' => 'PC Layer/Popup Width (px)',
+                    'ko' => '팝업 너비 (px)',
+                    'en' => 'Popup Width (px)',
                 ],
                 'hint' => [
-                    'ko' => 'PC 의 레이어·팝업 방식에서 쓰는 창 너비입니다. 레이어는 화면보다 크면 화면에 맞춰 줄어듭니다. (100~2000)',
-                    'en' => 'Window width used by the layer and popup modes on PC. A layer larger than the screen shrinks to fit. (100–2000)',
+                    'ko' => '팝업 모드에서 사용되는 창 너비입니다. (100~2000)',
+                    'en' => 'Window width used in popup mode. (100–2000)',
                 ],
                 'required' => false,
             ],
@@ -88,12 +72,12 @@ class Plugin extends AbstractPlugin
                 'min' => 100,
                 'max' => 2000,
                 'label' => [
-                    'ko' => 'PC 레이어·팝업 높이 (px)',
-                    'en' => 'PC Layer/Popup Height (px)',
+                    'ko' => '팝업 높이 (px)',
+                    'en' => 'Popup Height (px)',
                 ],
                 'hint' => [
-                    'ko' => 'PC 의 레이어·팝업 방식에서 쓰는 창 높이입니다. 레이어는 화면보다 크면 화면에 맞춰 줄어듭니다. (100~2000)',
-                    'en' => 'Window height used by the layer and popup modes on PC. A layer larger than the screen shrinks to fit. (100–2000)',
+                    'ko' => '팝업 모드에서 사용되는 창 높이입니다. (100~2000)',
+                    'en' => 'Window height used in popup mode. (100–2000)',
                 ],
                 'required' => false,
             ],
@@ -121,8 +105,7 @@ class Plugin extends AbstractPlugin
     public function getConfigValues(): array
     {
         return [
-            'display_mode_pc' => 'layer',
-            'display_mode_mobile' => 'inline',
+            'display_mode' => 'layer',
             'popup_width' => 500,
             'popup_height' => 600,
             'theme_color' => '#1D4ED8',

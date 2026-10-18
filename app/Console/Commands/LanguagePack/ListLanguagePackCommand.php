@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\LanguagePack;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Models\LanguagePack;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
@@ -16,12 +15,15 @@ use Illuminate\Console\Command;
  */
 class ListLanguagePackCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * @var string
      */
     protected $signature = 'language-pack:list {--scope= : 특정 스코프만 (core/module/plugin/template)}';
+
+    /**
+     * @var string
+     */
+    protected $description = '언어팩 목록을 출력합니다 (미설치 번들 및 드리프트 상태 포함).';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -48,7 +50,7 @@ class ListLanguagePackCommand extends Command
         $packs = $paginator->items();
 
         if (empty($packs)) {
-            $this->info(__('language_packs.commands.list.empty'));
+            $this->info('언어팩이 없습니다.');
 
             return self::SUCCESS;
         }
@@ -83,7 +85,7 @@ class ListLanguagePackCommand extends Command
     private function formatStatus(LanguagePack $pack): string
     {
         if ((bool) $pack->getAttribute('files_missing')) {
-            return __('language_packs.commands.list.files_missing', ['status' => $pack->status]);
+            return $pack->status.' (파일 없음)';
         }
 
         return (string) $pack->status;

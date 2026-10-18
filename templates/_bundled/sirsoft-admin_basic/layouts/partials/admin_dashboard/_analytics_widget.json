@@ -56,16 +56,19 @@
                 {
                     "id": "dashboard_analytics_more_btn",
                     "type": "basic",
-                    "name": "A",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate"
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/analytics"
+                            }
                         }
                     ],
                     "props": {
-                        "href": "/admin/analytics",
-                        "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                        "type": "button",
+                        "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                     },
                     "text": "$t:admin.analytics.dashboard_widget.detail"
                 }
@@ -304,16 +307,19 @@
                         },
                         {
                             "type": "basic",
-                            "name": "A",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate"
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/analytics/realtime"
+                                    }
                                 }
                             ],
                             "props": {
-                                "href": "/admin/analytics/realtime",
-                                "className": "button text-sm text-blue-600 dark:text-blue-300 hover:underline"
+                                "type": "button",
+                                "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
                             },
                             "text": "$t:admin.analytics.overview.realtime_link"
                         }

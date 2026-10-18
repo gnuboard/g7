@@ -4,20 +4,6 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.0.5] - 2026-11-10
-
-### Added
-
-- 페이지 1.2.2 의 브라우저 실측 데이터 시더 안내(`seeders.issue162_measure.*` — 실행 조건 안내·생성·정리 완료 건수)의 일본어 번역을 추가했습니다.
-- 페이지 편집기 본문 미디어 업로드(페이지 1.2.2)의 결과 안내와 검증 항목 이름 일본어 번역을 추가했습니다.
-- 페이지 편집기 본문 미디어 업로드 계약 조회(`GET admin/content-media/target`, 페이지 1.2.2)의 결과 안내(`messages.content_media.target_success`)와 화면 편집기 데이터 출처 「본문 미디어 업로드 계약」(`editor.data_source.contentMediaTarget`)의 일본어 번역을 추가했습니다.
-
-## [1.0.4] - 2026-10-21
-
-### Added
-
-- 페이지 1.2.1 에서 번역 문구로 바뀐 임시 첨부 정리 명령과 설치·샘플 시드 콘솔 출력(24건)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
-
 ## [1.0.3] - 2026-10-10
 
 ### Added

@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use Closure;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,6 +22,11 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class VerifyGuestOrderToken
 {
+    /**
+     * 미들웨어를 생성합니다.
+     *
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 주문 토큰 검증 서비스
+     */
     public function __construct(
         private GuestOrderAuthService $guestOrderAuthService
     ) {}
@@ -53,7 +59,7 @@ class VerifyGuestOrderToken
                 'sirsoft-ecommerce',
                 'exceptions.order_not_found',
                 404,
-                ['redirect_to' => ShopPathResolver::path('guest/orders')]
+                ['redirect_to' => EcommerceScreenUrl::guestOrders()]
             );
         }
 

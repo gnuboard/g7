@@ -11,7 +11,6 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { pickLocalized } from '../support/localeTag';
 
 const logger = createLogger('SystemBannerManager');
 
@@ -108,8 +107,7 @@ export class SystemBannerManager {
         if (typeof message === 'string') {
             return message;
         }
-        // 화면 언어 → 사이트 기본 언어 → en → 첫 값 (engine-v1.81.0)
-        return pickLocalized(message, locale) ?? '';
+        return message[locale] || message['en'] || message['ko'] || Object.values(message)[0] || '';
     }
 
     /**
@@ -146,19 +144,13 @@ export class SystemBannerManager {
 
         const locale = this.detectLocale();
 
-        // 배너 항목 렌더링 — 고정 모양은 코어 정적 CSS 의 `g7-system-banner` 클래스, 배너마다 다른 배경·글자색은
-        // CSSOM 대입으로 준다. HTML 문자열의 style 속성은 엄격한 스타일 정책에서 막혀 배너가 무스타일이 된다(#163).
-        // 메시지는 종전 계약대로 HTML 문자열을 허용한다(innerHTML).
-        container.replaceChildren(...sortedBanners.map(banner => {
-            const item = document.createElement('div');
-            item.dataset.bannerId = String(banner.id);
-            item.className = 'g7-system-banner';
-            item.style.background = banner.background || '#f59e0b';
-            item.style.color = banner.color || 'white';
-            item.innerHTML = this.resolveMessage(banner.message, locale);
-
-            return item;
-        }));
+        // HTML 렌더링
+        container.innerHTML = sortedBanners.map(banner => {
+            const msg = this.resolveMessage(banner.message, locale);
+            const bg = banner.background || '#f59e0b';
+            const color = banner.color || 'white';
+            return `<div data-banner-id="${banner.id}" style="background:${bg};color:${color};text-align:center;padding:8px 16px;font-size:14px;font-weight:500;">${msg}</div>`;
+        }).join('');
 
         // #app 컨테이너에 paddingTop 적용 (배너 높이만큼)
         // requestAnimationFrame으로 렌더링 후 높이 측정

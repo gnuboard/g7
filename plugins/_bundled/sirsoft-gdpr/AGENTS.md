@@ -44,22 +44,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 `sirsoft-gdpr.necessary_storage.filter_provided_keys`(`Plugin::PROVIDED_NECESSARY_STORAGE_HOOK`)를
 소유하고, 확장은 `['localStorage'=>[], 'sessionStorage'=>[], 'cookie'=>[]]` 를 받아 자기 키를 덧붙여
 돌려줍니다. `Plugin::providedNecessaryStorage()` 가 판정·인라인 때마다 그 훅을 당겨(pull) 모으고
-형식 규칙(`NECESSARY_STORAGE_KEY_PATTERN`)을 통과한 항목만 받습니다. PHP 리스너가 없는 템플릿은
-`template.json` 의 `necessary_storage` 로 선언하고, 코어 `TemplateManager::getActiveTemplatesNecessaryStorage()`
-(7.1.3+, 없는 옛 코어에서는 건너뜀)로 받아 같은 목록에 합칩니다. 제공 목록·잠금 목록은 계산값 키
-(`Plugin::getComputedSettingKeys()`, 코어 7.1.3+)라 설정에 저장하지 않으므로 확장을
+형식 규칙(`NECESSARY_STORAGE_KEY_PATTERN`)을 통과한 항목만 받습니다. 설정에 저장하지 않으므로 확장을
 켜고 끄면 다음 요청부터 저절로 반영되고(비활성 확장의 리스너는 부팅 때 등록되지 않는다), 이 플러그인이
 없으면 훅이 발행되지 않을 뿐 제공 확장은 그대로 섭니다 — 이커머스 결제수단 등록과 같은 방식입니다.
-1.1.1 까지 설치 시점에 굳은 계산값과 운영자 목록의 `g7_order_*`(이커머스 1.3.2+ 가 직접 제공)는 1.1.2
-업그레이드가 걷어냅니다.
-
-코어 엔진의 뒤로 가기·새로고침 스크롤 기억(sessionStorage `g7_scroll_positions`, 코어 engine-v1.85.0)은 출하
-카탈로그의 세션 저장소 목록에 있습니다(1.1.4). 동의 전에도 새로고침 뒤 보던 위치로 돌아가야 하는 화면 상태라
-필수로 분류했고, 이미 설치된 사이트는 `Upgrade_1_1_4` 가 운영자 목록의 세션 저장소 칸에 없을 때만
-덧붙이며 다른 항목은 건드리지 않습니다. 필수 카테고리 고지 문구 4곳은 고치지 않았습니다 — 문구가 「… 쿠키 동의
-기록 등」으로 범주만 적고 `g7_filters_*`·`g7.identity.redirectStash` 같은 개별 키를 열거하지 않으며, 이 키를
-기능 쿠키라고 안내한 곳도 없으므로 고지가 실제 동작과 어긋나지 않습니다(아래 금지 표 「저장소 허용목록만 고치고
-동의 안내 문구는 그대로 두기」가 막는 것은 그 어긋남이다).
 
 그래서 **판정 목록은 하나**입니다. 서버(`CookieConsentMiddleware`)와 클라이언트 셋
 (`storageInterceptor` · `cookieInterceptor` · `functionalCleaner`)이 같은 설정을 같은 매칭 규칙
@@ -121,12 +108,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 
 **요청마다 반복되는 게이팅**: `CookieConsentMiddleware`(web/api 그룹에 prepend)가 응답 직전
 `GdprConsentService::getCurrentCookieConsents()` 로 현재 functional 동의 여부를 조회하고,
-미동의면 strictly-necessary 4종을 제외한 모든 Set-Cookie 헤더를 응답에서 제거합니다. 지울
-후보(허용목록 밖·파기 아님)가 하나도 없는 응답은 동의를 조회하지 않고 그대로 통과합니다(1.1.4).
-한 요청 안에서 미들웨어·동의 제공자·동의 현황 리소스가 묻는 현재 정책 버전과 같은 주체의 동의
-행은 요청 단위 보관함 `Support\GdprConsentReadMemo`(scoped)에 한 번만 읽어 둡니다 — 정책 버전·
-동의 행·이력 모델이 저장·삭제되면 비우고, 이벤트 없는 대량 쓰기 뒤에는 `GdprConsentService` 가
-직접 비웁니다. 서비스 자체는 지금처럼 필요할 때마다 만듭니다. 이
+미동의면 strictly-necessary 4종을 제외한 모든 Set-Cookie 헤더를 응답에서 제거합니다. 이
 서버측 게이팅과 별개로, 클라이언트에서는 `data-gdpr-category` 속성이 붙은 스크립트/iframe 과
 분석/마케팅 카테고리 도메인 매칭 리소스가 동의 전까지 로드되지 않습니다.
 
@@ -175,8 +157,6 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
-- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] `gdpr_user_consent_histories` 는 append-only — UPDATE/DELETE 로 기존 행을 고치지 않는다 (완전삭제 시 익명화 UPDATE 예외는 `GdprUserDeleteListener` 단일 지점에서만 수행)
 - [ ] 새 자동 차단 카테고리(기능/분석/마케팅 외)를 추가하면 배너 UI·`blocked_domains` 스키마·차단 스크립트 3곳 동기화
 - [ ] 잠금 집합(`NecessaryAllowlist::locked()`)이나 출하 카탈로그에 항목을 늘릴 때는 ePrivacy Art.5(3) 면제 항목인지 먼저 검토 — 임의로 늘리면 동의 전 차단 원칙이 무력화된다
@@ -206,8 +186,6 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 정책 버전 발행을 코드/배치로 자동화 | 운영자가 매번 명시적으로 "+ 새 버전 발행" 클릭. 개인정보 이용내역의 연간 통지는 별도 자동 작업 | 정책 재동의와 처리 내역 안내는 서로 다른 작업이며 연간 통지는 정책 버전을 발행하지 않는다 |
 | 저장소 허용목록만 고치고 동의 안내 문구는 그대로 두기 | 목록·문구 4곳·업그레이드 스텝을 한 작업 단위로 | 안내가 "이 항목은 기능 쿠키이고 거부하면 저장되지 않는다" 라고 말하는데 실제로는 항상 저장되면, 고지 자체가 사실과 달라진다 |
 | 처리방침 링크를 다른 확장의 주소 규칙으로 조합(`/page/{slug}` 등) 하거나 화면에서 경로를 이어 붙이기 | 운영자가 적은 `privacy_policy_url` 을 서버가 `Support\PrivacyPolicyUrl` 로 걸러 내보낸 값 그대로 href 로 쓴다 | 선언하지 않은 확장의 주소 규칙에 기대면 그 확장이 없거나 규칙이 바뀔 때 링크가 조용히 404 가 된다. 판정(저장 검증·공개 응답·메일 링크·스냅샷 비교)이 한 곳이 아니면 저장은 막혔는데 출력은 새는 틈이 생긴다 |
-| 배너 조건에서 `gdprMyConsent !== undefined`(받는 중 가드)·신원 일치 가드를 빼고 `has_consented !== true` 만으로 판정 | `gdprMyConsent !== undefined && (gdprMyConsent === null \|\| 신원 일치) && has_consented !== true` | 새로고침 때 설정 응답이 동의 상태보다 먼저 오면 받는 중(undefined)을 「미동의」로 읽어, 동의를 마친 방문자에게도 배너가 잠깐 보였다(전수 테스트 `loadingNegativeState` 「받는 중 노출 전수」가 잠근다) |
-| 차단한 요소를 `style` 속성째 `outerHTML` 문자열로 보존했다가 `innerHTML` 로 되살리기 | `blocker.ts` 가 보존 전에 style 을 떼어 placeholder 의 `data-gdpr-original-styles` 에 두고(요소에는 순번 표식 `data-gdpr-style-ref`), 되살린 뒤 `el.style.cssText` 로 입힌다 | 엄격한 스타일 보안 정책(`style-src-attr 'none'`)은 문자열 속 `style` 을 막는다(파싱만 해도 위반이 보고된다) — 동의 뒤 되살아난 영상·지도가 크기·테두리를 잃는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -215,10 +193,10 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 52개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 39개 | `vitest.config.ts` |
+| PHPUnit | 50개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| Vitest | 30개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 44개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 34개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

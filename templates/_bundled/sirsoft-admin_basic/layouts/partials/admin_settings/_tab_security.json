@@ -1,5 +1,5 @@
 {
-    "comment": "보안 탭 — 로그인 시도 제한 같은 값과 함께 **IP 접근 제한**과 **앱 키**를 보여 준다.\n  키를 다시 만드는 것은 여기서 곧바로 하지 않고 비밀번호 확인 창을 거친다.\n  비밀번호 작성 규칙·재사용 금지·만료(#736)는 별도 조각(`_tab_security_password_policy`)이 보안 설정 카드 뒤에 그린다 —\n  최소 길이·특수문자 두 칸도 그 조각으로 옮겼다(data-ref 유지).\n  활동 로그(접속기록) 보관 기간(#736 D14)은 별도 조각(`_tab_security_activity_log`)이 접근 제한 카드 뒤에 그린다.\n  콘텐츠 보안 정책(CSP, #158)은 별도 조각(`_tab_security_csp`)이 활동 로그 카드 뒤에 그린다.\n  IP 접근 제한 카드는 별도 조각(`_tab_security_ip_restriction`)이다 — 프리셋 혼용 린트가 **문서 단위**로\n  재고(`LayoutLinter::lintResponsiveMix`), `<include>` 는 굽기 뒤에도 참조로 남아 두 문서의 프리셋이 섞이지\n  않는다. 이 문서는 portable(앱 키 카드), 그 조각은 mobile(규칙 표/카드)을 쓴다.\n  e2e:allow 이 문서의 변경은 ① 위 조각 include 한 줄 ② 체크박스 두 개를 자동 바인딩에서 명시 배선으로 돌린 것\n  (저장값이 boolean 이 아닐 때 빈 문자열이 실려 null 로 굳는 것을 막는다)이다. ②는 값이 오가는 경로만 바꾸고\n  화면·문구는 그대로이며, 레이아웃 테스트(admin-settings-security-password-policy)와 보안 탭 E2E\n  (settings-security-outbound-toggle · settings-ip-restriction)가 그 경로를 지난다",
+    "comment": "보안 탭 — 로그인 시도 제한 같은 값과 함께 **IP 접근 제한**과 **앱 키**를 보여 준다.\n  키를 다시 만드는 것은 여기서 곧바로 하지 않고 비밀번호 확인 창을 거친다.\n  비밀번호 작성 규칙·재사용 금지·만료(#736)는 별도 조각(`_tab_security_password_policy`)이 보안 설정 카드 뒤에 그린다 —\n  최소 길이·특수문자 두 칸도 그 조각으로 옮겼다(data-ref 유지).\n  활동 로그(접속기록) 보관 기간(#736 D14)은 별도 조각(`_tab_security_activity_log`)이 접근 제한 카드 뒤에 그린다.\n  IP 접근 제한 카드는 별도 조각(`_tab_security_ip_restriction`)이다 — 프리셋 혼용 린트가 **문서 단위**로\n  재고(`LayoutLinter::lintResponsiveMix`), `<include>` 는 굽기 뒤에도 참조로 남아 두 문서의 프리셋이 섞이지\n  않는다. 이 문서는 portable(앱 키 카드), 그 조각은 mobile(규칙 표/카드)을 쓴다.\n  e2e:allow 이 문서의 변경은 ① 위 조각 include 한 줄 ② 체크박스 두 개를 자동 바인딩에서 명시 배선으로 돌린 것\n  (저장값이 boolean 이 아닐 때 빈 문자열이 실려 null 로 굳는 것을 막는다)이다. ②는 값이 오가는 경로만 바꾸고\n  화면·문구는 그대로이며, 레이아웃 테스트(admin-settings-security-password-policy)와 보안 탭 E2E\n  (settings-security-outbound-toggle · settings-ip-restriction)가 그 경로를 지난다",
     "meta": {
         "is_partial": true,
         "description": "환경설정 보안 탭 콘텐츠"
@@ -74,7 +74,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400 ml-1"
+                                                        "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
                                                 }
@@ -200,7 +200,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400 ml-1"
+                                                        "className": "text-red-500 ml-1"
                                                     },
                                                     "text": "*"
                                                 }
@@ -389,102 +389,6 @@
                             ]
                         },
                         {
-                            "id": "field_password_reset_rate_limit_per_minute",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:admin.settings.security.password_reset_rate_limit_per_minute"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "number",
-                                        "name": "security.password_reset_rate_limit_per_minute",
-                                        "placeholder": "10",
-                                        "min": "{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_min ?? 1}}",
-                                        "max": "{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_max ?? 1000}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "input input-w-md {{_local.errors?.['security.password_reset_rate_limit_per_minute'] ? 'input-error' : ''}}"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_local.errors?.['security.password_reset_rate_limit_per_minute']}}",
-                                    "props": {
-                                        "className": "form-error"
-                                    },
-                                    "text": "{{_local.errors?.['security.password_reset_rate_limit_per_minute']?.[0] ?? ''}}"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "text-hint mt-1"
-                                    },
-                                    "text": "$t:admin.settings.security.rate_limit_per_minute_hint"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "field_register_rate_limit_per_minute",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": ""
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:admin.settings.security.register_rate_limit_per_minute"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "number",
-                                        "name": "security.register_rate_limit_per_minute",
-                                        "placeholder": "10",
-                                        "min": "{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_min ?? 1}}",
-                                        "max": "{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_max ?? 1000}}",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "input input-w-md {{_local.errors?.['security.register_rate_limit_per_minute'] ? 'input-error' : ''}}"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{_local.errors?.['security.register_rate_limit_per_minute']}}",
-                                    "props": {
-                                        "className": "form-error"
-                                    },
-                                    "text": "{{_local.errors?.['security.register_rate_limit_per_minute']?.[0] ?? ''}}"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "text-hint mt-1"
-                                    },
-                                    "text": "$t:admin.settings.security.rate_limit_per_minute_hint"
-                                }
-                            ]
-                        },
-                        {
                             "id": "field_two_factor_auth",
                             "type": "basic",
                             "name": "Div",
@@ -599,9 +503,6 @@
             "partial": "partials/admin_settings/_tab_security_activity_log.json"
         },
         {
-            "partial": "partials/admin_settings/_tab_security_csp.json"
-        },
-        {
             "id": "card_app_key",
             "type": "basic",
             "name": "Div",
@@ -679,7 +580,6 @@
                                         }
                                     ],
                                     "props": {
-                                        "type": "button",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": "px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
                                     },

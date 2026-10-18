@@ -3,24 +3,7 @@
     "title": "함께 쓰면 연동되는 확장",
     "hint": "아래 확장이 설치돼 있으면 기능이 서로 연결됩니다. 없어도 이 확장은 그대로 동작합니다.",
     "not_installed": "미설치",
-    "inactive": "비활성",
-    "required_version": "요구 {{version}}",
-    "installed_version": "설치 {{version}}",
-    "version_mismatch": "버전 미달",
-    "active": "사용 중",
-    "install_title": "함께 쓰면 연동되는 확장(선택)",
-    "install_hint": "체크한 확장을 이 확장보다 먼저 설치·활성화합니다. 해제해도 이 확장은 그대로 설치됩니다.",
-    "cannot_select": "여기서 설치할 수 없음",
-    "requires_label": "함께 설치:",
-    "requires_hint": "— 이 연동에 필요해서 먼저 설치합니다",
-    "requires_hint_unselected": "— 이 연동을 체크하면 함께 설치됩니다",
-    "requires_no_permission": "필요한 확장을 설치할 권한이 없음",
-    "integrated_by_label": "연동 중인 확장",
-    "deactivate_notice_title": "연동 중인 확장 확인",
-    "deactivate_notice_body": "{{name}}을(를) 끄면 아래 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다. 아래 확장은 계속 동작합니다.",
-    "deactivate_confirm": "비활성화",
-    "uninstall_notice": "아래 확장이 이 확장과 연동 중입니다 — 삭제하면 이 확장을 쓰던 메뉴·화면이 사라집니다.",
-    "notice_toast": "함께 쓰면 연동되는 확장 안내: {{items}}"
+    "inactive": "비활성"
   },
   "sidebar": {
     "no_accessible_menus": "접근 가능한 메뉴가 없습니다",
@@ -117,8 +100,7 @@
     },
     "refreshed": "대시보드가 새로고침되었습니다.",
     "extension_status": {
-      "more": "더보기",
-      "more_count": "외 {{count}}개 더 있음"
+      "more": "더보기"
     },
     "module_status": {
       "title": "모듈 상태",
@@ -440,8 +422,7 @@
         "profile_memo": "프로필/메모",
         "activity_info": "활동정보",
         "consent_info": "동의이력",
-        "notifications_info": "알림함",
-        "search_history_info": "최근 검색어"
+        "notifications_info": "알림함"
       },
       "unlock": "잠금 해제",
       "unlock_success": "계정 잠금이 해제되었습니다.",
@@ -466,15 +447,6 @@
         "no": "아니오",
         "postponed_until": "연기 종료",
         "policy": "만료 개별 설정"
-      },
-      "search_history": {
-        "auto_save": "검색어 자동 저장",
-        "auto_save_on": "켜짐",
-        "auto_save_off": "꺼짐 — 새 검색어를 기록하지 않습니다",
-        "feature_off": "사이트에서 최근 검색어 기능을 끈 상태입니다. 저장돼 있던 검색어만 보입니다.",
-        "keywords": "검색어",
-        "count": "{{count}}건",
-        "empty": "저장된 검색어가 없습니다."
       }
     },
     "filter": {
@@ -769,22 +741,17 @@
       "active": "활성화",
       "inactive": "비활성화",
       "not_installed": "미설치",
-      "version_mismatch": "버전 미달",
       "installing": "설치 중",
       "uninstalling": "제거 중",
       "updating": "업데이트 중",
-      "stuck_update": "업데이트 멈춤",
       "active_label": "활성화"
     },
-    "stuck_update_hint": "업데이트가 도중에 멈췄습니다. 「정리 후 다시 업데이트」를 누르면 정리한 뒤 업데이트를 마저 끝내고, 스위치를 켜면 정리한 뒤 활성화합니다.",
-    "stuck_update_reactivate_hint": "멈춘 업데이트를 정리했습니다. 정리한 모듈은 비활성 상태이니 스위치로 다시 켜 주세요.",
     "actions": {
       "install": "설치",
       "uninstall": "제거",
       "activate": "활성화",
       "deactivate": "비활성화",
       "update": "업데이트",
-      "recover_update": "정리 후 다시 업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
       "refresh_layouts": "레이아웃 갱신",
@@ -824,7 +791,7 @@
       "dependency_installed_version": "설치: {{version}}",
       "dependency_not_installed": "미설치",
       "dependency_met": "충족",
-      "dependency_unmet_version": "버전 미달",
+      "dependency_unmet_version": "버전 불일치",
       "dependency_inactive": "비활성",
       "permissions": "권한",
       "permissions_count": "{{count}}개의 권한이 등록됩니다.",
@@ -965,11 +932,6 @@
     "dependencies": "의존성: {{deps}}",
     "dependencies_label": "의존성:",
     "no_dependencies": "의존성: 없음",
-    "dependency_unmet": {
-      "not_installed": "미설치",
-      "inactive": "꺼짐",
-      "version_mismatch": "버전 미달 {{installed}} → {{required}}"
-    },
     "no_plugins": "설치된 플러그인이 없습니다.",
     "pagination_info": "총 {{total}}개 중 {{from}}-{{to}}개 표시",
     "update_available": "업데이트 필요",
@@ -993,21 +955,16 @@
       "active": "활성화",
       "inactive": "비활성화",
       "not_installed": "미설치",
-      "version_mismatch": "버전 미달",
       "installing": "설치 중",
       "uninstalling": "제거 중",
-      "updating": "업데이트 중",
-      "stuck_update": "업데이트 멈춤"
+      "updating": "업데이트 중"
     },
-    "stuck_update_hint": "업데이트가 도중에 멈췄습니다. 「정리 후 다시 업데이트」를 누르면 정리한 뒤 업데이트를 마저 끝내고, 스위치를 켜면 정리한 뒤 활성화합니다.",
-    "stuck_update_reactivate_hint": "멈춘 업데이트를 정리했습니다. 정리한 플러그인은 비활성 상태이니 스위치로 다시 켜 주세요.",
     "actions": {
       "install": "설치",
       "uninstall": "제거",
       "activate": "활성화",
       "deactivate": "비활성화",
       "update": "업데이트",
-      "recover_update": "정리 후 다시 업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
       "settings": "설정",
@@ -1053,7 +1010,7 @@
       "dependency_installed_version": "설치: {{version}}",
       "dependency_not_installed": "미설치",
       "dependency_met": "충족",
-      "dependency_unmet_version": "버전 미달",
+      "dependency_unmet_version": "버전 불일치",
       "dependency_inactive": "비활성",
       "permissions": "권한",
       "permissions_description": "이 플러그인에서 등록하는 권한 목록입니다.",
@@ -1258,12 +1215,7 @@
       "delete_title": "메뉴 삭제",
       "delete_confirm": "이 메뉴를 삭제하시겠습니까?",
       "delete_core_warning": "코어 메뉴는 삭제할 수 없습니다.",
-      "module_menu_notice": "모듈 기본 메뉴의 모듈은 변경할 수 없습니다.",
-      "editing_title": "편집 중인 내용이 있습니다",
-      "editing_message": "저장하지 않은 변경사항이 있습니다.",
-      "editing_confirm_message": "변경사항을 저장하지 않고 다른 메뉴로 이동하시겠습니까?",
-      "editing_discard": "변경사항 버리기",
-      "editing_continue": "계속 편집하기"
+      "module_menu_notice": "모듈 기본 메뉴의 모듈은 변경할 수 없습니다."
     },
     "messages": {
       "order_updated": "메뉴 순서가 변경되었습니다.",
@@ -1579,7 +1531,6 @@
       "general": "일반",
       "mail": "메일",
       "upload": "업로드",
-      "content": "본문 콘텐츠",
       "seo": "SEO",
       "security": "보안",
       "drivers": "드라이버",
@@ -1643,7 +1594,9 @@
       "static_cache_republish_confirm_warning": "완료까지 잠시 걸릴 수 있습니다. 그동안 사이트는 정상 동작합니다.",
       "static_cache_republished": "초기 화면 정적 파일을 다시 만들었습니다.",
       "static_cache_republish_not_publishable": "지금 환경에서는 정적 파일을 만들지 않습니다 (운영 모드가 아니거나 꺼져 있음).",
-      "static_cache_republish_failed": "초기 화면 정적 파일을 다시 만들지 못했습니다. 아래 실패 사유를 확인하세요. 사이트는 정상 동작합니다."
+      "static_cache_republish_failed": "초기 화면 정적 파일을 다시 만들지 못했습니다. 아래 실패 사유를 확인하세요. 사이트는 정상 동작합니다.",
+      "user_screen_url": "사용자 화면 URL",
+      "user_screen_url_help": "비우면 사이트 URL 과 같습니다. 다른 주소에서 운영하는 외부 화면(예: Next.js)을 쓸 때만 입력하세요. 비밀번호 재설정·알림 메일의 링크와 결제 뒤 돌아가는 주소에 쓰이며, 관리자 화면 주소는 바뀌지 않습니다."
     },
     "mail": {
       "smtp_settings": "SMTP 설정",
@@ -1686,8 +1639,6 @@
       "max_file_size": "최대 파일 크기",
       "allowed_extensions": "허용 확장자",
       "allowed_extensions_hint": "허용할 파일 확장자를 쉼표로 구분하여 입력하세요.",
-      "layout_attachment_extensions": "레이아웃 첨부 허용 확장자",
-      "layout_attachment_extensions_hint": "레이아웃 편집기에서 올릴 수 있는 형식입니다. 쉼표로 구분해 입력하세요. 이미지 외 형식은 공개 디스크로 내보내지 않으면 다운로드로 제공됩니다.",
       "image_settings": "이미지 설정",
       "image_settings_desc": "업로드되는 이미지의 자동 리사이즈 및 품질 설정입니다.",
       "image_max_width": "최대 너비",
@@ -1705,7 +1656,7 @@
       "meta_settings": "메타 태그 설정",
       "meta_settings_desc": "검색엔진 최적화를 위한 메타 태그를 설정합니다.",
       "meta_title_suffix": "타이틀 접미사",
-      "meta_title_suffix_hint": "모든 페이지 제목(검색엔진 제목과 방문자 브라우저 탭 제목) 뒤에 붙는 문구입니다. {site_name} 자리에 사이트 이름이 들어가고, 비우면 ' - 사이트 이름' 을 붙입니다. 제목이 이미 사이트 이름으로 끝나면 다시 붙이지 않습니다. (예: ' | {site_name}')",
+      "meta_title_suffix_hint": "모든 페이지 타이틀 뒤에 붙는 문구입니다. (예: ' | 그누보드7')",
       "meta_description": "기본 메타 설명",
       "meta_description_placeholder": "사이트의 기본 메타 설명을 입력하세요.",
       "meta_description_hint": "검색 결과에 표시되는 설명입니다. 최대 160자를 권장합니다.",
@@ -1788,9 +1739,7 @@
       "sitemap_progress_phase": "현재 처리 중: {{phase}}",
       "sitemap_progress_urls": "누적 URL: {{count}}개",
       "sitemap_realtime_connected": "실시간으로 연결되어 있습니다.",
-      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다.",
-      "meta_title_suffix_placeholder": " | 그누보드7",
-      "meta_keywords_placeholder": "CMS, 그누보드7, 오픈소스"
+      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다."
     },
     "security": {
       "title": "보안 설정",
@@ -1804,9 +1753,6 @@
       "auth_token_lifetime": "인증 토큰 유지시간 (분)",
       "max_login_attempts": "최대 로그인 시도 횟수",
       "login_lockout_time_full": "로그인 시도 횟수 초과시 차단 시간 (분)",
-      "password_reset_rate_limit_per_minute": "비밀번호 찾기·재설정 분당 허용 횟수",
-      "register_rate_limit_per_minute": "회원가입 분당 허용 횟수",
-      "rate_limit_per_minute_hint": "같은 IP 에서 1분 동안 받을 요청 수입니다(1~1000). 사내망처럼 여러 사람이 한 IP 를 쓰면 올리세요.",
       "zero_means_unlimited": "0을 입력하면 무한대로 설정됩니다.",
       "app_key": "어플리케이션 키 관리",
       "app_key_desc": "암호화에 사용되는 어플리케이션 키를 관리합니다.",
@@ -1954,44 +1900,6 @@
         "days_suffix": "일",
         "days_hint": "{{min}}~{{max}}일. 법정 최소 기간보다 짧게 정할 수 없습니다.",
         "legal_notice": "법정 최소: 접속기록 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면 2년) · 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관합니다."
-      },
-      "csp": {
-        "title": "콘텐츠 보안 정책 (CSP)",
-        "desc": "사이트 화면 응답에 스크립트 출처 정책 헤더를 붙여, 허용하지 않은 곳의 스크립트·인라인 스크립트가 실행되지 않게 합니다. 웹서버에서 직접 헤더를 거는 경우에는 끔으로 두세요.",
-        "mode": "적용 모드",
-        "mode_off": "끔",
-        "mode_report_only": "점검만 (위반만 기록)",
-        "mode_enforce": "강제 (위반 차단)",
-        "mode_desc": "점검만은 차단하지 않고 위반을 서버 로그(storage/logs/csp-*.log)에 남깁니다. 강제는 위반 스크립트를 실행하지 않습니다.",
-        "enforce_warning": "먼저 '점검만'으로 storage/logs/csp-*.log 에 위반이 없는지 확인한 뒤 강제로 바꾸세요. 위반이 남은 채로 강제하면 그 기능이 동작하지 않습니다.",
-        "override_notice": ".env 의 G7_CSP_MODE={{mode}} 가 이 설정보다 우선합니다. 바꾸려면 .env 를 고친 뒤 php artisan config:clear 를 실행하세요.",
-        "extra_hosts": "추가 스크립트 허용 호스트 (입력 후 Enter)",
-        "extra_hosts_placeholder": "cdn.example.com",
-        "extra_hosts_hint": "아래 자동 포함 호스트 밖에서 스크립트를 불러오는 경우에만 더하세요. 호스트만 입력합니다(예: cdn.example.com, *.example.com, https://cdn.example.com).",
-        "auto_hosts": "자동으로 포함되는 호스트 (활성 확장 선언)",
-        "auto_hosts_empty": "활성 확장이 선언한 외부 스크립트 호스트가 없습니다.",
-        "preview": "적용될 정책 미리보기",
-        "preview_hint": "저장된 값 기준입니다. 모드나 호스트를 바꿨다면 저장한 뒤 다시 확인하세요.",
-        "style": {
-          "title": "스타일 정책",
-          "desc": "사이트 화면 응답에 스타일 출처 정책을 더해, 허용하지 않은 곳의 CSS 와 인라인 스타일이 적용되지 않게 합니다. 스크립트 정책과 따로 켜고 끕니다.",
-          "mode": "스타일 적용 모드",
-          "mode_desc": "점검만은 차단하지 않고 위반을 서버 로그(storage/logs/csp-*.log)에 남깁니다. 강제는 위반 스타일을 적용하지 않습니다.",
-          "level": "차단 강도",
-          "level_basic": "기본 — <style> 블록과 허용하지 않은 외부 CSS 파일 차단",
-          "level_strict": "엄격 — 기본 + 태그의 style 속성도 차단",
-          "level_desc": "기본은 대부분의 화면이 그대로 동작합니다. 엄격은 외부 라이브러리가 직접 넣는 style 속성까지 막으므로 깨지는 화면이 더 많습니다.",
-          "enforce_warning": "먼저 '점검만'으로 storage/logs/csp-*.log 에 위반이 없는지 확인한 뒤 강제로 바꾸세요.",
-          "known_issues_basic": "강제하면 다음 화면이 깨집니다: 태그 입력·다중 선택 칸(이 카드의 허용 호스트 입력 포함) — 칸 안 배치가 흐트러지고 화면 낭독용 안내 문구가 그대로 보임; 레이아웃 코드 편집기 — 구문 색과 배경 테마가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
-          "known_issues_strict": "강제하면 다음 화면이 깨집니다: 태그 입력·다중 선택 칸(이 카드의 허용 호스트 입력 포함) — 칸 안 배치가 흐트러지고 화면 낭독용 안내 문구가 그대로 보임; 레이아웃 코드 편집기 — 구문 색·배경 테마·줄 강조가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
-          "override_notice": ".env 의 G7_CSP_STYLE_MODE={{mode}} 가 이 설정보다 우선합니다. 바꾸려면 .env 를 고친 뒤 php artisan config:clear 를 실행하세요.",
-          "extra_hosts": "추가 스타일 허용 호스트 (입력 후 Enter)",
-          "extra_hosts_placeholder": "fonts.example.com",
-          "extra_hosts_hint": "아래 자동 포함 호스트 밖에서 CSS 파일을 불러오는 경우에만 더하세요. 호스트만 입력합니다(예: fonts.example.com, *.example.com, https://fonts.example.com).",
-          "auto_hosts": "자동으로 포함되는 스타일 호스트 (활성 템플릿·확장 선언)",
-          "auto_hosts_empty": "활성 템플릿·확장이 선언한 외부 스타일시트 호스트가 없습니다.",
-          "preview": "적용될 스타일 정책 미리보기"
-        }
       }
     },
     "identity": {
@@ -2072,11 +1980,7 @@
         "title": "공개 자산 스토리지",
         "desc": "완전 공개 자산(상품·카테고리·리뷰·에디터 이미지, 레이아웃 배경 이미지 등)의 직접 URL 서빙 디스크를 설정합니다. 사용 안 함이면 기존 스트리밍 방식으로 동작합니다. 켠 뒤 업로드한 파일만 직접 URL 로 발급되며, 그 주소는 저장된 레이아웃에 그대로 남습니다.",
         "disk": "디스크",
-        "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다.",
-        "extensions": "공개 디스크로 내보낼 확장자",
-        "extensions_hint": "이 목록의 형식만 공개 디스크에 저장되어 직접 URL 로 제공됩니다. 그 밖의 형식은 기존 디스크에 저장되어 서버를 거쳐 제공됩니다. 이미지가 아닌 형식을 넣으면 직접 URL 에서도 다운로드로만 제공됩니다.",
-        "hardening_warning": "웹서버 보호 규칙이 적용되지 않았습니다. /storage 직접 주소 응답에 보호 헤더가 없습니다 — 설치 문서의 nginx/Apache 설정을 확인하세요.",
-        "hardening_rules_write_failed": "웹서버 보호 규칙 파일을 지금 설정으로 바꾸지 못했습니다. 공개 디스크 폴더(storage/app/public)와 그 안의 .htaccess 파일을 웹서버 계정이 쓸 수 있는지 확인한 뒤 다시 저장하세요."
+        "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다."
       },
       "cache": {
         "title": "캐시",
@@ -2508,10 +2412,6 @@
       "php_extensions_desc": "설치된 PHP 확장 모듈 상태입니다.",
       "required_modules": "필수 모듈",
       "optional_modules": "선택 모듈",
-      "requested_modules": "확장(모듈·플러그인)이 요구하는 모듈",
-      "requested_by_line": "요구: {{names}}",
-      "level_require": "필수",
-      "level_suggest": "권장",
       "check_update": "업데이트 확인",
       "update_check_failed": "업데이트 확인에 실패했습니다.",
       "update_result_title": "업데이트 확인 결과",
@@ -2528,15 +2428,28 @@
       "update_guide_warning": "코어 업데이트는 터미널에서만 실행할 수 있습니다. 업데이트 전 반드시 데이터베이스를 백업하세요.",
       "update_guide_desc": "서버 터미널에 접속하여 그누보드7 설치 디렉토리에서 아래 명령어를 실행하세요.",
       "update_guide_note": "업데이트 중 자동으로 유지보수 모드가 활성화됩니다. 업데이트 완료 후 자동으로 해제됩니다.",
-      "manual_update_title": "수동 업데이트 (GitHub 에서 받기 어려운 환경)",
-      "manual_update_desc": "GitHub 에 연결할 수 없거나 특정 버전으로 올릴 때, 릴리스 ZIP 을 직접 다운로드해 압축을 푼 폴더로 업데이트할 수 있습니다. 이 방법도 PHP zip 확장 등 필수 확장이 서버에 있어야 합니다.",
+      "manual_update_title": "수동 업데이트 (ZIP 확장 미설치 환경)",
+      "manual_update_desc": "서버에 PHP zip 확장이나 unzip 명령어가 없는 경우, GitHub에서 릴리스 ZIP을 직접 다운로드하여 업데이트할 수 있습니다.",
       "manual_update_step1": "# 1. GitHub 릴리스 페이지에서 ZIP 다운로드 후 서버에 압축 해제",
       "manual_update_step2": "# 2. 압축 해제된 경로를 지정하여 업데이트 실행",
       "update_guide_cmd_comment": "# 관리자 권한으로 실행 권장 (Linux/macOS)",
       "update_guide_cmd": "$ sudo php artisan core:update",
       "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
       "upgrade_guide_link_desc": "운영 환경별 권한/사용자군별 자세한 절차는 업그레이드 가이드를 참고하세요.",
-      "upgrade_guide_link_label": "전체 업그레이드 가이드 보기"
+      "upgrade_guide_link_label": "전체 업그레이드 가이드 보기",
+      "custom_preflight_title": "업데이트를 시작하지 않았습니다",
+      "custom_preflight_desc": "개발자가 설치한 패키지(custom/composer.json) {count}개가 새 코어 {version} 과 맞지 않습니다. 아무 파일도 바뀌지 않았고 사이트는 그대로 동작합니다.",
+      "custom_conflict_package": "개발자 패키지",
+      "custom_conflict_reason": "무엇이 맞지 않나",
+      "custom_conflict_core": "새 코어",
+      "custom_conflict_installed": "설치 {version}",
+      "custom_conflict_constraint": "이 패키지가 요구하는 {requires} 버전 조건({constraint})을 새 코어가 만족하지 않습니다",
+      "custom_conflict_duplicate": "코어도 같은 패키지를 다른 버전으로 갖고 있습니다 — 실행 때는 코어 버전이 쓰입니다",
+      "custom_reserved_files": "배포본이 개발자 전용 custom 자리에 파일을 싣고 있습니다:",
+      "custom_fix_title": "이렇게 해결하세요",
+      "custom_fix_step1": "개발자 패키지를 새 코어에 맞는 버전으로 올립니다: composer update [패키지] -d custom",
+      "custom_fix_step2": "php artisan custom:check 로 충돌이 없는지 확인한 뒤 다시 업데이트합니다.",
+      "custom_fix_step3": "composer 를 쓸 수 없는 서버라면 다른 PC 에서 고친 뒤 php artisan custom:vendor-bundle 로 묶음을 다시 만들어 올립니다."
     },
     "modals": {
       "password_confirm_title": "비밀번호 확인",
@@ -2603,24 +2516,6 @@
         "withdraw_warning": "탈퇴 처리된 계정은 되돌릴 수 없습니다. 관리자 계정은 자동 탈퇴 대상에서 제외됩니다.",
         "restore_hint": "휴면 회원이 로그인하면 자동으로 해제되며, 별도의 신청 절차는 없습니다."
       },
-      "search_history": {
-        "title": "최근 검색어",
-        "desc": "검색창에 입력해 제출한 검색어를 검색 범위별로 보관합니다. 회원은 서버에, 비회원은 방문자 브라우저에 저장되며 로그인하면 브라우저 목록이 회원 목록으로 합쳐집니다. 탈퇴하면 그 회원의 검색어를 지웁니다.",
-        "enabled": "최근 검색어 사용",
-        "enabled_desc": "기본 켬. 끄면 검색창이 검색어를 기록하지 않고 최근 검색어 목록도 보이지 않습니다. 이미 저장된 검색어는 아래 보관 기한에 따라 지워집니다.",
-        "auto_save_notice": "회원과 방문자는 검색창의 「자동 저장 끄기」로 자기 기록을 멈출 수 있습니다. 끄면 기록이 멈추고 목록이 감춰지며, 저장된 검색어는 지우지 않습니다.",
-        "scopes_title": "검색 범위별 보관",
-        "scopes_desc": "코어 통합 검색과 활성 확장이 선언한 검색 범위입니다. 같은 범위를 쓰는 검색창끼리 목록을 공유합니다. 확장을 끄면 그 범위는 목록에서 빠지고 설정값은 남습니다.",
-        "scope_meta": "{{owner}} · {{scope}}",
-        "max_count": "보관 개수",
-        "max_count_aria": "{{scope}} 보관 개수",
-        "retention_days": "보관 기한 (일)",
-        "retention_days_aria": "{{scope}} 보관 기한 (일)",
-        "retention_days_hint": "0 = 기한 없음",
-        "retention_desc": "보관 기한을 1일 이상 적은 범위는 매일 새벽 개인정보 보유기간 작업이 기한이 지난 검색어를 지웁니다. 대상 목록에는 검색어 대신 회원·범위·건수만 보입니다.",
-        "target_count": "검색어 {{count}}건",
-        "empty": "선언된 검색 범위가 없습니다."
-      },
       "targets": {
         "view": "대상 보기",
         "title": {
@@ -2628,16 +2523,14 @@
           "pre_notice": "휴면 사전 안내 대상",
           "convert": "휴면 전환 대상",
           "withdraw_notice": "휴면 탈퇴 예고 대상",
-          "withdraw": "휴면 자동 탈퇴 대상",
-          "search_history": "보관 기한이 지난 최근 검색어"
+          "withdraw": "휴면 자동 탈퇴 대상"
         },
         "rows": {
           "withdrawn": "탈퇴 회원 잔여정보",
           "pre_notice": "휴면 전환 사전 안내",
           "convert": "휴면 전환",
           "withdraw_notice": "휴면 계정 탈퇴 예정 안내",
-          "withdraw": "휴면 계정 탈퇴 처리",
-          "search_history": "최근 검색어 보관 기한 경과"
+          "withdraw": "휴면 계정 탈퇴 처리"
         },
         "hint": "건수와 명단은 저장된 설정 기준입니다. 기능이 꺼져 있어도 켜면 처리될 대상을 미리 보여 줍니다.",
         "total": "총 {{count}}건",
@@ -2678,75 +2571,6 @@
         "preview_failed": "대상 건수를 불러오지 못했습니다.",
         "editor_label": "개인정보 조치 직권 실행"
       }
-    },
-    "content": {
-      "candidates": {
-        "title": "허용 기능",
-        "description": "게시글·페이지·상품 설명 본문에서 쓸 수 있는 기능을 켜고 끕니다. 동영상·오디오는 켜야 편집기에서 파일을 올릴 수 있고, 꺼진 기능의 요소는 화면에 보일 때·저장할 때 지워집니다.",
-        "figure_caption": "그림 캡션",
-        "figure_caption_hint": "이미지 아래 설명(figure·figcaption)을 남깁니다.",
-        "uploaded_video": "동영상 업로드 허용",
-        "uploaded_video_hint": "편집기에서 동영상 파일(mp4 등)을 본문에 올리고 재생할 수 있게 합니다. 게시판·쇼핑몰에서 본문 미디어 규칙을 따로 정했다면 그 규칙에서도 동영상을 켜야 합니다. 이 사이트에 올린 파일만 재생됩니다.",
-        "uploaded_audio": "오디오 업로드 허용",
-        "uploaded_audio_hint": "편집기에서 오디오 파일(mp3 등)을 본문에 올리고 재생할 수 있게 합니다. 게시판·쇼핑몰에서 본문 미디어 규칙을 따로 정했다면 그 규칙에서도 오디오를 켜야 합니다. 이 사이트에 올린 파일만 재생됩니다.",
-        "external_embed": "외부 영상 삽입",
-        "external_embed_hint": "편집기 「미디어 삽입」으로 넣은 외부 영상을 아래에서 켠 서비스의 플레이어로 보여 줍니다. 끄면 링크로 보입니다."
-      },
-      "custom_tags": {
-        "title": "운영자 추가 태그",
-        "description": "위 후보에 없는 태그를 직접 더합니다(예: details, summary, svg).",
-        "warning": "보안 위험: 추가한 태그는 그대로 본문에 남습니다. 스크립트·외부 문서·입력 양식 태그는 추가할 수 없지만, svg·math 같은 태그도 악용될 수 있으니 꼭 필요한 것만 추가하세요. 이벤트 속성(on…)과 javascript: 주소는 늘 지워집니다.",
-        "placeholder": "태그 이름을 입력하고 Enter"
-      },
-      "embed": {
-        "title": "외부 영상 서비스",
-        "description": "「미디어 삽입」으로 넣을 수 있는 서비스입니다. 주소에서 꺼낸 영상 id 로 정해진 플레이어 주소만 만들며, 다른 HTML 이나 임의의 iframe 은 넣지 않습니다.",
-        "presets": "기본 서비스",
-        "extension": "확장이 제공한 서비스",
-        "extension_hint": "설치한 확장이 더한 외부 영상 서비스입니다. 처음에는 꺼져 있으며, 켠 서비스만 본문에서 플레이어로 보입니다.",
-        "custom": "직접 추가한 서비스",
-        "custom_empty": "직접 추가한 서비스가 없습니다.",
-        "add": "서비스 추가",
-        "enabled": "사용",
-        "preset_names": {
-          "youtube": "YouTube",
-          "vimeo": "Vimeo",
-          "tiktok": "TikTok"
-        },
-        "modal": {
-          "create_title": "외부 영상 서비스 추가",
-          "edit_title": "외부 영상 서비스 수정",
-          "trust_notice": "신뢰하는 서비스만 추가하세요. 플레이어 주소의 사이트가 본문 안(격리된 영역)에 뜹니다.",
-          "required": "이름·식별자·주소 형식·플레이어 주소를 모두 입력해 주세요.",
-          "name": "이름",
-          "name_placeholder": "예: 치지직 클립",
-          "id": "식별자",
-          "id_hint": "영문 소문자로 시작하는 2~32자(영문 소문자·숫자·밑줄). 기본 서비스와 겹칠 수 없습니다.",
-          "url_patterns": "주소 형식",
-          "url_patterns_hint": "한 줄에 하나(최대 5개). * 는 아무 글자(/ 제외), {id} 는 영상 id 자리입니다. 호스트의 * 는 맨 앞 하위 도메인 자리(*.example.com)에만 쓸 수 있습니다.",
-          "player_url": "플레이어 주소",
-          "player_url_hint": "https:// 로 시작하고 {id} 를 한 번 넣습니다. 고정 쿼리는 붙일 수 있습니다.",
-          "id_rule": "id 글자 규칙",
-          "id_rules": {
-            "alnum_dash": "영문·숫자·-·_",
-            "alnum": "영문·숫자",
-            "digits": "숫자만"
-          },
-          "aspect": "화면 비율",
-          "allow": "허용 권한",
-          "sample": "예시 주소 확인",
-          "sample_check": "확인",
-          "preview_id": "꺼낸 id: {{id}}",
-          "preview_player": "만들어질 플레이어 주소: {{url}}",
-          "preview_no_match": "주소 형식과 맞지 않습니다.",
-          "apply": "적용"
-        }
-      },
-      "ttl": {
-        "title": "미디어 주소 유효 시간",
-        "description": "비밀글·발행 전 페이지처럼 볼 수 있는 사람이 정해진 본문 미디어는 잠시만 유효한 주소로 내보냅니다. 화면을 오래 열어 두면 이 시간이 지난 뒤 다시 불러와야 재생됩니다.",
-        "unit": "분 (5~1440)"
-      }
     }
   },
   "templates": {
@@ -2763,10 +2587,6 @@
     "dependencies": "의존성: {{deps}}",
     "dependencies_label": "의존성:",
     "no_dependencies": "의존성: 없음",
-    "force_activate": {
-      "warning_user_503": "강제로 켜면 조건을 맞출 때까지 사용자 화면이 「서비스 일시 중단(503)」 안내로 바뀝니다.",
-      "warning_admin_503": "강제로 켜면 관리자 화면이 503 안내로 바뀌어 이 화면으로 되돌릴 수 없습니다. 복구: php artisan template:activate {{identifier}}"
-    },
     "available": "사용 가능",
     "no_templates": "설치된 템플릿이 없습니다.",
     "pagination_info": "총 {{total}}개 중 {{from}}-{{to}}개 표시",
@@ -2820,18 +2640,14 @@
       "installing": "설치 중",
       "uninstalling": "제거 중",
       "updating": "업데이트 중",
-      "stuck_update": "업데이트 멈춤",
       "update_available": "업데이트 필요"
     },
-    "stuck_update_hint": "업데이트가 도중에 멈췄습니다. 「정리 후 다시 업데이트」를 누르면 정리한 뒤 업데이트를 마저 끝내고, 스위치를 켜면 정리한 뒤 활성화합니다.",
-    "stuck_update_reactivate_hint": "멈춘 업데이트를 정리했습니다. 정리한 템플릿은 비활성 상태이니 스위치로 다시 켜 주세요.",
     "actions": {
       "install": "설치",
       "uninstall": "제거",
       "activate": "활성화",
       "deactivate": "비활성화",
       "update": "업데이트",
-      "recover_update": "정리 후 다시 업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
       "refresh_layouts": "레이아웃 갱신",
@@ -2941,7 +2757,7 @@
       "dependency_required_version": "요구: {{version}}",
       "dependency_installed_version": "설치: {{version}}",
       "dependency_not_installed": "미설치",
-      "dependency_unmet_version": "버전 미달",
+      "dependency_unmet_version": "버전 불일치",
       "dependency_inactive": "비활성",
       "required_modules": "필수 모듈",
       "required_plugins": "필수 플러그인",
@@ -3552,8 +3368,7 @@
         "purpose": "인증 목적",
         "purpose_help": "이 정책이 어떤 종류의 본인인증을 요구하는지 선택합니다.",
         "provider_id": "인증 수단",
-        "use_default_provider": "(지정 안 함 — 모든 수단 인정)",
-        "provider_id_desc": "수단을 지정하면 그 수단으로 받은 본인인증만 인정합니다. 비워 두면 어떤 수단의 인증이든 인정하고, 인증 창은 기본 수단으로 시작합니다.",
+        "use_default_provider": "(기본 인증 수단 사용)",
         "grace_minutes": "재요구 주기 (분) — 0: 매번 요구",
         "grace_minutes_help": "이 시간 안에 본인인증을 마쳤다면 다시 요구하지 않습니다. 0 으로 두면 매번 본인인증을 요구합니다.",
         "applies_to": "적용 대상",
@@ -4380,7 +4195,6 @@
       "extension_license_modal": "확장 라이선스 전문",
       "module_force_activate_modal": "모듈 강제 활성화",
       "module_force_deactivate_modal": "모듈 강제 비활성화",
-      "module_deactivate_integrations_modal": "모듈 비활성화 연동 안내",
       "module_install_modal": "모듈 설치",
       "module_manual_install_modal": "모듈 수동 설치",
       "module_reactivate_language_packs_modal": "언어팩 일괄 활성화",
@@ -4401,13 +4215,11 @@
       "plugin_extension_license_modal": "플러그인 라이선스 전문",
       "plugin_force_activate_modal": "플러그인 강제 활성화",
       "plugin_force_deactivate_modal": "플러그인 강제 비활성화",
-      "plugin_deactivate_integrations_modal": "플러그인 비활성화 연동 안내",
       "plugin_install_modal": "플러그인 설치 확인",
       "plugin_manifest_preview_drawer": "플러그인 매니페스트 미리보기"
     },
     "admin_settings": {
       "identity_policy_delete_modal": "본인인증 정책 삭제 확인",
-      "embed_provider_form_modal": "외부 영상 서비스 추가·수정",
       "identity_policy_form_modal": "본인인증 정책 편집",
       "ip_restriction_rule_form_modal": "IP 접근 제한 규칙 편집",
       "modal_notification_channel_off_confirm": "메일 채널 끄기 확인",
@@ -4502,73 +4314,6 @@
       "reaggregate_modal": "구간 재집계",
       "subject_delete_modal": "정보주체 기록 삭제 확인",
       "row_trend_modal": "항목 추이"
-    },
-    "lifecycle_warnings_modal": "확장 작업 경고 결과 창"
-  },
-  "brand_name": "그누보드7",
-  "default_user_name": "관리자",
-  "template_partial_test": {
-    "title": "템플릿 Partial 시스템 테스트",
-    "meta_description": "sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인",
-    "description": "sirsoft-admin_basic 템플릿의 레이아웃 Partial 기능을 테스트합니다",
-    "checklist_title": "테스트 항목",
-    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
-    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
-    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (Composite 컴포넌트)",
-    "check_basic": "✅ Basic 컴포넌트 렌더링",
-    "check_dark": "✅ 다크 모드 지원",
-    "success_title": "🎉 Partial 시스템 정상 동작",
-    "success_description": "위의 모든 섹션이 정상적으로 표시되면 템플릿 Partial 시스템이 정상 작동하는 것입니다.",
-    "level1_title": "Level 1 Partial: 컨텐츠 섹션",
-    "level1_description": "이 파일은 아래에 Level 2 partial 파일들을 포함합니다",
-    "after_title": "Partial 이후 추가 컨텐츠",
-    "after_description": "Partial 파일 뒤에도 원하는 만큼 컨텐츠를 추가할 수 있습니다.",
-    "header_title": "Level 2 Include: 헤더 섹션 로드됨",
-    "header_description": "이 파일은 templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html 입니다",
-    "card_title": "✨ Composite 컴포넌트 Include 테스트",
-    "card_content": "이 Card는 partials/template_partial_test/_info_card.g7.html에서 include되었습니다.\n\n📌 Include 시스템 특징:\n• 모듈과 템플릿 모두 지원\n• 무제한 중첩 깊이 (depth 제한 10)\n• 순환 참조 자동 감지\n• Basic과 Composite 컴포넌트 모두 사용 가능"
-  },
-  "extensions": {
-    "lifecycle_warnings": {
-      "title": "일부 항목이 실패했습니다",
-      "summary": "완료했지만 일부 항목이 실패했습니다 ({{count}}건)",
-      "description": "작업 자체는 끝났습니다. 아래 항목만 반영되지 않았으니 사유를 확인한 뒤 해당 작업(레이아웃 갱신 등)을 다시 실행하세요.",
-      "toggle": "자세히 보기",
-      "notice_title": "확인할 안내가 있습니다",
-      "notice_summary": "완료했습니다 — 확인할 안내 {{count}}건",
-      "notice_description": "작업은 모두 반영됐습니다. 아래 안내를 확인하세요.",
-      "declaration_title": "확장 선언에 틀린 값이 있습니다",
-      "declaration_summary": "완료했지만 확장이 잘못 선언한 값 {{count}}건을 버렸습니다",
-      "declaration_description": "작업 자체는 끝났습니다. 아래 항목은 확장이 설정 파일(manifest)에 잘못 선언한 값이라 버린 것입니다 — 다시 실행해도 바뀌지 않으니 확장 개발자에게 알리세요.",
-      "declaration_hint": "확장 개발자가 고칠 선언입니다 — 다시 실행해도 바뀌지 않습니다",
-      "steps": {
-        "dependents": "의존하는 확장",
-        "extract": "압축 풀기",
-        "php_extension_missing": "PHP 확장",
-        "autoload": "자동 로드",
-        "cleanup": "정리",
-        "composer_install": "Composer 패키지 설치",
-        "core_resync": "코어 재동기화",
-        "hook_cache": "훅 캐시",
-        "language_pack": "언어팩",
-        "language_pack_check_updates": "언어팩 업데이트 확인",
-        "language_pack_provision": "언어팩 준비",
-        "language_pack_seed": "언어팩 기본 데이터",
-        "layout_register": "레이아웃 등록",
-        "layout_refresh": "레이아웃 갱신",
-        "layout_override_register": "레이아웃 덮어쓰기 등록",
-        "layout_extension_register": "레이아웃 확장 조각 등록",
-        "layout_extension_override_register": "레이아웃 확장 조각 덮어쓰기 등록",
-        "layout_extension_reregister": "레이아웃 확장 조각 다시 등록",
-        "layout_extension_restore": "레이아웃 확장 조각 복원",
-        "layout_extension_unregister": "레이아웃 확장 조각 해제",
-        "menu_role": "메뉴 권한",
-        "necessary_storage": "필수 브라우저 저장 항목",
-        "operation_lock": "작업 잠금",
-        "reseed": "기본 데이터 다시 넣기",
-        "search_scopes": "최근 검색어 범위 선언",
-        "seeder": "기본 데이터 생성"
-      }
     }
   }
 }

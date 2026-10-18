@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\UserStatus;
 use App\Models\IdentityVerificationLog;
@@ -42,8 +41,6 @@ use Illuminate\Support\Facades\Hash;
  */
 class PlaywrightSeedTwoFactor extends Command
 {
-    use LocalizesDescription;
-
     protected $signature = 'playwright:seed-two-factor
         {--ensure-user= : 이 접미사로 Active 테스트 사용자를 생성/갱신하고 이메일을 출력한다}
         {--password= : --ensure-user 가 설정할 비밀번호 (기본값 Passw0rd!2fa)}
@@ -54,6 +51,8 @@ class PlaywrightSeedTwoFactor extends Command
         {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 2FA 테스트 계정을 정리. 0 이면 정리 안 함}
         {--purge-users : 나이와 무관하게 playwright 2FA 테스트 계정을 전부 제거 (실측 종료 직후 호출)}
         {--purge-prefix= : --purge-users 대상을 이 접미사로 시작하는 계정으로 한정 (스펙별 정리)}';
+
+    protected $description = 'Playwright E2E 용 2단계 인증 픽스처 (테스트 계정 준비 / 인증 코드 심기)';
 
     /** 테스트 전용 계정 이메일 접두사 */
     private const TEST_EMAIL_PREFIX = 'playwright_2fa_';
@@ -69,7 +68,7 @@ class PlaywrightSeedTwoFactor extends Command
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
         if (php_sapi_name() !== 'cli') {
-            $this->error(__('common.console.playwright_guard.cli_only', ['sapi' => php_sapi_name()]));
+            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
 
             return self::FAILURE;
         }
@@ -78,7 +77,7 @@ class PlaywrightSeedTwoFactor extends Command
         // 여기의 `env()` 는 `.env` 유래 값이 아니라 호출자가 그 자리에서 넘기는 프로세스
         // 환경변수이므로 config:cache 의 영향을 받지 않는다.
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error(__('common.console.playwright_guard.bypass_required'));
+            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
 
             return self::FAILURE;
         }
@@ -113,7 +112,7 @@ class PlaywrightSeedTwoFactor extends Command
         }
 
         if (! $did) {
-            $this->error(__('common.console.playwright_seed_two_factor.option_required'));
+            $this->error('--ensure-user · --plant · --purge-users 중 하나는 지정해야 합니다.');
 
             return self::FAILURE;
         }
@@ -125,6 +124,7 @@ class PlaywrightSeedTwoFactor extends Command
      * 알려진 비밀번호를 가진 Active 테스트 사용자를 만들거나 갱신하고 이메일을 출력합니다.
      *
      * @param  string  $suffix  계정 구분 접미사 (예: user / nonadmin)
+     *
      * @return void 반환값 없음
      */
     private function ensureUser(string $suffix): void
@@ -176,7 +176,7 @@ class PlaywrightSeedTwoFactor extends Command
                 $role = Role::where('identifier', $identifier)->first();
 
                 if ($role === null) {
-                    $this->warn(__('common.console.playwright_seed_two_factor.role_not_found_skipped', ['identifier' => $identifier]));
+                    $this->warn("역할 '{$identifier}' 을 찾지 못해 건너뜁니다.");
 
                     continue;
                 }
@@ -189,13 +189,6 @@ class PlaywrightSeedTwoFactor extends Command
             // 관리자 거절 경로를 재현하려면 관리자 역할이 없어야 한다 — 재사용 계정에
             // 앞선 실행의 admin 역할이 남아 있으면 403 을 측정할 수 없다.
             $user->roles()->detach();
-
-            // 대신 일반 회원 역할(`user`)을 붙인다 — 역할이 하나도 없으면 회원 화면(상품·알림 API)이 403 이라
-            // 사용자 템플릿을 실측할 수 없다(engine-v1.91.1 실측 중 발견). 역할이 없는 설치면 조용히 지나간다.
-            $memberRole = Role::where('identifier', 'user')->first();
-            if ($memberRole !== null) {
-                $user->roles()->attach($memberRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
-            }
         }
 
         $this->line($email);
@@ -213,7 +206,7 @@ class PlaywrightSeedTwoFactor extends Command
         $log = IdentityVerificationLog::find($challengeId);
 
         if ($log === null) {
-            $this->error(__('common.console.playwright_seed_two_factor.challenge_not_found', ['challenge' => $challengeId]));
+            $this->error("challenge 를 찾을 수 없습니다: {$challengeId}");
 
             return false;
         }
@@ -254,7 +247,7 @@ class PlaywrightSeedTwoFactor extends Command
                 }
             });
 
-        $this->info('[purge] '.__('common.console.playwright_seed_two_factor.users_purged', ['count' => $removed, 'prefix' => $prefix]));
+        $this->info("[purge] playwright 2FA 테스트 계정 제거: {$removed}건 (prefix={$prefix})");
     }
 
     /**
@@ -280,6 +273,7 @@ class PlaywrightSeedTwoFactor extends Command
      * chunk()/each() 는 줄어든 결과 집합만큼 커서가 밀려 일부를 건너뛴다.
      *
      * @param  int  $hours  이 시간보다 오래된 계정만 정리
+     *
      * @return void 반환값 없음
      */
     private function pruneStaleTestUsers(int $hours): void
@@ -297,7 +291,7 @@ class PlaywrightSeedTwoFactor extends Command
             });
 
         if ($removed > 0) {
-            $this->info('[gc] '.__('common.console.playwright_seed_two_factor.stale_users_pruned', ['count' => $removed]));
+            $this->info("[gc] playwright 2FA 테스트 계정 정리: {$removed}건");
         }
     }
 }

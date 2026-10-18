@@ -9,7 +9,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
-use Modules\Sirsoft\Ecommerce\Http\Requests\User\BulkDownloadCouponRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\DownloadCouponRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserCouponAvailableRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\User\UserCouponDownloadableRequest;
@@ -24,11 +23,6 @@ use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
  */
 class UserCouponController extends AuthBaseController
 {
-    /**
-     * 회원 쿠폰 서비스를 주입받습니다.
-     *
-     * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
-     */
     public function __construct(
         private UserCouponService $userCouponService
     ) {}
@@ -153,51 +147,6 @@ class UserCouponController extends AuthBaseController
             Log::error('쿠폰 다운로드 실패', [
                 'coupon_id' => $couponId,
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-            ]);
-
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
-            );
-        }
-    }
-
-    /**
-     * 쿠폰 일괄 받기 (받을 수 있는 쿠폰을 한 번에 발급)
-     *
-     * 받은 장이 없어도 200 으로 답한다 — 쿠폰별 결과와 사유 코드가 응답 본문에 있다.
-     *
-     * @param  BulkDownloadCouponRequest  $request  검증된 요청
-     * @return JsonResponse 쿠폰별 결과와 합계
-     */
-    public function bulkDownload(BulkDownloadCouponRequest $request): JsonResponse
-    {
-        try {
-            $this->logApiUsage('user.coupons.bulk-download');
-
-            $couponIds = $request->validated('coupon_ids');
-            $result = $this->userCouponService->bulkDownloadCoupons(
-                (int) Auth::id(),
-                $couponIds === null ? null : array_map('intval', $couponIds)
-            );
-
-            $messageKey = $result['issued_count'] === 0
-                ? 'messages.coupon.bulk_download_none'
-                : ($result['skipped_count'] === 0 ? 'messages.coupon.bulk_download_all' : 'messages.coupon.bulk_download_result');
-
-            return ResponseHelper::moduleSuccess(
-                'sirsoft-ecommerce',
-                $messageKey,
-                $result,
-                200,
-                ['count' => $result['issued_count'], 'issued' => $result['issued_count'], 'skipped' => $result['skipped_count']]
-            );
-        } catch (Exception $e) {
-            Log::error('쿠폰 일괄 받기 실패', [
-                'user_id' => Auth::id(),
-                'exception' => $e::class,
                 'error' => $e->getMessage(),
             ]);
 

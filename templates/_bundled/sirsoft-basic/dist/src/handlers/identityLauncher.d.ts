@@ -76,19 +76,6 @@ export declare function rememberIdentityClaimHandler(action?: {
     params?: Record<string, unknown>;
 } & Record<string, any>, _context?: any): boolean;
 /**
- * 전체화면 본인인증 진입 때, 넘어오기 전 화면이 세션 보관함에 남긴 인증 대상을 화면 상태로 되살립니다.
- *
- * 모달을 열지 못해 전체화면으로 넘어가면 페이지를 새로 읽어 전역 상태(`_global.identityChallenge.target`)가 사라진다.
- * 비회원은 로그인 세션에서 대상을 얻을 수 없어 [코드 재전송] 이 대상 없이 나가 422 로 거절됐다. launcher(와 코어
- * 기본 launcher)가 넘어가기 전 코어 보관함(`G7Core.identity.redirectStashKey`)에 대상을 함께 넣으므로, 그 값의
- * 이메일·전화번호만 꺼내 `_local.identity_target` 에 둔다. 30분이 지났거나 깨진 보관값은 쓰지 않는다.
- *
- * @param _action 액션 정의 (인자 없음)
- * @param _context 실행 컨텍스트 (미사용 — 상태는 G7Core.state 로 쓴다)
- * @return 되살린 대상, 없으면 null
- */
-export declare function restoreIdentityTargetHandler(_action?: unknown, _context?: unknown): IdentityVerificationTarget | null;
-/**
  * 부트스트랩 시 코어 인터셉터에 launcher 를 등록합니다.
  *
  * `initTemplate()` 의 핸들러 등록 직후에 호출 — `window.G7Core.identity.setLauncher` 를 사용해

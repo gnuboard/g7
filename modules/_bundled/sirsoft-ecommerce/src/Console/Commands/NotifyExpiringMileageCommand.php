@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
 use App\Extension\HookManager;
-use App\Helpers\TimezoneHelper;
 use Illuminate\Console\Command;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 
@@ -47,13 +46,13 @@ class NotifyExpiringMileageCommand extends Command
     public function handle(): int
     {
         if (! module_setting('sirsoft-ecommerce', 'mileage.enabled', false)) {
-            $this->info(__('sirsoft-ecommerce::messages.console.mileage.disabled'));
+            $this->info('마일리지 기능이 비활성화되어 있습니다.');
 
             return Command::SUCCESS;
         }
 
         if (! module_setting('sirsoft-ecommerce', 'mileage.expiry_notification_enabled', true)) {
-            $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.notification_disabled'));
+            $this->info('소멸 예정 알림 기능이 비활성화되어 있습니다.');
 
             return Command::SUCCESS;
         }
@@ -68,12 +67,12 @@ class NotifyExpiringMileageCommand extends Command
         $targets = $this->cache->getExpiringTargets($limit);
 
         if ($targets->isEmpty()) {
-            $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.no_targets'));
+            $this->info('소멸 예정 알림 대상이 없습니다.');
 
             return Command::SUCCESS;
         }
 
-        $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.targets', ['count' => $targets->count()]).($isDryRun ? ' [DRY-RUN]' : ''));
+        $this->info(sprintf('소멸 예정 알림 대상 %d건%s', $targets->count(), $isDryRun ? ' [DRY-RUN]' : ''));
 
         if ($isDryRun) {
             return Command::SUCCESS;
@@ -91,14 +90,13 @@ class NotifyExpiringMileageCommand extends Command
                 $user,
                 (float) $balance->expiring_soon,
                 $balance->currency,
-                // 알림 변수(expires_date) — 사이트 날짜. UTC 날짜면 저녁 소멸분이 하루 당겨져 안내된다.
-                TimezoneHelper::toSiteDateString($balance->expiring_date) ?? '',
+                $balance->expiring_date?->toDateString() ?? '',
                 (float) $balance->available,
             );
             $sent++;
         }
 
-        $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.done', ['count' => $sent]));
+        $this->info(sprintf('발송 완료: %d건', $sent));
 
         return Command::SUCCESS;
     }

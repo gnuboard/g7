@@ -1,6 +1,6 @@
 /**
  * @file admin-extension-dependency-name-fallback.test.tsx
- * @description 의존 확장 이름이 빈 문자열이면 식별자를 보여 준다 (7.1.0 전수 실측, #736)
+ * @description 의존 확장 이름이 빈 문자열이면 식별자를 보여 준다 (7.1.0 전수 실측 #736 O-F10)
  *
  * 7.1.0 CHANGELOG 는 「이름이 비면 식별자를 보여 줍니다」라고 약속했지만 화면은 `name ?? identifier` 로
  * null·undefined 만 걸렀다. 이름이 빈 문자열이면 카드에는 이름 없는 아이콘만, 상세·확인 창에는 빈 칸만 남았다.
@@ -41,8 +41,7 @@ function strings(tree: unknown): string[] {
 function cardDependencyNames(layout: unknown, dependencies: unknown): string[] {
   const source = strings(layout).find((s) => s.includes('p.dependencies'));
   expect(source, '카드 데이터에 의존성 매핑 식이 있어야 합니다').toBeDefined();
-  // 항목 객체 안에 한 겹 중괄호(미충족 사유 번역 인자 `{installed, required}`, #152)가 들어가도 끝까지 잡는다
-  const pattern = /\(p\.dependencies \?\? \[\]\)\.map\(d => \(\{(?:[^{}]|\{[^{}]*\})*\}\)\)|\.\.\.\(\(p\.dependencies\?\.(modules|plugins) \?\? \[\]\)\.map\(d => \(\{(?:[^{}]|\{[^{}]*\})*\}\)\)\)/g;
+  const pattern = /\(p\.dependencies \?\? \[\]\)\.map\(d => \(\{[^}]*\}\)\)|\.\.\.\(\(p\.dependencies\?\.(modules|plugins) \?\? \[\]\)\.map\(d => \(\{[^}]*\}\)\)\)/g;
   const exprs = source!.match(pattern) ?? [];
   expect(exprs.length).toBeGreaterThan(0);
   const body = exprs.length === 1 && !exprs[0].startsWith('...') ? exprs[0] : `[${exprs.join(', ')}]`;

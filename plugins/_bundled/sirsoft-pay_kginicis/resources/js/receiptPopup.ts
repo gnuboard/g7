@@ -8,9 +8,6 @@
  */
 const PLUGIN_ID = 'sirsoft-pay_kginicis';
 
-/** CBT 결제확인서 팝업의 CSS 파일 — 플러그인 루트 기준 경로 (빌드 대상이 아닌 정적 파일) */
-const RECEIPT_STYLESHEET = 'assets/bridge/receipt-popup.css';
-
 export interface KginicisReceiptField {
     /** 항목의 고정 이름 — 화면 스크립트는 번역되는 label 대신 이 값으로 항목을 찾는다 */
     key?: string;
@@ -107,33 +104,6 @@ export function openKginicisReceipt(info: KginicisReceiptInfo): void {
     }
 }
 
-/**
- * CBT 결제확인서 팝업이 실을 CSS 파일의 절대 주소를 만듭니다.
- *
- * 주소는 코어의 자산 주소 API 로만 만든다(손으로 조립하지 않는다). 팝업은 `about:blank` 라 상대 주소가 풀리지
- * 않으므로 여는 창의 출처를 붙인다. API 가 없는 코어이거나 주소를 만들지 못하면 null — 팝업은 링크 없이 그려진다
- * (무스타일이지만 내용과 인쇄는 된다).
- *
- * @returns CSS 절대 주소 또는 null
- */
-function receiptStylesheetHref(): string | null {
-    const build = (window as any)?.G7Core?.asset?.plugin;
-    if (typeof build !== 'function') {
-        return null;
-    }
-
-    try {
-        const path = build(PLUGIN_ID, RECEIPT_STYLESHEET);
-        if (typeof path !== 'string' || path === '') {
-            return null;
-        }
-
-        return new URL(path, window.location.origin).href;
-    } catch {
-        return null;
-    }
-}
-
 function openCbtConfirmation(info: KginicisReceiptInfo): void {
     const popup = window.open('', 'kginicis_receipt', 'width=800,height=700,scrollbars=yes,resizable=yes');
     if (!popup) return;
@@ -142,9 +112,6 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
     const printLabel = translateKginicis('user.receipt_print', '인쇄');
     const lang = document.documentElement.lang || 'ko';
     const notice = info.receipt_notice || '';
-    // 모양은 같은 출처 CSS 파일로 싣는다 — 빈 팝업은 여는 문서의 스타일 보안 정책을 물려받아 `<style>` 블록이 막힌다.
-    const stylesheetHref = receiptStylesheetHref();
-    const stylesheetLink = stylesheetHref ? `<link rel="stylesheet" href="${escapeHtml(stylesheetHref)}">` : '';
     const rows = (info.receipt_fields ?? [])
         .map(field => `
             <div class="row">
@@ -161,22 +128,86 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${escapeHtml(title)}</title>
-    ${stylesheetLink}
+    <style>
+        body {
+            margin: 0;
+            padding: 32px;
+            background: #f8fafc;
+            color: #111827;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        main {
+            max-width: 720px;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+        }
+        h1 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            line-height: 1.35;
+        }
+        .notice {
+            margin: 0 0 24px;
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        dl {
+            margin: 0;
+            border-top: 1px solid #e5e7eb;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 160px minmax(0, 1fr);
+            gap: 16px;
+            padding: 14px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        dt {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        dd {
+            margin: 0;
+            color: #111827;
+            font-size: 14px;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+        .actions {
+            margin-top: 24px;
+            text-align: right;
+        }
+        button {
+            border: 0;
+            border-radius: 6px;
+            background: #2563eb;
+            color: #fff;
+            padding: 10px 14px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        @media (max-width: 520px) {
+            body { padding: 16px; }
+            main { padding: 20px; }
+            .row { grid-template-columns: 1fr; gap: 6px; }
+        }
+    </style>
 </head>
 <body>
     <main>
         <h1>${escapeHtml(title)}</h1>
         ${notice ? `<p class="notice">${escapeHtml(notice)}</p>` : ''}
         <dl>${rows}</dl>
-        <div class="actions"><button type="button" data-print="1">${escapeHtml(printLabel)}</button></div>
+        <div class="actions"><button type="button" onclick="window.print()">${escapeHtml(printLabel)}</button></div>
     </main>
 </body>
 </html>`);
     popup.document.close();
-
-    // 인쇄 버튼은 인라인 onclick 없이 리스너로 묶는다 — 빈 팝업은 여는 문서의 CSP 를 물려받아
-    // strict CSP(`script-src 'self'`) 사이트에서는 인라인 핸들러가 실행되지 않는다(#158).
-    popup.document.querySelector('[data-print]')?.addEventListener('click', () => popup.print());
 }
 
 function escapeHtml(value: string): string {

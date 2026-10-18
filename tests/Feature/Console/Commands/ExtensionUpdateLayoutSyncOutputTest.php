@@ -259,6 +259,6 @@ class ExtensionUpdateLayoutSyncOutputTest extends TestCase
         $this->assertStringContainsString(PHP_EOL.'  '.__('extensions.layout_sync.summary', ['applied' => 0, 'conflicts' => 0]).' '.__('extensions.layout_sync.no_base', ['count' => 2]), $output, '템플릿 요약 한 줄(기준 없음 포함)');
         $this->assertSame(2, substr_count($output, __('extensions.layout_sync.summary', ['applied' => 0, 'conflicts' => 0])) + substr_count($output, __('extensions.layout_sync.summary', ['applied' => 1, 'conflicts' => 1])), 'overwrite 플러그인은 요약 줄이 없어야 한다');
         $this->assertStringNotContainsString(__('extensions.layout_sync.cli.header'), $output, 'core:update 는 표를 내지 않는다');
-        $this->assertStringContainsString(ExecuteBundledUpdatesCommand::RESULT_PREFIX.'{"success":3,"failed":0,"skipped":0,"aborted":false}', $output);
+        $this->assertStringContainsString(ExecuteBundledUpdatesCommand::RESULT_PREFIX.'{"success":3,"failed":0}', $output);
     }
 }

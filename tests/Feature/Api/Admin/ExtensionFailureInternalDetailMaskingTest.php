@@ -17,11 +17,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
 use Mockery;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
- * 확장 설치·활성화·비활성화·제거 실패 응답이 DB 내부 정보를 싣지 않는다 (7.1.0 전수 실측).
+ * 확장 설치·활성화·비활성화·제거 실패 응답이 DB 내부 정보를 싣지 않는다 (7.1.0 전수 실측 O-F7).
  *
  * 개발 DB 에 남은 테이블 때문에 모듈 설치가 실패하자, 운영 모드(APP_DEBUG=false)인데도 관리자 화면 토스트에
  * 「SQLSTATE[42S01] … (Connection: mysql, Host: …, Port: …, Database: …, SQL: create table …)」가 그대로 나왔다.
@@ -33,20 +32,7 @@ use Tests\TestCase;
  */
 class ExtensionFailureInternalDetailMaskingTest extends TestCase
 {
-    use FakesGithubReleases;
     use RefreshDatabase;
-
-    /**
-     * 설치·업데이트 확인 경로의 GitHub 실제 접속을 막습니다(테스트마다 최대 10초 대기 방지).
-     *
-     * @return void 반환값 없음
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->fakeGithubReleases();
-    }
 
     /**
      * 실측에서 본 것과 같은 모양의 DB 예외를 만듭니다.

@@ -9,8 +9,6 @@ return [
     'sitemap_regenerated' => 'Sitemap 再生成が完了しました。',
     'sitemap_regenerate_dispatched' => 'Sitemap 再生成を開始しました。完了まで時間がかかる場合があります。',
     'sitemap_regenerate_failed' => 'Sitemap 再生成に失敗しました。',
-    'sitemap_regenerate_in_progress' => 'Sitemap はすでに生成中です。完了後に再度お試しください。',
-    'sitemap_regenerate_locked' => '別の Sitemap 生成ジョブが待機中か、以前のジョブのロックが残っています。しばらく後に再度お試しいただくか、サーバーで `php artisan cache:clear` を実行してから再度お試しください。',
     'sitemap_disabled' => 'Sitemap 生成が無効化されています。',
     'sitemap_not_ready' => 'Sitemap を準備中です。しばらく後に再度お試しください。',
     'sitemap_generate_failed' => 'Sitemap 生成に失敗しました: :error',
@@ -28,17 +26,4 @@ return [
     'stats_total' => '合計',
     'stats_by_module' => 'モジュール別統計',
     'stats_module_identifier' => 'モジュール',
-    // `seo:generate-sitemap` コマンド出力
-    'console' => [
-        'generate_sitemap' => [
-            'already_running' => 'サイトマップをすでに生成中のため、今回の実行はスキップします。',
-            'lock_unavailable' => 'サイトマップ生成のロックストア（キャッシュ）が使用できないため、実行しませんでした。',
-            'invalid_mode' => '無効なモードです。許可: :allowed',
-            'generated' => 'サイトマップを生成しました。(モード: :mode)',
-            'dispatched' => 'サイトマップ生成をキューにディスパッチしました。(モード: :mode)',
-        ],
-    ],
-
-    // 管理画面のブラウザタブタイトル接尾辞 — 画面タイトルの後ろに付く({site_name} はサイト名)
-    'admin_title_suffix' => ' - {site_name} 管理画面',
 ];

@@ -144,7 +144,6 @@ React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품
 | `github_url` | `string\|null` | 선택 | GitHub 저장소 URL (업데이트 감지용) |
 | `github_changelog_url` | `string\|null` | 선택 | GitHub 변경 이력 URL |
 | `trusted_script_hosts` | `string[]` | 선택 | 레이아웃이 로드할 수 있는 외부 스크립트 신뢰 호스트 목록 (아래 참조) |
-| `trusted_style_hosts` | `string[]` | 선택 | 확장이 싣는 외부 스크립트가 스스로 불러오는 CSS 파일의 호스트 목록 — 스타일 정책에 자동 허용 (아래 「외부 스크립트가 싣는 CSS 호스트」, 코어 7.1.6) |
 
 #### `trusted_script_hosts` — 외부 스크립트 신뢰 호스트
 
@@ -165,15 +164,15 @@ React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품
 그 호스트를 이 배열에 선언합니다. 활성 확장이 선언한 호스트만 집계되며(편집자는 추가 불가 —
 manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allowlist 를 구성합니다.
 
-- 값은 호스트명만(스킴/경로 없이). 예: `"t1.kakaocdn.net"`.
+- 값은 호스트명만(스킴/경로 없이). 예: `"t1.daumcdn.net"`.
 - **`trusted_script_hosts_reason` 에 호스트별 사유를 함께 선언합니다.** 사유가 없는 선언은
   자체 제공 원칙의 예외로 인정되지 않습니다 — 왜 외부로 나가는지가 코드에 남아야 합니다.
 
   ```jsonc
   {
-    "trusted_script_hosts": ["t1.kakaocdn.net"],
+    "trusted_script_hosts": ["t1.daumcdn.net"],
     "trusted_script_hosts_reason": {
-      "t1.kakaocdn.net": "라이브러리가 아니라 카카오가 운영하는 서비스 SDK 다. 스크립트가 카카오 서버와 통신하므로 자체 호스팅해도 동작하지 않는다."
+      "t1.daumcdn.net": "라이브러리가 아니라 Daum 이 운영하는 서비스 SDK 다. 스크립트가 Daum 서버와 통신하므로 자체 호스팅해도 동작하지 않는다."
     }
   }
   ```
@@ -182,7 +181,7 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 - 결제 플러그인의 PG SDK 도 같은 부류입니다(그 회사 서버와 통신하므로 자체 호스팅 불가).
   선언 사례: KG 이니시스 `stgstdpay.inicis.com`·`stdpay.inicis.com` / 토스페이먼츠
   `js.tosspayments.com` / 나이스페이먼츠 `web.nicepay.co.kr` / NHN KCP `testpay.kcp.co.kr`·
-  `pay.kcp.co.kr`(+ SDK 가 이어서 싣는 `npay`·`spay` 계열 — 아래 「콘텐츠 보안 정책」). 이 플러그인들은 **코드에도 같은 호스트 목록을 두고 주입 직전에 확인**하며,
+  `pay.kcp.co.kr`. 이 플러그인들은 **코드에도 같은 호스트 목록을 두고 주입 직전에 확인**하며,
   확인에 실패하면 결제를 진행하지 않습니다(fail-closed). SDK URL 이 확장자로 끝나지 않는
   경우(예: `/v2/standard`)에는 그 런타임 확인이 유일한 게이트입니다. PG사가 호스트를 바꾸면
   manifest 와 코드 상수를 **함께** 갱신해야 하며, 두 목록의 일치는 각 플러그인 테스트가
@@ -190,118 +189,6 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 - 이 기능은 코어 7.0.7 에서 도입되었습니다. 선언하는 확장은 `g7_version` 을 `>=7.0.7` 로 두는
   것이 계약상 정확합니다(하위 코어에서는 필드가 무시되어 무해).
 - 관련 보안 정책 상세: [frontend/security.md](../frontend/security.md).
-
-##### 콘텐츠 보안 정책(CSP)과의 관계 (코어 7.1.4)
-
-운영자가 환경설정 > 보안에서 CSP 를 켜면 코어는 **켜진 확장의 `trusted_script_hosts` 를 모아**
-`script-src` 에 넣습니다([backend/content-security-policy.md](../backend/content-security-policy.md)).
-그래서 이 선언은 레이아웃 로더 허용목록이면서 동시에 운영 사이트의 브라우저 정책이 됩니다.
-
-- **SDK 가 이어서 불러오는 호스트까지 선언합니다.** 서비스 SDK 는 자기 호스트 밖의 스크립트를 더
-  싣는 경우가 있습니다. 예: KCP `payplus_web.jsp` 는 `npay.kcp.co.kr`(결제 연동)·`spay.kcp.co.kr`
-  (간편결제)과 그 테스트 호스트(`testnpay`·`testspay`)에서 스크립트를 싣습니다. 빠지면 강제 모드에서
-  결제창이 열리지 않는데, 레이아웃 로더는 SDK 가 스스로 붙이는 스크립트를 보지 않으므로 다른 검사로는
-  드러나지 않습니다.
-- **확인 방법** — 개발 사이트에서 CSP 를 「점검만」으로 켜고 그 기능을 끝까지 실행(결제창 열기·간편결제
-  선택 등)한 뒤 `storage/logs/csp-*.log` 의 `blocked_uri` 를 확인합니다. 찍힌 호스트를 선언하고 사유를
-  적습니다. 결제사가 SDK 내부 호스트를 바꾸면 다시 확인합니다.
-- **확장이 직접 내는 HTML 에 인라인 실행 코드를 쓰지 않습니다.** 결제 닫기·본인인증 결과·팝업 브리지처럼
-  컨트롤러가 HTML 을 돌려주는 화면은 `<script>…</script>` 본문·`onclick=` 속성·`href="javascript:…"` 대신
-  서버 값을 `<script type="application/json" id="…">` 데이터 블록으로 싣고, 동작은 확장이 동봉한 정적 JS
-  (`assets/bridge/*.js`, 손작성 ES5)를 `<script src>` 로 싣습니다. 빈 iframe 에 `document.write` 로 인라인
-  스크립트를 써 넣는 방식도 부모 문서의 정책을 이어받아 막힙니다 — 같은 출처 라우트를 여는 방식으로 바꿉니다.
-  번들 확장은 이 규칙을 자동 검사로 확인합니다.
-
-##### 외부 스크립트가 싣는 CSS 호스트 — `trusted_style_hosts` (코어 7.1.6)
-
-확장의 CSS 는 동봉해 같은 사이트에서 싣는 것이 원칙입니다. 다만 결제사 결제창처럼 **외부 스크립트가 자기
-호스트의 CSS 파일을 스스로 싣는** 경우는 확장이 그 CSS 를 대신 실을 수 없습니다. 운영자가 스타일 정책을
-강제하면 그 CSS 가 막혀 결제창이 화면을 덮지 못합니다. 이런 호스트는 manifest 에 선언합니다.
-
-```jsonc
-{
-  "trusted_style_hosts": ["stdpay.example.com"],
-  "trusted_style_hosts_reason": {
-    "stdpay.example.com": "결제창 스크립트가 결제창 CSS 파일을 이 호스트에서 스스로 싣는다. 막히면 결제창이 화면을 덮지 못한다."
-  }
-}
-```
-
-- 코어는 **켜진 모듈·플러그인의 선언만** 모아 스타일 정책(`style-src-elem` / `style-src`)의 허용 호스트에 더합니다.
-  환경설정 > 보안의 「자동으로 포함되는 스타일 호스트」에 보입니다. 꺼진 확장의 선언은 빠집니다.
-- 값은 호스트명만 씁니다(스킴·경로 없이). 형식이 어긋난 값은 정책에서 빠집니다.
-- 사유(`trusted_style_hosts_reason`)를 호스트별로 함께 적습니다. 확장이 직접 쓰는 CSS 를 외부에서 싣기 위한
-  용도로 쓰지 않습니다 — 그런 CSS 는 동봉합니다.
-- 실행 중에 정해지는 호스트는 필터 훅 `core.csp.trusted_style_hosts` 로 더할 수 있습니다.
-- 이 선언이 허용하는 것은 **CSS 파일 주소**뿐입니다. 외부 스크립트가 요소에 다는 `style` 속성은 엄격 강도에서
-  여전히 막힙니다.
-- 코어 7.1.5 이하에서는 필드가 무시됩니다(무해). 그 사이트에서는 운영자가 「추가 스타일 허용 호스트」에 직접 넣어야 합니다.
-- 템플릿은 이 키 대신 `externals` 선언의 외부 스타일시트가 자동으로 합산됩니다.
-
-##### 인라인 스타일을 쓰지 않습니다 (코어 7.1.6)
-
-운영자가 스타일 정책을 켜거나 웹서버에 `style-src 'self'; style-src-attr 'none'` 을 걸면 브라우저는 인라인
-스타일을 적용하지 않습니다([backend/content-security-policy.md](../backend/content-security-policy.md#1-무엇을-막는가)).
-확장의 화면이 그 사이트에서 깨지지 않도록 아래 세 가지를 쓰지 않습니다.
-
-| 쓰지 않는 것 | 예 |
-| --- | --- |
-| `<style>` 요소 | 컨트롤러가 돌려주는 HTML 의 `<style>…</style>`, `document.createElement('style')`, 컴포넌트가 그리는 `<style>` |
-| HTML 문자열의 `style="…"` 속성 | 서버가 돌려주는 HTML, `innerHTML`·`dangerouslySetInnerHTML`·`insertAdjacentHTML` 에 넣는 문자열 |
-| `setAttribute('style', …)` | 스크립트가 속성으로 스타일을 넣는 코드 |
-
-스크립트가 스타일 객체에 값을 대입하는 것(`el.style.width = …`, `el.style.cssText = …`,
-`el.style.setProperty(…)`, React `style={{…}}`)은 정책에 걸리지 않습니다. 대체 수단은 다음 네 가지입니다.
-
-1. **정해진 모양은 확장 CSS 로** — 규칙을 CSS 파일에 두고 manifest 의 `assets.css`(`entry`·`output`)로
-   선언합니다. 컨트롤러가 직접 돌려주는 HTML(결제 닫기·팝업 브리지 등)은 확장이 동봉한 CSS 파일을
-   `<link rel="stylesheet">` 로 싣습니다.
-2. **실행 중에 정해지는 값은 스타일 객체 대입이나 CSS 변수로** — 너비·좌표·색처럼 값이 바뀌는 것은
-   `el.style.x = …` 또는 React `style` prop 으로 넣습니다. 여러 요소가 같은 값을 쓰면 CSS 파일에
-   `var(--my-plugin-color)` 를 두고 `el.style.setProperty('--my-plugin-color', 값)` 으로 바꿉니다.
-3. **실행 중에 만들어야 하는 규칙은 `G7Core.style.setRules`** — 선택자가 실행 중에 정해지거나 `::after`·
-   `@keyframes` 처럼 스타일 객체로 표현할 수 없는 규칙은 `<style>` 요소를 만드는 대신 이 API 를 씁니다.
-
-   ```typescript
-   // 같은 key 로 다시 부르면 규칙이 교체됩니다
-   const handle = G7Core.style.setRules(
-       'my-plugin-highlight',
-       `#${CSS.escape(targetId)}::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.4)}`
-   );
-
-   G7Core.style.has('my-plugin-highlight'); // true
-   handle.remove();                         // 또는 G7Core.style.remove('my-plugin-highlight')
-   ```
-
-   key 는 확장 식별자를 접두사로 붙여 다른 확장과 겹치지 않게 합니다. 규칙은 문서 전체에 적용되므로
-   선택자를 좁게 씁니다.
-4. **사용자가 쓴 본문 HTML 은 `G7Core.inlineStyle`** — 게시글·상품 설명처럼 `style` 속성이 든 HTML 을
-   정화해 화면에 꽂는 컴포넌트는, 정화할 때 `style` 을 `data-g7-style` 속성으로 옮겨 받고 화면에 붙인 뒤
-   `apply()` 로 입힙니다. 저장 데이터는 바꾸지 않습니다.
-
-   ```typescript
-   // (가) 코어 본문 규칙으로 정화하는 경우 — 설정에 G7_DEFER_STYLE 을 더합니다
-   const html = G7Core.contentPolicy.sanitize(DOMPurify, raw, { ...config, G7_DEFER_STYLE: true });
-
-   // (나) 직접 정화하는 경우 — 전용 DOMPurify 인스턴스를 넘깁니다(전역 인스턴스에 훅이 남지 않게)
-   const html = G7Core.inlineStyle.sanitize(DOMPurify(window), raw, config);
-
-   // 화면에 붙인 뒤 한 번 호출합니다 (React 라면 dangerouslySetInnerHTML 로 그린 뒤 effect 에서)
-   container.innerHTML = html;
-   G7Core.inlineStyle.apply(container); // 입힌 요소 수를 돌려줍니다
-   ```
-
-   `apply()` 를 부르지 않으면 서식이 보이지 않으므로, `G7_DEFER_STYLE` 은 `apply()` 를 구현한 컴포넌트에서만
-   켭니다. 정화 설정이 `style` 속성을 금지하면(`FORBID_ATTR` 에 있거나 `ALLOWED_ATTR` 에 없으면) 서식은
-   옮기지 않고 버리며, 원문에 미리 적힌 `data-g7-style` 도 버립니다.
-
-- **옛 코어와의 호환** — `G7Core.style.setRules`·`G7Core.inlineStyle` 은 코어 7.1.6(템플릿 엔진
-  engine-v1.91.0)부터 있습니다. `g7_version` 을 올리지 않으려면 `typeof G7Core.style?.setRules === 'function'`
-  처럼 있는지 확인하고, 없으면 종전 방식으로 동작하게 둡니다.
-- **외부 라이브러리** — 확장이 싣는 라이브러리가 스스로 `<style>` 요소나 `style` 속성을 만들면 확장 코드로
-  막을 수 없습니다. 그 화면은 확장 문서에 한계로 적어 운영자가 알 수 있게 합니다.
-- **확인 방법** — 개발 사이트에서 스타일 정책을 「점검만」·강도 「엄격」으로 켜고 확장 화면을 끝까지 써 본 뒤
-  `storage/logs/csp-*.log` 에서 `effective_directive` 가 `style-src-elem`·`style-src-attr` 인 줄을 확인합니다.
 
 플러그인(`plugin.json`)·템플릿(`template.json`)도 동일 필드를 지원합니다.
 

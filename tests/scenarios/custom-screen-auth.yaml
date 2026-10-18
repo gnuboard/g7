@@ -1,0 +1,58 @@
+feature: 개발자 화면 회원 판정(서버 세션 + 그 로그인의 토큰 생존)·custom.auth·custom.admin·내부 API 도구 (#792)
+
+description: |
+  로그인·2단계 인증·비밀번호 변경 완료·관리자 로그인은 세션에 로그인을 남기며 이번 토큰 ID 를 세션
+  g7.screen_token_id 에 짝으로 묶는다. 토큰 갱신·가입 라우트도 세션을 열어 짝을 맞춘다. ScreenAuth::user() 는
+  웹 세션 회원 + 짝 토큰 존재·미만료일 때만 회원이고, 판정 때 토큰 만료를 API 와 같은 규칙으로 연장한다.
+  custom.auth 는 비회원을 로그인 화면으로, custom.admin 은 비회원을 관리자 로그인으로·일반 회원을 403 으로 보낸다.
+  InternalApiClient 는 같은 프로세스에서 그 회원 자격(비회원이면 손님)으로 /api/ 를 부르고 상태를 그대로 돌려주며,
+  세션을 여는 인증 API·재호출·비 API 경로를 거부하고 가드·로케일·request()·현재 라우트를 되돌린다.
+
+test_files:
+  - tests/Feature/Screen/ScreenAuthTest.php
+  - tests/Feature/Screen/InternalApiClientTest.php
+
+axes:
+  case:
+    - login_pairs
+    - revoked
+    - expired
+    - slide
+    - refresh
+    - register
+    - custom_auth
+    - custom_admin
+    - legacy_session
+    - guest
+    - member
+    - pair_invalid
+    - rejected
+    - password_change
+    - cookies
+
+effects:
+  - login_pairs_session_with_token
+  - revoked_token_invalidates_screen_login
+  - invalid_pair_logs_out_formally
+  - expired_token_invalidates_screen_login
+  - screen_request_slides_token_expiry
+  - refresh_repairs_pair
+  - register_logs_in_screen_session
+  - custom_auth_redirects_guest
+  - custom_auth_passes_member
+  - custom_admin_redirects_guest
+  - custom_admin_forbids_member
+  - custom_admin_passes_admin
+  - admin_login_pairs
+  - legacy_session_without_pair_is_guest
+  - guest_public_ok
+  - guest_auth_401
+  - state_restored
+  - member_calls_as_self
+  - forbidden_passes_through
+  - invalid_pair_calls_as_guest
+  - non_api_rejected
+  - session_auth_api_rejected
+  - nested_call_rejected
+  - password_change_keeps_paired_token
+  - only_maintenance_cookie_forwarded

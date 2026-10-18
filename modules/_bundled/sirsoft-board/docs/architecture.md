@@ -49,6 +49,10 @@ Service 를 건드리지 않고 리스너 추가만으로 끝납니다. 큐로 �
 막는다(코어 `docs/backend/activity-log.md` 「일괄 핸들러 트랜잭션 패턴」).
 <!-- @intent END -->
 
+## 화면 주소 (7.2.0)
+
+서버가 만드는 게시판 화면 주소(알림 링크·통합 검색 결과·사이트맵)는 `Support/BoardScreenUrl` 이 만든다. 화면 키 `board.index`·`board.list`·`board.post` 로 코어 `ScreenUrl` 을 거치므로 환경설정 「사용자 화면 URL」과 필터 훅 `core.screen_url.filter_path` 를 따른다 — 개발자 화면이나 외부 프론트가 주소를 바꾸면 링크가 따라간다. SEO 캐시 무효화·재생성은 그누보드7 화면이 봇에게 내는 캐시라 필터를 거치지 않은 `BoardScreenUrl::defaultPath()` 를 쓴다(경로 문자열을 리스너에 직접 적지 않는다).
+
 ## 디렉토리
 
 <!-- @generated:directory-map START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
@@ -78,7 +82,6 @@ Service 를 건드리지 않고 리스너 추가만으로 끝납니다. 큐로 �
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan module:update sirsoft-board --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update sirsoft-board --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->

@@ -11,7 +11,7 @@
 2. Filter 훅: applyFilters() - 데이터 변형 (type => 'filter' 필수!)
 3. 네이밍: [vendor-module].[entity].[action]_[timing]
 4. 우선순위: 1-5(높음), 10(기본), 15+(낮음)
-5. Service 패턴: before_* → filter_* → 로직 → after_* (조회 결과 훅은 캐시를 읽은 뒤·권한 후처리 뒤에 — §조회 결과 훅과 캐시)
+5. Service 패턴: before_* → filter_* → 로직 → after_*
 6. 공개 훅의 이름·인자 모양은 마이너에서 바꾸지 않는다 — 새 훅 추가 + 옛 훅 deprecated, 제거는 메이저
 ```
 
@@ -132,11 +132,7 @@ HookManager::addFilter('core.privacy.retention_handlers', function (array $handl
 `{prefix}.before_prune`(보존일) / `{prefix}.after_prune`(보존일, 건수).
 **`--dry-run` 에서는 발행하지 않습니다** — 리허설에서 자기 리스너가 돌았다고 착각하지 않도록
 실제 처리 때만 발행합니다. 번들 핸들러의 접두사 전수는 아래 「보존 기간 자동 파기」 카탈로그에 있습니다.
-코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다. 코어 최근 검색어 보관 기한 핸들러(7.1.5)는
-`core.privacy.search_history` 이고, 인자가 보존일 대신 범위별 기한 맵(`array<범위 id, 일>`)입니다.
-
-최근 검색어 기록(7.1.5)은 `core.search_history.filter_keyword`(filter — 검색어·범위·회원, 빈 문자열이나 문자열이 아닌 값을 돌려주면
-기록하지 않음, 예: 금칙어)와 `core.search_history.after_record`(action — 기록한 행·회원)를 발행합니다.
+코어 탈퇴 회원 핸들러의 접두사는 `core.privacy.withdrawn_user`입니다.
 구현 예시·규약 표·검증 매트릭스는 [개인정보 보유기간 처리 가이드](../backend/privacy-retention.md)에 있습니다.
 
 ### 개인정보 조치 직권 실행 대상·알림 훅
@@ -209,29 +205,6 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 다시 계산하면 집행 시점과 하루 어긋날 수 있습니다. 배치 훅은 표지(이번 주기 처리 기록)를 먼저 남긴 뒤 발행하고,
 발행이 던지면 표지를 되돌립니다(휴면 사전 안내와 같은 규칙) — 큐 안에서 실패한 발송은 표지를 되돌리지 못합니다.
 
-### 가입 트랜잭션 안 훅 `core.auth.registering` (7.1.6)
-
-회원가입(`AuthService::register()`)은 사용자 행 생성·역할 연결·토큰 발급을 한 DB 트랜잭션으로 묶습니다.
-`core.auth.registering` 은 그 트랜잭션 **안**(역할 연결 뒤, 토큰 발급 앞)에서 발행되는 액션 훅입니다. 「가입과 함께
-성공하거나 함께 취소」되어야 하는 기록 — 예: 본인확인 플러그인의 실명 정보(DI/CI) 선점 — 을 확장이 남기는 자리입니다.
-같은 사람이 이메일 두 개로 동시에 가입할 때, 가입 전 훅(`core.auth.before_register`, 트랜잭션 밖)의 조회만으로는 두 요청이
-모두 「중복 없음」을 볼 수 있어 DB 유니크 선점을 이 훅에서 합니다.
-
-| 훅 | 종류 | 인자 | 발행 시점 |
-| --- | --- | --- | --- |
-| `core.auth.registering` | action | `(User $user, array $data, array $context)` — `$data` = 가입 요청 데이터(`password`·`password_confirmation` 제외), `$context` = `['signup_stage' => 'in_transaction']` | 가입 트랜잭션 안, 사용자 생성·역할 연결 뒤 토큰 발급 전 |
-
-계약:
-
-- **동기 구독만 의미가 있습니다.** `getSubscribedHooks()` 에서 `'sync' => true` 로 받으세요. 큐 구독은 트랜잭션 커밋 뒤로
-  밀려 실행되므로 롤백 대상이 되지 않고, 이 훅을 쓰는 이유(가입과 원자적 기록)가 사라집니다.
-- **구독자가 예외를 던지면 가입 전체가 롤백됩니다** — 사용자 행·역할 연결·이 훅 안에서 쓴 다른 구독자의 기록이 함께
-  취소되고 토큰은 발급되지 않습니다. 화면에 보일 거절이면 `ValidationException`·422 계열 예외를 던집니다.
-- 트랜잭션 안이므로 외부 호출(PG·메일·HTTP)을 하지 않습니다. 잠금을 오래 잡으면 동시 가입이 그만큼 기다립니다.
-- 커밋 뒤 처리(알림·후속 기록)는 기존 `core.auth.after_register` 를 구독합니다.
-- 번들 구독자: 본인확인 플러그인 `sirsoft-verification_nhnkcp`·`sirsoft-verification_kginicis` 가 우선순위 20 으로 실명 정보를
-  선점합니다(플러그인별 선점 표의 UNIQUE). 이미 다른 계정이 선점했으면 중복가입 차단 오류(422)로 가입을 되돌립니다.
-
 ### 회원 역할 변경 훅 (7.1.0)
 
 회원 등록·수정(`UserService::createUser`·`updateUser`)으로 역할이나 최고관리자 지정이 **실제로 바뀌면**
@@ -269,32 +242,6 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 
 예제: 이커머스 `UserListMileageFilterListener`(마일리지 잔액 범위)·`UserListAddressFilterListener`(배송지 국가·등록 여부).
 화면 쪽 규약은 [관리자 목록 필터 컨벤션](../frontend/admin-list-filter-convention.md) 을 본다.
-
-### 목록 쿼리 확장 훅(`*.list_query_extensions`) 표준
-
-확장이 다른 확장·코어의 **목록 쿼리에 조건을 더하는** 표준 형태다. 이름은 `{vendor-module}.{entity}.list_query_extensions`
-(코어는 `core.{entity}.list_query_extensions`) 이고 filter 다. 리스너는 받은 배열에 **조건 함수**
-`fn (Builder $query, array $context): void` 를 더해 돌려준다. 발행하는 쪽은 자기 조건을 다 건 **뒤에** 조건 함수를
-붙이므로 확장은 결과를 좁히기만 한다. 구현 예: 코어 회원 목록(`core.user.list_query_extensions`, 위 절),
-게시판 목록(`sirsoft-board.post.list_query_extensions` — 목록·건수·공지·답글·상세의 답글 스레드·이전/다음·검색·통합검색·최근/인기·
-마이페이지·프로필·관리자 대시보드·사이트맵을 `$context['context']` 로 구분, 게시판 모듈의 확장 포인트 문서).
-
-발행하는 쪽 규칙:
-
-- 훅은 Service·리스너에서 발행하고, 저장소에는 모은 조건을 값 객체·인자로 넘겨 **적용만** 한다(저장소는 훅을 모른다).
-- 같은 목록의 행과 건수(페이지 수)는 같은 조건을 받아야 한다 — 건수 경로에도 같은 훅을 발행한다.
-- 리스너가 없으면 쿼리·결과·캐시 키가 지금과 같아야 한다.
-- 목록 캐시가 있으면 **캐시 축 훅**(`{vendor-module}.{entity}.filter_list_cache_variant`)을 짝으로 둔다. 리스너가 돌려준
-  축 값(스칼라 목록)으로 키 접미사를 만들고, 비면 키를 바꾸지 않는다. 조건을 사람·언어마다 다르게 거는 리스너는
-  같은 축을 이 훅으로 돌려줘야 한다 — 돌려주지 않으면 먼저 연 사람의 건수·위젯이 다른 사람에게 보인다.
-- 저장된 총계(글 수 컬럼·일별 통계)처럼 쿼리가 아닌 숫자는 조건으로 나눌 수 없다. 반영되지 않는 값을 문서에 적는다.
-
-리스너 규칙은 위 절과 같다 — 저장소 서브쿼리(`whereIn`)로 걸고, 조인이 있는 쿼리에서는 `$query->qualifyColumn()` 으로
-컬럼을 한정하고, 볼 권한이 없는 운영자에게는 걸지 않는다.
-
-> `*.filter_list_query`·`*.filter_list_params` 는 **검색 조건 배열**을 고치는 필터이며 쿼리 빌더가 아니다
-> (예: `sirsoft-page.page.filter_list_query`, `sirsoft-ecommerce.product.filter_public_list_params`). 쿼리에 조건을 더하려면
-> 이 절의 `*.list_query_extensions` 를 쓴다.
 
 ### 알림 추출의 선택 채널
 
@@ -430,13 +377,13 @@ sirsoft-ecommerce.product.after_update
 sirsoft-ecommerce.product.filter_create_data
 
 # 조회 작업
-sirsoft-ecommerce.product.before_public_list
-sirsoft-ecommerce.product.filter_public_list_params   # 검색 조건 배열 필터 — 쿼리 빌더가 아니다
-sirsoft-ecommerce.product.after_public_list
-sirsoft-ecommerce.product.filter_list_params          # 관리자 목록의 검색 조건 배열 필터
-sirsoft-ecommerce.product.filter_popular_list_result  # 결과 필터
-sirsoft-ecommerce.product.after_read
-sirsoft-board.post.list_query_extensions              # 목록 쿼리에 조건 함수를 더한다 — §목록 쿼리 확장 훅 표준
+sirsoft-ecommerce.product.before_list
+sirsoft-ecommerce.product.after_list
+sirsoft-ecommerce.product.filter_list_query
+sirsoft-ecommerce.product.filter_list_result
+sirsoft-ecommerce.product.before_show
+sirsoft-ecommerce.product.after_show
+sirsoft-ecommerce.product.filter_show_result
 
 # 이벤트/기타
 sirsoft-ecommerce.order.on_payment_success
@@ -446,13 +393,6 @@ sirsoft-ecommerce.product.calculate_price
 core.attachment.download
 core.attachment.update
 core.attachment.delete
-
-# 본문 미디어 공용 훅 (7.1.5) — 모든 확장(모듈·플러그인)의 편집기 본문 미디어. 마지막 인자는 ContentMediaContext
-# (어느 확장·문서의 미디어인지). 확장별 첨부 훅은 본문 미디어에 발화하지 않는다. 상세: content-media.md 「공용 훅」
-core.content_media.before_upload        # (UploadedFile, ctx) 저장 전
-core.content_media.filter_upload_file   # (UploadedFile, ctx) → UploadedFile — 돌려준 파일은 형식·크기 판정을 다시 거친다
-core.content_media.after_upload         # (행, ctx) 행 생성 뒤
-core.content_media.before_delete        # (행, ctx) 행·파일 영구 삭제 직전에만 — 소프트 삭제 때는 발화하지 않는다
 
 # 스토리지 공개 URL 훅 (Filter) — StorageInterface::url() 결과 공급/수정/차단 (공개#100)
 # 컨텍스트 6키는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
@@ -489,9 +429,6 @@ sirsoft-page.page.filter_content_thumbnail
 # 새 원본 파일명(xxx.webp)으로 UploadedFile 을 재구성해 반환할 것 — 일부 소비처는 저장
 # 확장자를 원본 파일명에서 얻으므로, 이름을 갱신하지 않으면 확장자와 내용이 어긋난다.
 core.attachment.filter_upload_file                      # 코어 첨부 (아바타 포함)
-core.content_media.before_upload                        # 편집기 본문 미디어 — 모든 확장 공용 (7.1.5)
-core.content_media.filter_upload_file                   # 편집기 본문 미디어 — 반환 파일은 정책 판정을 다시 거침 (7.1.5)
-core.content_media.after_upload                         # 편집기 본문 미디어 (7.1.5)
 core.template_layout_attachment.before_upload           # 레이아웃 편집기 첨부 (7.0.7)
 core.template_layout_attachment.filter_upload_file      # 레이아웃 편집기 첨부 (7.0.7)
 core.template_layout_attachment.after_upload            # 레이아웃 편집기 첨부 (7.0.7)
@@ -589,7 +526,6 @@ core.seo.filter_twitter_data    # Twitter 카드 분기별 hook ($twitter 배열
 core.seo.filter_structured_data # JSON-LD 분기별 hook ($structuredData 배열)
 core.seo.filter_meta            # 통합 hook (모든 분기 결합 후 $meta 전체)
 core.seo.filter_view_data       # View 직전 ($viewData) — extraHeadTags / extraBodyEnd
-#   두 번째 인자(메타)의 layoutName 은 확장 식별자를 뗀 이름, storedLayoutName 은 전체 이름(`{확장}.{레이아웃}` — 7.1.4+)
 
 # SEO 봇 감지 훅 (Filter) — null 반환 시 라이브러리 평가로 fallthrough
 core.seo.resolve_is_bot
@@ -625,49 +561,6 @@ core.analytics.extension_purged          # (Action) 확장을 데이터까지 �
 ```
 
 > `sitemap.index.collect_for_resource` 는 제3자 확장이 리소스 하나에 대한 sitemap 항목을 추가/보정할 때 씁니다(filter — `'type' => 'filter'` 명시 필수). `core.seo.sitemap.after_regenerate_failed` 는 재생성 잡이 실패했을 때 확장이 알림/복구를 걸 수 있는 action 훅입니다.
-
-### 조회 결과 훅과 캐시
-
-조회 작업도 변경 작업처럼 `before_*` / `filter_*_result` / `after_*` 세 훅을 둔다. 확장은 결과 훅으로 목록을 재정렬·변환하거나 값을 덧붙인다. 결과 훅은 **캐시와 권한 후처리의 바깥**에 있어야 한다 — 위치를 잘못 잡으면 한 사용자의 결과가 모든 방문자에게 나간다.
-
-1. **Service 계층에서 발행한다.** 컨트롤러·Repository 에서 발행하지 않는다. Service 메서드를 관리자 화면과 함께 쓰면 사용자 맥락(`$context === 'user'`)에서만 발행해 관리자 조회 동작을 바꾸지 않는다.
-2. **캐시를 읽은 뒤에 발행한다.** `remember()` 콜백 안에서 `applyFilters()` 를 부르면 처음 채운 요청의 결과(그 사용자의 권한·언어로 거른 값)가 공용 캐시에 저장된다. 캐시는 사용자와 무관한 값으로 채우고, 결과 훅은 꺼낸 값에 적용한다.
-3. **사용자별 권한 후처리 뒤에 발행한다.** 열람 권한으로 거르기·시간 표시 다시 계산 같은 사용자별 처리를 먼저 하고 결과 훅을 부른다. 리스너는 이미 걸러진 목록을 받으므로 권한 필터를 다시 구현하지 않는다(리스너가 목록에 항목을 더하면 그 항목의 열람 판정은 리스너 책임이다).
-4. **리스너는 같은 타입의 새 값을 돌려준다.** 컬렉션은 `map()`·`reverse()` 등으로 새 컬렉션을, 페이지네이터는 `through()`·`setCollection()` 으로 고쳐 돌려준다. 캐시에서 꺼낸 모델을 제자리에서 바꾸지 않는다 — `array` 캐시 저장소는 직렬화 없이 같은 인스턴스를 돌려주므로 같은 요청의 다음 호출이 오염된다. 캐시된 모델 컬렉션을 넘기는 Service 는 복제본을 넘긴다.
-5. **페이지네이터에서 항목을 빼도 건수(`total`·`last_page`)는 그대로다.** 결과 훅은 변환·재정렬·주석 용도이고, 목록을 좁히려면 조회 쿼리 단계의 확장 지점을 쓴다.
-6. **리스너는 가볍게 둔다.** 결과 훅은 요청마다 동기로 돈다. 무거운 일(외부 호출·집계)은 `after_*` 액션 훅에서 큐로 보낸다.
-
-훅 인자는 `(값, 요청 정보 배열)` 이다. 요청 정보에는 현재 사용자(`user`, 비회원은 `null`)와 화면 언어(`locale`)가 들어 있고, 경로마다 필요한 값(게시판·필터·조회 대상 회원 등)이 더해진다. `after_*` 는 결과 훅이 돌려준 값을 받는다. 단건 조회에서 대상이 없으면 `before_*` 만 발행한다.
-
-```php
-// 올바른 예 — 캐시를 읽고, 사용자별로 거른 뒤, 복제본에 결과 훅을 적용한다
-public function getMenuBoards(): Collection
-{
-    $context = ['user' => Auth::user(), 'locale' => app()->getLocale()];
-
-    HookManager::doAction('sirsoft-board.board.before_menu_list', $context);
-
-    $boards = $this->cache->remember('board_menu', fn () => $this->repository->getActiveBoardsForMenu(), $ttl, tags: ['board-menu'])
-        ->filter(fn (Board $board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $context['user']))
-        ->map(fn (Board $board) => clone $board)
-        ->values();
-
-    $boards = HookManager::applyFilters('sirsoft-board.board.filter_menu_list_result', $boards, $context);
-
-    HookManager::doAction('sirsoft-board.board.after_menu_list', $boards, $context);
-
-    return $boards;
-}
-```
-
-```php
-// 잘못된 예 — 콜백 안에서 거른 결과가 공용 캐시에 저장된다
-$boards = $this->cache->remember('board_menu', function () {
-    return HookManager::applyFilters('sirsoft-board.board.filter_menu_list_result', $this->repository->getActiveBoardsForMenu());
-}, $ttl);
-```
-
-서버 훅은 어느 화면이 불렀는지 모른다. 리스너를 등록하면 같은 API 를 쓰는 모든 화면(헤더 메뉴·모바일 메뉴·검색엔진용 페이지 등)의 결과가 함께 바뀐다. 한 템플릿의 한 화면에서만 순서를 바꾸려면 레이아웃의 데이터 바인딩에서 정렬한다(예: `{{[...(boards.data ?? [])].reverse()}}`).
 
 ### 방문자 통계 확장 기여 훅 페이로드
 
@@ -705,16 +598,6 @@ $boards = $this->cache->remember('board_menu', function () {
 `collector->addDimensionRow('ext:{식별자}:{키}', 라벨, 방문자유형, 지표)` 로 행을 얹는다 — 집계가
 「지우고 넣기」라 확장이 집계 표에 직접 쓰면 다음 집계가 지운다. 이 훅은 반드시 `'sync' => true` 로
 구독한다(아래 판정표).
-
-### 본문 콘텐츠 규칙 확장 훅 (7.1.5)
-
-| 훅 | 타입 | 받는 값 → 돌려줄 값 |
-| --- | --- | --- |
-| `core.content.filter_embed_providers` | filter | `array $providers`(처음 `[]`) → 외부 영상 서비스 항목 목록. 항목에 `extension`(확장 식별자) 필수, 검증 실패 항목은 버린다. 운영자가 「본문 콘텐츠」 탭에서 켜야 쓰인다 |
-| `core.content.filter_media_source_patterns` | filter | `array $patterns`(구분자 없는 정규식 — 확장이 등록한 서빙 라우트에서 만든 패턴) → 목록. 본문 `<video>`·`<audio>`·`<source>` 의 `src`·`poster` 가 맞아야 남는 서빙 주소를 더한다(기본 패턴 없음) |
-
-항목 형식·서빙 주소 패턴 생성 규칙·예시는 [본문 미디어 업로드 계약 — 본문 콘텐츠 규칙](content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy)을 보세요.
-본문 미디어 업로드·영구 삭제 훅(`core.content_media.*`)의 인자·발화 시점은 [본문 미디어 업로드 계약 — 공용 훅](content-media.md#공용-훅-corecontent_media)에 있습니다.
 
 ### 스토리지·드라이버 확장 훅 페이로드
 
@@ -824,8 +707,6 @@ public function addSources(array $sources): array
 ## 리스너 구현
 
 ### HookListenerInterface 사용
-
-`getHookListeners()` 에 적은 클래스가 없거나 `HookListenerInterface` 를 구현하지 않으면 그 리스너는 등록되지 않고 경고 로그가 남는다. 7.1.3 부터는 리스너 일부가 실패한 확장을 훅 캐시(`bootstrap/cache/hooks.php`)에 넣지 않으므로(고친 뒤 다음 요청에서 다시 스캔), 캐시 생성 결과의 생명주기 경고에도 실린다. 확장 파일만 교체했을 때 훅 캐시가 다시 만들어지는 조건은 [확장 업데이트 시스템 — 파일만 교체했을 때](extension-update-system.md#파일만-교체했을-때-업데이트-명령-없이)를 본다.
 
 ```php
 <?php
@@ -1011,28 +892,9 @@ public static function getSubscribedHooks(): array
 | `sync` 필수 | 같은 응답·바로 다시 연 화면에 보이는 파생 데이터 갱신(상품 총재고·옵션 그룹, 가입 직후 배정값, 저장한 동의값) |
 | `sync` 필수 | `before_*` 훅에서 삭제 전 데이터 정리 — 큐로 가면 커밋 뒤에 돌아 외래키가 이미 값을 지운 상태에서 정리 대상을 찾지 못하고, 실패해도 삭제를 되돌리지 못한다 |
 | `sync` 필수 | 같은 발송·처리 사이클의 문맥을 잇는 리스너(발송 로그 기록과 그 로그에 외부 발송 건을 잇는 리스너) — 큐로 가면 요청 단위 문맥이 작업 경계에서 사라지고, 가리기 전 본문이 큐 인자로 남는다 |
-| `sync` 필수 | 저장 트랜잭션 안 훅(`sirsoft-board.post.before_create_commit`·`before_update_commit`, `sirsoft-ecommerce.product.before_create_commit`·`before_update_commit`) — 큐로 가면 커밋 뒤에 돌아 같은 트랜잭션에 저장할 수 없고 실패해도 저장을 되돌리지 못한다 |
 | 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
 
 선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.
-
-#### 저장 트랜잭션 안 훅
-
-게시글·상품 저장에는 트랜잭션 **안**에서 도는 훅이 있다(7.1.5+). 기존 `after_create`·`after_update` 는 커밋 뒤 그대로다.
-
-| 훅 | 위치 | 인자 |
-| --- | --- | --- |
-| `sirsoft-board.post.before_create_commit` | 글 생성 — 첨부 연결 뒤, 커밋 앞 | `(Post $post, string $slug, array $data, array $options)` |
-| `sirsoft-board.post.before_update_commit` | 글 수정 — 첨부 연결 뒤, 커밋 앞 | `(Post $post, string $slug, array $data, array $snapshot)` |
-| `sirsoft-ecommerce.product.before_create_commit` | 상품 생성 — 트랜잭션 안 마지막 저장 뒤 | `(Product $product, array $data)` |
-| `sirsoft-ecommerce.product.before_update_commit` | 상품 수정 — 트랜잭션 안 마지막 저장 뒤 | `(Product $product, array $data, array $snapshot)` |
-
-- 확장이 글·상품 ID 가 정해진 뒤 같은 트랜잭션에서 자기 데이터를 저장하는 자리다. 리스너는 `'sync' => true` 로 구독한다 — 아니면
-  큐 래핑 + `afterCommit` 이라 커밋 뒤에 돈다.
-- 리스너의 예외는 저장 전체를 되돌린다. 오류 응답이 사용자에게 간다.
-- 커밋 전이라 외부 호출·메일·알림을 보내지 않는다(롤백돼도 되돌릴 수 없다). 그런 일은 `after_*` 에서 한다.
-- 파일을 옮기거나 지우면 `StorageTransaction`([저장소 드라이버 — 트랜잭션 파일 보상](storage-driver.md#트랜잭션-파일-보상-storagetransaction-715))
-  을 쓴다 — 롤백되면 파일도 제자리로 돌아간다.
 
 ### getSubscribedHooks() 옵션 요약
 
@@ -1872,20 +1734,10 @@ doAction('hook.name')
 ### addAction/addFilter 내부 동작
 
 ```text
-addAction()    → 액션 배열에 추가 + 지금 이벤트 디스패처에 `hook.*` 와일드카드 미러가 없으면 1개 등록
-addFilter()    → 필터 배열에 추가 (Laravel 이벤트에는 등록하지 않음)
-doAction()     → 배열의 콜백을 우선순위 순으로 실행 → Event::dispatch("hook.{이름}") (바깥 리스너용)
-removeAction() → 배열에서 그 콜백만 제거 (같은 훅에 바깥에서 건 Event::listen 리스너는 남음)
-clearAction()  → 배열에서 그 훅 전체 제거 + Event::forget("hook.{이름}") (바깥 리스너도 제거)
-removeFilter() / clearFilter() → 필터 배열에서만 제거
+addAction()  → Event::listen() 등록 + 리스너 배열 관리
+addFilter()  → Event::listen() 등록 + 리스너 배열 관리 (동일)
+removeAction() / removeFilter() → Event::forget() + 배열에서 제거
 ```
-
-**이벤트 미러 (7.1.5)** — 바깥 코드가 `Event::listen('hook.x')` 로 듣거나 `Event::dispatch('hook.x')` 로 직접 보내는 계약을 위해, 액션은 Laravel 이벤트로도 연결됩니다. 7.1.4 까지는 액션 콜백마다 이름 리스너를 하나씩 걸었고(요청마다 액션 수만큼), 7.1.5 부터는 디스패처당 `hook.*` 와일드카드 리스너 하나가 액션 배열을 읽어 실행합니다. 등록 여부는 디스패처 객체별로 기억하므로 새 앱·테스트의 새 디스패처에도 다시 걸리고, `Event::fake()` 가 감싼 경우에도 실제 디스패처에 두 번 걸리지 않습니다.
-
-- `doAction()` 안에서 나가는 `Event::dispatch` 는 위 가드(`$dispatching`)로 미러가 건너뛰므로 액션은 **정확히 1회** 실행됩니다.
-- 바깥에서 `Event::dispatch('hook.x', [$a, $b])` 로 보내면 액션이 doAction 과 같은 우선순위 순·같은 인자로 1회 실행됩니다(7.1.4 까지는 등록 순).
-- Laravel 은 이름 리스너를 와일드카드보다 먼저 부르므로, 바깥에서 직접 보낼 때는 같은 이름으로 건 `Event::listen` 리스너가 액션보다 먼저 실행됩니다.
-- 액션이 하나라도 등록된 뒤에는 `Event::hasListeners('hook.x')` 가 모든 훅 이름에 참입니다 — 훅 존재 여부 판정에 쓰지 마세요.
 
 ---
 

@@ -37,15 +37,13 @@ class UserService
      * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타 정리)
      * @param  PermissionEscalationGuard  $escalationGuard  역할 부여 상한 가드
      * @param  PasswordChangeService  $passwordChangeService  비밀번호 변경 기록 서비스
-     * @param  SearchHistoryService  $searchHistoryService  최근 검색어 서비스 (탈퇴·삭제 시 명시 삭제)
      */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
         private AttachmentService $attachmentService,
         private PermissionEscalationGuard $escalationGuard,
-        private PasswordChangeService $passwordChangeService,
-        private SearchHistoryService $searchHistoryService
+        private PasswordChangeService $passwordChangeService
     ) {}
 
     /**
@@ -348,7 +346,6 @@ class UserService
                 // 상태가 Active 외로 변경되었으면 토큰 삭제 (즉시 로그아웃)
                 if ($newStatus && $newStatus !== $oldStatus && $newStatus !== UserStatus::Active->value) {
                     $user->tokens()->delete();
-                    $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
                 }
 
                 // 역할 동기화
@@ -455,12 +452,8 @@ class UserService
         // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
         $this->passwordChangeService->purgeHistory($user);
 
-        // 최근 검색어 삭제 (명시적 삭제 - CASCADE 의존 금지, 7.1.5)
-        $this->searchHistoryService->purgeForUser($user);
-
-        // 토큰·web 세션 삭제 (로그아웃 처리)
+        // 토큰 삭제 (로그아웃 처리)
         $user->tokens()->delete();
-        $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
 
         // 탈퇴 처리 (suffix 추가 및 상태 변경)
         return $user->withdraw();
@@ -591,12 +584,8 @@ class UserService
                 // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
                 $this->passwordChangeService->purgeHistory($user);
 
-                // 최근 검색어 삭제 (명시적 삭제 - CASCADE 의존 금지, 7.1.5)
-                $this->searchHistoryService->purgeForUser($user);
-
-                // API 토큰·web 세션 삭제
+                // API 토큰 삭제
                 $user->tokens()->delete();
-                $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
 
                 return $this->userRepository->delete($user);
             });
@@ -724,12 +713,11 @@ class UserService
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
      *
      * @param  string  $keyword  검색할 키워드
-     * @param  bool  $excludeWithdrawn  탈퇴 회원을 뺄지 여부 — 알림 수신자처럼 고르는 자리는 true, 기록을 찾는 목록 필터는 false(기본)
      * @return Collection 검색된 사용자 컬렉션
      */
-    public function searchByKeyword(string $keyword, bool $excludeWithdrawn = false): Collection
+    public function searchByKeyword(string $keyword): Collection
     {
-        $result = $this->userRepository->searchByKeyword($keyword, $excludeWithdrawn);
+        $result = $this->userRepository->searchByKeyword($keyword);
 
         HookManager::doAction('core.user.after_search', $keyword, $result->count());
 
@@ -919,7 +907,7 @@ class UserService
 
         if (empty($userIds)) {
             // 훅에는 실제로 바뀐 회원만 싣는다 — 활동 로그 리스너가 이 목록의 회원마다 「상태 변경」 을 남기므로,
-            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다(#736 실측).
+            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다(#736 영역 C 실측).
             HookManager::doAction('sirsoft-core.user.after_bulk_update', [], $status, 0);
 
             return [
@@ -946,7 +934,6 @@ class UserService
             // Active 외 상태로 변경 시 해당 사용자들의 토큰 전체 삭제
             if ($statusEnum !== UserStatus::Active) {
                 $this->userRepository->deleteTokensByUserIds($userIds);
-                $this->userRepository->deleteSessionsByUserIds($userIds);
             }
 
             return $count;

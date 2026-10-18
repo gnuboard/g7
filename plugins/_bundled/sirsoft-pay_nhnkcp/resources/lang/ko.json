@@ -44,7 +44,6 @@
         "supply_amount": "공급가액",
         "vat_amount": "부가세",
         "tax_free_amount": "면세금액",
-        "zero_rated_amount": "영세금액",
         "escrow_badge": "에스크로",
         "loading": "로딩 중...",
         "vbank_amount": "입금 금액",
@@ -97,20 +96,7 @@
         "escrow_delivery_change_button": "배송정보 수정",
         "escrow_delivery_registering": "등록 중...",
         "escrow_delivery_success": "배송정보가 KCP에 등록되었습니다.",
-        "escrow_delivery_error": "배송등록에 실패했습니다.",
-        "escrow_couriers": {
-            "kyungdong": "경동택배",
-            "ilyang": "일양로지스",
-            "hapdong": "합동택배",
-            "dream": "드림택배",
-            "chunil": "천일택배",
-            "kunyoung": "건영택배",
-            "cj": "CJ대한통운",
-            "hanjin": "한진택배",
-            "logen": "로젠택배",
-            "lotte_parcel": "롯데택배",
-            "epost": "우체국택배"
-        }
+        "escrow_delivery_error": "배송등록에 실패했습니다."
     },
     "settings": {
         "title": "NHN KCP 설정",
@@ -205,7 +191,6 @@
             "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요.",
             "krw_only": "NHN KCP는 KRW 결제만 지원합니다. ({{currency}})",
             "mobile_approval_key_failed": "KCP 모바일 승인키 획득 실패",
-            "mobile_guest_auth_failed": "주문 확인 정보가 만료되었습니다. 주문 조회에서 다시 결제해 주세요.",
             "pg_error": "KCP 오류 [{{code}}]: {{message}}",
             "applepay_ios_only": "애플페이는 IOS 기기에 모바일결제만 가능합니다.",
             "method_missing": "결제수단 정보가 없어 결제를 진행할 수 없습니다. 주문서를 다시 열어 주세요."

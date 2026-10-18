@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Traits;
 
 use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
-use App\Support\LocalizedValue;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * 주문 생성 공통 흐름 Trait
@@ -82,11 +81,7 @@ trait HandlesOrderCreation
             // 활성이고 grace 만료 시 IdentityVerificationRequiredException(428) 을 throw 한다.
             // 이 예외는 \Error 를 상속하므로 아래 catch (Exception) 에 걸리지 않고 전파되어 428 이 유지된다.
             // 주문 레코드 생성(createFromTempOrder) 직전이므로 428 로 막혀도 주문 부산물이 생기지 않는다.
-            // 세 번째 인자: 비회원 본인인증 대상 — 인증 결과를 주문자 이메일에 묶어 확인한다(코어 7.1.6, 뒤에 붙인 인자라 기존 구독자 호환).
-            $ordererEmail = (string) ($request->getOrdererInfo()['email'] ?? '');
-            HookManager::doAction('sirsoft-ecommerce.checkout.before_payment', $tempOrder, $userId, [
-                'target_email' => $ordererEmail !== '' ? $ordererEmail : null,
-            ]);
+            HookManager::doAction('sirsoft-ecommerce.checkout.before_payment', $tempOrder, $userId);
 
             // 주문 생성 (회원/비회원 공통 — TempOrder.user_id 가 주문 user_id 로 그대로 반영)
             $order = $this->orderProcessingService->createFromTempOrder(
@@ -252,7 +247,7 @@ trait HandlesOrderCreation
             'order' => $orderResource,
             // 상점 주소는 운영자 설정이다 — 기본값 리터럴을 내려보내면 주소를 바꾼 상점에서
             // 결제를 마친 손님이 존재하지 않는 화면으로 이동한다 (공개 #85).
-            'redirect_url' => ShopPathResolver::path("orders/{$order->order_number}/complete"),
+            'redirect_url' => EcommerceScreenUrl::orderComplete((string) $order->order_number),
             'requires_pg_payment' => $requiresPg,
         ];
 
@@ -333,7 +328,7 @@ trait HandlesOrderCreation
         $locale = app()->getLocale();
         $firstName = $options->first()?->product_name;
         $orderName = is_array($firstName)
-            ? (LocalizedValue::pick($firstName, $locale) ?? '')
+            ? ($firstName[$locale] ?? $firstName[config('app.fallback_locale', 'ko')] ?? reset($firstName) ?: '')
             : ($firstName ?? '');
         if ($options->count() > 1) {
             $orderName .= ' 외 '.($options->count() - 1).'건';
@@ -355,25 +350,11 @@ trait HandlesOrderCreation
         // **전액 과세**로 등록해 두었다가 면세분이 실린 취소를 **「취소 할 수 없는 금액 입니다」**
         // 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 통째로 막힌다.
         // 환산은 청구액과 같은 스냅샷 규칙을 쓴다(둘이 다른 환율을 타면 PG 가 합을 못 맞춘다).
-        // 영세(세율 0%)는 부가세가 없으므로 PG 에는 면세에 합산해 넘긴다(#612 P2) — 쇼핑몰 장부에는
-        // `total_zero_rated_amount` 로 따로 남는다. 계산식은 Order::pgTaxFreeAmount()/pgTaxableAmount() 한 곳.
-        $taxFreeBase = $order->pgTaxFreeAmount();
+        $taxFreeBase = (float) ($order->total_tax_free_amount ?? 0);
         $taxFreeCharge = $taxFreeBase > 0
             ? app(CurrencyConversionService::class)
                 ->resolveSnapshotPaymentCharge($taxFreeBase, $order->currency_snapshot ?? [])
             : null;
-
-        // 면세분이 있으면 과세 합계(부가세 포함)·부가세도 같은 규칙으로 싣는다.
-        // 공급가액·부가세를 나눠 받는 PG(NHN KCP comm_tax_mny·comm_vat_mny, 나이스 SupplyAmt·GoodsVat)는
-        // 결제액을 이 비율로 나눈다 — 싣지 않으면 부가세가 0 으로 가 과세분 전액이 공급가액으로 등록된다.
-        $taxCharge = null;
-        $vatCharge = null;
-        if ($taxFreeCharge !== null) {
-            $taxCharge = app(CurrencyConversionService::class)
-                ->resolveSnapshotPaymentCharge($order->pgTaxableAmount(), $order->currency_snapshot ?? []);
-            $vatCharge = app(CurrencyConversionService::class)
-                ->resolveSnapshotPaymentCharge((float) ($order->total_vat_amount ?? 0), $order->currency_snapshot ?? []);
-        }
 
         // 가상계좌 입금 기한 — 주문이 정한 기한(설정 `order_settings.auto_cancel_days`)을 결제창에 그대로 넘긴다.
         // 넘기지 않으면 PG 가 자기 기본 기한(KG 10~30일·나이스 10일)으로 계좌를 열고, 콜백이 그 값으로 주문 기한을
@@ -386,15 +367,7 @@ trait HandlesOrderCreation
             'amount' => $charge['minor_unit_amount'],
             'currency' => $charge['currency'],
             // 면세분이 없으면 키를 싣지 않는다 — 과세 전용 상점에서 0 을 보내면 불필요한 계약 분기를 탄다.
-            // 면세 합계는 쿠폰 할인 뒤·마일리지 차감 전 값이라, 마일리지를 과세분보다 많이 쓰면 청구액을 넘는다.
-            // PG 는 면세 금액이 결제 금액 안에 있어야 받으므로(토스 totalAmount = taxFreeAmount + suppliedAmount + vat)
-            // 청구액으로 자른다.
-            'tax_free_amount' => $taxFreeCharge !== null
-                ? min($taxFreeCharge['minor_unit_amount'], $charge['minor_unit_amount'])
-                : null,
-            // 면세분이 있을 때만: 과세 합계(부가세 포함, 영세 제외)·부가세 — 공급가액·부가세 분할 비율용
-            'tax_amount' => $taxCharge['minor_unit_amount'] ?? null,
-            'vat_amount' => $vatCharge['minor_unit_amount'] ?? null,
+            'tax_free_amount' => $taxFreeCharge['minor_unit_amount'] ?? null,
             'customer_name' => $shippingAddress?->orderer_name,
             'customer_email' => $shippingAddress?->orderer_email,
             'customer_phone' => preg_replace('/[^0-9]/', '', $shippingAddress?->orderer_phone ?? ''),
@@ -423,10 +396,12 @@ trait HandlesOrderCreation
      */
     protected function buildEscrowProducts(Order $order, string $locale): array
     {
-        return $order->options->map(function ($option) use ($locale) {
+        $fallback = config('app.fallback_locale', 'ko');
+
+        return $order->options->map(function ($option) use ($locale, $fallback) {
             $name = $option->product_name;
             $localizedName = is_array($name)
-                ? (LocalizedValue::pick($name, $locale) ?? '')
+                ? ($name[$locale] ?? $name[$fallback] ?? reset($name) ?: '')
                 : ($name ?? '');
 
             return [

@@ -505,10 +505,10 @@ function showInstallationCompletedAlert(): void
 }
 
 /**
- * 안내 문구를 보여 주고 잠시 뒤 지정된 URL로 이동합니다 (스크립트 없음 — meta refresh).
+ * 알럿을 표시하고 지정된 URL로 리다이렉트합니다.
  *
  * @param  string  $title  페이지 제목
- * @param  string  $message  안내 문구
+ * @param  string  $message  알럿 메시지
  * @param  string  $redirectUrl  리다이렉트 URL
  */
 function showAlertAndRedirect(string $title, string $message, string $redirectUrl): void
@@ -530,47 +530,15 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     echo '<meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>'.$title.'</title>';
-    // 스크립트 없이 안내 + 3초 뒤 meta refresh 이동 — 종전 alert + location 인라인 스크립트는 웹서버가
-    // `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 흰 화면에 머물렀다(#158).
-    echo '<meta http-equiv="refresh" content="3;url='.$redirectUrl.'">';
-    // 스타일은 파일로 싣는다 — 문서 안 style 요소는 웹서버가 `style-src 'self'` 를 걸면 막힌다.
-    echo '<link rel="stylesheet" href="'.htmlspecialchars(installerStandaloneCssUrl()).'">';
     echo '</head>';
-    echo '<body class="standalone-redirect">';
-    echo '<main role="alert">';
-    echo '<p>'.$message.'</p>';
-    echo '<p class="hint">'.htmlspecialchars(lang('redirect_auto_notice')).'</p>';
-    echo '<p><a href="'.$redirectUrl.'">'.htmlspecialchars(lang('redirect_go_now')).'</a></p>';
-    echo '</main>';
+    echo '<body>';
+    echo '<script>';
+    echo 'alert("'.$message.'");';
+    echo 'window.location.href = "'.$redirectUrl.'";';
+    echo '</script>';
     echo '</body>';
     echo '</html>';
     exit;
-}
-
-/**
- * 독립 화면(안내 후 이동·403)용 스타일 파일 주소를 반환합니다.
- *
- * 설치기 기준 URL 상수(INSTALLER_BASE_URL)가 정의돼 있으면 그것을 쓰고(index.php 진입 — config.php 가 먼저 로드된다),
- * 없으면 요청 경로에서 계산합니다(session.php 만 로드한 진입에서 403 화면이 뜨는 경우).
- *
- * @return string 스타일 파일 URL
- */
-function installerStandaloneCssUrl(): string
-{
-    if (defined('INSTALLER_BASE_URL')) {
-        $base = INSTALLER_BASE_URL;
-    } else {
-        $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-        $pos = strrpos($script, '/install/');
-        if ($pos !== false) {
-            // /install/index.php, /install/api/*.php 모두 설치기 루트까지 자른다
-            $base = substr($script, 0, $pos).'/install';
-        } else {
-            $base = rtrim(dirname($script), '/.').'/install';
-        }
-    }
-
-    return rtrim($base, '/').'/assets/css/installer-standalone.css';
 }
 
 /**
@@ -633,7 +601,7 @@ function getSvgIcon(string $type): string
                 <circle class="result-icon-circle" cx="26" cy="26" r="25" fill="none"/>
                 <path class="result-icon-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
             </svg>',
-        'warning' => '<svg class="result-icon result-icon-warning" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        'warning' => '<svg class="result-icon result-icon-warning" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="color:#f59e0b">
                 <circle class="result-icon-circle" cx="26" cy="26" r="25" fill="none" stroke="currentColor" stroke-width="2"/>
                 <path d="M26 12 L26 28" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/>
                 <circle cx="26" cy="36" r="2.5" fill="currentColor"/>
@@ -1171,10 +1139,10 @@ function generateEnvContent(): ?string
     $replacements['APP_ENV=production'] = 'APP_ENV='.serializeEnvValue((string) ($config['app_env'] ?? 'production'));
     $replacements['APP_URL=http://localhost'] = 'APP_URL='.serializeEnvValue((string) ($config['app_url'] ?? 'http://localhost'));
 
-    // 언어 설정 — 세션이 아니라 state 에서 정한다(설정 general.language 와 같은 값).
-    $siteLang = installer_site_language($state);
-    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$siteLang;
-    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($siteLang === 'ko' ? 'ko_KR' : 'en_US');
+    // 언어 설정
+    $currentLang = getCurrentLanguage();
+    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$currentLang;
+    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($currentLang === 'ko' ? 'ko_KR' : 'en_US');
 
     if (isset($config['app_env']) && $config['app_env'] !== 'production') {
         $replacements['APP_DEBUG=false'] = 'APP_DEBUG=true';

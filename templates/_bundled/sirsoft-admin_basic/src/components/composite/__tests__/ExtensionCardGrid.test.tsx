@@ -217,25 +217,7 @@ describe('ExtensionCardGrid — 아이콘', () => {
     expect(badge.getAttribute('aria-label')).toBe('日本語 언어팩');
     // 다크에서도 파랑을 유지해야 흰 글자와의 대비가 남는다(§7.4).
     expect(badge.className).toContain('bg-blue-600');
-    // 다크 짝도 600 단계다 — blue-500 은 흰 글자 대비가 3.76 으로 4.5:1 에 못 미친다.
-    expect(badge.className).toContain('dark:bg-blue-600');
-    expect(badge.className).not.toContain('dark:bg-blue-500');
-  });
-
-  // @scenario shape=region_tagged
-  // @effects language_pack_composite_badge, long_locale_badge_is_not_clipped
-  it('긴 로케일 배지(fil-PH)는 작은 글자·말줄임·title 로 상자 안에 둔다 (#148)', () => {
-    setContainerWidth(1072);
-    const { container } = render(
-      <ExtensionCardGrid items={[baseItem({ iconBadge: { text: 'fil-PH', srLabel: 'Filipino (Pilipinas) 언어팩' } })]} />
-    );
-    const badge = container.querySelector('[data-ref="ext_icon_badge"]') as HTMLElement;
-
-    expect(badge.textContent).toBe('fil-PH');
-    expect(badge.getAttribute('title')).toBe('fil-PH');
-    expect(badge.className).toContain('text-[8px]');
-    expect(badge.className).toContain('truncate');
-    expect(badge.className).toContain('max-w-full');
+    expect(badge.className).toContain('dark:bg-blue-500');
   });
 
   // @scenario icon_state=lp_manifest
@@ -409,30 +391,28 @@ describe('ExtensionCardGrid — 콜백은 원본 행을 되돌려 준다', () =>
     expect(onToggle.mock.calls[0][1]).toBe(item.row);
   });
 
-  // 스위치는 서버 작업이 끝날 때까지 원래 값에 머물고 진행 중(aria-busy)으로 잠긴다 — 서버가 거절해(실패·의존 충돌 창
-  // 취소·409) 화면이 재동기 신호를 올리면 진행 표시만 꺼지고 값은 서버 값 그대로다(#703 의 「꺼진 채 남음」도 생기지 않는다, #882).
+  // 스위치를 누르면 먼저 뒤집혀 보이지만, 서버가 거절해(실패·의존 충돌 창 취소) 값이 그대로인 채 화면이
+  // 재동기 신호를 올리면 서버 값으로 돌아와야 한다 — 받은 checked 가 그대로라 스위치가 꺼진 채 남던 문제(#703 실측).
   // @scenario view=gallery, install_state=active
   // @effects toggle_resyncs_to_server_value_on_refetch
-  it('누르면 값은 그대로 진행 중이 되고, 재동기 신호가 오르면 진행 표시만 꺼진다', () => {
+  it('서버 값이 그대로인 채 재동기 신호가 오르면 스위치가 서버 값으로 돌아온다', () => {
     setContainerWidth(1072);
     const make = () => baseItem({ row: { identifier: 'sirsoft-ckeditor5', status: 'active' }, toggle: { checked: true, label: 'CKEditor 5' } });
     const { container, rerender } = render(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
 
     const switchEl = () => container.querySelector('[role="switch"]') as HTMLElement;
     fireEvent.click(container.querySelector('input[type="checkbox"]') as HTMLInputElement);
-    expect(switchEl().getAttribute('aria-checked')).toBe('true');
-    expect(switchEl().getAttribute('aria-busy')).toBe('true');
+    expect(switchEl().getAttribute('aria-checked')).toBe('false');
 
     rerender(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={1} />);
     expect(switchEl().getAttribute('aria-checked')).toBe('true');
-    expect(switchEl().getAttribute('aria-busy')).toBeNull();
   });
 
-  // 요청이 도는 동안 화면이 다시 그려져도 진행 표시가 유지된다 — 엔진은 렌더마다 카드 항목과 원본 행을 새 객체로
-  // 만든다. 그때마다 버려지면 진행 표시가 곧바로 꺼져 요청이 끝날 때까지(수 초) 반응이 없는 것처럼 보이고 두 번 누르게 된다.
+  // 요청이 도는 동안 화면이 다시 그려져도 누른 값이 유지된다 — 엔진은 렌더마다 카드 항목과 원본 행을
+  // 새 객체로 만든다. 그때마다 버려지면 누른 반응이 요청이 끝날 때까지(수 초) 안 보여 두 번 누르게 된다.
   // @scenario view=gallery, install_state=active
   // @effects toggle_resyncs_to_server_value_on_refetch
-  it('행 객체가 새로 만들어지는 다시 그리기에서는 진행 표시가 유지된다', () => {
+  it('행 객체가 새로 만들어지는 다시 그리기에서는 누른 값이 유지된다', () => {
     setContainerWidth(1072);
     const make = () => baseItem({ row: { identifier: 'sirsoft-ckeditor5', status: 'active' }, toggle: { checked: true, label: 'CKEditor 5' } });
     const { container, rerender } = render(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
@@ -441,8 +421,7 @@ describe('ExtensionCardGrid — 콜백은 원본 행을 되돌려 준다', () =>
     fireEvent.click(container.querySelector('input[type="checkbox"]') as HTMLInputElement);
     rerender(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
     rerender(<ExtensionCardGrid items={[make()]} onToggle={vi.fn()} resyncKey={0} />);
-    expect(switchEl().getAttribute('aria-checked')).toBe('true');
-    expect(switchEl().getAttribute('aria-busy')).toBe('true');
+    expect(switchEl().getAttribute('aria-checked')).toBe('false');
   });
 
   // 서버 값이 바뀌면(요청 성공 후 재조회) 누른 값을 버리고 서버를 따른다 — 이후 다른 곳에서 값이 다시 바뀌어도
@@ -628,7 +607,7 @@ describe('ExtensionCardGrid — 상태 표시', () => {
   });
 });
 
-describe('ExtensionCardGrid — 켜기 스위치의 접근 가능한 이름', () => {
+describe('ExtensionCardGrid — 켜기 스위치의 접근 가능한 이름 (O-Q2-1)', () => {
   // 업데이트·레이아웃 편집 단추가 스위치 바로 앞에 서면, 이름 없는 스위치가 곁 글자를 찾아 그 단추 글자를
   // 이름으로 집었다 — 화면 읽기에서 모듈·플러그인 카드 스위치가 「업데이트」, 템플릿 카드는 「레이아웃 편집」.
   // @scenario control=extension_card_switch

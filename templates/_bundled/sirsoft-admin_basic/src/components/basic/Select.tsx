@@ -1,7 +1,6 @@
-// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread)·키보드 항목 선택(포털 목록 초점 이동 — 단위 Select.keyboard.test.tsx, 관리자 화면 실제 키 실측). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
-import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
+// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
-import { getLocaleDisplayName } from '../../support/localeName';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
 import { Button } from './Button';
@@ -9,19 +8,19 @@ import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
 
-/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 전수 실측) */
+/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 J D-J11) */
 const selectSearchPlaceholder = (): string => {
   const translated = (window as any).G7Core?.t?.('common.search_placeholder');
   return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
 };
 
-/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 전수 실측 후속) */
+/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 J D-J11 후속) */
 const selectSearchLabel = (): string => {
   const translated = (window as any).G7Core?.t?.('common.search');
   return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
 };
 
-/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 전수 실측 같은 결함군) */
+/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 validate R4 동류) */
 const selectNoResults = (): string => {
   const translated = (window as any).G7Core?.t?.('common.no_results');
   return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
@@ -70,8 +69,20 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
 function getLocaleName(locale: string): string {
-  // 언어팩 이름 → 번역 → 내장 표 → 코드 (#148 — 종전 state.get(경로) 는 인자를 무시해 언어팩 이름을 못 읽었다)
-  return getLocaleDisplayName(locale);
+  const fromAppConfig = (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale];
+  if (fromAppConfig) {
+    return fromAppConfig;
+  }
+  const fallback: Record<string, string> = {
+    ko: '한국어',
+    en: 'English',
+    ja: '日本語',
+    zh: '中文',
+    es: 'Español',
+    fr: 'Français',
+    de: 'Deutsch',
+  };
+  return fallback[locale] || locale;
 }
 
 /**
@@ -94,7 +105,6 @@ export const Select: React.FC<SelectProps> = ({
   placeholder,
   editorAttrs,
   'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -105,10 +115,6 @@ export const Select: React.FC<SelectProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const nativeSelectRef = useRef<HTMLSelectElement>(null);
-  // 보이는 항목 단추(목록 순서) — ↓↑ 로 실제 초점을 옮긴다(사용자 템플릿 Basic Select 와 같은 방식)
-  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  // 단추에서 ↓↑ 로 열 때, 목록이 그려진 뒤 초점을 줄 자리
-  const pendingFocusRef = useRef<'selected' | 'last' | null>(null);
 
   // options를 SelectOption[] 형식으로 정규화
   const normalizedOptions = useMemo((): SelectOption[] | null => {
@@ -141,28 +147,6 @@ export const Select: React.FC<SelectProps> = ({
     const selected = normalizedOptions.find(opt => String(opt.value) === String(value));
     return selected?.label || '';
   }, [normalizedOptions, value]);
-
-  // 목록형 단추 이름 — 「{이름} {현재 값}」. 종전에는 aria-label 이 단추 이름을 덮어 고른 값이 빠지고,
-  // aria-labelledby 는 단추가 아니라 바깥 상자에 붙어 읽히지 않았다(#757). 숨은 이름 span + 값 span 을 잇는다.
-  const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
-  const nameId = `${domId}-name`;
-  const valueId = `${domId}-value`;
-  const listboxId = `${domId}-listbox`;
-  // 고른 값이 없으면 값 span 은 placeholder(안내 글자)를 보이므로 이름에 잇지 않는다 — 「상태 변경 상태 변경」처럼 겹친다.
-  // 값이 빈 자리표시 선택지(`<option value="" disabled>주문상태 변경</option>`, 「판매 상태 선택」)도 고른 값이 아니다 —
-  // disabled 이거나 글자가 이름으로 시작하면 잇지 않는다. 「언어 전체」처럼 뜻 있는 빈 값은 그대로 잇는다(수정 후 브라우저 실측)
-  const selectedOption = normalizedOptions?.find((opt) => String(opt.value) === String(value));
-  const isPlaceholderOption =
-    !!selectedOption &&
-    String(selectedOption.value) === '' &&
-    (!!selectedOption.disabled ||
-      (!!ariaLabel && selectedOption.label.trim().startsWith(String(ariaLabel).trim())));
-  const valuePart = selectedLabel && !isPlaceholderOption ? ` ${valueId}` : '';
-  const buttonLabelledBy = ariaLabel
-    ? `${nameId}${valuePart}`
-    : ariaLabelledBy
-      ? `${ariaLabelledBy}${valuePart}`
-      : undefined;
 
   // searchable 모드에서 검색어로 필터링된 옵션
   const visibleOptions = useMemo((): SelectOption[] | null => {
@@ -279,88 +263,6 @@ export const Select: React.FC<SelectProps> = ({
     }
   };
 
-  // 고를 수 있는(잠기지 않은) 항목의 목록 위치
-  const enabledIndexes = (): number[] =>
-    (visibleOptions ?? []).map((opt, index) => (opt.disabled ? -1 : index)).filter((index) => index >= 0);
-
-  // 목록 안 항목으로 초점 — 'selected' 는 고른 값(잠겼거나 없으면 첫 항목), 'last' 는 고른 값(없으면 마지막 항목)
-  const focusOption = (where: 'selected' | 'last') => {
-    const enabled = enabledIndexes();
-    if (enabled.length === 0) return;
-    const selectedIndex = (visibleOptions ?? []).findIndex((opt) => String(opt.value) === String(value));
-    const target = enabled.includes(selectedIndex)
-      ? selectedIndex
-      : where === 'last' ? enabled[enabled.length - 1] : enabled[0];
-    optionRefs.current[target]?.focus();
-  };
-
-  // ↓↑ 로 연 목록이 그려지면(포털은 위치 계산 뒤에 붙는다) 맡겨 둔 항목으로 초점.
-  // 아래 기본 select 분기보다 먼저 부른다 — 분기 뒤에 두면 options 유무에 따라 훅 호출 수가 달라진다.
-  useEffect(() => {
-    if (!isOpen || !dropdownPos || pendingFocusRef.current === null) return;
-    const where = pendingFocusRef.current;
-    pendingFocusRef.current = null;
-    focusOption(where);
-  });
-
-  // 단추 키보드 — ↓/↑ 는 목록을 열고(열려 있으면 그대로) 항목으로 들어간다. Enter·Space 는 단추 기본 동작(클릭)
-  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (disabled || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) return;
-    event.preventDefault();
-    const where = event.key === 'ArrowUp' ? 'last' : 'selected';
-    if (isOpen && dropdownPos) {
-      focusOption(where);
-      return;
-    }
-    pendingFocusRef.current = where;
-    setIsOpen(true);
-  };
-
-  // 목록 키보드 — 잠긴 항목을 건너뛰며 ↓↑ 순환, Home·End 양 끝, Esc 는 목록만 닫고 단추로,
-  // Tab 은 닫고 단추로 초점을 돌려 이어지는 기본 Tab 이 단추 다음 칸으로 가게 한다(목록은 문서 끝 포털이다).
-  // 검색칸에서는 ↓ 만 항목으로 들어가고 나머지 키는 글자 편집에 남긴다.
-  const handleListboxKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      setIsOpen(false);
-      buttonRef.current?.focus();
-      return;
-    }
-    if (event.key === 'Tab') {
-      setIsOpen(false);
-      buttonRef.current?.focus();
-      return;
-    }
-    const enabled = enabledIndexes();
-    if (enabled.length === 0) return;
-    const inSearch = event.target === searchInputRef.current;
-    const current = optionRefs.current.findIndex((el) => el !== null && el === document.activeElement);
-    const position = enabled.indexOf(current);
-    let next: number;
-    switch (event.key) {
-      case 'ArrowDown':
-        next = position < 0 ? enabled[0] : enabled[(position + 1) % enabled.length];
-        break;
-      case 'ArrowUp':
-        if (inSearch) return;
-        next = position < 0 ? enabled[enabled.length - 1] : enabled[(position - 1 + enabled.length) % enabled.length];
-        break;
-      case 'Home':
-        if (inSearch) return;
-        next = enabled[0];
-        break;
-      case 'End':
-        if (inSearch) return;
-        next = enabled[enabled.length - 1];
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    optionRefs.current[next]?.focus();
-  };
-
   const handleSelect = (optionValue: string | number) => {
     if (onChange) {
       // ActionDispatcher가 이벤트를 인식할 수 있도록 preventDefault 메서드 포함
@@ -377,7 +279,7 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   // 곁 라벨을 이름으로 잇는다 — 목록형 버튼은 「작업 유형 Artisan」 처럼 라벨 뒤에 현재 값이 이어 읽힌다.
-  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 전수 실측). 기본 select 는 라벨만 잇는다.
+  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 J D-J7). 기본 select 는 라벨만 잇는다.
   // 훅은 아래 기본 select 분기보다 먼저 부른다 — 분기 뒤에 두면 options 유무에 따라 훅 호출 수가 달라진다.
   useAdjacentLabel(
     (normalizedOptions ? buttonRef : nativeSelectRef) as React.RefObject<HTMLElement | null>,
@@ -401,7 +303,6 @@ export const Select: React.FC<SelectProps> = ({
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
         aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledBy}
         {...editorAttrs}
         {...props}
       >
@@ -441,26 +342,19 @@ export const Select: React.FC<SelectProps> = ({
 
   return (
     <Div ref={containerRef} className={`relative ${widthClass}`.trim()} {...rootDomProps}>
-      {ariaLabel && (
-        <Span id={nameId} className="sr-only">
-          {ariaLabel}
-        </Span>
-      )}
       <Button
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        onKeyDown={handleTriggerKeyDown}
         disabled={disabled}
         className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-controls={isOpen && dropdownPos ? listboxId : undefined}
-        aria-labelledby={buttonLabelledBy}
+        aria-label={ariaLabel}
       >
         {/* 고른 값이 없으면 placeholder 를 흐린 글자로 보인다 — 종전에는 placeholder 가 바깥 div 속성으로 새고
-            버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 전수 실측). */}
-        <Span id={valueId} className={selectedLabel ? 'truncate' : 'truncate text-gray-600 dark:text-gray-300'}>{selectedLabel || placeholder || '\u00A0'}</Span>
+            버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 J D-J11). */}
+        <Span className={selectedLabel ? 'truncate' : 'truncate text-gray-400 dark:text-gray-500'}>{selectedLabel || placeholder || '\u00A0'}</Span>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -483,9 +377,7 @@ export const Select: React.FC<SelectProps> = ({
             minWidth: dropdownPos.minWidth,
             maxWidth: dropdownPos.maxWidth,
           }}
-          id={listboxId}
           role="listbox"
-          onKeyDown={handleListboxKeyDown}
         >
           {searchable && (
             <Div className="p-2 border-b border-gray-200 dark:border-gray-600">
@@ -495,7 +387,7 @@ export const Select: React.FC<SelectProps> = ({
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 placeholder={searchPlaceholder ?? selectSearchPlaceholder()}
-                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-600 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 role="searchbox"
                 aria-label={searchPlaceholder ?? selectSearchLabel()}
               />
@@ -507,17 +399,16 @@ export const Select: React.FC<SelectProps> = ({
                 {searchTerm ? selectNoResults() : ''}
               </Div>
             )}
-            {(visibleOptions ?? []).map((option, index) => {
+            {(visibleOptions ?? []).map((option) => {
               const isSelected = String(option.value) === String(value);
               return (
                 <Button
                   key={option.value}
-                  ref={(el: HTMLButtonElement | null) => { optionRefs.current[index] = el; }}
                   type="button"
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   disabled={option.disabled}
                   className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    isSelected ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'
+                    isSelected ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
                   } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   role="option"
                   aria-selected={isSelected}
@@ -525,7 +416,7 @@ export const Select: React.FC<SelectProps> = ({
                   {option.description ? (
                     <Div className="flex flex-col gap-0.5 min-w-0">
                       <Span>{option.label}</Span>
-                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-300 whitespace-normal">{option.description}</Span>
+                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-400 whitespace-normal">{option.description}</Span>
                     </Div>
                   ) : (
                     <Span>{option.label}</Span>

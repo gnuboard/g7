@@ -38,7 +38,7 @@ class UploadCategoryImageRequest extends FormRequest
                 'required',
                 'file',
                 'image',
-                'mimes:jpeg,png,jpg,gif,webp',
+                'mimes:jpeg,png,jpg,gif,svg,webp',
                 'max:10240', // 10MB
             ],
             'temp_key' => $this->tempKeyRules(),

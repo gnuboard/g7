@@ -6,8 +6,6 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Concerns\EnsuresPublicProduct;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\DownloadableCouponsRequest;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
@@ -19,13 +17,6 @@ use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
  */
 class PublicCouponController extends PublicBaseController
 {
-    use EnsuresPublicProduct;
-
-    /**
-     * 회원 쿠폰 서비스를 주입받습니다.
-     *
-     * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
-     */
     public function __construct(
         private UserCouponService $userCouponService
     ) {}
@@ -42,9 +33,6 @@ class PublicCouponController extends PublicBaseController
      */
     public function downloadableCoupons(DownloadableCouponsRequest $request, Product $product): JsonResponse
     {
-        // 숨김·삭제 상품의 쿠폰 목록은 열지 않는다 (상품 상세와 같은 판정)
-        $this->ensurePublicProduct($product);
-
         try {
             $this->logApiUsage('products.downloadable_coupons');
 
@@ -57,13 +45,6 @@ class PublicCouponController extends PublicBaseController
                 ['data' => $coupons]
             );
         } catch (Exception $e) {
-            Log::error('products.downloadable_coupons failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-                'product_id' => $product->id,
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.coupon.downloadable_fetch_failed',

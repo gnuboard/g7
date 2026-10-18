@@ -11,7 +11,6 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Psr\Log\AbstractLogger;
-use Tests\Support\UpgradeFiles;
 
 /**
  * 같은 상품옵션 행 금액 겹침 보고(DataMigration) 테스트 (S-Q26-c)
@@ -41,8 +40,8 @@ class ReportSameOptionRowAmountOverlapTest extends ModuleTestCase
     {
         parent::setUp();
 
-        UpgradeFiles::requireOnce(dirname(__DIR__, 3)
-            .'/upgrades/data/1.3.0/migrations/09_ReportSameOptionRowAmountOverlap.php');
+        require_once dirname(__DIR__, 3)
+            .'/upgrades/data/1.3.0/migrations/09_ReportSameOptionRowAmountOverlap.php';
 
         $class = 'App\\Upgrades\\Data\\Ext\\Modules\\SirsoftEcommerce\\V1_3_0\\Migrations\\ReportSameOptionRowAmountOverlap';
         $this->migration = new $class;

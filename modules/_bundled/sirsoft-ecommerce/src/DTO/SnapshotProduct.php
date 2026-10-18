@@ -2,8 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\DTO;
 
-use App\Support\LocalizedValue;
-use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 
 /**
@@ -30,7 +28,7 @@ class SnapshotProduct
     /** @var object|null 배송정책 (스냅샷 모드에서는 null — calculateShippingFee에서 별도 처리) */
     public $shippingPolicy = null;
 
-    /** @var Collection 카테고리 (스냅샷 모드에서는 빈 컬렉션 — 쿠폰 스냅샷 모드에서 검증 우회) */
+    /** @var \Illuminate\Support\Collection 카테고리 (스냅샷 모드에서는 빈 컬렉션 — 쿠폰 스냅샷 모드에서 검증 우회) */
     public $categories;
 
     /**
@@ -42,11 +40,9 @@ class SnapshotProduct
         $this->id = $snapshot['id'] ?? 0;
         $this->name = $snapshot['name'] ?? '';
         $this->selling_price = $snapshot['selling_price'] ?? 0;
-        // 없거나 해석할 수 없는 값은 과세로 본다 — 「없으면 과세」 규약. tryFrom 의 null 을 그대로 두면
-        // 과세 판정(=== TAXABLE)이 거짓이 되어 손상된 스냅샷 주문이 조용히 면세로 재계산됐다(#612 S9).
-        $this->tax_status = (is_string($snapshot['tax_status'] ?? null)
+        $this->tax_status = isset($snapshot['tax_status'])
             ? ProductTaxStatus::tryFrom($snapshot['tax_status'])
-            : null) ?? ProductTaxStatus::TAXABLE;
+            : ProductTaxStatus::TAXABLE;
         $this->tax_rate = $snapshot['tax_rate'] ?? null;
         $this->shipping_policy_id = $shippingPolicyId;
         $this->categories = collect([]);
@@ -60,7 +56,7 @@ class SnapshotProduct
     public function getLocalizedName(): string
     {
         if (is_array($this->name)) {
-            return LocalizedValue::pick($this->name) ?? '';
+            return $this->name[app()->getLocale()] ?? $this->name['ko'] ?? reset($this->name) ?: '';
         }
 
         return $this->name;

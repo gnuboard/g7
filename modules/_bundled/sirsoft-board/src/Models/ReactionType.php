@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Models;
 use App\Casts\AsUnicodeJson;
 use App\Models\Attachment;
 use App\Models\Concerns\HasUserOverrides;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -138,8 +137,10 @@ class ReactionType extends Model
             return (string) $this->name;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->name, $locale) ?? '';
+        return $this->name[$locale]
+            ?? $this->name[config('app.fallback_locale')]
+            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+            ?? '';
     }
 
     /**

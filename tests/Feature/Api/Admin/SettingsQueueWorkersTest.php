@@ -283,10 +283,7 @@ class SettingsQueueWorkersTest extends TestCase
                 'commands' => [['connection', 'queues', 'command']],
                 'placement' => ['timeout_clamped' => ['count', 'last'], 'fallback' => ['count', 'last']],
             ]])
-            // 등록 2행(database:default·database-long:long) + 사이트맵 전용 큐 1행 (7.1.1 출시 전)
-            ->assertJsonCount(3, 'data.rows')
-            ->assertJsonPath('data.rows.2.queue', 'sitemap')
-            ->assertJsonPath('data.rows.2.dedicated', true);
+            ->assertJsonCount(2, 'data.rows');
     }
 
     /**

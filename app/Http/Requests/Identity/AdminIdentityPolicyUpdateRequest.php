@@ -8,8 +8,6 @@ use App\Enums\IdentityPolicyFailMode;
 use App\Enums\IdentityPolicyScope;
 use App\Extension\HookManager;
 use App\Models\IdentityPolicy;
-use App\Rules\IdentityProviderForPurposeRule;
-use App\Rules\RegisteredIdentityPurposeRule;
 use App\Rules\UniquePolicyPriorityPerTarget;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -43,18 +41,14 @@ class AdminIdentityPolicyUpdateRequest extends FormRequest
         $rules = [
             'enabled' => ['sometimes', 'boolean'],
             'grace_minutes' => ['sometimes', 'integer', 'min:0', 'max:43200'],
-            // 등록돼 있고 실효 목적(입력값 또는 현재 정책)을 지원하는 수단만 — 이미 저장된 값은 그대로 보내도 통과(정책 끄기 저장 보장, 7.1.6)
-            'provider_id' => ['sometimes', 'nullable', 'string', 'max:64', new IdentityProviderForPurposeRule(
-                fn (): ?string => $this->effectivePurpose(),
-                $this->currentPolicy()?->provider_id,
-            )],
+            'provider_id' => ['sometimes', 'nullable', 'string', 'max:64'],
             'fail_mode' => ['sometimes', Rule::enum(IdentityPolicyFailMode::class)],
 
             // 아래 필드는 source_type=admin 일 때만 Controller 에서 적용
             'key' => ['sometimes', 'string', 'max:120'],
             'scope' => ['sometimes', Rule::enum(IdentityPolicyScope::class)],
             'target' => ['sometimes', 'string', 'max:255'],
-            'purpose' => ['sometimes', 'string', 'max:64', new RegisteredIdentityPurposeRule(true, unchangedValue: $this->currentPolicy()?->purpose)],
+            'purpose' => ['sometimes', 'string', 'max:64'],
             // priority 동률 차단 — 같은 scope+target 에 동일 priority 활성 정책이 이미 있으면 거부 (자기 자신 제외).
             // scope/target/enabled 는 요청에 없으면 기존 정책 값으로 폴백 (선언형 정책은 scope/target 변경 불가).
             'priority' => [
@@ -102,8 +96,6 @@ class AdminIdentityPolicyUpdateRequest extends FormRequest
 
     /**
      * 동률 검사에 사용할 scope — 요청에 있으면 그 값, 없으면 기존 정책 값.
-     *
-     * @return string 실효 scope
      */
     protected function effectiveScope(): string
     {
@@ -117,8 +109,6 @@ class AdminIdentityPolicyUpdateRequest extends FormRequest
 
     /**
      * 동률 검사에 사용할 target — 요청에 있으면 그 값, 없으면 기존 정책 값.
-     *
-     * @return string 실효 target
      */
     protected function effectiveTarget(): string
     {
@@ -131,24 +121,7 @@ class AdminIdentityPolicyUpdateRequest extends FormRequest
     }
 
     /**
-     * 수단 검사에 쓸 목적 — 요청에 있으면 그 값, 없으면 기존 정책 값.
-     *
-     * @return string|null 실효 목적
-     */
-    protected function effectivePurpose(): ?string
-    {
-        $purpose = $this->input('purpose');
-        if (is_string($purpose) && $purpose !== '') {
-            return $purpose;
-        }
-
-        return $this->currentPolicy()?->purpose;
-    }
-
-    /**
      * 동률 검사에 사용할 enabled — 요청에 있으면 그 값, 없으면 기존 정책 값.
-     *
-     * @return bool 실효 활성 여부
      */
     protected function effectiveEnabled(): bool
     {

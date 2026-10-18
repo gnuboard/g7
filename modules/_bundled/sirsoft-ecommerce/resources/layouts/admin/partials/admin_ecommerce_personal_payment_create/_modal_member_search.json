@@ -47,7 +47,7 @@
                 {
                     "id": "member_item_1",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "actions": [
                         {
                             "type": "click",
@@ -55,13 +55,12 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                        "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
                             },
@@ -71,21 +70,21 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "user",
-                                        "className": "text-xl text-gray-500 dark:text-gray-300"
+                                        "className": "text-xl text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
-                                "className": "block flex-1 min-w-0"
+                                "className": "flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
                                         "className": "flex-center gap-2"
                                     },
@@ -96,7 +95,7 @@
                                             "props": {
                                                 "className": "font-medium text-heading"
                                             },
-                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
+                                            "text": "김철수"
                                         },
                                         {
                                             "type": "basic",
@@ -110,9 +109,9 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "block text-secondary text-sm truncate"
+                                        "className": "text-secondary text-sm truncate"
                                     },
                                     "text": "kim@example.com · 010-1234-5678"
                                 }
@@ -123,7 +122,7 @@
                 {
                     "id": "member_item_2",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "actions": [
                         {
                             "type": "click",
@@ -131,13 +130,12 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                        "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
                             },
@@ -147,21 +145,21 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "user",
-                                        "className": "text-xl text-gray-500 dark:text-gray-300"
+                                        "className": "text-xl text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
-                                "className": "block flex-1 min-w-0"
+                                "className": "flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
                                         "className": "flex-center gap-2"
                                     },
@@ -172,7 +170,7 @@
                                             "props": {
                                                 "className": "font-medium text-heading"
                                             },
-                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
+                                            "text": "이영희"
                                         },
                                         {
                                             "type": "basic",
@@ -186,9 +184,9 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "block text-secondary text-sm truncate"
+                                        "className": "text-secondary text-sm truncate"
                                     },
                                     "text": "lee@example.com · 010-2345-6789"
                                 }
@@ -199,7 +197,7 @@
                 {
                     "id": "member_item_3",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "actions": [
                         {
                             "type": "click",
@@ -207,13 +205,12 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                        "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
                             },
@@ -223,21 +220,21 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "user",
-                                        "className": "text-xl text-gray-500 dark:text-gray-300"
+                                        "className": "text-xl text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
-                                "className": "block flex-1 min-w-0"
+                                "className": "flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
                                         "className": "flex-center gap-2"
                                     },
@@ -248,7 +245,7 @@
                                             "props": {
                                                 "className": "font-medium text-heading"
                                             },
-                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
+                                            "text": "박민수"
                                         },
                                         {
                                             "type": "basic",
@@ -262,9 +259,9 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "block text-secondary text-sm truncate"
+                                        "className": "text-secondary text-sm truncate"
                                     },
                                     "text": "park@example.com · 010-3456-7890"
                                 }
@@ -275,7 +272,7 @@
                 {
                     "id": "member_item_4",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "actions": [
                         {
                             "type": "click",
@@ -283,13 +280,12 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                        "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
                             },
@@ -299,21 +295,21 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "user",
-                                        "className": "text-xl text-gray-500 dark:text-gray-300"
+                                        "className": "text-xl text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
-                                "className": "block flex-1 min-w-0"
+                                "className": "flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
                                         "className": "flex-center gap-2"
                                     },
@@ -324,7 +320,7 @@
                                             "props": {
                                                 "className": "font-medium text-heading"
                                             },
-                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.jung_sujin"
+                                            "text": "정수진"
                                         },
                                         {
                                             "type": "basic",
@@ -338,9 +334,9 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "block text-secondary text-sm truncate"
+                                        "className": "text-secondary text-sm truncate"
                                     },
                                     "text": "jung@example.com · 010-4567-8901"
                                 }
@@ -351,7 +347,7 @@
                 {
                     "id": "member_item_5",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "actions": [
                         {
                             "type": "click",
@@ -359,13 +355,12 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                        "className": "flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0"
                             },
@@ -375,21 +370,21 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "user",
-                                        "className": "text-xl text-gray-500 dark:text-gray-300"
+                                        "className": "text-xl text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
-                                "className": "block flex-1 min-w-0"
+                                "className": "flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
                                         "className": "flex-center gap-2"
                                     },
@@ -400,7 +395,7 @@
                                             "props": {
                                                 "className": "font-medium text-heading"
                                             },
-                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.choi_youngsu"
+                                            "text": "최영수"
                                         },
                                         {
                                             "type": "basic",
@@ -414,9 +409,9 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "block text-secondary text-sm truncate"
+                                        "className": "text-secondary text-sm truncate"
                                     },
                                     "text": "choi@example.com · 010-5678-9012"
                                 }

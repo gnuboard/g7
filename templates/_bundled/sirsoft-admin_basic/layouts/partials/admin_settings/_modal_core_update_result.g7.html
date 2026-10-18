@@ -11,6 +11,52 @@
         <span class="text-label">$t:admin.settings.info.latest_version</span>
         <span class="text-heading">{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}</span>
       </div>
+      <!-- 직전 업데이트 시도가 개발자 custom 자리 사전 검사로 시작 전에 멈췄을 때만 보인다(같은 새 버전 한정) —
+     개발자 패키지(custom/composer.lock)가 새 코어와 맞지 않거나 배포본이 custom 예약 자리에 파일을 실었다. -->
+      <div data-ref="custom_preflight_section" data-if="{{!!$parent._local.coreUpdateInfo?.custom_preflight}}" class="space-y-3" role="alert">
+        <div class="alert-warning space-y-1">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:admin.settings.info.custom_preflight_title</p>
+          <p data-if="{{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}" class="text-sm text-gray-700 dark:text-gray-300">$t:admin.settings.info.custom_preflight_desc|count={{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length}}|version={{$parent._local.coreUpdateInfo?.custom_preflight?.to_version ?? ''}}</p>
+        </div>
+        <div data-if="{{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}" class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
+              <tr>
+                <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.info.custom_conflict_package</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.info.custom_conflict_reason</th>
+                <th class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300">$t:admin.settings.info.custom_conflict_core</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-each="conflict in {{$parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []}}" class="border-t border-gray-200 dark:border-gray-700 align-top">
+                <td class="px-3 py-2">
+                  <span class="block font-mono text-gray-900 dark:text-white">{{conflict.package}}</span>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">$t:admin.settings.info.custom_conflict_installed|version={{conflict.installed}}</span>
+                </td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
+                  <span data-if="{{conflict.type === 'duplicate'}}">$t:admin.settings.info.custom_conflict_duplicate</span>
+                  <span data-if="{{conflict.type !== 'duplicate'}}">$t:admin.settings.info.custom_conflict_constraint|requires={{conflict.requires}}|constraint={{conflict.constraint}}</span>
+                </td>
+                <td class="px-3 py-2 font-mono text-xs text-amber-700 dark:text-amber-400">{{conflict.core_package}} {{conflict.core_version}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-if="{{($parent._local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []).length > 0}}" class="space-y-1">
+          <p class="text-sm text-gray-700 dark:text-gray-300">$t:admin.settings.info.custom_reserved_files</p>
+          <ul class="text-xs font-mono text-gray-600 dark:text-gray-400 list-disc pl-5">
+            <li data-each="reservedFile in {{$parent._local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []}}">{{reservedFile}}</li>
+          </ul>
+        </div>
+        <div class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+          <p class="font-semibold">$t:admin.settings.info.custom_fix_title</p>
+          <ol class="list-decimal pl-5 space-y-1">
+            <li>$t:admin.settings.info.custom_fix_step1</li>
+            <li>$t:admin.settings.info.custom_fix_step2</li>
+            <li>$t:admin.settings.info.custom_fix_step3</li>
+          </ol>
+        </div>
+      </div>
       <div data-ref="update_available_section" data-if="{{$parent._local.coreUpdateInfo?.update_available}}" class="space-y-3">
         <div class="alert-success">
           <p class="text-success-soft">$t:admin.settings.info.update_available_message</p>

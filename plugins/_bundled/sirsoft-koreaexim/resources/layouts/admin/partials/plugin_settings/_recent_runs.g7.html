@@ -3,16 +3,15 @@
 <div class="admin-card mb-4">
   <div class="flex-between">
     <h3 class="card-title">$t:sirsoft-koreaexim.recent</h3>
-    <a href="/admin/plugins/sirsoft-koreaexim/settings?tab=history" :mergeQuery="true" class="button btn btn-secondary">
+    <button type="button" class="btn btn-secondary">
       <on type="click">
         <!-- 이력 탭으로 이동 — 다른 쿼리는 유지한 채 tab 만 바꾼다 -->
-        <navigate :mergeQuery="true"><query tab="history"/></navigate>
+        <navigate path="/admin/plugins/sirsoft-koreaexim/settings" :mergeQuery="true"><query tab="history"/></navigate>
       </on>
       <span>$t:sirsoft-koreaexim.history_tab</span>
-    </a>
+    </button>
   </div>
-  <data-grid data-type="composite" data-ref="koreaexim_recent_runs" data="{{koreaeximRecentRuns?.data?.data ?? []}}" :pagination="false" :selectable="false" emptyMessage="{{koreaeximRecentRuns === undefined ? '' : $t('sirsoft-koreaexim.empty')}}">
-    <blur-until-loaded sources="koreaeximRecentRuns"/>
+  <data-grid data-type="composite" data-ref="koreaexim_recent_runs" data="{{koreaeximRecentRuns?.data?.data ?? []}}" :pagination="false" :selectable="false" emptyMessage="$t:sirsoft-koreaexim.empty">
     <column field="search_date" header="$t:sirsoft-koreaexim.date"/>
     <column field="trigger_label" header="$t:sirsoft-koreaexim.trigger"/>
     <column field="status_label" header="$t:sirsoft-koreaexim.result">

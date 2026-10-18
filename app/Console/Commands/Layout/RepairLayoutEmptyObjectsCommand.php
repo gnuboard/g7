@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Layout;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\LayoutExtensionType;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\LayoutExtension;
@@ -39,7 +38,6 @@ use Illuminate\Support\Facades\DB;
 class RepairLayoutEmptyObjectsCommand extends Command
 {
     use ClearsTemplateCaches;
-    use LocalizesDescription;
 
     /**
      * @var string
@@ -47,6 +45,11 @@ class RepairLayoutEmptyObjectsCommand extends Command
     protected $signature = 'layout:repair-empty-objects
                             {--apply : 실제로 고친다(없으면 미리보기)}
                             {--template= : 템플릿 식별자로 한정}';
+
+    /**
+     * @var string
+     */
+    protected $description = '편집기 저장·버전 복원 등으로 [] 로 굳은 레이아웃 빈 객체({})를 원본 기준으로 찾아 되돌립니다';
 
     /** 경로 예시로 보여 줄 최대 개수 */
     private const PATH_EXAMPLES = 3;
@@ -79,6 +82,7 @@ class RepairLayoutEmptyObjectsCommand extends Command
         private readonly LayoutExtensionService $extensionService,
     ) {
         parent::__construct();
+        $this->description = __('layouts.repair_empty_objects.description');
     }
 
     /**

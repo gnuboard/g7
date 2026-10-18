@@ -22,15 +22,6 @@ let mockGlobalState: Record<string, any> = {};
 let mockDataSources: Record<string, any> = {};
 
 const mockG7Core = {
-    // 엔진 G7Core.locale.pick(engine-v1.81.0) — 화면 ko·사이트 기본 언어 ko 인 사이트
-    locale: {
-        current: () => 'ko',
-        pick: (value: any) => {
-            if (typeof value === 'string') return value;
-            if (!value || typeof value !== 'object') return null;
-            return value.ko || value.en || (Object.values(value)[0] as string) || null;
-        },
-    },
     state: {
         getLocal: () => mockLocalState,
         get: () => mockGlobalState,
@@ -162,7 +153,6 @@ beforeEach(() => {
 });
 
 describe('updateOptionFieldHandler - 수정 필드 추적', () => {
-    /** @effects modified_fields_tracked_per_field */
     it('option_name 수정 시 modifiedOptionFields에 해당 필드만 기록', () => {
         const products = createMockProducts();
         mockDataSources.products = {
@@ -188,7 +178,6 @@ describe('updateOptionFieldHandler - 수정 필드 추적', () => {
         expect(mockLocalState.modifiedOptionFields['99-506']).not.toContain('stock_quantity');
     });
 
-    /** @effects modified_fields_tracked_per_field */
     it('여러 필드 수정 시 모든 수정 필드가 추적됨', () => {
         const products = createMockProducts();
         mockDataSources.products = {
@@ -220,7 +209,6 @@ describe('updateOptionFieldHandler - 수정 필드 추적', () => {
 });
 
 describe('updateProductFieldHandler - 수정 필드 추적', () => {
-    /** @effects modified_fields_tracked_per_field */
     it('sales_status 수정 시 modifiedProductFields에 해당 필드만 기록', () => {
         const products = createMockProducts();
         mockDataSources.products = {
@@ -247,7 +235,6 @@ describe('updateProductFieldHandler - 수정 필드 추적', () => {
 });
 
 describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
-    /** @effects confirm_reports_only_modified_fields */
     it('option_name만 수정 시 옵션명 변경만 보고 (price_adjustment, stock_quantity 미포함)', () => {
         const products = createMockProducts();
         // option_name이 수정된 상태 시뮬레이션
@@ -280,7 +267,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
         expect(optionChanges).not.toContain('SKU');
     });
 
-    /** @effects confirm_reports_only_modified_fields */
     it('안전재고/사용 변경이 i18n 키 라벨로 표시됨 (하드코딩 한글 없음 — A20 결함C)', () => {
         const products = createMockProducts();
         products[0].options[0]._modified = true;
@@ -309,7 +295,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
         expect(calledKeys).toContain('sirsoft-ecommerce.admin.product.messages.bulk_summary_is_active');
     });
 
-    /** @effects confirm_labels_localized */
     it('다국어 option_name이 로컬라이즈되어 표시됨 ([object Object] 미표시)', () => {
         const products = createMockProducts();
         products[0].options[0].option_name = { en: 'Black', ko: '블랙11' } as any;
@@ -341,7 +326,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
         expect(option.changes).toContain('블랙11');
     });
 
-    /** @effects confirm_labels_localized */
     it('productName이 로컬라이즈되어 표시됨', () => {
         const products = createMockProducts();
         products[0].options[0]._modified = true;
@@ -367,7 +351,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
         expect(confirmData.options[0].productName).toBe('테스트 상품');
     });
 
-    /** @effects confirm_reports_only_modified_fields */
     it('modifiedOptionFields가 비어있으면 인라인 수정으로 표시되나 필드별 변경 없음', () => {
         const products = createMockProducts();
         products[0].options[0]._modified = true;
@@ -391,7 +374,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
         expect(option.changes).toBe('인라인 수정됨');
     });
 
-    /** @effects confirm_reports_only_modified_fields */
     it('일괄 변경 + 인라인 수정 혼합 시 올바르게 보고', () => {
         const products = createMockProducts();
         products[0].options[1]._modified = true;
@@ -428,7 +410,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
 
     // 회귀: 일괄 재고/가격 조건은 표시용 문자열("+10개")로 저장됨.
     // 옵션 요약에서 sc.method/sc.value(객체 접근)로 읽으면 "재고: undefined undefined" 노출
-    /** @effects confirm_reports_only_modified_fields */
     it('일괄 재고 변경 시 옵션 요약에 undefined 미노출 (표시 문자열 직접 사용)', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -455,7 +436,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
         });
     });
 
-    /** @effects confirm_reports_only_modified_fields */
     it('일괄 가격 변경 시 옵션 요약에 undefined 미노출 (표시 문자열 직접 사용)', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -486,7 +466,6 @@ describe('buildConfirmDataHandler - 수정된 필드만 보고', () => {
 // 판매/전시 상태 라벨 변환 (raw enum 값 노출 회귀 방지)
 // ============================================================
 describe('buildConfirmDataHandler - 판매/전시 상태 라벨 변환', () => {
-    /** @effects confirm_status_shown_as_label */
     it('일괄 변경 판매상태가 raw enum(on_sale)이 아닌 라벨(판매중)로 표시됨', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -510,7 +489,6 @@ describe('buildConfirmDataHandler - 판매/전시 상태 라벨 변환', () => {
         expect(changes).not.toContain('visible');
     });
 
-    /** @effects confirm_status_shown_as_label */
     it('인라인 판매상태 수정도 라벨로 표시됨 (suspended → 판매중지)', () => {
         const products = createMockProducts();
         products[0].sales_status = 'suspended';
@@ -533,7 +511,6 @@ describe('buildConfirmDataHandler - 판매/전시 상태 라벨 변환', () => {
         expect(changes).not.toContain('suspended');
     });
 
-    /** @effects confirm_status_shown_as_label */
     it('미정의 enum 값은 원본으로 폴백 (라벨 누락 시 빈 문자열 방지)', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -558,7 +535,6 @@ describe('buildConfirmDataHandler - 판매/전시 상태 라벨 변환', () => {
 // A27 — 전체선택 SSoT 통일 (buildConfirmData 가 _global 우선)
 // ============================================================
 describe('buildConfirmDataHandler - A27 선택 소스 SSoT', () => {
-    /** @effects global_priority_in_confirm */
     it('상품 전체선택: _local 비어도 _global.bulkSelectedItems 로 confirmData 채움', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -588,7 +564,6 @@ describe('buildConfirmDataHandler - A27 선택 소스 SSoT', () => {
         expect(confirmData.options.length).toBeGreaterThan(0);
     });
 
-    /** @effects global_priority_in_confirm */
     it('옵션 헤더 전체선택: _global.bulkSelectedOptionIds 로 옵션 confirmData 채움', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -612,7 +587,6 @@ describe('buildConfirmDataHandler - A27 선택 소스 SSoT', () => {
         expect(confirmData.options.length).toBe(2);
     });
 
-    /** @effects individual_still_works */
     it('개별 일부선택(대조군): _local 로도 정상 동작 (회귀)', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -635,7 +609,6 @@ describe('buildConfirmDataHandler - A27 선택 소스 SSoT', () => {
         expect(confirmData.products.length).toBeGreaterThan(0);
     });
 
-    /** @effects global_priority_in_confirm */
     it('_global 과 _local 둘 다 있으면 _global 우선 (bulkUpdate 와 동일)', () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -660,7 +633,6 @@ describe('buildConfirmDataHandler - A27 선택 소스 SSoT', () => {
 });
 
 describe('bulkUpdateHandler - 실패 시 서버 에러 노출', () => {
-    /** @effects bulk_failure_surfaces_server_error */
     it('검증 실패 시 서버 message 를 토스트에 그대로 표시하고 상세 에러를 _global.bulkUpdateErrors 에 저장한다', async () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -707,7 +679,6 @@ describe('bulkUpdateHandler - 실패 시 서버 에러 노출', () => {
         expect(mockG7Core.modal.close).not.toHaveBeenCalled();
     });
 
-    /** @effects bulk_failure_surfaces_server_error */
     it('서버 message 가 없으면 폴백 다국어 문자열을 토스트로 표시한다', async () => {
         const products = createMockProducts();
         mockDataSources.products = { data: { data: products } };
@@ -811,7 +782,6 @@ describe('buildConfirmData - 미펼침 상품 옵션 집계', () => {
         expect(data.options[0].changes).toContain('재고');
     });
 
-    /** @effects summary_count_matches_regardless_of_expansion */
     it('펼침 + 미펼침 혼합에서 중복 없이 합산된다', () => {
         const data = buildWith([makeProduct(1, true), makeProduct(2, false)]);
 
@@ -820,7 +790,6 @@ describe('buildConfirmData - 미펼침 상품 옵션 집계', () => {
         expect(data.summary.optionCount).toBe(4);
     });
 
-    /** @effects options_total_count_matches_all */
     it('집계는 비활성 포함 전체 수(options_total_count)를 센다', () => {
         const product = makeProduct(1, false);
         product.options_count = 1; // 활성만 1건
@@ -831,7 +800,6 @@ describe('buildConfirmData - 미펼침 상품 옵션 집계', () => {
         expect(data.summary.optionCount).toBe(5);
     });
 
-    /** @effects aggregate_entry_for_unloaded_options */
     it('옵션 일괄 조건이 없으면 미펼침 상품에 집계 엔트리를 만들지 않는다', () => {
         mockDataSources.products = { data: { data: [makeProduct(1, false)] } };
         mockLocalState = { selectedItems: [1] };
@@ -849,7 +817,6 @@ describe('buildConfirmData - 미펼침 상품 옵션 집계', () => {
 });
 
 describe('bulkUpdate - 저장 후 펼친 행 옵션 재로드', () => {
-    /** @effects options_reloaded_after_save */
     it('저장 성공 시 목록 리페치 후 펼친 행의 옵션을 다시 가져온다', async () => {
         mockDataSources.products = { data: { data: [makeProduct(1, true)] } };
         mockLocalState = {
@@ -879,7 +846,6 @@ describe('bulkUpdate - 저장 후 펼친 행 옵션 재로드', () => {
         });
     });
 
-    /** @effects options_reloaded_after_save */
     it('펼친 행이 없으면 옵션 재로드를 하지 않는다', async () => {
         mockDataSources.products = { data: { data: [makeProduct(1, false)] } };
         mockLocalState = { selectedItems: [1], expandedRows: [] };
@@ -896,7 +862,6 @@ describe('bulkUpdate - 저장 후 펼친 행 옵션 재로드', () => {
         expect(mockG7Core.api.get).not.toHaveBeenCalled();
     });
 
-    /** @effects bulk_applies_to_inactive_options */
     it('미펼침 상품은 option_items 로 보내지 않는다 (서버가 ids 로 전개)', async () => {
         mockDataSources.products = { data: { data: [makeProduct(1, false)] } };
         mockLocalState = {

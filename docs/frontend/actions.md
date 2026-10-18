@@ -89,7 +89,6 @@
 | `confirm` | string | ❌ | 실행 전 확인 대화상자 메시지 |
 | `key` | string | ❌ | 키보드 이벤트 필터 (Enter, Escape 등) |
 | `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.68.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550) |
-| `preventDefault` | boolean | ❌ | 진입점 액션 한정 기본 동작 차단 방식 (engine-v1.80.1+). 생략 = 자동(실제 주소 링크를 수정키·새 창으로 누르면 막지도 실행하지도 않음) · `true` = 언제나 막고 실행 · `false` = 막지 않고 실행 — 상세: [기본 동작 제어](#기본-동작-제어--액션-키-preventdefault-engine-v1801) |
 | `cases` | object | ❌ | switch 핸들러용 케이스별 액션 정의 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |
 | `debounce` | number \| object | ❌ | 연속 호출 제어 (300 또는 { delay, leading, trailing }) |
@@ -433,10 +432,10 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `loginPasswordChange` | 로그인 비밀번호 변경 단계 완료 → 새 토큰 발급 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id, password, password_confirmation) |
 | `loginPasswordChangePostpone` | 로그인 비밀번호 변경 단계 연기 → 로그인 완료 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id) |
 | `logout` | 로그아웃 | - | - |
-| `setState` | 상태 변경 | - | target (`global`/`local`, 생략 시 local), 상태 값들. `_global` 은 전역이 아니다(지역 상태에 써진다 — 레이아웃 lint 경고) |
+| `setState` | 상태 변경 | - | target (global/local), 상태 값들 |
 | `setError` | 에러 상태 설정 | 에러 메시지 | - |
 | `openModal` | 모달 열기 | 모달 ID | - |
-| `closeModal` | 모달 닫기 — 맨 위 모달 하나를 닫는다 | 무시됨 (모달 id 를 적어도 맨 위 모달을 닫는다) | - |
+| `closeModal` | 모달 닫기 | - | - |
 | `showAlert` | 알림 표시 (alert) | 메시지 | - |
 | `toast` | 토스트 알림 표시 | - | type, message |
 | `switch` | 조건 분기 처리 | - | params.value, cases (케이스별 액션 정의, default 지원) |
@@ -448,32 +447,31 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `reloadRoutes` (deprecated) | 라우트 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `reloadTranslations` (deprecated) | 다국어 파일 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `refresh` | 현재 페이지 전체 새로고침 | - | - |
-| `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target (`content`/`full`), containerId |
-| `openWindow` | 새 창/탭 열기 | URL (`params.path` 가 있으면 그쪽 우선) | path, query, target (`_blank` 기본/`_self`), bypassLeaveGuard |
+| `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target, containerId, layout |
+| `openWindow` | 새 창/탭 열기 | URL | features, name |
 | `redirect` | **같은 탭**으로 통째 이동 (SPA 라우팅 밖). 사이트 안의 절대 경로만 따라가며 외부 주소·실행 스킴은 첫 화면(`/`)으로 대체 | - | url, replace |
 | `replaceUrl` | refetch 없이 URL 만 치환 | - | path, query, mergeQuery |
-| `scrollIntoView` | 요소로 스크롤 | - | selector (CSS 선택자, 필수), behavior, block, inline, waitForElement, scrollContainer |
-| `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, newData (배열), dataPath |
-| `updateDataSource` | 데이터 소스 값 교체 (refetch 없이) | - | dataSourceId, data, merge |
+| `scrollIntoView` | 요소로 스크롤 | 대상 요소 ID | behavior, block |
+| `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, items |
+| `updateDataSource` | 데이터 소스 항목 갱신 | - | dataSourceId, items |
 | `updateProductField` | 상품 필드 갱신 (이커머스 작성 보조) | - | 필드 경로·값 |
 | `updateOptionField` | 상품 옵션 필드 갱신 | - | 필드 경로·값 |
 | `conditions` | 조건 목록 평가 후 분기 | - | conditions (else 키 없음) |
 | `suppress` | 에러 전파 차단 (무의미한 setState 대체) | - | - |
 | `startInterval` | 주기 실행 시작 | - | id, intervalMs, actions |
 | `stopInterval` | 주기 실행 중지 | - | id |
-| `saveToLocalStorage` | localStorage 저장 | - | key, value |
-| `loadFromLocalStorage` | localStorage 읽기 (`_local` 에 기록) | - | key, stateKey, defaultValue |
-| `setLocale` | 앱 언어 변경 | 로케일 (예 `en`) | - |
-| `emitEvent` | 커스텀 이벤트 발화 | - | event (이벤트명), data |
+| `saveToLocalStorage` | localStorage 저장 | 키 | value |
+| `loadFromLocalStorage` | localStorage 읽기 | 키 | resultTo |
+| `setLocale` | 앱 언어 변경 | - | locale |
+| `emitEvent` | 커스텀 이벤트 발화 | 이벤트명 | payload |
 | `refreshConsent` | 방문자 동의 스냅샷(`_global.consent`) 다시 읽기 — 사용자 템플릿 전용, 구독자(`consent:changed`)가 끝날 때까지(최대 3초) 기다린 뒤 다음 액션으로 진행 (engine-v1.78.0) | - | - |
-| `recordSearchKeyword` | 검색창 제출 검색어를 최근 검색어에 기록 — 검색 이동 앞에 둔다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면·편집기 미리보기에서는 아무것도 하지 않고, 실패해도 다음 액션을 막지 않는다 (engine-v1.87.0) | - | scope (범위 id — `core.site` 또는 `{확장 식별자}.{이름}`), keyword |
-| `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | - | src, id, async, defer |
-| `callExternal` | 외부 SDK 함수 호출 | - | constructor (전역 생성자 경로), args, method, methodArgs, callbackEvent, callbackSetState, callbackAction |
-| `callExternalEmbed` | 외부 SDK 임베드 호출 (엔진이 만든 레이어에 띄움) | - | constructor, args, layerClassName, callbackEvent, callbackSetState, callbackAction |
-| `ensureIdentityVerified` | 본인인증 필요 여부 확인·유도 | - | purpose, target (`{email, phone}`), policy_key, provider_id, render_hint |
-| `resolveIdentityChallenge` | 본인인증 챌린지 응답 처리 | - | result (`verified`/`pending`/`failed`/`cancelled`), token, providerData, pollUrl, pollIntervalMs, expiresAt, failureCode, reason |
-| `reloadModuleHandlers` | 모듈 핸들러 번들 재로드 | - | moduleInfo (모듈 정보 응답), action (`add`/`remove`) |
-| `reloadPluginHandlers` | 플러그인 핸들러 번들 재로드 | - | pluginInfo (플러그인 정보 응답), action (`add`/`remove`) |
+| `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | src | id, async |
+| `callExternal` | 외부 SDK 함수 호출 | 함수 경로 | args |
+| `callExternalEmbed` | 외부 SDK 임베드 호출 | 함수 경로 | args, container |
+| `ensureIdentityVerified` | 본인인증 필요 여부 확인·유도 | - | purpose, channel |
+| `resolveIdentityChallenge` | 본인인증 챌린지 응답 처리 | - | challenge |
+| `reloadModuleHandlers` | 모듈 핸들러 번들 재로드 | - | moduleId |
+| `reloadPluginHandlers` | 플러그인 핸들러 번들 재로드 | - | pluginId |
 
 > **이 표는 전수다 (49종).** 코드상 SSoT 는 [`ActionHandlerManifest::CORE_HANDLERS`](../../app/Support/LayoutMarkup/ActionHandlerManifest.php) 이고, 엔진 실등록(`ActionDispatcher` switch 32 + `registerDefaultHandlers` 17)과 이름 집합이 양방향 일치한다. 핸들러를 추가하면 매니페스트와 이 표를 함께 갱신한다 — 두 집합의 일치는 계약 표면 커버리지 검사가 자동으로 대조한다.
 
@@ -483,7 +481,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 ## 이벤트 전파 제어 — 액션 키 `stopPropagation` (engine-v1.68.0)
 
-`stopPropagation`·`preventDefault` 는 **핸들러가 아니라 액션 키**다. 핸들러로 등록된 적이 없어 `handler: "stopPropagation"` / `handler: "preventDefault"` 로 적으면 미등록 핸들러라 무동작한다. `preventDefault` 키는 아래 「기본 동작 제어」 참조.
+`stopPropagation`·`preventDefault` 는 **핸들러가 아니다**. `registerHandler` 등록도 `ActionType` 유니온 항목도 없어 엔진 소비처가 0이다 — `handler: "stopPropagation"` / `handler: "preventDefault"` 로 적으면 미등록 핸들러라 무동작한다.
 
 상위로의 이벤트 전파를 막으려면 **진입점 액션의 최상위 키 `stopPropagation: true`** 를 쓴다(opt-in). 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 바깥 행 클릭을 막을 때 사용한다. 이벤트 객체를 쥔 진입점 액션에서만 의미가 있다(`sequence`/`parallel` 안쪽 액션에는 이벤트 객체가 없어 무효).
 
@@ -513,34 +511,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 </on>
 ```
 
-### 기본 동작 제어 — 액션 키 `preventDefault` (engine-v1.80.1)
-
-엔진은 진입점 액션을 실행하기 전에 기본 동작을 막는다(폼 제출 새로고침·링크 이동 등, `change` 이벤트는 제외). 단 **실제 주소 `<a href>` 를 보통 클릭이 아니게 누르면** — Ctrl·Cmd·Shift·Alt+클릭, `target="_blank"`·`download` 링크 — 막지도 실행하지도 않는다. 브라우저가 새 탭·새 창으로 연다. 클릭이 그 링크 **안쪽에서 시작된** 부모 요소의 click 액션(링크를 감싼 카드 등)도 같은 판정으로 비킨다 — 부모가 막으면 새 탭이 취소되기 때문이다. 가운데 버튼(`auxclick`)·우클릭 「새 탭에서 열기」(`contextmenu`)에는 엔진이 리스너를 달지 않으므로 그대로 동작한다.
-
-이 자동 판정을 바꾸려면 진입점 액션의 최상위 키 `preventDefault` 를 쓴다(`stopPropagation` 과 같은 자리·형식).
-
-| 값 | 동작 |
-| --- | --- |
-| 생략 | 자동 — 위 규칙 |
-| `:preventDefault="true"` | 언제나 막고 실행(새 탭으로 열리면 안 되는 링크) |
-| `:preventDefault="false"` | 막지 않고 실행(브라우저 기본 동작 + 액션) |
-
-```html
-<a href="/admin/settings"><on type="click"><navigate :preventDefault="true" path="/admin/settings"/></on>설정</a>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
-```json
-{
-  "type": "click",
-  "handler": "navigate",
-  "preventDefault": true,
-  "params": { "path": "/admin/settings" }
-}
-```
-
-화면 이동을 링크로 쓰는 법(주소는 href 한 곳, path 없는 `navigate`)은 [actions-handlers-navigation.md 「화면 이동을 링크로 쓰는 법」](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801) 참조. 합성 컴포넌트가 직접 `<a>` 를 그릴 때는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 기본 동작을 막고 SPA 로 옮긴다(엔진과 같은 판정). 렌더할 때 `mergeQueryIntoHref` 로 쿼리를 합치는 링크는 `G7Core.navigation.subscribeLocationSearch` 로 주소 변경을 구독해 다시 그린다(같은 절, engine-v1.82.1).
+> `preventDefault` 는 대응 액션 키가 없다. `<a href>` 의 기본 네비게이션 차단 등은 엔진이 액션 존재 시 자동 처리하므로 마크업에서 별도 지정하지 않는다.
 
 > **동명이의 주의 — 컴포넌트 prop `stopPropagation` 은 이 액션 키가 아니다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation?: boolean` 을 갖고 자기 클릭 핸들러 안에서 `e.stopPropagation()` 을 호출한다([UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`). 소스 코퍼스에서 이 이름의 **다수파는 prop 쪽**(게시판 목록 4파일)이므로, `<user-info :stopPropagation="true"/>` 처럼 **노드 속성 자리**에 있으면 컴포넌트 prop 이고, `<on>` 아래 핸들러 태그 속성 자리에 있으면 액션 키다. 배치 자리가 둘을 가른다.
 

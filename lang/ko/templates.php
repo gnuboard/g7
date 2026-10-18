@@ -234,18 +234,6 @@ return [
     'move_failed' => '템플릿 ":template" 이동에 실패했습니다: :error',
 
     'commands' => [
-        // `template:refresh-layout` 명령 출력
-        'refresh_layout' => [
-            'refreshing' => '템플릿 \':template\' 레이아웃 갱신 중...',
-            'success' => '템플릿 \':template\' 레이아웃 갱신 완료',
-            'failed' => '템플릿 \':template\' 레이아웃 갱신 실패',
-            'none_active' => '활성화된 템플릿이 없습니다.',
-            'refreshing_all' => '모든 활성 템플릿 레이아웃 갱신 중...',
-            'item_refreshing' => ':identifier 갱신 중...',
-            'item_done' => ':identifier 완료',
-            'item_failed' => ':identifier 실패',
-            'summary' => '총 :success개 성공, :failed개 실패',
-        ],
         'install' => [
             'success' => '템플릿 ":template" 설치 완료',
             'already_installed' => '":template" 템플릿이 이미 설치되어 있습니다.',
@@ -264,17 +252,6 @@ return [
             'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
             'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
             'deactivated_previous' => '기존 :type 템플릿 ":previous" 비활성화',
-            // `template:activate` 의존성 미충족 안내
-            'required_modules' => '필요한 모듈:',
-            'required_plugins' => '필요한 플러그인:',
-            'missing_status' => [
-                'not_installed' => '미설치',
-                'inactive' => '비활성',
-                'version_mismatch' => '버전 미달 :installed → :required',
-            ],
-            'force_hint' => '강제로 활성화하려면 --force 옵션을 사용하세요.',
-            'force_503_hint_user' => '강제로 켜면 조건을 맞출 때까지 사용자 화면이 「서비스 일시 중단(503)」 안내로 바뀝니다.',
-            'force_503_hint_admin' => '강제로 켜면 관리자 화면이 503 안내로 바뀌어 관리자 화면에서 되돌릴 수 없습니다. 복구: php artisan template:activate :identifier',
         ],
         'deactivate' => [
             'success' => '템플릿 ":template" 비활성화 완료',
@@ -350,33 +327,6 @@ return [
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
             'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
         ],
-        // `template:build` 명령 출력
-        'build' => [
-            'missing_identifier' => '템플릿 식별자를 지정하거나 --all 옵션을 사용하세요.',
-            'usage' => '사용법:',
-            'not_found' => '템플릿을 찾을 수 없습니다: :identifier',
-            'not_found_detail' => '_bundled 및 활성 디렉토리 모두 존재하지 않습니다.',
-            'source' => '빌드 소스: :source (:path)',
-            'source_active' => '활성',
-            'package_json_missing' => 'package.json 파일이 없습니다: :path',
-            'package_json_hint' => '템플릿 프론트엔드 구조를 먼저 생성하세요.',
-            'installing_dependencies' => '의존성 설치 중...',
-            'npm_install_failed' => 'npm install 실패',
-            'watch_start' => '파일 감시 모드로 빌드 시작: :identifier',
-            'watch_hint' => 'Ctrl+C로 종료할 수 있습니다.',
-            'start' => '빌드 시작: :identifier',
-            'start_production' => '빌드 시작: :identifier (프로덕션)',
-            'pruned' => '이전 산출물 정리: :files',
-            'done' => '빌드 완료: :identifier',
-            'build_results' => '빌드 결과:',
-            'cache_version_bumped' => '캐시 버전 갱신됨',
-            'apply_hint' => '활성 디렉토리에 반영하려면: php artisan template:update :identifier',
-            'no_targets' => '빌드할 템플릿이 없습니다.',
-            'start_all' => '모든 템플릿 빌드 시작 (:source)',
-            'start_all_production' => '모든 템플릿 빌드 시작 (:source) (프로덕션)',
-            'targets' => '대상 템플릿: :list',
-            'summary' => '빌드 결과: 성공 :success개, 실패 :failed개',
-        ],
     ],
 
     // 레이아웃 설치 소스 선택 (--layout-source=auto|json)
@@ -400,7 +350,8 @@ return [
         'validation' => [
             'file_required' => '업로드할 파일을 선택해 주세요.',
             'file_invalid' => '올바른 파일이 아닙니다.',
-            'file_extensions' => '올릴 수 없는 파일 형식입니다. 허용 형식: :extensions',
+            'file_image' => '이미지 파일만 업로드할 수 있습니다.',
+            'file_mimes' => '지원하는 이미지 형식이 아닙니다 (jpg, jpeg, png, gif, webp, svg).',
             'file_max' => '파일 크기는 최대 :max MB까지 허용됩니다.',
             'layout_name_max' => '레이아웃 이름은 최대 150자까지 허용됩니다.',
         ],

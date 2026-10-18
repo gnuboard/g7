@@ -15,7 +15,6 @@
     "claim": "클레임",
     "shipping": "배송설정",
     "review_settings": "리뷰 설정",
-    "product_display": "상품 진열",
     "notification_definitions": "알림 설정",
     "identity_policies": "본인인증 정책",
     "mileage": "마일리지",
@@ -75,10 +74,6 @@
       "mail_order_number_placeholder": "제 2024-서울강남-12345 호",
       "telecom_number": "부가통신 사업자번호",
       "telecom_number_placeholder": "부가통신 사업자번호",
-      "hosting_provider": "호스팅 서비스 제공자",
-      "hosting_provider_placeholder": "예: 호스팅 회사 이름",
-      "show_business_footer": "사용자 화면 하단에 사업자 정보 표시",
-      "show_business_footer_hint": "켜면 상호·대표자·사업장 주소·전화·전자우편·사업자등록번호·통신판매업 신고번호·호스팅 서비스 제공자 중 값이 있는 항목을 사용자 화면 하단에 보여 줍니다. 끄면 이 값들을 사용자 화면으로 내보내지 않습니다.",
       "postcode_plugin_required": "다음 우편번호 플러그인이 설치되지 않았거나 비활성화 상태입니다. 관리자 > 플러그인에서 활성화해주세요."
     },
     "public_asset_storage": {
@@ -251,9 +246,7 @@
       "days_suffix": "일 이후 자동 취소됩니다.",
       "pending_minutes_prefix": "결제창까지 갔으나 결제가 끝나지 않은 주문은",
       "pending_minutes_suffix": "분 이후 자동 취소됩니다.",
-      "pending_minutes_hint": "0 으로 두면 이 부류는 자동 취소하지 않습니다. 최대 20160분(14일).",
-      "days_label": "입금대기 주문 자동 취소 일수",
-      "pending_minutes_label": "결제 미완료 주문 자동 취소 시간(분)"
+      "pending_minutes_hint": "0 으로 두면 이 부류는 자동 취소하지 않습니다. 최대 20160분(14일)."
     },
     "cart_expiry": {
       "title": "장바구니 유효기간",
@@ -279,7 +272,7 @@
       "shipping_fee_tax_proportional": "안분 (기본)",
       "shipping_fee_tax_taxable": "전액 과세",
       "shipping_fee_tax_follow_main_item": "주된 재화 기준",
-      "shipping_fee_tax_help": "안분은 과세·영세·면세 상품 금액 비율로 배송비를 나눕니다. 주된 재화는 가장 큰 쪽(같으면 과세 > 영세 > 면세)을 따릅니다.",
+      "shipping_fee_tax_help": "안분은 과세·면세 상품 금액 비율로 배송비를 나눕니다.",
       "self_issue_label": "자진발급 사용",
       "self_issue_help": "구매자가 신청하지 않은 무통장 입금 건도 자동으로 발급합니다 (소득공제용 전용).",
       "self_issue_mandatory_help": "현금영수증 의무발행 업종은 구매자가 신청하지 않아도 발급 의무가 있습니다. 해당 업종이면 켜세요.",
@@ -582,7 +575,7 @@
   "seo": {
     "meta_settings": {
       "title": "메타태그 설정",
-      "description": "각 페이지의 메타태그를 설정합니다. 변수를 사용하여 동적으로 설정할 수 있습니다. Title 은 검색엔진 제목과 방문자 브라우저 탭 제목에 함께 쓰이고, 사이트 이름은 코어 SEO 설정의 「타이틀 접미사」(비우면 ' - 사이트 이름')로 뒤에 붙으므로 틀에 넣지 않아도 됩니다.",
+      "description": "각 페이지의 메타태그를 설정합니다. 변수를 사용하여 동적으로 설정할 수 있습니다.",
       "main_page": "메인화면",
       "category_page": "카테고리",
       "search_page": "검색 결과",
@@ -630,24 +623,7 @@
     "max_images_hint": "리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 불가)",
     "images_unit": "장",
     "max_image_size_mb_label": "이미지 최대 용량",
-    "max_image_size_mb_hint": "업로드 가능한 이미지 파일의 최대 용량",
-    "author_name_masking_label": "작성자 이름 가림",
-    "author_name_masking_middle": "가운데 가림 (홍*동)",
-    "author_name_masking_none": "가리지 않음",
-    "author_name_masking_hint": "상품 상세 후기 탭과 리뷰 모아보기에 보이는 작성자 이름에 적용됩니다. 관리자 화면과 작성자 본인 화면에는 실명이 보입니다."
-  },
-  "product_display": {
-    "title": "관련 상품",
-    "description": "상품 상세 아래 「이 상품은 어떠세요?」 목록을 정합니다. 대표 분류 상품을 먼저, 모자라면 그 상위 분류 상품으로 채웁니다(최대 8개).",
-    "order_label": "같은 단계 안 순서",
-    "order_hint": "대표 분류·상위 분류 등 같은 단계 안에서 상품을 늘어놓는 순서입니다.",
-    "order_random": "무작위",
-    "order_sales": "판매 많은 순",
-    "order_reviews": "리뷰 많은 순",
-    "order_latest": "최신 등록 순",
-    "cache_hours_label": "목록 유지 시간",
-    "hours_unit": "시간",
-    "cache_hours_hint": "한 번 고른 목록을 이 시간 동안 그대로 보여 줍니다(무작위도 이 동안은 같은 목록). 0 이면 볼 때마다 새로 고릅니다. 저장하면 지금 골라 둔 목록은 비웁니다."
+    "max_image_size_mb_hint": "업로드 가능한 이미지 파일의 최대 용량"
   },
   "notification_definitions": {
     "title": "알림 설정",

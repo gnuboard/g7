@@ -44,7 +44,6 @@ SEO 설정. `sirsoft-admin_basic` 이 컴포넌트 125개와 화면 145개를 �
 | `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update gnuboard7-hello_admin_template --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update gnuboard7-hello_admin_template --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
-| `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
 | `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update gnuboard7-hello_admin_template --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update gnuboard7-hello_admin_template --force` |
@@ -134,8 +133,6 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
-| 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다 | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
-| `initTemplate()` 없이 컴포넌트만 내보내기 | `src/bootstrap.ts` 의 `initTemplate()` 이 템플릿 핸들러(`handlerMap`)를 등록하고 본인인증 launcher 를 정한다(이 샘플은 코어 기본 launcher) | 템플릿 부트스트랩 의무(docs/frontend/template-development.md) — 샘플을 본뜬 새 템플릿이 의무를 놓친다 |
 | 오류 레이아웃 6종 중 일부를 빼기 | 401 · 403 · 404 · 500 · 503 · maintenance 전부 유지 | 코어가 그 상황에서 활성 템플릿의 레이아웃을 부른다 — 없으면 사용자에게 백지가 된다 |
 | `401` 레이아웃에서 로그인으로 직접 리다이렉트 | 코어 `TemplateApp.showRouteError` 가드에 위임 | 이중 리다이렉트가 되고, 돌아올 위치를 코어가 이미 관리한다 |
 | `src/index.ts` 에서 `ComponentRegistry` 를 찾아 직접 등록 | 컴포넌트를 export 만 한다 | 등록은 코어가 `components.json` 을 읽어 한다. 자가등록은 매니페스트에 실릴 자리가 없는 모듈과 플러그인의 방식이다 |
@@ -153,9 +150,9 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 6개 | `vitest.config.ts` |
+| Vitest | 2개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 0개 | — |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

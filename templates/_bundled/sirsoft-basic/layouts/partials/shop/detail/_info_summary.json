@@ -56,7 +56,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-lg font-bold text-red-600 dark:text-red-400"
+                                "className": "text-lg font-bold text-red-500"
                             },
                             "text": "{{product.data?.discount_rate}}%"
                         },
@@ -79,16 +79,6 @@
                         "className": "text-2xl font-bold text-gray-900 dark:text-white"
                     },
                     "text": "{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}"
-                },
-                {
-                    "comment": "면세·영세 상품 표시 — 모든 옵션이 같은 과세 종류일 때만 가격 옆에 보인다. 옵션마다 다르면 고른 항목에 보인다 (#612, 넓은 화면)",
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{['tax_free', 'zero_rated'].includes((product.data?.options?.[0]?.tax_status ?? product.data?.tax_status)) && (product.data?.options ?? []).every(o => (o.tax_status ?? product.data?.tax_status) === (product.data?.options?.[0]?.tax_status ?? product.data?.tax_status))}}",
-                    "props": {
-                        "className": "inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium {{(product.data?.options?.[0]?.tax_status ?? product.data?.tax_status) === 'zero_rated' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}"
-                    },
-                    "text": "{{product.data?.options?.[0]?.tax_status_label ?? product.data?.tax_status_label}}"
                 }
             ]
         },
@@ -114,7 +104,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "ticket",
-                                "className": "text-sm text-orange-600 dark:text-orange-400 flex-shrink-0"
+                                "className": "text-sm text-orange-500 dark:text-orange-400 flex-shrink-0"
                             }
                         },
                         {
@@ -213,28 +203,16 @@
                                         {
                                             "if": "{{_global.currentUser?.uuid}}",
                                             "then": {
-                                                "comment": "「+N」 배지는 이 상품에 적용되는 쿠폰 수(productDownloadableCoupons)로 계산되므로, 모달도 같은 목록을 보여준다. 전체 다운로드 쿠폰을 다시 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다.\n                     창 상태는 창 고유 전역 이름 공간에 비운 뒤 다시 쓴다 — 창은 영구 마운트라 페이지 _local 에 넣으면 창이 앞서 쥔 목록(받음 표시)에 가린다(7.1.1).",
+                                                "comment": "「+N」 배지는 이 상품에 적용되는 쿠폰 수(productDownloadableCoupons)로 계산되므로, 모달도 같은 목록을 보여준다. 전체 다운로드 쿠폰을 다시 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다.",
                                                 "handler": "sequence",
                                                 "actions": [
                                                     {
                                                         "handler": "setState",
                                                         "params": {
-                                                            "target": "global",
-                                                            "couponDownloadModal": null
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "global",
-                                                            "couponDownloadModal": {
-                                                                "coupons": "{{productDownloadableCoupons.data ?? null}}",
-                                                                "loading": false,
-                                                                "loadingMore": false,
-                                                                "downloadingCouponId": null,
-                                                                "scope": "product",
-                                                                "downloadingAll": false
-                                                            }
+                                                            "target": "local",
+                                                            "downloadableCoupons": "{{productDownloadableCoupons.data}}",
+                                                            "downloadableCouponsLoading": false,
+                                                            "downloadingMore": false
                                                         }
                                                     },
                                                     {
@@ -259,113 +237,6 @@
                                 "className": "flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                             },
                             "text": "+{{(productDownloadableCoupons.data?.data ?? []).length - 3}}"
-                        },
-                        {
-                            "comment": "모두 받기 — 이 상품에 쓸 수 있는 쿠폰 중 받지 않은 것을 한 번에. 비회원은 다른 칩과 같이 로그인 안내로",
-                            "id": "product_coupon_download_all",
-                            "type": "basic",
-                            "name": "Button",
-                            "if": "{{(productDownloadableCoupons.data?.data ?? []).some(c => !c.is_downloaded)}}",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "conditions",
-                                    "conditions": [
-                                        {
-                                            "if": "{{_global.currentUser?.uuid}}",
-                                            "then": {
-                                                "handler": "sequence",
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "couponDownloadingAll": true
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "target": "/api/modules/sirsoft-ecommerce/user/coupons/bulk-download",
-                                                        "auth_mode": "required",
-                                                        "params": {
-                                                            "method": "POST",
-                                                            "body": "{{({ coupon_ids: (productDownloadableCoupons.data?.data ?? []).filter(c => !c.is_downloaded && c.coupon_id != null).map(c => c.coupon_id) })}}"
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "couponDownloadingAll": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "refetchDataSource",
-                                                                "params": {
-                                                                    "dataSourceId": "productDownloadableCoupons"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "success",
-                                                                    "message": "{{response.message}}"
-                                                                }
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "couponDownloadingAll": false
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "error",
-                                                                    "message": "{{error.message ?? '$t:shop.coupon_download.download_failed'}}"
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "comment": "비회원: 로그인 필요 안내",
-                                            "then": {
-                                                "handler": "openModal",
-                                                "target": "login_required_modal"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{!!_local.couponDownloadingAll}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "download",
-                                        "size": "xs"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "whitespace-nowrap"
-                                    },
-                                    "text": "$t:shop.coupon_download.download_all"
-                                }
-                            ]
                         }
                     ]
                 }
@@ -547,7 +418,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-green-700 dark:text-green-400"
+                                        "className": "text-sm text-green-600 dark:text-green-400"
                                     },
                                     "text": "$t:shop.product.free_shipping_over|amount={{product.data?.shipping_policy?.free_threshold_formatted}}"
                                 }

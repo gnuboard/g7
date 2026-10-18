@@ -61,8 +61,7 @@
     "tax_status_options": {
       "all": "전체",
       "taxable": "과세",
-      "tax_free": "면세",
-      "zero_rated": "영세"
+      "tax_free": "비과세"
     },
     "price": "가격",
     "price_type_select": "가격 기준",
@@ -81,8 +80,7 @@
     "shipping_policy_options": {
       "all": "전체"
     },
-    "detail_filter_label": "상세 검색 필터",
-    "category_step": "카테고리 {{n}}단계"
+    "detail_filter_label": "상세 검색 필터"
   },
   "action": {
     "edit": "수정",
@@ -288,10 +286,8 @@
       "tax_status": "과세 여부",
       "tax_status_options": {
         "taxable": "과세",
-        "tax_free": "면세",
-        "zero_rated": "영세"
+        "tax_free": "면세"
       },
-      "tax_status_help": "옵션마다 다르게 하려면 상품옵션 표의 「과세 종류」에서 바꿉니다. 영세는 세율 0%(수출 등)로, 결제사에는 면세로 전달됩니다.",
       "sales_status": "판매 상태",
       "sales_status_options": {
         "on_sale": "판매중",
@@ -583,8 +579,7 @@
       "value": "변경 수량",
       "preview_increase": "재고를 {{value}}개 증가합니다.",
       "preview_decrease": "재고를 {{value}}개 감소합니다.",
-      "preview_set": "재고를 {{value}}개로 변경합니다.",
-      "quantity_unit": "개"
+      "preview_set": "재고를 {{value}}개로 변경합니다."
     },
     "bulk_confirm": {
       "title": "일괄 변경 확인",
@@ -645,10 +640,7 @@
       "related_data_notice": "다음 데이터가 함께 삭제됩니다:",
       "warning_message": "삭제된 상품은 복구할 수 없습니다.",
       "permanent_warning": "이 작업은 되돌릴 수 없습니다. 상품과 관련된 모든 데이터(이미지, 옵션, 재고 등)가 영구적으로 삭제됩니다.",
-      "confirm_button": "삭제",
-      "related_images": "- 이미지: {{count}}개",
-      "related_options": "- 옵션: {{count}}개",
-      "related_additional_options": "- 추가옵션: {{count}}개"
+      "confirm_button": "삭제"
     },
     "mode_change": {
       "title": "상세설명 모드 변경",
@@ -862,7 +854,6 @@
       "category": "분류",
       "list_price": "정가",
       "selling_price": "판매가",
-      "tax_status": "과세 종류",
       "price": "가격",
       "price_type": "가격유형",
       "sku": "SKU",
@@ -899,10 +890,7 @@
       "additional_max_5": "추가옵션 그룹은 최대 5개까지 추가할 수 있습니다.",
       "additional_value_max_20": "선택지는 그룹당 최대 20개까지 추가할 수 있습니다.",
       "additional_value_min_1": "그룹당 선택지는 최소 1개가 필요합니다."
-    },
-    "option_group_name_n": "{{n}}번째 옵션그룹명",
-    "option_group_values_n": "{{n}}번째 옵션그룹 옵션값",
-    "tax_status_inherit": "기본값 따름 ({{status}})"
+    }
   },
   "notice": {
     "tab_existing_template": "템플릿 선택",
@@ -1144,8 +1132,7 @@
   },
   "tax": {
     "taxable": "과세",
-    "tax_free": "면세",
-    "zero_rated": "영세"
+    "tax_free": "비과세"
   },
   "labels": {
     "title": "라벨",

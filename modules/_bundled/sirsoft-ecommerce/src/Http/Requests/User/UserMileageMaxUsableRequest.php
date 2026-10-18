@@ -29,23 +29,9 @@ class UserMileageMaxUsableRequest extends FormRequest
     {
         $rules = [
             'order_amount' => ['required', 'integer', 'min:0'],
-            // 상품 합계(판매가 × 수량 합, 쿠폰·배송비 반영 전) — 「사용 가능 최소 상품 합계」 판정용 선택 값
-            'product_total' => ['nullable', 'integer', 'min:0'],
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.mileage.max_usable_validation_rules', $rules, $this);
-    }
-
-    /**
-     * 검증 필드 라벨
-     *
-     * @return array<string, string> 필드 라벨
-     */
-    public function attributes(): array
-    {
-        return [
-            'product_total' => __('sirsoft-ecommerce::validation.settings_attributes.product_total'),
-        ];
     }
 
     /**

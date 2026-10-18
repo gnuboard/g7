@@ -33,10 +33,8 @@
 | 상태 | 조건 | 비고 |
 | --- | --- | --- |
 | 401 | 비로그인 요청 | `auth:sanctum` 미들웨어, 또는 컨트롤러의 `getCurrentUser()` 가 null 일 때 |
-| 403 | 권한 부족 | 관리자 강제 해제 1건에만 해당 (`permission` 미들웨어·슈퍼 관리자 등급 상한) |
-| 409 | 상태 충돌 | 등록 시작(이미 등록됨)·확정(다른 화면이 먼저 확정) |
-| 422 | `code`·`current_password` 검증 실패 또는 코드·비밀번호 불일치 | 아래 각 엔드포인트 참조 |
-| 429 | 회원 단위 시도 제한 초과 (1.0.3) | 등록 시작의 비밀번호 확인, 해제·재발급의 코드 확인. `Retry-After` 헤더 |
+| 403 | 권한 부족 | 관리자 강제 해제 1건에만 해당 (`permission` 미들웨어) |
+| 422 | `code` 검증 실패 또는 코드 불일치 | 아래 각 엔드포인트 참조 |
 
 **`code` 입력 규칙** (확정·해제·재발급 공통, `TotpCodeRequest`)
 
@@ -50,8 +48,7 @@
   구분해 주면 어떤 입력이 "형식은 맞다" 인지 흘러 나갑니다.
 - 인증 앱 코드는 **재사용되지 않습니다**. 한 번 통과한 timestep 이하의 코드는 유효 시간이
   남아 있어도 거부됩니다(`last_used_timestep` 리플레이 가드). 백업 코드도 1회용이라
-  통과하는 즉시 소진됩니다. 같은 코드를 **동시에** 여러 번 보내도 하나만 통과합니다(1.0.3) —
-  timestep 전진은 「저장된 값보다 클 때만」 조건부 갱신, 백업 코드 소진은 행 잠금 안에서 대조·제거합니다.
+  통과하는 즉시 소진됩니다.
 
 ---
 
@@ -147,25 +144,17 @@ Authorization: Bearer {token}
 - **라우트명**: `api.plugins.sirsoft-totp.enrollment.store`
 - **컨트롤러**: `Plugins\Sirsoft\Totp\Http\Controllers\TotpEnrollmentController@store`
 - **인증/권한**: `auth:sanctum` (로그인 필수)
-- **FormRequest**: `Plugins\Sirsoft\Totp\Http\Requests\TotpStartEnrollmentRequest`
 
 **요청 파라미터**
 
-| 파라미터 | 타입 | 필수 | 규칙 | 설명 |
-| --- | --- | --- | --- | --- |
-| `current_password` | string | ✅ | `max:255` | 호출자의 **현재 비밀번호**(1.0.3). 로그인된 탭만으로 인증 앱을 바꿔 달지 못하게 등록 시작 때 다시 확인한다. 이름은 코어 비밀번호 변경 요청과 같다 |
-
-시크릿은 서버가 생성하며 클라이언트가 값을 제시할 수 없다.
+_요청 파라미터 없음._ 시크릿은 서버가 생성하며 클라이언트가 값을 제시할 수 없다.
 
 **요청 예시**
 
 ```http
 POST /api/plugins/sirsoft-totp/enrollment HTTP/1.1
 Accept: application/json
-Content-Type: application/json
 Authorization: Bearer {token}
-
-{ "current_password": "{현재 비밀번호}" }
 ```
 
 **응답 필드** (`data` 내부)
@@ -202,12 +191,7 @@ Authorization: Bearer {token}
 | 상태 | 조건 | 비고 |
 | --- | --- | --- |
 | 401 | 비로그인 요청 | `auth:sanctum` |
-| 422 | `current_password` 누락·형식 오류 | Laravel 표준 검증 응답 (`errors.current_password`) |
-| 422 | 현재 비밀번호가 틀림 | `sirsoft-totp::messages.errors.password_incorrect`, `errors.current_password` 에 같은 문구. 시크릿은 발급하지 않는다 |
-| 429 | 비밀번호 확인을 너무 여러 번 틀림 | 코어 `PasswordReconfirmationService` — 회원 단위(`password-reconfirm:{userId}`, 코어 `/api/me/verify-password` 와 공유), 상한 = 환경설정 보안 「로그인 시도 횟수」, 대기 = 「잠금 시간」(분). `auth.password_reconfirm_throttled` + `Retry-After` 헤더. 남은 대기 초는 본문 `errors.retry_after` 에도 같은 값으로 실린다 — 설정 화면은 그동안 [등록 시작] 버튼을 잠근다 |
 | 409 | 이미 확정된 자격증명이 있음 | `AlreadyEnrolledException` → `sirsoft-totp::messages.errors.already_enrolled` |
-
-비밀번호 확인이 먼저다 — 비밀번호가 틀린 요청은 이미 등록된 회원인지(409)도 알려 주지 않는다.
 
 409 예시:
 
@@ -293,9 +277,6 @@ Authorization: Bearer {token}
 | 401 | 비로그인 요청 | `auth:sanctum` |
 | 422 | `code` 검증 실패 | Laravel 표준 검증 응답 (`errors.code`) |
 | 422 | 코드 불일치 · 자격증명 없음 · 이미 확정됨 | 세 경우 모두 같은 메시지 `sirsoft-totp::messages.errors.invalid_code` |
-| 409 | 코드는 맞았지만 그 사이 다른 화면이 먼저 확정했거나 시크릿이 새로 발급됨 (1.0.3) | `EnrollmentConflictException` → `sirsoft-totp::messages.errors.confirm_conflict`. 확정은 「아직 미확정이고 시크릿이 그대로인 행」에만 조건부로 적용되므로 이 요청의 백업 코드는 저장되지 않았다 — 화면을 새로고침해 저장된 상태를 다시 읽는다 |
-
-확정이 성공하면 `sirsoft-totp.credential.enrolled` 훅이 발행되고(보안 알림 `totp_enrolled`), 실패·충돌이면 발행되지 않는다.
 
 422 예시:
 
@@ -369,7 +350,6 @@ Authorization: Bearer {token}
 | 401 | 비로그인 요청 | `auth:sanctum` |
 | 422 | `code` 검증 실패 | Laravel 표준 검증 응답 (`errors.code`) |
 | 422 | 코드 불일치 · 확정된 자격증명 없음 | 같은 메시지 `sirsoft-totp::messages.errors.invalid_code` |
-| 429 | 코드 확인을 너무 여러 번 틀림 (1.0.3) | `TotpOwnershipThrottle` — 회원 단위(`sirsoft-totp:ownership:{userId}`, 해제·재발급 합산), 상한 = 환경설정 보안 「로그인 시도 횟수」, 대기 = 「잠금 시간」(분). `sirsoft-totp::messages.errors.too_many_attempts` + `Retry-After`. 맞히면 횟수가 초기화된다 |
 
 <!-- @generated:end -->
 
@@ -443,7 +423,6 @@ Authorization: Bearer {token}
 | 401 | 비로그인 요청 | `auth:sanctum` |
 | 422 | `code` 검증 실패 | Laravel 표준 검증 응답 (`errors.code`) |
 | 422 | 코드 불일치 · 확정된 자격증명 없음 | 같은 메시지 `sirsoft-totp::messages.errors.invalid_code` |
-| 429 | 코드 확인을 너무 여러 번 틀림 (1.0.3) | `TotpOwnershipThrottle` — 회원 단위(`sirsoft-totp:ownership:{userId}`, 해제·재발급 합산), 상한 = 환경설정 보안 「로그인 시도 횟수」, 대기 = 「잠금 시간」(분). `sirsoft-totp::messages.errors.too_many_attempts` + `Retry-After`. 맞히면 횟수가 초기화된다 |
 
 <!-- @generated:end -->
 
@@ -526,7 +505,6 @@ Authorization: Bearer {token}
 | --- | --- | --- |
 | 401 | 비로그인 요청 | `auth:sanctum` |
 | 403 | `sirsoft-totp.credentials.delete` 권한 없음 | `permission` 미들웨어가 차단 |
-| 403 | 슈퍼 관리자가 아닌 운영자가 슈퍼 관리자의 인증 앱을 해제하려 함 (1.0.3) | 코어 `UserGradeGuard::assertActorMayModify()` — 코어 예외 렌더러가 403 으로 낸다. 자격증명은 지우지 않는다 |
 | 404 | 대상 회원이 존재하지 않음 | `common.not_found` |
 
 404 예시:

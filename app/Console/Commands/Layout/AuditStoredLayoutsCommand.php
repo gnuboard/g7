@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Layout;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutExtensionVersion;
@@ -27,8 +26,6 @@ use Illuminate\Database\Eloquent\Model;
  */
 class AuditStoredLayoutsCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * @var string
      */
@@ -36,6 +33,11 @@ class AuditStoredLayoutsCommand extends Command
                             {--source=all : 검사 대상 (db|files|all)}
                             {--json : 결과를 JSON 으로 출력}
                             {--limit=50 : 콘솔에 출력할 위반 상세 개수}';
+
+    /**
+     * @var string
+     */
+    protected $description = '저장된 레이아웃(DB·파일)을 저장측 보안 게이트로 재검사해 위반을 보고합니다 (보고 전용)';
 
     /**
      * 검사할 DB 모델 → 보고용 출처 이름.
@@ -67,7 +69,7 @@ class AuditStoredLayoutsCommand extends Command
         $source = (string) $this->option('source');
 
         if (! in_array($source, ['db', 'files', 'all'], true)) {
-            $this->error(__('layouts.console.audit_expressions.invalid_source'));
+            $this->error('--source 는 db|files|all 중 하나여야 합니다.');
 
             return 2;
         }
@@ -206,7 +208,7 @@ class AuditStoredLayoutsCommand extends Command
             return;
         }
 
-        $this->info(__('layouts.console.audit_expressions.summary', ['scanned' => $scanned, 'violations' => count($findings)]));
+        $this->info("검사한 레이아웃: {$scanned}건 · 위반: ".count($findings).'건');
 
         if ($findings === []) {
             return;
@@ -214,11 +216,7 @@ class AuditStoredLayoutsCommand extends Command
 
         $limit = max(1, (int) $this->option('limit'));
         $this->table(
-            [
-                __('layouts.console.audit_expressions.headers.source'),
-                __('layouts.console.audit_expressions.headers.target'),
-                __('layouts.console.audit_expressions.headers.violation'),
-            ],
+            ['출처', '대상', '위반'],
             array_map(
                 fn (array $row) => [$row['source'], $row['target'], mb_substr($row['violation'], 0, 120)],
                 array_slice($findings, 0, $limit)
@@ -226,9 +224,9 @@ class AuditStoredLayoutsCommand extends Command
         );
 
         if (count($findings) > $limit) {
-            $this->line('... '.__('layouts.console.audit_expressions.more', ['count' => count($findings) - $limit]));
+            $this->line('... 외 '.(count($findings) - $limit).'건 (--limit 또는 --json 으로 전체 확인)');
         }
 
-        $this->warn(__('layouts.console.audit_expressions.action_hint'));
+        $this->warn('조치: 편집기에서 해당 값을 고치거나 이전 버전으로 되돌리세요. 이 커맨드는 값을 바꾸지 않습니다.');
     }
 }

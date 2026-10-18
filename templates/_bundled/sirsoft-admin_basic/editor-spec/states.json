@@ -1974,37 +1974,6 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(isModuleIntegrationDeactivating, selectedModule) — 목록 스위치가 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "module_deactivate_integrations_modal"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "selectedModule": {
-                "identifier": "sirsoft-board",
-                "name": "게시판",
-                "status": "active",
-                "integrated_by": [
-                  {
-                    "type": "template",
-                    "identifier": "sirsoft-basic",
-                    "name": "기본 사용자 템플릿"
-                  }
-                ]
-              },
-              "isModuleIntegrationDeactivating": false
-            }
-          }
-        }
-      ]
-    },
-    {
       "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isModuleInstalling, moduleInstallVendorMode, moduleLayoutSource, moduleLayoutSourceOpen, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -2017,7 +1986,6 @@
           "default": true,
           "initialState": {
             "global": {
-              "installSelectedIntegrations": null,
               "moduleLayoutSource": "auto",
               "moduleLayoutSourceOpen": true,
               "selectedModule": {
@@ -2028,47 +1996,6 @@
               },
               "moduleInstallVendorMode": "auto",
               "installPreview": {
-                "integrations": [
-                  {
-                    "type": "module",
-                    "identifier": "sirsoft-board",
-                    "name": "게시판",
-                    "status": "not_installed",
-                    "required_version": ">=1.2.1",
-                    "installed_version": null,
-                    "is_installed": false,
-                    "is_active": false,
-                    "is_met": false,
-                    "can_select": true,
-                    "default_selected": true
-                  },
-                  {
-                    "type": "plugin",
-                    "identifier": "sirsoft-daum_postcode",
-                    "name": "다음 우편번호",
-                    "status": "inactive",
-                    "required_version": "*",
-                    "installed_version": "1.0.0",
-                    "is_installed": true,
-                    "is_active": false,
-                    "is_met": true,
-                    "can_select": true,
-                    "default_selected": true
-                  },
-                  {
-                    "type": "module",
-                    "identifier": "sirsoft-page",
-                    "name": "페이지",
-                    "status": "active",
-                    "required_version": "*",
-                    "installed_version": "1.0.0",
-                    "is_installed": true,
-                    "is_active": true,
-                    "is_met": true,
-                    "can_select": true,
-                    "default_selected": false
-                  }
-                ],
                 "dependencies": [
                   {
                     "identifier": "sirsoft-board",
@@ -2248,13 +2175,6 @@
           "initialState": {
             "global": {
               "selectedModule": {
-                "integrated_by": [
-                  {
-                    "type": "template",
-                    "identifier": "sirsoft-basic",
-                    "name": "기본 사용자 템플릿"
-                  }
-                ],
                 "identifier": "sirsoft-ecommerce",
                 "name": "이커머스",
                 "status": "inactive",
@@ -2652,37 +2572,6 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(isPluginIntegrationDeactivating, selectedPlugin) — 목록 스위치가 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "plugin_deactivate_integrations_modal"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "selectedPlugin": {
-                "identifier": "sirsoft-daum_postcode",
-                "name": "다음 우편번호",
-                "status": "active",
-                "integrated_by": [
-                  {
-                    "type": "template",
-                    "identifier": "sirsoft-basic",
-                    "name": "기본 사용자 템플릿"
-                  }
-                ]
-              },
-              "isPluginIntegrationDeactivating": false
-            }
-          }
-        }
-      ]
-    },
-    {
       "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isPluginInstalling, pluginInstallVendorMode, pluginLayoutSource, pluginLayoutSourceOpen, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -2695,51 +2584,9 @@
           "default": true,
           "initialState": {
             "global": {
-              "installSelectedIntegrations": null,
               "pluginLayoutSource": "auto",
               "pluginLayoutSourceOpen": true,
               "installPreview": {
-                "integrations": [
-                  {
-                    "type": "module",
-                    "identifier": "sirsoft-board",
-                    "name": "게시판",
-                    "status": "not_installed",
-                    "required_version": ">=1.2.1",
-                    "installed_version": null,
-                    "is_installed": false,
-                    "is_active": false,
-                    "is_met": false,
-                    "can_select": true,
-                    "default_selected": true
-                  },
-                  {
-                    "type": "plugin",
-                    "identifier": "sirsoft-daum_postcode",
-                    "name": "다음 우편번호",
-                    "status": "inactive",
-                    "required_version": "*",
-                    "installed_version": "1.0.0",
-                    "is_installed": true,
-                    "is_active": false,
-                    "is_met": true,
-                    "can_select": true,
-                    "default_selected": true
-                  },
-                  {
-                    "type": "module",
-                    "identifier": "sirsoft-page",
-                    "name": "페이지",
-                    "status": "active",
-                    "required_version": "*",
-                    "installed_version": "1.0.0",
-                    "is_installed": true,
-                    "is_active": true,
-                    "is_met": true,
-                    "can_select": true,
-                    "default_selected": false
-                  }
-                ],
                 "dependencies": [
                   {
                     "identifier": "sirsoft-board",
@@ -2887,37 +2734,6 @@
       ]
     },
     {
-      "comment": "확장 작업 경고 결과 창(모듈·플러그인·템플릿·언어팩 화면 공용, 코어 7.1.3)이 읽는 전역 상태(lifecycleWarnings, lifecycleWarningsOpen) — 작업 성공 응답이 담는 값이라, 편집기에서는 이 상태로 담아야 「0건」·빈 목록으로 열리지 않는다. 목록 행을 편집할 수 있게 펼친 모습으로 담는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "lifecycle_warnings_modal"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "lifecycleWarnings": [
-                {
-                  "step": "layout_refresh",
-                  "target": "board_list.g7.html",
-                  "message": "레이아웃 저장에 실패했습니다."
-                },
-                {
-                  "step": "seeder",
-                  "target": "sirsoft-board",
-                  "message": "기본 데이터 생성에 실패했습니다."
-                }
-              ],
-              "lifecycleWarningsOpen": true
-            }
-          }
-        }
-      ]
-    },
-    {
       "comment": "모달 본문이 읽는 전역 상태(isPluginRefreshingLayouts, pluginLayoutSource, pluginLayoutSourceOpen, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -2957,13 +2773,6 @@
           "initialState": {
             "global": {
               "selectedPlugin": {
-                "integrated_by": [
-                  {
-                    "type": "template",
-                    "identifier": "sirsoft-basic",
-                    "name": "기본 사용자 템플릿"
-                  }
-                ],
                 "identifier": "sirsoft-gdpr",
                 "name": "GDPR (일반 데이터 보호 규정)",
                 "status": "inactive",
@@ -3373,13 +3182,6 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
-                "integrated_by": [
-                  {
-                    "type": "module",
-                    "identifier": "sirsoft-sample",
-                    "name": "예시 모듈"
-                  }
-                ],
                 "identifier": "sirsoft-basic",
                 "name": "Basic",
                 "status": "active"
@@ -3578,51 +3380,9 @@
           "default": true,
           "initialState": {
             "global": {
-              "installSelectedIntegrations": null,
               "templateLayoutSource": "auto",
               "templateLayoutSourceOpen": true,
               "installPreview": {
-                "integrations": [
-                  {
-                    "type": "module",
-                    "identifier": "sirsoft-board",
-                    "name": "게시판",
-                    "status": "not_installed",
-                    "required_version": ">=1.2.1",
-                    "installed_version": null,
-                    "is_installed": false,
-                    "is_active": false,
-                    "is_met": false,
-                    "can_select": true,
-                    "default_selected": true
-                  },
-                  {
-                    "type": "plugin",
-                    "identifier": "sirsoft-daum_postcode",
-                    "name": "다음 우편번호",
-                    "status": "inactive",
-                    "required_version": "*",
-                    "installed_version": "1.0.0",
-                    "is_installed": true,
-                    "is_active": false,
-                    "is_met": true,
-                    "can_select": true,
-                    "default_selected": true
-                  },
-                  {
-                    "type": "module",
-                    "identifier": "sirsoft-page",
-                    "name": "페이지",
-                    "status": "active",
-                    "required_version": "*",
-                    "installed_version": "1.0.0",
-                    "is_installed": true,
-                    "is_active": true,
-                    "is_met": true,
-                    "can_select": true,
-                    "default_selected": false
-                  }
-                ],
                 "dependencies": [
                   {
                     "identifier": "sirsoft-board",
@@ -3810,13 +3570,6 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
-                "integrated_by": [
-                  {
-                    "type": "template",
-                    "identifier": "sirsoft-basic",
-                    "name": "기본 사용자 템플릿"
-                  }
-                ],
                 "identifier": "sirsoft-basic",
                 "name": "Basic",
                 "type": "user",
@@ -4592,10 +4345,10 @@
       ]
     },
     {
-      "comment": "외부 영상 서비스 추가·수정 창(#883) — 「서비스 추가」 단추가 창 상태를 통째로 만든다. 편집기는 그 클릭을 하지 않으므로 예시 주소 확인까지 마친 모습을 담는다(제목 식이 row_index, 안내 문구가 preview 를 읽는다).",
+      "comment": "코어 업데이트 확인 결과 창은 창을 연 화면(환경설정 정보 탭)의 _local.coreUpdateInfo 를 읽는다. 「업데이트 확인」 클릭이 담는 값이라 편집기에서는 이 표본으로 담아야 버전과 custom 사전 검사 중단 영역(번역 인자 count·version)이 빈 채로 그려지지 않는다 (#792).",
       "scope": {
         "kind": "modal",
-        "match": "embed_provider_form_modal"
+        "match": "core_update_result_modal"
       },
       "items": [
         {
@@ -4603,31 +4356,28 @@
           "label": "$t:editor.state.modal_filled",
           "default": true,
           "initialState": {
-            "global": {
-              "embed_provider_form_modal": {
-                "form": {
-                  "id": "myvideo",
-                  "name": "My Video",
-                  "url_patterns_text": "https://www.myvideo.example/v/{id}",
-                  "player_url": "https://player.myvideo.example/{id}",
-                  "id_rule": "alnum_dash",
-                  "aspect": "16:9",
-                  "allow": [
-                    "fullscreen",
-                    "encrypted-media",
-                    "picture-in-picture"
-                  ],
-                  "enabled": true
-                },
-                "sample_url": "https://www.myvideo.example/v/abc123",
-                "preview": {
-                  "matched": true,
-                  "id": "abc123",
-                  "player_url": "https://player.myvideo.example/abc123"
-                },
-                "row_index": null,
-                "providers": [],
-                "error": null
+            "local": {
+              "coreUpdateInfo": {
+                "update_available": true,
+                "current_version": "7.2.0",
+                "latest_version": "7.3.0",
+                "github_url": "https://github.com/gnuboard/g7",
+                "custom_preflight": {
+                  "to_version": "7.3.0",
+                  "checked_at": "2026-10-17T09:00:00+09:00",
+                  "reserved_files": [],
+                  "conflicts": [
+                    {
+                      "package": "symfony/polyfill-ctype",
+                      "installed": "v1.31.0",
+                      "type": "duplicate",
+                      "requires": "symfony/polyfill-ctype",
+                      "constraint": "",
+                      "core_package": "symfony/polyfill-ctype",
+                      "core_version": "v1.37.0"
+                    }
+                  ]
+                }
               }
             }
           }

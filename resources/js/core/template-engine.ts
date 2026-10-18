@@ -31,7 +31,6 @@ import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
-import { documentTitle } from './routing/DocumentTitle';
 import { loadScriptWithRetry } from './template-engine/networkResilience';
 // LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
 // (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
@@ -538,7 +537,7 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
         } catch (loadError) {
           logger.error('레이아웃 편집기 번들 로드 실패', loadError);
           // 오류 화면이 컨테이너를 덮기 전에 React 루트를 내려놓는다 — SPA 로 들어왔으면 살아 있는 루트 위에
-          // 덮이게 된다 (engine-v1.79.0, 같은 규칙)
+          // 덮이게 된다 (engine-v1.79.0, O-K2-2 와 같은 규칙)
           releaseTemplateRoot();
           // 컨테이너에 직접 에러 화면 렌더 (CSS 의존성 없는 인라인 스타일)
           ErrorDisplay.render(options.containerId, {
@@ -786,12 +785,9 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
     // → 아직 관측되지 않은(unconsumed) 슬롯만 누적 병합한다. 상세: localInitSlot.ts
     const mergedLocalInit = mergeLocalInitSlot(state.currentDataContext._localInit, data._localInit);
 
-    // 전역 변수는 기존 데이터 뒤에 둔다 (@since engine-v1.83.0) — 기존 컨텍스트는 첫 렌더 때 심은 전역 변수(`$locales` 등)를
-    // 이미 갖고 있어, 앞에 두면 옛 값이 새 값을 이겼다(언어팩 설치 직후 `reloadExtensionState` 가 활성 언어 목록을 바꿔도
-    // 새로고침 전까지 옛 목록). 전역 변수 키는 `createGlobalVariables` 만 만든다.
     state.currentDataContext = {
+      ...globalVariables,           // 전역 변수 (낮은 우선순위)
       ...state.currentDataContext,  // 기존 데이터
-      ...globalVariables,           // 전역 변수 (기존 데이터의 옛 전역 변수를 새 값으로)
       ...data,                       // 새 데이터 (높은 우선순위)
       _global: mergedGlobalState,   // _global은 명시적으로 깊은 병합된 값 사용
       _localInit: mergedLocalInit,  // _localInit은 소비 전이면 누적 병합된 값 사용
@@ -962,13 +958,6 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       });
     }
 
-    // 브라우저 탭 제목 — 받은 데이터로 다시 계산한다. 이 화면 레이아웃에 연결된 동안만 쓴다(앞 화면의 늦은 데이터 무시) (engine-v1.86.0)
-    try {
-      documentTitle.recompute(state.currentLayoutJson, state.currentDataContext);
-    } catch (titleError) {
-      logger.warn('탭 제목 계산 실패', titleError);
-    }
-
     logger.log('템플릿 데이터 업데이트 완료');
   } catch (error) {
     logger.error('템플릿 데이터 업데이트 실패', error);
@@ -981,7 +970,7 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
  *
  * 오류 화면(ErrorDisplay)은 컨테이너를 `innerHTML` 로 바꾼다. 루트를 그대로 두면 React 가 지워진 노드를
  * 계속 들고 있다가 다음 커밋(토스트 갱신 등)에서 `insertBefore`/`removeChild` NotFoundError 를 내고,
- * 렌더 오류 경계가 다시 그리기를 반복해 콘솔 오류가 수백 건 쌓인다(7.1.0 실측 — 제한 관리자가
+ * 렌더 오류 경계가 다시 그리기를 반복해 콘솔 오류가 수백 건 쌓인다(7.1.0 실측 O-K2-2 — 제한 관리자가
  * 403 화면으로 SPA 이동할 때 198건 + React #185). 레지스트리·번역·디스패처·현재 레이아웃 등 엔진 상태는
  * 그대로 두며, 대기 중인 업데이트는 버리고, 다음 `renderTemplate` 이 새 루트를 만든다.
  *
@@ -1102,9 +1091,6 @@ if (typeof window !== 'undefined') {
       bindingEngine: state.bindingEngine,
       actionDispatcher: state.actionDispatcher,
       templateMetadata: state.templateMetadata,
-      // 레이아웃 이탈 가드(meta.leave_guard)가 읽는다 (engine-v1.82.0)
-      currentLayoutJson: state.currentLayoutJson,
-      currentDataContext: state.currentDataContext,
     }),
     transitionManager,
     responsiveManager,

@@ -92,14 +92,14 @@ class PlaywrightSeedBoardScrap extends Command
     {
         // ① CLI 한정
         if (php_sapi_name() !== 'cli') {
-            $this->error(__('sirsoft-board::messages.console.playwright_seed.cli_only'));
+            $this->error('CLI 전용 커맨드입니다.');
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error(__('sirsoft-board::messages.console.playwright_seed.bypass_required'));
+            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
 
             return self::FAILURE;
         }

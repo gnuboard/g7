@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Seo\SeoCacheStatsService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -15,13 +13,15 @@ use Illuminate\Console\Command;
  */
 class SeoCacheStatsCommand extends Command
 {
-    use LocalizesDescription;
-    use ParsesDaysOption;
-
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'seo:stats {--days=7 : 통계 기간 (일)}';
+
+    /**
+     * @var string 커맨드 설명
+     */
+    protected $description = 'SEO 캐시 통계 출력';
 
     /**
      * 커맨드를 실행합니다.
@@ -31,14 +31,7 @@ class SeoCacheStatsCommand extends Command
      */
     public function handle(SeoCacheStatsService $statsService): int
     {
-        $days = $this->parseDaysOption();
-
-        if ($days === false) {
-            return Command::FAILURE;
-        }
-
-        $days ??= 7;
-
+        $days = (int) $this->option('days');
         $since = Carbon::now()->subDays($days);
 
         $this->info(trans_choice('seo.stats_period', $days, ['days' => $days]));

@@ -2,11 +2,11 @@
 
 # 그누보드7
 
-**개발자와 에이전트를 위한 클린 오픈소스 CMS**
-엔터프라이즈급 기반을, 최소한의 토큰으로
+**모던 아키텍처로 다시 태어난 대한민국 대표 오픈소스 CMS**
+A modern, extensible CMS platform built with Laravel + React
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.1.6-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.2.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -27,12 +27,12 @@
 
 ## 그누보드7 소개
 
-**그누보드7 (Gnuboard7)** 은 누구나 AI 에이전트와 함께 자신의 웹 플랫폼을 빠르게 만들 수 있도록 설계된 오픈소스 CMS입니다.
+**그누보드7 (Gnuboard7)** 은 23년간 대한민국에서 가장 널리 사용된 오픈소스 CMS인 그누보드를, 현대적 기술 스택으로 **완전히 새로 설계**한 차세대 웹 플랫폼입니다.
 
-선언형 레이아웃, 코어를 건드리지 않는 확장 구조, 저장소에 내장된 에이전트 개발 규칙 덕분에 에이전트는 필요한 부분만 읽고 씁니다. 그만큼 **적은 토큰으로** 커뮤니티·쇼핑몰 서비스를 만들 수 있고, 권한·다국어·본인인증·결제 같은 엔터프라이즈급 기반은 처음부터 갖춰져 있습니다. 23년간 대한민국 웹을 지탱해 온 그누보드의 차세대 플랫폼으로, Laravel과 React 위에 새로 만들었습니다.
+Laravel과 React를 기반으로, 보안부터 아키텍처까지 처음부터 다시 만들었습니다.
 
 - **선언형 레이아웃 엔진**: React를 몰라도 HTML 유사 마크업(`.g7.html`)만으로 React 기반 UI를 선언적으로 정의. 설치 시 서버가 이를 런타임 JSON 계약으로 컴파일한다. 모듈/플러그인이 프론트엔드 빌드 없이 UI를 동적으로 주입/확장. 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
-- **하나의 플랫폼, 다양한 비즈니스**: 커뮤니티, 쇼핑몰 — 비즈니스 모델에 맞게 확장
+- **하나의 플랫폼, 다양한 비즈니스**: 커뮤니티, 쇼핑몰, 구독, 예약 — 비즈니스 모델에 맞게 확장
 - **정교한 권한 관리**: 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로, 서비스 규모가 커져도 통제력 유지
 - **글로벌 레디**: 다국어(i18n) 네이티브 지원, 로케일 기반 UI, 다중 통화 대응
 - **확장 시스템**: 모듈 + 플러그인 + 템플릿 3중 구조로 코어 수정 없이 기능 확장
@@ -408,7 +408,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
 ### 시스템 요구사항
 
-- PHP 8.2+ (필수 확장 16개 포함 — `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `zip` 등. `gd`/`imagick`, `intl`, `redis`, `bcmath` 등은 해당 기능을 쓸 때만 필요하며 전체 목록은 [docs/requirements.md](docs/requirements.md) 참조. 모듈·플러그인은 자기 `composer.json` 의 `require`/`suggest` `ext-*` 로 추가 PHP 확장을 선언하며, 설치할 때 검사하고 관리자 화면에 표시한다)
+- PHP 8.2+ (필수 확장 16개 포함 — `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `zip` 등. `gd`/`imagick`, `intl`, `redis`, `bcmath` 등은 해당 기능을 쓸 때만 필요하며 전체 목록은 [docs/requirements.md](docs/requirements.md) 참조)
 - MySQL 8.0+ 또는 MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
 - Node.js 20+ (프론트엔드 에셋을 직접 빌드할 때만 필요)
@@ -429,13 +429,6 @@ cp .env.example .env
 ```
 
 > Composer 의존성은 설치 마법사가 운영용 구성(`--no-dev`)으로 자동 설치합니다. 직접 설치하려면 `composer install --no-dev --optimize-autoloader` 를 사용하세요.
-
-브라우저 없이 서버 터미널에서도 같은 설치를 진행할 수 있습니다(대화형, 또는 옵션·환경변수만으로 끝나는 비대화형).
-
-```bash
-php g7-install                       # 대화형
-php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
-```
 
 > 상세 설치 가이드는 [INSTALL.md](INSTALL.md)를 참조하세요.
 
@@ -583,15 +576,13 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 
 <!-- community-contributors:start -->
 <p>
-  <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
   <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
+  <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
   <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
   <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
-  <a href="https://github.com/digitalnomadxxx" title="digitalnomadxxx"><img src="https://github.com/digitalnomadxxx.png" width="48" alt="digitalnomadxxx"></a>
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
-  <a href="https://github.com/eondcom" title="eondcom"><img src="https://github.com/eondcom.png" width="48" alt="eondcom"></a>
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
   <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
@@ -619,7 +610,7 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 |------|------|
 | GitHub | [github.com/gnuboard/g7](https://github.com/gnuboard/g7) |
 | SIR 커뮤니티 | [sir.kr](https://sir.kr) |
-| 문의 | jjh621@sir.kr |
+| 문의 | minsup@sir.kr |
 
 ---
 

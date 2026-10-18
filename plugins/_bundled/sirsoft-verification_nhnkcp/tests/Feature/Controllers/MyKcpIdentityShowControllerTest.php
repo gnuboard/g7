@@ -3,7 +3,6 @@
 namespace Plugins\Sirsoft\VerificationNhnkcp\Tests\Feature\Controllers;
 
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityRecordRepositoryInterface;
@@ -40,19 +39,16 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
      *
      * @scenario record_exists=true,auth=authenticated
      *
-     * @effects verified_user_receives_masked_fields, verified_at_uses_viewer_timezone
+     * @effects verified_user_receives_masked_fields
      *
      * @return void 반환값 없음
      */
     public function test_verified_user_receives_masked_fields(): void
     {
         $user = User::factory()->create();
-        // 인증 시각 UTC 11-03 16:00 = 서울 11-04 01:00
-        Carbon::setTestNow(Carbon::parse('2026-11-03 16:00:00', 'UTC'));
         $this->seedRecord($user->id);
-        Carbon::setTestNow();
 
-        $response = $this->actingAs($user, 'sanctum')->withHeader('X-Timezone', 'Asia/Seoul')->getJson(self::ENDPOINT);
+        $response = $this->actingAs($user, 'sanctum')->getJson(self::ENDPOINT);
 
         $response->assertStatus(200);
         $data = $response->json('data');
@@ -63,7 +59,7 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
         $this->assertTrue($data['is_adult']);
         $this->assertFalse($data['is_foreigner']);
         $this->assertNotEmpty($data['method']);
-        $this->assertSame('2026-11-04 01:00:00', $data['verified_at'], '인증 시각은 보는 사람 시간대여야 한다');
+        $this->assertNotEmpty($data['verified_at']);
     }
 
     /**
@@ -115,7 +111,7 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
     /**
      * 응답 안내 문장은 이 플러그인의 번역 문구로 나간다 — 원문 키(`messages.success`)가 그대로 나가면 안 된다.
      *
-     * 코어에는 `messages` 번역 묶음이 없어 종전 키는 어느 언어에서도 번역되지 않았다(2026-10-07 실측).
+     * 코어에는 `messages` 번역 묶음이 없어 종전 키는 어느 언어에서도 번역되지 않았다(2026-10-07 실측 O-M2-5).
      *
      * @param  string  $locale  회원 언어
      * @param  bool  $withRecord  본인확인 기록 유무

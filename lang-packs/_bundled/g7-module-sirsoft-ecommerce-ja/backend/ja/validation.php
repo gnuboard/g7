@@ -240,7 +240,6 @@ return [
             'option_selling_price' => 'オプション販売価格',
             'option_price_adjustment' => 'オプション価格調整額',
             'option_stock_quantity' => 'オプション在庫数量',
-            'option_tax_status' => 'オプション課税区分',
             'option_name' => 'オプション名',
             'option_code' => 'オプションコード',
             'option_group_name' => 'オプショングループ名',
@@ -309,9 +308,6 @@ return [
             ],
             'stock_quantity' => [
                 'required_with' => 'オプション在庫数量は必須です。',
-            ],
-            'tax_status' => [
-                'in' => 'オプションの課税区分は課税・非課税・ゼロ税率から選ぶか、空欄にしてください。',
             ],
         ],
         'label_assignments' => [
@@ -472,7 +468,7 @@ return [
             'required' => '画像ファイルを選択してください。',
             'file' => '有効なファイルではありません。',
             'image' => '画像ファイルのみアップロード可能です。',
-            'mimes' => 'サポートされている画像形式: jpeg、png、jpg、gif、webp',
+            'mimes' => 'サポートされている画像形式: jpeg、png、jpg、gif、svg、webp',
             'max' => '画像ファイルサイズは10MB以下である必要があります。',
         ],
         'temp_key' => [
@@ -612,7 +608,6 @@ return [
         'user_ids_required' => '発行する会員を選択してください。',
         'user_ids_min' => '最低1名以上の会員を選択してください。',
         'user_ids_invalid' => '存在しない会員が含まれています。',
-        'user_withdrawn' => '退会した会員にはクーポンを発行できません。',
     ],
     'orders' => [
         'ids' => [
@@ -1277,12 +1272,6 @@ return [
     ],
     'public_asset_disk_invalid' => '有効な公開アセットディスクを選択してください。',
     'attributes' => [
-        'content_media' => [
-            'owner_type' => '本文メディアの所有種別',
-            'file' => '本文メディアファイル',
-            'temp_key' => '一時キー',
-        ],
-        'content_media_temp_key' => '本文メディアの一時キー',
         // 手動決済処理・再有効化の確認ウィンドウ3項目 (Q13・Q14)
         'apply_stock_deduction' => '在庫差し引き',
         'apply_mileage_deduction' => '使用マイレージ差し引き',
@@ -1422,10 +1411,6 @@ return [
         'review_settings.write_deadline_days' => 'レビュー作成期限(日)',
         'review_settings.max_images' => 'レビュー画像最大枚数',
         'review_settings.max_image_size_mb' => 'レビュー画像最大容量(MB)',
-
-        // 商品陳列設定
-        'product_display.related_order' => '関連商品の並び順',
-        'product_display.related_cache_hours' => '関連商品リストの保持時間',
         'country_settings.*.api_config.http_method' => 'HTTPメソッド',
         'country_settings.*.api_config.auth_type' => '認証方式',
         'country_settings.*.api_config.auth_token' => '認証トークン',
@@ -1464,15 +1449,6 @@ return [
         'claim.refund_reasons.*.code' => '返金理由コード',
         'claim.refund_reasons.*.name' => '返金理由名',
         'claim.refund_reasons.*.fault_type' => '返金理由帰責区分',
-        'review_settings.author_name_masking' => '公開レビューの投稿者名マスク',
-        'basic_info.hosting_provider' => 'ホスティングサービス提供者',
-        'basic_info.show_business_footer' => '事業者情報の表示',
-        'mileage.signup_earn_enabled' => '会員登録積立金を使用',
-        'mileage.signup_earn_amount' => '会員登録積立金',
-        'mileage.no_earn_when_points_used' => 'マイレージ使用注文の積立除外',
-        'mileage.min_product_total_for_use_enabled' => '利用可能な最低商品合計を使用',
-        'mileage.min_product_total_for_use' => '利用可能な最低商品合計',
-        'product_total' => '商品合計',
     ],
     'custom' => [
         'basic_info' => [
@@ -2118,7 +2094,6 @@ return [
         'user_required' => '対象会員を選択してください。',
         'amount_min' => '金額は1ポイント以上である必要があります。',
         'action_invalid' => '付与または差引のみが可能です。',
-        'user_withdrawn' => '退会した会員にはマイレージを付与できません。',
         'duplicate_currency' => '通貨コードが重複しています。',
         'first_must_be_default' => '最初の通貨はデフォルト通貨(:currency)である必要があります。',
         'currency_not_registered' => '登録されていない通貨(:currency)です。言語/通貨設定に先に追加してください。',
@@ -2277,25 +2252,5 @@ return [
     'identity_policy' => [
         'target_not_owned' => 'イーコマースの本人認証ポリシーはイーコマースの地点のみを対象にできます。フック・カスタム範囲は「sirsoft-ecommerce.」、ルート範囲は「api.modules.sirsoft-ecommerce.」で始まる必要があります。',
         'nothing_to_update' => '変更する項目がありません。',
-    ],
-    'settings_attributes' => [
-        'hosting_provider' => 'ホスティングサービス提供者',
-        'show_business_footer' => '事業者情報の表示',
-        'author_name_masking' => '公開レビューの投稿者名マスク',
-        'signup_earn_enabled' => '会員登録積立金を使用',
-        'signup_earn_amount' => '会員登録積立金',
-        'no_earn_when_points_used' => 'マイレージ使用注文の積立除外',
-        'min_product_total_for_use_enabled' => '利用可能な最低商品合計を使用',
-        'min_product_total_for_use' => '利用可能な最低商品合計',
-        'product_total' => '商品合計',
-    ],
-    'user_coupon_attributes' => [
-        'coupon_ids' => 'クーポン番号リスト',
-    ],
-    'public_list_attributes' => [
-        'sort' => '並び替え基準',
-        'photo_only' => '写真レビューのみ表示',
-        'rating' => '評価',
-        'exclude_sold_out' => '品切れを除く',
     ],
 ];

@@ -150,43 +150,17 @@ HookManager::addFilter(
 
 **보안**: 훅이 `IdentityPolicy` 외 타입(`null` 등)을 반환하면 원본 정책이 그대로 유지됩니다 (silent retention). 의도적으로 정책을 변경하려면 반드시 `IdentityPolicy` 인스턴스를 반환할 것.
 
-## 5.1 정책 provider_id = 인정할 수단 (7.1.6)
+## 5.1 정책 provider_id 해석 — fallback 체인
 
-정책의 `provider_id` 는 **그 정책이 인정하는 본인인증 수단**입니다(KVE-2026-3188).
+`IdentityPolicyService::enforce()` 는 정책 위반 시 `IdentityVerificationRequiredException` 을 던지는데, 정책에 `provider_id` 가 명시되지 않은 경우 `resolveProviderId()` 가 환경설정의 기본 프로바이더로 자동 fallback 합니다. 운영자가 정책마다 provider 를 일일이 지정하지 않아도 환경설정 default 가 일관 적용되도록 보장합니다.
 
-| 정책 `provider_id` | 인정하는 인증 결과 | 428 이 여는 인증 창 |
-| --- | --- | --- |
-| 지정됨(예: `sirsoft-verification_nhnkcp`) | 그 수단으로 받은 결과만 — 정확히 일치. 토큰 경로·「재요청 주기」(grace) 경로·가입 전/후 정책 모두 | 지정 수단 |
-| `null`(「지정 안 함 — 모든 수단 인정」) | 어떤 수단의 결과든 | 목적의 기본 수단(환경설정 `purpose_providers.{purpose}` → `default_provider` → 등록된 첫 수단) |
+해석 순서:
 
-- 지정 수단을 지금 쓸 수 없으면(미등록·비활성·목적 미지원) **다른 수단으로 대신 발급하지 않습니다.** 정책 강제는
-  `IdentityPolicyProviderUnavailableException`(503, `failure_code=POLICY_PROVIDER_UNAVAILABLE`), `fail_mode=log_only` 정책은
-  기록만 하고 통과합니다. 공개 인증 요청(`POST /api/identity/challenges`)도 `policy_key` 정책이 수단을 지정했으면 그 수단으로만
-  발급하고(생략하면 정책 값, 다른 값이면 422 `identity.errors.provider_policy_mismatch`), 쓸 수 없으면 503 입니다.
-- `IdentityPolicyService::requiredProviderId(IdentityPolicy): ?string` 이 지정 수단을 돌려줍니다(trim, 빈 값은 `null`).
-  `resolveProviderId()` 는 지정 수단이 있으면 쓸 수 있을 때만 그 값, 아니면 `null` 입니다(메일 폴백 없음).
-- 관리자 정책 저장·수정 요청은 등록되고 정책 목적을 지원하는 수단만 받습니다. 수정은 현재 저장된 값과 같으면 플러그인이
-  꺼져 있어도 받아 줍니다 — 그런 정책도 「끄기」 저장은 가능해야 합니다. 운영자는 수단 플러그인을 끄기 전에 그 수단을 지정한
-  정책의 수단을 바꿔야 합니다.
+1. 정책 `provider_id` 가 등록된 provider 면 그대로 사용
+2. 정책 미명시 또는 미등록 provider → `IdentityVerificationManager::resolveForPurpose()` 호출 (purpose 기반 fallback 체인 — 환경설정 `purpose_providers.{purpose}` → `default_provider` → 등록된 첫 provider)
+3. Manager 예외 시 정책의 원본 provider_id 그대로 반환 (정책 정보 보존)
 
-### 5.1.1 인증 결과는 작업 1건에 한 번 (D2)
-
-정책 강제는 `App\Services\IdentityTokenAcceptanceService::accept($token, $purpose, $requiredProviderId, $targetHash, $userId)` 로
-토큰을 판정하고 **소비**합니다(`consumed_at` 조건부 갱신 — 동시 두 요청 중 하나만 이깁니다).
-
-- 결박: purpose 같음 / 지정 수단이 있으면 수단 같음 / 회원이면 `log.user_id === 회원 id`(또는 `user_id` 가 비고 대상 해시
-  일치) / 비회원이고 대상이 있으면 대상 해시 일치 / 대상 개념이 없는 비회원 정책은 purpose·수단·1회만으로 인정.
-- 한 HTTP 요청 = 작업 1건: 같은 요청 안에서는 서로 다른 정책이라도 결박이 맞으면 다시 인정합니다(route 정책과 hook 정책이
-  한 요청에 겹치는 프로필 수정). 상태는 현재 `Request` 의 attributes(`g7.identity.accepted_tokens`)에 둡니다.
-- 요청이 422·428 로 끝나면 `EnforceIdentityPolicy` 미들웨어가 `releaseAccepted()` 로 이 요청이 소비한 것만 되돌립니다(입력
-  오류로 실패한 작업은 인증 결과를 돌려준다). 「재요청 주기」(grace) 안의 재요청 생략은 그대로입니다.
-- 비회원 대상: `EnforceIdentityPolicyListener` 는 훅 인자 중 `target_email` 키를 가진 배열(없으면 요청의 `email` 입력)을
-  대상으로 씁니다. 비회원 대상이 있는 정책 훅을 발행하는 확장은 `['target_email' => …]` 를 인자로 덧붙입니다(이커머스
-  `sirsoft-ecommerce.checkout.before_payment` 가 주문자 이메일을 넘깁니다).
-- 검증 규칙 `App\Rules\IdvTokenRule` 은 `acceptedInRequest()` 를 먼저 봅니다 — 미들웨어가 이미 소비한 토큰도 같은 요청 안에서는
-  유효합니다.
-
-`resolveRenderHint()` 는 위 해석과 같은 수단으로 모달 launcher payload 의 `provider_id` 를 채웁니다.
+`resolveRenderHint()` 와 동일한 우선순위 체인을 적용하여 정책에 provider 가 지정되지 않아도 환경설정 default 가 모달 launcher payload 의 `provider_id` 로 정확히 전달됩니다.
 
 ## 5.2 Service 라이프사이클 훅 (cancel / consume_token)
 

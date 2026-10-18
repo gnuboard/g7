@@ -207,8 +207,7 @@ final readonly class GoalDefinition
             'description' => LocalizedText::pick($this->description, ''),
             'category' => $this->category,
             'dedupe' => $this->dedupe,
-            // 속성 이름 → 스키마 맵이라 선언이 없으면 `{}` (7.1.1 출시 전)
-            'attributes' => $this->attributes ?: new \stdClass,
+            'attributes' => $this->attributes,
             'attribution_window_days' => $this->attributionWindowDays,
             'dimensions' => $this->dimensions,
         ];

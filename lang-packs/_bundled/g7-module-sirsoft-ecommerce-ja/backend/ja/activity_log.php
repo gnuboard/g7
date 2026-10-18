@@ -66,7 +66,6 @@ return [
         'mode_change' => '進行方法変更',
         'stock_restore' => '在庫復旧',
         'request_update' => '申請内容修正',
-        'signup_earn' => '会員登録積立',
     ],
     'description' => [
         'product_index' => '商品 目録 閲覧',
@@ -252,7 +251,6 @@ return [
         'claim_refund_request_update_on_behalf' => '返金申請内容修正 — 管理者が顧客に代わり修正(:claim_number)',
         'claim_payment_refund' => 'クレーム追加決済返金 (:payment_number)',
         'claim_payment_refund_amount' => 'クレーム追加決済返金 (:payment_number, :amount)',
-        'mileage_signup_earn' => '会員登録積立マイレージ付与（:amount）',
     ],
     // 手動決済処理アクティビティログの項目名 (Q13·Q26)
     'manual_paid' => [

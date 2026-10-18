@@ -5,6 +5,7 @@ use App\Providers\AuthServiceProvider;
 use App\Providers\BladeServiceProvider;
 use App\Providers\BroadcastServiceProvider;
 use App\Providers\CoreServiceProvider;
+use App\Providers\CustomReservedServiceProvider;
 use App\Providers\EventServiceProvider;
 use App\Providers\InstallerRuntimeServiceProvider;
 use App\Providers\LanguagePackServiceProvider;
@@ -22,7 +23,7 @@ return [
     SettingsServiceProvider::class,  // DB 연결 전 JSON 설정 로드
     AppServiceProvider::class,
     AuthServiceProvider::class,
-    BroadcastServiceProvider::class,  // 채널 인가 정의 등록기 바인딩 — routes/channels.php 는 인가 요청에서 등록 (Broadcast::routes() 자동 등록은 배제)
+    BroadcastServiceProvider::class,  // routes/channels.php 채널 인가 정의 로드 (Broadcast::routes() 자동 등록은 배제)
     BladeServiceProvider::class,
     CoreServiceProvider::class,
     ModuleServiceProvider::class,
@@ -34,4 +35,5 @@ return [
     LanguagePackServiceProvider::class,
     ScoutServiceProvider::class,
     SeoServiceProvider::class,
+    CustomReservedServiceProvider::class,  // custom 예약 자리(#792) — 반드시 마지막. 개발자 App\Custom\CustomServiceProvider 를 가장 늦게 등록
 ];

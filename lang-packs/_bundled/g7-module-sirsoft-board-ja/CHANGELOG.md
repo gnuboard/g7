@@ -4,37 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.1.3] - 2026-11-10
-
-### Added
-
-- 게시판 1.2.3 의 브라우저 실측 데이터 시더 안내(`seeders.issue162_measure.*` — 실행 조건 안내·생성·정리 완료 건수)의 일본어 번역을 추가했습니다.
-- 게시판 1.2.3 의 예약 첨부 구분 거절 안내(`validation.attachment.collection_reserved` 「この添付区分ではアップロードできません。」)의 일본어 번역을 추가했습니다.
-- 게시판 1.2.3 의 최근 검색어 범위 이름(`messages.search_history.scope_posts` 「投稿検索」)의 일본어 번역을 추가했습니다. 없으면 일본어 관리자 화면의 「최근 검색어」 카드에 범위 이름이 키 그대로 보입니다.
-- 회원 상세 「게시글 검색어」 탭 문구(`admin.users.search_history.*` 「投稿検索語」 등)의 일본어 번역을 추가했습니다.
-- 게시판 1.2.3 의 본문 미디어 문구(업로드 성공·실패 `messages.content_media.*`, 요청 항목명·임시 키 누락 `validation.content_media.*`·`validation.attributes.content_media.*`, 게시판 설정 일괄 적용 항목 이름 `content_media_policy`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 문구가 키 그대로 보입니다.
-- 게시판 1.2.3 의 본문 미디어 정책 하위 칸 이름(`validation.attributes.content_media_policy.*` — 「本文メディアポリシー」「文書あたりの本文メディア最大数」「:kind 許可拡張子」 등)의 일본어 번역을 추가했습니다. 없으면 게시판 생성·수정·일괄 적용의 검증 문구에 필드 키가 그대로 보입니다.
-- 게시판 1.2.3 의 편집기 업로드 조건 조회 문구(`messages.content_media.target_success` 「本文メディアのアップロード条件を取得しました。」)와 레이아웃 편집기 데이터 소스 이름(`editor.data_source.content_media_target` 「本文メディアアップロード契約」)의 일본어 번역을 추가했습니다.
-
-## [1.1.2] - 2026-11-01
-
-### Added
-
-- 게시판 1.2.2 의 샘플 데이터 생성에서 PHP gd 확장이 없을 때의 안내(`seeders.post_sample.images_skipped_no_gd` 「PHP gd 拡張がないため、…」)의 일본어 번역을 추가했습니다.
-
-## [1.1.1] - 2026-10-21
+## [1.1.1] - 2026-10-15
 
 ### Added
 
 - 게시판 설정 「비밀 답변 열람 범위」(「非公開返信の閲覧範囲」)의 일본어 번역을 추가했습니다 — 게시판 수정 화면의 칸 이름·안내·값 3개(「パスルール（既定）」「下位のみ」「返信ごとに個別」)와 값별 설명(`admin/form.fields.secret_reply_visibility.*`), 환경설정 기본값·일괄 적용 항목 이름(`admin/settings.fields.secret_reply_visibility`·`fields.descriptions.*`·`options.secret_reply_visibility*`·`bulk_apply.field_labels.*`), 값 이름(`enums.secret_reply_visibility.*`), 검증·변경 기록의 항목 이름(`validation.attributes.*`·`activity_log.fields.*`)입니다.
 - 답변 화면에서 원글 비밀번호로 답변을 열 때의 안내(`messages.posts.thread_password_verified` 「元の投稿のパスワードが確認されました。」·`thread_password_not_applicable` 「元の投稿のパスワードで開ける返信ではありません。」)의 일본어 번역을 추가했습니다.
-- 관리자 게시판 목록 「순서 변경」 모달(「並び順を変更」)의 일본어 번역을 추가했습니다 — 단추·제목·안내·끌기 손잡이·위/아래 이동 단추 이름·「無効」 배지·저장/취소(`admin/board.index.reorder.*`), 순서 저장 메시지(`messages.boards.reorder_success` 「掲示板の並び順を保存しました。」·`reorder_failed`), 목록이 바뀌었을 때의 검증 문구(`validation.boards.reorder_stale`)·항목 이름(`validation.attributes.board_ids`), 활동 로그(`activity_log.action.reorder` 「並び順変更」·`activity_log.description.board_reorder`)입니다.
-- 게시판 1.2.1 의 목록을 불러오지 못했을 때 보이는 안내(`common.list_load_failed` — 「一覧を読み込めませんでした。…」)와, 관리자 대시보드 처리 대기 신고 카드의 제목·작성자 없음 표시(`admin/dashboard.community.untitled`·`anonymous` — 「（タイトルなし）」「匿名」)의 일본어 번역을 추가했습니다.
-- 게시판 1.2.1 에서 번역 문구로 바뀐 첨부 정리·통계 집계 명령과 설치·샘플 시드 콘솔 출력의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
-
-### Changed
-
-- 관리자 신고 목록 날짜 칸의 보조 표시가 처음 신고 시각으로 바뀐 데 맞춰, 「最近」 표시(`admin/reports.columns.last_reported_at_label`)를 「初回」(`columns.first_reported_at_label`)로 바꿨습니다.
 
 ## [1.1.0] - 2026-10-10
 

@@ -31,19 +31,7 @@ return [
         'message' => 'The page you requested does not exist or has been moved.',
     ],
 
-    // Shared by 4xx responses without a dedicated page (429 too many requests, 419 session expired, 405 method not allowed, etc.)
-    '4xx' => [
-        'title' => 'Unable to Process the Request',
-        'message' => 'The request is invalid or not allowed. Please try again later.',
-    ],
-
     '500' => [
-        'title' => 'Server Error',
-        'message' => 'Something went wrong while processing your request. Please try again later.',
-    ],
-
-    // Shared by 5xx responses without a dedicated page (502, 504, etc.)
-    '5xx' => [
         'title' => 'Server Error',
         'message' => 'Something went wrong while processing your request. Please try again later.',
     ],

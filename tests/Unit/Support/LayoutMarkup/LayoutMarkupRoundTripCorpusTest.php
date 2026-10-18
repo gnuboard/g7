@@ -220,7 +220,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_form.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_view.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_delete_confirm.g7.html',
-        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_editing_confirm.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_image_preview.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_category_list.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_detail.g7.html',
@@ -349,6 +348,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_clear_seo_cache.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_identity_policy_delete.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_identity_policy_form.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_mail_template_edit.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_definition_reset.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_template_edit.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_modal_notification_template_preview.g7.html',
@@ -458,10 +458,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-tosspayments/resources/extensions/user_order_show.g7.html',
         'plugins/_bundled/sirsoft-tosspayments/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-totp/resources/extensions/admin_user_totp_card.g7.html',
-        'plugins/_bundled/sirsoft-totp/resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.g7.html',
-        'plugins/_bundled/sirsoft-totp/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html',
-        'plugins/_bundled/sirsoft-totp/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.g7.html',
-        'plugins/_bundled/sirsoft-totp/resources/layouts/admin/partials/plugin_settings/_notifications_card.g7.html',
         'plugins/_bundled/sirsoft-totp/resources/layouts/admin/plugin_settings.g7.html',
         'plugins/_bundled/sirsoft-verification_kginicis/resources/extensions/identity_provider_inicis.g7.html',
         'plugins/_bundled/sirsoft-verification_kginicis/resources/extensions/mypage_identity_card.g7.html',
@@ -520,7 +516,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_identity_challenge_modal.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_changelog.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_license.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_lifecycle_warnings.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_notification_delete_all_confirm.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_datagrid.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_filter.g7.html',
@@ -540,14 +535,12 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_language_pack_list/_modal_update.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_modal_bulk_roles_confirm.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_modal_delete.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_modal_editing_confirm.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_bulk_roles.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_detail.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_form.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_menu_list.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_view.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_drawer_manifest_preview.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_deactivate_integrations.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_deactivate_warning.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_detail.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_extension_license.g7.html',
@@ -563,7 +556,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_partial_datagrid.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_partial_filter.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_drawer_manifest_preview.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_deactivate_integrations.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_detail.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_extension_license.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_force_activate.g7.html',
@@ -613,7 +605,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_privacy.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_activity_log.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_csp.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_ip_restriction.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_password_policy.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_seo.g7.html',
@@ -768,6 +759,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_option_change.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_unavailable.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_coupon_download.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_exclusive_coupon_confirm.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_temp_order_not_found.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_admin_edit_link.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_header.g7.html',
@@ -781,17 +773,14 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_review_image.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_price_mobile.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_review_avatar.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_detail.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_qna.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_reviews.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.g7.html',
+        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_new_products.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_popular_products.g7.html',
-        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_related_products.g7.html',
-        'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_sort_bar.g7.html',
-        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_review_card.g7.html',
-        'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_options.g7.html',
-        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_quick_option.g7.html',
-        'templates/_bundled/sirsoft-basic/layouts/shop/reviews.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_product_grid.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_recent_products.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_search_filter_bar.g7.html',
@@ -941,23 +930,13 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_user_list/_partial_filter_section.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-mileage.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/extensions/admin-user-list-filter-address.g7.html',
-        // ── #860 이 저작하고 등재를 빠뜨린 2건 — develop 리베이스 뒤 저작 트랙 종료 게이트(2026-11-04)가 찾았다.
-        // 관리자 회원 상세 「최근 검색어」 게시판 탭, 이커머스 환경설정 「상품 표시」 탭.
-        'modules/_bundled/sirsoft-board/resources/extensions/admin-user-search-history-tab.g7.html',
-        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_tab_product_display.g7.html',
-        // ── #883 본문 미디어·본문 콘텐츠가 저작하고 등재를 빠뜨린 4건 — 커밋 전 점검(2026-11-09)의 전체 검증이 찾았다.
-        // 게시판·쇼핑몰 「본문 미디어」 정책 조각, 관리자 환경설정 「본문 콘텐츠」 탭과 외부 영상 서비스 추가 창.
-        'modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_form/_content_media_policy.g7.html',
-        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_settings/_content_media_policy.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_embed_provider_form.g7.html',
-        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_content.g7.html',
     ];
 
     /**
      * 1급 문법이 없어 원시 JSON 으로 남는 자리 (U-RAWJSON — D41 → D42 전면 재집계 → **D42 종료로 비었다**).
      *
      * D41 은 태그 본문(`<params>`/`<fallback>`/`<prop>`/`<props>`)을 "설계된 정본" 으로 보아 계량에서
-     * 뺐으나, 설계 검토 지적으로 **그 제외를 폐기**했다. 태그 예외 없이 다시 세자 대장은 35 로 늘었고
+     * 뺐으나, 설계 검토 지적(3회차)으로 **그 제외를 폐기**했다. 태그 예외 없이 다시 세자 대장은 35 로 늘었고
      * (늘어난 것은 새 결함이 아니라 원래 있었으나 안 세던 것), D42 문법 신설이 그것을 전부 해소했다:
      *
      *  - 빈 컬렉션 — `[]`·`{}` 는 구조가 없는 값 리터럴이라 계량 대상이 아니다(D42 선행 판정).
@@ -991,7 +970,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         // 구별되지 않아 왕복이 깨진다({@see EmitsMarkup::isStructuredValue} 독블록). 문법이 없다는
         // 근거가 설계 결정 자체이므로 등재한다 — 새 문법이 생기면 이 행을 지우고 재생성한다.
         'templates/_bundled/sirsoft-basic/layouts/shop/show.g7.html' => [':starList' => 1, ':starNums' => 1],
-        'templates/_bundled/sirsoft-basic/layouts/shop/reviews.g7.html' => [':starList' => 1],
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_apply.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_show.g7.html',
         // W6 — **상태 트리의 표기 불가 리스트**. G18(D53)이 상태 트리 `<field>` 에 `<item>` 을 열어
@@ -1026,12 +1004,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_form.g7.html' => [':ui' => 1],
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_claim_detail.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_claim_list.g7.html',
-        // #860 — **`<meta>` 의 구조 객체 속성**. 엔진 스크롤 복원(engine-v1.85.0)의 `meta.scroll_restoration` 은
-        // `containers`(문자열 리스트)·`snapshot`(하위 객체)을 담는 객체인데, `<meta>` 는 `seo` 만 `<seo>` 하위
-        // 요소로 펴고 나머지 키는 속성값으로 내보낸다({@see LayoutMarkupDecompiler::meta}). 문법이 없는 자리라
-        // 등재한다 — `<meta>` 에 하위 요소 문법이 생기면 이 두 행을 지우고 재생성한다.
-        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_common_info_index.g7.html' => [':scroll_restoration' => 1],
-        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_notice_index.g7.html' => [':scroll_restoration' => 1],
     ];
 
     /**

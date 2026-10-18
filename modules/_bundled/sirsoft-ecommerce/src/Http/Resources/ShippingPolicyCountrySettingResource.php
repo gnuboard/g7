@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
@@ -134,8 +133,6 @@ class ShippingPolicyCountrySettingResource extends BaseApiResource
      * 배송방법 라벨을 해석합니다.
      *
      * custom인 경우 custom_shipping_name에서 현재 로케일 값을 반환합니다.
-     *
-     * @return string|null 배송방법 라벨 (없으면 null)
      */
     private function resolveShippingMethodLabel(): ?string
     {
@@ -148,7 +145,7 @@ class ShippingPolicyCountrySettingResource extends BaseApiResource
             if (is_array($name)) {
                 $locale = app()->getLocale();
 
-                return LocalizedValue::pick($name, $locale);
+                return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null;
             }
 
             return null;

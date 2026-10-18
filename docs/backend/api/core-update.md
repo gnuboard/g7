@@ -103,6 +103,7 @@ _단건 응답: `data` 객체의 필드._
 | current_version | string | `7.0.3` | 현재 설치된 코어 버전 (프로세스 환경값이 아니라 설정의 버전 — `config('app.version')`) |
 | latest_version | string | `7.0.3` | GitHub 릴리스에서 조회한 최신 코어 버전 (조회 값이 없으면 현재 버전과 동일) |
 | github_url | string | `https://github.com/gnuboard/g7` | 업데이트 조회 대상 GitHub 저장소 URL (`config('app.update.github_url')`) |
+| custom_preflight | object\|null | `null` | 직전 `core:update` 가 개발자 custom 자리 사전 검사로 시작 전에 멈췄고 그 대상 버전이 `latest_version` 과 같을 때만 실린다 (7.2.0). `to_version`·`checked_at`·`reserved_files`(릴리스에 들어 있던 예약 경로 파일)·`conflicts`(`package`·`installed`·`type`(`constraint`\|`duplicate`)·`core_package`·`core_version`). 그 밖에는 `null` |
 
 > 조회 실패 시(GitHub 접속 불가 등)에는 422 응답이 반환되며, `error` 객체에 `reason`(실패 사유) · `current_version` · `github_url` 이 담깁니다.
 
@@ -116,7 +117,8 @@ _단건 응답: `data` 객체의 필드._
         "update_available": false,
         "current_version": "7.0.3",
         "latest_version": "7.0.3",
-        "github_url": "https://github.com/gnuboard/g7"
+        "github_url": "https://github.com/gnuboard/g7",
+        "custom_preflight": null
     }
 }
 ```
@@ -132,6 +134,8 @@ _단건 응답: `data` 객체의 필드._
 <!-- @generated:end -->
 
 **설명** GitHub 릴리스를 기준으로 코어 업데이트 가능 여부를 확인합니다. 현재 버전과 최신 버전을 비교한 결과를 반환하며, 조회에 실패하면 실패 사유·현재 버전·github_url과 함께 422를 반환합니다. `core.settings.update` 권한이 필요하고, 관리자가 업데이트 확인 버튼을 눌러 새 버전 유무를 점검하는 시나리오에 사용합니다.
+
+**개발자 패키지 사전 검사 기록(7.2.0)** 업데이트는 CLI(`core:update`)가 하므로, custom 자리 사전 검사로 시작 전에 멈춘 결과는 기록 파일로 넘어온다. 응답의 `custom_preflight` 는 그 기록 중 이번에 확인한 `latest_version` 과 같은 버전의 것만 싣는다 — 고르는 판단은 `CoreUpdateService::pendingCustomPreflight()` 한 곳이고, 다른 버전을 시도하다 멈춘 기록은 지금 업데이트와 무관하므로 `null` 이다.
 
 **권한(7.1.0)** 업데이트 확인은 버전 정보를 읽기만 하고 설정을 바꾸지 않으므로 환경설정 조회 권한(`core.settings.read`)으로 연다. 정보 탭의 [업데이트 확인] 버튼은 읽기 전용 관리자에게도 열려 있다.
 

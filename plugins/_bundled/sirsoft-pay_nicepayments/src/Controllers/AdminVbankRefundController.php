@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
-// audit:allow api-doc-coverage 요청·응답 무변경 — 결제 메타 시각 저장 줄에 시간대 허용 주석만 더함 (#160)
-
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
@@ -186,7 +184,6 @@ class AdminVbankRefundController extends AdminBaseController
             $payment->update([
                 'payment_meta' => array_merge($meta, [
                     'vbank_refund_status' => 'processing',
-                    // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                     'vbank_refund_started_at' => now()->toIso8601String(),
                 ]),
             ]);
@@ -270,7 +267,6 @@ class AdminVbankRefundController extends AdminBaseController
         $payment->update([
             'payment_meta' => array_merge($payment->payment_meta ?? [], [
                 'vbank_refund_status' => 'completed',
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'vbank_refunded_at' => now()->toIso8601String(),
                 'vbank_refund_result_code' => $result['ResultCode'] ?? null,
                 'vbank_refund_tid' => $result['TID'] ?? $payment->transaction_id,
@@ -296,7 +292,6 @@ class AdminVbankRefundController extends AdminBaseController
         $payment->update([
             'payment_meta' => array_merge($payment->payment_meta ?? [], [
                 'vbank_refund_status' => $pgCancelled ? 'pg_cancelled_domain_failed' : 'failed',
-                // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'vbank_refund_failed_at' => now()->toIso8601String(),
                 'vbank_refund_error' => $e->getMessage(),
             ]),

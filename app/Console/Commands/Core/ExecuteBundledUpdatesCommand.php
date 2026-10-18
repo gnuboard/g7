@@ -2,20 +2,15 @@
 
 namespace App\Console\Commands\Core;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
-use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
-use App\Support\ExtensionDependencyOrder;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -51,9 +46,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ExecuteBundledUpdatesCommand extends Command
 {
-    use LocalizesDescription;
     use RendersLayoutSyncResult;
-    use ReportsLifecycleWarnings;
 
     public const RESULT_PREFIX = '[BUNDLED-RESULT] ';
 
@@ -62,15 +55,7 @@ class ExecuteBundledUpdatesCommand extends Command
         {--force : 강제 업데이트 플래그 (확장 매니저 update 호출에 전달)}
         {--rebuild-search-index : 일괄 업데이트 후 검색 인덱스 재생성 (매니페스트의 선택보다 우선)}';
 
-    /**
-     * 부분 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모는 종료코드와 결과 페이로드로 성공·실패를 판정한다.
-     *
-     * @return bool 늘 false
-     */
-    protected function lifecycleWarningsChangeExitCode(): bool
-    {
-        return false;
-    }
+    protected $description = '번들 확장 일괄 업데이트를 실행합니다 (CoreUpdateCommand 내부용 — fresh PHP 프로세스에서 호출)';
 
     /**
      * 매니페스트를 읽어 번들 확장·언어팩을 일괄 업데이트하고 결과 페이로드를 출력한다.
@@ -96,7 +81,6 @@ class ExecuteBundledUpdatesCommand extends Command
             Log::warning('bundled update spawn 자식: updateComposerAutoload 호출 실패', [
                 'error' => $e->getMessage(),
             ]);
-            LifecycleWarnings::current()->add('autoload', 'autoload-extensions.php', $e->getMessage());
         }
 
         $manifest = json_decode(File::get($manifestPath), true);
@@ -109,15 +93,17 @@ class ExecuteBundledUpdatesCommand extends Command
         // 부모(core:update)가 운영자 선택을 매니페스트에 실어 보낸다 — 자식이 임의로 정하지 않는다
         $rebuildSearchIndex = (bool) $this->option('rebuild-search-index') || (bool) ($manifest['rebuild_search_index'] ?? false);
 
-        // 모듈·플러그인은 한 목록으로 서로의 의존 순서를 따른다(기본 순서 모듈 → 플러그인, 의존만 앞당김 — 모듈이 플러그인에
-        // 의존하면 플러그인이 먼저). 의존은 새 배포본(_bundled) manifest 의 선언을 읽는다 — 부모(이전 버전 core:update)가
-        // 만든 목록의 순서를 믿지 않는다. 템플릿 → 언어팩 단계는 그 뒤에 그대로 돈다.
-        $modules = $manifest['modules'] ?? [];
-        $plugins = $manifest['plugins'] ?? [];
-        $extensionOrder = ExtensionDependencyOrder::orderModulesAndPlugins($modules, $plugins, [self::class, 'bundledDependencyKeys']);
-        foreach ($extensionOrder['cycles'] as $cycle) {
-            $this->warn(__('extensions.commands.bundled_update.dependency_cycle', ['cycle' => implode(' → ', $cycle)]));
-        }
+        // 종류 순서(모듈 → 플러그인 → 템플릿 → 언어팩)는 아래 반복문 순서가 지킨다. 같은 종류 안에서도 의존하는 쪽이
+        // 뒤에 오도록 번들 manifest 의 같은 종류 의존 선언으로 정렬한다 — 부모(이전 버전 core:update)가 만든 목록의 순서를
+        // 믿지 않는다.
+        $modules = self::orderByDependencies(
+            $manifest['modules'] ?? [],
+            fn (string $id) => self::bundledSameTypeDependencies('modules', $id, 'module.json')
+        );
+        $plugins = self::orderByDependencies(
+            $manifest['plugins'] ?? [],
+            fn (string $id) => self::bundledSameTypeDependencies('plugins', $id, 'plugin.json')
+        );
         $templates = $manifest['templates'] ?? [];
         $langPacks = $manifest['lang_packs'] ?? [];
 
@@ -128,63 +114,59 @@ class ExecuteBundledUpdatesCommand extends Command
 
         $success = 0;
         $failed = 0;
-        // 잠금 저장소 장애로 일괄 업데이트를 멈췄는지 — 처리한 항목 수로 남은(건너뛴) 항목 수를 센다
-        $aborted = false;
-        $attempted = 0;
-        $totalItems = count($extensionOrder['ordered'])
-            + count(array_filter($templates, fn ($entry) => (string) ($entry['identifier'] ?? '') !== ''))
-            + count(array_filter($langPacks, fn ($entry) => (string) ($entry['identifier'] ?? '') !== ''));
 
         $this->info(__('extensions.commands.bundled_update.child_running'));
 
-        foreach ($extensionOrder['ordered'] as $node) {
-            $entry = $node['entry'];
-            $id = (string) ($entry['identifier'] ?? '');
-            $strategy = (string) ($entry['strategy'] ?? 'overwrite');
-            $type = $node['type'];
-            $attempted++;
-            $this->line($type === 'module'
-                ? __('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy])
-                : __('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
-            try {
-                $result = $type === 'module'
-                    ? $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled')
-                    : $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
-                $this->lineLayoutSyncSummary($result);
-                $this->renderDependencyWarnings($result, '  ');
-                $success++;
-            } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
-                $failed++;
-                $aborted = true;
-                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => $type, 'id' => $id]);
-                break;
-            } catch (\Throwable $e) {
-                $failed++;
-                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
-                Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => $type, 'id' => $id, 'error' => $e->getMessage()]);
-            }
-        }
-
-        foreach ($aborted ? [] : $templates as $entry) {
+        foreach ($modules as $entry) {
             $id = (string) ($entry['identifier'] ?? '');
             $strategy = (string) ($entry['strategy'] ?? 'overwrite');
             if ($id === '') {
                 continue;
             }
-            $attempted++;
+            $this->line(__('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy]));
+            try {
+                $result = $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
+                $success++;
+            } catch (\Throwable $e) {
+                $failed++;
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
+                Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'module', 'id' => $id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        foreach ($plugins as $entry) {
+            $id = (string) ($entry['identifier'] ?? '');
+            $strategy = (string) ($entry['strategy'] ?? 'overwrite');
+            if ($id === '') {
+                continue;
+            }
+            $this->line(__('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
+            try {
+                $result = $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
+                $success++;
+            } catch (\Throwable $e) {
+                $failed++;
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
+                Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'plugin', 'id' => $id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        foreach ($templates as $entry) {
+            $id = (string) ($entry['identifier'] ?? '');
+            $strategy = (string) ($entry['strategy'] ?? 'overwrite');
+            if ($id === '') {
+                continue;
+            }
             $this->line(__('extensions.commands.bundled_update.running_items.template', ['identifier' => $id, 'strategy' => $strategy]));
             try {
                 $result = $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
-            } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
-                $failed++;
-                $aborted = true;
-                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'template', 'id' => $id]);
-                break;
             } catch (\Throwable $e) {
                 $failed++;
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
@@ -196,30 +178,22 @@ class ExecuteBundledUpdatesCommand extends Command
         // 모듈 서비스 프로바이더(바인딩)가 옛 판으로 등록돼 있어, 팩 활성화가 부르는 모듈 시더 재실행이 새 판 클래스의 새
         // 바인딩을 못 찾아 실패한다(새 클레임 사유의 일본어 이름이 빈 채 남은 W3 실측). 새 프로세스를 띄울 수 없으면 종전처럼
         // 여기서 돈다.
-        // 언어팩 단계 자식이 중단을 알렸으면 그 자식이 이미 안내했다 — 여기서 다시 알리지 않는다
-        $abortReportedByChild = false;
-        if (! $aborted && self::langPackPhaseNeedsFreshProcess($modules, $plugins, $templates, $langPacks)) {
+        if (self::langPackPhaseNeedsFreshProcess($modules, $plugins, $templates, $langPacks)) {
             $isolated = $this->runLangPackPhaseInFreshProcess($langPacks);
             if ($isolated !== null) {
                 $success += $isolated['success'];
                 $failed += $isolated['failed'];
-                $attempted += count($langPacks) - $isolated['skipped'];
-                if ($isolated['aborted']) {
-                    $aborted = true;
-                    $abortReportedByChild = true;
-                }
                 $langPacks = [];
             } else {
                 $this->warn(__('extensions.commands.bundled_update.lang_pack_phase_in_process'));
             }
         }
 
-        foreach ($aborted ? [] : $langPacks as $entry) {
+        foreach ($langPacks as $entry) {
             $id = (string) ($entry['identifier'] ?? '');
             if ($id === '') {
                 continue;
             }
-            $attempted++;
             $this->line(__('extensions.commands.bundled_update.running_items.lang_pack', ['identifier' => $id]));
             try {
                 $pack = $langPackService->findByIdentifier($id);
@@ -228,12 +202,6 @@ class ExecuteBundledUpdatesCommand extends Command
                 }
                 $langPackService->performUpdate($pack, true);
                 $success++;
-            } catch (ExtensionOperationLockUnavailableException $e) {
-                // 잠금 저장소 장애 — 남은 항목도 같은 오류로 하나씩 실패하므로 여기서 멈추고 끝에서 한 번만 알린다(#161 D8)
-                $failed++;
-                $aborted = true;
-                Log::error('번들 일괄 업데이트 중단 — 작업 잠금 저장소 오류', ['type' => 'lang_pack', 'id' => $id]);
-                break;
             } catch (\Throwable $e) {
                 $failed++;
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
@@ -241,17 +209,11 @@ class ExecuteBundledUpdatesCommand extends Command
             }
         }
 
-        $skipped = $aborted ? max(0, $totalItems - $attempted) : 0;
-
         $this->newLine();
         $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
-        if ($aborted && ! $abortReportedByChild) {
-            $this->error(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
-        }
 
         // 검색 인덱스 재생성 — 운영자가 부모 단계에서 선택했을 때만 수행 (인덱스 잠금·재색인 비용)
-        // 잠금 저장소 장애로 멈췄으면 재생성하지 않는다 — 확장 갱신이 끝나지 않았다
-        if ($rebuildSearchIndex && ! $aborted) {
+        if ($rebuildSearchIndex) {
             $report = app(SearchIndexMaintenanceManager::class)->repairStale();
             $this->newLine();
             $this->info(__('extensions.commands.bundled_update.search_index_result', ['summary' => $report->summary()]));
@@ -271,12 +233,9 @@ class ExecuteBundledUpdatesCommand extends Command
         }
 
         // 부모 프로세스가 결과를 복원할 수 있도록 표식 라인으로 페이로드 출력
-        // skipped·aborted 는 7.1.5 부터 — 옛 부모는 모르는 키를 무시한다
         $this->line(self::RESULT_PREFIX.json_encode([
             'success' => $success,
             'failed' => $failed,
-            'skipped' => $skipped,
-            'aborted' => $aborted,
         ], JSON_UNESCAPED_UNICODE));
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
@@ -304,7 +263,7 @@ class ExecuteBundledUpdatesCommand extends Command
      * 자식 출력은 그대로 이어 보이고 결과 표식 줄만 받아 집계한다. 환경 변수(`G7_UPDATE_IN_PROGRESS` 등)는 그대로 넘긴다.
      *
      * @param  array<int, mixed>  $langPacks  언어팩 항목
-     * @return array{success: int, failed: int, skipped: int, aborted: bool}|null 실행했으면 집계, 프로세스를 띄울 수 없으면 null
+     * @return array{success: int, failed: int}|null 실행했으면 집계, 프로세스를 띄울 수 없으면 null
      */
     private function runLangPackPhaseInFreshProcess(array $langPacks): ?array
     {
@@ -358,15 +317,10 @@ class ExecuteBundledUpdatesCommand extends Command
             if ($payload === null) {
                 Log::warning('번들 일괄 업데이트: 언어팩 단계 새 프로세스가 결과를 내지 않음 — 실패로 집계');
 
-                return ['success' => 0, 'failed' => count($langPacks), 'skipped' => 0, 'aborted' => false];
+                return ['success' => 0, 'failed' => count($langPacks)];
             }
 
-            return [
-                'success' => (int) ($payload['success'] ?? 0),
-                'failed' => (int) ($payload['failed'] ?? 0),
-                'skipped' => (int) ($payload['skipped'] ?? 0),
-                'aborted' => (bool) ($payload['aborted'] ?? false),
-            ];
+            return ['success' => (int) ($payload['success'] ?? 0), 'failed' => (int) ($payload['failed'] ?? 0)];
         } finally {
             if (File::exists($manifestPath)) {
                 File::delete($manifestPath);
@@ -375,49 +329,65 @@ class ExecuteBundledUpdatesCommand extends Command
     }
 
     /**
-     * 항목을 의존 대상이 먼저 오도록 정렬합니다(안정 정렬 — 의존이 없으면 원래 순서). {@see ExtensionDependencyOrder} 에 위임.
+     * 같은 종류 항목을 의존 대상이 먼저 오도록 정렬합니다(안정 정렬 — 의존이 없으면 원래 순서).
      *
-     * 목록에 없는 의존은 무시하고, 순환 구간은 원래 순서로 둔다. 어떤 경우에도 항목을 잃거나 내용을 바꾸지 않는다.
+     * 목록에 없는 의존은 무시하고, 순환 의존은 원래 순서로 둔다. 어떤 경우에도 항목을 잃거나 내용을 바꾸지 않는다.
      *
      * @param  array<int, array<string, mixed>>  $entries  매니페스트 항목 (`identifier`·`strategy`)
-     * @param  callable(string): array<int, string>  $dependenciesOf  식별자 → 의존 식별자 목록
+     * @param  callable(string): array<int, string>  $dependenciesOf  식별자 → 같은 종류 의존 식별자 목록
      * @return array<int, array<string, mixed>> 정렬된 항목
      */
     public static function orderByDependencies(array $entries, callable $dependenciesOf): array
     {
-        $nodes = [];
-        foreach (array_values($entries) as $index => $entry) {
+        $byId = [];
+        foreach ($entries as $index => $entry) {
             $id = (string) ($entry['identifier'] ?? '');
-            $nodes[] = ['key' => $id !== '' ? $id : "#{$index}", 'entry' => $entry];
+            $byId[$id !== '' ? $id : "#{$index}"] = $entry;
         }
 
-        return array_column(ExtensionDependencyOrder::order($nodes, $dependenciesOf)['ordered'], 'entry');
+        $sorted = [];
+        $state = []; // 1 = 방문 중, 2 = 완료
+
+        $visit = function (string $id) use (&$visit, &$sorted, &$state, $byId, $dependenciesOf): void {
+            if (($state[$id] ?? 0) !== 0) {
+                return; // 완료됐거나 순환 — 순환은 끊고 원래 순서에 맡긴다
+            }
+            $state[$id] = 1;
+            foreach ($dependenciesOf($id) as $dependency) {
+                if (isset($byId[$dependency])) {
+                    $visit($dependency);
+                }
+            }
+            $state[$id] = 2;
+            $sorted[] = $byId[$id];
+        };
+
+        foreach (array_keys($byId) as $id) {
+            $visit((string) $id);
+        }
+
+        return $sorted;
     }
 
     /**
-     * 번들(`{type}/_bundled/{id}`) manifest 가 선언한 모듈·플러그인 의존을 노드 키(`module:…`·`plugin:…`)로 읽습니다.
+     * 번들 manifest 가 선언한 같은 종류 의존 식별자를 읽습니다(모듈 → 모듈, 플러그인 → 플러그인).
      *
-     * 일괄 업데이트는 새 배포본의 선언을 따라야 한다(활성본은 아직 옛 판). 같은 프로세스 경로(BundledExtensionUpdatePrompt)도 쓴다.
-     *
-     * @param  string  $key  노드 키 (`module:…`·`plugin:…`)
-     * @return array<int, string> 의존 키 목록 (읽지 못하면 빈 배열)
+     * @param  string  $type  `modules`·`plugins`
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $manifestFile  manifest 파일 이름
+     * @return array<int, string> 의존 식별자 목록 (읽지 못하면 빈 배열)
      */
-    public static function bundledDependencyKeys(string $key): array
+    private static function bundledSameTypeDependencies(string $type, string $identifier, string $manifestFile): array
     {
-        [$kind, $identifier] = array_pad(explode(':', $key, 2), 2, '');
-        $path = match ($kind) {
-            'module' => base_path("modules/_bundled/{$identifier}/module.json"),
-            'plugin' => base_path("plugins/_bundled/{$identifier}/plugin.json"),
-            default => null,
-        };
+        $path = base_path("{$type}/_bundled/{$identifier}/{$manifestFile}");
 
-        if ($path === null || $identifier === '' || ! File::isFile($path)) {
+        if (! File::isFile($path)) {
             return [];
         }
 
         $manifest = json_decode((string) File::get($path), true);
+        $dependencies = is_array($manifest) ? ($manifest['dependencies'][$type] ?? []) : [];
 
-        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 읽으면 식별자 자리에 0·1 이 들어간다(#822 D6)
-        return is_array($manifest) ? ExtensionDependencyOrder::dependencyKeys($manifest['dependencies'] ?? []) : [];
+        return is_array($dependencies) ? array_map('strval', array_keys($dependencies)) : [];
     }
 }

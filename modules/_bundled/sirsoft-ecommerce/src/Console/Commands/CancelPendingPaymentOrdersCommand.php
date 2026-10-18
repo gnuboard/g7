@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Console\Commands;
 
-use App\Helpers\TimezoneHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
@@ -45,12 +44,6 @@ class CancelPendingPaymentOrdersCommand extends Command
      */
     protected $description = '입금 기한 만료된 결제대기 주문을 자동 취소합니다.';
 
-    /**
-     * 커맨드를 생성합니다.
-     *
-     * @param  OrderRepositoryInterface  $orderRepository  입금 기한이 지난 결제대기 주문을 조회하는 저장소
-     * @param  OrderProcessingService  $orderProcessingService  주문 취소를 수행하는 서비스
-     */
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
         protected OrderProcessingService $orderProcessingService
@@ -67,7 +60,7 @@ class CancelPendingPaymentOrdersCommand extends Command
     {
         // 자동 취소 설정 확인
         if (! module_setting('sirsoft-ecommerce', 'order_settings.auto_cancel_expired', true)) {
-            $this->info(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.disabled'));
+            $this->info('자동 취소 기능이 비활성화되어 있습니다.');
 
             return Command::SUCCESS;
         }
@@ -76,8 +69,8 @@ class CancelPendingPaymentOrdersCommand extends Command
         $limit = (int) $this->option('limit');
 
         $this->info($isDryRun
-            ? '[DRY RUN] '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.dry_run_start')
-            : __('sirsoft-ecommerce::messages.console.cancel_pending_orders.start')
+            ? '[DRY RUN] 입금 기한 만료 주문 확인 중...'
+            : '입금 기한 만료 주문 취소 처리 시작...'
         );
 
         try {
@@ -96,12 +89,12 @@ class CancelPendingPaymentOrdersCommand extends Command
             );
 
             if ($expiredOrders->isEmpty()) {
-                $this->info(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.no_targets'));
+                $this->info('처리할 만료 주문이 없습니다.');
 
                 return Command::SUCCESS;
             }
 
-            $this->info(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.target_count', ['count' => $expiredOrders->count()]));
+            $this->info("대상 주문 수: {$expiredOrders->count()}건");
 
             $successCount = 0;
             $failCount = 0;
@@ -120,12 +113,7 @@ class CancelPendingPaymentOrdersCommand extends Command
                     default => $order->ordered_at,
                 };
 
-                $this->line('- '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.order_line', [
-                    'order_number' => $order->order_number,
-                    'payment_method' => $paymentMethodValue,
-                    // 운영자 콘솔 출력 — 사이트 시간대 시각(화면의 입금 기한과 같은 기준)
-                    'due_at' => (string) TimezoneHelper::toSiteDateTimeString($dueAt),
-                ]));
+                $this->line("- 주문번호: {$order->order_number} ({$paymentMethodValue}, 기한: {$dueAt})");
 
                 if ($isDryRun) {
                     $successCount++;
@@ -155,7 +143,7 @@ class CancelPendingPaymentOrdersCommand extends Command
                 } catch (\Exception $e) {
                     $failCount++;
 
-                    $this->error('  '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.cancel_failed', ['error' => $e->getMessage()]));
+                    $this->error("  취소 실패: {$e->getMessage()}");
 
                     Log::error('CancelPendingPaymentOrdersCommand: 주문 자동 취소 실패', [
                         'order_id' => $order->id,
@@ -167,14 +155,14 @@ class CancelPendingPaymentOrdersCommand extends Command
 
             $this->newLine();
             $this->info($isDryRun
-                ? '[DRY RUN] '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.dry_run_summary', ['count' => $successCount])
-                : __('sirsoft-ecommerce::messages.console.cancel_pending_orders.summary', ['success' => $successCount, 'failed' => $failCount])
+                ? "[DRY RUN] 취소 대상: {$successCount}건"
+                : "처리 완료 - 성공: {$successCount}건, 실패: {$failCount}건"
             );
 
             return $failCount > 0 ? Command::FAILURE : Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.error', ['error' => $e->getMessage()]));
+            $this->error("오류 발생: {$e->getMessage()}");
 
             Log::error('CancelPendingPaymentOrdersCommand: 커맨드 실행 실패', [
                 'error' => $e->getMessage(),

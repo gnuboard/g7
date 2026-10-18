@@ -79,7 +79,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['inquiry.board_slug']}}",
                             "props": {
-                                "className": "block text-xs text-red-600 mt-1 dark:text-red-400"
+                                "className": "block text-xs text-red-500 mt-1 dark:text-red-400"
                             },
                             "text": "{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}"
                         }
@@ -153,16 +153,19 @@
                                         {
                                             "id": "inquiry_board_go_edit",
                                             "type": "basic",
-                                            "name": "A",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate"
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit"
+                                                    }
                                                 }
                                             ],
                                             "props": {
-                                                "href": "/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit",
-                                                "className": "button self-start inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                "type": "button",
+                                                "className": "self-start inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -222,16 +225,19 @@
                                                 {
                                                     "id": "inquiry_board_go_posts",
                                                     "type": "basic",
-                                                    "name": "A",
+                                                    "name": "Button",
                                                     "actions": [
                                                         {
                                                             "type": "click",
-                                                            "handler": "navigate"
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "/admin/board/{{settings?.data?.inquiry?.board_slug}}"
+                                                            }
                                                         }
                                                     ],
                                                     "props": {
-                                                        "href": "/admin/board/{{settings?.data?.inquiry?.board_slug}}",
-                                                        "className": "button inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                        "type": "button",
+                                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                                     },
                                                     "children": [
                                                         {

@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Support;
 
 use App\Support\OutboundUrlValidator;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use App\Support\TrustedScriptHosts;
 
 /**
@@ -109,7 +109,8 @@ final class PrivacyPolicyUrl
     /**
      * 메일처럼 사이트 밖에서 열리는 자리에 쓸 절대 주소로 바꿉니다.
      *
-     * 사이트 내부 경로는 사이트 주소(`SiteUrl::absolute()`)를 앞에 붙이고, https 절대 주소는 그대로 둡니다.
+     * 사이트 내부 경로는 사용자 화면 베이스(`ScreenUrl::toAbsolute()` — 「사용자 화면 URL」, 비면 사이트 주소)를 앞에 붙이고,
+     * https 절대 주소는 그대로 둡니다.
      * 요청 Host 를 쓰지 않는다 — 결과가 전 회원 통지 스냅샷에 동결된다.
      *
      * @param  mixed  $value  설정 저장값
@@ -123,7 +124,8 @@ final class PrivacyPolicyUrl
             return '';
         }
 
-        return str_starts_with($url, '/') ? SiteUrl::absolute($url) : $url;
+        // 메일을 받는 사람이 여는 화면이라 「사용자 화면 URL」(비면 사이트 주소)을 베이스로 쓴다(#792)
+        return str_starts_with($url, '/') ? ScreenUrl::toAbsolute($url) : $url;
     }
 
     /**
@@ -138,7 +140,8 @@ final class PrivacyPolicyUrl
             return '';
         }
 
-        return self::LEGACY_PAGE_PREFIX.rawurlencode(trim($slug));
+        // 페이지 화면 주소는 화면 주소 헬퍼(page.show)를 거친다(#792 F1-18) — 기본 경로는 그 시절과 같은 /page/{slug}
+        return ScreenUrl::path('page.show', self::LEGACY_PAGE_PREFIX.'{slug}', ['slug' => trim($slug)]);
     }
 
     /**

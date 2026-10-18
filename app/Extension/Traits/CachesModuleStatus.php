@@ -5,8 +5,6 @@ namespace App\Extension\Traits;
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\Cache\CoreCacheDriver;
-use App\Extension\Support\ExtensionStatusMemo;
-use App\Extension\Support\IntegrationReverseIndex;
 use App\Models\Module;
 use App\Support\InstallerContext;
 use Illuminate\Support\Facades\DB;
@@ -53,27 +51,16 @@ trait CachesModuleStatus
      */
     private static function rememberNonEmpty(string $key, \Closure $resolver): array
     {
-        // 같은 요청 안에서는 저장소를 한 번만 읽는다 — 목록은 요청 안에서 바뀌지 않고, 바뀌면 무효화가 메모도 비운다(#860)
-        $memo = ExtensionStatusMemo::current();
-        $memoized = $memo?->get($key);
-
-        if ($memoized !== null) {
-            return $memoized;
-        }
-
         $cache = self::resolveStatusCache();
         $cached = $cache->get($key);
 
         if (is_array($cached) && $cached !== []) {
-            $memo?->put($key, $cached);
-
             return $cached;
         }
 
         $fresh = $resolver();
 
         if ($fresh !== []) {
-            $memo?->put($key, $fresh);
             $cache->put(
                 $key,
                 $fresh,
@@ -106,40 +93,14 @@ trait CachesModuleStatus
     }
 
     /**
-     * 상태와 무관하게 행이 있는 식별자 목록을 조회합니다 — 목록 화면의 「미설치」 판정용.
-     *
-     * 「설치됨」 캐시 목록은 active·inactive 만 센다. 진행 중 상태(installing·updating·uninstalling)에 멈춘 확장까지
-     * 미설치로 보면 관리자 목록에 같은 확장이 「업데이트 중」 카드와 「미설치 · 설치」 카드로 겹쳐 나온다(7.1.1 출시 전).
-     * 목록을 그릴 때만 부르므로 캐시하지 않는다.
-     *
-     * @return array<int, string> 식별자 목록
-     */
-    public static function getRecordedModuleIdentifiers(): array
-    {
-        if (! self::isExtensionTableReady('modules')) {
-            return [];
-        }
-
-        return Module::pluck('identifier')->toArray();
-    }
-
-    /**
      * 모듈 상태 캐시를 무효화합니다.
      * 모듈 상태 변경 시 (install, activate, deactivate, uninstall) 호출해야 합니다.
-     *
-     * @return void
      */
     public static function invalidateModuleStatusCache(): void
     {
         $cache = self::resolveStatusCache();
         $cache->forget('ext.modules.active_identifiers');
         $cache->forget('ext.modules.installed_identifiers');
-
-        // 같은 요청의 목록 메모도 버린다 — 상태를 바꾼 요청의 뒤쪽(활성화 직후 provider boot 등)이 새 목록을 보게(#860)
-        ExtensionStatusMemo::forgetCurrent('modules');
-
-        // 같은 요청에서 만든 선택 연동 역맵도 버린다 — 상태가 바뀐 뒤의 「연동 중인 확장」 응답이 옛 목록이 되지 않게(7.1.4)
-        IntegrationReverseIndex::flushCurrent();
     }
 
     /**
@@ -152,9 +113,6 @@ trait CachesModuleStatus
      * 단, 마이그레이션 계열 명령 실행 중에는 `INSTALLER_COMPLETED=true` 라도 테이블이
      * 아직 없을 수 있으므로(빈 DB 새 서버에 .env 복사 후 migrate 전) fast-path 를
      * 신뢰하지 않고 실제 `Schema::hasTable()` 폴백으로 진입합니다.
-     *
-     * @param  string  $table  확인할 테이블 이름
-     * @return bool 테이블을 조회할 수 있으면 true
      */
     private static function isExtensionTableReady(string $table): bool
     {
@@ -173,8 +131,6 @@ trait CachesModuleStatus
 
     /**
      * CacheInterface 인스턴스를 lazy 조회합니다 (register 시점 안전).
-     *
-     * @return CacheInterface 컨테이너의 캐시, 조회 실패 시 기본 드라이버
      */
     private static function resolveStatusCache(): CacheInterface
     {

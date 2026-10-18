@@ -34,7 +34,6 @@ use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceScopeLedgerListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
-use Modules\Sirsoft\Ecommerce\Listeners\GrantSignupMileageListener;
 use Modules\Sirsoft\Ecommerce\Listeners\InjectAppConfigDeviceListener;
 use Modules\Sirsoft\Ecommerce\Listeners\IssueCashReceiptOnDepositListener;
 use Modules\Sirsoft\Ecommerce\Listeners\MergeCartOnLoginListener;
@@ -53,7 +52,6 @@ use Modules\Sirsoft\Ecommerce\Listeners\SeoProductDetailRegenerateListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
-use Modules\Sirsoft\Ecommerce\Listeners\StripBusinessInfoWhenHiddenListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncOptionGroupsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SyncProductFromOptionListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SystemActorContextListener;
@@ -1799,13 +1797,6 @@ class Module extends AbstractModule
                 'label' => '주문 생성 (임시 주문 → 주문 전환)',
                 'prepare' => [OrderCreationBenchmark::class, 'prepare'],
                 'callback' => [OrderCreationBenchmark::class, 'create'],
-            ],
-            // 요청 1건을 새 프로세스에서 처음부터 처리하는 부팅 비용 — 코어 boot 축(7.1.5)이 없는 코어에서는
-            // 알 수 없는 축으로 경고만 남고 이 선언만 빠진다
-            'boot_products' => [
-                'type' => 'boot',
-                'label' => '공개 상품 목록 API 부팅',
-                'uri' => '/api/modules/sirsoft-ecommerce/products?per_page=12',
             ],
         ];
     }
@@ -3715,8 +3706,6 @@ class Module extends AbstractModule
     public function getHookListeners(): array
     {
         return [
-            GrantSignupMileageListener::class,
-            StripBusinessInfoWhenHiddenListener::class,
             SyncProductFromOptionListener::class,
             SyncOptionGroupsListener::class,
             ProductActivityLogListener::class,

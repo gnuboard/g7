@@ -70,8 +70,7 @@ class PermissionsMenusSeedTest extends TestCase
 
         $this->assertNull($parent->parent_id);
         $this->assertSame(2, (int) $parent->order, '대시보드 다음 자리');
-        // 하위 메뉴가 있는 다른 부모(게시판 관리·이커머스)처럼 경로를 비워 펼침 전용으로 둔다 — 개요 화면은 첫 하위 메뉴가 연다
-        $this->assertNull($parent->url);
+        $this->assertSame('/admin/analytics', $parent->url);
 
         $children = Menu::whereIn('slug', self::CHILD_SLUGS)->get();
 

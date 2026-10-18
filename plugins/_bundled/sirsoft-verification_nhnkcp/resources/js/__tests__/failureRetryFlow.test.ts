@@ -208,32 +208,6 @@ describe('인증 실패 후 흐름', () => {
         expect(globalState.identityChallenge.challenge_id).toBe('challenge-reissued');
     });
 
-    // @scenario environment=desktop,outcome=failed
-    // @effects reissue_sends_policy_key
-    it('재발급 요청은 정책 키를 승계해 정책이 지정한 수단으로 다시 발급받는다', async () => {
-        globalState.identityChallenge.policy_key = 'core.auth.signup_before_submit';
-        await startAuthHandler();
-        emitBridgeResult({ identity_error: 'REMOTE_CALL_FAILED', challenge_id: currentChallengeId });
-
-        answerReissue({
-            success: true,
-            data: {
-                id: 'challenge-reissued-policy',
-                expires_at: '2026-07-28T15:00:00+09:00',
-                public_payload: { call_url: NEXT_CALL_URL, reg_cert_key: 'CERTKEY000000003', siteOrigin: SITE_ORIGIN },
-            },
-        });
-
-        await startAuthHandler();
-
-        expect(reissueCalls()).toHaveLength(1);
-        expect(reissueCalls()[0][1]).toMatchObject({
-            purpose: 'signup',
-            provider_id: 'nhnkcp',
-            policy_key: 'core.auth.signup_before_submit',
-        });
-    });
-
     /**
      * 실패 결과에 challenge_id 가 실려 오지 않아도 진행 중이던 거래는 끝난 것이 확실하다.
      * 이 경우를 놓치면 죽은 거래키로 인증창을 다시 열어 "이미 종료된 거래" 로 실패하고,
@@ -312,23 +286,17 @@ describe('인증 실패 후 흐름', () => {
 });
 
 describe('실패 사유 안내 문구', () => {
-    // @scenario environment=desktop,outcome=failed
-    // @effects failure_notice_explains_reason_by_code
     it('우리말 안내가 준비된 사유는 다국어 키로 안내한다', () => {
         expect(resolveFailureMessage('NOT_ADULT')).toBe('$t:sirsoft-verification_nhnkcp.errors.not_adult');
         expect(resolveFailureMessage('9999')).toBe('$t:sirsoft-verification_nhnkcp.errors.cancelled');
     });
 
-    // @scenario environment=desktop,outcome=failed
-    // @effects failure_notice_explains_reason_by_code
     it('안내가 없는 KCP 코드는 코드와 원문을 그대로 보여준다', () => {
         expect(resolveFailureMessage('CS16', '거래등록이 올바르지 않습니다.')).toBe(
             '[CS16] 거래등록이 올바르지 않습니다.',
         );
     });
 
-    // @scenario environment=desktop,outcome=failed
-    // @effects failure_notice_explains_reason_by_code
     it('원문도 없으면 일반 실패 안내로 떨어진다', () => {
         expect(resolveFailureMessage('CS99')).toBe('$t:sirsoft-verification_nhnkcp.errors.verify_failed');
         expect(resolveFailureMessage('CS99', '   ')).toBe('$t:sirsoft-verification_nhnkcp.errors.verify_failed');

@@ -2,17 +2,12 @@
 
 namespace Plugins\Sirsoft\Totp\Http\Controllers;
 
-use App\Exceptions\Auth\PasswordReconfirmThrottledException;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AuthBaseController;
-use App\Services\PasswordReconfirmationService;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\Totp\Exceptions\AlreadyEnrolledException;
-use Plugins\Sirsoft\Totp\Exceptions\EnrollmentConflictException;
-use Plugins\Sirsoft\Totp\Exceptions\OwnershipThrottledException;
 use Plugins\Sirsoft\Totp\Http\Requests\TotpCodeRequest;
-use Plugins\Sirsoft\Totp\Http\Requests\TotpStartEnrollmentRequest;
 use Plugins\Sirsoft\Totp\Services\TotpEnrollmentService;
 
 /**
@@ -37,11 +32,9 @@ class TotpEnrollmentController extends AuthBaseController
      * TotpEnrollmentController 생성자.
      *
      * @param  TotpEnrollmentService  $enrollmentService  등록 서비스
-     * @param  PasswordReconfirmationService  $passwordReconfirmation  코어 현재 비밀번호 재확인(회원 단위 시도 제한) 서비스
      */
     public function __construct(
         private readonly TotpEnrollmentService $enrollmentService,
-        private readonly PasswordReconfirmationService $passwordReconfirmation,
     ) {
         parent::__construct();
     }
@@ -72,30 +65,14 @@ class TotpEnrollmentController extends AuthBaseController
     /**
      * 새 시크릿을 발급합니다 (등록 시작).
      *
-     * 현재 비밀번호를 다시 확인한다(KVE-2026-3194) — 틀리면 422, 회원 단위 시도 기준을 넘으면 429.
-     * 시도 제한은 마이페이지 비밀번호 확인과 같은 키를 공유한다(코어 `PasswordReconfirmationService`).
-     *
-     * @param  TotpStartEnrollmentRequest  $request  현재 비밀번호를 담은 요청
      * @return JsonResponse 평문 시크릿과 otpauth URI (1회 노출)
      */
-    public function store(TotpStartEnrollmentRequest $request): JsonResponse
+    public function store(): JsonResponse
     {
         $user = $this->getCurrentUser();
 
         if ($user === null) {
             return $this->unauthorized();
-        }
-
-        try {
-            if (! $this->passwordReconfirmation->attempt($user, (string) $request->validated()['current_password'])) {
-                return ResponseHelper::error('sirsoft-totp::messages.errors.password_incorrect', 422, [
-                    'current_password' => [__('sirsoft-totp::messages.errors.password_incorrect')],
-                ]);
-            }
-        } catch (PasswordReconfirmThrottledException $e) {
-            // 남은 대기 초를 본문에도 싣는다 — 설정 화면이 그동안 [등록 시작] 버튼을 잠근다(헤더는 화면 동작이 읽지 못함)
-            return ResponseHelper::error('auth.password_reconfirm_throttled', 429, ['retry_after' => $e->retryAfterSeconds], ['seconds' => $e->retryAfterSeconds])
-                ->header('Retry-After', (string) $e->retryAfterSeconds);
         }
 
         try {
@@ -122,12 +99,7 @@ class TotpEnrollmentController extends AuthBaseController
             return $this->unauthorized();
         }
 
-        try {
-            $backupCodes = $this->enrollmentService->confirm($user, $request->validated()['code'], $this->requestContext());
-        } catch (EnrollmentConflictException) {
-            // 다른 화면이 먼저 확정했거나 그 사이 시크릿이 새로 발급됐다 — 이 화면의 백업 코드는 저장되지 않았다(1.0.3)
-            return ResponseHelper::error('sirsoft-totp::messages.errors.confirm_conflict', 409);
-        }
+        $backupCodes = $this->enrollmentService->confirm($user, $request->validated()['code']);
 
         if ($backupCodes === null) {
             return ResponseHelper::error('sirsoft-totp::messages.errors.invalid_code', 422);
@@ -152,13 +124,7 @@ class TotpEnrollmentController extends AuthBaseController
             return $this->unauthorized();
         }
 
-        try {
-            $disabled = $this->enrollmentService->disable($user, $request->validated()['code'], $this->requestContext());
-        } catch (OwnershipThrottledException $e) {
-            return $this->throttledResponse($e);
-        }
-
-        if (! $disabled) {
+        if (! $this->enrollmentService->disable($user, $request->validated()['code'])) {
             return ResponseHelper::error('sirsoft-totp::messages.errors.invalid_code', 422);
         }
 
@@ -179,11 +145,7 @@ class TotpEnrollmentController extends AuthBaseController
             return $this->unauthorized();
         }
 
-        try {
-            $backupCodes = $this->enrollmentService->regenerateBackupCodes($user, $request->validated()['code'], $this->requestContext());
-        } catch (OwnershipThrottledException $e) {
-            return $this->throttledResponse($e);
-        }
+        $backupCodes = $this->enrollmentService->regenerateBackupCodes($user, $request->validated()['code']);
 
         if ($backupCodes === null) {
             return ResponseHelper::error('sirsoft-totp::messages.errors.invalid_code', 422);
@@ -192,31 +154,6 @@ class TotpEnrollmentController extends AuthBaseController
         return ResponseHelper::success('sirsoft-totp::messages.enrollment.backup_codes_regenerated', [
             'backup_codes' => $backupCodes,
         ]);
-    }
-
-    /**
-     * 알림·감사용 요청 문맥을 만듭니다.
-     *
-     * @return array{ip_address: string|null, user_agent: string|null} 요청 문맥
-     */
-    private function requestContext(): array
-    {
-        return [
-            'ip_address' => request()->ip(),
-            'user_agent' => substr((string) request()->userAgent(), 0, 512),
-        ];
-    }
-
-    /**
-     * 코드 확인 시도 기준 초과 응답(429 + Retry-After)을 만듭니다.
-     *
-     * @param  OwnershipThrottledException  $e  시도 제한 예외
-     * @return JsonResponse 429 응답
-     */
-    private function throttledResponse(OwnershipThrottledException $e): JsonResponse
-    {
-        return ResponseHelper::error('sirsoft-totp::messages.errors.too_many_attempts', 429, null, ['seconds' => $e->retryAfterSeconds])
-            ->header('Retry-After', (string) $e->retryAfterSeconds);
     }
 
     /**

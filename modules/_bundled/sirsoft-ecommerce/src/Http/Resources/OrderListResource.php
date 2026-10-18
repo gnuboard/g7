@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Extension\HookManager;
 use App\Http\Resources\BaseApiResource;
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\MissingValue;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
@@ -149,10 +148,6 @@ class OrderListResource extends BaseApiResource
                     'shipping_method_label' => $this->resolveSnapshotMethodLabel($shipping),
                     'carrier_name' => $shipping?->carrier?->getLocalizedName(),
                     'tracking_number' => $shipping?->tracking_number,
-                    // 송장 조회 주소 — 주문 상세와 같은 규칙. 송장·택배사가 없으면 null
-                    'tracking_url' => ($shipping?->carrier !== null && ! empty($shipping->tracking_number))
-                        ? $shipping->carrier->buildTrackingUrl((string) $shipping->tracking_number)
-                        : null,
                 ];
             }),
 
@@ -337,7 +332,7 @@ class OrderListResource extends BaseApiResource
             if (is_array($name)) {
                 $locale = app()->getLocale();
 
-                return LocalizedValue::pick($name, $locale);
+                return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null;
             }
 
             return null;

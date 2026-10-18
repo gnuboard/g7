@@ -2,11 +2,9 @@
 
 namespace App\Extension\Storage;
 
-use App\Contracts\Extension\StreamingStorageInterface;
+use App\Contracts\Extension\StorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
-use App\Extension\Storage\Concerns\GuardsPublicDiskWrites;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
-use App\Extension\Storage\Concerns\ProvidesStreamingAccess;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -17,11 +15,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 플러그인별로 격리된 파일 저장소를 제공합니다.
  * 경로 패턴: storage/app/plugins/{identifier}/{category}/{path}
  */
-class PluginStorageDriver implements StreamingStorageInterface
+class PluginStorageDriver implements StorageInterface
 {
-    use GuardsPublicDiskWrites;
     use GuardsStoragePaths;
-    use ProvidesStreamingAccess;
     use ResolvesPublicUrl;
 
     /**
@@ -44,7 +40,6 @@ class PluginStorageDriver implements StreamingStorageInterface
     {
         $this->identifier = $identifier;
         $this->disk = $disk;
-        $this->homeDisk = $disk;
     }
 
     /**
@@ -105,14 +100,9 @@ class PluginStorageDriver implements StreamingStorageInterface
     public function put(string $category, string $path, mixed $content): bool
     {
         $fullPath = $this->resolvePath($category, $path);
-
-        if ($this->refusesPublicDiskWrite($category, $fullPath)) {
-            return false;
-        }
-
         $this->ensurePreservationMarker();
 
-        return Storage::disk($this->disk)->put($fullPath, $content, $this->objectStorageWriteOptions($fullPath, $content));
+        return Storage::disk($this->disk)->put($fullPath, $content);
     }
 
     /**

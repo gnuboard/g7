@@ -234,18 +234,6 @@ return [
     'move_failed' => 'Failed to move template ":template": :error',
 
     'commands' => [
-        // `template:refresh-layout` 명령 출력
-        'refresh_layout' => [
-            'refreshing' => 'Refreshing layouts of template \':template\'...',
-            'success' => 'Template \':template\' layouts refreshed',
-            'failed' => 'Failed to refresh layouts of template \':template\'',
-            'none_active' => 'No active templates.',
-            'refreshing_all' => 'Refreshing layouts of all active templates...',
-            'item_refreshing' => ':identifier refreshing...',
-            'item_done' => ':identifier done',
-            'item_failed' => ':identifier failed',
-            'summary' => 'Total: :success succeeded, :failed failed',
-        ],
         'install' => [
             'success' => 'Template ":template" installed successfully',
             'already_installed' => 'Template ":template" is already installed.',
@@ -264,17 +252,6 @@ return [
             'option_without_language_packs' => 'Do not re-enable the language packs that were disabled together with this extension (they are re-enabled by default)',
             'not_installed' => 'Template ":template" is not installed.',
             'deactivated_previous' => 'Previous :type template ":previous" deactivated',
-            // `template:activate` unmet dependency notice
-            'required_modules' => 'Required modules:',
-            'required_plugins' => 'Required plugins:',
-            'missing_status' => [
-                'not_installed' => 'not installed',
-                'inactive' => 'inactive',
-                'version_mismatch' => 'version too low :installed → :required',
-            ],
-            'force_hint' => 'Use the --force option to activate anyway.',
-            'force_503_hint_user' => 'If you force it, the user site shows the "Service temporarily unavailable (503)" notice until the requirements are met.',
-            'force_503_hint_admin' => 'If you force it, the admin screens show the 503 notice and cannot be used to undo this. To recover: php artisan template:activate :identifier',
         ],
         'deactivate' => [
             'success' => 'Template ":template" deactivated successfully',
@@ -350,33 +327,6 @@ return [
             'backup_restored' => 'Previous version has been restored from backup.',
             'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
         ],
-        // `template:build` command output
-        'build' => [
-            'missing_identifier' => 'Specify a template identifier or use the --all option.',
-            'usage' => 'Usage:',
-            'not_found' => 'Template not found: :identifier',
-            'not_found_detail' => 'Neither the _bundled nor the active directory exists.',
-            'source' => 'Build source: :source (:path)',
-            'source_active' => 'active',
-            'package_json_missing' => 'package.json not found: :path',
-            'package_json_hint' => 'Create the template frontend structure first.',
-            'installing_dependencies' => 'Installing dependencies...',
-            'npm_install_failed' => 'npm install failed',
-            'watch_start' => 'Starting build in watch mode: :identifier',
-            'watch_hint' => 'Press Ctrl+C to stop.',
-            'start' => 'Starting build: :identifier',
-            'start_production' => 'Starting build: :identifier (production)',
-            'pruned' => 'Cleaned up previous output: :files',
-            'done' => 'Build completed: :identifier',
-            'build_results' => 'Build output:',
-            'cache_version_bumped' => 'Cache version updated',
-            'apply_hint' => 'To apply it to the active directory: php artisan template:update :identifier',
-            'no_targets' => 'No templates to build.',
-            'start_all' => 'Starting build of all templates (:source)',
-            'start_all_production' => 'Starting build of all templates (:source) (production)',
-            'targets' => 'Target templates: :list',
-            'summary' => 'Build result: :success succeeded, :failed failed',
-        ],
     ],
 
     // Layout attachments (background images, etc.)
@@ -400,7 +350,8 @@ return [
         'validation' => [
             'file_required' => 'Please select a file to upload.',
             'file_invalid' => 'The file is invalid.',
-            'file_extensions' => 'This file type cannot be uploaded. Allowed types: :extensions',
+            'file_image' => 'Only image files can be uploaded.',
+            'file_mimes' => 'Unsupported image format (jpg, jpeg, png, gif, webp, svg).',
             'file_max' => 'The file size may not exceed :max MB.',
             'layout_name_max' => 'The layout name may not exceed 150 characters.',
         ],

@@ -59,8 +59,7 @@ return [
     'move_failed' => 'Failed to move plugin ":plugin": :error',
 
     // Dependency messages
-    'dependency_not_active' => 'Dependency :type ":dependency" is not installed or inactive.',
-    'dependency_version_unmet' => 'The installed version (:installed) of dependency ":dependency" does not satisfy the required version (:required). Update the dependency first.',
+    'dependency_not_active' => 'Dependency ":dependency" is not installed or inactive.',
 
     // Plugin service error messages
     'installation_failed' => 'Plugin installation failed: :error',
@@ -132,19 +131,6 @@ return [
 
     // Artisan command messages
     'commands' => [
-        // `plugin:refresh-layout` 명령 출력
-        'refresh_layout' => [
-            'refreshing' => 'Refreshing layouts of plugin \':plugin\'...',
-            'success' => 'Plugin \':plugin\' layouts refreshed',
-            'failed' => 'Failed to refresh layouts of plugin \':plugin\'',
-            'none_active' => 'No active plugins.',
-            'refreshing_all' => 'Refreshing layouts of all active plugins...',
-            'item_refreshing' => ':identifier refreshing...',
-            'item_done' => ':identifier done',
-            'item_failed' => ':identifier failed',
-            'summary' => 'Total: :success succeeded, :failed failed',
-            'stats' => 'Created: :created, updated: :updated, deleted: :deleted',
-        ],
         'list' => [
             'headers' => [
                 'identifier' => 'Identifier',
@@ -180,15 +166,6 @@ return [
             'not_installed' => 'Plugin ":plugin" is not installed.',
             'already_active' => 'Plugin ":plugin" is already active.',
             'layouts_registered' => ':count layout registered|:count layouts registered',
-            // `plugin:activate` unmet dependency notice
-            'required_modules' => 'Required modules:',
-            'required_plugins' => 'Required plugins:',
-            'missing_status' => [
-                'not_installed' => 'not installed',
-                'inactive' => 'inactive',
-                'version_mismatch' => 'version too low :installed → :required',
-            ],
-            'force_hint' => 'Use the --force option to activate anyway.',
         ],
         'deactivate' => [
             'success' => 'Plugin ":plugin" deactivated successfully',
@@ -196,11 +173,6 @@ return [
             'not_active' => 'Plugin ":plugin" is not active.',
             'warning' => 'Plugin routes and features have been deactivated.',
             'layouts_deleted' => ':count layout deleted|:count layouts deleted',
-            // `plugin:deactivate` dependent extension notice
-            'dependent_templates' => 'Dependent templates:',
-            'dependent_modules' => 'Dependent modules:',
-            'dependent_plugins' => 'Dependent plugins:',
-            'force_hint' => 'Use the --force option to deactivate anyway.',
         ],
         'uninstall' => [
             'success' => 'Plugin ":plugin" uninstalled successfully',
@@ -218,8 +190,6 @@ return [
             'confirm_question' => 'Do you really want to delete?',
             'aborted' => 'Plugin uninstallation cancelled.',
             'not_installed' => 'Plugin ":plugin" is not installed.',
-            // `plugin:uninstall` --delete-data warning
-            'delete_data_warning' => '--delete-data: migrations will be rolled back and the settings file will be deleted as well.',
         ],
         'cache_clear' => [
             'clearing_all' => 'Clearing all plugin caches...',
@@ -258,67 +228,6 @@ return [
             'layout_strategy' => 'Layout strategy: :strategy',
             'modified_layouts_warning' => ':count operator-modified layout/extension fragment will be overwritten:|:count operator-modified layouts/extension fragments will be overwritten:',
             'modified_layout_item' => '  - :name (modified: :date)',
-        ],
-        // `plugin:build`, `plugin:seed`, `plugin:composer-install`, `plugin:vendor-bundle`, `plugin:vendor-verify` command output
-        'build' => [
-            'missing_identifier' => 'Specify a plugin identifier or use the --all option.',
-            'usage' => 'Usage:',
-            'not_found' => 'Plugin not found: :identifier',
-            'not_found_detail' => 'Neither the _bundled nor the active directory exists.',
-            'source' => 'Build source: :source (:path)',
-            'source_active' => 'active',
-            'package_json_missing' => 'package.json not found: :path',
-            'package_json_hint' => 'Create the plugin frontend structure first.',
-            'no_assets' => 'The plugin has no assets to build: :identifier',
-            'installing_dependencies' => 'Installing dependencies...',
-            'npm_install_failed' => 'npm install failed',
-            'watch_start' => 'Starting build in watch mode: :identifier',
-            'watch_hint' => 'Press Ctrl+C to stop.',
-            'start' => 'Starting build: :identifier',
-            'start_production' => 'Starting build: :identifier (production)',
-            'pruned' => 'Cleaned up previous output: :files',
-            'done' => 'Build completed: :identifier',
-            'components_manifest_written' => 'components.json generated (:count components)',
-            'components_manifest_failed' => 'Failed to generate components.json (edit mode controls will be limited)',
-            'cache_version_bumped' => 'Cache version updated',
-            'apply_hint' => 'To apply it to the active directory: php artisan plugin:update :identifier',
-            'no_targets' => 'No plugins to build.',
-            'start_all' => 'Starting build of all plugins (:source)',
-            'start_all_production' => 'Starting build of all plugins (:source) (production)',
-            'targets' => 'Target plugins: :list',
-            'summary' => 'Build result: :success succeeded, :failed failed',
-        ],
-        'seed' => [
-            'production_requires_force' => 'The --force option is required in production.',
-            'not_active' => 'The plugin is not active: :identifier',
-            'activate_hint' => 'Run php artisan plugin:activate :identifier first.',
-            'no_seeder_directory' => 'The plugin has no seeder directory: :identifier',
-            'seeder_class_not_found' => 'Seeder class not found: :class',
-            'start' => 'Running seeders: :identifier',
-            'class' => 'Class: :class',
-            'done' => 'Seeders completed: :identifier',
-            'no_active' => 'No active plugins.',
-            'no_seedable' => 'No active plugins have seeders.',
-            'start_all' => 'Running seeders for all active plugins',
-            'targets' => 'Target plugins: :list',
-            'summary' => 'Seeder result: :success succeeded, :failed failed',
-        ],
-        'composer_install' => [
-            'missing_identifier' => 'Specify a plugin identifier or use the --all option.',
-            'usage' => 'Usage:',
-            'autoload_refreshed' => 'Autoload cache refreshed',
-            'none_installed' => 'No plugins are installed.',
-            'duplicate_packages' => 'Duplicate packages detected:',
-            'start_all' => 'Installing Composer dependencies for all plugins',
-            'item_done' => 'Done: :identifier',
-            'item_failed' => 'Failed: :identifier',
-        ],
-        'vendor_bundle' => [
-            'missing_identifier' => 'You must specify an identifier or the --all option.',
-            'usage' => 'Usage:',
-        ],
-        'vendor_verify' => [
-            'missing_identifier' => 'You must specify an identifier or the --all option.',
         ],
     ],
 

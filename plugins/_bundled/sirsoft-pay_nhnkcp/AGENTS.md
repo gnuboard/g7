@@ -74,8 +74,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 `PreventsReplayCallback` 트레이트가 콜백 진입 시점에 동일 `transaction_id` 가 이미 `paid`
 상태인지 먼저 확인해 재처리를 조기 차단합니다.
 
-**모바일 결제 승인**: `/mobile/approval-key` API 호출(주문 소유자 확인 — 회원은 본인 로그인, 비회원 주문은
-`X-Guest-Order-Token`. 라우트는 `optional.sanctum`) → KCP SOAP `approve` 로 승인키·`pay_url`
+**모바일 결제 승인**: `/mobile/approval-key` API 호출 → KCP SOAP `approve` 로 승인키·`pay_url`
 획득 → 브라우저가 `pay_url` 로 폼 POST → KCP가 `/payment/callback` 으로 결과 POST(PC와 동일
 콜백 엔드포인트 공유) → 이후는 PC 흐름과 합류.
 
@@ -123,7 +122,6 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] CLI 인자 조립부를 고칠 때 `assertSafeCliValue()` 검증을 모든 인자에 유지 — 인자 하나만 빠져도 그 필드가 injection 통로가 된다
 - [ ] `bin/` 바이너리(OS별 CLI·`pub.key`·WSDL) 교체 시 실행 권한(0755)과 파일 존재를 관리자 설정 화면의 시스템 점검(§API)으로 확인
 - [ ] 승인/취소 흐름을 고칠 때 `before_*`/`after_*` 훅 순서와 우선순위(`PaymentRefundListener` < `CancelActivityLogListener`)를 유지 — 로그가 실제 처리보다 먼저 실행되면 안 된다
@@ -154,7 +152,6 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 스크립트가 주소 정규식·DOM 폴링으로 남의 화면을 찾아 글자를 고치거나 버튼을 붙이기, `window.fetch`·`history.pushState` 덮어쓰기, `localStorage.getItem('auth_token')` 으로 Bearer 붙이기 | 표시는 레이아웃 조각(`resources/extensions`)이 자기 데이터 소스로 그린다. 요청은 `G7Core.api`, 상태는 `G7Core.state.get()`·`subscribe()` 와 공개 상태 계약(`_global.guestOrderToken`)으로만 | 엔진이 내부를 바꾸면 조용히 깨지고, 덮어쓰기는 확장끼리 서로를 감싸 순서에 따라 동작이 바뀐다. 제목·버튼 글자로 찾으면 다른 언어 화면에서 빠진다(#639). 가드: `extension-private-core-internals` |
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지·라벨을 넣기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → 라벨은 `children._patch`(by: id)로 text 만, 배지는 `children._append` | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
-| PC 결제 프레임 페이지(`KcpFrameController`)에 `<style>` 블록·`style="…"` 속성으로 모양 싣기 | 규칙은 `assets/bridge/kcp-frame.css`(빌드 대상 아님), `<head>` 에서 `BridgeScript::stylesheetTag()` 로 싣는다 | 스타일 보안 정책(`style-src 'self'`)에서 인라인 스타일이 막혀 투명 프레임에 여백이 생긴다. `<head>` 의 `<link>` 는 렌더를 막아 배경이 깜빡이지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -162,10 +159,10 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 52개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 35개 | `vitest.config.ts` |
+| PHPUnit | 49개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| Vitest | 27개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 52개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 43개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

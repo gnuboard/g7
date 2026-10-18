@@ -31,7 +31,7 @@
 | per_page | query | integer | 아니오 | min 1, max 999 | 페이지당 항목 수 (게시판은 운영자 등록 설정성 테이블 — 전체 목록 셀렉트 소비처의 전량 조회를 수용) |
 | type | query | string | 아니오 | max 50 | 게시판 타입 슬러그 필터 (basic, gallery 등) |
 | search | query | string | 아니오 | max 100 | 검색어 (게시판명/슬러그 부분 일치) |
-| sort_by | query | string | 아니오 | `id`, `display_order`, `slug`, `type`, `is_active`, `posts_count`, `comments_count`, `created_at`, `updated_at` | 정렬 기준 컬럼 (닫힌 집합 — `name` 은 다국어 JSON 컬럼이라 정렬 대상에서 제외). 생략하면 표시 순서(`display_order` 오름차순, 같은 순서는 만든 순서·id) |
+| sort_by | query | string | 아니오 | `id`, `slug`, `type`, `is_active`, `posts_count`, `comments_count`, `created_at`, `updated_at` | 정렬 기준 컬럼 (닫힌 집합 — `name` 은 다국어 JSON 컬럼이라 정렬 대상에서 제외) |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (대문자 `ASC`/`DESC` 로 보내도 검증 전 소문자로 정규화되어 수용) |
 
 **요청 예시**
@@ -59,7 +59,6 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | posts_count | integer | `0` | 게시글 수 (집계) |
 | type | string | `basic` | 게시판 타입 (basic, gallery, card 등) |
 | is_active | boolean | `true` | 활성 여부 |
-| display_order | integer | `0` | 표시 순서 (작을수록 앞, 0 은 미지정 — 만든 순서로 뒤따름) |
 | categories | array | `[]` | 분류 목록 (배열) |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 게시판의 소유자인지 여부 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
@@ -114,7 +113,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자 화면의 게시판 관리 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.boards.read` 권한이 필요하며, `IndexBoardRequest` 로 검증된 필터/정렬/페이징 파라미터만 서비스에 넘겨 전체 게시판을 페이지네이션합니다. 정렬 컬럼(`sort_by`)과 페이지 크기(`per_page` 1~999)는 닫힌 집합으로 제한되어 허용값 밖 요청은 422 로 거부됩니다. 각 항목은 `BoardCollection::withPermissions()` 로 감싸져 현재 관리자의 생성/수정/삭제 가능 여부(`abilities`)를 함께 반환합니다. 목록 단위 `data.abilities.can_reorder` 는 게시판 조회·수정 권한을 모두 범위 제한(본인만·소유역할) 없이 가졌을 때만 `true` 이며, 화면의 「순서 변경」 단추가 이 값을 본다. 정렬을 지정하지 않으면 관리자가 정한 표시 순서다.
+**설명** 관리자 화면의 게시판 관리 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.boards.read` 권한이 필요하며, `IndexBoardRequest` 로 검증된 필터/정렬/페이징 파라미터만 서비스에 넘겨 전체 게시판을 페이지네이션합니다. 정렬 컬럼(`sort_by`)과 페이지 크기(`per_page` 1~999)는 닫힌 집합으로 제한되어 허용값 밖 요청은 422 로 거부됩니다. 각 항목은 `BoardCollection::withPermissions()` 로 감싸져 현재 관리자의 생성/수정/삭제 가능 여부(`abilities`)를 함께 반환합니다.
 
 
 ### POST /api/modules/sirsoft-board/admin/boards
@@ -452,75 +451,6 @@ HTTP/1.1 200
 
 게시판 환경설정 「게시판 설정」 탭의 「관리자·스텝 일괄 지정」. 한 회원(또는 여러 회원)을 전체 또는 고른 게시판들의 관리자·스텝으로 한 번에 지정하거나 뺀다. 게시판 폼에서 관리자·스텝을 저장할 때와 같은 경로(게시판별 역할 동기화)를 쓰므로 회원의 게시판 역할·권한 캐시가 같은 방식으로 갱신된다. 권한 범위 밖 게시판과, 관리자를 빼면 0명이 되는 게시판은 건너뛰고 `skipped` 에 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다). 바꿀 것이 없던 게시판은 `unchanged_count` 로 따로 세어 화면 결과 줄에 「변화 없음 N개」 로 보인다. 한 트랜잭션으로 처리하며 앞뒤로 `sirsoft-board.board.before_bulk_members`·`sirsoft-board.board.after_bulk_members` 가 발화한다. 제외가 있어도 응답은 200 이다.
 
-
-### PUT /api/modules/sirsoft-board/admin/boards/order
-<!-- @generated:start:api.modules.sirsoft-board.admin.boards.order -->
-- **라우트명**: `api.modules.sirsoft-board.admin.boards.order`
-- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\BoardController@reorder`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.boards.update` (범위 제한 없는 수정 권한 — 서비스가 추가 판정)
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| board_ids | body | array\<integer\> | 예 | min 1, 중복 없음, **현재 전체 게시판 id 집합과 같아야 함**(활성·비활성 전부) | 새 표시 순서대로 나열한 게시판 id |
-
-**요청 예시**
-
-```http
-PUT /api/modules/sirsoft-board/admin/boards/order HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-Content-Type: application/json
-
-{
-    "board_ids": [5, 4, 8, 6, 7]
-}
-```
-
-**응답 필드** (`data` 내부)
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| boards | array | `[{"id":4,"display_order":2},{"id":5,"display_order":1}]` | 저장된 표시 순서(게시판 id 오름차순). 받은 순서대로 1..N 으로 다시 매긴다 |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "게시판 순서를 저장했습니다.",
-    "data": {
-        "boards": [
-            { "id": 4, "display_order": 2 },
-            { "id": 5, "display_order": 1 },
-            { "id": 6, "display_order": 4 },
-            { "id": 7, "display_order": 5 },
-            { "id": 8, "display_order": 3 }
-        ]
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-board.boards.update`)이 없거나, 그 권한의 범위가 「본인만」·「소유역할」로 제한된 경우 (`auth.scope_denied`) |
-| 422 | Unprocessable Entity | 목록이 비었거나 중복·정수 아님, 또는 현재 게시판 집합과 다른 경우 — 그 사이 다른 관리자가 게시판을 만들거나 지웠으면 `errors.board_ids` 에 「게시판 목록이 바뀌었습니다. 순서 변경 창을 닫고 다시 열어 주세요.」 (`sirsoft-board::validation.boards.reorder_stale`) |
-| 500 | Internal Server Error | 저장 중 예외 발생 (`sirsoft-board::messages.boards.reorder_failed`) |
-
-<!-- @generated:end -->
-
-**설명**
-
-관리자 게시판 목록의 「순서 변경」. 사용자 메뉴(`boards/board-menu`)·게시판 목록 화면(`boards`)·관리자 게시판 목록 기본 정렬·통합검색 게시판 선택칸이 이 순서를 따른다(인기 게시판·최근글·인기글·사이트맵은 자체 기준). 전체 게시판 id 목록을 받아 한 번의 UPDATE 로 1..N 을 매기고 게시판 캐시(메뉴·목록·인기 게시판)를 비운다. 앞뒤로 `sirsoft-board.board.before_reorder`·`sirsoft-board.board.after_reorder`(커밋 뒤)가 발화하고, 활동 로그 `board.reorder` 한 건이 남는다. 검증 규칙은 `sirsoft-board.board.reorder_validation_rules` 필터로 늘릴 수 있다. 새로 만들거나 복사한 게시판은 맨 끝(현재 최댓값 + 1)에 붙는다.
 
 ### GET /api/modules/sirsoft-board/admin/boards/form-data
 <!-- @generated:start:api.modules.sirsoft-board.admin.boards.form-data -->
@@ -1793,7 +1723,7 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 <!-- @generated:end -->
 
-**설명** 사용자 화면용 활성 게시판 목록을 경량으로 조회합니다. 전체 게시판 목록 페이지에서 사용하며, `id`/`name`/`slug`/`description`/`posts_count` 만 반환합니다. 호출자가 열람할 수 있는(`sirsoft-board.{slug}.posts.read`) 게시판만 관리자가 정한 표시 순서(같은 순서는 만든 순서)로 돌려준다. 확장은 `sirsoft-board.board.filter_public_list_result` 로 결과를 바꿀 수 있다. `limit` 파라미터(0~10, 기본 0)를 주면 게시판별 최신글도 함께 담아주며(답변글·삭제·블라인드 제외), 활성화된 게시판만 노출됩니다.
+**설명** 사용자 화면용 활성 게시판 목록을 경량으로 조회합니다. 전체 게시판 목록 페이지에서 사용하며, `id`/`name`/`slug`/`description`/`posts_count` 만 반환합니다. `limit` 파라미터(0~10, 기본 0)를 주면 게시판별 최신글도 함께 담아주며(답변글·삭제·블라인드 제외), 활성화된 게시판만 노출됩니다.
 
 
 ### GET /api/modules/sirsoft-board/boards/board-menu
@@ -1849,7 +1779,7 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 <!-- @generated:end -->
 
-**설명** 헤더/네비게이션 메뉴에 노출할 게시판 목록을 최소 필드(`id`/`name`/`slug`)로 반환합니다. 활성 게시판을 관리자가 정한 표시 순서(같은 순서는 만든 순서·id)로 캐시에서 꺼낸 뒤, 호출자가 열람할 수 있는 게시판만 남깁니다(게시판 목록 `boards` 와 같은 기준 — 비회원에게 회원전용 게시판은 나오지 않습니다). 확장은 `sirsoft-board.board.filter_menu_list_result` 로 결과를 바꿀 수 있고, 리스너가 바꾼 값은 공용 캐시에 남지 않습니다.
+**설명** 헤더/네비게이션 메뉴에 노출할 게시판 목록을 최소 필드(`id`/`name`/`slug`)로 반환합니다. 활성 게시판만 오래된 순(created_at ASC)으로 정렬해 캐시에서 제공하는 경량 조회 API입니다.
 
 
 ### GET /api/modules/sirsoft-board/boards/popular
@@ -2549,8 +2479,8 @@ Cache-Control: public, max-age=86400
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | file | body | file | 예 | 게시판 허용 확장자 · 최대 용량 | 업로드 파일. **파일 이름의 확장자와 내용으로 추론한 형식이 모두** 게시판 허용 확장자에 들어야 한다(md·log·csv·tsv 처럼 원래 일반 텍스트인 형식은 허용 목록에 있으면 통과). 이름이 허용 밖이면 「허용되지 않은 파일 형식입니다」, 내용이 맞지 않으면(예: SVG 내용의 `x.png`) 「파일 내용이 허용된 형식과 일치하지 않습니다」, 0바이트면 「빈 파일(0바이트)은 올릴 수 없습니다」로 422 |
 | post_id | body | integer | 아니오 | min 1 | post 식별자 |
-| collection | body | string | 아니오 | max 100, `content_media` 제외 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default). 예약 컬렉션 `content_media`(본문 미디어)는 422 — 전용 업로드로만 올린다 |
-| temp_key | body | string | 아니오 | UUID 또는 `temp_<숫자>_<36진수 소문자>`(7.0.x 화면 꼴) | 게시글 저장 전 임시 업로드를 묶는 키 (`post_id` 와 함께 생략하면 서버가 UUID 를 발급. post_id가 없을 때 첨부를 임시로 그룹핑, 저장 시 게시글에 연결) |
+| collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
+| temp_key | body | string | 아니오 | UUID | 게시글 저장 전 임시 업로드를 묶는 키 (`post_id` 와 함께 생략하면 서버가 UUID 를 발급. post_id가 없을 때 첨부를 임시로 그룹핑, 저장 시 게시글에 연결) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-board.attachment.upload_validation_rules`).
 
@@ -2632,19 +2562,11 @@ HTTP/1.1 201
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.attachments.upload`)이 없거나, 게시판의 파일 업로드 설정이 꺼진 경우 (`이 게시판에서는 파일 업로드가 비활성화되어 있습니다.`) |
 | 404 | Not Found | 게시판 슬러그에 해당하는 게시판이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 429 | Too Many Requests | 글 번호(`post_id`)와 비밀번호(`password`)를 함께 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`Retry-After` 헤더에 남은 초, 1.2.4) |
 | 500 | Internal Server Error | 파일 저장 중 예외 (`파일 업로드에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 게시글 작성/수정 폼에서 단일 파일을 업로드합니다. `optional.sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며(비회원 권한이 있으면 비회원도 올린다), 게시판의 파일 업로드 설정이 꺼져 있으면 403을 반환합니다. 파일 1개당 용량 상한은 게시판의 `max_file_size`, 비어 있으면 게시판 환경설정 기본값, 그것도 없으면 10MB 순으로 정해지며(게시글 저장 검증과 같은 기준) 초과 시 422를 반환합니다. 게시글 저장 전 임시 업로드를 위해 `temp_key` 로 묶어두거나 `post_id` 로 기존 글에 바로 연결할 수 있고, 성공 시 FileUploader 컴포넌트가 기대하는 `data.data` 형식으로 첨부 메타(해시·URL·순서 등)를 201로 반환합니다.
-
-**소유 규칙 (1.2.3+)**
-
-- `post_id` 로 기존 글에 붙이면 그 글이 **이 게시판 글**이어야 하고(아니면 404 「게시글을 찾을 수 없습니다」), 글 수정과 같은 판정을 통과해야 한다(아니면 403 「수정 권한이 없습니다」) — 게시판 관리자·회원 글 작성자 본인·비회원 글은 비밀번호 확인 뒤 받은 검증 토큰(`X-Board-Post-Verify-Token` 헤더 또는 `verification_token`, 업로드가 소비하지 않음) 또는 `password`.
-- 응답 `data.data.temp_key` 는 올린 사람에게만 주는 임시 키다(키 없이 올렸으면 서버가 만든 키, `post_id` 업로드는 null). 비회원은 글 저장에서 첨부 번호(`attachment_ids`)로 이을 때 이 키를 `temp_key` 로 함께 보내야 한다 — 번호만으로는 잇지 않는다.
-- 임시 첨부를 글에 잇는 것은 이 게시판에 올린 임시 첨부(`{slug}/temp/…`)뿐이고, 회원은 본인 업로드, 비회원은 비회원 업로드만 잇는다.
-- 첨부 개수 상한은 예약 컬렉션(`content_media`)을 뺀 모든 컬렉션을 센다.
+**설명** 게시글 작성/수정 폼에서 단일 파일을 업로드합니다. `auth:sanctum` + `sirsoft-board.{slug}.attachments.upload` 권한이 필요하며, 게시판의 파일 업로드 설정이 꺼져 있으면 403을 반환합니다. 파일 1개당 용량 상한은 게시판의 `max_file_size`, 비어 있으면 게시판 환경설정 기본값, 그것도 없으면 10MB 순으로 정해지며(게시글 저장 검증과 같은 기준) 초과 시 422를 반환합니다. 게시글 저장 전 임시 업로드를 위해 `temp_key` 로 묶어두거나 `post_id` 로 기존 글에 바로 연결할 수 있고, 성공 시 FileUploader 컴포넌트가 기대하는 `data.data` 형식으로 첨부 메타(해시·URL·순서 등)를 201로 반환합니다.
 
 
 ### PATCH /api/modules/sirsoft-board/boards/{slug}/attachments/reorder
@@ -2820,7 +2742,7 @@ _단건 응답: `data` 객체의 필드 (접수된 신고 케이스 = `ReportRes
 | processed_at | null | `null` | 처리 일시 (미처리 시 null) |
 | metadata | null | `null` | 신고 메타(IP/User-Agent) — 상세 조회 라우트에서만 노출, 접수 응답에서는 null |
 | report_count | null | `null` | 케이스 누적 신고 건수 (목록 그룹 조회에서만 채워짐) |
-| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준 |
+| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 접수 일시 (재접수 시 갱신) |
 | is_reactivated | boolean | `false` | 반려/중단 후 재접수된 케이스인지 여부 |
 | target_status | null | `null` | 신고 대상의 현재 상태 (목록 그룹 조회에서만 채워짐) |
 | target_trigger_type | null | `null` | 신고 대상 상태 변경 주체 (목록 그룹 조회에서만 채워짐) |
@@ -2971,107 +2893,12 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write`)이 없는 경우 |
 | 404 | Not Found | 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | `password` 누락 등 검증 실패 (`error.errors` 에 필드별 메시지) |
-| 429 | Too Many Requests | 같은 IP 에서 비밀번호 확인 요청이 분당 10회를 넘은 경우 — 비밀글·스레드·글 수정용·댓글 비밀번호 확인을 합산한다 (`Retry-After` 헤더에 남은 초) |
 | 500 | Internal Server Error | 검증 처리 중 예외 |
 
 <!-- @generated:end -->
 
 **설명** 비회원이 작성한 댓글의 수정/삭제 권한을 확인하기 위해 비밀번호를 검증합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.write` 권한이 필요하며, 대상이 비회원 댓글이 아니면 400, 비밀번호가 틀리면 401을 반환합니다. 검증 성공 시 1시간 유효한 임시 토큰(`verification_token`)을 발급해 이후 수정/삭제 요청에서 비밀번호 재입력 없이 사용하도록 합니다.
 
-
-### POST /api/modules/sirsoft-board/boards/{slug}/content-media
-<!-- @generated:start:api.modules.sirsoft-board.boards.content-media.upload -->
-- **라우트명**: `api.modules.sirsoft-board.boards.content-media.upload`
-- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController@upload`
-- **인증/권한**: `optional.sanctum` + `permission:user,sirsoft-board.{slug}.attachments.upload` (비회원 포함) · `throttle:60,1`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| slug | path | string | 예 | — | 게시판 slug |
-| file | body | file | 예 | 게시판 본문 미디어 정책의 종류·확장자·파일당 크기 | 본문에 넣을 이미지·동영상·오디오. 형식은 파일 내용으로 판정한다(이름만 바꾼 파일은 거부) |
-| temp_key | body | string | 예 | UUID | 글쓰기 화면의 임시 키. 글 저장 때 같은 키를 보내야 본문이 참조한 미디어가 글에 이어진다 |
-| post_id | body | integer | 아니오 | min 1 | 기존 글 편집 중이면 그 글 번호 — 그 글을 고칠 수 있는지 본다(아니면 403, 다른 게시판 글이면 404) |
-
-**응답 필드** (`data` 내부)
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| data.id | integer | `812` | 본문 미디어 행 번호 |
-| data.hash | string | `"Xk2pQ9rT0aLm"` | 서빙 주소의 12자 해시 |
-| data.kind | string | `"image"` | `image`·`video`·`audio` |
-| data.url | string | `"/api/modules/sirsoft-board/boards/free/content-media/Xk2pQ9rT0aLm?expires=…&signature=…"` | 서명된 서빙 주소(편집 중 미리보기). 글 저장 때 서명 쿼리는 떼어 정식 주소로 저장한다 |
-
-- 상태: `201` 성공 · `401/403` 업로드 권한 없음 · `403` `post_id` 의 글을 고칠 수 없음 · `404` 게시판·글 없음 · `422` 정책 밖 파일(`errors.file`)·임시 키 없음·같은 임시 키 업로드가 문서당 최대 개수의 2배 초과(`errors.code = content_media_limit_exceeded`)
-- `post_id` 와 함께 비회원 글 비밀번호(`password`)를 실어 보낸 요청은 비밀번호 확인 요청과 합산해 같은 IP 분당 10회까지만 받는다(초과 시 `429`, 1.2.4). 비밀번호가 없는 업로드는 세지 않는다.
-- 비회원 응답에는 소유 쿠키 `g7_board_guest_upload`(경로 `/api/modules/sirsoft-board`, httpOnly)가 붙는다 — 첨부 업로드와 같은 쿠키다.
-- 「파일 첨부 사용」(`use_file_upload`)은 보지 않는다. 정책은 게시판 `content_media_policy`, 비어 있으면 그 게시판 첨부 정책(동영상·오디오는 코어 「본문 콘텐츠」 스위치를 따름).
-- 코어 공용 훅 `core.content_media.before_upload` → `filter_upload_file` → `after_upload` 가 발화한다(1.2.3, 코어 7.1.5). 필터가 돌려준 파일이 정책 밖이면 `422`. 게시판 첨부 훅(`sirsoft-board.attachment.*`)은 발화하지 않는다.
-<!-- @generated:end -->
-
----
-
-### GET /api/modules/sirsoft-board/boards/{slug}/content-media/target
-<!-- @generated:start:api.modules.sirsoft-board.boards.content-media.target -->
-- **라우트명**: `api.modules.sirsoft-board.boards.content-media.target`
-- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController@target`
-- **인증/권한**: `optional.sanctum` + `permission:user,sirsoft-board.{slug}.attachments.upload` (비회원 포함) · `throttle:60,1`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| slug | path | string | 예 | — | 게시판 slug |
-
-**응답 필드** (`data` 내부 — 받는 종류가 없으면 `data: null`)
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| data.version | integer | `1` | 계약 판 |
-| data.endpoint | string | `"/api/modules/sirsoft-board/boards/free/content-media"` | 업로드 주소(같은 출처 상대 경로) |
-| data.fileField | string | `"file"` | 파일 필드 이름 |
-| data.fields | object | `{}` | 함께 보낼 폼 필드 — 화면이 `temp_key`(글쓰기 임시 키)를 더한다 |
-| data.headers | object | `{}` | 함께 보낼 헤더(허용 목록만) |
-| data.response | object | `{"urlPath":"data.url","idPath":"data.id","kindPath":"data.kind"}` | 업로드 응답에서 값을 읽을 경로 |
-| data.mediaUrlPattern | string | `"/api/modules/sirsoft-board/boards/free/content-media/(?<hash>[A-Za-z0-9]{12})"` | 본문 미디어 서빙 주소 정규식(편집기 개수 판정) |
-| data.policy | object | `{"image":{"enabled":true,…},"max_per_document":30}` | 종류별 허용·파일당 크기·형식과 글 한 편 최대 개수 |
-
-- 상태: `200` · `401` 비회원에게 업로드 권한 없음 · `403` 회원에게 업로드 권한 없음 · `404` 게시판 없음
-- 값은 그 게시판 본문 미디어 정책이고, 코어는 동영상·오디오 업로드 허용 스위치로만 관여한다. 형식은 코어 `docs/extension/content-media.md` 「표준 계약 엔드포인트」.
-- 글쓰기 폼 메타(`GET boards/{slug}/posts/form-meta`)의 `data.content_media` 는 같은 값을 계속 싣는다(호환, 폐기 예정).
-<!-- @generated:end -->
-
-**설명** 사용자 글쓰기 편집기의 본문 미디어 업로드 계약을 내는 표준 계약 엔드포인트입니다(1.2.3). 판정은 본문 미디어 업로드와 같은 `attachments.upload` 권한(비회원 포함)이고 「파일 첨부 사용」은 보지 않습니다. 글쓰기 화면은 이 응답을 데이터소스 `content_media_target` 으로 받아 편집기 `mediaUpload` 에 넘기며, 실패(권한 없음 포함)는 조용히 넘겨 업로드 없이 편집기를 세웁니다.
-
----
-
-### GET /api/modules/sirsoft-board/boards/{slug}/content-media/{hash}
-<!-- @generated:start:api.modules.sirsoft-board.boards.content-media.show -->
-- **라우트명**: `api.modules.sirsoft-board.boards.content-media.show`
-- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\ContentMediaController@show`
-- **인증/권한**: `optional.sanctum` · `throttle:600,1` — 권한 미들웨어 없음(`<img>`·`<video>` 요청에는 Bearer 가 실리지 않음). 게이트는 아래와 같다
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| slug | path | string | 예 | — | 게시판 slug |
-| hash | path | string | 예 | `[A-Za-z0-9]{12}` | 본문 미디어 해시 |
-| expires·signature | query | string | 아니오 | — | 글 응답·업로드 응답이 준 한시 서명(유효 시간은 환경설정 「본문 콘텐츠」 미디어 주소 유효 시간, 기본 240분) |
-| Range | header | string | 아니오 | `bytes=a-b` 한 구간 | 동영상 탐색. 여러 구간은 200 전량 |
-
-**게이트**
-
-- 서명이 유효하면 통과(글에 잇기 전 임시 행 포함 — 편집 중 미리보기).
-- 서명이 없으면 임시 행은 403. 글에 이어진 행은 요청자의 **글 읽기 권한**(`posts.read`, 게시판 관리자 포함)과 삭제·비밀·블라인드 게이트(첨부 미리보기와 같은 기준).
-
-**응답**: 파일 본문. 래스터 이미지는 `inline`, 동영상·오디오는 게시판 정책과 코어 후보가 모두 켜졌을 때 `inline` + `Content-Security-Policy: default-src 'none'; media-src 'self'; sandbox`, 그 밖에는 다운로드. 언제나 `X-Content-Type-Options: nosniff`·`Cache-Control: private`. 로컬·원격 디스크 모두 `Accept-Ranges: bytes`·`206`·`416` 을 지원한다.
-
-- 상태: `200`·`206` · `403` 게이트 · `404` 해시·게시판 없음 · `416` 구간 충족 불가
-<!-- @generated:end -->
-
----
 
 ### GET /api/modules/sirsoft-board/boards/{slug}/posts
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.index -->
@@ -3479,7 +3306,6 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 429 | Too Many Requests | 글 번호(`post_id`)와 비밀번호(`password`)를 함께 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`Retry-After` 헤더에 남은 초, 1.2.4) |
 
 <!-- @generated:end -->
 
@@ -3609,9 +3435,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
-
-> **본문 미디어 업로드 계약 `data.content_media`** (1.2.3) — 이 게시판 `attachments.upload` 권한이 있고 정책이 받는 종류가 있으면 편집기 확장점 `html_editor` 의 `mediaUpload` 로 넘길 계약 객체(`version`·`endpoint`·`fileField`·`fields`·`headers`·`response`·`mediaUrlPattern`·`policy`), 없으면 `null`. 화면은 `fields.temp_key` 에 글쓰기 임시 키를 더해 넘긴다. 형식은 코어 `docs/extension/content-media.md`. 표준 계약 엔드포인트 `GET boards/{slug}/content-media/target` 과 같은 값이며, 옛 화면 호환으로 계속 싣는다(폐기 예정 — 새 화면은 표준 엔드포인트를 쓴다).
-
 <!-- @generated:end -->
 
 **설명** 게시글 작성/수정 폼 렌더링에 필요한 게시판 메타 정보를 반환합니다. `auth:sanctum` + `sirsoft-board.{slug}.posts.write` 권한이 필요하며, 게시판 설정과 사용자 권한(`user_abilities`)을 담습니다. `user_abilities.can_write_notice` 는 공지 등록 권한(`sirsoft-board.{slug}.posts.write-notice`) 보유 여부로, 화면은 `can_manage` 또는 이 값이 참일 때 공지 옵션을 보여 준다(서버의 공지 지정 판정과 같은 기준 — 게시판이 권한 행을 갖지 않으면 키가 빠진다). 비회원은 서버가 공지 지정에 로그인을 요구하므로 guest 역할에 공지 등록 권한이 있어도 `can_write_notice` 가 false 로 내려갑니다. `board.max_file_size` 는 게시판 값이 비어 있으면(기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10(MB)으로 채워 첨부 업로드 검증의 용량 상한과 같은 값을 내려 줍니다. `post_id` 가 있으면 수정 모드로 작성자/작성일/첨부 목록을 포함하되 회원 글은 본인 또는 관리자만, 비회원 글은 비밀번호/검증 토큰 확인을 요구합니다. `parent_id` 가 있으면 답변 모드로 원글 정보를 포함하며, 답변 기능이 꺼져 있거나 원글이 블라인드/삭제 상태면 차단합니다.
@@ -3624,7 +3447,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.destroy -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\PostController@destroy`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager`
 
 **요청 파라미터**
 
@@ -3670,7 +3493,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write\|sirsoft-board.{slug}.manager`)이 없거나, 작성자 본인·게시판 관리자·비회원 글 검증(토큰/비밀번호) 중 어느 조건도 만족하지 않는 경우 (`게시글 삭제 권한이 없습니다.`) |
 | 404 | Not Found | 활성 게시판 또는 게시글이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터(`password`/`verification_token`/`force_delete`)가 형식 검증을 위반한 경우 (`error.errors` 에 필드별 메시지) / 게시판의 답글 삭제 정책(`reply_delete_policy`)이 `block` 이고 살아 있는 답글이 있는 경우 (`답글이 달린 글은 삭제할 수 없습니다. 답글을 먼저 삭제해 주세요.` — `sirsoft-board::validation.post.delete.has_replies`) |
-| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 | 500 | Internal Server Error | 삭제 처리 중 예외 (`게시글 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -3729,7 +3551,7 @@ _단건 응답: `data` 객체의 필드._
 | is_author | boolean | `true` | author 여부 |
 | is_guest_post | boolean | `false` | guest post 여부 |
 | title | string | `API 문서 샘플 게시글` | 제목 |
-| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용. HTML 본문의 본문 미디어 주소 가운데 **이 글 소유** 미디어만 한시 서명 주소로 나간다(1.2.3). 다른 글 소유 주소는 서명 없이 나가 원래 글의 열람 권한을 따른다(남의 비밀글 미디어 주소를 넣어도 서명되지 않음) |
+| content | string | `<p>API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.</p>` | 본문 내용 |
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | user 식별자 (연관 리소스 참조) |
 | trigger_type | string | `user` | 상태 변경/삭제를 유발한 주체 (user 사용자 / admin 관리자 / report 신고 / system 시스템 / auto_hide 자동 블라인드 / cascade 연쇄 삭제 — TriggerType Enum) |
 | updated_at | string | `2026-07-07 09:39:03` | 최종 수정 일시 |
@@ -3740,7 +3562,7 @@ _단건 응답: `data` 객체의 필드._
 | navigation | null | `null` | 이전/다음 글 정보 (상세 API에서는 기본 null — 별도 navigation 엔드포인트로 비동기 로딩) |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
 | comments | array | `[{"id":760,"post_id":237,"parent_id":null,"content":"API …` | 이 게시글의 댓글 목록 (CommentResource 배열 — 대댓글 계층 포함) |
-| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 이 게시글의 첨부파일 목록 (비밀글/삭제글은 권한에 따라 빈 배열 또는 cascade 항목만 노출). 각 항목의 `meta` 는 이미지면 `{"width":…,"height":…}`, 정보가 없으면 `null`, 비어 있으면 `{}` 다 — 코어 첨부 응답과 같은 모양 |
+| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 이 게시글의 첨부파일 목록 (비밀글/삭제글은 권한에 따라 빈 배열 또는 cascade 항목만 노출) |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록 (PostResource 배열 — use_reply 게시판에서만 로드) |
 | thread_password_available | boolean | `false` | 본문이 가려진 비밀 답변을 스레드 조상(비회원·비밀번호가 있는 글)의 비밀번호로 열 수 있는지. true 면 화면이 원글 비밀번호 폼을 보여 주고 `POST …/verify-thread-password` 를 부른다. 어떤 조상인지는 싣지 않는다 |
 | reply_locked_by_secret_ancestor | boolean | `false` | 이 글에 하위 글은 쓸 수 있지만 위쪽 비밀글을 지금 볼 수 없어 답변은 막히는지. true 면 답변 버튼을 숨긴다(직접 호출 시 답변 폼 404, 제출 422 `parent_id`) |
@@ -3935,7 +3757,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.update -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.update`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\PostController@update`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager`
 
 **요청 파라미터**
 
@@ -3944,7 +3766,7 @@ HTTP/1.1 200
 | slug | path | string | 예 | — | 대상 리소스의 slug (URL 친화 식별자) |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
 | attachment_ids | body | integer[] | 아니오 | — | 미리 업로드해 둔 첨부 ID 목록. 게시글에 연결된다 (관리자 수정 경로와 동일) |
-| temp_key | body | string | 아니오 | UUID 또는 `temp_<숫자>_<36진수 소문자>`(7.0.x 화면 꼴) | 임시 업로드 묶음 키. 해당 묶음의 첨부가 게시글로 이동·연결된다 |
+| temp_key | body | string | 아니오 | UUID | 임시 업로드 묶음 키. 해당 묶음의 첨부가 게시글로 이동·연결된다 |
 | is_secret | body | boolean | 아니오 | — | 비밀글 여부. 문자열 `"true"`/`"false"`/`"1"`/`"0"` 도 수용해 boolean 으로 정규화한다 (해석 불가값은 422) |
 | is_notice | body | boolean | 아니오 | — | 공지 여부. 현재 값과 **다르게** 보내면(등록·해제 모두) 게시판 관리 권한 또는 공지 등록 권한(`posts.write-notice`)이 있어야 한다 — 없으면 403. 수정 폼이 기존 값을 그대로 되돌려 보내는 것은 판정하지 않는다 |
 | status | body | string | 아니오 | `published` | 게시 상태. 사용자 경로는 `published` 만 허용 |
@@ -4136,7 +3958,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write\|sirsoft-board.{slug}.manager`)이 없는 경우, 수정 권한(작성자·관리자·비회원 검증)이 없는 경우(`게시글 수정 권한이 없습니다.`), 공지 지정 권한 없이 공지 여부를 바꾸려는 경우(`게시글을 공지로 지정할 권한이 없습니다.`), 비밀글 기능이 꺼진 게시판에서 일반글을 비밀글로 바꾸려는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 
 <!-- @generated:end -->
 
@@ -4512,7 +4333,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.posts.write`)이 없는 경우 |
 | 404 | Not Found | 활성 게시판 또는 게시글이 없는 경우 |
 | 422 | Unprocessable Entity | `password` 누락 등 검증 실패 (`error.errors` 에 필드별 메시지) |
-| 429 | Too Many Requests | 같은 IP 에서 비밀번호 확인 요청이 분당 10회를 넘은 경우 — 비밀글·스레드·글 수정용·댓글 비밀번호 확인을 합산한다 (`Retry-After` 헤더에 남은 초) |
 | 500 | Internal Server Error | 검증 처리 중 예외 (`비밀번호 검증에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4627,7 +4447,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글의 댓글 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.read` 권한이 필요하며, 게시판의 댓글 기능이 꺼져 있으면 403을 반환합니다. 조회 범위는 사용자 문맥(`sirsoft-board.{slug}.comments.read` 의 범위 식별자)으로 판정해 글 상세에 실리는 댓글과 같습니다 — 「본인 댓글만」 범위의 회원에게 남의 댓글이 나가지 않습니다. 없는 게시판(`slug`)이면 권한 검사보다 먼저 404 를 반환합니다. 대댓글 계층(`depth`, `replies_count`)을 포함하며, 각 항목에 현재 사용자의 작성자 여부·소유 여부·신고 이력 등이 메타로 담깁니다.
+**설명** 게시글의 댓글 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.read` 권한이 필요하며, 게시판의 댓글 기능이 꺼져 있으면 403을 반환합니다. 대댓글 계층(`depth`, `replies_count`)을 포함하며, 각 항목에 현재 사용자의 작성자 여부·소유 여부·신고 이력 등이 메타로 담깁니다.
 
 **비밀 댓글** `is_secret=true` 인 댓글의 `content` 는 댓글 작성자 · 대댓글이면 부모 댓글 작성자 · 원글을 열 수 있는 사람(원글 작성자 · 비밀번호를 맞혀 `X-Board-Secret-View-Token` 을 받은 사람 · 비밀글 읽기 권한자 · 게시판 관리자)에게만 실립니다. 그 밖에는 `content=null` 이고 `is_secret` 은 그대로 내려가 화면이 "비밀 댓글입니다" 를 표시합니다. 게시글 상세 응답의 `comments` 도 같은 규칙입니다.
 
@@ -4750,7 +4570,7 @@ HTTP/1.1 201
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.comments.destroy -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.comments.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\CommentController@destroy`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager`
 
 **요청 파라미터**
 
@@ -4796,7 +4616,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write\|sirsoft-board.{slug}.manager`)이 없거나, 게시판의 댓글 기능이 꺼진 경우, 또는 작성자 본인·게시판 관리자·비회원 댓글 비밀번호 확인 중 어느 조건도 만족하지 않는 경우 (`댓글 삭제 권한이 없습니다.`) |
 | 404 | Not Found | 게시판 또는 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | `password` 가 형식 검증(문자열, 4~20자)을 위반한 경우 (`error.errors.password` — 배열 주입 차단), `status` 가 `published` 가 아닌 경우 (`error.errors.status`) |
-| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 | 500 | Internal Server Error | 삭제 처리 중 예외 (`댓글 삭제에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4808,7 +4627,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-board.boards.posts.comments.update -->
 - **라우트명**: `api.modules.sirsoft-board.boards.posts.comments.update`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\User\CommentController@update`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager` + `throttle:sirsoft-board.secret-password-verify`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-board.{slug}.comments.write|sirsoft-board.{slug}.manager`
 
 **요청 파라미터**
 
@@ -4918,7 +4737,6 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.comments.write\|sirsoft-board.{slug}.manager`)이 없거나, 게시판의 댓글 기능이 꺼진 경우, 또는 작성자 본인·게시판 관리자·비회원 댓글 비밀번호 확인 중 어느 조건도 만족하지 않는 경우 (`댓글 수정 권한이 없습니다.`) |
 | 404 | Not Found | 게시판 또는 댓글이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 429 | Too Many Requests | 비밀번호(`password`)를 실어 보낸 요청이 같은 IP 에서 분당 10회를 넘은 경우 — 비밀번호 확인 요청과 합산한다. 비밀번호가 없는 요청은 세지 않는다 (`auth.too_many_attempts`, `Retry-After` 헤더에 남은 초, 1.2.4+) |
 | 500 | Internal Server Error | 수정 처리 중 예외 (`댓글 수정에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -4983,7 +4801,7 @@ _단건 응답: `data` 객체의 필드 (접수된 신고 케이스 = `ReportRes
 | processed_at | null | `null` | 처리 일시 (미처리 시 null) |
 | metadata | null | `null` | 신고 메타(IP/User-Agent) — 상세 조회 라우트에서만 노출 |
 | report_count | null | `null` | 케이스 누적 신고 건수 (목록 그룹 조회에서만 채워짐) |
-| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준 |
+| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 접수 일시 |
 | is_reactivated | boolean | `false` | 반려/중단 후 재접수된 케이스인지 여부 |
 | target_status | null | `null` | 신고 대상 현재 상태 (목록 그룹 조회에서만 채워짐) |
 | target_trigger_type | null | `null` | 신고 대상 상태 변경 주체 (목록 그룹 조회에서만 채워짐) |

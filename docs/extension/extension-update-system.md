@@ -7,12 +7,11 @@
 ```text
 1. 업데이트 감지: GitHub·_bundled 중 높은 버전(같으면 GitHub, GitHub 실패 시 _bundled) — --source=bundled 는 GitHub 안 봄, github 는 _bundled 폴백 없음 (_pending 미참여)
 2. _bundled = Git 추적 선탑재 소스, _pending = 설치 시 임시 스테이징만
-3. 상태 가드: StuckUpdateRecovery::assertNotInProgress() → ExtensionStatusGuard (10분 넘게 멈춘 updating 은 활성화·--force 업데이트가 정리)
+3. 상태 가드: ExtensionStatusGuard.assertNotInProgress(ExtensionStatus, identifier)
 4. 업그레이드 콜백: upgrades/ 디렉토리에 Upgrade_X_Y_Z.php (UpgradeStepInterface 구현)
 5. 역할/권한/메뉴 동기화: user_overrides로 사용자 커스터마이징 보존 (개별 식별자 보호)
 6. 확장 수정/개발은 _bundled 에서만 (활성 디렉토리 직접 수정 금지 → {type}:update 로 반영)
 7. DB/설정 구조 변경 시 업그레이드 스텝 작성 필수 (필요 판단은 "업그레이드 스텝이 필요한 경우" 표)
-8. 파일만 교체했으면: 훅·오토로드 캐시는 자동 감지(7.1.3+), 레이아웃·config·라우트·정적 게시·캐시는 명령 실행 ("파일만 교체했을 때" 표)
 ```
 
 ---
@@ -89,8 +88,6 @@
 
 목록 API(모듈·플러그인·템플릿)의 설치된 행도 **업데이트가 있을 때만** 같은 규칙으로 `required_core_version`·`is_compatible`·`current_core_version` 을 싣는다(`ResolvesUpdateCoreCompatibility`). GitHub 출처는 원격 매니페스트를 받지 않는 추정값이고, 정확한 판정은 업데이트 스테이징 단계에서 한다. 관리자 화면은 이 값으로 업데이트 창에 코어 호환 경고와 「강제 업데이트」 체크를 띄우며, 목록의 업데이트 버튼은 잠그지 않는다. 설치본 자체의 호환은 별도 필드 `core_compatible` 이 맡는다.
 
-같은 행은 업데이트할 새 버전이 요구하는 확장 중 지금 미설치·꺼짐·버전 미달인 것도 싣는다(7.1.5) — 필수 의존은 `update_dependency_warnings`, 함께 쓰면 연동되는 확장(`integrations`)은 `update_integration_notices`. 판정은 업데이트가 끝난 뒤 결과의 `dependency_warnings`·`integration_notices`(완료 문구에 덧붙는 안내)와 같은 함수(`DependencyVersionWarnings::forManifest()`·`IntegrationNotices::forManifest()`)이고, 대조 대상은 번들 출처면 `_bundled` 매니페스트, GitHub 출처면 `_bundled` 판이 업데이트 대상 버전과 같을 때만 그 매니페스트다(아니면 `null` — 원격 매니페스트를 받지 않는다). 관리자 업데이트 창은 이 목록을 실행 버튼 위에 경고로 보이지만 업데이트를 막지 않는다 — 업데이트 뒤 안내와 같이 알리기만 한다(코어 업데이트 뒤 번들 일괄 업데이트처럼 의존·연동 확장이 같은 흐름에서 곧 따라 올라오는 경우가 정상 경로다). 그래서 연동 요구 버전을 올린 확장을 먼저 올리려는 운영자가 연동이 꺼진다는 것을 업데이트 전에 알 수 있다.
-
 ### 소스 강제 경로 (sourceOverride)
 
 기본 판정(GitHub·`_bundled` 중 높은 버전)을 우회해 특정 소스 단독으로 업데이트를 실행하는 경로입니다.
@@ -122,7 +119,7 @@
 
 사용 예: GitHub 에 임시 장애가 있거나 잘못된 태그가 퍼블리시되어 자동 경로가 실패할 때 `--source=bundled` 로 강제 설치, 반대로 긴급 핫픽스를 GitHub 태그로만 배포한 경우 `--source=github` 로 번들 폴백을 차단합니다.
 
-`module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. 스크립트나 `--no-interaction` 처럼 답할 수 없는 환경에서는 기본값(아니오)으로 취소되며, 7.1.6 부터는 「`--yes` 를 붙이세요」 경고와 함께 **종료 코드 1** 로 끝납니다(종전에는 종료 코드 0 이라 실행되지 않은 것을 알 수 없었습니다). 자동 실행에는 `--yes`(`-y`)를 붙입니다 — 확인에만 「예」로 답하고 버전 비교는 그대로 합니다. `--force` 도 확인을 건너뛰지만 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 다시 적용할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
+`module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. 스크립트나 `--no-interaction` 처럼 답할 수 없는 환경에서는 기본값(아니오)으로 **오류 없이 취소**되므로(종료 코드 0, 아무것도 바뀌지 않음) 자동 실행에는 `--force` 를 붙입니다. 단 `--force` 는 확인을 건너뛸 뿐 아니라 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 갱신할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
 
 #### 외부 ZIP 직접 지정 (`--zip`)
 
@@ -169,13 +166,12 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 
 > **주의**: `zipball/{ref}` 엔드포인트는 태그 존재 여부와 무관하게 항상 302로 codeload 에 리다이렉트하기 때문에, 302 수신만으로는 태그 유효성을 판정할 수 없습니다. 반드시 `git/refs/tags/{tag}` 로 실재를 먼저 검증해야 합니다.
 
-**아카이브 추출** (`SafeArchiveExtractor`, 7.1.3+):
+**아카이브 추출 전략** (2단계 폴백):
 
-| 항목 | 동작 |
-| ---------- | ---------- |
-| 추출 방식 | `ZipArchive` (PHP zip 확장) **필수** — 없으면 추출 실패. `unzip` 명령 폴백 없음(7.1.3 에서 제거) |
-| 경로 정규화 | 항목 이름의 `\` 를 `/` 로 바꾼 뒤 판정 (Windows 에서 만든 zip 의 `dir\file.php` 항목 대응) |
-| 거부 항목 | `..` 로 압축 밖을 가리키는 경로, 절대 경로, 드라이브 문자(`C:`), UNC 경로, 널 문자, 심볼릭 링크 — **하나라도 있으면 아무것도 풀지 않고 전체 거부** |
+| 순서 | 방식 | 조건 |
+| ---------- | ---------- | ---------- |
+| 1 | `ZipArchive` (PHP zip 확장) | `class_exists(ZipArchive::class)` |
+| 2 | `unzip` CLI 명령어 | ZipArchive 미사용 시 폴백 |
 
 **GitHub 아카이브 디렉토리 구조**: GitHub zipball은 `owner-repo-hash/` 형태의 루트 디렉토리를 포함합니다. `ZipInstallHelper::findAndValidateManifest()`가 1단계 하위 디렉토리까지 자동 검색하여 매니페스트 파일을 찾습니다.
 
@@ -186,11 +182,10 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 ### 모듈/플러그인 업데이트 (10단계)
 
 ```
-1. [가드] StuckUpdateRecovery::assertNotInProgress() — --force 면 멈춘 updating 을 먼저 정리 (→ 4. 멈춘 업데이트 정리)
+1. [가드] ExtensionStatusGuard::assertNotInProgress()
 2. [백업] ExtensionBackupHelper::createBackup()
-   + [진행 기록] ExtensionUpdateJournal::begin() — 시작 판·목표 판 기록 (끝나지 않은 앞선 기록이 있으면 이어받음)
 3. [상태] status → Updating
-4. [파일] 소스에서 활성 디렉토리로 복사 (복사 직전 진행 기록에 「파일을 건드림」 표시)
+4. [파일] 소스에서 활성 디렉토리로 복사
    - github: 다운로드 후 복사
    - bundled: ExtensionPendingHelper::copyToActive()
 5. [마이그레이션] runMigrations()
@@ -199,27 +194,9 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 7. [레이아웃] 활성 상태였으면 레이아웃 갱신
    - registerModuleLayouts() + registerLayoutExtensions() + refreshModuleLayouts()
 8. [오토로드] Composer autoload 갱신
-9. [업그레이드] runUpgradeSteps($module, $fromVersion, $toVersion, …, $journal) — 스텝마다 끝나면 진행 기록에 적음
-10. [마무리] 이전 상태 복원 + 백업 삭제(진행 기록도 삭제) + 캐시 무효화
+9. [업그레이드] runUpgradeSteps($module, $fromVersion, $toVersion)
+10. [마무리] 이전 상태 복원 + 백업 삭제 + 캐시 무효화
 ```
-
-### 진행 기록 (ExtensionUpdateJournal)
-
-> 파일: `app/Extension/Helpers/ExtensionUpdateJournal.php` · 저장: `ExtensionUpdateJournalRepositoryInterface`(파일 기반, `storage/app/extension_update_journal/{type}/{identifier}.json`)
-
-업데이트는 DB 판을 새 판으로 적은 **뒤** 업그레이드 스텝을 돈다. 프로세스가 스텝 도중 죽으면(메모리 초과·시간 초과·강제 종료) catch 가 돌지 않으므로, 여러 판을 건너뛴 업데이트(예: 1.1.0 → 1.1.4)의 중간 판 스텝을 다시 돌 길이 없었다. 진행 기록이 이를 잇는다.
-
-| 기록 칸 | 뜻 |
-|---|---|
-| `from_version` / `to_version` | 이 업데이트의 시작 판 / 목표 판. 끝나지 않은 앞선 기록을 이어받으면 시작 판은 둘 중 낮은 판 |
-| `files_touched` | 활성 디렉토리 파일 교체를 시작했는지 |
-| `completed_steps` | 끝낸 업그레이드 스텝 판 목록 |
-
-- **이어 돌기**: 기록이 남아 있으면 다음 업데이트는 기록의 시작 판부터 스텝을 고르고, **끝낸 스텝은 건너뛴다** — 못 끝낸 스텝만 판 순서대로 한 번씩 돈다.
-- **지우는 시점**: 백업을 지울 때(파일·DB 판·스텝이 되돌릴 수 없게 끝났을 때).
-- **예외로 실패했을 때**: 파일을 백업으로 되돌렸고 끝낸 스텝이 없으면 지운다. 끝낸 스텝이 있으면 남긴다(다음 시도가 그 스텝을 건너뜀). 파일을 되돌리지 못했으면 남긴다.
-- 기록을 읽거나 쓰지 못해도 업데이트는 막지 않는다 — 기록 없는 종전 동작으로 돌아가고 경고 로그를 남긴다.
-- 템플릿도 기록을 남긴다(스텝은 없으므로 파일 교체와 판 기록까지가 판 전환이다).
 
 ### 템플릿 업데이트 (차이점)
 
@@ -330,44 +307,6 @@ public static function assertNotInProgress(ExtensionStatus $status, string $iden
 | Uninstalled | O | - | - | - | - |
 
 - `Installing`, `Uninstalling`, `Updating` 상태에서는 모든 작업이 `\RuntimeException`으로 차단됩니다.
-- 예외: 도중에 멈춘 `Updating`(아래 「멈춘 업데이트 정리」)은 활성화와 `--force` 업데이트가 정리한 뒤 진행합니다.
-
-### 멈춘 업데이트 정리 (StuckUpdateRecovery)
-
-> 파일: `app/Extension/Helpers/StuckUpdateRecovery.php`
-
-업데이트 프로세스가 죽으면 행이 `Updating` 으로 남고 위 가드가 시간 조건 없이 막아 빠져나올 수 없었다. 진입점은 상태 가드 앞에서 `StuckUpdateRecovery` 를 거친다.
-
-| 항목 | 규칙 |
-|---|---|
-| 고착 판정 | `Updating` 이고 마지막 갱신이 작업 잠금 유지 시간(`ExtensionOperationLock::LOCK_SECONDS`, 10분)보다 오래됐으며, 작업 잠금이 비어 있다(그 업데이트를 하는 프로세스가 없다). 진행 중인 업데이트는 단계마다 잠금을 늘리고 행 `updated_at` 을 갱신하므로(하트비트) 10분 넘게 걸려도 고착이 아니다. 잠금 저장소가 오류를 내 비었는지 알 수 없으면 고착으로 보지 않는다(정리하지 않는다) |
-| 정리하는 진입점 | 활성화(`{type}:activate`·관리자 활성화) — 정리 뒤 그대로 활성화한다. `--force` 업데이트 — 정리 뒤 업데이트를 이어 한다 |
-| 정리하지 않는 경우 | `--force` 없는 업데이트는 업데이트 확인(「업데이트 없음」)보다 먼저 멈춘 상태를 안내하고 실패로 끝낸다. 10분이 지나지 않았거나 잠금이 잡혀 있으면 종전처럼 「진행 중」으로 거절한다. 자동으로 풀지 않는다 |
-| 정리 결과 | 직전 상태를 따로 남기지 않으므로 `Inactive` 로 되돌린다. 업데이트 명령은 다시 켜는 명령(`php artisan {type}:activate {identifier}`)을 함께 안내한다 |
-| 끝나지 않은 판 전환 | 진행 기록이 남아 있고 파일을 건드렸거나 끝낸 스텝이 있으면, DB 판을 기록의 시작 판으로 되돌리고 「업데이트 있음」(`latest_version`·`update_available`)으로 표시한다. 파일은 옛 판으로 되돌리지 않는다. 다음 업데이트(`--force` 없이도)가 못 끝낸 스텝만 이어 돈다 — 활성화 명령과 실패한 업데이트는 업데이트를 다시 실행하라고 안내한다 |
-| 아무 일도 없던 경우 | 파일을 건드리기 전에 멈췄고 끝낸 스텝도 없으면 진행 기록을 지우고 상태만 되돌린다 |
-
-관리자 확장 목록 응답의 `stuck_update` 칸이 이 판정(10분 경과·진행 프로세스 없음)을 싣는다. 잠금 저장소 장애 중에는 `false` 다(목록은 정상 응답).
-
-### 작업 잠금 (ExtensionOperationLock)
-
-> 파일: `app/Extension/Helpers/ExtensionOperationLock.php`
-
-같은 대상의 작업을 한 번에 하나만 수행하게 하는 원자적 잠금이다. Manager 진입점 첫 줄(직전 훅보다 앞)에서 잡으므로 CLI·관리자 화면·일괄 업데이트가 같은 잠금을 공유한다.
-
-| 항목 | 규칙 |
-|---|---|
-| 대상 동작 | 모듈·플러그인·템플릿의 설치·활성화·비활성화·제거·업데이트, ZIP·GitHub 설치(`_pending` 이동부터 설치까지), 언어팩의 설치·업데이트·활성화·비활성화·제거, `core:update` |
-| 키 | `extension-update:{type}:{identifier}` (`type` = `module`·`plugin`·`template`·`language_pack`), 코어는 `core-update` |
-| 겹침 | 다른 프로세스가 같은 키를 잡고 있으면 409 — 응답 `errors.operation_in_progress: true`, 업데이트는 「업데이트가 이미 진행 중」, 그 밖의 작업은 「다른 작업이 진행 중」 문구. 명령줄은 같은 문구로 실패 종료 |
-| 잠금 저장소 오류 | 작업을 시작하지 않는다 — 503, 응답 `errors.operation_lock_unavailable: true` 와 번역 문구만 싣고 원본 오류(경로 포함)는 `Log::error` 에만 남긴다. 7.1.4 까지는 잠금 없이 진행했다 |
-| 재진입 | 같은 프로세스가 이미 잡은 키를 다시 잡으면 합류한다(Service 바깥 잠금 → 안쪽 Manager, 언어팩 업데이트 → 설치). 가장 바깥 핸들이 풀릴 때 실제로 풀린다 |
-| 유지·연장 | 기본 600초(코어 1800초). 업데이트 진행 콜백이 30초 간격으로 잠금을 늘리고, 업그레이드 스텝 경계·캐시 비우기 직후에는 바로 늘린다. 잠금을 잃었으면(만료·캐시 비우기) 같은 소유자로 다시 잡고, 그래도 못 잡으면 오류 로그만 남기고 계속한다 |
-| 일괄 업데이트 | 번들 일괄 업데이트는 잠금 저장소 오류를 만나면 첫 항목에서 멈추고 「남은 N건 건너뜀」을 한 번 알린 뒤 실패로 끝난다. 진행 중(409) 항목은 실패 1건으로 세고 다음 항목으로 간다 |
-| `cache:clear` | file 캐시는 잠금을 `storage/framework/cache/locks` 에 따로 두어 캐시를 비워도 잡힌 잠금이 남는다. redis·memcached 는 `flush` 가 잠금까지 지우므로 다음 연장 때 다시 잡는다(그 사이 최대 30초는 배제가 약해진다) |
-| 다중 서버 | 서버 사이 배제는 공유 캐시 스토어(redis·memcached·database)에서만 성립한다. file 스토어는 서버마다 따로다 |
-
-관리자 화면의 켜기/끄기·템플릿 활성화는 409 를 「의존 확장 있음(강제 창)」·「같은 자리에 다른 언어팩(칸 충돌 창)」으로 써 왔으므로, `errors.operation_in_progress` 가 있으면 창을 열지 않고 안내 토스트를 띄운다(관리자 템플릿 sirsoft-admin_basic 1.1.5).
 
 ---
 
@@ -551,8 +490,6 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 
 업그레이드 스텝은 재실행될 수 있다 (롤백 후 재시도, `--force` 등). 모든 DB 조작은 이미 완료된 상태에서 재실행해도 안전해야 한다.
 
-진행 기록([3. 업데이트 실행 흐름](#진행-기록-extensionupdatejournal))은 **끝낸** 스텝만 건너뛴다. 스텝 도중에 프로세스가 죽거나 예외로 실패한 스텝은 끝냈다고 적히지 않으므로 다음 업데이트에서 처음부터 다시 돈다 — 그래서 멱등성 규정은 그대로 필요하다.
-
 | 조작 유형 | 방어 패턴 |
 |----------|----------|
 | 레코드 삽입 | `firstOrCreate` 또는 `updateOrCreate` |
@@ -566,7 +503,7 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 
 - 디렉토리: `{extensionPath}/upgrades/`
 - 파일 패턴: `Upgrade_X_Y_Z.php` (언더스코어 → 점으로 변환: `1_1_0` → `1.1.0`)
-- 실행 순서: `fromVersion < stepVersion <= toVersion` 범위의 스텝만 자연 정렬 순 실행 — 끝나지 않은 진행 기록이 있으면 `fromVersion` 은 기록의 시작 판이고, 기록에 끝냈다고 적힌 스텝은 빠진다
+- 실행 순서: `fromVersion < stepVersion <= toVersion` 범위의 스텝만 자연 정렬 순 실행
 
 ---
 
@@ -632,24 +569,6 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 전환점: _bundled에 최초 반영한 이후부터는 반드시 _bundled에서만 작업
 전환 후: 활성 디렉토리 직접 수정 금지 → 업데이트 프로세스만 사용
 ```
-
-### 파일만 교체했을 때 (업데이트 명령 없이)
-
-배포 도구·FTP 로 활성 디렉토리의 파일만 바꿨거나 `_bundled` 를 고친 뒤 업데이트 명령을 거치지 않으면 생명주기 후처리가 돌지 않는다. 캐시별로 자동 감지 여부가 다르다.
-
-| 대상 | 자동 감지 | 실행할 명령 |
-| ---------- | ---------- | ---------- |
-| 훅 캐시 (`bootstrap/cache/hooks.php`) | O (7.1.3+) — 활성 확장의 매니페스트·진입 파일(`module.php`/`plugin.php`)·`composer.json` 수정 시각 지문이 다르면 스캔으로 동작하고 다시 만든다 | 필요 시 `php artisan hooks:cache` |
-| 확장 오토로드 캐시 (`bootstrap/cache/autoload-extensions.php`) | O (7.1.3+) — 같은 지문으로 감지해 다시 만들고, 사라진 파일의 classmap 항목은 등록하지 않는다 | `php artisan extension:update-autoload` (**명시 실행 권장**) |
-| 레이아웃 (DB) | X | `php artisan module:refresh-layout {id}` · `plugin:refresh-layout {id}` · `template:refresh-layout {id}` |
-| config 캐시 | X | `php artisan config:clear` |
-| 라우트 캐시 | X | `php artisan route:clear` (라우트를 캐시해 운영하면 이어서 `php artisan route:cache`) |
-| 정적 게시 리소스 | X | `php artisan ext-static:publish` |
-| 애플리케이션 캐시 (설정·목록 등) | X | `php artisan cache:clear` |
-
-- 지문은 위 세 파일의 수정 시각만 본다. 이 세 파일을 건드리지 않은 변경(예: `src/` 아래 클래스 파일만 추가)은 감지하지 못하므로 `extension:update-autoload` 를 직접 실행한다.
-- 훅 캐시는 확장 활성화·비활성화 때도 다시 만든다(7.1.3+).
-- 마이그레이션·권한/메뉴 동기화·업그레이드 스텝은 위 명령으로 대신할 수 없다 — 버전을 올리고 `{type}:update` 로 반영하는 것이 원칙이다.
 
 ---
 
@@ -1115,10 +1034,6 @@ public function getSchedules(): array
 
 - cron expression vs 메서드명 자동 분기
 - `enabled_config`: 확장 설정값으로 조건부 활성화
-- 중복 실행 방지(7.1.5 기본): 모든 확장 예약 작업에 `withoutOverlapping(1440)`·`onOneServer()` 를 건다. 이전 회차가 끝나지 않았으면 다음 회차를 건너뛰고, 다중 서버에서는 한 서버만 실행한다
-  - `'without_overlapping' => false` 로 끈다. 정수(분)를 주면 그 시간 뒤 잠금이 만료된다
-  - `'on_one_server' => false` 로 끈다. 서버 사이 배제는 공유 캐시 스토어에서만 효력이 있다
-  - 비정상 종료로 남은 잠금은 만료 시간이 지나거나 `php artisan schedule:clear-cache` 로 풀린다(캐시 비우기로는 풀리지 않는다 — 잠금 폴더가 따로다)
 
 ---
 

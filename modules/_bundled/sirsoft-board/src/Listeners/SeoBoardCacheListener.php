@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 
 /**
  * 게시글 변경 시 SEO 캐시 무효화 리스너
@@ -94,12 +95,6 @@ class SeoBoardCacheListener implements HookListenerInterface
             ],
             'sirsoft-board.board.after_update' => [
                 'method' => 'onBoardUpdate',
-                'priority' => 20,
-                'sync' => true,
-            ],
-            // 표시 순서가 바뀌면 게시판 목록·홈의 메뉴 순서가 바뀐다
-            'sirsoft-board.board.after_reorder' => [
-                'method' => 'onBoardReorder',
                 'priority' => 20,
                 'sync' => true,
             ],
@@ -197,7 +192,7 @@ class SeoBoardCacheListener implements HookListenerInterface
             }
 
             try {
-                app(SeoCacheManagerInterface::class)->invalidateByUrl("/board/{$slug}/{$postId}");
+                app(SeoCacheManagerInterface::class)->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $postId]));
             } catch (\Throwable $e) {
                 Log::warning('[SEO] Board post cache invalidation on comment change failed', [
                     'error' => $e->getMessage(),
@@ -212,9 +207,8 @@ class SeoBoardCacheListener implements HookListenerInterface
      *
      * 게시판 이름/설명 변경은 게시판 목록(/board/{slug})과 인덱스(/boards)의
      * title/description 메타에 노출되므로, 수정 후 이전 메타가 봇에게 계속
-     * 반환되지 않도록 관련 캐시를 무효화합니다. 게시글 상세(/board/{slug}/{id})도
-     * 화면에 게시판 이름을 렌더하므로(상단 제목·이동 영역) 그 게시판의 글 상세까지 비웁니다.
-     * 다른 게시판 화면은 이 게시판 정보를 렌더하지 않으므로 비우지 않습니다.
+     * 반환되지 않도록 관련 캐시를 무효화합니다. 게시글 상세(/board/{slug}/{id})는
+     * 게시판명을 메타에 노출하지 않으므로 광역 무효화 대상에서 제외합니다.
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Board 모델, 두 번째: 변경 데이터, 세 번째: 스냅샷)
      * @return void
@@ -236,15 +230,13 @@ class SeoBoardCacheListener implements HookListenerInterface
                 // 봇 캐시 키는 쿼리스트링 변종(`?`, `?page=2`, `?_escaped_fragment_=` 등)을
                 // 포함해 저장되므로(SeoMiddleware::buildCacheUrl), 와일드카드로 변종까지 무효화한다.
                 // matchesPattern 이 ^...$ 정확 매칭이라 와일드카드 없이는 `/board/{slug}?` 가 누락된다.
-                $cache->invalidateByUrl("/board/{$slug}");
-                $cache->invalidateByUrl("/board/{$slug}?*");
-
-                // 그 게시판의 글 상세 (게시판 이름을 렌더한다)
-                $cache->invalidateByUrl("/board/{$slug}/*");
+                $listPath = BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]);
+                $cache->invalidateByUrl($listPath);
+                $cache->invalidateByUrl($listPath.'?*');
 
                 // 게시판 인덱스 페이지 (게시판명 목록 노출 가능)
-                $cache->invalidateByUrl('/boards');
-                $cache->invalidateByUrl('/boards?*');
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX);
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX.'?*');
 
                 // 홈 / 검색 페이지 (게시판명이 함께 노출될 수 있음)
                 $cache->invalidateByLayout('home');
@@ -264,33 +256,6 @@ class SeoBoardCacheListener implements HookListenerInterface
             }
 
             $this->syncBoardSitemapIndex($board);
-        });
-    }
-
-    /**
-     * 게시판 표시 순서 변경 시 게시판 목록·홈 SEO 캐시를 무효화합니다.
-     *
-     * 봇용 HTML 의 게시판 목록(/boards)·홈 메뉴가 옛 순서로 남지 않게 한다. 게시판 수정과 같은 범위다.
-     *
-     * @param  mixed  ...$args  훅 인자 (첫 번째: 새 순서의 게시판 id 목록, 두 번째: 변경 전 순서)
-     * @return void 반환값 없음
-     */
-    public function onBoardReorder(...$args): void
-    {
-        DB::afterCommit(function () {
-            try {
-                $cache = app(SeoCacheManagerInterface::class);
-
-                $cache->invalidateByUrl('/boards');
-                $cache->invalidateByUrl('/boards?*');
-                $cache->invalidateByLayout('home');
-
-                Log::debug('[SEO] Board cache invalidated on board reorder');
-            } catch (\Throwable $e) {
-                Log::warning('[SEO] Board cache invalidation on board reorder failed', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
         });
     }
 
@@ -381,7 +346,7 @@ class SeoBoardCacheListener implements HookListenerInterface
 
             if ($visible) {
                 $indexer->indexResource('board_post', $post->id, 'sirsoft-board', [[
-                    'url' => "/board/{$slug}/{$post->id}",
+                    'url' => BoardScreenUrl::post((string) $slug, $post->id),
                     'lastmod' => $post->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Monthly->value,
                     'priority' => 0.5,
@@ -423,7 +388,7 @@ class SeoBoardCacheListener implements HookListenerInterface
 
             if ($visible) {
                 $indexer->indexResource('board', $board->id, 'sirsoft-board', [[
-                    'url' => "/board/{$board->slug}",
+                    'url' => BoardScreenUrl::list((string) $board->slug),
                     'lastmod' => $board->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Daily->value,
                     'priority' => 0.6,
@@ -476,13 +441,12 @@ class SeoBoardCacheListener implements HookListenerInterface
 
             // 해당 게시글 상세 페이지 캐시 무효화 (정확한 URL)
             if ($post && isset($post->id) && $slug) {
-                $cache->invalidateByUrl("/board/{$slug}/{$post->id}");
+                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $post->id]));
             }
 
-            // 해당 게시판의 목록 페이지만 무효화 (다른 게시판은 유지) — 쪽 변종(`?page=2`)까지
+            // 해당 게시판의 목록 페이지만 무효화 (다른 게시판은 유지)
             if ($slug) {
-                $cache->invalidateByUrl("/board/{$slug}");
-                $cache->invalidateByUrl("/board/{$slug}?*");
+                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]));
             }
 
             // 홈 페이지 캐시 무효화 (최근 게시글 등이 표시될 수 있음)

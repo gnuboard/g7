@@ -61,10 +61,6 @@ return [
 
     // user-friendly attribute names shown in validation errors
     'attributes' => [
-        'content_media' => [
-            'file' => 'content media file',
-            'temp_key' => 'temporary key',
-        ],
         'search' => 'search query',
         'temp_key' => 'temporary attachment key',
         'title' => 'page title',

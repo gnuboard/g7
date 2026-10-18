@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Analytics;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\Analytics\CloudIpRangeService;
 use Illuminate\Console\Command;
 
@@ -19,14 +18,19 @@ use Illuminate\Console\Command;
  */
 class UpdateCloudRangesCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * 커맨드 이름 및 시그니처
      *
      * @var string
      */
     protected $signature = 'analytics:update-cloud-ranges';
+
+    /**
+     * 커맨드 설명
+     *
+     * @var string
+     */
+    protected $description = '클라우드 사업자의 IP 대역 목록을 내려받아 갱신합니다.';
 
     /**
      * 커맨드 실행
@@ -39,16 +43,16 @@ class UpdateCloudRangesCommand extends Command
         $result = $service->refresh();
 
         if ($result['failed'] !== []) {
-            $this->warn(__('analytics.console.update_cloud_ranges.failed_sources', ['sources' => implode(', ', $result['failed'])]));
+            $this->warn('받지 못한 출처: '.implode(', ', $result['failed']));
         }
 
         if ($result['count'] === 0) {
-            $this->error(__('analytics.console.update_cloud_ranges.none_received'));
+            $this->error('대역을 하나도 받지 못해 기존 목록을 그대로 둡니다.');
 
             return self::FAILURE;
         }
 
-        $this->info(__('analytics.console.update_cloud_ranges.done', ['count' => $result['count']]));
+        $this->info(sprintf('클라우드 IP 대역 %d건을 갱신했습니다.', $result['count']));
 
         return self::SUCCESS;
     }

@@ -7,6 +7,7 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\ModuleManager;
 use App\Services\NotificationRecipientCapability;
+use App\Support\ScreenUrl;
 use BackedEnum;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +23,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Services\UserNotificationSettingService;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 
 /**
  * 게시판 알림 데이터 필터 리스너
@@ -189,7 +191,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -249,7 +251,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -304,7 +306,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $parentPost->title ?? '',
                 'post_url' => $this->buildPostUrl($board, $parentPost),
-                'site_url' => config('app.url'),
+                'site_url' => ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -361,7 +363,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => config('app.url'),
+                    'site_url' => ScreenUrl::userBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -402,8 +404,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : config('app.url'),
-                    'site_url' => config('app.url'),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userBase(),
+                    'site_url' => ScreenUrl::userBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -459,7 +461,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => config('app.url'),
+                    'site_url' => ScreenUrl::userBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -491,8 +493,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : config('app.url'),
-                    'site_url' => config('app.url'),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userBase(),
+                    'site_url' => ScreenUrl::userBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -626,7 +628,8 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function buildAdminPostUrl(string $slug, int $postId): string
     {
-        return config('app.url')."/admin/board/{$slug}/post/{$postId}";
+        // 관리자 화면 — 화면 주소 헬퍼의 관리자 범위(베이스 = 사이트 주소, #792)
+        return ScreenUrl::absolute('board.admin.post', '/admin/board/{slug}/post/{id}', ['slug' => $slug, 'id' => $postId], ScreenUrl::SCOPE_ADMIN);
     }
 
     /**
@@ -686,7 +689,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'post_title' => $postTitle,
                 'target_type' => __('sirsoft-board::notification.report_action.target_types.'.$targetType),
                 'reason_type' => __('sirsoft-board::notification.report_received_admin.reason_types.'.$reasonType),
-                'report_url' => config('app.url').'/admin/boards/reports',
+                'report_url' => ScreenUrl::absolute('board.admin.reports', '/admin/boards/reports', [], ScreenUrl::SCOPE_ADMIN),
                 'site_url' => config('app.url'),
             ],
             'context' => [
@@ -736,7 +739,8 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function buildPostUrl(Board $board, Post $post): string
     {
-        return config('app.url')."/board/{$board->slug}/{$post->id}";
+        // 회원이 여는 글보기 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
+        return BoardScreenUrl::post($board->slug, $post->id, absolute: true);
     }
 
     /**

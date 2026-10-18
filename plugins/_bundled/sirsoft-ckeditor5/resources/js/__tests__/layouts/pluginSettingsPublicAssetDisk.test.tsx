@@ -131,8 +131,6 @@ const CATALOG = [
 ];
 
 describe('CKEditor5 공개 자산 디스크 필드 — 계약', () => {
-    // @scenario consumer=editor, override=module_override
-    // @effects settings_catalog_includes_plugin_registered_disks
     it('코어 설정 API 교차 조회 데이터소스가 없다 (권한 표면 단일화)', () => {
         const dataSources = (pluginSettings as any).data_sources;
 
@@ -144,8 +142,6 @@ describe('CKEditor5 공개 자산 디스크 필드 — 계약', () => {
         expect(dataSources.find((d: any) => d.endpoint === '/api/admin/settings')).toBeUndefined();
     });
 
-    // @scenario consumer=editor, override=module_override
-    // @effects settings_catalog_includes_plugin_registered_disks
     it('Select 가 저장 키와 설정 응답 부착 카탈로그를 바인딩한다', () => {
         const select = findNode(
             publicAssetField,
@@ -157,8 +153,6 @@ describe('CKEditor5 공개 자산 디스크 필드 — 계약', () => {
         expect(select.props.options).toContain('follow_core');
     });
 
-    // @scenario consumer=editor, override=module_override
-    // @effects settings_catalog_includes_plugin_registered_disks
     it('설정 스키마(getSettingsSchema)가 같은 키를 선언한다 (저장 whitelist)', () => {
         const pluginSource = fs.readFileSync(path.join(pluginRoot(), 'plugin.php'), 'utf-8');
         const defaults = JSON.parse(
@@ -247,8 +241,6 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         );
     }
 
-    // @scenario consumer=editor
-    // @effects settings_catalog_includes_plugin_registered_disks
     it('라벨/힌트가 다국어 해석되어 렌더된다', async () => {
         testUtils = makeUtils();
         const { container } = await testUtils.render();
@@ -262,8 +254,6 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         expect(() => testUtils!.assertNoValidationErrors()).not.toThrow();
     });
 
-    // @scenario consumer=editor, override=follow_core
-    // @effects settings_catalog_includes_plugin_registered_disks
     it('설정 응답 부착 카탈로그가 옵션으로 계산된다 (코어 따름 선두 + $localized 매핑)', async () => {
         testUtils = makeUtils();
         const { container } = await testUtils.render();
@@ -288,8 +278,7 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         testUtils = makeUtils({ public_asset_disk: 'none', public_asset_disk_unavailable: 'gone_cdn' });
         const { container } = await testUtils.render();
 
-        // 경고 글자색은 이 확장에 CSS 빌드가 없어 관리자 템플릿 text-warning-soft 와 같은 색 팔레트(라이트·다크 짝)로 싣는다(#757)
-        const notice = container.querySelector('p.text-yellow-700');
+        const notice = container.querySelector('p.text-warning-soft');
         expect(notice?.textContent).toContain('gone_cdn');
         expect(notice?.textContent).toContain('스트리밍');
     });
@@ -302,6 +291,6 @@ describe('CKEditor5 공개 자산 디스크 필드 — 렌더링', () => {
         testUtils = makeUtils({ public_asset_disk: 'fake_cdn' });
         const { container } = await testUtils.render();
 
-        expect(container.querySelector('p.text-yellow-700')).toBeNull();
+        expect(container.querySelector('p.text-warning-soft')).toBeNull();
     });
 });

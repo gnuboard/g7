@@ -3,24 +3,7 @@
     "title": "Works together with",
     "hint": "When these extensions are installed, their features connect with this one. This extension works without them.",
     "not_installed": "Not installed",
-    "inactive": "Inactive",
-    "required_version": "Requires {{version}}",
-    "installed_version": "Installed {{version}}",
-    "version_mismatch": "Version too low",
-    "active": "In use",
-    "install_title": "Extensions that work together (optional)",
-    "install_hint": "Checked extensions are installed and activated before this one. This extension is installed even if you uncheck them.",
-    "cannot_select": "Cannot be installed here",
-    "requires_label": "Also installs:",
-    "requires_hint": "— required by this integration, installed first",
-    "requires_hint_unselected": "— installed too if you check this integration",
-    "requires_no_permission": "No permission to install a required extension",
-    "integrated_by_label": "Integrated extensions",
-    "deactivate_notice_title": "Check integrated extensions",
-    "deactivate_notice_body": "If you turn off {{name}}, the menus and screens that the extensions below use from it will disappear. The extensions below keep working.",
-    "deactivate_confirm": "Deactivate",
-    "uninstall_notice": "The extensions below are integrated with this one — deleting it removes the menus and screens they use from it.",
-    "notice_toast": "Extensions that work together: {{items}}"
+    "inactive": "Inactive"
   },
   "sidebar": {
     "no_accessible_menus": "No accessible menus",
@@ -117,8 +100,7 @@
     },
     "refreshed": "Dashboard refreshed.",
     "extension_status": {
-      "more": "More",
-      "more_count": "and {{count}} more"
+      "more": "More"
     },
     "module_status": {
       "title": "Module Status",
@@ -448,8 +430,7 @@
         "profile_memo": "Profile/Memo",
         "activity_info": "Activity",
         "consent_info": "Consent",
-        "notifications_info": "Inbox",
-        "search_history_info": "Recent searches"
+        "notifications_info": "Inbox"
       },
       "unlock": "Unlock",
       "unlock_success": "The account lock has been released.",
@@ -474,15 +455,6 @@
         "no": "No",
         "postponed_until": "Postponed until",
         "policy": "Expiry setting"
-      },
-      "search_history": {
-        "auto_save": "Save search history",
-        "auto_save_on": "On",
-        "auto_save_off": "Off — new searches are not saved",
-        "feature_off": "Recent searches are turned off for this site. Only searches saved earlier are shown.",
-        "keywords": "Searches",
-        "count": "{{count}}",
-        "empty": "No saved searches."
       }
     },
     "filter": {
@@ -778,22 +750,17 @@
       "active": "Active",
       "inactive": "Inactive",
       "not_installed": "Not Installed",
-      "version_mismatch": "version below requirement",
       "installing": "Installing",
       "uninstalling": "Uninstalling",
       "updating": "Updating",
-      "stuck_update": "Update stuck",
       "active_label": "Active"
     },
-    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
-    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The module is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
-      "recover_update": "Clean up and update again",
       "check_updates": "Check Updates",
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
@@ -834,7 +801,7 @@
       "dependency_installed_version": "Installed: {{version}}",
       "dependency_not_installed": "Not installed",
       "dependency_met": "Satisfied",
-      "dependency_unmet_version": "Version too low",
+      "dependency_unmet_version": "Version mismatch",
       "dependency_inactive": "Inactive",
       "permissions": "Permissions",
       "permissions_count": "{{count}} permissions will be registered.",
@@ -980,11 +947,6 @@
     "dependencies": "Dependencies: {{deps}}",
     "dependencies_label": "Dependencies:",
     "no_dependencies": "Dependencies: None",
-    "dependency_unmet": {
-      "not_installed": "not installed",
-      "inactive": "disabled",
-      "version_mismatch": "version too low {{installed}} → {{required}}"
-    },
     "no_plugins": "No plugins installed.",
     "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
     "update_available": "Update Available",
@@ -1009,21 +971,16 @@
       "active": "Active",
       "inactive": "Inactive",
       "not_installed": "Not Installed",
-      "version_mismatch": "version below requirement",
       "installing": "Installing",
       "uninstalling": "Uninstalling",
-      "updating": "Updating",
-      "stuck_update": "Update stuck"
+      "updating": "Updating"
     },
-    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
-    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The plugin is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
-      "recover_update": "Clean up and update again",
       "view_detail": "View Details",
       "settings": "Settings",
       "refresh_layouts": "Refresh Layouts",
@@ -1069,7 +1026,7 @@
       "dependency_installed_version": "Installed: {{version}}",
       "dependency_not_installed": "Not installed",
       "dependency_met": "Satisfied",
-      "dependency_unmet_version": "Version too low",
+      "dependency_unmet_version": "Version mismatch",
       "dependency_inactive": "Inactive",
       "permissions": "Permissions",
       "permissions_description": "List of permissions registered by this plugin.",
@@ -1276,12 +1233,7 @@
       "delete_title": "Delete Menu",
       "delete_confirm": "Are you sure you want to delete this menu?",
       "delete_core_warning": "Core menus cannot be deleted.",
-      "module_menu_notice": "Module default menu cannot be changed.",
-      "editing_title": "You have unsaved changes",
-      "editing_message": "There are unsaved changes.",
-      "editing_confirm_message": "Move to another menu without saving?",
-      "editing_discard": "Discard changes",
-      "editing_continue": "Continue editing"
+      "module_menu_notice": "Module default menu cannot be changed."
     },
     "messages": {
       "order_updated": "Menu order has been updated.",
@@ -1602,7 +1554,6 @@
       "general": "General",
       "mail": "Mail",
       "upload": "Upload",
-      "content": "Content",
       "seo": "SEO",
       "security": "Security",
       "drivers": "Drivers",
@@ -1667,7 +1618,9 @@
       "static_cache_republish_confirm_warning": "This may take a moment. The site keeps working in the meantime.",
       "static_cache_republished": "Startup static files were rebuilt.",
       "static_cache_republish_not_publishable": "Static files are not built in this environment (not production, or disabled).",
-      "static_cache_republish_failed": "Startup static files could not be rebuilt. See the failure reason below. The site keeps working normally."
+      "static_cache_republish_failed": "Startup static files could not be rebuilt. See the failure reason below. The site keeps working normally.",
+      "user_screen_url": "User screen URL",
+      "user_screen_url_help": "Leave empty to use the site URL. Enter it only when you run an external screen (e.g. Next.js) at another address. It is used for links in password reset and notification emails and for the address you return to after payment; admin screen addresses do not change."
     },
     "mail": {
       "smtp_settings": "SMTP Settings",
@@ -1710,8 +1663,6 @@
       "max_file_size": "Max File Size",
       "allowed_extensions": "Allowed Extensions",
       "allowed_extensions_hint": "Enter allowed file extensions separated by commas.",
-      "layout_attachment_extensions": "Allowed Extensions for Layout Attachments",
-      "layout_attachment_extensions_hint": "File types that can be uploaded in the layout editor, separated by commas. Non-image types are served as downloads unless they are exported to the public disk.",
       "image_settings": "Image Settings",
       "image_settings_desc": "Auto-resize and quality settings for uploaded images.",
       "image_max_width": "Max Width",
@@ -1729,7 +1680,7 @@
       "meta_settings": "Meta Tag Settings",
       "meta_settings_desc": "Configure meta tags for search engine optimization.",
       "meta_title_suffix": "Title Suffix",
-      "meta_title_suffix_hint": "Text appended to every page title (the search engine title and the visitor's browser tab title). {site_name} is replaced with the site name; when empty, ' - site name' is appended. It is not appended again when the title already ends with the site name. (e.g., ' | {site_name}')",
+      "meta_title_suffix_hint": "Text appended to all page titles. (e.g., ' | Gnuboard7')",
       "meta_description": "Default Meta Description",
       "meta_description_placeholder": "Enter the default meta description for your site.",
       "meta_description_hint": "Description shown in search results. Max 160 characters recommended.",
@@ -1812,9 +1763,7 @@
       "sitemap_progress_phase": "Processing: {{phase}}",
       "sitemap_progress_urls": "URLs so far: {{count}}",
       "sitemap_realtime_connected": "Connected in real time.",
-      "sitemap_polling": "Checking progress periodically.",
-      "meta_title_suffix_placeholder": " | Gnuboard7",
-      "meta_keywords_placeholder": "CMS, Gnuboard7, open source"
+      "sitemap_polling": "Checking progress periodically."
     },
     "security": {
       "title": "Security Settings",
@@ -1828,9 +1777,6 @@
       "auth_token_lifetime": "Auth Token Lifetime (minutes)",
       "max_login_attempts": "Max Login Attempts",
       "login_lockout_time_full": "Lockout Time After Exceeding Login Attempts (minutes)",
-      "password_reset_rate_limit_per_minute": "Password Reset Requests per Minute",
-      "register_rate_limit_per_minute": "Sign-up Requests per Minute",
-      "rate_limit_per_minute_hint": "Number of requests accepted from the same IP in one minute (1-1000). Raise it if many people share one IP, such as an office network.",
       "zero_means_unlimited": "Set to 0 for unlimited.",
       "app_key": "Application Key Management",
       "app_key_desc": "Manage the application key used for encryption.",
@@ -1982,44 +1928,6 @@
         "days_suffix": "days",
         "days_hint": "{{min}}–{{max}} days. It cannot be shorter than the legal minimum.",
         "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value."
-      },
-      "csp": {
-        "title": "Content Security Policy (CSP)",
-        "desc": "Adds a script-source policy header to site page responses so scripts from untrusted origins and inline scripts do not run. Leave this off if your web server already sends the header.",
-        "mode": "Mode",
-        "mode_off": "Off",
-        "mode_report_only": "Report only (log violations)",
-        "mode_enforce": "Enforce (block violations)",
-        "mode_desc": "Report only does not block anything and writes violations to the server log (storage/logs/csp-*.log). Enforce does not run violating scripts.",
-        "enforce_warning": "Check storage/logs/csp-*.log with 'Report only' first and switch to Enforce only when there are no violations. Features with remaining violations stop working when enforced.",
-        "override_notice": "G7_CSP_MODE={{mode}} in .env takes precedence over this setting. To change it, edit .env and run php artisan config:clear.",
-        "extra_hosts": "Additional allowed script hosts (press Enter after each)",
-        "extra_hosts_placeholder": "cdn.example.com",
-        "extra_hosts_hint": "Add hosts only when scripts load from somewhere other than the automatically included hosts below. Enter a host only (e.g. cdn.example.com, *.example.com, https://cdn.example.com).",
-        "auto_hosts": "Automatically included hosts (declared by active extensions)",
-        "auto_hosts_empty": "No active extension declares an external script host.",
-        "preview": "Policy preview",
-        "preview_hint": "Based on saved values. Save first if you changed the mode or hosts.",
-        "style": {
-          "title": "Style policy",
-          "desc": "Adds a style-source policy to site page responses so CSS from untrusted origins and inline styles are not applied. It is turned on and off separately from the script policy.",
-          "mode": "Style mode",
-          "mode_desc": "Report only does not block anything and writes violations to the server log (storage/logs/csp-*.log). Enforce does not apply violating styles.",
-          "level": "Strictness",
-          "level_basic": "Basic — block <style> blocks and external CSS files that are not allowed",
-          "level_strict": "Strict — Basic plus block style attributes on tags",
-          "level_desc": "Basic keeps most screens working as they are. Strict also blocks style attributes that third-party libraries add themselves, so more screens break.",
-          "enforce_warning": "Check storage/logs/csp-*.log with 'Report only' first and switch to Enforce only when there are no violations.",
-          "known_issues_basic": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors and the background theme are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
-          "known_issues_strict": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors, the background theme and line highlights are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
-          "override_notice": "G7_CSP_STYLE_MODE={{mode}} in .env takes precedence over this setting. To change it, edit .env and run php artisan config:clear.",
-          "extra_hosts": "Additional allowed style hosts (press Enter after each)",
-          "extra_hosts_placeholder": "fonts.example.com",
-          "extra_hosts_hint": "Add hosts only when CSS files load from somewhere other than the automatically included hosts below. Enter a host only (e.g. fonts.example.com, *.example.com, https://fonts.example.com).",
-          "auto_hosts": "Automatically included style hosts (declared by the active template and extensions)",
-          "auto_hosts_empty": "The active template and extensions declare no external stylesheet host.",
-          "preview": "Style policy preview"
-        }
       }
     },
     "identity": {
@@ -2100,11 +2008,7 @@
         "title": "Public Asset Storage",
         "desc": "Configure the disk for serving fully public assets (product, category, review, and editor images, layout background images, etc.) via direct URLs. When disabled, the existing streaming method is used. Only files uploaded after enabling this get direct URLs, and those addresses stay in the saved layout.",
         "disk": "Disk",
-        "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used.",
-        "extensions": "Extensions Exported to the Public Disk",
-        "extensions_hint": "Only these file types are stored on the public disk and served by direct URL. Other types stay on the existing disk and are served through the server. Non-image types listed here are served as downloads even by direct URL.",
-        "hardening_warning": "Web server protection rules are not applied. Responses from /storage direct URLs have no protective headers — check the nginx/Apache settings in the installation guide.",
-        "hardening_rules_write_failed": "Could not update the web server protection rules file to the current settings. Make sure the web server account can write to the public disk folder (storage/app/public) and its .htaccess file, then save again."
+        "s3_help": "When selecting S3, the S3 URL (CDN domain) in the File Storage card above must be configured. Without it, streaming is used."
       },
       "cache": {
         "title": "Cache",
@@ -2540,10 +2444,6 @@
       "php_extensions_desc": "Installed PHP extension module status.",
       "required_modules": "Required Modules",
       "optional_modules": "Optional Modules",
-      "requested_modules": "Modules requested by extensions",
-      "requested_by_line": "Requested by: {{names}}",
-      "level_require": "required",
-      "level_suggest": "recommended",
       "check_update": "Check Update",
       "update_check_failed": "Failed to check for updates.",
       "update_result_title": "Update Check Result",
@@ -2560,15 +2460,29 @@
       "update_guide_warning": "Core updates can only be performed from the terminal. Please backup your database before updating.",
       "update_guide_desc": "Connect to your server terminal and run the following command in the Gnuboard7 installation directory.",
       "update_guide_note": "Maintenance mode is automatically enabled during updates and disabled after completion.",
-      "manual_update_title": "Manual Update (When GitHub Download Is Unavailable)",
-      "manual_update_desc": "If the server cannot reach GitHub or you need a specific version, download the release ZIP yourself and update from the extracted folder. The server still needs the required PHP extensions, including zip.",
+      "manual_update_title": "Manual Update (No ZIP Extension)",
+      "manual_update_desc": "If PHP zip extension or unzip command is not available on your server, you can download the release ZIP from GitHub and update manually.",
       "manual_update_step1": "# 1. Download ZIP from GitHub releases page and extract on server",
       "manual_update_step2": "# 2. Run update with the extracted path",
       "update_guide_cmd_comment": "# Run with administrator privileges (Linux/macOS)",
       "update_guide_cmd": "$ sudo php artisan core:update",
       "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
       "upgrade_guide_link_desc": "See the upgrade guide for permission notes and per-version paths.",
-      "upgrade_guide_link_label": "Open the full upgrade guide"
+      "upgrade_guide_link_label": "Open the full upgrade guide",
+      "custom_preflight_title": "The update was not started",
+      "custom_preflight_desc": "{count} developer packages (custom/composer.json) do not match the new core {version}. No files were changed and the site keeps running as before.",
+      "custom_preflight_desc_one": "{count} developer package (custom/composer.json) does not match the new core {version}. No files were changed and the site keeps running as before.",
+      "custom_conflict_package": "Developer package",
+      "custom_conflict_reason": "What does not match",
+      "custom_conflict_core": "New core",
+      "custom_conflict_installed": "Installed {version}",
+      "custom_conflict_constraint": "The new core does not satisfy the {requires} version constraint ({constraint}) this package requires",
+      "custom_conflict_duplicate": "The core ships the same package in a different version — the core version is used at runtime",
+      "custom_reserved_files": "The release ships files in the developer-only custom locations:",
+      "custom_fix_title": "How to fix",
+      "custom_fix_step1": "Upgrade the developer package to a version compatible with the new core: composer update [package] -d custom",
+      "custom_fix_step2": "Confirm there is no conflict with php artisan custom:check, then run the update again.",
+      "custom_fix_step3": "On servers without composer, fix it on another machine and rebuild the bundle with php artisan custom:vendor-bundle."
     },
     "modals": {
       "password_confirm_title": "Password Confirmation",
@@ -2636,25 +2550,6 @@
         "withdraw_warning": "A withdrawn account cannot be restored. Administrator accounts are excluded from automatic withdrawal.",
         "restore_hint": "Dormancy is lifted automatically when the member signs in — no application is required."
       },
-      "search_history": {
-        "title": "Recent searches",
-        "desc": "Search terms submitted in search boxes are kept per search scope. Members’ terms are stored on the server and visitors’ in their browser; when a visitor logs in, the browser list is merged into the member list. A member’s terms are deleted on withdrawal.",
-        "enabled": "Use recent searches",
-        "enabled_desc": "On by default. When off, search boxes do not record terms and no recent-search list is shown. Terms already saved are still deleted according to the retention periods below.",
-        "auto_save_notice": "Members and visitors can stop their own history with \"Turn off auto-save\" in the search box. This stops recording and hides the list; saved terms are not deleted.",
-        "scopes_title": "Retention per search scope",
-        "scopes_desc": "Search scopes declared by core site search and active extensions. Search boxes using the same scope share one list. When an extension is deactivated its scope leaves this list and its settings are kept.",
-        "scope_meta": "{{owner}} · {{scope}}",
-        "max_count": "Searches kept",
-        "max_count_aria": "Searches kept for {{scope}}",
-        "retention_days": "Retention (days)",
-        "retention_days_aria": "Retention in days for {{scope}}",
-        "retention_days_hint": "0 = no limit",
-        "retention_desc": "For scopes with a retention of 1 day or more, the nightly privacy retention job deletes expired terms. The target list shows the member, scope and count instead of the terms.",
-        "target_count": "{{count}} searches",
-        "target_count_one": "{{count}} search",
-        "empty": "No search scopes are declared."
-      },
       "targets": {
         "view": "View targets",
         "title": {
@@ -2662,16 +2557,14 @@
           "pre_notice": "Members to receive the dormancy notice",
           "convert": "Members to be converted to dormant",
           "withdraw_notice": "Dormant members to receive the withdrawal notice",
-          "withdraw": "Dormant members to be withdrawn",
-          "search_history": "Recent searches past retention"
+          "withdraw": "Dormant members to be withdrawn"
         },
         "rows": {
           "withdrawn": "Withdrawn members' residual data",
           "pre_notice": "Advance notice before dormancy",
           "convert": "Convert to dormant",
           "withdraw_notice": "Notice before withdrawing dormant accounts",
-          "withdraw": "Withdraw dormant accounts",
-          "search_history": "Recent searches past retention"
+          "withdraw": "Withdraw dormant accounts"
         },
         "hint": "Counts and lists follow the saved settings. Even while a feature is off, they show what would be processed once it is turned on.",
         "total": "{{count}} in total",
@@ -2712,75 +2605,6 @@
         "preview_failed": "Could not load the target count.",
         "editor_label": "Run privacy action now"
       }
-    },
-    "content": {
-      "candidates": {
-        "title": "Allowed features",
-        "description": "Turn on the features available in post, page and product description content. Video and audio files can be uploaded in the editor only when turned on, and elements of features that are off are removed when displayed and saved.",
-        "figure_caption": "Image captions",
-        "figure_caption_hint": "Keep captions under images (figure, figcaption).",
-        "uploaded_video": "Allow video uploads",
-        "uploaded_video_hint": "Lets editors upload video files (such as mp4) into content and play them. If a board or the shop has its own content media rule, videos must also be turned on in that rule. Only files uploaded to this site play.",
-        "uploaded_audio": "Allow audio uploads",
-        "uploaded_audio_hint": "Lets editors upload audio files (such as mp3) into content and play them. If a board or the shop has its own content media rule, audio must also be turned on in that rule. Only files uploaded to this site play.",
-        "external_embed": "External videos",
-        "external_embed_hint": "Show videos inserted with the editor's \"Insert media\" in the player of a service enabled below. When off, they appear as links."
-      },
-      "custom_tags": {
-        "title": "Extra tags",
-        "description": "Add tags that are not in the list above (e.g. details, summary, svg).",
-        "warning": "Security risk: added tags stay in the content as is. Script, external document and form tags cannot be added, but tags such as svg and math can also be abused — add only what you really need. Event attributes (on…) and javascript: URLs are always removed.",
-        "placeholder": "Type a tag name and press Enter"
-      },
-      "embed": {
-        "title": "External video services",
-        "description": "Services that can be inserted with \"Insert media\". Only the fixed player URL is built from the video id taken from the address — no other HTML or arbitrary iframe is inserted.",
-        "presets": "Built-in services",
-        "extension": "Services provided by extensions",
-        "extension_hint": "External video services added by installed extensions. They start turned off; only the ones you turn on are shown as players in content.",
-        "custom": "Custom services",
-        "custom_empty": "No custom services.",
-        "add": "Add service",
-        "enabled": "Enabled",
-        "preset_names": {
-          "youtube": "YouTube",
-          "vimeo": "Vimeo",
-          "tiktok": "TikTok"
-        },
-        "modal": {
-          "create_title": "Add external video service",
-          "edit_title": "Edit external video service",
-          "trust_notice": "Add only services you trust. The player site appears inside the content (in an isolated frame).",
-          "required": "Enter the name, identifier, URL formats and player URL.",
-          "name": "Name",
-          "name_placeholder": "e.g. Chzzk clips",
-          "id": "Identifier",
-          "id_hint": "2-32 characters starting with a lowercase letter (lowercase letters, digits, underscore). Cannot match a built-in service.",
-          "url_patterns": "URL formats",
-          "url_patterns_hint": "One per line (up to 5). * matches any characters except /, {id} marks the video id. A * in the host is allowed only as the leading subdomain (*.example.com).",
-          "player_url": "Player URL",
-          "player_url_hint": "Starts with https:// and contains {id} once. Fixed query parameters are allowed.",
-          "id_rule": "Id characters",
-          "id_rules": {
-            "alnum_dash": "Letters, digits, - and _",
-            "alnum": "Letters and digits",
-            "digits": "Digits only"
-          },
-          "aspect": "Aspect ratio",
-          "allow": "Permissions",
-          "sample": "Check an example URL",
-          "sample_check": "Check",
-          "preview_id": "Extracted id: {{id}}",
-          "preview_player": "Player URL: {{url}}",
-          "preview_no_match": "The URL does not match the formats.",
-          "apply": "Apply"
-        }
-      },
-      "ttl": {
-        "title": "Media URL lifetime",
-        "description": "Content media that only certain people may see (secret posts, unpublished pages) is served through short-lived URLs. If a screen stays open longer than this, reload it to play.",
-        "unit": "minutes (5-1440)"
-      }
     }
   },
   "templates": {
@@ -2797,10 +2621,6 @@
     "dependencies": "Dependencies: {{deps}}",
     "dependencies_label": "Dependencies:",
     "no_dependencies": "Dependencies: None",
-    "force_activate": {
-      "warning_user_503": "If you force it, the user site shows the \"Service temporarily unavailable (503)\" notice until the requirements are met.",
-      "warning_admin_503": "If you force it, the admin screens show the 503 notice and you cannot undo it from here. To recover: php artisan template:activate {{identifier}}"
-    },
     "available": "available",
     "no_templates": "No templates installed.",
     "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
@@ -2855,18 +2675,14 @@
       "installing": "Installing",
       "uninstalling": "Uninstalling",
       "updating": "Updating",
-      "stuck_update": "Update stuck",
       "update_available": "Update Available"
     },
-    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
-    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The template is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
-      "recover_update": "Clean up and update again",
       "check_updates": "Check Updates",
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
@@ -2977,7 +2793,7 @@
       "dependency_required_version": "Required: {{version}}",
       "dependency_installed_version": "Installed: {{version}}",
       "dependency_not_installed": "Not installed",
-      "dependency_unmet_version": "Version too low",
+      "dependency_unmet_version": "Version mismatch",
       "dependency_inactive": "Inactive",
       "required_modules": "Required Modules",
       "required_plugins": "Required Plugins",
@@ -3598,8 +3414,7 @@
         "purpose": "Purpose",
         "purpose_help": "Pick what kind of identity verification this policy requires.",
         "provider_id": "Verification method",
-        "use_default_provider": "(Not specified — any method accepted)",
-        "provider_id_desc": "When a method is selected, only verifications completed with that method are accepted. Leave it empty to accept any method; the verification window then starts with the default method.",
+        "use_default_provider": "(Use default method)",
         "grace_minutes": "Re-prompt after (min) — 0: always required",
         "grace_minutes_help": "If the user verified within this window, do not ask again. Set to 0 to always require verification.",
         "applies_to": "Applies to",
@@ -4436,7 +4251,6 @@
       "extension_license_modal": "Extension License",
       "module_force_activate_modal": "Force Activate Module",
       "module_force_deactivate_modal": "Force Deactivate Module",
-      "module_deactivate_integrations_modal": "Module Deactivation Integration Notice",
       "module_install_modal": "Install Module",
       "module_manual_install_modal": "Manual Module Install",
       "module_reactivate_language_packs_modal": "Bulk Activate Language Packs",
@@ -4457,13 +4271,11 @@
       "plugin_extension_license_modal": "Plugin License",
       "plugin_force_activate_modal": "Force Activate Plugin",
       "plugin_force_deactivate_modal": "Force Deactivate Plugin",
-      "plugin_deactivate_integrations_modal": "Plugin Deactivation Integration Notice",
       "plugin_install_modal": "Install Plugin",
       "plugin_manifest_preview_drawer": "Plugin Manifest Preview"
     },
     "admin_settings": {
       "identity_policy_delete_modal": "Delete Identity Verification Policy",
-      "embed_provider_form_modal": "Add or Edit External Video Service",
       "identity_policy_form_modal": "Edit Identity Verification Policy",
       "ip_restriction_rule_form_modal": "Edit IP Access Restriction Rule",
       "modal_notification_channel_off_confirm": "Confirm Turning Off Mail Channel",
@@ -4558,73 +4370,6 @@
       "reaggregate_modal": "Re-aggregate range",
       "subject_delete_modal": "Delete data subject records confirm",
       "row_trend_modal": "Item trend"
-    },
-    "lifecycle_warnings_modal": "Extension operation warnings window"
-  },
-  "brand_name": "Gnuboard7",
-  "default_user_name": "Administrator",
-  "template_partial_test": {
-    "title": "Template Partial System Test",
-    "meta_description": "Checks the partial system of the sirsoft-admin_basic template",
-    "description": "Tests the layout partial feature of the sirsoft-admin_basic template",
-    "checklist_title": "Checklist",
-    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
-    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
-    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (composite component)",
-    "check_basic": "✅ Basic component rendering",
-    "check_dark": "✅ Dark mode support",
-    "success_title": "🎉 Partial system works",
-    "success_description": "If every section above is shown, the template partial system is working.",
-    "level1_title": "Level 1 Partial: Content Section",
-    "level1_description": "This file includes the Level 2 partial files below",
-    "after_title": "Content After the Partial",
-    "after_description": "You can add as much content as you like after a partial file.",
-    "header_title": "Level 2 Include: Header Section Loaded",
-    "header_description": "This file is templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html",
-    "card_title": "✨ Composite Component Include Test",
-    "card_content": "This card was included from partials/template_partial_test/_info_card.g7.html.\n\n📌 Include system features:\n• Supported by both modules and templates\n• Unlimited nesting depth (depth limit 10)\n• Automatic circular reference detection\n• Both basic and composite components can be used"
-  },
-  "extensions": {
-    "lifecycle_warnings": {
-      "title": "Some items failed",
-      "summary": "Completed, but some items failed ({{count}})",
-      "description": "The operation itself finished. Only the items below were not applied — check the reasons and run the related operation (such as refreshing layouts) again.",
-      "toggle": "Show details",
-      "notice_title": "Notices to review",
-      "notice_summary": "Completed — notices to review: {{count}}",
-      "notice_description": "Everything was applied. Please review the notices below.",
-      "declaration_title": "The extension declares invalid values",
-      "declaration_summary": "Completed, but invalid values declared by the extension were dropped ({{count}})",
-      "declaration_description": "The task itself finished. The items below are values the extension declared incorrectly in its manifest and were dropped — running the task again will not change them, so let the extension developer know.",
-      "declaration_hint": "The extension developer needs to fix this declaration — running again will not change it",
-      "steps": {
-        "dependents": "Dependent extension",
-        "extract": "Extract",
-        "php_extension_missing": "PHP extension",
-        "autoload": "Autoload",
-        "cleanup": "Cleanup",
-        "composer_install": "Composer install",
-        "core_resync": "Core resync",
-        "hook_cache": "Hook cache",
-        "language_pack": "Language pack",
-        "language_pack_check_updates": "Language pack update check",
-        "language_pack_provision": "Language pack provisioning",
-        "language_pack_seed": "Language pack seeding",
-        "layout_register": "Layout registration",
-        "layout_refresh": "Layout refresh",
-        "layout_override_register": "Layout override registration",
-        "layout_extension_register": "Layout extension registration",
-        "layout_extension_override_register": "Layout extension override registration",
-        "layout_extension_reregister": "Layout extension re-registration",
-        "layout_extension_restore": "Layout extension restore",
-        "layout_extension_unregister": "Layout extension removal",
-        "menu_role": "Menu roles",
-        "necessary_storage": "Necessary storage",
-        "operation_lock": "Operation lock",
-        "reseed": "Reseed",
-        "search_scopes": "Recent search scope declaration",
-        "seeder": "Seeder"
-      }
     }
   }
 }

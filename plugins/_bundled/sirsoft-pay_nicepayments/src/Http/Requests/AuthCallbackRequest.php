@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Http\Requests;
 
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -92,7 +92,7 @@ class AuthCallbackRequest extends FormRequest
         $url = $baseUrl.$separator.http_build_query(['error' => 'invalid_params']);
 
         throw new HttpResponseException(
-            redirect(SiteUrl::absolute($url))
+            redirect(ScreenUrl::toAbsolute($url))
         );
     }
 }

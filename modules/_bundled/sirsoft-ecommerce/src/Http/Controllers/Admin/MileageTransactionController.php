@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
@@ -123,8 +124,7 @@ class MileageTransactionController extends AdminBaseController
             $transaction = $this->mileageService->updateAdminTransaction(
                 $id,
                 $touchMemo ? ($data['memo'] ?? null) : null,
-                // 입력값 해석(날짜만이면 사이트 기준 그날 끝)은 수동 지급과 같은 규칙으로 Service 가 한다.
-                $touchExpiry && ! empty($data['expires_at']) ? (string) $data['expires_at'] : null,
+                $touchExpiry && ! empty($data['expires_at']) ? Carbon::parse($data['expires_at']) : null,
                 $touchMemo,
                 $touchExpiry,
             );
@@ -165,14 +165,6 @@ class MileageTransactionController extends AdminBaseController
                 $userId,
                 array_map('intval', $data['lot_ids']),
                 (int) $data['days'],
-            );
-        } catch (MileageValidationException $e) {
-            // 탈퇴 회원 적립건 연장 거절 등 도메인 규칙 위반(7.1.1)
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.mileage.validation_failed',
-                422,
-                ['general' => [$e->getMessage()]]
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');

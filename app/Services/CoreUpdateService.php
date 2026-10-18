@@ -10,7 +10,7 @@ use App\Exceptions\CoreUpdateOperationException;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\AbstractUpgradeStep;
 use App\Extension\CoreVersionChecker;
-use App\Extension\Exceptions\UpgradeStepClassMissingException;
+use App\Extension\Custom\CustomUpdatePreflight;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
@@ -18,8 +18,7 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
-use App\Extension\Helpers\SafeArchiveExtractor;
-use App\Extension\Support\LifecycleWarnings;
+use App\Extension\Helpers\UpdateReservedPaths;
 use App\Extension\UpgradeContext;
 use App\Extension\Vendor\EnvironmentDetector;
 use App\Extension\Vendor\VendorInstallContext;
@@ -139,10 +138,8 @@ class CoreUpdateService
             $path = base_path($relative);
             $entry = ['path' => $relative, 'mkdir' => false, 'chown_changed' => 0, 'chown_failed' => 0, 'gw_changed' => 0, 'gw_failed' => 0];
 
-            $targetPerms = self::targetPermsForWritableDirectory($relative, $perms);
-
             if (! File::isDirectory($path)) {
-                if (! @mkdir($path, $targetPerms, true) && ! File::isDirectory($path)) {
+                if (! @mkdir($path, $perms, true) && ! File::isDirectory($path)) {
                     $msg = sprintf('[ensureWritableDirectories] mkdir 실패 — %s', $relative);
                     $log('warning', $msg);
                     $warnings[] = $msg;
@@ -150,9 +147,9 @@ class CoreUpdateService
 
                     continue;
                 }
-                @chmod($path, $targetPerms);
+                @chmod($path, $perms);
                 $entry['mkdir'] = true;
-                $log('info', sprintf('[ensureWritableDirectories] mkdir + perms 0%o — %s', $targetPerms, $relative));
+                $log('info', sprintf('[ensureWritableDirectories] mkdir + perms 0%o — %s', $perms, $relative));
             }
 
             if ($owner !== false) {
@@ -176,18 +173,15 @@ class CoreUpdateService
                 }
             }
 
-            // perms 정상화 (루트가 g-w 등으로 생성됐을 때 reference perms 로 강제).
-            // 웹서버가 직접 내주는 public/ 아래 경로는 other 읽기·진입을 남기고, 이미 있던 other 비트는
-            // 지우지 않는다(targetPermsForWritableDirectory).
+            // perms 정상화 (루트가 g-w 등으로 생성됐을 때 reference perms 로 강제)
             $currentPerms = @fileperms($path) & 0777;
-            $targetPerms = self::targetPermsForWritableDirectory($relative, $perms, $currentPerms);
-            if ($currentPerms !== $targetPerms) {
-                if (! @chmod($path, $targetPerms)) {
-                    $msg = sprintf('[ensureWritableDirectories] chmod 실패 — %s. 수동: sudo chmod %o %s', $relative, $targetPerms, $path);
+            if ($currentPerms !== false && $currentPerms !== $perms) {
+                if (! @chmod($path, $perms)) {
+                    $msg = sprintf('[ensureWritableDirectories] chmod 실패 — %s. 수동: sudo chmod %o %s', $relative, $perms, $path);
                     $log('warning', $msg);
                     $warnings[] = $msg;
                 } else {
-                    $log('info', sprintf('[ensureWritableDirectories] perms 보정 %o → %o — %s', $currentPerms, $targetPerms, $relative));
+                    $log('info', sprintf('[ensureWritableDirectories] perms 보정 %o → %o — %s', $currentPerms, $perms, $relative));
                 }
             }
 
@@ -207,41 +201,6 @@ class CoreUpdateService
         }
 
         return ['reference' => $reference, 'processed' => $processed, 'warnings' => $warnings];
-    }
-
-    /**
-     * 쓰기 보장 디렉토리에 적용할 권한을 정합니다.
-     *
-     * 기준 권한은 확장 디렉토리(modules 등)에서 오므로 0770 처럼 other 비트가 없을 수 있다. 그 값을
-     * 웹서버가 직접 내주는 `public/` 아래 경로(`public/build/ext` 정적 게시본)에 그대로 강제하면,
-     * php-fpm 계정과 다른 계정으로 도는 웹서버(Apache `www-data` 등)가 그 폴더에 들어가지 못해
-     * 정적 자산이 전부 403 이 된다. 그래서 `public/` 아래 경로에는 other 읽기·진입(`o+rx`)을 남긴다.
-     * 그 밖의 경로(storage·bootstrap/cache·확장 디렉토리)는 기준 권한을 따른다.
-     *
-     * 이미 있는 디렉토리의 other 비트는 지우지 않는다. 운영자가 쓰기 보장 목록에 `storage` 처럼 웹서버가
-     * 심링크로 내주는 경로(`public/storage` → `storage/app/public`)의 상위를 넣었을 때, 0770 기준이 그 경로의
-     * other 진입 권한을 지워 `/storage/**` 가 403 이 되는 것을 막는다. 쓰기 보장의 목적은 그룹 쓰기이므로
-     * other 비트를 좁힐 이유가 없다.
-     *
-     * @param  string  $relative  base_path() 기준 상대 경로
-     * @param  int  $referencePerms  기준 권한 (예: 0770)
-     * @param  int|null  $currentPerms  디렉토리의 현재 권한 (새로 만들 때는 null)
-     * @return int 적용할 권한
-     */
-    public static function targetPermsForWritableDirectory(string $relative, int $referencePerms, ?int $currentPerms = null): int
-    {
-        $normalized = ltrim(str_replace('\\', '/', $relative), '/');
-        $target = $referencePerms;
-
-        if ($normalized === 'public' || str_starts_with($normalized, 'public/')) {
-            $target |= 0005;
-        }
-
-        if ($currentPerms !== null) {
-            $target |= ($currentPerms & 0007);
-        }
-
-        return $target;
     }
 
     /**
@@ -318,6 +277,28 @@ class CoreUpdateService
             'latest_version' => $latestVersion ?? $currentVersion,
             'github_url' => $githubUrl,
         ];
+    }
+
+    /**
+     * 직전 업데이트 시도가 개발자 custom 자리 사전 검사로 멈춘 기록을 돌려줍니다 (#792).
+     *
+     * 업데이트는 CLI 가 하므로 결과는 기록으로 전달된다. 관리자 확인 창은 지금 확인한 새 버전과 같은 버전의
+     * 기록만 보여 준다 — 다른 버전을 시도하다 멈춘 기록은 지금 업데이트와 무관하다.
+     *
+     * @param  string|null  $latestVersion  확인한 새 코어 버전
+     * @return array{to_version:string, checked_at:string, reserved_files:array<int,string>, conflicts:array<int,array<string,string>>}|null 같은 버전의 기록, 없으면 null
+     *
+     * @since 7.2.0
+     */
+    public function pendingCustomPreflight(?string $latestVersion): ?array
+    {
+        if ($latestVersion === null || $latestVersion === '') {
+            return null;
+        }
+
+        $record = CustomUpdatePreflight::lastRecord();
+
+        return ($record !== null && ($record['to_version'] ?? null) === $latestVersion) ? $record : null;
     }
 
     /**
@@ -589,8 +570,11 @@ class CoreUpdateService
     /**
      * GitHub에서 아카이브를 다운로드하여 _pending에 압축 해제합니다.
      *
-     * 추출: zipball + ZipArchive(PHP zip 확장, 필수) + 안전 해제(SafeArchiveExtractor).
-     * unzip 명령 폴백은 항목 이름 검사를 거치지 않아 7.1.3 에서 제거했다. 실패하면 에러.
+     * 추출 폴백 체인:
+     * 1. zipball + ZipArchive (PHP zip 확장)
+     * 2. zipball + unzip 명령어 (Linux만)
+     * 3. tarball + PharData (PHP 내장)
+     * 4. 모두 실패 시 에러
      *
      * @param  string  $version  다운로드할 버전
      * @param  \Closure|null  $onProgress  진행 콜백
@@ -613,10 +597,9 @@ class CoreUpdateService
         $token = (string) (config('app.update.github_token') ?? '');
         $extractDir = $pendingPath.DIRECTORY_SEPARATOR.'extracted';
 
-        // 추출 전략: zipball(ZipArchive + 안전 해제)
+        // 폴백 체인: zipball(ZipArchive → unzip) → tarball(PharData)
         $strategies = $this->buildExtractionStrategies();
         $lastError = null;
-        $resolvedAny = false;
 
         foreach ($strategies as $strategy) {
             $archiveType = $strategy['archive_type'];
@@ -630,8 +613,6 @@ class CoreUpdateService
 
                 continue;
             }
-
-            $resolvedAny = true;
 
             $extension = $archiveType === 'zipball' ? '.zip' : '.tar.gz';
             $archivePath = $pendingPath.DIRECTORY_SEPARATOR.'core_update'.$extension;
@@ -686,12 +667,6 @@ class CoreUpdateService
             }
         }
 
-        // 어느 전략도 아카이브 주소를 얻지 못했다 = 한 번도 내려받지 않았다(태그 없음·GitHub 연결 실패).
-        // 「추출 실패」로 알리면 원인을 추출 도구로 잘못 짚는다(7.1.1 출시 전).
-        if (! $resolvedAny && $strategies !== []) {
-            throw new CoreUpdateOperationException('settings.core_update.release_not_found', ['version' => $version]);
-        }
-
         // 모든 전략 실패
         throw new CoreUpdateOperationException(
             'settings.core_update.all_extract_methods_failed',
@@ -718,8 +693,14 @@ class CoreUpdateService
             ];
         }
 
-        // unzip 명령어 폴백은 두지 않는다 — 항목 이름 검사(역슬래시 정규화·압축 밖 경로 거부)를
-        // 거치지 않고 심볼릭 링크까지 풀기 때문이다. ZipArchive(zip 확장)는 필수 요구사항이다.
+        // 2단계: unzip 명령어 (Linux만)
+        if (PHP_OS_FAMILY !== 'Windows' && $this->isUnzipAvailable()) {
+            $strategies[] = [
+                'archive_type' => 'zipball',
+                'method' => 'extractWithUnzip',
+                'label' => 'unzip',
+            ];
+        }
 
         return $strategies;
     }
@@ -733,12 +714,47 @@ class CoreUpdateService
      */
     protected function extractWithZipArchive(string $zipPath, string $extractDir): void
     {
-        if (! class_exists(\ZipArchive::class)) {
+        $zip = new \ZipArchive;
+        if ($zip->open($zipPath) !== true) {
             throw new CoreUpdateOperationException('settings.core_update.zip_extract_failed');
         }
 
-        // 역슬래시 경로 정규화 + 압축 밖 경로·심볼릭 링크 거부
-        SafeArchiveExtractor::extractZip($zipPath, $extractDir);
+        $zip->extractTo($extractDir);
+        $zip->close();
+    }
+
+    /**
+     * 시스템 unzip 명령어를 사용하여 ZIP 파일을 압축 해제합니다.
+     *
+     * @param  string  $zipPath  ZIP 파일 경로
+     * @param  string  $extractDir  추출 대상 디렉토리
+     * @return void 반환값 없음
+     */
+    protected function extractWithUnzip(string $zipPath, string $extractDir): void
+    {
+        $escapedZip = escapeshellarg($zipPath);
+        $escapedDir = escapeshellarg($extractDir);
+
+        exec("unzip -o {$escapedZip} -d {$escapedDir} 2>&1", $output, $exitCode);
+
+        if ($exitCode !== 0) {
+            throw new CoreUpdateOperationException('settings.core_update.unzip_command_failed', [
+                'code' => $exitCode,
+                'output' => implode("\n", array_slice($output, -5)),
+            ]);
+        }
+    }
+
+    /**
+     * 시스템에 unzip 명령어가 사용 가능한지 확인합니다.
+     *
+     * @return bool unzip 명령을 쓸 수 있으면 true
+     */
+    protected function isUnzipAvailable(): bool
+    {
+        exec('which unzip 2>/dev/null', $output, $exitCode);
+
+        return $exitCode === 0;
     }
 
     /**
@@ -931,7 +947,9 @@ class CoreUpdateService
     {
         $targets = config('app.update.targets', []);
         $excludes = config('app.update.excludes', []);
-        $skipPaths = array_values(array_filter(array_map(fn ($p) => $this->normalizeRelativePath((string) $p), $skipPaths)));
+        // custom 예약 자리(#792)는 어느 모드에서도 복사·orphan 정리·자동 발견 대상이 아니다 —
+        // skipPaths 와 같은 경로 판정으로 copyDirectory 의 복사·removeOrphanItems 양쪽에서 건너뛴다.
+        $skipPaths = array_values(array_filter(array_map(fn ($p) => $this->normalizeRelativePath((string) $p), UpdateReservedPaths::mergeInto($skipPaths))));
 
         // 증분 모드 여부: prune 이 아니고 적용 목록이 주어진 경우에만 증분 적용.
         // applyList 가 null 이면(백업 부재 등) 안전을 위해 전체 덮어쓰기로 회귀한다.
@@ -1254,38 +1272,12 @@ class CoreUpdateService
             return new VendorInstallResult(
                 mode: VendorMode::Composer,
                 strategy: 'composer',
-                packageCount: $this->countInstalledPackages($ctx->sourceDir.DIRECTORY_SEPARATOR.'vendor'),
+                packageCount: 0,
                 details: ['pending_path' => $ctx->sourceDir],
             );
         };
 
         return $resolver->install($context, $composerExecutor);
-    }
-
-    /**
-     * composer 가 설치를 마친 vendor 의 패키지 수를 셉니다(`vendor/composer/installed.json`).
-     *
-     * 업데이트 로그의 「vendor 설치 완료 (packages: N)」 표시용이다. 파일을 읽을 수 없으면 0 — 설치 성공 판정에는 쓰지 않는다.
-     *
-     * @param  string  $vendorPath  vendor 디렉토리 절대 경로
-     * @return int 설치된 패키지 수
-     */
-    private function countInstalledPackages(string $vendorPath): int
-    {
-        $path = $vendorPath.DIRECTORY_SEPARATOR.'composer'.DIRECTORY_SEPARATOR.'installed.json';
-        if (! is_file($path)) {
-            return 0;
-        }
-
-        $decoded = json_decode((string) @file_get_contents($path), true);
-        if (! is_array($decoded)) {
-            return 0;
-        }
-
-        // Composer 2 는 {packages: [...]}, Composer 1 은 최상위가 패키지 배열이다.
-        $packages = array_key_exists('packages', $decoded) ? $decoded['packages'] : $decoded;
-
-        return is_array($packages) ? count($packages) : 0;
     }
 
     /**
@@ -1724,14 +1716,12 @@ class CoreUpdateService
             $this->syncCoreRolesAndPermissions();
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 권한 재동기화 실패', ['error' => $e->getMessage()]);
-            LifecycleWarnings::current()->add('core_resync', 'permissions', $e->getMessage());
         }
 
         try {
             $this->syncCoreMenus();
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 메뉴 재동기화 실패', ['error' => $e->getMessage()]);
-            LifecycleWarnings::current()->add('core_resync', 'menus', $e->getMessage());
         }
 
         try {
@@ -1740,7 +1730,6 @@ class CoreUpdateService
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 알림 정의 재시딩 실패', ['error' => $e->getMessage()]);
-            LifecycleWarnings::current()->add('core_resync', 'notification_definitions', $e->getMessage());
         }
 
         try {
@@ -1749,7 +1738,6 @@ class CoreUpdateService
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
-            LifecycleWarnings::current()->add('core_resync', 'identity_policies', $e->getMessage());
         }
 
         // 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity)로 선언되어 위 NotificationDefinitionSeeder 가
@@ -1901,18 +1889,6 @@ class CoreUpdateService
                 require_once $file->getPathname();
                 $className = "App\\Upgrades\\{$filename}";
 
-                // 범위 안 단계 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 업데이트 실패
-                // (7.1.3 — 예전엔 조용히 건너뛰어 데이터는 옛 형태인데 버전만 올라갔다)
-                try {
-                    UpgradeStepClassMissingException::assertUsable($file->getPathname(), $className, UpgradeStepInterface::class);
-                } catch (UpgradeStepClassMissingException $e) {
-                    throw new CoreUpdateOperationException(
-                        $e->interface === null ? 'extensions.errors.upgrade_step_class_missing' : 'extensions.errors.upgrade_step_interface_missing',
-                        ['file' => $e->stepFile, 'class' => $e->class, 'interface' => (string) $e->interface],
-                        $e,
-                    );
-                }
-
                 if (class_exists($className)) {
                     $instance = new $className;
                     if ($instance instanceof UpgradeStepInterface) {
@@ -2053,7 +2029,6 @@ class CoreUpdateService
     public function createPendingDirectory(): string
     {
         $basePath = config('app.update.pending_path');
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = date('Ymd_His');
         $pendingPath = $basePath.DIRECTORY_SEPARATOR.'core_'.$timestamp;
 
@@ -2601,10 +2576,10 @@ class CoreUpdateService
             base_path('bootstrap/cache'),
             storage_path('app/ext-bundles'),
             // 확장 업데이트의 다운로드·추출 임시 폴더. 부모 `storage/app/temp` 가 sudo 업데이트에서 root 로
-            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다 (#651).
+            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다 (#651 F14).
             storage_path('app/temp'),
             // `restore_ownership` 은 `storage/logs` 를 포함하지만 그 복원은 흐름 **중간**(Step 11)이라,
-            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다 (#651).
+            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다 (#651 F15).
             storage_path('logs'),
         ];
 
@@ -2918,13 +2893,11 @@ class CoreUpdateService
      */
     public function generateFailureReport(\Throwable $exception, string $fromVersion, string $toVersion): string
     {
-        // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
         $timestamp = date('Ymd_His');
         $reportPath = storage_path("logs/core_update_failure_{$timestamp}.log");
 
         $content = implode("\n", [
             '=== 그누보드7 코어 업데이트 실패 리포트 ===',
-            // audit:allow datetime-display-user-timezone reason: 서버 로그·리포트 파일 — UTC 기록
             '날짜: '.date('Y-m-d H:i:s'),
             "시작 버전: {$fromVersion}",
             "대상 버전: {$toVersion}",

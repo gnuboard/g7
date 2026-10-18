@@ -3,8 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Services\Concerns;
 
 use App\Contracts\Extension\StorageInterface;
-use App\Support\PublicAssetDisk;
-use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
 
 /**
  * 이미지 행 disk 기준 스토리지 해석 trait (서비스 공용)
@@ -15,21 +13,6 @@ use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
  */
 trait ResolvesRowStorage
 {
-    /**
-     * 올릴 이미지의 저장 확장자에 맞는 스토리지를 반환합니다.
-     *
-     * 주입 스토리지가 공개 자산 디스크여도, 확장자가 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본
-     * 디스크의 스토리지를 돌려준다 — 그 파일은 서버를 거쳐 내려간다. 행의 disk 는 돌려받은 스토리지의
-     * `getDisk()` 로 기록한다.
-     *
-     * @param  string  $extension  저장 확장자 (내용 기준)
-     * @return StorageInterface 이 이미지를 저장할 스토리지
-     */
-    protected function storageForUpload(string $extension): StorageInterface
-    {
-        return PublicAssetDisk::storageForExtension($this->storage, $extension, AssetStorage::defaultDisk());
-    }
-
     /**
      * 이미지 행에 기록된 disk 기준 스토리지를 반환합니다.
      *

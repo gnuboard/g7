@@ -8,9 +8,7 @@ use App\Enums\MenuPermissionType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\HookManager;
-use App\Extension\TemplateManager;
 use App\Models\Menu;
-use App\Support\CoreNecessaryStorage;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
@@ -96,7 +94,7 @@ class Plugin extends AbstractPlugin
             'g7_devtools_*',
             'g7_filters_*',
             'g7_columns_*',
-            // `g7_order_*`(주문 목록 표시 열)는 이커머스가 계약 훅으로 직접 제공한다(1.1.2) — 출하 목록에서 뺐다.
+            'g7_order_*',
             // 관리자 화면 표시 설정 — 테마와 같은 범주. `g7_filters_` 는 필터 '값' 이고
             // `g7_filter_visibility_` 는 필터 '표시 여부' 라 접두사가 서로 덮지 않는다.
             'g7_admin_sidebar_collapsed',
@@ -115,15 +113,13 @@ class Plugin extends AbstractPlugin
         'sessionStorage' => [
             // 본인인증 복귀 (코어) — 인증창에서 돌아왔을 때 원래 화면 복원에 필요
             'g7.identity.redirectStash',
-            // 뒤로/앞으로 가기·새로고침 스크롤 위치 (코어 engine-v1.85.0) — 사용자가 요청한 화면 이동을
-            // 탭 수명 동안 보던 위치로 되돌리는 데만 쓴다(사용자 식별 정보 없음). 빠지면 미동의 방문자는 새로고침마다 맨 위.
-            'g7_scroll_positions',
             // 레이아웃 편집기 클립보드 — 같은 탭에서 다른 레이아웃으로 붙여넣기
             'g7le.*',
             // 관리자 화면 상태 — 저장소 종류를 가리지 않던 이관 전 판정 범위를 그대로 옮긴다
             'g7_devtools_*',
             'g7_filters_*',
             'g7_columns_*',
+            'g7_order_*',
             'g7_filter_visibility_*',
         ],
         // 쿠키 — 클라이언트 쓰기 + 서버 Set-Cookie 공통 목록
@@ -571,28 +567,7 @@ class Plugin extends AbstractPlugin
         $raw = HookManager::applyFilters(self::PROVIDED_NECESSARY_STORAGE_HOOK, $empty);
 
         if (! is_array($raw)) {
-            $raw = $empty;
-        }
-
-        // 템플릿이 template.json `necessary_storage` 로 선언한 키 — PHP 리스너가 없는 템플릿의 통로(코어 7.1.3, 1.1.2).
-        // 함수가 없는 옛 코어에서는 건너뛴다. 아래 형식 규칙을 똑같이 통과해야 받는다.
-        $templates = app(TemplateManager::class);
-        if (method_exists($templates, 'getActiveTemplatesNecessaryStorage')) {
-            foreach ($templates->getActiveTemplatesNecessaryStorage() as $scope => $items) {
-                if (array_key_exists($scope, $empty) && is_array($items)) {
-                    $raw[$scope] = [...(is_array($raw[$scope] ?? null) ? $raw[$scope] : []), ...$items];
-                }
-            }
-        }
-
-        // 코어 엔진이 선언한 필수 키(예: 비회원 최근 검색어 `g7_search_history`) — 코어 7.1.5, 1.1.4.
-        // 클래스가 없는 옛 코어에서는 건너뛴다. 아래 형식 규칙을 똑같이 통과해야 받는다.
-        if (class_exists(CoreNecessaryStorage::class) && method_exists(CoreNecessaryStorage::class, 'keys')) {
-            foreach (CoreNecessaryStorage::keys() as $scope => $items) {
-                if (array_key_exists($scope, $empty) && is_array($items)) {
-                    $raw[$scope] = [...(is_array($raw[$scope] ?? null) ? $raw[$scope] : []), ...$items];
-                }
-            }
+            return $empty;
         }
 
         $provided = $empty;
@@ -672,19 +647,6 @@ class Plugin extends AbstractPlugin
                 ],
             ],
         ]];
-    }
-
-    /**
-     * 매번 계산하는 값이라 설정 파일에 저장하지 않는 설정 키 (코어 7.1.3 계산값 키, 1.1.2)
-     *
-     * 잠금 목록(세션 쿠키 이름 등으로 계산)과 제공 목록(확장 훅이 모은 키)은 설치 시점 값이 설정 파일에 굳으면
-     * 이후 실시간 값을 영원히 덮어 동의 전 저장소 정리가 옛 목록으로 판정한다. 옛 코어는 이 메서드를 부르지 않는다.
-     *
-     * @return array<int, string> 계산값 키
-     */
-    public function getComputedSettingKeys(): array
-    {
-        return ['necessary_storage_locked', 'necessary_storage_provided'];
     }
 
     public function getConfigValues(): array

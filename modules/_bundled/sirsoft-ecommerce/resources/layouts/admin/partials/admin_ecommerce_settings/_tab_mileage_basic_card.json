@@ -29,15 +29,18 @@
                 {
                     "id": "view_transactions_button",
                     "type": "basic",
-                    "name": "A",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate"
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/ecommerce/mileage-transactions"
+                            }
                         }
                     ],
                     "props": {
-                        "href": "/admin/ecommerce/mileage-transactions",
+                        "type": "button",
                         "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     },
                     "children": [
@@ -157,7 +160,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.default_earn_rate']}}",
                     "props": {
-                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
+                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
                     },
                     "text": "{{_local.errors?.['mileage.default_earn_rate']?.[0] ?? ''}}"
                 },
@@ -238,10 +241,6 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "blur_until_loaded": {
-                                "enabled": true,
-                                "data_sources": "settings"
-                            },
                             "props": {
                                 "className": "text-sm text-gray-600 dark:text-gray-400"
                             },
@@ -256,232 +255,6 @@
                         "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_trigger_hint"
-                }
-            ]
-        },
-        {
-            "comment": "가입 적립금",
-            "id": "mileage_signup_earn",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "border-t border-gray-200 dark:border-gray-700 mt-4 pt-4"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex-between"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.signup_earn"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.signup_earn_hint"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "composite",
-                            "name": "Toggle",
-                            "props": {
-                                "name": "mileage.signup_earn_enabled",
-                                "value": "{{_local.form?.mileage?.signup_earn_enabled ?? false}}",
-                                "disabled": "{{_computed.isReadOnly}}"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex items-center gap-2 mt-2"
-                    },
-                    "children": [
-                        {
-                            "comment": "audit:allow layout-input-boundary-hardcoded 금액의 하한 0 은 저장 규칙(min:0)과 같은 고정값이다",
-                            "type": "basic",
-                            "name": "Input",
-                            "props": {
-                                "type": "number",
-                                "name": "mileage.signup_earn_amount",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.signup_earn_amount",
-                                "value": "{{_local.form?.mileage?.signup_earn_amount ?? 0}}",
-                                "min": "0",
-                                "step": "100",
-                                "className": "input w-32 text-right",
-                                "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.signup_earn_enabled ?? false)}}"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.point_unit"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{_local.errors?.['mileage.signup_earn_amount']}}",
-                    "props": {
-                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
-                    },
-                    "text": "{{_local.errors?.['mileage.signup_earn_amount']?.[0] ?? ''}}"
-                }
-            ]
-        },
-        {
-            "comment": "적립금을 쓴 주문은 구매 적립 없음",
-            "id": "mileage_no_earn_when_points_used",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex-between border-t border-gray-200 dark:border-gray-700 mt-4 pt-4"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Label",
-                            "props": {
-                                "className": "block text-sm font-medium text-gray-900 dark:text-white"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.no_earn_when_points_used"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.no_earn_when_points_used_hint"
-                        }
-                    ]
-                },
-                {
-                    "type": "composite",
-                    "name": "Toggle",
-                    "props": {
-                        "name": "mileage.no_earn_when_points_used",
-                        "value": "{{_local.form?.mileage?.no_earn_when_points_used ?? false}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                    }
-                }
-            ]
-        },
-        {
-            "comment": "상품 합계가 기준 미만이면 사용 불가",
-            "id": "mileage_min_product_total_for_use",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "border-t border-gray-200 dark:border-gray-700 mt-4 pt-4"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex-between"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use_hint"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "composite",
-                            "name": "Toggle",
-                            "props": {
-                                "name": "mileage.min_product_total_for_use_enabled",
-                                "value": "{{_local.form?.mileage?.min_product_total_for_use_enabled ?? false}}",
-                                "disabled": "{{_computed.isReadOnly}}"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex items-center gap-2 mt-2"
-                    },
-                    "children": [
-                        {
-                            "comment": "audit:allow layout-input-boundary-hardcoded 금액의 하한 0 은 저장 규칙(min:0)과 같은 고정값이다",
-                            "type": "basic",
-                            "name": "Input",
-                            "props": {
-                                "type": "number",
-                                "name": "mileage.min_product_total_for_use",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use_amount",
-                                "value": "{{_local.form?.mileage?.min_product_total_for_use ?? 0}}",
-                                "min": "0",
-                                "step": "1000",
-                                "className": "input w-32 text-right",
-                                "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.min_product_total_for_use_enabled ?? false)}}"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.mileage_settings.policy.min_product_total_for_use_suffix"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{_local.errors?.['mileage.min_product_total_for_use']}}",
-                    "props": {
-                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
-                    },
-                    "text": "{{_local.errors?.['mileage.min_product_total_for_use']?.[0] ?? ''}}"
                 }
             ]
         }

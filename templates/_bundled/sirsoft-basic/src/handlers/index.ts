@@ -6,13 +6,11 @@
  */
 
 // 상품 옵션 관련 핸들러
-import { quickAddToCartHandler, openQuickOptionHandler, toggleWishlistQuickHandler } from './productQuickActions';
 import {
   addSelectedItemIfCompleteHandler,
   updateSelectedItemQuantityHandler,
   removeSelectedItemHandler,
   updateNoOptionQuantityHandler,
-  setNoOptionAdditionalOptionHandler,
   setBlockAdditionalOptionHandler,
 } from './productOptions';
 
@@ -68,7 +66,7 @@ import { downloadAttachmentHandler } from './downloadAttachment';
 
 // 데이터소스 onSuccess 의 「한 번만」 가드 (onSuccess 컨텍스트에는 _local 이 없다)
 import { markLocalOnceHandler } from './markLocalOnce';
-import { rememberIdentityClaimHandler, restoreIdentityTargetHandler } from './identityLauncher';
+import { rememberIdentityClaimHandler } from './identityLauncher';
 
 // 언어 관련 핸들러는 엔진 레벨(ActionDispatcher)에서 처리
 // setLocale 핸들러는 ActionDispatcher에 빌트인으로 등록되어 있음
@@ -98,13 +96,7 @@ export const handlers = {
   'sirsoft-basic.updateSelectedItemQuantity': updateSelectedItemQuantityHandler,
   'sirsoft-basic.removeSelectedItem': removeSelectedItemHandler,
   'sirsoft-basic.updateNoOptionQuantity': updateNoOptionQuantityHandler,
-  'sirsoft-basic.setNoOptionAdditionalOption': setNoOptionAdditionalOptionHandler,
   'sirsoft-basic.setBlockAdditionalOption': setBlockAdditionalOptionHandler,
-
-  // 상품 카드의 곧바로 담기·옵션 선택 창·찜
-  'sirsoft-basic.quickAddToCart': quickAddToCartHandler,
-  'sirsoft-basic.openQuickOption': openQuickOptionHandler,
-  'sirsoft-basic.toggleWishlistQuick': toggleWishlistQuickHandler,
 
   // 다중 통화
   'sirsoft-basic.getDisplayPrice': getDisplayPriceHandler,
@@ -127,8 +119,6 @@ export const handlers = {
   'sirsoft-basic.markLocalOnce': markLocalOnceHandler,
   // 본인인증 링크 방식 — [다시 보내기]가 받은 새 건의 일회용 비밀값을 처리기에 넘긴다(전역 상태에 두지 않는다).
   'sirsoft-basic.rememberIdentityClaim': rememberIdentityClaimHandler,
-  // 본인인증 전체화면 — 넘어오기 전 화면이 보관한 비회원 인증 대상을 되살려 [코드 재전송] 에 싣는다.
-  'sirsoft-basic.restoreIdentityTarget': restoreIdentityTargetHandler,
 
   // 언어: setLocale은 엔진 레벨(ActionDispatcher)에서 빌트인으로 처리
 
@@ -179,11 +169,7 @@ export {
   updateSelectedItemQuantityHandler,
   removeSelectedItemHandler,
   updateNoOptionQuantityHandler,
-  setNoOptionAdditionalOptionHandler,
   setBlockAdditionalOptionHandler,
-  quickAddToCartHandler,
-  openQuickOptionHandler,
-  toggleWishlistQuickHandler,
   getDisplayPriceHandler,
   formatCurrencyHandler,
   getCurrencySymbol,

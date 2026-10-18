@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api\Admin\Identity;
 
-use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\IdentityPolicy;
 use App\Models\Role;
 use App\Models\User;
@@ -423,9 +422,6 @@ class AdminIdentityPolicyCrudTest extends TestCase
             'scope' => 'hook',
             'target' => 'sirsoft-board.post.before_create',
         ]));
-
-        // 등록된 목적으로만 바꿀 수 있다(7.1.6) — 플러그인이 등록하는 목적을 이 테스트에서 직접 등록한다
-        app(IdentityVerificationManager::class)->registerPurpose('inicis.adult_verification', ['label' => '성인 인증'], 'plugin', 'sirsoft-verification_kginicis');
 
         $response = $this->authRequest()->putJson("/api/admin/identity/policies/{$policy->id}", [
             'purpose' => 'inicis.adult_verification',

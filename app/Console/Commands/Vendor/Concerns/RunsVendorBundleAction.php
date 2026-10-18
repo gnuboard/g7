@@ -19,16 +19,16 @@ trait RunsVendorBundleAction
     /**
      * 빌드 또는 stale 체크 수행.
      *
-     * @param  VendorBundler  $bundler  vendor-bundle.zip 빌더
-     * @param  array<int, array{type: string, identifier: ?string}>  $targets
+     * @param  VendorBundler  $bundler  번들 빌드와 stale 판정을 수행하는 빌더
+     * @param  array<int, array{type: string, identifier: ?string}>  $targets  빌드 대상 목록
      * @param  bool  $force  해시 체크 무시하고 강제 재빌드
      * @param  bool  $check  실제 빌드 없이 stale 여부만 확인 (true 면 stale 시 종료코드 1)
-     * @return int 종료 코드
+     * @return int 명령 종료 코드 (SUCCESS 또는 FAILURE)
      */
     protected function runBuildAction(VendorBundler $bundler, array $targets, bool $force, bool $check): int
     {
         if (empty($targets)) {
-            $this->error(__('extensions.commands.vendor_bundle_action.no_build_targets'));
+            $this->error('빌드 대상이 없습니다.');
 
             return self::FAILURE;
         }
@@ -73,14 +73,14 @@ trait RunsVendorBundleAction
     /**
      * 무결성 검증 수행.
      *
-     * @param  VendorIntegrityChecker  $checker  vendor 번들 무결성 검사기
-     * @param  array<int, array{type: string, identifier: ?string}>  $targets
-     * @return int 종료 코드 (검증 실패가 하나라도 있으면 실패)
+     * @param  VendorIntegrityChecker  $checker  번들 무결성 검사기
+     * @param  array<int, array{type: string, identifier: ?string}>  $targets  검증 대상 목록
+     * @return int 명령 종료 코드 (모두 통과 시 SUCCESS, 하나라도 실패 시 FAILURE)
      */
     protected function runVerifyAction(VendorIntegrityChecker $checker, array $targets): int
     {
         if (empty($targets)) {
-            $this->error(__('extensions.commands.vendor_bundle_action.no_verify_targets'));
+            $this->error('검증 대상이 없습니다.');
 
             return self::FAILURE;
         }
@@ -95,14 +95,14 @@ trait RunsVendorBundleAction
             $outputPath = $this->resolveOutputPath($target);
 
             if (! is_dir($outputPath)) {
-                $this->warn('- '.__('extensions.commands.vendor_bundle_action.output_path_missing', ['label' => $label]));
+                $this->warn("- $label: 출력 경로 없음");
 
                 continue;
             }
 
             $zipPath = $outputPath.DIRECTORY_SEPARATOR.VendorIntegrityChecker::ZIP_FILENAME;
             if (! file_exists($zipPath)) {
-                $this->line('- '.__('extensions.commands.vendor_bundle_action.bundle_missing', ['label' => $label]));
+                $this->line("- $label: 번들 없음 (스킵)");
 
                 continue;
             }
@@ -131,12 +131,12 @@ trait RunsVendorBundleAction
         $this->line(str_repeat('─', 66));
 
         if ($failures > 0) {
-            $this->error(__('extensions.commands.vendor_bundle_action.verify_failed', ['count' => $failures]));
+            $this->error("검증 실패: $failures 개");
 
             return self::FAILURE;
         }
 
-        $this->info(__('extensions.commands.vendor_bundle_action.verify_passed'));
+        $this->info('모든 번들이 무결성 검증을 통과했습니다.');
 
         return self::SUCCESS;
     }
@@ -165,33 +165,42 @@ trait RunsVendorBundleAction
     }
 
     /**
-     * 대상 하나의 vendor 번들을 빌드하고 결과(빌드·건너뜀 사유)를 출력합니다.
+     * 대상 하나의 번들을 빌드하고 결과를 한 줄로 출력합니다.
      *
-     * @param  VendorBundler  $bundler  vendor-bundle.zip 빌더
-     * @param  array{type: string, identifier: ?string}  $target  빌드 대상 (core|module|plugin)
+     * @param  VendorBundler  $bundler  번들 빌더
+     * @param  array{type: string, identifier: ?string}  $target  빌드 대상
      * @param  bool  $force  해시 체크 무시하고 강제 재빌드
-     * @return VendorBundleResult 빌드 결과
+     * @return VendorBundleResult 빌드 결과 (스킵 여부와 사유 포함)
      */
     private function performBuild(VendorBundler $bundler, array $target, bool $force): VendorBundleResult
     {
         $label = $this->formatTargetLabel($target);
-        $this->line('▶ '.__('extensions.commands.vendor_bundle_action.building', ['label' => $label]));
+        $this->line("▶ $label 빌드 중...");
 
-        $result = $target['type'] === 'core'
-            ? $bundler->buildForCore($force)
-            : $bundler->buildForExtension($target['type'], $target['identifier'], $force);
+        $result = match ($target['type']) {
+            'core' => $bundler->buildForCore($force),
+            'custom' => $bundler->buildForCustom($force),
+            default => $bundler->buildForExtension($target['type'], $target['identifier'], $force),
+        };
 
         if ($result->skipped && $result->reason === 'no-external-dependencies') {
-            $this->line('  ○ '.__('extensions.commands.vendor_bundle_action.skipped_no_dependencies', ['label' => $label]));
+            $this->line(sprintf(
+                '  ○ %s: 스킵 (외부 composer 의존성 없음)',
+                $label,
+            ));
         } elseif ($result->skipped && $result->reason === 'extension-not-installed') {
-            $this->line('  ○ '.__('extensions.commands.vendor_bundle_action.skipped_not_installed', ['label' => $label]));
+            $this->line(sprintf(
+                '  ○ %s: 스킵 (확장이 설치되지 않음 — 먼저 module:install / plugin:install 필요)',
+                $label,
+            ));
         } elseif ($result->skipped) {
-            $this->line('  ○ '.__('extensions.commands.vendor_bundle_action.skipped_reason', [
-                'label' => $label,
-                'reason' => $result->reason,
-                'size' => $result->zipSizeHuman(),
-                'count' => (int) $result->packageCount,
-            ]));
+            $this->line(sprintf(
+                '  ○ %s: 스킵 (%s, %s, %d packages)',
+                $label,
+                $result->reason,
+                $result->zipSizeHuman(),
+                $result->packageCount,
+            ));
         } else {
             $this->line(sprintf(
                 '  ✓ %s: %s, %d packages',
@@ -207,8 +216,8 @@ trait RunsVendorBundleAction
     /**
      * stale 여부 확인만 수행.
      *
-     * @param  VendorBundler  $bundler  stale 판정에 쓰는 vendor-bundle.zip 빌더
-     * @param  array{type: string, identifier: ?string}  $target  확인 대상 (core|module|plugin)
+     * @param  VendorBundler  $bundler  stale 판정을 수행하는 번들 빌더
+     * @param  array{type: string, identifier: ?string}  $target  확인 대상
      * @return bool stale 이면 true
      */
     private function performCheck(VendorBundler $bundler, array $target): bool
@@ -223,26 +232,26 @@ trait RunsVendorBundleAction
         $composerJsonPath = $this->resolveCheckFile($sourcePath, $outputPath, 'composer.json');
         if ($composerJsonPath === null) {
             if (! is_dir($sourcePath) && ! is_dir($outputPath)) {
-                $this->warn('- '.__('extensions.commands.vendor_bundle_action.path_missing', ['label' => $label, 'path' => $outputPath]));
+                $this->warn("- $label: 경로 없음 ($outputPath)");
 
                 return false;
             }
 
-            $this->line('- '.__('extensions.commands.vendor_bundle_action.check_skipped_no_composer', ['label' => $label]));
+            $this->line("- $label: SKIPPED (composer.json 없음)");
 
             return false;
         }
 
         // 외부 composer 의존성이 없는 확장은 번들링 대상이 아님
         if (! $this->composerJsonHasExternalDependencies($composerJsonPath)) {
-            $this->line('- '.__('extensions.commands.vendor_bundle_action.check_skipped_no_dependencies', ['label' => $label]));
+            $this->line("- $label: SKIPPED (외부 composer 의존성 없음)");
 
             return false;
         }
 
         $stale = $bundler->isStale($sourcePath, $outputPath);
         if ($stale) {
-            $this->error('✗ '.__('extensions.commands.vendor_bundle_action.stale', ['label' => $label]));
+            $this->error("✗ $label: STALE — 재빌드 필요");
         } else {
             $this->line("✓ $label: up-to-date");
         }
@@ -256,10 +265,10 @@ trait RunsVendorBundleAction
      * VendorBundler::resolveHashTarget() 과 같은 규칙. 판정 파일이 빌드·해시 기준과
      * 다르면 --check 결과가 실제 stale 여부와 어긋난다.
      *
-     * @param  string  $sourcePath  활성 디렉토리 소스 경로
-     * @param  string  $outputPath  _bundled 출력 경로
-     * @param  string  $filename  찾을 파일 이름
-     * @return string|null 찾은 파일 경로 (양쪽 모두 없으면 null)
+     * @param  string  $sourcePath  활성 디렉토리 경로 (폴백 대상)
+     * @param  string  $outputPath  번들 출력 경로 (우선 대상)
+     * @param  string  $filename  찾을 파일 이름 ('composer.json' 또는 'composer.lock')
+     * @return string|null 판정에 쓸 파일의 절대 경로. 양쪽 모두 없으면 null
      */
     private function resolveCheckFile(string $sourcePath, string $outputPath, string $filename): ?string
     {
@@ -279,8 +288,8 @@ trait RunsVendorBundleAction
      * VendorBundler::hasExternalDependencies() 와 동일 로직 — trait 에서 중복 구현을
      * 피하지 않고 독립적으로 구현하여 VendorBundler 인스턴스 없이도 사용 가능하게 함.
      *
-     * @param  string  $composerJsonPath  composer.json 경로
-     * @return bool php·ext-* 외 패키지 의존성이 있으면 true (읽기·파싱 실패 시 false)
+     * @param  string  $composerJsonPath  검사할 composer.json 경로
+     * @return bool php, ext-* 외의 패키지 require 가 있으면 true
      */
     private function composerJsonHasExternalDependencies(string $composerJsonPath): bool
     {
@@ -312,16 +321,18 @@ trait RunsVendorBundleAction
     }
 
     /**
-     * 출력용 대상 표기를 만듭니다.
+     * 출력용 대상 라벨을 만듭니다.
      *
-     * @param  array{type: string, identifier: ?string}  $target
-     * @return string 'core' 또는 '{type}s/{identifier}' 형식의 표기
+     * @param  array{type: string, identifier: ?string}  $target  대상
+     * @return string 표시용 라벨 (예: 'core', 'modules/sirsoft-ecommerce')
      */
     private function formatTargetLabel(array $target): string
     {
-        return $target['type'] === 'core'
-            ? 'core'
-            : sprintf('%ss/%s', $target['type'], $target['identifier']);
+        return match ($target['type']) {
+            'core' => 'core',
+            'custom' => 'custom',
+            default => sprintf('%ss/%s', $target['type'], $target['identifier']),
+        };
     }
 
     /**
@@ -330,13 +341,14 @@ trait RunsVendorBundleAction
      * 코어: base_path() 자체가 소스이자 출력
      * 모듈/플러그인: 활성 디렉토리 (modules/{id}, plugins/{id}) — 설치 시 composer install 이 실행된 곳
      *
-     * @param  array{type: string, identifier: ?string}  $target
-     * @return string 소스 경로 (알 수 없는 유형이면 빈 문자열)
+     * @param  array{type: string, identifier: ?string}  $target  대상
+     * @return string 소스 절대 경로 (알 수 없는 타입이면 빈 문자열)
      */
     private function resolveSourcePath(array $target): string
     {
         return match ($target['type']) {
             'core' => base_path(),
+            'custom' => base_path('custom'),
             'module' => base_path('modules/'.$target['identifier']),
             'plugin' => base_path('plugins/'.$target['identifier']),
             default => '',
@@ -349,13 +361,14 @@ trait RunsVendorBundleAction
      * 코어: base_path() (소스와 동일)
      * 모듈/플러그인: _bundled 디렉토리 — Git 추적되는 배포 아티팩트 저장 위치
      *
-     * @param  array{type: string, identifier: ?string}  $target
-     * @return string 출력 경로 (알 수 없는 유형이면 빈 문자열)
+     * @param  array{type: string, identifier: ?string}  $target  대상
+     * @return string 출력 절대 경로 (알 수 없는 타입이면 빈 문자열)
      */
     private function resolveOutputPath(array $target): string
     {
         return match ($target['type']) {
             'core' => base_path(),
+            'custom' => base_path('custom'),
             'module' => base_path('modules/_bundled/'.$target['identifier']),
             'plugin' => base_path('plugins/_bundled/'.$target['identifier']),
             default => '',
@@ -363,10 +376,10 @@ trait RunsVendorBundleAction
     }
 
     /**
-     * 빌드·건너뜀 건수와 전체 번들 크기 요약을 출력합니다.
+     * 빌드 결과 요약(빌드 수, 스킵 수, 총 크기)을 출력합니다.
      *
-     * @param  array<int, VendorBundleResult>  $results
-     * @return void
+     * @param  array<int, VendorBundleResult>  $results  대상별 빌드 결과 목록
+     * @return void 반환값 없음
      */
     private function printBuildSummary(array $results): void
     {

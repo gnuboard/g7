@@ -3,14 +3,11 @@
 namespace Tests\Feature\Extension;
 
 use App\Extension\ExtensionManager;
-use App\Extension\Helpers\ExtensionPendingHelper;
-use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
-use App\Listeners\SeoExtensionCacheListener;
 use App\Models\Module;
 use App\Models\Plugin;
 use App\Models\Template;
@@ -74,7 +71,7 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
     {
         $bundled = base_path("{$type}/_bundled/{$identifier}");
         $this->fixturePaths[] = $bundled;
-        FilePermissionHelper::copyDirectory(base_path("{$type}/{$identifier}"), $bundled, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
+        File::copyDirectory(base_path("{$type}/{$identifier}"), $bundled);
 
         $manifest = json_decode(File::get("{$bundled}/{$manifestFile}"), true);
         $manifest['version'] = '1.1.0';
@@ -161,8 +158,6 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
 
         $manager = app(ModuleManager::class);
         $manager->loadModules();
-        // 실패 경로도 검색봇 화면 캐시를 비워야 한다 — 「업데이트 중」 창에 렌더된 봇 화면이 남지 않게(#822)
-        $seoListener = $this->spy(SeoExtensionCacheListener::class);
 
         try {
             $manager->updateModule($this->fixtureModule, true, null, VendorMode::Auto, 'overwrite', null, 'bundled');
@@ -178,7 +173,6 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
         $this->assertSame('composer', $row->getRawOriginal('vendor_mode'), 'vendor_mode 도 업데이트 전 값이어야 합니다.');
         $this->assertSame('active', $row->status);
         $this->assertFileDoesNotExist(base_path("modules/{$this->fixtureModule}/resources/layouts/broken.json"));
-        $seoListener->shouldHaveReceived('onExtensionChanged')->with($this->fixtureModule);
     }
 
     /**
@@ -200,8 +194,6 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
 
         $manager = app(PluginManager::class);
         $manager->loadPlugins();
-        // 실패 경로도 검색봇 화면 캐시를 비워야 한다 — 「업데이트 중」 창에 렌더된 봇 화면이 남지 않게(#822)
-        $seoListener = $this->spy(SeoExtensionCacheListener::class);
 
         try {
             $manager->updatePlugin($this->fixturePlugin, true, null, VendorMode::Auto, 'overwrite', null, 'bundled');
@@ -217,7 +209,6 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
         $this->assertSame('composer', $row->getRawOriginal('vendor_mode'), 'vendor_mode 도 업데이트 전 값이어야 합니다.');
         $this->assertSame('active', $row->status);
         $this->assertFileDoesNotExist(base_path("plugins/{$this->fixturePlugin}/resources/layouts/broken.json"));
-        $seoListener->shouldHaveReceived('onExtensionChanged')->with($this->fixturePlugin);
     }
 
     /**
@@ -239,7 +230,7 @@ class ExtensionUpdateFailureRestoresVersionTest extends TestCase
         $this->fixtureTemplateModel->update(['latest_version' => '1.1.0', 'update_available' => true]);
         $bundled = base_path("templates/_bundled/{$this->fixtureTemplate}");
         $this->fixturePaths[] = $bundled;
-        FilePermissionHelper::copyDirectory(base_path("templates/{$this->fixtureTemplate}"), $bundled, null, ExtensionPendingHelper::EXCLUDED_DIRECTORIES);
+        File::copyDirectory(base_path("templates/{$this->fixtureTemplate}"), $bundled);
         $manifest = json_decode(File::get("{$bundled}/template.json"), true);
         $manifest['version'] = '1.1.0';
         File::put("{$bundled}/template.json", json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

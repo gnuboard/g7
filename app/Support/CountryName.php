@@ -29,15 +29,9 @@ class CountryName
         $code = strtoupper(trim($code));
         $locale ??= app()->getLocale();
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 순 (#148)
-        foreach (LocalizedValue::fallbackChain($locale) as $candidate) {
-            $name = self::resolveOrNull($code, $candidate);
-            if ($name !== null) {
-                return $name;
-            }
-        }
-
-        return $code;
+        return self::resolveOrNull($code, $locale)
+            ?? self::configured(config('app.fallback_locale', 'en'), $code)
+            ?? $code;
     }
 
     /**

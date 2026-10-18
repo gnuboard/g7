@@ -2,8 +2,6 @@
 
 use App\Support\ComposerInstallInfo;
 
-require_once __DIR__.'/safe-archive-extractor.php';
-
 /**
  * Vendor 번들 설치 헬퍼 (웹 인스톨러 전용 shim).
  *
@@ -141,19 +139,25 @@ function extractVendorBundle(string $sourceDir, string $targetDir): array
         }
     }
 
-    // 역슬래시 경로 정규화 + 압축 밖 경로·심볼릭 링크 거부
-    $extracted = g7InstallSafeExtractZip($zipPath, $targetDir);
-
-    if (! $extracted['success']) {
+    $zip = new ZipArchive;
+    $openResult = $zip->open($zipPath);
+    if ($openResult !== true) {
         if ($hasBackup && is_dir($backupDir)) {
             restoreVendorFromBackup($vendorDir, $backupDir, $backupDirName);
         }
 
-        if (($extracted['error'] ?? '') === 'unsafe_entry') {
-            return ['success' => false, 'error' => 'bundle_contains_unsafe_path: '.$extracted['unsafe_entry']];
+        return ['success' => false, 'error' => 'extraction_failed: ZipArchive::open failed (code '.$openResult.')'];
+    }
+
+    $extracted = $zip->extractTo($targetDir);
+    $zip->close();
+
+    if (! $extracted) {
+        if ($hasBackup && is_dir($backupDir)) {
+            restoreVendorFromBackup($vendorDir, $backupDir, $backupDirName);
         }
 
-        return ['success' => false, 'error' => 'extraction_failed: '.($extracted['error'] ?? 'unknown')];
+        return ['success' => false, 'error' => 'extraction_failed: ZipArchive::extractTo returned false'];
     }
 
     // 성공: 백업 디렉토리 삭제 (vendor/.bundle_backup_{ts}/)
@@ -234,8 +238,31 @@ function restoreVendorFromBackup(string $vendorDir, string $backupDir, string $b
  */
 function checkVendorBundleZipSafety(string $zipPath): ?string
 {
-    // `..` 조각·절대경로·드라이브·UNC·널 문자·심볼릭 링크 거부 (safe-archive-extractor.php)
-    return g7InstallFindUnsafeZipEntry($zipPath);
+    $zip = new ZipArchive;
+    if ($zip->open($zipPath) !== true) {
+        return 'cannot open zip';
+    }
+
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        if ($name === false) {
+            continue;
+        }
+        $normalized = str_replace('\\', '/', $name);
+        if (
+            str_contains($normalized, '../')
+            || str_starts_with($normalized, '/')
+            || preg_match('#^[A-Za-z]:/#', $normalized)
+        ) {
+            $zip->close();
+
+            return $name;
+        }
+    }
+
+    $zip->close();
+
+    return null;
 }
 
 /**
@@ -371,4 +398,61 @@ function buildVendorBundlePermissionHint(string $path): string
 
     return " — 실행 사용자({$currentUser})와 디렉토리 소유자({$ownerUser})가 다릅니다. ".
         "FTP/SSH로 'chown -R {$currentUser} {$path}' 실행 후 재시도하세요.";
+}
+
+/**
+ * 개발자 전용 composer(`custom/`, 7.2.0 #792)의 vendor 를 맞춥니다.
+ *
+ * custom/composer.json 이 있을 때만 동작한다. 설치본이 custom/composer.lock 과 맞으면(설치 표식
+ * `vendor/.g7-custom-lock.sha256`) 건너뛴다. vendor 묶음 모드이거나 auto 인데 composer 를 쓸 수 없고
+ * custom/vendor-bundle.zip 이 있으면 묶음을 무결성 검사 후 풀고, 아니면 composer install --no-dev 를
+ * custom 에서 실행한다. 표식 형식은 코어 App\Extension\Custom\CustomVendorService 와 같다.
+ *
+ * @param  string  $basePath  설치 루트
+ * @param  bool  $useBundle  묶음으로 풀지 여부 (호출자가 vendor 모드로 판정)
+ * @param  callable|null  $composerRunner  composer 실행 콜백 (작업 디렉터리를 받아 성공 여부 반환)
+ * @return array{success: bool, skipped?: bool, mode?: string, error?: string}
+ */
+function installCustomVendorIfNeeded(string $basePath, bool $useBundle, ?callable $composerRunner = null): array
+{
+    $customDir = rtrim($basePath, '/\\').DIRECTORY_SEPARATOR.'custom';
+    if (! file_exists($customDir.DIRECTORY_SEPARATOR.'composer.json')) {
+        return ['success' => true, 'skipped' => true];
+    }
+
+    $lockFile = file_exists($customDir.DIRECTORY_SEPARATOR.'composer.lock')
+        ? $customDir.DIRECTORY_SEPARATOR.'composer.lock'
+        : $customDir.DIRECTORY_SEPARATOR.'composer.json';
+    $lockHash = (string) hash_file('sha256', $lockFile);
+    $vendorDir = $customDir.DIRECTORY_SEPARATOR.'vendor';
+    $marker = $vendorDir.DIRECTORY_SEPARATOR.'.g7-custom-lock.sha256';
+
+    if (file_exists($vendorDir.DIRECTORY_SEPARATOR.'autoload.php') && file_exists($marker)
+        && trim((string) file_get_contents($marker)) === $lockHash) {
+        return ['success' => true, 'skipped' => true, 'mode' => 'in-sync'];
+    }
+
+    if ($useBundle) {
+        $integrity = verifyVendorBundle($customDir);
+        if (! $integrity['valid']) {
+            return ['success' => false, 'error' => 'custom vendor-bundle.zip: '.implode(', ', $integrity['errors'])];
+        }
+        $result = extractVendorBundle($customDir, $customDir);
+        if (! $result['success']) {
+            return ['success' => false, 'error' => 'custom vendor-bundle.zip: '.($result['error'] ?? 'unknown')];
+        }
+        $mode = 'bundled';
+    } else {
+        if ($composerRunner === null || ! $composerRunner($customDir)) {
+            return ['success' => false, 'error' => 'composer install (custom) failed'];
+        }
+        $mode = 'composer';
+    }
+
+    if (! is_dir($vendorDir)) {
+        @mkdir($vendorDir, 0755, true);
+    }
+    @file_put_contents($marker, $lockHash);
+
+    return ['success' => true, 'mode' => $mode];
 }

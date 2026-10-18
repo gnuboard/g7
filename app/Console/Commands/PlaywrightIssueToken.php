@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ScopeType;
 use App\Models\Permission;
@@ -39,12 +38,12 @@ use Illuminate\Support\Facades\Config;
  */
 class PlaywrightIssueToken extends Command
 {
-    use LocalizesDescription;
-
     protected $signature = 'playwright:issue-token
         {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능. 뒤에 :self·:role 을 붙이면 그 범위로 부여 (예: core.users.read:self)}
         {--no-admin-role : admin 역할을 부여하지 않고 지정한 권한만 가진 계정을 만든다 (권한 분기 검증용)}
         {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 테스트 유저/역할을 발급 전 정리. 0 이면 정리 안 함}';
+
+    protected $description = 'Playwright E2E 용 Sanctum 토큰 발급 (CLI + G7_PLAYWRIGHT_BYPASS 3중 가드)';
 
     /** 테스트 전용 역할 식별자 접두사 */
     private const TEST_ROLE_PREFIX = 'playwright_test_';
@@ -58,7 +57,7 @@ class PlaywrightIssueToken extends Command
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
         if (php_sapi_name() !== 'cli') {
-            $this->error(__('common.console.playwright_guard.cli_only', ['sapi' => php_sapi_name()]));
+            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
 
             return self::FAILURE;
         }
@@ -68,7 +67,7 @@ class PlaywrightIssueToken extends Command
         // 호출자가 그 자리에서 넘기는 프로세스 환경변수이고, config 로 캡처할 대상도 아니다.
         // (`.env` 유래 값을 런타임 `env()` 로 읽는 것은 금지다 — config 로 캡처해야 한다.)
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error(__('common.console.playwright_guard.bypass_required'));
+            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
 
             return self::FAILURE;
         }
@@ -80,15 +79,15 @@ class PlaywrightIssueToken extends Command
         // 권한 식별자 검사 — 아무것도 만들거나 지우기 전에 한다. 잘못된 범위는 예외, DB 에 없는 식별자는 실패 코드.
         // 예전에는 없는 식별자를 받으면 이름·설명이 식별자 그대로인 가짜 권한 행을 만들어, 관리자 권한 트리에
         // 식별자가 그대로 보이는 행이 쌓였고 spec 은 실제 라우트가 검사하지 않는 권한을 「받았다」고 믿었다
-        // (7.1.0 결정 「발급 때 거절」). 권한은 그 권한을 정의한 확장의 설치·게시판 생성으로만 생긴다.
+        // (7.1.0 O-D2 · 결정 「발급 때 거절」). 권한은 그 권한을 정의한 확장의 설치·게시판 생성으로만 생긴다.
         $specs = array_map(
             fn (string $spec): array => $this->parsePermissionSpec($spec),
             $this->option('permissions') ?: []
         );
         $unknown = $this->findUnknownPermissions(array_column($specs, 0));
         if ($unknown !== []) {
-            $this->error(__('common.console.playwright_issue_token.unknown_permissions', ['permissions' => implode(', ', $unknown)]));
-            $this->line(__('common.console.playwright_issue_token.unknown_permissions_hint'));
+            $this->error('DB 에 없는 권한 식별자라 토큰을 발급하지 않습니다: '.implode(', ', $unknown));
+            $this->line('그 권한을 정의하는 확장이 설치돼 있는지, 게시판별 권한이면 게시판을 먼저 만들었는지, 식별자 철자가 맞는지 확인하세요.');
 
             return self::FAILURE;
         }
@@ -156,7 +155,7 @@ class PlaywrightIssueToken extends Command
             });
 
         if ($roles > 0) {
-            $this->info('[gc] '.__('common.console.playwright_issue_token.stale_artifacts_pruned', ['roles' => $roles, 'users' => $users]));
+            $this->info("[gc] playwright 테스트 잔재 정리: 역할 {$roles}건, 유저 {$users}건");
         }
     }
 
@@ -195,7 +194,7 @@ class PlaywrightIssueToken extends Command
         [$identifier, $scope] = explode(':', $spec, 2);
 
         if (ScopeType::tryFrom($scope) === null) {
-            throw new \InvalidArgumentException(__('common.console.playwright_issue_token.invalid_scope', ['scope' => $scope, 'spec' => $spec]));
+            throw new \InvalidArgumentException("알 수 없는 권한 범위 '{$scope}' — self 또는 role 만 쓸 수 있습니다: {$spec}");
         }
 
         return [$identifier, $scope];

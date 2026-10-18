@@ -7,7 +7,6 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
-use App\Support\LocalizedValue;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -612,7 +611,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             $name = $item->orderOption?->product_name ?? '';
 
             if (is_array($name)) {
-                $name = LocalizedValue::pick($name) ?? '';
+                $name = $name[app()->getLocale()] ?? $name[(string) config('app.fallback_locale', 'ko')] ?? (reset($name) ?: '');
             }
 
             $lines[] = trim((string) $name).' × '.(int) $item->exchange_quantity;
@@ -624,8 +623,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             [
                 'status' => $this->headerStatusValue($fresh),
                 'overdue_days' => (string) $overdueDays,
-                // 알림 변수 날짜는 사이트 날짜 — 요청자 시간대가 끼어들지 않게 고정한다.
-                'collection_due_date' => TimezoneHelper::toSiteDateString($fresh->collection_due_at) ?? '',
+                'collection_due_date' => TimezoneHelper::toUserDateString($fresh->collection_due_at) ?? '',
                 'unreturned_item_lines' => implode("\n", $lines),
             ],
         );
@@ -644,8 +642,8 @@ class ClaimStatusNotificationListener implements HookListenerInterface
         }
 
         return __('sirsoft-ecommerce::messages.claims.notifications.advance_exchange_notice', [
-            // 사이트 날짜 — 알림을 만든 요청자(관리자)의 시간대가 고객 안내에 섞이지 않게 고정한다.
-            'date' => TimezoneHelper::toSiteDateString($exchange->collection_due_at) ?? '',
+            // 사용자 타임존 날짜 — 화면의 반송 기한과 같은 날을 알린다.
+            'date' => TimezoneHelper::toUserDateString($exchange->collection_due_at) ?? '',
         ]);
     }
 
@@ -727,7 +725,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             $name = $row->orderOption?->product_name ?? '';
 
             if (is_array($name)) {
-                $name = LocalizedValue::pick($name) ?? '';
+                $name = $name[app()->getLocale()] ?? $name[(string) config('app.fallback_locale', 'ko')] ?? (reset($name) ?: '');
             }
 
             $quantity = (int) ($row->exchange_quantity ?? $row->return_quantity ?? $row->quantity ?? 0);

@@ -4,7 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\Listeners\ProvideNecessaryStorageKeysListener;
-use Tests\PureTestCase;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * 개인정보 동의 플러그인에 필수 저장 키를 제공하는 리스너 검증
@@ -20,7 +20,7 @@ use Tests\PureTestCase;
  *   provider_keys_match_the_storage_writing_code,
  *   provider_does_not_reference_consent_plugin_classes
  */
-class ProvideNecessaryStorageKeysListenerTest extends PureTestCase
+class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
 {
     /** @var string 동의 플러그인이 소유한 계약 훅 */
     private const HOOK = 'sirsoft-gdpr.necessary_storage.filter_provided_keys';
@@ -29,7 +29,6 @@ class ProvideNecessaryStorageKeysListenerTest extends PureTestCase
     private const EXPECTED = [
         'localStorage' => [
             'g7_cart_key',
-            'g7_order_*',
         ],
         'sessionStorage' => [
             'g7_guest_order_token',
@@ -41,8 +40,6 @@ class ProvideNecessaryStorageKeysListenerTest extends PureTestCase
     /** @var array<string, string> 키 => 그 키를 실제로 저장하는 소스 (이 확장 루트 기준) */
     private const WRITERS = [
         'g7_cart_key' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
-        // 관리자 주문 목록 표시 열 — `g7_order_visible_columns_{관리자 uuid}` 로 저장한다(앞부분 매칭, 1.3.2)
-        'g7_order_*' => 'resources/js/handlers/orderHandlers.ts',
         'g7_guest_order_token' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         'g7_guest_order_number' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         'g7_guest_order_expires_at' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
@@ -162,12 +159,8 @@ class ProvideNecessaryStorageKeysListenerTest extends PureTestCase
         foreach (self::WRITERS as $key => $relative) {
             $source = file_get_contents($root.'/'.$relative);
             $this->assertIsString($source, $relative.' 를 읽지 못했습니다.');
-            // 끝 `*` 는 앞부분 매칭 — 저장 코드는 그 접두로 시작하는 문자열을 쓴다
-            $pattern = str_ends_with($key, '*')
-                ? '/[\'"`]'.preg_quote(rtrim($key, '*'), '/').'/'
-                : '/[\'"]'.preg_quote($key, '/').'[\'"]/';
             $this->assertMatchesRegularExpression(
-                $pattern,
+                '/[\'"]'.preg_quote($key, '/').'[\'"]/',
                 $source,
                 "{$key} 가 {$relative} 의 저장 키 문자열과 어긋납니다."
             );

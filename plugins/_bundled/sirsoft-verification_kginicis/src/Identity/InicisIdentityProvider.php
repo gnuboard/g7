@@ -4,7 +4,6 @@ namespace Plugins\Sirsoft\VerificationKginicis\Identity;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\IdentityVerificationInterface;
-use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\IdentityVerificationLog;
@@ -18,7 +17,6 @@ use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationKginicis\Enums\InicisDuplicateField;
 use Plugins\Sirsoft\VerificationKginicis\Exceptions\AlreadyConsumedException;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisChallengeMappingRepositoryInterface;
-use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityClaimRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Repositories\InicisIdentityRecordRepositoryInterface;
 use Plugins\Sirsoft\VerificationKginicis\Services\InicisGatewayInterface;
 use Plugins\Sirsoft\VerificationKginicis\Support\InicisIdentityHasher;
@@ -73,8 +71,6 @@ class InicisIdentityProvider implements IdentityVerificationInterface
      * @param  InicisIdentityRecordRepositoryInterface  $recordRepository  PII record Repository
      * @param  CacheInterface  $cache  비로그인 verify PII stash 용 캐시 (PluginCacheDriver 자동 prefix)
      * @param  array<string, mixed>  $config  settings 주입값 (PluginSettingsService::get 결과)
-     * @param  IdentityVerificationLogRepositoryInterface|null  $logRepository  코어 본인인증 이력 Repository (1.1.4, 미주입이면 컨테이너에서 해석)
-     * @param  InicisIdentityClaimRepositoryInterface|null  $claimRepository  동일인 선점표 (1.1.4, 미주입이면 컨테이너에서 해석)
      */
     public function __construct(
         protected readonly InicisGatewayInterface $gateway,
@@ -82,8 +78,6 @@ class InicisIdentityProvider implements IdentityVerificationInterface
         protected readonly InicisIdentityRecordRepositoryInterface $recordRepository,
         protected readonly CacheInterface $cache,
         protected readonly array $config = [],
-        protected readonly ?IdentityVerificationLogRepositoryInterface $logRepository = null,
-        protected readonly ?InicisIdentityClaimRepositoryInterface $claimRepository = null,
     ) {}
 
     /**
@@ -268,9 +262,7 @@ class InicisIdentityProvider implements IdentityVerificationInterface
      */
     public function verify(string $challengeId, array $input, array $context = []): VerificationResult
     {
-        // 코어 Repository 로 읽는다(1.1.4) — 아래 상태 검사는 조기 안내일 뿐이고, 동시 콜백의 최종 판정은
-        // 트랜잭션 안 조건부 전이(markVerifiedIfPending)가 한다.
-        $log = $this->logs()->findById($challengeId);
+        $log = IdentityVerificationLog::query()->whereKey($challengeId)->first();
 
         if (! $log) {
             return VerificationResult::failure(
@@ -417,14 +409,11 @@ class InicisIdentityProvider implements IdentityVerificationInterface
                 $piiPayload,
                 $challengeId,
             ): void {
-                // 진행 중인 challenge 만 verified 로 바꾼다(1.1.4, KVE 동형 O7) — 같은 콜백이 동시에 두 번 들어오면
-                // 둘 다 위의 상태 검사를 통과하므로, 조건부 전이에서 진 쪽은 토큰을 발급하지 않고 이미 처리됨으로 끝낸다.
-                // Eloquent builder update 라 모델 캐스팅을 거치지 않는다 — metadata 는 직접 JSON 으로 넘긴다.
-                $transitioned = $this->logs()->markVerifiedIfPending((string) $log->id, [
+                $log->update([
                     'status' => 'verified',
                     'verification_token' => $verificationToken,
                     'verified_at' => $verifiedAt,
-                    'metadata' => json_encode(array_merge((array) $log->metadata, [
+                    'metadata' => array_merge((array) $log->metadata, [
                         'sdk_tx_id' => $input['txId'] ?? null,
                         'svcCd' => $input['svcCd'] ?? null,
                         'providerDevCd' => $input['providerDevCd'] ?? null,
@@ -432,24 +421,10 @@ class InicisIdentityProvider implements IdentityVerificationInterface
                         'ci_hash' => $userCiHashCandidate,
                         'duplicate_field_used' => $duplicateField->value,
                         'is_adult' => $isAdult,
-                    ]), JSON_UNESCAPED_UNICODE),
+                    ]),
                 ]);
 
-                if (! $transitioned) {
-                    throw new AlreadyConsumedException($challengeId, (string) ($input['mTxId'] ?? ''));
-                }
-
                 if ($log->user_id !== null) {
-                    // 로그인 사용자: 자기 명의 식별값을 선점표에도 채워 둔다(비어 있을 때만) — 이후 같은 명의의 신규 가입이
-                    // records 가 아니라 선점표에서 막힌다(1.1.4).
-                    $claims = $this->claims();
-                    if ($userDiHashCandidate !== null) {
-                        $claims->claimSoft(InicisDuplicateField::Di->value, $userDiHashCandidate, (int) $log->user_id);
-                    }
-                    if ($userCiHashCandidate !== null) {
-                        $claims->claimSoft(InicisDuplicateField::Ci->value, $userCiHashCandidate, (int) $log->user_id);
-                    }
-
                     // 로그인 사용자: record upsert 는 같은 트랜잭션 — 실패 시 log 갱신과 함께 롤백.
                     $this->recordRepository->upsertForUser((int) $log->user_id, array_merge($piiPayload, [
                         'latest_log_id' => $challengeId,
@@ -471,9 +446,6 @@ class InicisIdentityProvider implements IdentityVerificationInterface
                     $ttl,
                 );
             });
-        } catch (AlreadyConsumedException $e) {
-            // 다른 콜백이 먼저 처리했다 — 트랜잭션은 롤백됐고, 호출자(InicisCallbackResolver)가 ALREADY_CONSUMED 로 안내한다.
-            throw $e;
         } catch (\Throwable $e) {
             // 식별값(challenge_id)만 로깅 — PII 비노출.
             Log::error('이니시스 본인확인: 인증 성공 후 PII 저장 실패 — 토큰 발급 롤백', [
@@ -580,29 +552,7 @@ class InicisIdentityProvider implements IdentityVerificationInterface
             $this->recordRepository,
             $this->cache,
             array_merge($this->config, $config),
-            $this->logRepository,
-            $this->claimRepository,
         );
-    }
-
-    /**
-     * 코어 본인인증 이력 Repository 를 돌려준다 (미주입이면 컨테이너에서 해석 — 기존 생성 호출부 호환).
-     *
-     * @return IdentityVerificationLogRepositoryInterface 본인인증 이력 Repository
-     */
-    protected function logs(): IdentityVerificationLogRepositoryInterface
-    {
-        return $this->logRepository ?? app(IdentityVerificationLogRepositoryInterface::class);
-    }
-
-    /**
-     * 동일인 선점 Repository 를 돌려준다 (미주입이면 컨테이너에서 해석 — 기존 생성 호출부 호환).
-     *
-     * @return InicisIdentityClaimRepositoryInterface 동일인 선점 Repository
-     */
-    protected function claims(): InicisIdentityClaimRepositoryInterface
-    {
-        return $this->claimRepository ?? app(InicisIdentityClaimRepositoryInterface::class);
     }
 
     /**
@@ -663,13 +613,9 @@ class InicisIdentityProvider implements IdentityVerificationInterface
         }
 
         try {
-            // 한국 법상 나이 — 생일과 오늘을 모두 한국 시간 날짜로 센다(서버 UTC 날짜면 한국 0~9시 생일자가 하루 늦게 성인이 된다).
-            // audit:allow datetime-display-user-timezone reason: 한국 법상 나이 — Asia/Seoul 고정(D10)
-            $birth = Carbon::createFromFormat('Ymd', $birthday, 'Asia/Seoul')->startOfDay();
-            // audit:allow datetime-display-user-timezone reason: 한국 법상 나이 — Asia/Seoul 고정(D10)
-            $age = (int) floor($birth->diffInYears(Carbon::now('Asia/Seoul')->startOfDay()));
+            $birth = Carbon::createFromFormat('Ymd', $birthday)->startOfDay();
 
-            return $age >= 19;
+            return $birth->age >= 19;
         } catch (\Throwable $e) {
             Log::warning('이니시스 본인확인: 생년월일 파싱 실패', ['birthday' => $birthday, 'error' => $e->getMessage()]);
 

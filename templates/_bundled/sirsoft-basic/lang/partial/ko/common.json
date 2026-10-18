@@ -64,14 +64,6 @@
   "page_n": "페이지 {{n}}",
   "currency_unit": "원",
   "select_all": "전체 선택",
-  "select_item": "{{name}} 선택",
-  "select_row_n": "{{n}}번째 행 선택",
-  "row_cell": "{{row}} {{column}}",
-  "row_n": "{{n}}번째 행",
-  "sort_order": "정렬 기준",
-  "per_page": "페이지당 표시 개수",
-  "search_field": "검색 대상",
-  "field_in_language": "{{label}} ({{language}})",
   "file_input": {
     "clear": "파일 지우기",
     "browse": "파일 선택",
@@ -87,24 +79,5 @@
   "quantity_increase": "수량 증가",
   "close_menu": "메뉴 닫기",
   "page_transitioning": "페이지 전환 중",
-  "page_loading": "페이지 로딩 중",
-  "lightbox": {
-    "dialog": "이미지 확대 보기",
-    "carousel": "이미지 넘겨 보기",
-    "photo_gallery": "사진 모음",
-    "slide": "사진",
-    "slide_position": "{total}장 중 {index}번째",
-    "previous": "이전 사진",
-    "next": "다음 사진",
-    "close": "닫기",
-    "zoom_in": "확대",
-    "zoom_out": "축소",
-    "enter_fullscreen": "전체 화면",
-    "exit_fullscreen": "전체 화면 끝내기",
-    "play": "자동 넘김 시작",
-    "pause": "자동 넘김 멈춤",
-    "thumbnails": "작은 사진 목록",
-    "show_thumbnails": "작은 사진 목록 보이기",
-    "hide_thumbnails": "작은 사진 목록 숨기기"
-  }
+  "page_loading": "페이지 로딩 중"
 }

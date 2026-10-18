@@ -6,7 +6,6 @@
  */
 
 import type { ActionContext } from '../types';
-import { localizedText } from '../utils/localizedText';
 import { addCalendarDays, calendarDateIn, formatCalendarDate, resolveAccountTimezone } from '../utils/timezoneDate';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -163,7 +162,7 @@ export function getCommonInfoContentHandler(
     const locale = G7Core?.locale?.current?.() || 'ko';
 
     const template = templates.find((t) => t.id === templateId);
-    return localizedText(template?.content, locale) ?? '';
+    return template?.content?.[locale] ?? template?.content?.ko ?? '';
 }
 
 /**

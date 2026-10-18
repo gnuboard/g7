@@ -146,8 +146,6 @@
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
-- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
-- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 동봉 CKEditor 5 버전을 올렸다면 디렉토리명 · `resources/extensions/html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언을 **한 버전으로** 맞춘다 (하나만 어긋나면 그 자산이 404 인데 빌드·테스트는 통과한다)
 - [ ] `dist/` 는 커밋되는 배포 산출물 — TS 를 고쳤으면 `--production` 재빌드 후 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 참조 소스 목록(코어 6종)을 바꿨다면 로그 사본 테이블이 섞이지 않았는지 확인
@@ -168,9 +166,7 @@
 | 로그 사본 테이블(알림 로그·메일 로그·신고 스냅샷·레이아웃 미리보기)을 참조 소스로 등록 | 원본 콘텐츠 테이블만 등록 | 사본은 자체 보존기간으로 지워진다 — 로그가 지워지는 순간 이미지가 고아가 되는 역전이 생긴다 |
 | 참조 판정을 해시 토큰 하나로만 수행 | 해시와 저장 파일명 두 토큰을 OR 로 검사 | 본문에 박히는 URL 형태가 둘(API 폴백형·디스크 직접형)이라, 한쪽만 보면 다른 형태를 미참조로 오판한다 |
 | 비활성 설치 모듈이 있는 상태에서 정리를 강행 | `hasPotentiallyMissingSources()` 로 감지해 중단 | 비활성 모듈의 콘텐츠는 훅을 등록하지 않으므로 판정에서 빠진다 (fail-open 방지) |
-| 핸들러에서 `<style>` 요소·HTML 문자열의 `style="…"`·`setAttribute('style', …)` 로 스타일 싣기 | 고정 규칙은 `resources/css/main.css`(→ `dist/css/plugin.css`), 실행 중 값은 `el.style.x = …`·`el.style.setProperty()` | 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서 앞의 셋이 막혀 편집기가 다크 모드·높이·탭 모양을 잃는다. 뒤의 둘은 막히지 않는다 |
 | 동봉 자산 버전을 올리면서 일부 기재만 갱신 | 디렉토리명·레이아웃 조각의 `scripts.src`·의존성 핀·소스 상수·테스트 단언을 한 버전으로 | 하나만 어긋나도 그 자산이 404 가 되는데 빌드와 테스트는 통과한다 |
-| 편집 화면 서식 플러그인(`resources/js/handlers/editingViewStyle.ts`)을 조건부로 싣거나, 같은 효과를 내려고 저장용 변환기·프로토타입·동봉 라이브러리 파일을 고치기 | 편집기를 만들 때 항상 `extraPlugins` 로 싣고, 편집 화면 변환기(`editor.editing.view.domConverter`) 인스턴스의 `setDomElementAttribute` 만 덮어써 `style` 을 `el.style.cssText` 로 입힌다. 동봉 판을 올릴 때 그 메서드의 이름·인자·안전 판정(`shouldRenderAttribute`)이 그대로인지 확인한다 | 엄격한 스타일 정책(`style-src-attr 'none'`)에서는 `setAttribute('style')` 가 막혀 편집 화면에 정렬·색·표·이미지 크기가 보이지 않는다. 저장용 경로를 건드리면 저장되는 HTML 이 달라진다. 색상 선택기(shadow DOM `<style>`)·끌어 놓기 미리보기는 고치지 않는 범위다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -178,10 +174,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 21개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
-| Vitest | 38개 | `vitest.config.ts` |
+| PHPUnit | 19개 | `plugins/_bundled/sirsoft-ckeditor5/tests` |
+| Vitest | 20개 | `vitest.config.ts` |
 | Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 26개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 10개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

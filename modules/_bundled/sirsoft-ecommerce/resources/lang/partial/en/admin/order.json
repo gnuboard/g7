@@ -47,7 +47,6 @@
       "price_details": {
         "taxable": "Taxable",
         "vat": "VAT",
-        "zero_rated": "Zero-rated",
         "mileage": "Mileage",
         "deposit": "Deposit"
       },
@@ -123,8 +122,7 @@
       "search_by_member": "Search by Member",
       "search_by_name": "Search by Orderer Name",
       "search_by_phone": "Search by Phone",
-      "reset_guest_password": "Reset Lookup Password",
-      "quantity_value": "{{count}}"
+      "reset_guest_password": "Reset Lookup Password"
     },
     "tabs": {
       "order_info": "Order Info",
@@ -293,7 +291,6 @@
         "points_used": "Points Used",
         "taxable_amount": "Taxable Amount",
         "vat_amount": "VAT",
-        "zero_rated_amount": "Zero-rated Amount",
         "total_paid": "Paid Amount",
         "earned_points": "Expected Points",
         "product_subtotal": "Subtotal",
@@ -374,9 +371,6 @@
       "final_amount": "Final Amount",
       "taxable_amount": "Taxable Amount",
       "vat": "VAT",
-      "tax_free_amount": "Tax-Free Amount",
-      "zero_rated_amount": "Zero-rated Amount",
-      "cancelled_vat": "Cancelled VAT",
       "expected_points": "Expected Points",
       "method": {
         "credit_card": "Credit Card",
@@ -898,8 +892,7 @@
     "submit": "File",
     "success": "Filed on behalf of the customer.",
     "error": "Could not file the request.",
-    "reason_required": "Select a reason.",
-    "exchange_option_label": "Exchange option"
+    "reason_required": "Select a reason."
   },
   "manual_paid": {
     "title": "Payment processing items",

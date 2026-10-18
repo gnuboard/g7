@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
 use App\Services\PluginSettingsService;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +22,6 @@ use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
-use Plugins\Sirsoft\PayKginicis\Concerns\SplitsInicisTax;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
@@ -46,7 +45,6 @@ class MobileCallbackController
     use ResolvesEasyPaySelection;
     use SanitizesPgResponse;
     use SerializesPaymentCallbacks;
-    use SplitsInicisTax;
     use ValidatesCbtOrderContext;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
@@ -377,8 +375,7 @@ class MobileCallbackController
                     'is_test_mode' => $this->apiService->isTestMode(),
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_APPROVE_RESPONSE_KEYS),
-                    // 결제창이 과세 구분(P_TAX·P_TAXFREE)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거(#820)
-                ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod), $this->buildTaxSplitApprovalMeta($order, $totPrice)),
+                ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod)),
                 'payment_device' => 'mobile',
             ], $totPrice);
 
@@ -544,7 +541,6 @@ class MobileCallbackController
             'P_TID' => $tid,
             'vbank_name' => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
             'vbank_number' => $result['P_VACT_NUM'] ?? null,
-            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
             'vbank_due_at' => $vbankDueAt?->toDateTimeString(),
         ]);
     }
@@ -560,7 +556,7 @@ class MobileCallbackController
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
 
-        return SiteUrl::absolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
+        return ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]));
     }
 
     /**
@@ -572,7 +568,7 @@ class MobileCallbackController
     private function resolveFailUrl(array $queryParams = []): string
     {
         $settings = $this->pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
-        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
 
         if (empty($queryParams)) {
             return $baseUrl;

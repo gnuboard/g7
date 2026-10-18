@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\ExtensionBundleService;
 use Illuminate\Console\Command;
 
@@ -16,12 +15,15 @@ use Illuminate\Console\Command;
  */
 class CleanupExtensionBundlesCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'ext-bundles:cleanup';
+
+    /**
+     * The console command description.
+     */
+    protected $description = '오래된 확장 프론트엔드 병합 번들 파일(구 version)을 삭제합니다';
 
     /**
      * Execute the console command.
@@ -34,7 +36,7 @@ class CleanupExtensionBundlesCommand extends Command
         $currentVersion = $service->getCurrentVersion();
         $deleted = $service->cleanupStaleBundles($currentVersion);
 
-        $this->info(__('extensions.commands.ext_bundles_cleanup.done', ['count' => $deleted, 'version' => $currentVersion]));
+        $this->info("오래된 확장 번들 {$deleted}건이 삭제되었습니다. (현재 version: {$currentVersion})");
 
         return self::SUCCESS;
     }

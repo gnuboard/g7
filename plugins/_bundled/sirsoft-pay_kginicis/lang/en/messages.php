@@ -8,9 +8,6 @@ return [
         'order_not_found' => 'Order not found.',
         'cbt_failed' => 'Failed to process the cross-border payment.',
         'payment_failed' => 'Payment could not be completed. Please try again in a moment.',
-        'escrow_in_progress' => 'Another escrow request for this order is being processed. Please try again in a moment.',
-        'escrow_delivery_already_registered' => 'Escrow delivery has already been registered. Refresh the page and submit it as a change.',
-        'escrow_deny_already_confirmed' => 'The purchase refusal has already been confirmed.',
     ],
     'cash_receipt' => [
         'provider_name' => 'KG Inicis',
@@ -142,6 +139,6 @@ return [
         ],
     ],
     'settings' => [
-        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, / or http(s):// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
     ],
 ];

@@ -16,13 +16,7 @@
             "method": "GET",
             "auto_fetch": false,
             "auth_mode": "optional",
-            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
-            "errorHandling": {
-                "404": {
-                    "handler": "suppress"
-                }
-            },
-            "comment": "이용약관 본문 — 약관 모달을 열 때만 부른다(auto_fetch 꺼짐). 가입 전이라 비로그인으로도 읽혀야 한다.\n       페이지 모듈 문서라 그 모듈이 꺼져 있으면 데이터소스를 두지 않는다(보기 단추도 폼 조각에서 숨긴다). 옛 코어에서 꺼진 모듈로 나간 요청의 404 는 삼킨다."
+            "comment": "이용약관 본문 — 약관 모달을 열 때만 부른다(auto_fetch 꺼짐). 가입 전이라 비로그인으로도 읽혀야 한다."
         },
         {
             "id": "privacyContent",
@@ -32,24 +26,10 @@
             "method": "GET",
             "auto_fetch": false,
             "auth_mode": "optional",
-            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
-            "errorHandling": {
-                "404": {
-                    "handler": "suppress"
-                }
-            },
-            "comment": "개인정보처리방침 본문 — 방침 모달을 열 때만 부른다. 약관과 같은 페이지 모듈 가드·404 삼킴."
+            "comment": "개인정보처리방침 본문 — 방침 모달을 열 때만 부른다."
         }
     ],
     "init_actions": [
-        {
-            "comment": "깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) — 같은 레이아웃으로 다시 들어오면 앞 입력이 남는다.",
-            "handler": "setState",
-            "params": {
-                "target": "local",
-                "registerForm": null
-            }
-        },
         {
             "comment": "registerForm 초기 상태 시드 — language 기본값은 _register_form.g7.html 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘)",
             "handler": "setState",
@@ -77,10 +57,9 @@
                         "partial": "partials/auth/_redirect_if_logged_in.json"
                     },
                     {
-                        "comment": "회원가입 폼 — 사용자 정보를 받은 비회원에게만 그린다(받는 중·회원이면 위 조각이 홈으로 보낸다, #915).",
+                        "comment": "회원가입 폼",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{_global.currentUser !== undefined && (!_global.currentUser?.uuid || _local.isLoginAction)}}",
                         "props": {
                             "className": "w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow"
                         },
@@ -115,16 +94,18 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "A",
+                                        "name": "Button",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate"
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/login"
+                                                }
                                             }
                                         ],
                                         "props": {
-                                            "href": "/login",
-                                            "className": "inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                         },
                                         "text": "$t:auth.login"
                                     }

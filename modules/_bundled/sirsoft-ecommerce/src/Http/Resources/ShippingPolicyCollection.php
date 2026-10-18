@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
@@ -107,7 +106,7 @@ class ShippingPolicyCollection extends BaseApiCollection
             if ($method === 'custom') {
                 $name = $countrySetting->custom_shipping_name;
                 $locale = app()->getLocale();
-                $methodLabel = is_array($name) ? LocalizedValue::pick($name, $locale) : null;
+                $methodLabel = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null) : null;
             } else {
                 $methodLabel = $method
                     ? ShippingType::getCachedByCode($method)?->getLocalizedName()

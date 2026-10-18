@@ -172,9 +172,8 @@ export class ErrorHandlingResolver {
                 handler: 'sequence',
                 actions: normalizedOnError as any,
               };
-        // onError 안 showErrorPage 도 실제 오류 코드를 받는다 (@since engine-v1.83.0) — 종전에는 넣지 않아 기본값 500 화면
         return {
-          handler: ErrorHandlingUtils.injectErrorCode(sequenceHandler, 'onError', errorCode),
+          handler: sequenceHandler,
           level: 'action',
           matchedKey: 'onError',
         };
@@ -242,7 +241,7 @@ export class ErrorHandlingResolver {
     }
 
     // 떠나는 문서(세션 만료로 로그인 화면으로 옮기는 중·새로고침·이동)의 실패는 화면에 그리지 않는다
-    // — 토스트·이동이 떠날 화면에 남거나 진행 중인 이동과 겨룬다(engine-v1.78.2).
+    // — 토스트·이동이 떠날 화면에 남거나 진행 중인 이동과 겨룬다(engine-v1.78.2, O-F1).
     if (isDocumentUnloading()) {
       logger.log('Document is leaving — error handler skipped:', handler.handler);
       return;

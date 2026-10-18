@@ -7,7 +7,7 @@ namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -207,7 +207,7 @@ class PaymentCallbackController
                 $claimPayment = $this->findClaimPayment($moid);
 
                 if ($claimPayment) {
-                    return redirect(SiteUrl::absolute(ClaimPaymentRedirect::cancelled($claimPayment)));
+                    return redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::cancelled($claimPayment)));
                 }
             }
 
@@ -241,7 +241,7 @@ class PaymentCallbackController
                 $claimPayment = $this->findClaimPayment($moid);
 
                 if ($claimPayment !== null) {
-                    return redirect(SiteUrl::absolute(ClaimPaymentRedirect::success($claimPayment)));
+                    return redirect(ScreenUrl::toAbsolute(ClaimPaymentRedirect::success($claimPayment)));
                 }
 
                 // 결제 건을 못 찾아도 주문 경로로 흘려보내지 않는다 — CP 번호를 주문번호로 실은
@@ -1277,7 +1277,6 @@ class PaymentCallbackController
         }
 
         DB::transaction(function () use ($order, $payment) {
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             $now = now()->toIso8601String();
             $orderMeta = $order->order_meta ?? [];
             $paymentMeta = $payment->payment_meta ?? [];
@@ -1366,7 +1365,8 @@ class PaymentCallbackController
         $urlTemplate = $settings['redirect_success_url'] ?? ShopRedirectUrl::DEFAULT_SUCCESS_URL;
         $url = ShopRedirectUrl::resolve($urlTemplate, ['{orderId}' => $orderId]);
 
-        return SiteUrl::absolute($url);
+        // 결제 뒤 사람이 돌아가는 화면 — 「사용자 화면 URL」(비면 사이트 주소)로 절대화한다(#792 W15)
+        return ScreenUrl::toAbsolute($url);
     }
 
     /**
@@ -1386,7 +1386,7 @@ class PaymentCallbackController
             $baseUrl = $baseUrl.$separator.$query;
         }
 
-        return SiteUrl::absolute($baseUrl);
+        return ScreenUrl::toAbsolute($baseUrl);
     }
 
     /**
@@ -1407,7 +1407,6 @@ class PaymentCallbackController
         array $validated
     ): array {
         return [
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'received_at' => now()->toIso8601String(),
             'type' => $type, // 'deposited' | 'cancelled' | 'other'
             'result_code' => $resultCode,
