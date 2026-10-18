@@ -25,6 +25,7 @@ axes:
     - command_blocks_zip_with_new_version
     - command_blocks_package_conflict
     - command_passes_without_conflict
+    - admin_check_reads_record
     - no_conflict
     - constraint_unsatisfied
     - duplicate
@@ -48,6 +49,7 @@ effects:
   - preflight_result_recorded_for_admin
   - conflict_table_printed
   - preflight_passes_without_conflict
+  - pending_preflight_matches_latest_version
   - compatible_packages_pass
   - constraint_conflict_detected
   - duplicate_conflict_detected

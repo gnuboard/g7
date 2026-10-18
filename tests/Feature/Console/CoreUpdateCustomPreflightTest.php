@@ -224,6 +224,27 @@ class CoreUpdateCustomPreflightTest extends TestCase
     }
 
     /**
+     * 관리자 업데이트 확인은 서비스가 고른 중단 기록만 싣습니다 — 확인한 새 버전과 같은 기록만, 다르거나 없으면 null.
+     *
+     * @scenario case=admin_check_reads_record
+     *
+     * @effects pending_preflight_matches_latest_version
+     *
+     * @return void 반환값 없음
+     */
+    public function test_service_returns_preflight_record_only_for_same_version(): void
+    {
+        $service = app(CoreUpdateService::class);
+        $this->assertNull($service->pendingCustomPreflight('7.3.0'), '기록이 없으면 null');
+
+        CustomUpdatePreflight::record('7.3.0', ['reserved_files' => ['routes/custom.php'], 'conflicts' => []]);
+
+        $this->assertSame(['routes/custom.php'], $service->pendingCustomPreflight('7.3.0')['reserved_files'] ?? null);
+        $this->assertNull($service->pendingCustomPreflight('7.4.0'), '다른 새 버전의 기록은 싣지 않는다');
+        $this->assertNull($service->pendingCustomPreflight(null), '새 버전을 모르면 싣지 않는다');
+    }
+
+    /**
      * CoreUpdateService 목을 바인딩합니다.
      *
      * @return MockInterface 서비스 목

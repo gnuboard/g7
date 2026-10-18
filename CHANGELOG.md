@@ -11,7 +11,7 @@
 #### 개발자 화면 자리(custom 예약 자리)
 
 - 그누보드7 화면 대신 개발자가 직접 만든 화면(Blade·HTML+jQuery·외부 프레임워크)을 쓸 수 있는 예약 자리를 마련했습니다 — `routes/custom.php`·`app/Custom`·`resources/views/custom`·`public/custom`·`lang/custom`·`config/custom.php`·`database/migrations/custom`·`custom/`. 코어 업데이트는 이 자리를 덮지도 지우지도 않으며, 업데이트 패키지에 이 자리의 파일이 들어 있으면 시작 전에 멈춥니다(`G7_UPDATE_RESERVED_PATHS` 로 목록 조정). 사용법은 `docs/custom-development.md` 에 정리했습니다.
-- `routes/custom.php` 에 등록한 주소는 그누보드7 화면보다 먼저 처리되고, 등록하지 않은 주소는 그누보드7 화면이 그대로 그립니다. 코어 API·확장 자산·빌드·설치기 주소(`/api`·`/plugins`·`/modules`·`/build`·`/storage`·`/install`)와 정적 파일 확장자 주소는 등록되지 않고 경고로 남습니다. 사용자 템플릿이 없어도 동작합니다.
+- `routes/custom.php` 에 등록한 주소는 그누보드7 화면보다 먼저 처리되고, 등록하지 않은 주소는 그누보드7 화면이 그대로 그립니다. 코어 API·확장 자산·빌드·설치기·개발 대시보드·사이트맵 주소(`/api`·`/plugins`·`/modules`·`/build`·`/storage`·`/install`·`/dev`·`/sitemap.xml`)와 정적 파일 확장자 주소는 등록되지 않고 경고로 남습니다. 사용자 템플릿이 없어도 동작합니다.
 - 개발자 화면용 미들웨어 `custom.auth`(회원만)·`custom.admin`(관리자만)과, 로그인한 회원을 알려 주는 `ScreenAuth::user()`, 같은 서버 안에서 코어·확장 API 를 그 회원 자격으로 부르는 `InternalApiClient` 를 추가했습니다.
 - `resources/views/custom` 아래 `.html` 파일을 뷰로 쓸 수 있습니다(서버가 파일 그대로 내보냄). `lang/custom` 은 `custom::` 번역, `database/migrations/custom` 은 마이그레이션 경로로 읽히고, `App\Custom\CustomServiceProvider` 가 있으면 마지막에 등록됩니다.
 - 개발자 전용 Composer 자리 `custom/composer.json` 을 추가했습니다. 코어 업데이트 전에 개발자 패키지가 새 코어 패키지와 맞지 않으면(요구 버전 불만족, 같은 패키지 다른 버전) 업데이트를 시작하지 않고 표로 알려 주며, 관리자 업데이트 확인 창에도 같은 표와 해결 순서가 보입니다. Composer 가 없는 서버는 `php artisan custom:vendor-bundle` 로 만든 `custom/vendor-bundle.zip` 을 설치기와 업데이트가 풀어 줍니다(`custom:vendor-verify` 로 무결성 확인).

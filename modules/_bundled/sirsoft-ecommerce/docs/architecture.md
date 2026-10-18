@@ -107,6 +107,10 @@ Listeners 33종은 이 흐름과 **별도 레인**입니다. Service 가 발행�
 방식을 더할 때 이 셋을 우회해 서비스 안에서 다시 계산하면 취소 경로와 규칙이 갈립니다.
 <!-- @intent END -->
 
+## 화면 주소 (7.2.0)
+
+서버가 만드는 이커머스 화면 주소(주문·클레임·문의·마일리지 알림, 결제 완료 복귀, 상품 검색·사이트맵)는 `Support/EcommerceScreenUrl` 이 화면 키(`ecommerce.product`·`mypage.order.detail`·`mypage.claim.detail`·`ecommerce.guest.claim.detail` 등)로 코어 `ScreenUrl` 을 거쳐 만든다. 상점 주소 설정·「사용자 화면 URL」·필터 훅 `core.screen_url.filter_path` 를 따른다. 기본 경로의 자리 이름은 snake_case(`{order_number}`·`{claim_number}`)로 하나다 — 필터는 이 이름으로 값을 받는다. `ClaimUrl` 의 경로 상수도 같은 이름을 쓰고, 메서드는 `EcommerceScreenUrl` 에 위임한다.
+
 ## 디렉토리
 
 <!-- @generated:directory-map START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

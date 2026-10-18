@@ -88,7 +88,15 @@ class EcommerceScreenUrlTest extends ModuleTestCase
         $this->assertSame('/account/returns/C-9', ClaimUrl::memberDetail('C-9'));
         $this->assertSame('/mypage/claims', ClaimUrl::memberList());
         $this->assertSame('/admin/ecommerce/claims/C-9', ClaimUrl::adminDetail('C-9'));
-        $this->assertSame('/mypage/claims/{claimNumber}', ClaimUrl::MEMBER_DETAIL);
+
+        // 상수의 자리 이름은 화면 주소 헬퍼·필터 훅과 같은 snake_case 하나다 — 상수를 보고 필터를 쓴 개발자가 치환을 놓치지 않게
+        $this->assertSame('/mypage/claims/{claim_number}', ClaimUrl::MEMBER_DETAIL);
+        $this->assertSame('{shopBase}/guest/claims/{claim_number}', ClaimUrl::GUEST_DETAIL);
+        $this->assertSame('/admin/ecommerce/claims/{claim_number}', ClaimUrl::ADMIN_DETAIL);
+        $this->assertSame('/mypage/orders/{order_number}', ClaimUrl::MEMBER_ORDER_DETAIL);
+
+        HookManager::addFilter(ScreenUrl::FILTER, fn (string $path, string $key, array $params) => $key === 'ecommerce.admin.claim.detail' ? '/ops/claims/'.($params['claim_number'] ?? 'MISSING') : $path);
+        $this->assertSame('/ops/claims/C-9', ClaimUrl::adminDetail('C-9'));
     }
 
     /**

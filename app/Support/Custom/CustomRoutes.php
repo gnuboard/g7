@@ -34,8 +34,11 @@ class CustomRoutes
     /** custom 라우트에 씌우는 미들웨어 묶음 이름 */
     public const MIDDLEWARE_GROUP = 'custom.screen';
 
-    /** custom 라우트가 쓸 수 없는 첫 구간 (코어 API·확장 자산·빌드·설치기) */
-    public const RESERVED_PREFIXES = ['api', 'plugins', 'modules', '_boost', 'build', 'storage', 'install'];
+    /** custom 라우트가 쓸 수 없는 첫 구간 (코어 API·확장 자산·빌드·설치기·개발 대시보드) */
+    public const RESERVED_PREFIXES = ['api', 'plugins', 'modules', '_boost', 'build', 'storage', 'install', 'dev'];
+
+    /** 코어가 루트에 내놓는 사이트맵 파일 이름 (`/sitemap.xml`·`/sitemap-{n}.xml`) — 첫 구간 전체와 맞춘다 */
+    public const RESERVED_SITEMAP_PATTERN = '/^sitemap(-[^\/]+)?\.xml$/i';
 
     /** 라우트 캐시 기준 패턴 보관 키 접두 */
     private const PATTERN_CACHE_PREFIX = 'custom_routes.patterns.';
@@ -167,7 +170,7 @@ class CustomRoutes
     {
         $path = trim($uri, '/');
         $first = strtolower(explode('/', $path)[0] ?? '');
-        if (in_array($first, self::RESERVED_PREFIXES, true)) {
+        if (in_array($first, self::RESERVED_PREFIXES, true) || preg_match(self::RESERVED_SITEMAP_PATTERN, $first) === 1) {
             return 'reserved_prefix:'.$first;
         }
 

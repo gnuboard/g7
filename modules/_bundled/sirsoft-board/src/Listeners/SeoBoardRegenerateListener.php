@@ -90,7 +90,7 @@ class SeoBoardRegenerateListener implements HookListenerInterface
 
         try {
             $regenerator = app(SeoCacheRegenerator::class);
-            $url = "/board/{$slug}/{$post->id}";
+            $url = BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $post->id]);
             $regenerator->renderAndCache($url);
 
             Log::debug('[SEO] Board post detail cache regenerated', [

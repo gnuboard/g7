@@ -10,6 +10,7 @@ use App\Exceptions\CoreUpdateOperationException;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\AbstractUpgradeStep;
 use App\Extension\CoreVersionChecker;
+use App\Extension\Custom\CustomUpdatePreflight;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
@@ -276,6 +277,28 @@ class CoreUpdateService
             'latest_version' => $latestVersion ?? $currentVersion,
             'github_url' => $githubUrl,
         ];
+    }
+
+    /**
+     * 직전 업데이트 시도가 개발자 custom 자리 사전 검사로 멈춘 기록을 돌려줍니다 (#792).
+     *
+     * 업데이트는 CLI 가 하므로 결과는 기록으로 전달된다. 관리자 확인 창은 지금 확인한 새 버전과 같은 버전의
+     * 기록만 보여 준다 — 다른 버전을 시도하다 멈춘 기록은 지금 업데이트와 무관하다.
+     *
+     * @param  string|null  $latestVersion  확인한 새 코어 버전
+     * @return array{to_version:string, checked_at:string, reserved_files:array<int,string>, conflicts:array<int,array<string,string>>}|null 같은 버전의 기록, 없으면 null
+     *
+     * @since 7.2.0
+     */
+    public function pendingCustomPreflight(?string $latestVersion): ?array
+    {
+        if ($latestVersion === null || $latestVersion === '') {
+            return null;
+        }
+
+        $record = CustomUpdatePreflight::lastRecord();
+
+        return ($record !== null && ($record['to_version'] ?? null) === $latestVersion) ? $record : null;
     }
 
     /**

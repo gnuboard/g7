@@ -94,7 +94,7 @@ class SeoPageCacheListener implements HookListenerInterface
 
                 // 페이지 상세 URL 캐시 무효화 (공개 URL은 단수형 /page/{slug})
                 if ($page && isset($page->slug)) {
-                    $cache->invalidateByUrl("*/page/{$page->slug}");
+                    $cache->invalidateByUrl('*'.PageScreenUrl::defaultPath($page->slug));
                 }
 
                 // 페이지 상세 레이아웃 캐시 무효화

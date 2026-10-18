@@ -192,7 +192,7 @@ class SeoBoardCacheListener implements HookListenerInterface
             }
 
             try {
-                app(SeoCacheManagerInterface::class)->invalidateByUrl("/board/{$slug}/{$postId}");
+                app(SeoCacheManagerInterface::class)->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $postId]));
             } catch (\Throwable $e) {
                 Log::warning('[SEO] Board post cache invalidation on comment change failed', [
                     'error' => $e->getMessage(),
@@ -230,12 +230,13 @@ class SeoBoardCacheListener implements HookListenerInterface
                 // 봇 캐시 키는 쿼리스트링 변종(`?`, `?page=2`, `?_escaped_fragment_=` 등)을
                 // 포함해 저장되므로(SeoMiddleware::buildCacheUrl), 와일드카드로 변종까지 무효화한다.
                 // matchesPattern 이 ^...$ 정확 매칭이라 와일드카드 없이는 `/board/{slug}?` 가 누락된다.
-                $cache->invalidateByUrl("/board/{$slug}");
-                $cache->invalidateByUrl("/board/{$slug}?*");
+                $listPath = BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]);
+                $cache->invalidateByUrl($listPath);
+                $cache->invalidateByUrl($listPath.'?*');
 
                 // 게시판 인덱스 페이지 (게시판명 목록 노출 가능)
-                $cache->invalidateByUrl('/boards');
-                $cache->invalidateByUrl('/boards?*');
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX);
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX.'?*');
 
                 // 홈 / 검색 페이지 (게시판명이 함께 노출될 수 있음)
                 $cache->invalidateByLayout('home');
@@ -440,12 +441,12 @@ class SeoBoardCacheListener implements HookListenerInterface
 
             // 해당 게시글 상세 페이지 캐시 무효화 (정확한 URL)
             if ($post && isset($post->id) && $slug) {
-                $cache->invalidateByUrl("/board/{$slug}/{$post->id}");
+                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $post->id]));
             }
 
             // 해당 게시판의 목록 페이지만 무효화 (다른 게시판은 유지)
             if ($slug) {
-                $cache->invalidateByUrl("/board/{$slug}");
+                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]));
             }
 
             // 홈 페이지 캐시 무효화 (최근 게시글 등이 표시될 수 있음)

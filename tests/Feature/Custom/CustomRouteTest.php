@@ -140,7 +140,7 @@ PHP);
     }
 
     /**
-     * 금지 주소 판정 — 예약 첫 구간과 정적 자산 확장자만 막고, 비슷한 이름은 통과시킵니다.
+     * 금지 주소 판정 — 예약 첫 구간(코어 사이트맵·개발 대시보드 포함)과 정적 자산 확장자만 막고, 비슷한 이름은 통과시킵니다.
      *
      * @scenario case=forbidden_rules
      *
@@ -158,6 +158,15 @@ PHP);
         $this->assertNull(CustomRoutes::forbiddenReason('/board/{slug}'));
         $this->assertNull(CustomRoutes::forbiddenReason('/admin/custom-example'));
         $this->assertNull(CustomRoutes::forbiddenReason('/custom-jquery-example'));
+        // 코어 사이트맵(`/sitemap.xml`·`/sitemap-{n}.xml`)과 개발 대시보드(`/dev`)도 가리지 못한다
+        $this->assertSame('reserved_prefix:dev', CustomRoutes::forbiddenReason('/dev'));
+        $this->assertSame('reserved_prefix:dev', CustomRoutes::forbiddenReason('dev/tools'));
+        $this->assertSame('reserved_prefix:sitemap.xml', CustomRoutes::forbiddenReason('/sitemap.xml'));
+        $this->assertSame('reserved_prefix:sitemap-{n}.xml', CustomRoutes::forbiddenReason('sitemap-{n}.xml'));
+        $this->assertSame('reserved_prefix:sitemap-3.xml', CustomRoutes::forbiddenReason('/sitemap-3.xml'));
+        $this->assertNull(CustomRoutes::forbiddenReason('/developer'));
+        $this->assertNull(CustomRoutes::forbiddenReason('/sitemap'));
+        $this->assertNull(CustomRoutes::forbiddenReason('/board/sitemap.xml'));
     }
 
     /**
@@ -241,6 +250,31 @@ PHP);
 
         $this->get('/visit-probe', ['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/141.0 Safari/537.36'])->assertOk();
         $this->assertSame($before + 1, AnalyticsVisit::count(), '사람 요청은 서버 폴백 방문 1건');
+    }
+
+    /**
+     * custom 화면의 봇 표식은 관리자 「봇 감지」 설정을 따릅니다 — 끄면 G7 화면(SEO 미들웨어)처럼 표식을 남기지 않습니다.
+     *
+     * @scenario case=bot_marked
+     *
+     * @effects bot_mark_follows_detection_setting
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bot_mark_follows_bot_detection_setting(): void
+    {
+        $this->loadCustomRoutes(<<<'PHP'
+<?php
+use Illuminate\Support\Facades\Route;
+Route::get('/bot-setting-probe', fn () => request()->attributes->get('seo.is_bot') === true ? 'bot' : 'human');
+PHP);
+        $googlebot = ['User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'];
+
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+        $this->get('/bot-setting-probe', $googlebot)->assertSeeText('bot');
+
+        config(['g7_settings.core.seo.bot_detection_enabled' => false]);
+        $this->get('/bot-setting-probe', $googlebot)->assertSeeText('human');
     }
 
     /**
