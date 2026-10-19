@@ -83,7 +83,9 @@
 하며 받는 시점에 권한·범위·원본 조회 권한을 다시 봅니다. 「본인/전체」 범위는 `exports.all` 권한이 나눕니다(`Support\ExportAccess`).
 열은 `Exports\Declarations\*` 의 모델 선언(`type`·`personal` 필수)에서 오고, 선언도 제외 사유도 없는 컬럼은
 `ExportDeclarationCoverageTest` 가 잡습니다. 새 유형·형식·항목은 `sirsoft-ecommerce.export.*` 필터 훅으로 붙고, 모든 단계가
-액션 훅과 활동 로그를 남깁니다. 창과 진행 표시는 세 목록이 함께 쓰는 `partials/admin_ecommerce_export/*` 조각입니다.
+액션 훅과 활동 로그를 남깁니다. 창과 진행 표시는 세 목록이 함께 쓰는 `partials/admin_ecommerce_export/*` 조각입니다. 목록 버튼은 창 조건(`_global.ecommerceExportContext`)을
+열 때마다 `merge="shallow"` 로 **통째로** 바꿉니다 — 기본 깊은 병합이면 지운 검색어·다른 목록의 조건이 남아 화면과 다른 파일이
+오류 없이 만들어집니다(`admin-export-request-and-manage.spec.ts` 가 잠금).
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도

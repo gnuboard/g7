@@ -122,7 +122,7 @@ test.describe('내보내기 창 쓰임새', () => {
   });
 
   // @scenario type=orders, permission=personal_data
-  // @effects validation_errors_shown_inline
+  // @effects validation_errors_shown_inline, reason_field_announces_required_and_invalid
   test('사유 없이 요청하면 사유 칸 아래에 오류가 보이고, 적으면 사라진다', async ({ page }) => {
     test.setTimeout(120_000);
     await authenticatePage(page, orderOperator());
@@ -142,10 +142,14 @@ test.describe('내보내기 창 쓰임새', () => {
     const messageBox = (await message.boundingBox())!;
     expect(messageBox.y, '오류가 사유 칸 아래에 있지 않다').toBeGreaterThan(inputBox.y);
     await expect(reasonInput).toHaveClass(/input-error/);
+    // 보조기술에도 필수·오류 상태를 알린다
+    await expect(reasonInput).toHaveJSProperty('required', true);
+    await expect(reasonInput).toHaveAttribute('aria-invalid', 'true');
 
     await reasonInput.fill('E2E 사유');
     await reasonInput.blur();
     await expect(message).toHaveCount(0);
+    await expect(reasonInput).toHaveAttribute('aria-invalid', 'false');
   });
 
   // @scenario type=orders, scope=filter
@@ -234,5 +238,40 @@ test.describe('내보내기 창 쓰임새', () => {
     const dialog = page.getByRole('dialog', { name: '다운로드 이력' });
     await expect(dialog.getByText(/항목 수 2개/)).toBeVisible({ timeout: 10_000 });
     await expect(dialog.getByText(/합계 행 포함/)).toBeVisible();
+  });
+
+  // @scenario type=products, totals=on
+  // @effects field_change_recalculates_estimate, totals_hint_when_nothing_summable
+  test('데이터 선택을 비웠다 다시 고르면 예상 행 수를 저절로 다시 받고, 더할 열이 없으면 합계 안내가 보인다', async ({ page }) => {
+    test.setTimeout(120_000);
+    await authenticatePage(page, orderOperator());
+    await page.goto(PRODUCT_LIST_URL);
+    const dialog = await openExportDialog(page);
+    await expect(dialog.getByText(/예상 [1-9][\d,]*행/)).toBeVisible({ timeout: 20_000 });
+
+    await dialog.getByRole('radio', { name: '데이터 선택' }).click();
+    await dialog.getByRole('button', { name: '전체 해제', exact: true }).click();
+    // 비우면 그 자리에서 이유를 알리고 요청을 막는다 — [다시 계산]을 누르지 않아도 된다
+    await expect(dialog.getByText('내보낼 항목을 하나 이상 고르세요.')).toBeVisible({ timeout: 10_000 });
+    await expect(dialog.getByRole('button', { name: '내보내기', exact: true })).toBeDisabled();
+
+    const codeBox = dialog.getByRole('checkbox', { name: '상품코드', exact: true });
+    // 체크 상자는 상태를 바꾼 뒤 다시 그려진다 — 눌러 두고 체크 표시가 나타날 때까지 기다린다
+    await codeBox.click();
+    await expect(codeBox).toBeChecked();
+    await expect(dialog.getByText(/예상 [1-9][\d,]*행/)).toBeVisible({ timeout: 10_000 });
+    await expect(dialog.getByText('내보낼 항목을 하나 이상 고르세요.')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: '내보내기', exact: true })).toBeEnabled();
+
+    // 상품코드만으로는 더할 열이 없다 — 합계를 켜면 합계 행이 생기지 않는다고 미리 알린다
+    const totalsHint = dialog.getByText(/더할 수 있는 열\(금액·수량\)이 없어 합계 행이 생기지 않습니다/);
+    const totalsBox = dialog.getByRole('checkbox', { name: '마지막 줄에 합계 행 넣기', exact: true });
+    await totalsBox.click();
+    await expect(totalsBox).toBeChecked();
+    await expect(totalsHint).toBeVisible();
+    const stockBox = dialog.getByRole('checkbox', { name: '재고 수량', exact: true });
+    await stockBox.click();
+    await expect(stockBox).toBeChecked();
+    await expect(totalsHint).toHaveCount(0);
   });
 });

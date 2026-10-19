@@ -44,8 +44,12 @@
               <label class="inline-clickable">
                 <input type="radio" name="export_column_mode" class="radio" checked="{{(_global.ecommerceExportForm?.column_mode ?? 'current') === 'current'}}">
                   <on type="change">
-                    <!-- 현재 화면 컬럼 — 고른 필드는 지우지 않는다(「데이터 선택」으로 돌아오면 그대로 보인다). 열 구성만 바뀌어 건수와 무관하다 -->
-                    <set-state target="global" ecommerceExportForm.column_mode="current"/>
+                    <!-- 현재 화면 컬럼 — 고른 필드는 지우지 않는다(「데이터 선택」으로 돌아오면 그대로 보인다). 건수는 같지만 열 검증 결과가
+                         달라지므로(빈 선택 오류 등) 예상 건수를 다시 받는다 -->
+                    <sequence>
+                      <set-state target="global" ecommerceExportForm.column_mode="current" :ecommerceExportIsEstimating="true"/>
+                      <refetch-data-source dataSourceId="ecommerceExportEstimateSource"/>
+                    </sequence>
                   </on>
                 </input>
                 <span class="text-label">$t:sirsoft-ecommerce.admin.export.modal.data_current</span>
@@ -53,8 +57,12 @@
               <label class="inline-clickable">
                 <input type="radio" name="export_column_mode" class="radio" checked="{{_global.ecommerceExportForm?.column_mode === 'custom'}}">
                   <on type="change">
-                    <!-- 직접 고르기로 넘어갈 때 비어 있으면 지금 화면 컬럼이 덮는 필드로 시작한다 — 빈 목록에서 하나씩 고르게 하지 않는다 -->
-                    <set-state target="global" ecommerceExportForm.column_mode="custom" ecommerceExportForm.fields="{{(_global.ecommerceExportForm?.fields ?? []).length > 0 ? _global.ecommerceExportForm.fields : (_global.ecommerceExportForm?.screen_columns ?? []).flatMap(sc => _global.ecommerceExportCatalog?.screen_column_fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit]?.[sc] ?? [])}}"/>
+                    <!-- 직접 고르기로 넘어갈 때 비어 있으면 지금 화면 컬럼이 덮는 필드로 시작한다 — 빈 목록에서 하나씩 고르게 하지 않는다.
+                         열 검증 결과가 달라지므로 예상 건수를 다시 받는다 -->
+                    <sequence>
+                      <set-state target="global" ecommerceExportForm.column_mode="custom" ecommerceExportForm.fields="{{(_global.ecommerceExportForm?.fields ?? []).length > 0 ? _global.ecommerceExportForm.fields : (_global.ecommerceExportForm?.screen_columns ?? []).flatMap(sc => _global.ecommerceExportCatalog?.screen_column_fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit]?.[sc] ?? [])}}" :ecommerceExportIsEstimating="true"/>
+                      <refetch-data-source dataSourceId="ecommerceExportEstimateSource"/>
+                    </sequence>
                   </on>
                 </input>
                 <span class="text-label">$t:sirsoft-ecommerce.admin.export.modal.data_custom</span>
@@ -65,8 +73,11 @@
               <label data-each="column in _global.ecommerceExportCatalog?.screen_columns ?? []" class="inline-clickable px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700">
                 <input type="checkbox" class="checkbox" checked="{{(_global.ecommerceExportForm?.screen_columns ?? []).includes(column.key)}}">
                   <on type="change">
-                    <!-- 화면 컬럼 낱개 — 같은 키를 먼저 걸러 낸 뒤 넣거나 뺀다 -->
-                    <set-state target="global" ecommerceExportForm.screen_columns="{{$event.target.checked ? [...(_global.ecommerceExportForm?.screen_columns ?? []).filter(k => k !== column.key), column.key] : (_global.ecommerceExportForm?.screen_columns ?? []).filter(k => k !== column.key)}}"/>
+                    <!-- 화면 컬럼 낱개 — 같은 키를 먼저 걸러 낸 뒤 넣거나 뺀다. 예상 건수도 다시 받는다(빈 선택 오류가 남지 않게) -->
+                    <sequence>
+                      <set-state target="global" ecommerceExportForm.screen_columns="{{$event.target.checked ? [...(_global.ecommerceExportForm?.screen_columns ?? []).filter(k => k !== column.key), column.key] : (_global.ecommerceExportForm?.screen_columns ?? []).filter(k => k !== column.key)}}" :ecommerceExportIsEstimating="true"/>
+                      <refetch-data-source dataSourceId="ecommerceExportEstimateSource"/>
+                    </sequence>
                   </on>
                 </input>
                 <span class="text-label">{{column.label}}</span>
@@ -78,15 +89,21 @@
                 <div class="flex-center gap-2">
                   <button type="button" class="btn btn-secondary btn-sm">
                     <on type="click">
-                      <!-- 전체 선택 — 이 행 단위에서 고를 수 있는 필드 전부 -->
-                      <set-state target="global" ecommerceExportForm.fields="{{(_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).map(f => f.key)}}"/>
+                      <!-- 전체 선택 — 이 행 단위에서 고를 수 있는 필드 전부. 고른 필드가 바뀌면 예상 건수도 다시 계산한다(빈 선택 오류가 남지 않게) -->
+                      <sequence>
+                        <set-state target="global" ecommerceExportForm.fields="{{(_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).map(f => f.key)}}" :ecommerceExportIsEstimating="true"/>
+                        <refetch-data-source dataSourceId="ecommerceExportEstimateSource"/>
+                      </sequence>
                     </on>
                     $t:sirsoft-ecommerce.admin.export.modal.select_all
                   </button>
                   <button type="button" class="btn btn-secondary btn-sm">
                     <on type="click">
-                      <!-- 전체 해제 — 고른 필드를 모두 비운다 -->
-                      <set-state target="global" :ecommerceExportForm.fields="[]"/>
+                      <!-- 전체 해제 — 고른 필드를 모두 비운다. 예상 건수도 다시 계산해 「필드를 고르세요」 안내를 바로 보인다 -->
+                      <sequence>
+                        <set-state target="global" :ecommerceExportForm.fields="[]" :ecommerceExportIsEstimating="true"/>
+                        <refetch-data-source dataSourceId="ecommerceExportEstimateSource"/>
+                      </sequence>
                     </on>
                     $t:sirsoft-ecommerce.admin.export.modal.clear_all
                   </button>
@@ -98,8 +115,11 @@
                   <label data-each="field in (_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).filter(f => f.group === group.key)" class="inline-clickable">
                     <input type="checkbox" class="checkbox" checked="{{(_global.ecommerceExportForm?.fields ?? []).includes(field.key)}}">
                       <on type="change">
-                        <!-- 필드 낱개 — 같은 키를 먼저 걸러 낸 뒤 넣거나 뺀다(고른 순서가 곧 열 순서다) -->
-                        <set-state target="global" ecommerceExportForm.fields="{{$event.target.checked ? [...(_global.ecommerceExportForm?.fields ?? []).filter(k => k !== field.key), field.key] : (_global.ecommerceExportForm?.fields ?? []).filter(k => k !== field.key)}}"/>
+                        <!-- 필드 낱개 — 같은 키를 먼저 걸러 낸 뒤 넣거나 뺀다(고른 순서가 곧 열 순서다). 예상 건수도 다시 계산한다 -->
+                        <sequence>
+                          <set-state target="global" ecommerceExportForm.fields="{{$event.target.checked ? [...(_global.ecommerceExportForm?.fields ?? []).filter(k => k !== field.key), field.key] : (_global.ecommerceExportForm?.fields ?? []).filter(k => k !== field.key)}}" :ecommerceExportIsEstimating="true"/>
+                          <refetch-data-source dataSourceId="ecommerceExportEstimateSource"/>
+                        </sequence>
                       </on>
                     </input>
                     <span class="text-label">{{field.label}}</span>
@@ -303,11 +323,15 @@
               </input>
               <span class="text-label">$t:sirsoft-ecommerce.admin.export.modal.include_totals</span>
             </label>
+            <!-- 합계를 켰는데 고른 열에 더할 수 있는 열(금액·수량 — 카탈로그의 summable)이 하나도 없으면 합계 행이 생기지 않는다고 미리 알린다.
+                 판매가 같은 단가는 더하지 않으므로 상품 내보내기에서 자주 겪는다 -->
+            <p data-if="{{_global.ecommerceExportForm?.include_totals === true &amp;&amp; !(((_global.ecommerceExportForm?.column_mode ?? 'current') === 'custom') ? (_global.ecommerceExportForm?.fields ?? []) : (_global.ecommerceExportForm?.screen_columns ?? []).flatMap(sc => _global.ecommerceExportCatalog?.screen_column_fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit]?.[sc] ?? [])).some(k => (_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).some(f => f.key === k &amp;&amp; f.summable))}}" role="status" class="form-hint">$t:sirsoft-ecommerce.admin.export.modal.totals_none_hint</p>
           </div>
-          <!-- 다운로드 사유 — 고른 필드에 개인정보가 하나라도 있으면 필수(서버도 같은 기준으로 본다) -->
+          <!-- 다운로드 사유 — 고른 필드에 개인정보가 하나라도 있으면 필수(서버도 같은 기준으로 본다). 칸은 보이는 제목과 같은 이름(aria-label)·
+               필수·오류 상태(aria-invalid)를 보조기술에 알린다 -->
           <div data-ref="export_reason_section" data-if="{{(((_global.ecommerceExportForm?.column_mode ?? 'current') === 'custom') ? (_global.ecommerceExportForm?.fields ?? []) : (_global.ecommerceExportForm?.screen_columns ?? []).flatMap(sc => _global.ecommerceExportCatalog?.screen_column_fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit]?.[sc] ?? [])).some(k => (_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).some(f => f.key === k &amp;&amp; f.personal))}}" class="flex flex-col gap-2">
             <span class="form-label">$t:sirsoft-ecommerce.admin.export.modal.reason</span>
-            <textarea name="exportReason" rows="2" maxlength="500" placeholder="$t:sirsoft-ecommerce.admin.export.modal.reason_placeholder" class="input w-full {{((_global.ecommerceExportErrors || []).reason ?? []).length > 0 ? 'input-error' : ''}}" value="{{_global.ecommerceExportForm?.reason ?? ''}}">
+            <textarea name="exportReason" rows="2" maxlength="500" :required="true" aria-label="$t:sirsoft-ecommerce.admin.export.modal.reason" aria-invalid="{{((_global.ecommerceExportErrors || []).reason ?? []).length > 0 ? 'true' : 'false'}}" placeholder="$t:sirsoft-ecommerce.admin.export.modal.reason_placeholder" class="input w-full {{((_global.ecommerceExportErrors || []).reason ?? []).length > 0 ? 'input-error' : ''}}" value="{{_global.ecommerceExportForm?.reason ?? ''}}">
               <on type="change">
                 <!-- 사유를 적으면 사유 칸 오류를 지운다 — 비었는지는 요청 때 서버가 다시 본다 -->
                 <sequence>

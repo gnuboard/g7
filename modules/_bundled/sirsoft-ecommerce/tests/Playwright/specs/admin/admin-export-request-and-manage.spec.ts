@@ -68,6 +68,44 @@ async function expectAtRightOfSortRow(page: Page, button: Locator): Promise<void
   }
 }
 
+/**
+ * 새로고침 없이 화면을 옮긴다 — 운영자가 메뉴·뒤로 가기로 움직일 때처럼 전역 상태가 그대로 남는다.
+ *
+ * @param page 화면
+ * @param url 옮겨 갈 주소
+ */
+async function spaNavigate(page: Page, url: string): Promise<void> {
+  await page.evaluate((target) => {
+    window.history.pushState({}, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+  }, url);
+}
+
+/**
+ * [내보내기]를 눌러 창이 보내는 예상 건수 요청의 목록 조건(filters)을 돌려준다.
+ *
+ * 그 목록 유형의 요청만 받는다 — 앞 화면 창이 늦게 보낸 요청이나, 화면이 바뀌기 전 버튼을 누른 요청을 섞어 읽지 않는다.
+ *
+ * @param page 화면
+ * @param type 이 목록의 내보내기 유형(orders·products·mileage)
+ * @returns 예상 건수 요청 본문의 filters
+ */
+async function openExportAndReadFilters(page: Page, type: string): Promise<Record<string, unknown>> {
+  const estimate = page.waitForRequest(
+    (req) => req.url().endsWith(`${EXPORT_API}/estimate`) && req.method() === 'POST' && req.postDataJSON()?.type === type,
+    { timeout: 30_000 },
+  );
+  const button = page.getByRole('button', { name: '내보내기', exact: true }).first();
+  await expect(button).toBeVisible({ timeout: 20_000 });
+  await button.click();
+  const filters = ((await estimate).postDataJSON()?.filters ?? {}) as Record<string, unknown>;
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(dialog).toHaveCount(0, { timeout: 10_000 });
+
+  return filters;
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('내보내기 요청·관리', () => {
@@ -436,5 +474,34 @@ test.describe('내보내기 요청·관리', () => {
     await expect(page).toHaveURL(/search_field=requester/, { timeout: 10_000 });
     expect(decodeURIComponent(new URL(page.url()).searchParams.get('search_keyword') ?? '')).toBe(name);
     await expect(page.locator('input[name="search"]:visible').first()).toHaveValue(name);
+  });
+
+  // @scenario type=orders, scope=filter
+  // @effects export_context_replaced_on_every_open
+  test('검색을 지우거나 다른 목록으로 옮겨 다시 열면 전에 담긴 검색 조건이 남지 않는다', async ({ page }) => {
+    test.setTimeout(150_000);
+    await authenticatePage(page, issueToken('sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.products.read', 'sirsoft-ecommerce.exports.create'));
+
+    // ① 검색한 주문 목록 — 창이 그 검색어를 조건으로 싣는다
+    await page.goto(`${orderListLastYear()}&search_field=order_number&search_keyword=E2E-STALE-KEYWORD`);
+    const searched = await openExportAndReadFilters(page, 'orders');
+    expect(searched.search_keyword).toBe('E2E-STALE-KEYWORD');
+
+    // ② 같은 목록에서 검색을 지우고 다시 연다 — 지운 검색어가 남으면 화면은 전체인데 파일만 걸러진다
+    await spaNavigate(page, orderListLastYear());
+    await expect(page).not.toHaveURL(/search_keyword/);
+    const cleared = await openExportAndReadFilters(page, 'orders');
+    expect(cleared, '지운 검색 조건이 남았다').not.toHaveProperty('search_keyword');
+    expect(cleared).not.toHaveProperty('search_field');
+
+    // ③ 상품 목록으로 옮겨 연다 — 주문 목록의 조건(날짜 종류 등)이 섞이면 상품 검증이 422 를 낸다
+    await page.goto(`${orderListLastYear()}&search_field=order_number&search_keyword=E2E-STALE-KEYWORD`);
+    await openExportAndReadFilters(page, 'orders');
+    await spaNavigate(page, PRODUCT_LIST_URL);
+    await expect(page.getByRole('heading', { name: '상품 관리', level: 1 })).toBeVisible({ timeout: 20_000 });
+    const product = await openExportAndReadFilters(page, 'products');
+    for (const key of ['search_keyword', 'search_field', 'date_type', 'start_date', 'end_date']) {
+      expect(product, `주문 목록의 ${key} 가 상품 조건에 섞였다`).not.toHaveProperty(key);
+    }
   });
 });

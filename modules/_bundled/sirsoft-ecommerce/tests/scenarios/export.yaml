@@ -124,6 +124,10 @@ effects:
   - list_period_option_disabled_when_unusable
   - estimate_recalculates_automatically
   - download_history_shows_field_count_and_totals
+  - export_context_replaced_on_every_open
+  - field_change_recalculates_estimate
+  - totals_hint_when_nothing_summable
+  - reason_field_announces_required_and_invalid
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportControllerTest.php

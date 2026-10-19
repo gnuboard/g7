@@ -54,6 +54,7 @@
     "locale_select": "Language",
     "options": "Options",
     "include_totals": "Add a totals row at the end",
+    "totals_none_hint": "None of the selected fields can be summed (amounts or quantities), so no totals row will be added. Unit prices such as the sale price are not summed.",
     "reason": "Download reason",
     "reason_placeholder": "e.g. Month-end settlement report",
     "reason_hint": "You selected fields containing personal data. The reason is kept in the activity log and Export Management.",
