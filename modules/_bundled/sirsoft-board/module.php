@@ -75,26 +75,34 @@ class Module extends AbstractModule
     /**
      * 모듈 스케줄 목록 반환
      *
-     * 대시보드 게시물 현황 집계를 매시간 실행합니다.
+     * 설치·갱신 때 코어가 이 선언을 스케줄 표에 동기화하고, 운영자는 관리자 > 스케줄 관리(또는 게시판 설정의
+     * 「스케줄」 탭)에서 주기·활성을 바꾼다. 시각은 사이트 시간대 기준이다.
      *
-     * @return array<int, array<string, string>> 스케줄 정의 목록
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractModule::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [
             [
+                'name' => 'aggregate-stats',
+                'type' => 'artisan',
+                'label' => ['ko' => '게시물 현황 집계', 'en' => 'Aggregate board stats'],
+                'description' => ['ko' => '대시보드 게시물 현황을 집계합니다.', 'en' => 'Aggregates post statistics for the dashboard.'],
                 'command' => 'sirsoft-board:aggregate-stats',
-                'schedule' => 'hourly',
-                'description' => '대시보드 게시물 현황 집계',
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
             ],
             [
-                'command' => 'sirsoft-board:prune-attachments --scheduled',
-                'schedule' => 'daily',
-                'description' => '방치된 임시 첨부 정리 + 보존기간 경과 삭제 첨부 영구 정리',
-                // 임시 첨부 정리 파트는 상시 동작해야 하므로 스케줄 자체는 항상 등록한다.
+                'name' => 'prune-attachments',
+                'type' => 'artisan',
+                'label' => ['ko' => '게시판 첨부 정리', 'en' => 'Prune board attachments'],
+                // 임시 첨부 정리 파트는 상시 동작해야 하므로 스케줄 자체는 조건 없이 돈다.
                 // 사용자 파일을 실제로 파기하는 영구 정리 파트만 커맨드 내부에서 게이트한다
                 // (attachment_settings.purge_enabled, false 폴백).
-                'enabled_config' => null,
+                'description' => ['ko' => '방치된 임시 첨부를 지우고, 보존 기간이 지난 삭제 첨부를 영구 정리합니다(영구 정리는 설정에서 켠 경우만).', 'en' => 'Deletes abandoned temporary attachments and permanently purges deleted attachments past retention (purge only when enabled in settings).'],
+                'command' => 'sirsoft-board:prune-attachments --scheduled',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
         ];
     }

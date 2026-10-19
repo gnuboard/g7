@@ -780,13 +780,27 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 | sitemap_serve_stale_on_miss | boolean | true | 신선도 만료 시 기존 세트를 그대로 서빙(true) / 503 반환(false) |
 | sitemap_max_urls_per_contributor | integer | 0 | 수집기당 URL 상한 (0=무제한). 초과 시 경고 로그 + truncate |
 | sitemap_hreflang_enabled | boolean | true | 다국어 alternate(hreflang) 링크 출력 ON/OFF. 로케일 수가 `SitemapXmlRenderer::MAX_HREFLANG`(50) 초과 시 alternate 생략 |
-| sitemap_schedule | string | "daily" | 생성 주기 (hourly/daily/weekly) |
-| sitemap_schedule_time | string | "02:00" | 생성 시각 |
 | og_default_site_name | string | "" | og:site_name 기본값. 비면 `general.site_name` fallback |
 | og_image_default_width | integer | 1200 | og:image:width 기본값 (픽셀) |
 | og_image_default_height | integer | 630 | og:image:height 기본값 (픽셀) |
 | twitter_default_card | string | "summary_large_image" | twitter:card 기본 (summary/summary_large_image/app/player) |
 | twitter_default_site | string | "" | twitter:site 핸들 (예: @gnuboard). 비면 출력 생략 |
+
+### 사이트맵 생성 주기 (7.2.0~)
+
+사이트맵 정기 생성 주기·시각은 SEO 설정이 아니라 **관리자 > 스케줄 관리**의 코어 행 `sitemap-generate` 가 정합니다([scheduling.md](scheduling.md)). 7.1.x 의 `seo.sitemap_schedule`(hourly/daily/weekly)·`seo.sitemap_schedule_time`(HH:mm)은 더 이상 예약에 쓰이지 않습니다.
+
+| 항목 | 값 |
+| --- | --- |
+| 기본 일정 | `0 2 * * *` (매일 02:00, 사이트 설정 시간대) |
+| 유형 | job `App\Jobs\GenerateSitemapJob` — 큐로 보내기(전용 `sitemap` 큐, Job 의 재시도·중복 방지 그대로) |
+| 실행 조건 | `seo.sitemap_enabled` 가 켜져 있을 때만 (기본 true). 끄면 예약 생성을 건너뛴다 |
+| 중복 방지 | 30분 |
+| 생성 모드 | `auto` (위 「재생성 모드」 표의 스케줄러 행) |
+
+- 운영자가 스케줄 관리에서 바꾼 주기는 코어 업데이트가 덮지 않습니다.
+- 7.2.0 업그레이드는 저장된 주기가 기본(매일 02:00)과 다르면 그 값을 `sitemap-generate` 행의 cron 으로 옮기고(hourly → `0 * * * *`, daily → `분 시 * * *`, weekly → `분 시 * * 0`) 두 설정 키를 지웁니다.
+- 큐로 보낸 사이트맵 Job 의 결과는 스케줄 실행 이력이 아니라 스케줄 관리 「큐」 탭의 처리 기록에서 봅니다. 최종 실패 알림은 위 「완료/실패 알림」 규칙(관리자 수동 재생성만)을 따르고, 스케줄 실패 알림(`schedule_failed`)은 보내지 않습니다.
 
 ## 캐시 상한 (config/core.php `seo_cache_limits`)
 

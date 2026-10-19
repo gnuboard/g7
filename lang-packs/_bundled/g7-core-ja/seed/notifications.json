@@ -183,6 +183,22 @@
       }
     }
   },
+  "schedule_failed": {
+    "definition": {
+      "name": "予約タスク失敗",
+      "description": "予約タスク(スケジュール)が失敗した場合に管理者に送信される通知(同じタスクは1日1回)"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 予約タスク「{schedule_label}」が失敗しました",
+        "body": "<h1>予約タスク失敗</h1><p>{owner}の予約タスク <strong>{schedule_label}</strong>({schedule_name})が {failed_at} に失敗しました。</p><p>エラー: <strong>{error}</strong></p><p>同じタスクの失敗は1日に1回だけ通知します。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{schedule_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">スケジュール管理を開く</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "予約タスク失敗: {schedule_label}",
+        "body": "{owner}の予約タスク「{schedule_label}」が失敗しました。エラー: {error}"
+      }
+    }
+  },
   "analytics_ledger_limit_exceeded": {
     "definition": {
       "name": "訪問者統計台帳の閾値超過",

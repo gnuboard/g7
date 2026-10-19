@@ -2,7 +2,6 @@
 
 namespace Plugins\Sirsoft\Koreaexim\Services;
 
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,33 +21,31 @@ class RateRunService
      * @param  ManagedCurrencyResolver  $resolver  resolver 입력값
      * @param  EcommerceSettingsService  $settings  settings 입력값
      * @param  ExchangeRateUpdateService  $updates  updates 입력값
+     * @param  UpdateScheduleResolver  $schedule  정기 갱신 시각 해석기 (코어 스케줄 행 기준)
      */
     public function __construct(private RateRunRepositoryInterface $runs, private ManagedCurrencyResolver $resolver,
-        private EcommerceSettingsService $settings, private ExchangeRateUpdateService $updates) {}
+        private EcommerceSettingsService $settings, private ExchangeRateUpdateService $updates,
+        private UpdateScheduleResolver $schedule) {}
 
     /**
      * 관리 상태와 최근 이력·다음 실행 예정 시각을 반환합니다.
+     *
+     * 갱신 시각은 관리자 > 스케줄 관리의 정기 갱신 행(cron·한국시간)이 정한다. 다음 실행 시각은 그 행의 일정 중
+     * 실행 요일에 드는 첫 시각이며, 자동 관리가 꺼졌거나 실행 요일이 없거나 행이 비활성이면 null 이다.
+     * `schedule` 은 설정 화면의 「스케줄 관리에서 변경」 링크·표시용이다(행이 없으면 null).
      *
      * @return array 처리 결과
      */
     public function status(): array
     {
-        $next = null;
+        $siteZone = config('app.schedule_timezone', config('app.timezone'));
         $auto = (bool) plugin_setting('sirsoft-koreaexim', 'auto_manage', false);
         $days = (array) plugin_setting('sirsoft-koreaexim', 'run_days', [1, 2, 3, 4, 5]);
-        $time = plugin_setting('sirsoft-koreaexim', 'update_time', '11:30');
-        if (! is_string($time) || ! preg_match('/^([01]\d|2[0-3]):[0-5]\d$/D', $time)) {
-            $time = '11:30';
-        }
-        if ($auto && $days !== []) {
-            $candidate = Carbon::today('Asia/Seoul')->setTimeFromTimeString($time);
-            for ($i = 0; $i < 8; $i++, $candidate->addDay()) {
-                if ($candidate->isFuture() && in_array($candidate->dayOfWeekIso, array_map('intval', $days), true)) {
-                    $next = $candidate;
-                    break;
-                }
-            }
-        }
+        $row = $this->schedule->schedule();
+        $active = $row === null || (bool) $row->is_active;
+        $next = $auto && $days !== [] && $active ? $this->schedule->nextRunAt(now(), $days, $row) : null;
+        // 요일·자동 관리와 무관한 「일정상 다음 갱신」의 시각(사이트 시간대 HH:mm) — 설정 화면의 시각 안내용
+        $upcoming = $this->schedule->nextRunAt(now(), [1, 2, 3, 4, 5, 6, 7], $row);
 
         return array_merge($this->resolver->resolve(), [
             'auto_manage' => $auto, 'auth_key_set' => (bool) plugin_setting('sirsoft-koreaexim', 'auth_key', ''),
@@ -56,8 +53,12 @@ class RateRunService
             'last_success_run' => $this->runs->latestSuccessful(), 'last_run' => $this->runs->latest(),
             'today_request_count' => $this->runs->sumTodayRequestCount(), 'quota_limit' => 1000,
             'next_run_at_kst' => $next ? $next->format('Y-m-d H:i').' KST' : null,
-            'update_time_site' => Carbon::today('Asia/Seoul')->setTimeFromTimeString($time)->setTimezone(config('app.schedule_timezone', config('app.timezone')))->format('H:i'),
-            'next_run_at' => $next?->copy()->setTimezone(config('app.schedule_timezone', config('app.timezone')))->format('Y-m-d H:i'),
+            'update_time_site' => $upcoming?->setTimezone($siteZone)->format('H:i'),
+            'next_run_at' => $next?->setTimezone($siteZone)->format('Y-m-d H:i'),
+            'schedule' => $row === null ? null : [
+                'id' => $row->id, 'name' => $row->name, 'expression' => $row->expression,
+                'timezone' => $row->timezone, 'is_active' => (bool) $row->is_active,
+            ],
             'scheduler_hint' => __('sirsoft-koreaexim::messages.scheduler_hint'),
         ]);
     }

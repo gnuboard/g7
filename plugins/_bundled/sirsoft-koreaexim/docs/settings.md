@@ -9,13 +9,12 @@
 |---|---|---|---|
 | `auth_key` | `string` | - | 인증키 |
 | `auto_manage` | `boolean` | `false` | 환율 자동 관리 사용 |
-| `update_time` | `string` | `11:30` | 갱신 시각 (한국시간) |
 | `run_days` | `array` | `[1,2,3,4,5]` | 실행 요일 |
 | `retry_max` | `integer` | `3` | 최대 재시도 |
 | `rate_type` | `enum` | `deal_bas_r` | 환율 종류 |
 | `rate_decimal_places` | `integer` | `6` | 환율 소수 자릿수 |
 | `lookback_days` | `integer` | `7` | 직전 영업일 탐색 일수 |
-| `history_retention_days` | `integer` | `365` | 이력 보존 일수 |
+| `history_retention_days` | `integer` | `365` | 이력 보관 기간 (일) |
 | `notify_on_failure` | `boolean` | `true` | 실패 알림 |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`

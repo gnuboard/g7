@@ -1,0 +1,15 @@
+feature: 배송정책 목록 필터 — 표시만 하고 아무것도 바꾸지 않는 검색대상 선택이 없다
+
+description: |
+  배송정책 목록 검색줄에는 선택지가 '정책명' 하나뿐인 검색대상 select 가 있었다. 서버로 보내지도
+  않는 표시 전용 컨트롤이라 운영자가 다른 대상을 고를 수 있는 것처럼 보였다. 이를 없애고 검색어는
+  엔터와 [검색] 버튼이 같은 명명 액션(searchShippingPolicies)으로 보낸다.
+
+axes:
+  case: [no_search_type_select]
+
+effects:
+  - search_keyword_submits_named_search
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyFilterSearchRow.test.tsx

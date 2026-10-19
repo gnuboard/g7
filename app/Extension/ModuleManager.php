@@ -34,6 +34,7 @@ use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionRollbackCacheRepair;
+use App\Extension\Helpers\ExtensionScheduleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\FilePermissionHelper;
@@ -54,6 +55,7 @@ use App\Extension\Vendor\VendorResolver;
 use App\Models\IdentityPolicy;
 use App\Models\Module;
 use App\Models\Plugin;
+use App\Models\Schedule;
 use App\Models\Template;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
@@ -565,6 +567,9 @@ class ModuleManager implements ModuleManagerInterface
 
                 // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
                 $this->syncModuleNotificationDefinitions($module);
+
+                // 스케줄 선언 동기화 (schedules — 7.2.0). 비활성으로 설치돼도 행은 만들고 등록기·실행기가 거른다.
+                $this->syncModuleSchedules($module);
 
                 DB::commit();
 
@@ -1132,6 +1137,19 @@ class ModuleManager implements ModuleManagerInterface
                                 ->cleanupStaleDefinitions('module', $module->getIdentifier(), []);
                         } catch (\Throwable $e) {
                             Log::warning('알림 정의 정리 실패 (uninstall)', [
+                                'module' => $module->getIdentifier(),
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // 스케줄도 data 옵션 선택 시 이력과 함께 제거 (7.2.0 — 비활성·데이터 보존 제거는 행을 남긴다)
+                    if (Schema::hasTable('schedules')) {
+                        try {
+                            app(ExtensionScheduleSyncHelper::class)
+                                ->cleanupSchedulesForExtension(ExtensionOwnerType::Module, $module->getIdentifier());
+                        } catch (\Throwable $e) {
+                            Log::warning('스케줄 정리 실패 (uninstall)', [
                                 'module' => $module->getIdentifier(),
                                 'error' => $e->getMessage(),
                             ]);
@@ -2561,6 +2579,8 @@ class ModuleManager implements ModuleManagerInterface
      *   6. IDV 정책 (`getIdentityPolicies`)
      *   7. 알림 정의/템플릿 (`getNotificationDefinitions`) — 본인인증 알림 포함.
      *      옛 `getIdentityMessages()` 선언은 7.1.0 부터 여기서 알림 정의로 변환·합류한다(호환층).
+     *   8. 예약 작업 (`getSchedules`) — `schedules` 행. 선언에서 빠진 행은 같은 소유 범위에서 정리하되,
+     *      선언이 0건이면 정리하지 않는다(데이터 보호). 7.2.0.
      *
      * `installModule` / `updateModule` 트랜잭션 내부에서 호출되어 모듈 디스크 상태와 DB 를
      * 정합 상태로 유지한다. 외부 호출 진입점으로도 노출되어 코어 업그레이드 사후 보정
@@ -2581,6 +2601,7 @@ class ModuleManager implements ModuleManagerInterface
         $this->cleanupStaleModuleEntries($module);
         $this->syncModuleIdentityPolicies($module);
         $this->syncModuleNotificationDefinitions($module);
+        $this->syncModuleSchedules($module);
     }
 
     /**
@@ -2785,6 +2806,45 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         return $definitions;
+    }
+
+    /**
+     * Module 의 `getSchedules()` 선언을 schedules 테이블로 동기화합니다 (7.2.0).
+     *
+     * 옛 형식(command·schedule·enabled_config)은 `ExtensionScheduleSyncHelper::normalizeLegacySchedules()` 로
+     * 새 스키마로 바꾼 뒤, 언어팩 필터(`seed.{id}.schedules.translations`, matchKey=name)로 로케일 키를 더한다.
+     * 운영자 수정은 user_overrides 로 보존되고, 선언에서 빠진 행은 같은 소유 범위에서 정리된다.
+     * 비활성 module의 행은 지우지 않는다 — 등록기·실행기가 `Schedule::ownerIsActive()` 로 거른다.
+     *
+     * 선언이 빈 배열인데 DB 행이 있으면 정리를 막는다(알림 정의와 같은 데이터 손실 방어 — fresh-load 가
+     * 옛 활성 디렉터리를 읽어 선언 0건을 돌려주는 전이 구간이 있다).
+     *
+     * @param  ModuleInterface  $module  스케줄을 동기화할 module 인스턴스
+     * @return void 반환값 없음
+     */
+    protected function syncModuleSchedules(ModuleInterface $module): void
+    {
+        if (! Schema::hasTable('schedules')) {
+            return; // 마이그레이션 미실행 환경 보호
+        }
+
+        $helper = app(ExtensionScheduleSyncHelper::class);
+        $identifier = $module->getIdentifier();
+
+        $definitions = $helper->normalizeLegacySchedules($module->getSchedules(), ExtensionOwnerType::Module, $identifier);
+        $definitions = HookManager::applyFilters("seed.{$identifier}.schedules.translations", $definitions);
+
+        if (empty($definitions)) {
+            if (Schedule::ownedBy(ExtensionOwnerType::Module, $identifier)->exists()) {
+                Log::warning('스케줄 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'module' => $identifier,
+                ]);
+            }
+
+            return;
+        }
+
+        $helper->syncSchedules(ExtensionOwnerType::Module, $identifier, is_array($definitions) ? $definitions : []);
     }
 
     /**

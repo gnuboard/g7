@@ -341,6 +341,26 @@ return [
 | dormant_converted | core.privacy.dormant_converted | mail, database |
 | dormant_withdraw_notice | core.privacy.dormant_withdraw_notice | mail, database |
 
+#### 예약 작업 실패 `schedule_failed` (7.2.0~)
+
+스케줄 실행기(`ScheduleExecutor`)가 실패마다 발화하는 `core.schedule.run_failed`(인자 `Schedule $schedule, ?ScheduleHistory $history, string $error`)를 구독하는 운영 알림이다. 방문자 통계 집계 실패(`analytics_archive_failed`)와 같은 구조다.
+
+| 항목 | 값 |
+|------|----|
+| hook_prefix · audience | `core.schedule` · `staff` |
+| hooks | `core.schedule.run_failed` |
+| 채널 · 수신자 | mail, database — 두 템플릿 모두 `role: admin` |
+| 변수 | `schedule_label`(표시 명칭) · `schedule_name`(식별자) · `owner`(코어·확장 이름·직접 등록) · `error`(500자에서 자름) · `failed_at`(사이트 시간대 `Y-m-d H:i`) · `schedule_url`(스케줄 관리 화면, 해당 작업 검색) · `app_name` · `site_url` |
+| database 알림 click_url | `{schedule_url}` |
+
+값은 `ScheduleNotificationDataListener`(`core.schedule.notification.extract_data` 필터)가 채우고, 보낼지는 `ScheduleFailureNotifier::shouldNotify()` 가 정한다. 보내지 않을 때는 `context.skip` 으로 발송을 멈춘다.
+
+- 스케줄의 「실패 시 알림」(`notify_on_failure`)이 꺼져 있으면 보내지 않는다.
+- 관리 화면 「즉시 실행」(수동 실행) 실패는 보내지 않는다 — 운영자가 결과를 화면에서 이미 본다.
+- job 유형 스케줄을 「큐로 보내기」로 실행하면 Job 을 큐에 넣는 데 성공한 시점에 스케줄 실행은 성공이므로 이 알림은 가지 않는다. Job 자체의 실패는 그 Job 의 재시도·실패 처리를 따르고, 큐 관리 화면의 실패 작업·처리 기록에서 본다.
+- 같은 스케줄은 사이트 시간대 기준 **하루 1회**만 보낸다. 캐시 키 `schedule:failure_notified:{id}:{Ymd}`(TTL 86400초)로 판정하고, 캐시 장애면 보낸다(놓치는 쪽이 더 해롭다).
+- 오류는 문자열로 넘긴다 — 큐로 가는 발송 리스너는 `Throwable` 을 직렬화하지 못한다.
+
 ### Board 7종
 
 | type | hooks |

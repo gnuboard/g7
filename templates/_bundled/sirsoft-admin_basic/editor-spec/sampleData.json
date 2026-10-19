@@ -3166,7 +3166,7 @@
           {
             "id": 12,
             "name": {
-              "ko": "스케쥴 관리",
+              "ko": "스케줄 관리",
               "en": "Schedule Management",
               "ja": "スケジュール管理"
             },
@@ -4701,60 +4701,421 @@
         }
       ]
     },
+    "coreSchedules": {
+      "data": {
+        "data": [
+          {"name": "sitemap-generate", "is_active": true, "next_run_at": "2026-05-30T02:00:00+09:00"},
+          {"name": "queue-prune-records", "is_active": true, "next_run_at": "2026-05-30T04:10:00+09:00"},
+          {"name": "activity-log-prune", "is_active": true, "next_run_at": "2026-05-30T04:45:00+09:00"},
+          {"name": "auth-process-password-expiry", "is_active": true, "next_run_at": "2026-05-30T05:15:00+09:00"},
+          {"name": "geoip-update", "is_active": true, "next_run_at": "2026-06-03T03:00:00+09:00"},
+          {"name": "privacy-process-retention", "is_active": true, "next_run_at": "2026-05-30T05:05:00+09:00"},
+          {"name": "attachments-prune-orphans", "is_active": false, "next_run_at": null}
+        ]
+      }
+    },
+    "analytics_report_schedules": {
+      "data": {
+        "data": [
+          {"name": "analytics-report-weekly", "is_active": true, "next_run_at": "2026-06-01T08:00:00+09:00"},
+          {"name": "analytics-report-monthly", "is_active": true, "next_run_at": "2026-06-01T08:00:00+09:00"}
+        ]
+      }
+    },
     "schedules": {
       "data": {
-        "abilities": { "can_create": true, "can_update": true, "can_delete": true, "can_run": true },
-        "pagination": { "total": 3, "current_page": 1, "last_page": 1, "per_page": 20 },
+        "abilities": {
+          "can_create": true,
+          "can_update": true,
+          "can_delete": true,
+          "can_run": true
+        },
+        "pagination": {
+          "total": 3,
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "has_more_pages": false
+        },
         "data": [
           {
             "id": 1,
-            "name": "일일 백업",
-            "command": "backup:run",
-            "type": "artisan",
-            "frequency_label": "매일",
-            "frequency_detail": "0 3 * * *",
+            "name": "sitemap-generate",
+            "label": {
+              "ko": "사이트맵 생성",
+              "en": "사이트맵 생성"
+            },
+            "label_localized": "사이트맵 생성",
+            "description": {
+              "ko": "샘플 설명",
+              "en": "Sample description"
+            },
+            "description_localized": "샘플 설명",
+            "command": "App\\Jobs\\GenerateSitemapJob",
+            "type": "job",
+            "frequency": "custom",
+            "frequency_label": "사용자 정의",
+            "expression": "0 2 * * *",
+            "owner": {
+              "type": "core",
+              "identifier": "core",
+              "name": "코어"
+            },
+            "is_owned": true,
+            "locked_fields": [
+              "command",
+              "type",
+              "name",
+              "enabled_condition",
+              "timezone"
+            ],
+            "overridden_fields": [],
+            "enabled_condition": [
+              {
+                "source": "core_setting",
+                "key": "seo.sitemap_enabled",
+                "operator": "truthy",
+                "default": true
+              }
+            ],
+            "unmet_conditions": [
+              {
+                "source": "core_setting",
+                "key": "seo.sitemap_enabled",
+                "operator": "truthy"
+              }
+            ],
+            "dispatch_mode": "queue",
+            "history_mode": "all",
+            "without_overlapping": 30,
+            "on_one_server": true,
+            "notify_on_failure": true,
+            "queue_connection": null,
+            "queue_name": null,
+            "timezone": null,
+            "run_in_maintenance": false,
+            "timeout": 600,
             "is_active": true,
             "last_result": "success",
             "last_run_at": "2026-05-29T03:00:00+09:00",
             "last_duration": "1.2초",
-            "next_run_at": "2026-05-30T03:00:00+09:00"
+            "next_run_at": "2026-05-30T03:00:00+09:00",
+            "created_at": "2026-05-01",
+            "abilities": {
+              "can_create": true,
+              "can_update": true,
+              "can_delete": false,
+              "can_run": true
+            }
           },
           {
             "id": 2,
-            "name": "캐시 정리",
-            "command": "cache:clear",
+            "name": "sirsoft-board-cleanup",
+            "label": {
+              "ko": "게시판 임시 파일 정리",
+              "en": "게시판 임시 파일 정리"
+            },
+            "label_localized": "게시판 임시 파일 정리",
+            "description": {
+              "ko": "샘플 설명",
+              "en": "Sample description"
+            },
+            "description_localized": "샘플 설명",
+            "command": "board:cleanup-temp",
             "type": "artisan",
+            "frequency": "daily",
             "frequency_label": "매일",
-            "frequency_detail": "0 4 * * *",
+            "expression": "0 4 * * *",
+            "owner": {
+              "type": "module",
+              "identifier": "sirsoft-board",
+              "name": "게시판"
+            },
+            "is_owned": true,
+            "locked_fields": [
+              "command",
+              "type",
+              "name",
+              "enabled_condition",
+              "timezone"
+            ],
+            "overridden_fields": [],
+            "enabled_condition": [],
+            "unmet_conditions": [],
+            "dispatch_mode": "sync",
+            "history_mode": "all",
+            "without_overlapping": 0,
+            "on_one_server": true,
+            "notify_on_failure": true,
+            "queue_connection": null,
+            "queue_name": null,
+            "timezone": null,
+            "run_in_maintenance": false,
+            "timeout": 600,
             "is_active": true,
             "last_result": "success",
-            "last_run_at": "2026-05-29T04:00:00+09:00",
-            "last_duration": "0.9초",
-            "next_run_at": "2026-05-30T04:00:00+09:00"
+            "last_run_at": "2026-05-29T03:00:00+09:00",
+            "last_duration": "1.2초",
+            "next_run_at": "2026-05-30T03:00:00+09:00",
+            "created_at": "2026-05-01",
+            "abilities": {
+              "can_create": true,
+              "can_update": true,
+              "can_delete": false,
+              "can_run": true
+            }
           },
           {
             "id": 3,
-            "name": "통계 집계",
-            "command": "stats:aggregate",
-            "type": "shell",
-            "frequency_label": "매주",
-            "frequency_detail": "0 1 * * 1",
+            "name": "외부 상태 점검",
+            "label": {
+              "ko": "외부 상태 점검",
+              "en": "외부 상태 점검"
+            },
+            "label_localized": "외부 상태 점검",
+            "description": {
+              "ko": "샘플 설명",
+              "en": "Sample description"
+            },
+            "description_localized": "샘플 설명",
+            "command": "https://example.com/health",
+            "type": "url",
+            "frequency": "everyThirtySeconds",
+            "frequency_label": "30초마다",
+            "expression": "* * * * *",
+            "owner": {
+              "type": "custom",
+              "identifier": null,
+              "name": "직접 등록"
+            },
+            "is_owned": false,
+            "locked_fields": [],
+            "overridden_fields": [],
+            "enabled_condition": [],
+            "unmet_conditions": [],
+            "dispatch_mode": "sync",
+            "history_mode": "failures_only",
+            "without_overlapping": 5,
+            "on_one_server": true,
+            "notify_on_failure": true,
+            "queue_connection": null,
+            "queue_name": null,
+            "timezone": null,
+            "run_in_maintenance": false,
+            "timeout": 600,
             "is_active": false,
             "last_result": "failed",
-            "last_run_at": "2026-05-26T01:00:00+09:00",
-            "last_duration": "-",
-            "next_run_at": null
+            "last_run_at": "2026-05-29T03:00:00+09:00",
+            "last_duration": "1.2초",
+            "next_run_at": null,
+            "created_at": "2026-05-01",
+            "abilities": {
+              "can_create": true,
+              "can_update": true,
+              "can_delete": true,
+              "can_run": true
+            }
           }
         ],
-        "current_page": 1,
-        "last_page": 1,
-        "per_page": 20,
-        "total": 3,
         "statistics": {
           "total": 3,
           "active": 2,
+          "inactive": 1,
           "success": 2,
-          "failed": 1
+          "failed": 1,
+          "running": 0,
+          "never_run": 0
+        }
+      }
+    },
+    "schedule_owners": {
+      "data": [
+        {
+          "type": "core",
+          "identifier": "core",
+          "name": "코어",
+          "schedule_count": 25
+        },
+        {
+          "type": "module",
+          "identifier": "sirsoft-board",
+          "name": "게시판",
+          "schedule_count": 2
+        },
+        {
+          "type": "module",
+          "identifier": "sirsoft-ecommerce",
+          "name": "이커머스",
+          "schedule_count": 12
+        },
+        {
+          "type": "plugin",
+          "identifier": "sirsoft-koreaexim",
+          "name": "한국수출입은행 환율",
+          "schedule_count": 1
+        },
+        {
+          "type": "custom",
+          "identifier": null,
+          "name": "직접 등록",
+          "schedule_count": 1
+        }
+      ]
+    },
+    "schedule_status": {
+      "data": {
+        "shell_enabled": false,
+        "heartbeat": {
+          "last_tick_at": "2026-05-29T10:01:00+09:00",
+          "minutes_ago": 1,
+          "healthy": true
+        },
+        "queue": {
+          "driver": "database",
+          "connection": "database",
+          "measurable": true,
+          "pending_count": 4,
+          "failed_count": 2,
+          "workers": {
+            "registered": 2,
+            "alive": 2,
+            "warning_count": 0,
+            "heartbeat_stale_after_minutes": 5,
+            "long_worker": null
+          }
+        }
+      }
+    },
+    "queue_status": {
+      "data": {
+        "driver": "database",
+        "connection": "database",
+        "measurable": true,
+        "pending_count": 4,
+        "failed_count": 2,
+        "workers": {
+          "registered": 2,
+          "alive": 2,
+          "warning_count": 0,
+          "heartbeat_stale_after_minutes": 5,
+          "long_worker": null
+        },
+        "entries": [
+          {
+            "connection": "database",
+            "queue": "default"
+          },
+          {
+            "connection": "database",
+            "queue": "long"
+          }
+        ],
+        "connections": [
+          "database"
+        ]
+      }
+    },
+    "queue_pending": {
+      "data": {
+        "data": [
+          {
+            "id": 11,
+            "uuid": "00000000-0000-0000-0000-000000000011",
+            "queue": "default",
+            "display_name": "schedule:1 사이트맵 생성",
+            "job_class": "App\\Jobs\\RunScheduledTaskJob",
+            "schedule_id": 1,
+            "attempts": 0,
+            "max_tries": 1,
+            "state": "waiting",
+            "reserved_at": null,
+            "available_at": "2026-05-29T10:02:00+09:00",
+            "created_at": "2026-05-29T10:02:00+09:00",
+            "abilities": {
+              "can_retry": false,
+              "can_delete": false
+            }
+          }
+        ],
+        "pagination": {
+          "total": 1,
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "has_more_pages": false
+        },
+        "meta": {
+          "measurable": true,
+          "connection": "database",
+          "driver": "database"
+        }
+      }
+    },
+    "queue_failed": {
+      "data": {
+        "data": [
+          {
+            "id": 21,
+            "uuid": "00000000-0000-0000-0000-000000000021",
+            "connection": "database",
+            "queue": "default",
+            "display_name": "schedule:3 외부 상태 점검",
+            "job_class": "App\\Jobs\\RunScheduledTaskJob",
+            "schedule_id": 3,
+            "attempts": 1,
+            "max_tries": 1,
+            "exception_summary": "HTTP 요청 실패 (상태: 503)",
+            "failed_at": "2026-05-29T09:30:00+09:00",
+            "abilities": {
+              "can_retry": true,
+              "can_delete": true
+            }
+          }
+        ],
+        "pagination": {
+          "total": 1,
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "has_more_pages": false
+        },
+        "abilities": {
+          "can_retry": true,
+          "can_delete": true
+        }
+      }
+    },
+    "queue_logs": {
+      "data": {
+        "data": [
+          {
+            "id": 31,
+            "uuid": "00000000-0000-0000-0000-000000000031",
+            "connection": "database",
+            "queue": "default",
+            "display_name": "schedule:1 사이트맵 생성",
+            "job_class": "App\\Jobs\\RunScheduledTaskJob",
+            "schedule_id": 1,
+            "status": "processed",
+            "attempts": 1,
+            "duration_ms": 1820,
+            "exception_class": null,
+            "exception_message": null,
+            "started_at": "2026-05-29T02:00:01+09:00",
+            "finished_at": "2026-05-29T02:00:03+09:00",
+            "created_at": "2026-05-29T02:00:03+09:00",
+            "abilities": {
+              "can_retry": false,
+              "can_delete": false
+            }
+          }
+        ],
+        "pagination": {
+          "total": 1,
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "has_more_pages": false
         }
       }
     },
@@ -4842,8 +5203,6 @@
           "cache_ttl": 7200,
           "sitemap_enabled": true,
           "sitemap_cache_ttl": 86400,
-          "sitemap_schedule": "daily",
-          "sitemap_schedule_time": "02:00",
           "sitemap_last_updated_at": "",
           "generator_enabled": true,
           "generator_content": ""

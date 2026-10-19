@@ -177,7 +177,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-ckeditor5:prune-unused-images --scheduled` | `daily` | 미참조 에디터 업로드 이미지 정리 |
+| `prune-unused-images` | `0 0 * * *` | 미참조 에디터 이미지 정리 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

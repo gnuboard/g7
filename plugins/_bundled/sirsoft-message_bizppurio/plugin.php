@@ -521,16 +521,20 @@ class Plugin extends AbstractPlugin
      * 검수중(requested) 알림톡 템플릿의 카카오 검수 상태를 30분 주기로 동기화한다.
      * 커맨드는 requested 행이 없으면 카카오 API 를 호출하지 않으며, 화면의 수동
      * [새로고침]이 동등 기능을 제공하므로 cron 미가동 환경에서도 승인 확인이 가능하다.
+     * 운영자는 관리자 > 스케줄 관리에서 주기·활성을 바꿀 수 있다.
      *
-     * @return array<int, array<string, string>> 스케줄 정의 목록
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractPlugin::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [
             [
+                'name' => 'sync-template-status',
+                'type' => 'artisan',
+                'label' => ['ko' => '알림톡 템플릿 검수 상태 동기화', 'en' => 'Sync AlimTalk template review status'],
+                'description' => ['ko' => '검수 중인 비즈뿌리오 알림톡 템플릿의 카카오 검수 상태를 가져옵니다.', 'en' => 'Fetches the Kakao review status of Bizppurio AlimTalk templates under review.'],
                 'command' => 'bizppurio:sync-template-status',
-                'schedule' => 'everyThirtyMinutes',
-                'description' => '비즈뿌리오 알림톡 템플릿 검수 상태 동기화',
+                'expression' => '*/30 * * * *',
             ],
         ];
     }

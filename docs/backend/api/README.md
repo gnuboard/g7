@@ -282,8 +282,9 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [plugins.md](plugins.md) | `plugins` | 27 |
 | [privacy.md](privacy.md) | `privacy` | 3 |
 | [profile.md](profile.md) | `profile` | 4 |
+| [queue.md](queue.md) | `schedules/queue` | 10 |
 | [roles.md](roles.md) | `roles` | 7 |
-| [schedules.md](schedules.md) | `schedules` | 12 |
+| [schedules.md](schedules.md) | `schedules` | 14 |
 | [search.md](search.md) | `search` | 1 |
 | [seo.md](seo.md) | `seo` | 5 |
 | [settings.md](settings.md) | `settings` | 18 |

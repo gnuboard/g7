@@ -314,19 +314,26 @@ class Plugin extends AbstractPlugin
      * 플러그인 스케줄 목록 반환
      *
      * 미참조 이미지 정리는 사용자 파일을 지우므로 기본 꺼짐(옵트인)이다.
-     * enabled_config 게이트는 설정 조회 실패 시 true 로 폴백하므로, 커맨드가
+     * 실행 조건은 설정 조회 실패 시 true 로 폴백하므로(옛 등록 의미 보존), 커맨드가
      * `--scheduled` 에서 같은 설정을 false 폴백으로 재확인해 자동 삭제를 차단한다.
+     * 운영자는 관리자 > 스케줄 관리에서 주기·활성을 바꿀 수 있고, 시각은 사이트 시간대 기준이다.
      *
-     * @return array<int, array<string, string>> 스케줄 정의 목록
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractPlugin::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [
             [
+                'name' => 'prune-unused-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '미참조 에디터 이미지 정리', 'en' => 'Prune unused editor images'],
+                'description' => ['ko' => '어느 글에서도 쓰지 않는 에디터 업로드 이미지를 지웁니다(설정에서 켠 경우만).', 'en' => 'Deletes editor-uploaded images no longer used by any content (only when enabled in settings).'],
                 'command' => 'sirsoft-ckeditor5:prune-unused-images --scheduled',
-                'schedule' => 'daily',
-                'description' => '미참조 에디터 업로드 이미지 정리',
-                'enabled_config' => 'sirsoft-ckeditor5.unusedImageCleanup',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => [
+                    ['source' => 'plugin_setting', 'key' => 'unusedImageCleanup', 'operator' => 'truthy', 'default' => true],
+                ],
             ],
         ];
     }

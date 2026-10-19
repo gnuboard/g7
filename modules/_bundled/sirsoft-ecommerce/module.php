@@ -3761,102 +3761,141 @@ class Module extends AbstractModule
     /**
      * 스케줄 작업 목록 반환
      *
-     * 모듈에서 등록하는 스케줄 작업 목록입니다.
-     * 코어에서 이 메서드를 호출하여 모듈 스케줄러를 등록합니다.
+     * 설치·갱신 때 코어가 이 선언을 스케줄 표(`schedules`)에 동기화하고, 운영자는 관리자 > 스케줄 관리(또는
+     * 이커머스 설정의 「스케줄」 탭)에서 주기·활성을 바꾼다. 운영자가 바꾼 칸은 다음 갱신에서도 보존된다.
+     * 시각은 사이트 시간대 기준이다(`timezone` 미지정).
      *
-     * @return array 스케줄 작업 배열
-     *               [
-     *               [
-     *               'command' => 'artisan:command',
-     *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
-     *               'description' => '작업 설명 (선택)',
-     *               'enabled_config' => 'config.key' (선택, 설정에 따라 활성화 여부 결정),
-     *               ],
-     *               ]
+     * - `enabled_condition` 은 모듈 설정이 꺼져 있으면 그 틱에서 실행하지 않는다(설정 기본값 true 폴백 — 옛 등록 의미 보존).
+     * - 판매 현황 집계의 `dashboard.scheduler_enabled` 는 화면 없는 config 전용 값이라 조건에 두지 않는다 —
+     *   커맨드가 스스로 건너뛰고, 운영자 제어는 스케줄 활성 토글로 한다.
+     *
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractModule::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
+        $setting = static fn (string $key): array => [
+            ['source' => 'module_setting', 'key' => $key, 'operator' => 'truthy', 'default' => true],
+        ];
+
         return [
             [
+                'name' => 'cancel-pending-orders',
+                'type' => 'artisan',
+                'label' => ['ko' => '입금 기한 만료 주문 취소', 'en' => 'Cancel overdue unpaid orders'],
+                'description' => ['ko' => '입금 기한이 지난 주문을 자동으로 취소합니다(주문 설정에서 켠 경우만).', 'en' => 'Automatically cancels orders past the payment deadline (only when enabled in order settings).'],
                 'command' => 'sirsoft-ecommerce:cancel-pending-orders',
-                'schedule' => 'daily',
-                'description' => '입금 기한 만료 주문 자동 취소',
-                'enabled_config' => 'sirsoft-ecommerce.order_settings.auto_cancel_expired',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('order_settings.auto_cancel_expired'),
             ],
             [
+                'name' => 'prune-expired-carts',
+                'type' => 'artisan',
+                'label' => ['ko' => '만료 장바구니 삭제', 'en' => 'Prune expired carts'],
+                // cart_expiry_days < 1 이면 커맨드가 스스로 건너뛴다 (별도 토글 없음)
+                'description' => ['ko' => '보관 기간이 지난 장바구니를 지웁니다.', 'en' => 'Deletes carts past the retention period.'],
                 'command' => 'sirsoft-ecommerce:prune-expired-carts',
-                'schedule' => 'daily',
-                'description' => '보관기간 만료 장바구니 자동 삭제',
-                // cart_expiry_days < 1 시 커맨드 내부 self-guard 로 비활성 (별도 토글 없음)
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'prune-temp-product-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '임시 상품 이미지 삭제', 'en' => 'Prune temporary product images'],
+                // temp_key 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없다 (보존기간은 커맨드 옵션)
+                'description' => ['ko' => '상품에 연결되지 않은 임시 이미지를 지웁니다.', 'en' => 'Deletes temporary images not linked to any product.'],
                 'command' => 'sirsoft-ecommerce:prune-temp-product-images',
-                'schedule' => 'daily',
-                'description' => '미연결 임시 상품 이미지 자동 삭제',
-                // temp_key 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없다.
-                // 운영 데이터가 아니므로 별도 토글 없이 상시 동작한다 (보존기간은 커맨드 옵션).
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'prune-temp-orders',
+                'type' => 'artisan',
+                'label' => ['ko' => '만료 임시 주문 삭제', 'en' => 'Prune expired temporary orders'],
+                // 만료 판정은 임시 주문 자체의 TTL 이 정한다 (별도 토글 없음)
+                'description' => ['ko' => '유효 시간이 지난 임시 주문을 지웁니다.', 'en' => 'Deletes temporary orders past their validity period.'],
                 'command' => 'sirsoft-ecommerce:prune-temp-orders',
-                'schedule' => 'hourly',
-                'description' => '만료 임시 주문 자동 삭제',
-                // 만료 판정은 임시 주문 자체의 TTL 이 정하므로 별도 토글 없음
-                'enabled_config' => null,
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
             ],
             [
+                'name' => 'earn-mileage',
+                'type' => 'artisan',
+                'label' => ['ko' => '지연 마일리지 적립', 'en' => 'Earn deferred mileage'],
+                'description' => ['ko' => '적립 예정일이 된 마일리지를 적립합니다(마일리지를 켠 경우만).', 'en' => 'Credits mileage whose earning date has arrived (only when mileage is enabled).'],
                 'command' => 'sirsoft-ecommerce:earn-mileage',
-                'schedule' => 'hourly',
-                'description' => '지연 마일리지 적립',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.enabled',
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
+                'enabled_condition' => $setting('mileage.enabled'),
             ],
             [
+                'name' => 'expire-mileage',
+                'type' => 'artisan',
+                'label' => ['ko' => '마일리지 소멸', 'en' => 'Expire mileage'],
+                'description' => ['ko' => '유효 기간이 지난 마일리지를 소멸시킵니다(소멸을 켠 경우만).', 'en' => 'Expires mileage past its validity period (only when expiry is enabled).'],
                 'command' => 'sirsoft-ecommerce:expire-mileage',
-                'schedule' => 'daily',
-                'description' => '마일리지 자동 소멸',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.expiry_enabled',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('mileage.expiry_enabled'),
             ],
             [
+                'name' => 'notify-expiring-mileage',
+                'type' => 'artisan',
+                'label' => ['ko' => '소멸 예정 마일리지 알림', 'en' => 'Notify expiring mileage'],
+                'description' => ['ko' => '곧 소멸될 마일리지를 회원에게 알립니다(소멸 예정 알림을 켠 경우만).', 'en' => 'Notifies members of mileage about to expire (only when expiry notices are enabled).'],
                 'command' => 'sirsoft-ecommerce:notify-expiring-mileage',
-                'schedule' => 'daily',
-                'description' => '소멸 예정 마일리지 알림',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.expiry_notification_enabled',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('mileage.expiry_notification_enabled'),
             ],
             [
+                'name' => 'reconcile-mileage-balance',
+                'type' => 'artisan',
+                'label' => ['ko' => '마일리지 잔액 교정', 'en' => 'Reconcile mileage balances'],
+                'description' => ['ko' => '회원 마일리지 잔액 캐시를 원장과 맞춥니다(마일리지를 켠 경우만).', 'en' => 'Reconciles cached member mileage balances with the ledger (only when mileage is enabled).'],
                 'command' => 'sirsoft-ecommerce:reconcile-mileage-balance',
-                'schedule' => 'daily',
-                'description' => '마일리지 잔액 캐시 정합 교정',
-                'enabled_config' => 'sirsoft-ecommerce.mileage.enabled',
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
+                'enabled_condition' => $setting('mileage.enabled'),
             ],
             [
+                'name' => 'aggregate-stats',
+                'type' => 'artisan',
+                'label' => ['ko' => '판매 현황 집계', 'en' => 'Aggregate sales stats'],
+                'description' => ['ko' => '대시보드 판매 현황을 집계합니다.', 'en' => 'Aggregates sales statistics for the dashboard.'],
                 'command' => 'sirsoft-ecommerce:aggregate-stats',
-                'schedule' => 'hourly',
-                'description' => '대시보드 판매 현황 집계',
-                'enabled_config' => 'sirsoft-ecommerce.dashboard.scheduler_enabled',
+                'frequency' => 'hourly',
+                'expression' => '0 * * * *',
             ],
             [
+                'name' => 'prune-pending-claim-images',
+                'type' => 'artisan',
+                'label' => ['ko' => '클레임 임시 첨부 삭제', 'en' => 'Prune pending claim attachments'],
+                // 귀속된 첨부는 유형 값이 바뀌어 대상에서 빠지므로 오탐 여지가 없다 (보존기간은 커맨드 옵션)
+                'description' => ['ko' => '신청으로 이어지지 않은 클레임 임시 첨부를 지웁니다.', 'en' => 'Deletes temporary claim attachments that never became a request.'],
                 'command' => 'sirsoft-ecommerce:prune-pending-claim-images',
-                'schedule' => 'daily',
-                'description' => '신청으로 이어지지 않은 클레임 임시 첨부 자동 삭제',
-                // 귀속된 첨부는 유형 값이 바뀌어 대상에서 빠지므로 오탐 여지가 없다.
-                // 운영 데이터가 아니므로 별도 토글 없이 상시 동작한다 (보존기간은 커맨드 옵션).
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'cancel-orphan-claim-payments',
+                'type' => 'artisan',
+                'label' => ['ko' => '고아 클레임 결제 취소', 'en' => 'Cancel orphan claim payments'],
+                // 살아 있는 신청서의 결제 대기 건은 커맨드가 스스로 건너뛴다 (별도 토글 없음)
+                'description' => ['ko' => '종결된 신청서에 남은 클레임 결제 대기 건을 취소합니다.', 'en' => 'Cancels pending claim payments left on closed requests.'],
                 'command' => 'sirsoft-ecommerce:cancel-orphan-claim-payments',
-                'schedule' => 'daily',
-                'description' => '종결된 신청서에 남은 클레임 결제 대기 건 자동 취소',
-                // 살아 있는 신청서의 결제 대기 건은 커맨드가 스스로 건너뛴다 (별도 토글 없음).
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
             [
+                'name' => 'notify-overdue-collections',
+                'type' => 'artisan',
+                'label' => ['ko' => '회수 지연 알림', 'en' => 'Notify overdue collections'],
+                // 선교환 설정을 꺼도 이미 선교환인 건의 지연은 알려야 하므로 별도 토글 없이 돈다 (대상이 없으면 아무 일도 하지 않음)
+                'description' => ['ko' => '선교환 후 헌 상품 회수가 늦어진 건을 관리자에게 한 번 알립니다.', 'en' => 'Notifies administrators once about overdue returns of exchanged items.'],
                 'command' => 'sirsoft-ecommerce:claims:notify-overdue-collections',
-                'schedule' => 'daily',
-                'description' => '선교환 헌 상품 회수 지연 관리자 알림 (1회)',
-                // 선교환 설정을 꺼도 이미 선교환인 건의 지연은 알려야 하므로 별도 토글 없이 돈다 —
-                // 대상이 없으면 아무 일도 하지 않는다.
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
         ];
     }

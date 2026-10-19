@@ -182,7 +182,7 @@
             </div>
             <div data-ref="description_field">
               <label class="form-label">$t:admin.roles.form.description</label>
-              <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" :multiline="true" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
+              <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" inputType="textarea" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
               <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
             </div>
             <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는

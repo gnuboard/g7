@@ -836,7 +836,8 @@
         "permissions": "権限",
         "menus": "管理者メニュー",
         "notification_definitions": "通知定義",
-        "identity_policies": "本人認証ポリシー"
+        "identity_policies": "本人認証ポリシー",
+        "schedules": "スケジュール"
       },
       "no_tables": "削除するテーブルがありません。",
       "no_storage": "削除するストレージがありません。",
@@ -849,7 +850,6 @@
       "refresh_layouts_description": "モジュールファイルに含まれるレイアウトでデータベースのレイアウトが置き換えられます。既存で編集したレイアウトの内容はすべて削除されます。",
       "deactivate_warning_title": "モジュール無効化警告",
       "deactivate_warning_message": "このモジュールに依存する有効な拡張（テンプレート、モジュール、プラグイン）があります。",
-      "affected_templates": "以下のテンプレートが影響を受けます:",
       "dependent_templates": "依存するテンプレート",
       "dependent_modules": "依存するモジュール",
       "dependent_plugins": "依存するプラグイン",
@@ -1058,7 +1058,8 @@
         "permissions": "権限",
         "menus": "管理者メニュー",
         "notification_definitions": "通知定義",
-        "identity_policies": "本人認証ポリシー"
+        "identity_policies": "本人認証ポリシー",
+        "schedules": "スケジュール"
       },
       "no_tables": "削除するテーブルがありません。",
       "no_storage": "削除するストレージがありません。",
@@ -1338,105 +1339,107 @@
   },
   "schedules": {
     "page_title": "スケジュール管理",
-    "page_description": "システム予約タスクを管理します。",
+    "page_description": "システムの予約タスクを管理します。",
     "title": "スケジュール管理",
-    "description": "システムに登録されたスケジュール（crontab、Job）を管理します。",
-    "add_schedule": "スケジュール追加",
-    "register_schedule": "スケジュール登録",
-    "search_placeholder": "スケジュール名で検索...",
+    "description": "システムに登録されたスケジュール(crontab、Job)を管理します。",
     "search_input_placeholder": "検索語を入力してください...",
-    "pagination_info": "全{{total}}個中{{from}}-{{to}}個を表示",
-    "advanced_search": "詳細検索",
-    "apply_filters": "フィルター適用",
-    "reset_filters": "初期化",
-    "column_select": "カラム選択（{{count}}）",
-    "total_count": "全{{count}}個",
-    "selected_count": "{{count}}個選択されました",
-    "duration_display": "{{duration}}掛かります",
+    "total_count": "合計 {{count}}件",
+    "total_at_least": "合計 {{count}}件以上",
+    "selected_count": "{{count}}件選択",
+    "per_page": "{{count}}件",
+    "per_page_label": "1ページの件数",
+    "duration_display": "所要 {{duration}}",
+    "empty": "登録されたスケジュールがありません。",
     "tabs": {
       "schedules": "スケジュールタスク",
       "queue": "キューモニタリング"
     },
-    "stats": {
-      "total": "すべて",
-      "active": "有効化",
-      "success": "成功",
-      "failed": "失敗"
+    "action": {
+      "register": "スケジュール登録",
+      "security_policy": "セキュリティポリシー",
+      "edit": "編集",
+      "run": "今すぐ実行",
+      "history": "実行履歴",
+      "duplicate": "コピー",
+      "delete": "削除",
+      "delete_disabled_reason": "直接登録したタスクのみ削除できます。",
+      "bulk_apply": "一括適用",
+      "bulk_delete": "選択削除",
+      "advanced_search": "詳細検索",
+      "edit_search": "検索編集",
+      "reset": "リセット"
     },
     "search_fields": {
       "all": "すべて",
       "name": "タスク名",
-      "command": "コマンド",
-      "description": "説明"
+      "identifier": "識別子",
+      "command": "コマンド"
     },
-    "filters": {
+    "filter": {
+      "detail_title": "詳細検索",
+      "owner": "所有",
+      "owner_schedule_count": "スケジュール",
+      "owner_search": "拡張名・識別子で検索",
+      "owner_select": "拡張を選択",
+      "show_in_basic": "{{label}} フィルターを基本検索に表示",
       "type": "タスクタイプ",
-      "status": "ステータス",
-      "result": "実行結果",
-      "last_result": "最後の実行結果",
-      "all_types": "すべてのタイプ",
-      "all_status": "すべてのステータス",
-      "all_results": "すべての結果",
-      "all": "すべて",
+      "status": "状態",
+      "last_result": "最近の実行結果",
       "frequency": "実行周期",
       "created_at": "登録日",
-      "start_date": "開始日",
-      "end_date": "終了日",
       "without_overlapping": "重複実行防止",
-      "run_in_maintenance": "点検モード実行",
-      "module": "所属モジュール",
-      "yes": "はい",
-      "no": "いいえ",
-      "use": "使用",
-      "not_use": "未使用",
-      "allow": "許可",
-      "disallow": "非許可",
+      "overlap_on": "オン",
+      "overlap_off": "オフ",
+      "dispatch_mode": "実行方式",
+      "history_mode": "実行履歴",
       "preset": {
         "today": "今日",
         "week": "1週間",
-        "month": "1ヶ月",
-        "3months": "3ヶ月",
-        "6months": "6ヶ月",
-        "year": "1年"
+        "month": "1か月",
+        "3months": "3か月",
+        "6months": "6か月",
+        "1year": "1年"
       }
     },
     "bulk": {
-      "status_change": "ステータス変更",
-      "action_run": "タスク実行",
-      "apply": "一括変更"
+      "select_status": "変更する状態を選択",
+      "action_select": "一括操作を選択",
+      "to_active": "有効に変更",
+      "to_inactive": "無効に変更",
+      "delete_owned_blocked": "コア・拡張が登録したタスクが含まれているため削除できません。直接登録したタスクのみ選択してください。"
     },
     "sort": {
-      "created_at_desc": "登録日時最新順",
-      "created_at_asc": "登録日時古い順",
-      "name_asc": "タスク名昇順",
-      "name_desc": "タスク名降順",
-      "next_run_at_asc": "次回実行速い順",
-      "next_run_at_desc": "次回実行遅い順"
-    },
-    "per_page": {
-      "10": "10個",
-      "20": "20個",
-      "50": "50個",
-      "100": "100個"
+      "label": "並べ替え",
+      "created_at_desc": "登録日の新しい順",
+      "created_at_asc": "登録日の古い順",
+      "name_asc": "タスク名 昇順",
+      "name_desc": "タスク名 降順",
+      "next_run_at_asc": "次回実行の早い順",
+      "next_run_at_desc": "次回実行の遅い順",
+      "last_run_at_desc": "最近の実行の新しい順",
+      "last_run_at_asc": "最近の実行の古い順"
     },
     "columns": {
       "name": "タスク名",
+      "owner": "所有",
       "type": "タスクタイプ",
-      "command": "コマンド",
       "frequency": "実行周期",
-      "last_result": "最後の実行結果",
-      "last_run": "最後の実行",
-      "next_run": "次の実行予定",
-      "status": "ステータス"
+      "without_overlapping": "重複防止",
+      "next_run": "次回実行",
+      "last_run": "最近の実行",
+      "last_result": "最近の実行結果",
+      "status": "状態"
     },
     "type": {
       "artisan": "Artisan",
       "shell": "Shell",
-      "url": "URL"
+      "url": "URL",
+      "job": "Job"
     },
     "frequency": {
+      "everyThirtySeconds": "30秒ごと",
       "everyMinute": "毎分",
-      "hourly": "毎時間",
+      "hourly": "毎時",
       "daily": "毎日",
       "weekly": "毎週",
       "monthly": "毎月",
@@ -1449,76 +1452,312 @@
       "never": "未実行"
     },
     "status": {
-      "active": "有効化",
-      "inactive": "無効化"
+      "active": "有効",
+      "inactive": "無効"
     },
     "trigger_type": {
-      "scheduled": "スケジュール実行",
+      "scheduled": "予約実行",
       "manual": "手動実行"
     },
-    "actions": {
-      "run": "今すぐ実行",
-      "history": "実行履歴",
-      "duplicate": "複製"
+    "dispatch_mode": {
+      "sync": "即時実行",
+      "queue": "キューに送る"
     },
+    "history_mode": {
+      "all": "すべての実行を記録",
+      "failures_only": "失敗のみ記録"
+    },
+    "owner": {
+      "core": "コア",
+      "module": "モジュール",
+      "plugin": "プラグイン",
+      "custom": "直接登録"
+    },
+    "condition_unmet": "設定でオフ",
+    "overlap_minutes": "{{minutes}}分",
+    "overlap_off": "オフ",
     "form": {
-      "name": "名前",
-      "name_placeholder": "スケジュール名を入力してください",
+      "label": "タスク名",
+      "label_placeholder": "タスク名を入力してください",
       "description": "説明",
-      "description_placeholder": "スケジュールの説明を入力してください",
+      "description_placeholder": "タスクの説明を入力してください",
       "type": "タスクタイプ",
+      "name": "識別子",
+      "name_placeholder": "例: cleanup_temp_files",
+      "name_help": "機械識別子です。空欄の場合はタスク名から生成します。",
       "command": "コマンド",
-      "command_placeholder": "実行するコマンドを入力してください",
-      "command_help": "Artisanコマンド、シェルコマンド、またはURLを入力してください",
+      "command_placeholder": {
+        "artisan": "例: cache:prune-stale-tags",
+        "shell": "例: /usr/bin/php -v",
+        "url": "例: https://example.com/ping",
+        "job": "例: App\\Jobs\\GenerateSitemapJob"
+      },
+      "command_help": {
+        "artisan": "php artisan に続くコマンドとオプションを入力してください。セキュリティ許可リストにあるコマンドのみ実行されます。",
+        "shell": "サーバー設定で許可された実行ファイルで始まるコマンドを入力してください。",
+        "url": "呼び出すURLを入力してください。内部ネットワークのアドレスはセキュリティ設定によりブロックされる場合があります。",
+        "job": "セキュリティ許可リストに登録された Job クラス名(完全修飾名)を入力してください。"
+      },
+      "command_multiline_hint": "複数行で入力しても保存時に1行にまとめられます。",
+      "shell_disabled": "サーバー設定でShell実行がオフになっています。サーバーの .env に SCHEDULE_SHELL_ENABLED=true と許可する実行ファイル(SCHEDULE_SHELL_ALLOWED_BINARIES、例: php,python3)を設定するとオンになります。",
+      "locked_hint": "コア・拡張が登録したタスクのため変更できません。",
       "frequency": "実行周期",
-      "expression": "Cron表現式",
+      "expression": "Cron式",
       "expression_help": "例: * * * * * (毎分)、0 0 * * * (毎日午前0時)",
-      "timeout": "タイムアウト (秒)",
-      "timeout_help": "最大実行時間 (1-86400秒)",
+      "timeout": "制限時間",
+      "timeout_help": "この時間を超えると実行を停止します。(1 ~ 86400秒)",
+      "seconds_suffix": "秒",
+      "minutes_suffix": "分",
       "without_overlapping": "重複実行防止",
-      "without_overlapping_help": "前のタスクが実行中の場合、新しいタスクをスキップします",
+      "without_overlapping_help": "前回の実行が終わっていない場合、新しい実行をスキップします。",
+      "overlap_minutes": "ロック保持時間",
+      "overlap_minutes_help": "前回の実行がこの時間内に終わらない場合、ロックが解除されます。(1 ~ 10080分)",
+      "on_one_server": "1台のサーバーでのみ実行",
+      "on_one_server_help": "複数のサーバーでスケジューラーを動かす場合、1台だけが実行します(共有キャッシュが必要)。",
+      "notify_on_failure": "失敗通知",
+      "notify_on_failure_help": "予約実行が失敗すると管理者に通知します(同じタスクは1日1回)。",
       "run_in_maintenance": "メンテナンスモードで実行",
-      "run_in_maintenance_help": "システムメンテナンスモード中もタスクを実行します",
-      "is_active": "有効化",
-      "is_active_help": "無効化するとスケジュール実行されません"
+      "run_in_maintenance_help": "サイトのメンテナンスモード中もタスクを実行します。",
+      "is_active": "有効",
+      "is_active_help": "オフにすると予約実行されません。",
+      "conditions": "実行条件",
+      "conditions_help": "以下の設定がすべてオンのときだけ予約実行されます(黄色 = 現在オフ)。条件はコア・拡張が定めるもので、ここでは変更できません。",
+      "dispatch_mode": "実行方式",
+      "dispatch_mode_help": "即時実行はワーカーがなくても動作します。時間のかかるタスクはキューに送り、ワーカーに処理させてください。",
+      "history_mode": "実行履歴",
+      "history_mode_help": "「失敗のみ記録」にすると、頻繁に実行されるタスクの履歴が溜まりません。",
+      "queue_connection": "キュー接続",
+      "queue_name": "キュー",
+      "queue_default": "既定値",
+      "overridden_badge": "運営者が変更",
+      "owned_badge": "{{owner}} 登録タスク — 名前・タイプ・コマンドはロック",
+      "timezone_badge": "タイムゾーン: {{timezone}}"
     },
     "modals": {
-      "create_title": "スケジュール追加",
+      "create_title": "スケジュール登録",
       "edit_title": "スケジュール編集",
+      "bulk_status_title": "状態の一括変更",
+      "bulk_status_confirm_active": "選択した{{count}}件のスケジュールを有効に変更しますか?",
+      "bulk_status_confirm_inactive": "選択した{{count}}件のスケジュールを無効に変更しますか?",
       "delete_title": "スケジュール削除",
-      "delete_confirm": "このスケジュールを削除してもよろしいですか？関連する実行履歴も削除されます。",
-      "run_title": "スケジュール今すぐ実行",
-      "run_confirm": "このスケジュールを今すぐ実行してもよろしいですか？",
-      "run_duration": "実行時間: {{duration}}",
+      "delete_confirm": "このスケジュールを削除しますか?",
+      "delete_confirm_bulk": "選択した{{count}}件のスケジュールを削除しますか?",
+      "delete_warning": "削除したスケジュールと実行履歴は元に戻せません。",
+      "run_title": "スケジュールの即時実行",
+      "run_confirm": "このスケジュールを今すぐ実行しますか?",
+      "duration": "所要時間",
       "output": "出力",
+      "error_output": "エラー出力",
       "running": "実行中...",
+      "run_not_recorded": "「失敗のみ記録」タスクのため、成功した実行の履歴は残していません。",
+      "run_queue_hint": "このタスクはキューに送られます。ワーカーが処理すると実行履歴に記録されます。",
+      "run_queued": "キューに追加しました。ワーカーが処理すると実行履歴に記録されます。",
+      "run_unmet_warning": "実行条件がオフのため予約実行はスキップされるタスクです。即時実行はそのまま実行されます。",
       "history_title": "実行履歴",
       "no_history": "実行履歴がありません。",
-      "duplicate_title": "スケジュール複製",
-      "duplicate_confirm": "このスケジュールを複製してもよろしいですか？",
-      "duplicate_note": "複製されたスケジュールは無効化状態で作成されます。",
-      "duplicating": "複製中..."
+      "duplicate_title": "スケジュールのコピー",
+      "duplicate_confirm": "このスケジュールをコピーしますか?",
+      "duplicate_note": "コピーしたスケジュールは無効の状態で作成されます。",
+      "duplicate_owned_note": "コア・拡張が登録したタスクをコピーすると、直接登録タスクとして作成されます。",
+      "duplicating": "コピー中..."
     },
     "history": {
-      "duration": "所要時間: {{duration}}",
-      "memory": "メモリ: {{memory}}",
-      "triggered_by": "実行者: {{user}}"
+      "duration": "所要時間 {{duration}}",
+      "memory": "メモリ {{memory}}",
+      "triggered_by": "実行者 {{user}}"
     },
     "messages": {
-      "create_success": "スケジュールが作成されました。",
-      "update_success": "スケジュールが編集されました。",
+      "create_success": "スケジュールが登録されました。",
+      "update_success": "スケジュールが更新されました。",
       "delete_success": "スケジュールが削除されました。",
-      "duplicate_success": "スケジュールが複製されました。",
-      "status_updated": "スケジュールのステータスが変更されました。",
-      "bulk_status_updated": "選択したスケジュールのステータスが一括変更されました。"
+      "bulk_delete_success": "選択したスケジュールが削除されました。",
+      "duplicate_success": "スケジュールがコピーされました。",
+      "status_updated": "スケジュールの状態が変更されました。",
+      "bulk_status_updated": "選択したスケジュールの状態が変更されました。"
     },
     "errors": {
       "save_failed": "スケジュールの保存に失敗しました。",
       "delete_failed": "スケジュールの削除に失敗しました。",
       "run_failed": "スケジュールの実行に失敗しました。",
-      "duplicate_failed": "スケジュールの複製に失敗しました。",
-      "status_update_failed": "ステータスの変更に失敗しました。",
-      "bulk_status_failed": "一括ステータス変更に失敗しました。"
+      "duplicate_failed": "スケジュールのコピーに失敗しました。",
+      "status_update_failed": "状態の変更に失敗しました。",
+      "bulk_status_failed": "状態の一括変更に失敗しました。"
+    },
+    "security": {
+      "title": "スケジュールのセキュリティポリシー",
+      "description": "予約タスクで実行できるコマンドの範囲です。この画面では閲覧のみできます。",
+      "guide": "サーバー管理者は storage/app/schedule_security.json で項目を追加できます(コアの拒否リストは解除できません)。Shell 実行の可否と許可する実行ファイルは .env の SCHEDULE_SHELL_ENABLED・SCHEDULE_SHELL_ALLOWED_BINARIES で設定します。",
+      "load_failed": "セキュリティポリシーを読み込めませんでした。",
+      "none": "なし",
+      "count": "{{count}}件",
+      "allowed": "許可",
+      "not_allowed": "許可しない",
+      "source": {
+        "core": "コア",
+        "override": "追加",
+        "extension": "拡張"
+      },
+      "denied": "拒否",
+      "override": {
+        "title": "上書きファイル",
+        "path": "パス",
+        "status": "状態",
+        "applied": "適用中",
+        "missing": "なし — コアの既定値のみ使用",
+        "invalid": "形式エラー — ファイル全体を無視しています"
+      },
+      "shell": {
+        "title": "Shell 実行",
+        "enabled": "オン",
+        "disabled": "オフ",
+        "allowed_binaries": "許可する実行ファイル",
+        "no_binaries": "SCHEDULE_SHELL_ENABLED はオンですが、許可された実行ファイルがないため Shell タスクは使用できません。"
+      },
+      "artisan": {
+        "allowlist": "許可する Artisan コマンド",
+        "allow_extension_commands": "拡張コマンドを自動で許可",
+        "denylist": "拒否するコマンド",
+        "denylist_prefixes": "拒否する接頭辞",
+        "denylist_hint": "許可項目が拒否リストと重なる場合は拒否が優先されます。"
+      },
+      "job": {
+        "allowed_classes": "許可する Job クラス"
+      },
+      "url": {
+        "block_private_hosts": "内部ネットワークのアドレスをブロック"
+      }
+    },
+    "status_card": {
+      "scheduler": "スケジューラー",
+      "healthy": "正常稼働",
+      "stopped": "停止",
+      "last_tick": "最終実行 {{minutes}}分前",
+      "never_ticked": "実行記録がありません",
+      "cron_hint": "サーバーの cron に以下の1行を登録してください。",
+      "schedules": "登録済みタスク",
+      "active_inactive": "有効 {{active}} · 無効 {{inactive}}",
+      "results": "最近の実行結果",
+      "failed_count": "失敗 {{count}}",
+      "success_never": "成功 {{success}} · 未実行 {{never}}",
+      "queue": "キュー ({{driver}})",
+      "pending_count": "待機 {{count}}",
+      "pending_unmeasurable": "待機件数は測定不可",
+      "queue_detail": "失敗 {{failed}} · ワーカー {{alive}}/{{registered}}",
+      "mobile_summary": "{{minutes}}分前 · ワーカー {{alive}}/{{registered}} · 失敗 {{failed}}件",
+      "mobile_summary_never": "実行記録なし · ワーカー {{alive}}/{{registered}} · 失敗 {{failed}}件",
+      "detail_open": "詳細",
+      "detail_close": "閉じる"
+    },
+    "queue": {
+      "views": {
+        "pending": "待機",
+        "failed": "失敗",
+        "logs": "処理記録"
+      },
+      "status": {
+        "driver": "ドライバー",
+        "connection": "接続 {{connection}}",
+        "pending": "待機",
+        "failed": "失敗",
+        "count": "{{count}}件",
+        "unmeasurable": "測定不可",
+        "workers": "ワーカー",
+        "workers_hint": "稼働中 / 登録",
+        "worker_warnings": "ワーカー警告 {{count}}件"
+      },
+      "notice": {
+        "unmeasurable": "現在のキュードライバー({{driver}})は待機一覧を数えられません。待機一覧は database ドライバーでのみ表示されます。",
+        "no_worker": "既定のキュードライバーが {{driver}} のため、失敗したジョブを再投入しても処理するワーカーがありません。再試行は拒否されます。"
+      },
+      "filter": {
+        "queue": "キュー",
+        "connection": "接続",
+        "connection_all": "すべての接続",
+        "result": "処理結果",
+        "failed_at": "失敗日時",
+        "processed_at": "処理日時"
+      },
+      "search_fields": {
+        "label": "検索対象",
+        "all": "すべて",
+        "job": "キュージョブ",
+        "error": "エラー内容",
+        "uuid": "UUID"
+      },
+      "search_placeholder": "検索語を入力してください",
+      "sort": {
+        "created_at_desc": "登録日時の新しい順",
+        "created_at_asc": "登録日時の古い順",
+        "available_at_asc": "実行可能日時の早い順",
+        "available_at_desc": "実行可能日時の遅い順",
+        "attempts_desc": "試行の多い順",
+        "attempts_asc": "試行の少ない順",
+        "failed_at_desc": "失敗日時の新しい順",
+        "failed_at_asc": "失敗日時の古い順",
+        "finished_at_desc": "処理日時の新しい順",
+        "finished_at_asc": "処理日時の古い順",
+        "duration_ms_desc": "所要時間の長い順",
+        "duration_ms_asc": "所要時間の短い順"
+      },
+      "columns": {
+        "job": "キュージョブ",
+        "queue": "キュー",
+        "state": "状態",
+        "attempts": "試行",
+        "queued_at": "登録日時",
+        "available_at": "実行可能日時",
+        "error": "エラー",
+        "failed_at": "失敗日時",
+        "result": "結果",
+        "duration": "所要時間",
+        "processed_at": "処理日時"
+      },
+      "state": {
+        "waiting": "待機",
+        "delayed": "遅延",
+        "running": "実行中"
+      },
+      "log_status": {
+        "processed": "処理完了",
+        "failed": "失敗"
+      },
+      "schedule_ref": "スケジュール #{{id}}",
+      "duration_ms": "{{ms}}ms",
+      "empty": {
+        "pending": "待機中のジョブはありません。",
+        "failed": "失敗したジョブはありません。",
+        "logs": "処理記録がありません。"
+      },
+      "action": {
+        "detail": "詳細を見る",
+        "retry": "再試行",
+        "retry_selected": "選択を再試行",
+        "delete_selected": "選択削除"
+      },
+      "confirm": {
+        "retry_title": "失敗ジョブの再試行",
+        "retry_message": "以下のジョブを元のキューに再投入します。",
+        "delete_title": "失敗ジョブの削除",
+        "delete_message": "以下のジョブを失敗一覧から削除します。削除したジョブは復元できません。",
+        "bulk_target": "選択したジョブ {{count}}件"
+      },
+      "detail": {
+        "title": "キュージョブの詳細",
+        "uuid": "UUID",
+        "period": "処理日時",
+        "schedule": "スケジュール",
+        "exception": "エラー内容",
+        "payload": "ジョブ情報"
+      },
+      "messages": {
+        "retry_done": "再試行を要求しました。",
+        "delete_done": "削除しました。"
+      },
+      "errors": {
+        "retry_failed": "再試行できませんでした。",
+        "delete_failed": "削除できませんでした。",
+        "detail_failed": "ジョブの詳細を読み込めませんでした。"
+      }
     }
   },
   "settings": {
@@ -1648,20 +1887,23 @@
       "orphan_cleanup": "孤立した添付ファイルのクリーンアップ",
       "orphan_cleanup_desc": "フォームを保存せずに離脱して、所有者がいなくなった添付ファイルをクリーンアップします。",
       "orphan_cleanup_enabled": "孤立した添付ファイルの自動クリーンアップ",
-      "orphan_cleanup_enabled_hint": "デフォルトはオフです — 管理者が直接有効化する必要があります。有効化すると、保持期間を過ぎた孤立した添付ファイルのファイルと記録を毎日削除します。サイトロゴなど現在使用中の添付ファイルは削除しません。",
+      "orphan_cleanup_enabled_hint": "既定はオフ — 運営者が自分でオンにする必要があります。オンにすると、保存期間を過ぎた孤立した添付のファイルと記録を整理スケジュールが削除します。サイトロゴのように現在使用中の添付は削除しません。",
       "orphan_retention_days": "孤立した添付ファイルの保持期間（日数）",
-      "orphan_retention_days_hint": "アップロード後この期間が経過した孤立した添付ファイルのみがクリーンアップの対象になります。フォーム作成中の中断を考慮して、余裕を持って設定してください。（1～3650日）"
+      "orphan_retention_days_hint": "アップロード後この期間が経過した孤立した添付ファイルのみがクリーンアップの対象になります。フォーム作成中の中断を考慮して、余裕を持って設定してください。（1～3650日）",
+      "orphan_cleanup_schedule_notice": "孤立した添付の整理は添付整理スケジュールが実行します。"
     },
     "seo": {
       "meta_settings": "メタタグ設定",
       "meta_settings_desc": "検索エンジン最適化のためのメタタグを設定します。",
       "meta_title_suffix": "タイトルサフィックス",
       "meta_title_suffix_hint": "すべてのページのタイトルの後に追加される文言です。 (例: ' | Gnuboard7')",
+      "meta_title_suffix_placeholder": " | Gnuboard7",
       "meta_description": "デフォルトメタ説明",
       "meta_description_placeholder": "サイトのデフォルトメタ説明を入力してください。",
       "meta_description_hint": "検索結果に表示される説明です。最大160文字を推奨します。",
       "meta_keywords": "メタキーワード",
       "meta_keywords_hint": "カンマで区切って入力してください。",
+      "meta_keywords_placeholder": "CMS, Gnuboard7, オープンソース",
       "generator_settings": "Generatorメタタグ",
       "generator_settings_desc": "CMS識別用のgeneratorメタタグです。W3Techsなどの統計ツールがこの値でサイトをGnuboard7として分類します。",
       "generator_enabled": "Generatorタグ表示",
@@ -1710,12 +1952,7 @@
       "sitemap_settings_desc": "sitemap.xml 自動生成関連の設定です。",
       "sitemap_enabled": "Sitemap 生成 有効化",
       "sitemap_enabled_desc": "sitemap.xml を自動生成し、検索エンジンに提供します。",
-      "sitemap_schedule": "生成 周期",
-      "sitemap_schedule_hourly": "毎時間",
-      "sitemap_schedule_daily": "毎日",
-      "sitemap_schedule_weekly": "毎週",
-      "sitemap_schedule_time": "生成 時刻",
-      "sitemap_schedule_time_hint": "HH:mm 形式で入力してください。(例: 02:00)",
+      "sitemap_schedule_managed": "サイトマップの生成周期と時刻はスケジュール管理で変更します。",
       "sitemap_cache_ttl": "Sitemap キャッシュ 保持時間 (秒)",
       "sitemap_cache_ttl_hint": "空欄にすると詳細設定の Sitemap キャッシュ時間に従います。値を入力するとこの画面の値が優先されます — 最小 3600 秒 (1 時間)、最大 604800 秒 (7 日)",
       "sitemap_last_updated_at": "最後の生成",
@@ -1859,7 +2096,7 @@
         "remind_days_hint": "1〜90日。「後で変更」を選んだ会員に、この期間後に再び変更を求めます。",
         "batch_size": "1回の実行あたりの処理上限 (人)",
         "batch_size_hint": "事前案内・期限切れ処理にそれぞれ適用されます。期限が近い会員から処理し、残りは次回の実行で処理します。0を入力すると制限なく処理します。",
-        "schedule_notice": "毎日 05:15 にスケジューラーが案内メールとサイト通知を送ります。メール設定と通知設定の「パスワード有効期限の事前案内」・「パスワードの有効期限切れ」がオンになっている必要があります。個人情報処理方針でパスワードの変更周期を事前にお知らせください。",
+        "schedule_notice": "スケジューラーが案内メールとサイト通知を送ります。メール設定と通知設定の「パスワード有効期限の事前案内」・「パスワード有効期限切れ」がオンのときのみ送信されます。個人情報処理方針でパスワード変更周期を事前に告知してください。",
         "rows": {
           "notice": "有効期限の事前案内",
           "expire": "期限切れ処理"
@@ -1895,11 +2132,12 @@
       },
       "activity_log_retention": {
         "title": "アクティビティログ(アクセス記録)の保管",
-        "desc": "管理者・会員のアクセスと操作の記録(アクティビティログ)を保管する期間です。期間を過ぎた記録は毎日 04:45 に自動で削除されます。",
+        "desc": "管理者・会員のアクセスと操作の記録(アクティビティログ)を保管する期間です。期間を過ぎた記録は整理スケジュールが自動で削除します。",
         "days": "保管期間",
         "days_suffix": "日",
         "days_hint": "{{min}}〜{{max}}日。法定の最低期間より短くはできません。",
-        "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。"
+        "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。",
+        "schedule_notice": "期間を過ぎたアクティビティログは整理スケジュールが削除します。"
       }
     },
     "identity": {
@@ -2079,6 +2317,16 @@
             "title": "Supervisor実行コマンド",
             "desc": "登録した接続ごとに以下のコマンドでワーカーを起動してください。長時間ジョブ接続は必ずその接続名で起動する必要があります。"
           }
+        },
+        "records": {
+          "title": "処理記録",
+          "job_log_enabled": "タスク処理記録",
+          "job_log_enabled_desc": "キュージョブが終了または失敗するたびに記録を残します。",
+          "retention_days": "保管期間",
+          "retention_days_hint": "処理記録と失敗したジョブをこの期間保管します。({{min}} ~ {{max}}日)",
+          "view_link": "処理記録を見る",
+          "days_suffix": "日",
+          "schedule_managed": "古い処理記録と失敗したジョブは整理スケジュールが削除します。"
         }
       },
       "log": {
@@ -2182,7 +2430,7 @@
       "geoip_license_key": "MaxMindライセンスキー",
       "geoip_license_key_desc": "MaxMind無料アカウントから発行されたライセンスキーを入力してください。https://www.maxmind.com/en/geolite2/signup から無料で発行可能です。",
       "geoip_auto_update_enabled": "GeoIP DB自動更新",
-      "geoip_auto_update_enabled_desc": "週1回（水曜日03:00）MaxMind GeoLite2-City DBを自動的に再ダウンロードします。",
+      "geoip_auto_update_enabled_desc": "MaxMind GeoLite2-City DB をスケジュールに従って自動で再ダウンロードします。",
       "geoip_last_updated_at": "最後の更新",
       "geoip_manual_update": "今すぐ更新",
       "geoip_updating": "更新中...",
@@ -2212,7 +2460,8 @@
       "trusted_proxy_client_ip": "訪問者 IP として認識された値",
       "trusted_proxy_remote_addr": "直前の呼び出し元 IP (REMOTE_ADDR)",
       "trusted_proxy_same_ip_hint": "2 つの値が同じでプロキシヘッダーを受信しています — すべての訪問者が同一人物として記録されている状態です。",
-      "trusted_proxy_doc_hint": "設定方法と導入時の後続対応:"
+      "trusted_proxy_doc_hint": "設定方法と導入時の後続対応:",
+      "geoip_schedule_notice": "自動更新は GeoIP 更新スケジュールが実行します。"
     },
     "notification_definitions": {
       "title": "通知設定",
@@ -2257,6 +2506,7 @@
         "sitemap_regenerated": "サイトマップ再生成完了",
         "sitemap_regenerate_failed": "サイトマップ再生成失敗",
         "analytics_archive_failed": "訪問者統計集計失敗",
+        "schedule_failed": "予約タスク失敗",
         "analytics_ledger_limit_exceeded": "訪問者統計台帳閾値超過",
         "analytics_visit_limit_exceeded": "訪問あたりアクション上限超過",
         "analytics_weekly_report": "訪問者統計週間レポート",
@@ -2495,10 +2745,11 @@
         "title": "退会会員の残存情報削除",
         "desc": "退会時には紛争対応のため、名前·メールアドレスの原値がサフィックス形式で残ります。保有期間が経過したら、その残存情報まで実際に削除します。",
         "enabled": "保有期間経過時の自動削除",
-        "enabled_desc": "デフォルトで無効。有効にすると毎日未明にバッチが対象を処理します。",
+        "enabled_desc": "既定はオフ。オンにすると個人情報破棄スケジュールが対象を処理します。",
         "days": "退会後の保有期間（日）",
         "days_hint": "退会日からこの期間が経過した会員が対象です。デフォルトは365日です。",
-        "irreversible_warning": "連絡先·住所·自己紹介と本人認証識別子まで削除され、取り戻せません。名前は「退会会員」に、メールアドレスは識別不可形式に変わります。"
+        "irreversible_warning": "連絡先·住所·自己紹介と本人認証識別子まで削除され、取り戻せません。名前は「退会会員」に、メールアドレスは識別不可形式に変わります。",
+        "schedule_notice": "退会会員の破棄は個人情報破棄スケジュールが実行します。"
       },
       "dormant": {
         "title": "休眠アカウント",
@@ -2571,6 +2822,11 @@
         "preview_failed": "対象件数を読み込むことができませんでした。",
         "editor_label": "個人情報措置の職権実行"
       }
+    },
+    "schedule_link": {
+      "next_run": "次回実行",
+      "inactive": "このスケジュールは無効のため、現在は実行されません。",
+      "change": "スケジュール管理で変更"
     }
   },
   "templates": {
@@ -3432,7 +3688,6 @@
       "module_refresh_layouts_modal": "モジュールレイアウト更新",
       "module_uninstall_modal": "モジュール削除",
       "module_update_modal": "モジュールアップデート",
-      "module_deactivate_warning_modal": "モジュール無効化警告",
       "module_detail_modal": "モジュール詳細",
       "module_manifest_preview_drawer": "モジュール マニフェスト プレビュー"
     },
@@ -3512,10 +3767,14 @@
     },
     "admin_schedule_list": {
       "schedule_delete_modal": "スケジュール削除",
-      "schedule_duplicate_modal": "スケジュール複製",
+      "schedule_duplicate_modal": "スケジュールのコピー",
       "schedule_form_modal": "スケジュール登録/編集",
       "schedule_history_modal": "スケジュール実行履歴",
-      "schedule_run_modal": "スケジュール即座実行"
+      "schedule_run_modal": "スケジュール即座実行",
+      "queue_job_detail_modal": "キュータスク詳細",
+      "queue_confirm_modal": "キュー失敗タスクの再試行・削除",
+      "schedule_bulk_status_modal": "スケジュール状態の一括変更",
+      "schedule_security_modal": "スケジュールのセキュリティポリシー"
     },
     "admin_notification_log_list": {
       "modal_notification_log_detail": "通知発送履歴詳細"
@@ -4240,9 +4499,9 @@
       },
       "reports": {
         "weekly": "週間レポートメール",
-        "weekly_hint": "毎週月曜日 08:00 に管理者ロールに送信します。",
+        "weekly_hint": "admin ロールに週次レポートを送ります。",
         "monthly": "月間レポートメール",
-        "monthly_hint": "毎月1日08:00に管理者ロールに送信されます。",
+        "monthly_hint": "admin ロールに月次レポートを送ります。",
         "definitions_title": "通知定義ステータス",
         "definitions_description": "レポート·警告通知の有効化と無効化およびチャネル。文案の編集は環境設定の通知定義タブで行います。",
         "definition_inactive_alert": "レポートメールは有効ですが、通知定義が無効になっているためメールが送信されません — 下で定義を有効にしてください。",

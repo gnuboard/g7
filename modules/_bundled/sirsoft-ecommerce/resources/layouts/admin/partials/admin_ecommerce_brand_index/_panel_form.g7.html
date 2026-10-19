@@ -86,8 +86,7 @@
               <span>$t:sirsoft-ecommerce.admin.brand.form.name</span>
               <span class="text-required">*</span>
             </label>
-            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.brand.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}"/>
-            <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
+            <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:sirsoft-ecommerce.admin.brand.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" disabled="{{_global.panelMode === 'edit' &amp;&amp; brands?.data?.abilities?.can_update !== true}}" error="{{_local.errors?.name?.[0] ?? ''}}"/>
           </div>
         </div>
       </div>

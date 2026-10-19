@@ -122,6 +122,34 @@
             "comment": "동의 출처·GeoIP 상태 배지(개인정보·봇 탭).\n       `timezone`·`timezone_differs` 는 시간대 배지가 읽는다. 조회 권한이 없어 403 을 삼켰을 때는\n       fallback 의 거짓값 때문에 배지가 뜨지 않는다 — 비교할 값이 없는 상태에서 「다르다」고 알릴\n       수는 없다(#682 S3 라운드 7)."
         },
         {
+            "id": "analytics_report_schedules",
+            "label_key": "$t:editor.data_source.coreSchedules",
+            "type": "api",
+            "endpoint": "/api/admin/schedules",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "if": "{{(query.tab || 'collection') === 'reports'}}",
+            "params": {
+                "extension_type": "core",
+                "search_field": "identifier",
+                "search_keyword": "analytics-report",
+                "per_page": 10
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "comment": "리포트 발송 스케줄(코어 analytics-report-weekly·monthly)의 다음 실행 일시 — 리포트 탭 안내가 고정 요일·시각 대신 보인다.\n       스케줄 조회 권한이 없으면 403 을 조용히 넘기고 안내는 링크만 남는다. 늦게 받아도 되는 값이라 background 다."
+        },
+        {
             "id": "analytics_notification_definitions",
             "label_key": "$t:editor.data_source.analytics_notification_definitions",
             "type": "api",
@@ -3026,6 +3054,55 @@
                                                                     "className": "form-hint"
                                                                 },
                                                                 "text": "$t:admin.analytics.settings.reports.weekly_hint"
+                                                            },
+                                                            {
+                                                                "id": "report_weekly_next_run",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "form-hint flex-center flex-wrap gap-x-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.is_active !== false && !!(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.next_run_at}}",
+                                                                        "props": {
+                                                                            "className": "flex-center gap-1"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "$t:admin.settings.schedule_link.next_run"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "font-medium"
+                                                                                },
+                                                                                "text": "{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.next_run_at | datetime}}"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-weekly')?.is_active === false}}",
+                                                                        "text": "$t:admin.settings.schedule_link.inactive"
+                                                                    },
+                                                                    {
+                                                                        "id": "report_weekly_schedule_link",
+                                                                        "type": "basic",
+                                                                        "name": "A",
+                                                                        "props": {
+                                                                            "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=analytics-report-weekly",
+                                                                            "className": "text-link"
+                                                                        },
+                                                                        "text": "$t:admin.settings.schedule_link.change"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     },
@@ -3067,6 +3144,55 @@
                                                                     "className": "form-hint"
                                                                 },
                                                                 "text": "$t:admin.analytics.settings.reports.monthly_hint"
+                                                            },
+                                                            {
+                                                                "id": "report_monthly_next_run",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "form-hint flex-center flex-wrap gap-x-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.is_active !== false && !!(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.next_run_at}}",
+                                                                        "props": {
+                                                                            "className": "flex-center gap-1"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "$t:admin.settings.schedule_link.next_run"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "props": {
+                                                                                    "className": "font-medium"
+                                                                                },
+                                                                                "text": "{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.next_run_at | datetime}}"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{(analytics_report_schedules?.data?.data ?? []).find(r => r.name === 'analytics-report-monthly')?.is_active === false}}",
+                                                                        "text": "$t:admin.settings.schedule_link.inactive"
+                                                                    },
+                                                                    {
+                                                                        "id": "report_monthly_schedule_link",
+                                                                        "type": "basic",
+                                                                        "name": "A",
+                                                                        "props": {
+                                                                            "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=analytics-report-monthly",
+                                                                            "className": "text-link"
+                                                                        },
+                                                                        "text": "$t:admin.settings.schedule_link.change"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     },

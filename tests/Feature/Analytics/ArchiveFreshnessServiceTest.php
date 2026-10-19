@@ -5,9 +5,13 @@ namespace Tests\Feature\Analytics;
 use App\Analytics\OnViewOutcome;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
+use App\Enums\ScheduleResultStatus;
+use App\Enums\ScheduleTriggerType;
 use App\Models\Analytics\AnalyticsArchiveRun;
 use App\Models\Analytics\AnalyticsVisit;
+use App\Models\Schedule;
 use App\Services\Analytics\ArchiveFreshnessService;
+use App\Services\Schedule\ScheduleExecutor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -203,5 +207,36 @@ class ArchiveFreshnessServiceTest extends TestCase
         // 서울 자정을 넘긴 00:10 (UTC 15:10)
         Carbon::setTestNow(Carbon::parse('2026-09-28 15:10:00', 'UTC'));
         $this->assertFalse($this->service()->describe()['is_today']);
+    }
+
+    /**
+     * DB 스케줄로 옮긴 매시 집계(카탈로그 analytics-archive-hour)를 실행기가 돌려도 「예약 실행」으로 기록돼
+     * 스케줄러가 살아 있다고 판정되는지 확인합니다(#720 판정 보존 — `--scheduled` 옵션이 실행기까지 전달).
+     *
+     * @return void 없음
+     *
+     * @scenario period=hour, trigger=scheduled
+     *
+     * @effects scheduler_alive_is_judged_by_scheduled_runs_within_120_minutes
+     */
+    public function test_db_scheduled_hourly_archive_counts_as_scheduler_run(): void
+    {
+        $entry = config('core.schedules.analytics-archive-hour');
+        $this->assertIsArray($entry, '카탈로그에 매시 집계 항목이 없습니다');
+        $this->assertStringContainsString('--scheduled', (string) $entry['command']);
+
+        $schedule = Schedule::factory()->create([
+            'name' => 'analytics-archive-hour-'.uniqid(),
+            'type' => 'artisan',
+            'command' => $entry['command'],
+            'expression' => $entry['expression'],
+            'without_overlapping' => 0,
+        ])->fresh();
+
+        $history = app(ScheduleExecutor::class)->execute($schedule, ScheduleTriggerType::Scheduled);
+
+        $this->assertSame(ScheduleResultStatus::Success, $history->status, (string) $history->error_output);
+        $this->assertSame(1, AnalyticsArchiveRun::query()->where('run_type', ArchiveRunType::Hour->value)->where('trigger', 'scheduled')->count());
+        $this->assertTrue($this->service()->schedulerStatus()['alive']);
     }
 }

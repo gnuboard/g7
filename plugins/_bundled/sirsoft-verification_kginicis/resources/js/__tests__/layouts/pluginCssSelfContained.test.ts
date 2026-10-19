@@ -56,6 +56,19 @@ describe('KG이니시스 본인인증 환경설정 — 플러그인 자기 CSS',
     });
 
     /**
+     * @scenario element=layout
+     *
+     * @effects no_ungenerated_utilities_in_layout
+     */
+    it('레이아웃은 관리자 템플릿의 의미 색 클래스(경고·안내·성공 톤)를 빌려 쓰지 않는다', () => {
+        // 의미 색은 템플릿마다 이름·값이 다르다 — 다른 관리자 템플릿에서는 규칙이 없어 색이 사라진다
+        // (audit extension-template-tone-class). 확장 화면의 의미 색은 자기 접두 클래스로 싣는다.
+        // 저장 오류 상자의 text-error-strong/soft 는 룰이 허용한다(위 의미 클래스 위치 테스트가 그 자리를 고정).
+        const tone = /^(dark:)?(text|bg|border|ring)-(success|warning|info|danger)(-(soft|strong|light|solid))?$/;
+        expect(tokens.filter((t) => tone.test(t))).toEqual([]);
+    });
+
+    /**
      * @scenario element=plugin_css
      *
      * @effects prefixed_classes_defined_in_plugin_css

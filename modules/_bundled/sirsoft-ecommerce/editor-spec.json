@@ -2280,13 +2280,34 @@
         }
       },
       "coupon_abilities": {
-        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+        "data": {
+          "data": [],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
       },
       "policy_abilities": {
-        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+        "data": {
+          "data": [],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
       },
       "product_abilities": {
-        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+        "data": {
+          "data": [],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
       },
       "extra_fee_templates": {
         "data": {
@@ -4126,26 +4147,69 @@
       "claimRequestContext": {
         "data": {
           "order_id": 1,
-          "abilities": { "can_update_status": true, "can_execute_refund": true },
+          "abilities": {
+            "can_update_status": true,
+            "can_execute_refund": true
+          },
           "gates": {
-            "exchange": ["shipping", "delivered", "confirmed"],
-            "return": ["shipping", "delivered", "confirmed"],
-            "refund": ["pending_order", "pending_payment", "payment_complete", "shipping_hold", "preparing", "shipping_ready"]
+            "exchange": [
+              "shipping",
+              "delivered",
+              "confirmed"
+            ],
+            "return": [
+              "shipping",
+              "delivered",
+              "confirmed"
+            ],
+            "refund": [
+              "pending_order",
+              "pending_payment",
+              "payment_complete",
+              "shipping_hold",
+              "preparing",
+              "shipping_ready"
+            ]
           },
           "reasons": {
             "exchange": [
-              { "value": "size_mismatch", "label": "사이즈가 맞지 않음", "fault_type": "customer" },
-              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+              {
+                "value": "size_mismatch",
+                "label": "사이즈가 맞지 않음",
+                "fault_type": "customer"
+              },
+              {
+                "value": "defective_product",
+                "label": "상품 불량",
+                "fault_type": "seller"
+              }
             ],
             "return": [
-              { "value": "changed_mind", "label": "단순 변심", "fault_type": "customer" },
-              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+              {
+                "value": "changed_mind",
+                "label": "단순 변심",
+                "fault_type": "customer"
+              },
+              {
+                "value": "defective_product",
+                "label": "상품 불량",
+                "fault_type": "seller"
+              }
             ]
           },
           "charge_methods": [
-            { "value": "deduct_from_refund", "label": "환불금에서 차감" },
-            { "value": "pay_on_approval", "label": "고객 결제 요청" },
-            { "value": "free", "label": "무료" }
+            {
+              "value": "deduct_from_refund",
+              "label": "환불금에서 차감"
+            },
+            {
+              "value": "pay_on_approval",
+              "label": "고객 결제 요청"
+            },
+            {
+              "value": "free",
+              "label": "무료"
+            }
           ]
         }
       },
@@ -4210,6 +4274,77 @@
             ]
           }
         ]
+      },
+      "ecommerceSchedules": {
+        "data": {
+          "data": [
+            {
+              "id": 101,
+              "name": "order-auto-confirm",
+              "label_localized": "주문 자동 구매확정",
+              "description_localized": null,
+              "type": "artisan",
+              "frequency": "daily",
+              "frequency_label": "매일",
+              "expression": "0 3 * * *",
+              "is_active": true,
+              "next_run_at": "2026-10-17T03:00:00+09:00",
+              "last_result": "success",
+              "unmet_conditions": [],
+              "owner": {
+                "type": "module",
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스"
+              },
+              "is_owned": true,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": false,
+                "can_run": true
+              }
+            },
+            {
+              "id": 102,
+              "name": "stats-aggregate",
+              "label_localized": "쇼핑몰 통계 집계",
+              "description_localized": null,
+              "type": "artisan",
+              "frequency": "hourly",
+              "frequency_label": "매시간",
+              "expression": "0 * * * *",
+              "is_active": false,
+              "next_run_at": null,
+              "last_result": "never",
+              "unmet_conditions": [],
+              "owner": {
+                "type": "module",
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스"
+              },
+              "is_owned": true,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": false,
+                "can_run": true
+              }
+            }
+          ],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true,
+            "can_run": true
+          },
+          "pagination": {
+            "total": 2,
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 100,
+            "has_more_pages": false
+          }
+        }
       },
       "ecommerceIdentityPolicies": {
         "data": {
@@ -4360,7 +4495,9 @@
       },
       "cartItems": {
         "data": {
-          "abilities": { "can_order": true },
+          "abilities": {
+            "can_order": true
+          },
           "calculation": {
             "items": [
               "샘플"
@@ -9255,6 +9392,18 @@
                 "activeEcommerceSettingsTab": "privacy_retention"
               }
             }
+          },
+          {
+            "id": "tab_schedules",
+            "label": "$t:editor.state.tab.schedules",
+            "initialState": {
+              "query": {
+                "tab": "schedules"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "schedules"
+              }
+            }
           }
         ]
       },
@@ -10435,7 +10584,9 @@
                 },
                 "bulkSalesStatus": "coming_soon",
                 "bulkDisplayStatus": "visible",
-                "bulkUpdateErrors": ["프리미엄 무선 이어버드 프로: 재고는 0개보다 적게 바꿀 수 없습니다."],
+                "bulkUpdateErrors": [
+                  "프리미엄 무선 이어버드 프로: 재고는 0개보다 적게 바꿀 수 없습니다."
+                ],
                 "manualPaidPreview": {
                   "summary": {
                     "mileage_deduction": {
@@ -11119,7 +11270,11 @@
                 "reviewForModal": {
                   "content": "샘플 설명 문구입니다.",
                   "createdAt": "2026-09-19 11:30:00",
-                  "images": [{"download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"}],
+                  "images": [
+                    {
+                      "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                    }
+                  ],
                   "optionValues": [],
                   "rating": 0,
                   "userName": "홍길동"
@@ -11480,11 +11635,17 @@
                   "claimExchangeStatus": "sample",
                   "claimRefundStatus": "sample",
                   "claimReturnStatus": "sample",
-                  "countries": ["샘플 값"],
+                  "countries": [
+                    "샘플 값"
+                  ],
                   "dateQuick": "샘플 값",
                   "dateType": "sample",
-                  "deliveryMethods": ["샘플 값"],
-                  "devices": ["샘플 값"],
+                  "deliveryMethods": [
+                    "샘플 값"
+                  ],
+                  "devices": [
+                    "샘플 값"
+                  ],
                   "displayStatus": "sample",
                   "endDate": "2026-09-19 11:30:00",
                   "maxPrice": 10000,
@@ -11494,7 +11655,9 @@
                   "noBrandRegistered": "샘플 값",
                   "noCategoryRegistered": "샘플 값",
                   "orderStatus": "sample",
-                  "paymentMethods": ["샘플 값"],
+                  "paymentMethods": [
+                    "샘플 값"
+                  ],
                   "priceType": "sample",
                   "salesStatus": "sample",
                   "searchField": "샘플 값",
@@ -12279,7 +12442,9 @@
             "label": "$t:editor.state.screen_filled",
             "initialState": {
               "global": {
-                "bulkSelectedItems": ["샘플 값"]
+                "bulkSelectedItems": [
+                  "샘플 값"
+                ]
               }
             },
             "default": true

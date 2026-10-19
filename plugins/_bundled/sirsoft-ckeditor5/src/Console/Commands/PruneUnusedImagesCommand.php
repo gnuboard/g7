@@ -13,7 +13,7 @@ use Plugins\Sirsoft\Ckeditor5\Services\ImageCleanupService;
  *
  * 자동 정리는 사용자 파일을 지우므로 기본 꺼짐(운영자 옵트인)입니다. 스케줄러 호출
  * (`--scheduled`)은 커맨드 안에서 설정을 **false 폴백으로** 재확인합니다 — 스케줄 등록부의
- * `enabled_config` 게이트는 설정 조회가 실패하면 true 로 폴백하므로, 그것만으로는
+ * 실행 조건(`enabled_condition`) 게이트는 설정 조회가 실패하면 true 로 폴백하므로, 그것만으로는
  * "설정을 만지지 않은 사이트에서 자동 삭제 0" 을 보장할 수 없습니다.
  *
  * @example php artisan sirsoft-ckeditor5:prune-unused-images --dry-run
@@ -143,6 +143,7 @@ class PruneUnusedImagesCommand extends Command
      *
      * @param  array{scanned: int, referenced: int, deleted: int, failed: int, items: array<int, array<string, mixed>>}  $result  판정 결과
      * @param  int  $days  보존기간(일)
+     * @return void 반환값 없음
      */
     private function renderDryRun(array $result, int $days): void
     {

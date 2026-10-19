@@ -1,0 +1,386 @@
+{
+    "comment": "큐 탭 — 처리 기록 하위 탭의 표. 모든 Job 의 처리 완료·실패를 남긴 기록(queue_job_logs)이다.\n\n  기록은 환경설정 > 드라이버의 보관 기간(기본 7일)이 지나면 정리 스케줄(queue-prune-records)이 지운다. 재시도 대기(release)는\n  기록하지 않으므로 줄 하나가 「끝난 처리 한 번」이다. 조회 전용이라 고르는 칸이 없고, 행 메뉴(항목이 「상세보기」 하나뿐이었다) 대신\n  큐 작업 이름을 누르면 줄이 이미 가진 값으로 상세 창을 연다(서버를 다시 부르지 않는다).\n  표 머리 줄은 다른 하위 탭과 같다(총 N개 ─ 정렬 · 쪽당 개수, 정렬 기준 finished_at|duration_ms|attempts).",
+    "meta": {
+        "is_partial": true
+    },
+    "layout_name": "queue_logs_grid",
+    "id": "queue_logs_section",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "id": "queue_logs_list_info",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between flex-wrap gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{queue_logs?.data?.pagination?.total_is_exact !== false}}",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:admin.schedules.total_count|count={{queue_logs?.data?.pagination?.total ?? 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{queue_logs?.data?.pagination?.total_is_exact === false}}",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:admin.schedules.total_at_least|count={{queue_logs?.data?.pagination?.total ?? 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "정렬 — 값 끝 마디가 방향이다(`duration_ms_desc` → 기준 duration_ms + desc). 쪽은 1로.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/schedules/queue",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "transition_overlay_target": "queue_logs_grid__body",
+                                        "query": {
+                                            "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                            "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "queue_logs_sort",
+                                "className": "w-40",
+                                "value": "{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'finished_at_desc'}}",
+                                "aria-label": "$t:admin.schedules.sort.label",
+                                "options": [
+                                    {
+                                        "value": "finished_at_desc",
+                                        "label": "$t:admin.schedules.queue.sort.finished_at_desc"
+                                    },
+                                    {
+                                        "value": "finished_at_asc",
+                                        "label": "$t:admin.schedules.queue.sort.finished_at_asc"
+                                    },
+                                    {
+                                        "value": "duration_ms_desc",
+                                        "label": "$t:admin.schedules.queue.sort.duration_ms_desc"
+                                    },
+                                    {
+                                        "value": "duration_ms_asc",
+                                        "label": "$t:admin.schedules.queue.sort.duration_ms_asc"
+                                    },
+                                    {
+                                        "value": "attempts_desc",
+                                        "label": "$t:admin.schedules.queue.sort.attempts_desc"
+                                    },
+                                    {
+                                        "value": "attempts_asc",
+                                        "label": "$t:admin.schedules.queue.sort.attempts_asc"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "한 쪽에 몇 줄을 볼지. 개수가 바뀌면 첫 쪽으로 돌아간다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/schedules/queue",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "transition_overlay_target": "queue_logs_grid__body",
+                                        "query": {
+                                            "per_page": "{{$event.target.value}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "queue_logs_per_page",
+                                "className": "w-24",
+                                "value": "{{query.per_page ?? '20'}}",
+                                "aria-label": "$t:admin.schedules.per_page_label",
+                                "options": [
+                                    {
+                                        "value": "10",
+                                        "label": "$t:admin.schedules.per_page|count=10"
+                                    },
+                                    {
+                                        "value": "20",
+                                        "label": "$t:admin.schedules.per_page|count=20"
+                                    },
+                                    {
+                                        "value": "50",
+                                        "label": "$t:admin.schedules.per_page|count=50"
+                                    },
+                                    {
+                                        "value": "100",
+                                        "label": "$t:admin.schedules.per_page|count=100"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "queue_logs_grid",
+            "type": "composite",
+            "name": "DataGrid",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "queue_logs"
+            },
+            "actions": [
+                {
+                    "comment": "쪽 이동 — 이력에 쌓지 않는다.",
+                    "type": "change",
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/schedules/queue",
+                        "mergeQuery": true,
+                        "replace": true,
+                        "transition_overlay_target": "queue_logs_grid__body",
+                        "query": {
+                            "page": "{{$args[0]}}"
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "data": "{{queue_logs?.data?.data}}",
+                "pagination": true,
+                "serverSidePagination": true,
+                "serverCurrentPage": "{{queue_logs?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{queue_logs?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{queue_logs?.data?.pagination?.has_more_pages ?? false}}",
+                "pageSize": "{{+(query.per_page || 20)}}",
+                "alwaysShowPagination": true,
+                "idField": "id",
+                "selectable": false,
+                "showColumnSelector": false,
+                "responsiveBreakpoint": 768,
+                "emptyMessage": "$t:admin.schedules.queue.empty.logs",
+                "columns": [
+                    {
+                        "field": "display_name",
+                        "header": "$t:admin.schedules.queue.columns.job",
+                        "sortable": false,
+                        "required": true,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "min-w-0"
+                                },
+                                "children": [
+                                    {
+                                        "id": "queue_log_name_link",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "큐 작업 이름을 눌러 상세 — 행 메뉴 「상세보기」와 같다(줄 값 그대로).",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "queueJobDetailKind": "log",
+                                                            "queueJobDetail": "{{row}}",
+                                                            "queueJobDetailLoading": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "queue_job_detail_modal"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "font-medium text-left text-blue-600 dark:text-blue-400 hover:underline break-all"
+                                        },
+                                        "text": "{{row.display_name}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 break-all"
+                                        },
+                                        "text": "{{row.job_class}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.schedule_id}}",
+                                        "props": {
+                                            "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                        },
+                                        "text": "$t:defer:admin.schedules.queue.schedule_ref|id={{row.schedule_id}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "queue",
+                        "header": "$t:admin.schedules.queue.columns.queue",
+                        "width": "140px",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-mono text-gray-900 dark:text-white"
+                                },
+                                "text": "{{row.queue}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.connection}}",
+                                "props": {
+                                    "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5"
+                                },
+                                "text": "{{row.connection}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "status",
+                        "header": "$t:admin.schedules.queue.columns.result",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "if": "{{row.status === 'processed'}}",
+                                "props": {
+                                    "color": "green",
+                                    "size": "md",
+                                    "text": "$t:admin.schedules.queue.log_status.processed"
+                                }
+                            },
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "if": "{{row.status === 'failed'}}",
+                                "props": {
+                                    "color": "red",
+                                    "size": "md",
+                                    "text": "$t:admin.schedules.queue.log_status.failed"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.status === 'failed' && row.exception_message}}",
+                                "props": {
+                                    "className": "block max-w-md text-xs text-red-700 dark:text-red-300 mt-1 break-all"
+                                },
+                                "text": "{{row.exception_message}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "attempts",
+                        "header": "$t:admin.schedules.queue.columns.attempts",
+                        "width": "90px",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-900 dark:text-white whitespace-nowrap"
+                                },
+                                "text": "{{row.attempts ?? 0}}{{row.max_tries ? ' / ' + row.max_tries : ''}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "duration_ms",
+                        "header": "$t:admin.schedules.queue.columns.duration",
+                        "width": "100px",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.duration_ms !== null && row.duration_ms !== undefined}}",
+                                "props": {
+                                    "className": "text-sm text-gray-900 dark:text-white whitespace-nowrap"
+                                },
+                                "text": "$t:defer:admin.schedules.queue.duration_ms|ms={{row.duration_ms}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.duration_ms === null || row.duration_ms === undefined}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "finished_at",
+                        "header": "$t:admin.schedules.queue.columns.processed_at",
+                        "width": "150px",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.finished_at ?? row.created_at}}",
+                                "props": {
+                                    "className": "text-label whitespace-nowrap"
+                                },
+                                "text": "{{(row.finished_at ?? row.created_at) | datetime}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!(row.finished_at ?? row.created_at)}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -26,6 +26,7 @@
             "couponIssues": "쿠폰 발급 내역",
             "coupons": "쿠폰 목록",
             "ecommerceIdentityPolicies": "쇼핑몰 본인인증 정책",
+            "ecommerceSchedules": "쇼핑몰 스케줄",
             "ecommerceIdentityPurposes": "쇼핑몰 본인인증 목적",
             "ecommerceNotificationDefinitions": "쇼핑몰 알림 정의",
             "ecommercePrivacyRetentionPreview": "이커머스 개인정보 보유기간 대상 건수",

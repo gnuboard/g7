@@ -56,7 +56,6 @@
     ],
     "initLocal": {
         "filter": {
-            "searchType": "name",
             "search": "",
             "shipping_methods": [],
             "charge_policies": [],

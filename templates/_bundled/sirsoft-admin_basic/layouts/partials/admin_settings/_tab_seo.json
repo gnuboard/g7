@@ -1,5 +1,5 @@
 {
-    "comment": "SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다.\n  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다).",
+    "comment": "SEO 탭 — 기본 메타 정보와 사이트맵 관련 값을 고친다. 사이트맵 생성 주기·시각은 스케줄 관리 화면에서 바꾼다(링크만 둔다).\n  저장은 화면 하단의 공용 버튼이 이 탭 몫만 잘라 보낸다(다른 탭 값은 건드리지 않는다).",
     "meta": {
         "is_partial": true,
         "description": "환경설정 SEO 탭 콘텐츠"
@@ -59,7 +59,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.meta_title_suffix",
-                                        "placeholder": " | 그누보드7",
+                                        "placeholder": "$t:admin.settings.seo.meta_title_suffix_placeholder",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": ""
                                     }
@@ -128,7 +128,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.meta_keywords",
-                                        "placeholder": "CMS, 그누보드7, 오픈소스",
+                                        "placeholder": "$t:admin.settings.seo.meta_keywords_placeholder",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": ""
                                     }
@@ -969,75 +969,100 @@
                             ]
                         },
                         {
-                            "id": "field_sitemap_schedule",
+                            "comment": "생성 주기·시각 — 코어 스케줄 행(core/sitemap-generate)이 원천이라 여기서는 입력받지 않는다. 스케줄 관리 화면의\n             그 행으로 가는 링크와 다음 실행 일시를 둔다(소유=코어 + 식별자 검색 쿼리를 스케줄 화면이 그대로 필터로 읽는다).\n             안내 상자 모양은 설정 화면의 「스케줄 관리에서 변경」 안내 전부가 같다(아이콘 + 문장 + 다음 실행 + 링크).",
+                            "id": "field_sitemap_schedule_link",
                             "type": "basic",
                             "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Div",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "flex gap-3"
                                     },
-                                    "text": "$t:admin.settings.seo.sitemap_schedule"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Select",
-                                    "props": {
-                                        "name": "seo.sitemap_schedule",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "w-full",
-                                        "options": [
-                                            {
-                                                "value": "hourly",
-                                                "label": "$t:admin.settings.seo.sitemap_schedule_hourly"
-                                            },
-                                            {
-                                                "value": "daily",
-                                                "label": "$t:admin.settings.seo.sitemap_schedule_daily"
-                                            },
-                                            {
-                                                "value": "weekly",
-                                                "label": "$t:admin.settings.seo.sitemap_schedule_weekly"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0 mt-0.5"
                                             }
-                                        ]
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "id": "field_sitemap_schedule_time",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}",
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Label",
-                                    "props": {
-                                        "className": "form-label"
-                                    },
-                                    "text": "$t:admin.settings.seo.sitemap_schedule_time"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "name": "seo.sitemap_schedule_time",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "placeholder": "02:00",
-                                        "className": ""
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "form-hint"
-                                    },
-                                    "text": "$t:admin.settings.seo.sitemap_schedule_time_hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.seo.sitemap_schedule_managed"
+                                                },
+                                                {
+                                                    "id": "field_sitemap_schedule_link_next_run",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.is_active !== false && !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.next_run_at}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.schedule_link.next_run"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.next_run_at | datetime}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "field_sitemap_schedule_link_inactive",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'sitemap-generate')?.is_active === false}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.schedule_link.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "sitemap_schedule_link",
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "props": {
+                                                                "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=sitemap-generate",
+                                                                "className": "text-link"
+                                                            },
+                                                            "text": "$t:admin.settings.schedule_link.change"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         },

@@ -288,6 +288,7 @@
                         ],
                         "props": {
                             "position": "right",
+                            "className": "block max-w-full",
                             "items": [
                                 {
                                     "id": "view_member",
@@ -397,6 +398,7 @@
                         ],
                         "props": {
                             "position": "right",
+                            "className": "block max-w-full",
                             "items": [
                                 {
                                     "id": "view_member",

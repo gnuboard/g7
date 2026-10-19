@@ -361,17 +361,9 @@
                                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.name",
                                 "maxLength": 100,
                                 "required": true,
-                                "disabled": "{{_computed.isReadOnly}}"
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "error": "{{_local.errors?.name?.[0] ?? ''}}"
                             }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{_local.errors?.name}}",
-                            "props": {
-                                "className": "form-error-xs mt-1"
-                            },
-                            "text": "{{_local.errors?.name?.[0] ?? ''}}"
                         }
                     ]
                 },

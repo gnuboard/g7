@@ -1,0 +1,15 @@
+feature: 이커머스 화면 조회 조건과 서버 게이트 키의 정합 — 검색·필터 키가 조용히 버려지지 않는다
+
+description: |
+  코어 `tests/scenarios/layout-query-param-gate-parity.yaml` 과 같은 계약을 이커머스 레이아웃에 적용한다.
+  모듈 라우트는 모듈이 활성일 때만 등록되므로 모듈 스위트에서 검사한다.
+
+axes:
+  check: [data_source_params_within_gate, navigate_query_consumed]
+
+effects:
+  - dropped_query_key_detected
+  - unconsumed_navigate_key_detected
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/LayoutQueryParamGateParityTest.php

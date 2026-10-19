@@ -229,7 +229,7 @@
         <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.display_status</span>
         <div class="filter-buttons">
           <label class="flex-center gap-2 cursor-pointer text-label">
-            <input type="radio" name="display_status" class="radio" checked="{{(_local.filter.displayStatus || 'all') === 'all'}}">
+            <input type="radio" :autoBinding="false" value="all" name="display_status" class="radio" checked="{{(_local.filter.displayStatus || 'all') === 'all'}}">
               <on type="change">
                 <!-- 전시상태는 판매상태와 달리 **하나만** 고른다 — 그래서 배열이 아니라 라디오이고 "전체" 도 값(`all`)이다. -->
                 <set-state target="_local" filter.displayStatus="all"/>
@@ -238,7 +238,7 @@
             <span>$t:sirsoft-ecommerce.admin.product.filter.display_status_options.all</span>
           </label>
           <label class="flex-center gap-2 cursor-pointer text-label">
-            <input type="radio" name="display_status" class="radio" checked="{{_local.filter.displayStatus === 'visible'}}">
+            <input type="radio" :autoBinding="false" value="visible" name="display_status" class="radio" checked="{{_local.filter.displayStatus === 'visible'}}">
               <on type="change">
                 <!-- 노출. 전시상태는 쇼핑몰에서 보이는지만 정하고 살 수 있는지는 판매상태가 정한다 — 둘은 독립이다. -->
                 <set-state target="_local" filter.displayStatus="visible"/>
@@ -247,7 +247,7 @@
             <span>$t:sirsoft-ecommerce.enums.display_status.visible</span>
           </label>
           <label class="flex-center gap-2 cursor-pointer text-label">
-            <input type="radio" name="display_status" class="radio" checked="{{_local.filter.displayStatus === 'hidden'}}">
+            <input type="radio" :autoBinding="false" value="hidden" name="display_status" class="radio" checked="{{_local.filter.displayStatus === 'hidden'}}">
               <on type="change">
                 <!-- 숨김. 숨긴 상품도 주소를 알면 들어갈 수 있으므로 "판매중지" 와 같지 않다. -->
                 <set-state target="_local" filter.displayStatus="hidden"/>
@@ -293,7 +293,7 @@
         <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.tax_status</span>
         <div class="filter-buttons">
           <label class="flex-center gap-2 cursor-pointer text-label">
-            <input type="radio" name="tax_status" class="radio" checked="{{(_local.filter.taxStatus || 'all') === 'all'}}">
+            <input type="radio" :autoBinding="false" value="all" name="tax_status" class="radio" checked="{{(_local.filter.taxStatus || 'all') === 'all'}}">
               <on type="change">
                 <!-- 과세구분도 하나만 고르는 값이라 "전체" 가 값(`all`)이다. -->
                 <set-state target="_local" filter.taxStatus="all"/>
@@ -302,7 +302,7 @@
             <span>$t:sirsoft-ecommerce.admin.product.filter.tax_status_options.all</span>
           </label>
           <label class="flex-center gap-2 cursor-pointer text-label">
-            <input type="radio" name="tax_status" class="radio" checked="{{_local.filter.taxStatus === 'taxable'}}">
+            <input type="radio" :autoBinding="false" value="taxable" name="tax_status" class="radio" checked="{{_local.filter.taxStatus === 'taxable'}}">
               <on type="change">
                 <!-- 과세. 부가세 계산 대상이라 주문 금액 구성이 면세 상품과 다르다. -->
                 <set-state target="_local" filter.taxStatus="taxable"/>
@@ -311,7 +311,7 @@
             <span>$t:sirsoft-ecommerce.enums.tax_status.taxable</span>
           </label>
           <label class="flex-center gap-2 cursor-pointer text-label">
-            <input type="radio" name="tax_status" class="radio" checked="{{_local.filter.taxStatus === 'tax_free'}}">
+            <input type="radio" :autoBinding="false" value="tax_free" name="tax_status" class="radio" checked="{{_local.filter.taxStatus === 'tax_free'}}">
               <on type="change">
                 <!-- 면세. 도서·농산물처럼 법으로 정해진 품목에 쓴다. -->
                 <set-state target="_local" filter.taxStatus="tax_free"/>

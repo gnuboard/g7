@@ -71,6 +71,23 @@
           </div>
           <toggle data-type="composite" name="privacy.withdrawn_retention_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
+        <!-- 스케줄로 도는 작업 안내 — 고정 시각 대신 그 작업의 다음 실행 일시(조회 권한이 있을 때)와 스케줄 관리 링크를 보인다. 끈 스케줄이면 그 사실을 알린다. -->
+        <div data-ref="withdrawn_schedule_notice" class="alert-info">
+          <div class="flex gap-3">
+            <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+            <div class="min-w-0 space-y-1">
+              <p class="text-label-subtle">$t:admin.settings.privacy.withdrawn.schedule_notice</p>
+              <p data-ref="withdrawn_schedule_notice_next_run" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.is_active !== false &amp;&amp; !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.next_run_at}}" class="text-label-subtle flex-center flex-wrap gap-1">
+                <span>$t:admin.settings.schedule_link.next_run</span>
+                <span class="font-medium">{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.next_run_at | datetime}}</span>
+              </p>
+              <p data-ref="withdrawn_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
+              <div class="flex-center flex-wrap gap-3">
+                <a data-ref="withdrawn_schedule_notice_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=privacy-process-retention" class="text-link">$t:admin.settings.schedule_link.change</a>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다 -->
         <div data-ref="withdrawn_target_list_row" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn'] || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}">
           <div data-ref="withdrawn_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700">

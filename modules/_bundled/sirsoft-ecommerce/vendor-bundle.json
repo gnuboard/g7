@@ -1,11 +1,11 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-10-16T23:38:32+00:00",
+    "generated_at": "2026-10-18T16:11:54+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "module:sirsoft-ecommerce",
     "composer_json_sha256": "8812ca09b731e646367c9edaca84389a8d95ff34245d6fe1963ce3e1bff5ace0",
     "composer_lock_sha256": "55493f3c4e9973545a497cedff199e59f4f472e67dff606887825acec1250094",
-    "zip_sha256": "84a1842e709493239df1f31a737b47aa777fc374e10810690b61f6c13e555d83",
+    "zip_sha256": "123144b758b47a8ce4234ca6624ba7dd0d338a5bdbd535d3f108f0ca83098484",
     "zip_size": 435648,
     "package_count": 1,
     "php_requirement": "^8.2",

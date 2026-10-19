@@ -181,7 +181,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-gdpr:send-annual-notices --scheduled` | `daily` | 개인정보 연간 통지 |
+| `send-annual-notices` | `0 0 * * *` | 개인정보 연간 통지 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

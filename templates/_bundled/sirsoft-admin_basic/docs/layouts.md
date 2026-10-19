@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 194개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 136개 |
+| `partials` | 146개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -105,7 +105,6 @@
 | `_panel_menu_list` | `partials` | partial | - |
 | `_panel_view` | `partials` | partial | - |
 | `_drawer_manifest_preview` | `partials` | partial | - |
-| `_modal_deactivate_warning` | `partials` | partial | - |
 | `_modal_detail` | `partials` | partial | - |
 | `_modal_extension_license` | `partials` | partial | - |
 | `_modal_force_activate` | `partials` | partial | - |
@@ -131,11 +130,22 @@
 | `_modal_uninstall` | `partials` | partial | - |
 | `_modal_update` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
+| `_modal_bulk_status` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
 | `_modal_duplicate` | `partials` | partial | - |
 | `_modal_form` | `partials` | partial | - |
 | `_modal_history` | `partials` | partial | - |
+| `_modal_queue_confirm` | `partials` | partial | - |
+| `_modal_queue_job_detail` | `partials` | partial | - |
 | `_modal_run` | `partials` | partial | - |
+| `_modal_security` | `partials` | partial | - |
+| `_partial_filter_section` | `partials` | partial | - |
+| `_partial_schedule_datagrid` | `partials` | partial | - |
+| `_queue_failed_grid` | `partials` | partial | - |
+| `_queue_logs_grid` | `partials` | partial | - |
+| `_queue_pending_grid` | `partials` | partial | - |
+| `_status_card` | `partials` | partial | - |
+| `_tab_queue` | `partials` | partial | - |
 | `_tab_schedules` | `partials` | partial | - |
 | `_modal_cache_delete` | `partials` | partial | - |
 | `_modal_core_changelog` | `partials` | partial | - |
@@ -391,6 +401,7 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 | `*/admin/roles` | `admin_role_list` | - |
 | `*/admin/roles/create` | `admin_role_form` | - |
 | `*/admin/roles/:id/edit` | `admin_role_form` | - |
+| `*/admin/schedules/queue` | `admin_schedule_list` | - |
 | `*/admin/schedules` | `admin_schedule_list` | - |
 | `*/admin/identity/logs` | `admin_identity_logs` | - |
 | `*/admin/identity/challenge` | `auth/identity_challenge` | - |
@@ -622,7 +633,6 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_manual_install.g7.html
 │           ├── _modal_uninstall.g7.html
 │           ├── _modal_update.g7.html
-│           ├── _modal_deactivate_warning.g7.html
 │           ├── _modal_force_activate.g7.html
 │           ├── _modal_force_deactivate.g7.html
 │           ├── _modal_extension_license.g7.html
@@ -659,15 +669,26 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_file_delete_confirm.g7.html
 │           └── _modal_file_form.g7.html
 │
-├── 스케줄 관리
-│   └── admin_schedule_list.g7.html
+├── 스케줄 관리 (스케줄·큐 경로 탭 — `/admin/schedules`, `/admin/schedules/queue?view=pending|failed|logs`)
+│   └── admin_schedule_list.g7.html (탭별 데이터소스 조건 · 명명 액션 searchSchedules/resetSchedules · 큐 검색)
 │       └── partials/admin_schedule_list/
-│           ├── _tab_schedules.g7.html
+│           ├── _status_card.g7.html (스케줄러 하트비트·큐 요약 — 좁은 화면은 한 줄 요약 + 자세히)
+│           ├── _tab_schedules.g7.html (스케줄 탭 — 필터·표 partial 을 담는 틀)
+│           ├── _partial_filter_section.g7.html (쿠폰 목록형 필터 — 검색대상·기본/상세 슬롯·검색편집·빠른 기간)
+│           ├── _partial_schedule_datagrid.g7.html (스케줄 표 — 정렬·쪽 크기·일괄 활성/비활성/삭제)
 │           ├── _modal_form.g7.html
 │           ├── _modal_delete.g7.html
 │           ├── _modal_duplicate.g7.html
 │           ├── _modal_history.g7.html
-│           └── _modal_run.g7.html
+│           ├── _modal_run.g7.html
+│           ├── _modal_bulk_status.g7.html (일괄 활성·비활성 확인)
+│           ├── _modal_security.g7.html (보안 정책 — 읽기 전용, 서버 관리자 덮어쓰기 파일 상태 포함)
+│           ├── _tab_queue.g7.html (큐 탭 — 대기/실패/처리 기록 하위 탭·비 database 드라이버 안내)
+│           ├── _queue_pending_grid.g7.html
+│           ├── _queue_failed_grid.g7.html (단건·일괄 재시도·삭제)
+│           ├── _queue_logs_grid.g7.html
+│           ├── _modal_queue_job_detail.g7.html
+│           └── _modal_queue_confirm.g7.html (재시도·삭제 확인 — 건별 결과)
 │
 ├── 언어팩 관리
 │   ├── admin_language_pack_list.g7.html (허브 — 아래 3화면이 이것을 extends)

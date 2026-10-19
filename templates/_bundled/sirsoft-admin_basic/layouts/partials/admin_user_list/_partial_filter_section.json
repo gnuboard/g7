@@ -1056,6 +1056,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "adminScope",
                                                 "value": "all",
                                                 "checked": "{{(_local.filter.adminScope || 'all') === 'all'}}",
@@ -1095,6 +1096,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "adminScope",
                                                 "value": "admin",
                                                 "checked": "{{_local.filter.adminScope === 'admin'}}",
@@ -1134,6 +1136,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "adminScope",
                                                 "value": "member",
                                                 "checked": "{{_local.filter.adminScope === 'member'}}",
@@ -1230,6 +1233,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "lockState",
                                                 "value": "all",
                                                 "checked": "{{(_local.filter.lockState || 'all') === 'all'}}",
@@ -1269,6 +1273,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "lockState",
                                                 "value": "locked",
                                                 "checked": "{{_local.filter.lockState === 'locked'}}",
@@ -1308,6 +1313,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "lockState",
                                                 "value": "unlocked",
                                                 "checked": "{{_local.filter.lockState === 'unlocked'}}",
@@ -1875,6 +1881,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "emailVerified",
                                                 "value": "all",
                                                 "checked": "{{(_local.filter.emailVerified || 'all') === 'all'}}",
@@ -1914,6 +1921,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "emailVerified",
                                                 "value": "verified",
                                                 "checked": "{{_local.filter.emailVerified === 'verified'}}",
@@ -1953,6 +1961,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "emailVerified",
                                                 "value": "unverified",
                                                 "checked": "{{_local.filter.emailVerified === 'unverified'}}",
@@ -2049,6 +2058,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "identityVerified",
                                                 "value": "all",
                                                 "checked": "{{(_local.filter.identityVerified || 'all') === 'all'}}",
@@ -2088,6 +2098,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "identityVerified",
                                                 "value": "verified",
                                                 "checked": "{{_local.filter.identityVerified === 'verified'}}",
@@ -2127,6 +2138,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "identityVerified",
                                                 "value": "unverified",
                                                 "checked": "{{_local.filter.identityVerified === 'unverified'}}",

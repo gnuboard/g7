@@ -878,6 +878,8 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
+                                                "value": "all",
                                                 "name": "display_status",
                                                 "className": "radio",
                                                 "checked": "{{(_local.filter.displayStatus || 'all') === 'all'}}"
@@ -913,6 +915,8 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
+                                                "value": "visible",
                                                 "name": "display_status",
                                                 "className": "radio",
                                                 "checked": "{{_local.filter.displayStatus === 'visible'}}"
@@ -948,6 +952,8 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
+                                                "value": "hidden",
                                                 "name": "display_status",
                                                 "className": "radio",
                                                 "checked": "{{_local.filter.displayStatus === 'hidden'}}"
@@ -1137,6 +1143,8 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
+                                                "value": "all",
                                                 "name": "tax_status",
                                                 "className": "radio",
                                                 "checked": "{{(_local.filter.taxStatus || 'all') === 'all'}}"
@@ -1172,6 +1180,8 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
+                                                "value": "taxable",
                                                 "name": "tax_status",
                                                 "className": "radio",
                                                 "checked": "{{_local.filter.taxStatus === 'taxable'}}"
@@ -1207,6 +1217,8 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
+                                                "value": "tax_free",
                                                 "name": "tax_status",
                                                 "className": "radio",
                                                 "checked": "{{_local.filter.taxStatus === 'tax_free'}}"

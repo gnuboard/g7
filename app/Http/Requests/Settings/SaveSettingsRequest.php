@@ -571,9 +571,6 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_serve_stale_on_miss' => ['nullable', 'boolean'],
             'seo.sitemap_max_urls_per_contributor' => ['nullable', 'integer', 'min:0'],
             'seo.sitemap_hreflang_enabled' => ['nullable', 'boolean'],
-            'seo.sitemap_schedule' => ['nullable', 'string', Rule::in(['hourly', 'daily', 'weekly'])],
-            // 형식뿐 아니라 실제 있는 시각만 — `99:99` 가 저장되면 스케줄러의 `->at()` 가 잘못된 크론 식을 만든다.
-            'seo.sitemap_schedule_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'seo.generator_enabled' => ['nullable', 'boolean'],
             'seo.generator_content' => ['nullable', 'string', 'max:200'],
 
@@ -698,6 +695,9 @@ class SaveSettingsRequest extends FormRequest
             'drivers.queue_names' => ['nullable', 'array'],
             'drivers.queue_names.*' => ['array', 'max:20'],
             'drivers.queue_names.*.*' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9][A-Za-z0-9_.-]*$/'],
+            // 큐 작업 처리 기록 (#17) — 기록 켜기·처리 기록과 실패 작업 공통 보관 기간(일)
+            'drivers.queue_job_log_enabled' => ['nullable', 'boolean'],
+            'drivers.queue_record_retention_days' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_queue_record_retention_days_min', 1), 'max:'.config('core.settings_limits.drivers_queue_record_retention_days_max', 90)],
             'drivers.websocket_enabled' => ['nullable', 'boolean'],
             'drivers.websocket_app_id' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_key' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
@@ -1423,8 +1423,6 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_max_urls_per_contributor.integer' => __('validation.settings.sitemap_max_urls_per_contributor_integer'),
             'seo.sitemap_max_urls_per_contributor.min' => __('validation.settings.sitemap_max_urls_per_contributor_min'),
             'seo.sitemap_hreflang_enabled.boolean' => __('validation.settings.sitemap_hreflang_enabled_boolean'),
-            'seo.sitemap_schedule.in' => __('validation.settings.sitemap_schedule_invalid'),
-            'seo.sitemap_schedule_time.regex' => __('validation.settings.sitemap_schedule_time_invalid'),
 
             // 보안 설정
             'security.force_https.required' => __('validation.settings.force_https_required'),
@@ -1615,6 +1613,10 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_days.integer' => __('validation.settings.log_days_integer'),
             'drivers.log_days.min' => __('validation.settings.log_days_min'),
             'drivers.log_days.max' => __('validation.settings.log_days_max'),
+            'drivers.queue_job_log_enabled.boolean' => __('validation.settings.queue_job_log_enabled_boolean'),
+            'drivers.queue_record_retention_days.integer' => __('validation.settings.queue_record_retention_days_integer'),
+            'drivers.queue_record_retention_days.min' => __('validation.settings.queue_record_retention_days_min', ['min' => config('core.settings_limits.drivers_queue_record_retention_days_min', 1)]),
+            'drivers.queue_record_retention_days.max' => __('validation.settings.queue_record_retention_days_max', ['max' => config('core.settings_limits.drivers_queue_record_retention_days_max', 90)]),
             'drivers.public_asset_disk.string' => __('validation.settings.public_asset_disk_invalid'),
             'drivers.public_asset_disk.max' => __('validation.settings.public_asset_disk_invalid'),
 
@@ -1766,8 +1768,6 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_serve_stale_on_miss' => __('validation.attributes.sitemap_serve_stale_on_miss'),
             'seo.sitemap_max_urls_per_contributor' => __('validation.attributes.sitemap_max_urls_per_contributor'),
             'seo.sitemap_hreflang_enabled' => __('validation.attributes.sitemap_hreflang_enabled'),
-            'seo.sitemap_schedule' => __('validation.attributes.sitemap_schedule'),
-            'seo.sitemap_schedule_time' => __('validation.attributes.sitemap_schedule_time'),
             'seo.generator_enabled' => __('validation.attributes.generator_enabled'),
             'seo.generator_content' => __('validation.attributes.generator_content'),
             // security
@@ -1863,6 +1863,8 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_driver' => __('validation.attributes.log_driver'),
             'drivers.log_level' => __('validation.attributes.log_level'),
             'drivers.log_days' => __('validation.attributes.log_days'),
+            'drivers.queue_job_log_enabled' => __('validation.attributes.queue_job_log_enabled'),
+            'drivers.queue_record_retention_days' => __('validation.attributes.queue_record_retention_days'),
             'drivers.public_asset_disk' => __('validation.attributes.public_asset_disk'),
         ];
 

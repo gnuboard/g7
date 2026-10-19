@@ -361,6 +361,104 @@
                             ]
                         },
                         {
+                            "comment": "스케줄로 도는 작업 안내 — 고정 시각 대신 그 작업의 다음 실행 일시(조회 권한이 있을 때)와 스케줄 관리 링크를 보인다. 끈 스케줄이면 그 사실을 알린다.",
+                            "id": "withdrawn_schedule_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.privacy.withdrawn.schedule_notice"
+                                                },
+                                                {
+                                                    "id": "withdrawn_schedule_notice_next_run",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.is_active !== false && !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.next_run_at}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.schedule_link.next_run"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.next_run_at | datetime}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "withdrawn_schedule_notice_inactive",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.is_active === false}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.schedule_link.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "withdrawn_schedule_notice_link",
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "props": {
+                                                                "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=privacy-process-retention",
+                                                                "className": "text-link"
+                                                            },
+                                                            "text": "$t:admin.settings.schedule_link.change"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
                             "comment": "row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다",
                             "id": "withdrawn_target_list_row",
                             "type": "basic",

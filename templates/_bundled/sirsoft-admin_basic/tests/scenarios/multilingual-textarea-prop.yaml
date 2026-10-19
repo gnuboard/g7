@@ -1,0 +1,19 @@
+feature: 다국어 입력의 여러 줄 입력 — inputType="textarea" 로만 켠다
+
+description: |
+  이슈 #17 — 다국어 입력 컴포넌트는 `inputType` 이 textarea 일 때만 여러 줄 입력을 그리고 `multiline` prop 은 모른다.
+  `multiline` 을 주면 조용히 한 줄 입력으로 떨어지고 `rows` 도 무시된다. 스케줄 편집 창 설명(이전에는 여러 줄),
+  역할 편집 설명, 쇼핑몰 카테고리 설명이 같은 결함군이었다. 이 컴포넌트를 쓰는 레이아웃은 관리자 템플릿·모듈·플러그인
+  전역이므로 번들 레이아웃 전체를 저장소에서 훑어 확인한다.
+
+axes:
+  case: [multilingual_textarea_prop]
+
+effects:
+  - multilingual_textarea_uses_input_type
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/multilingual-input-textarea-prop.test.ts
+
+validation:
+  browser_check: 관리자 > 역할 관리 > 역할 편집, 쇼핑몰 > 카테고리 편집, 스케줄 관리 > 편집 창에서 설명 칸이 여러 줄(textarea)로 보이고 줄바꿈 입력이 저장된다

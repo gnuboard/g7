@@ -20,7 +20,10 @@ description: |
     - 이 축의 회귀 테스트가 0건이라 결함군이 무가드로 통과됐다.
 
   적용 지점:
-    - `routes/console.php` 의 만료 데이터 정리 구획 (일 1회 새벽 배치 + 시간별 1건).
+    - `config/core.php` schedules 카탈로그의 `group: gc` 항목 → CoreScheduleSeeder 가 DB 행으로 동기화 →
+      ScheduleRegistrar 가 `schedule:{id}` 이벤트로 등록 (일 1회 새벽 배치 + 시간별 1건). 7.2.0 전에는
+      `routes/console.php` 의 gc 표식 구획이었다 — 등록 전수 회귀 테스트도 카탈로그를 읽는다.
+    - `queue:prune-failed` 는 처리 기록과 실패 Job 을 함께 정리하는 `queue:prune-records` 로 대체(#17 D8).
     - 신설 코어 커맨드 6종 + 이커머스 모듈 커맨드 1종.
     - 시각 기준: 설정 반영부가 `app.schedule_timezone` 을 세팅해 Schedule 인스턴스
       전체에 일괄 적용 (이벤트별 지정 방식은 누락이 생겨 채택하지 않음).

@@ -108,6 +108,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "display.date_display_format",
                                                 "value": "standard",
                                                 "aria-label": "$t:sirsoft-board.admin.settings.options.date_display_format.standard",
@@ -189,6 +190,7 @@
                                             ],
                                             "props": {
                                                 "type": "radio",
+                                                "autoBinding": false,
                                                 "name": "display.date_display_format",
                                                 "value": "relative",
                                                 "aria-label": "$t:sirsoft-board.admin.settings.options.date_display_format.relative",

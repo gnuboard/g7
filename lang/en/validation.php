@@ -1080,8 +1080,6 @@ return [
         'sitemap_max_urls_per_contributor_integer' => 'Maximum URLs per contributor must be an integer.',
         'sitemap_max_urls_per_contributor_min' => 'Maximum URLs per contributor must be at least 0.',
         'sitemap_hreflang_enabled_boolean' => 'The sitemap hreflang alternate links setting must be true or false.',
-        'sitemap_schedule_invalid' => 'Please select a valid sitemap generation schedule.',
-        'sitemap_schedule_time_invalid' => 'Sitemap generation time must be a valid HH:mm time between 00:00 and 23:59.',
 
         // Misc
         'session_lifetime_integer' => 'Session lifetime must be an integer.',
@@ -1179,6 +1177,11 @@ return [
         'log_days_integer' => 'Log retention days must be an integer.',
         'log_days_min' => 'Log retention days must be at least 1.',
         'log_days_max' => 'Log retention days may not be greater than 365.',
+        // Queue job records (#17)
+        'queue_job_log_enabled_boolean' => 'Job record logging must be on or off.',
+        'queue_record_retention_days_integer' => 'Job record retention must be a whole number of days.',
+        'queue_record_retention_days_min' => 'Job record retention must be at least :min days.',
+        'queue_record_retention_days_max' => 'Job record retention may not be greater than :max days.',
 
         // Public asset disk settings
         'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
@@ -1477,8 +1480,6 @@ return [
         'sitemap_serve_stale_on_miss' => 'serve stale sitemap on miss',
         'sitemap_max_urls_per_contributor' => 'sitemap max URLs per contributor',
         'sitemap_hreflang_enabled' => 'sitemap hreflang links',
-        'sitemap_schedule' => 'sitemap schedule',
-        'sitemap_schedule_time' => 'sitemap schedule time',
         'generator_enabled' => 'SEO page generator',
         'generator_content' => 'SEO page generator content',
         // Security settings (additional)
@@ -1550,6 +1551,8 @@ return [
         'log_driver' => 'log driver',
         'log_level' => 'log level',
         'log_days' => 'log retention days',
+        'queue_job_log_enabled' => 'queue job records',
+        'queue_record_retention_days' => 'queue job record retention',
         'public_asset_disk' => 'public asset disk',
     ],
 ];

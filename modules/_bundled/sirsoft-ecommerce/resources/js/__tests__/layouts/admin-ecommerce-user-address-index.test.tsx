@@ -161,7 +161,10 @@ describe('관리자 회원 배송지 목록 — 필터', () => {
         const call = flattenActions(search).find((a: any) => a.handler === 'apiCall');
 
         expect(call.target).toBe('/api/admin/users/search');
-        expect(call.debounce).toBe(300);
+        // debounce 는 이벤트 바로 아래 액션에만 먹는다 — 순서(sequence) 안쪽 apiCall 에 달면 엔진이 무시해
+        // 글자마다 회원 검색이 나갔다(컴파일러 경고 nested_action_debounce_ignored).
+        expect(search.debounce).toBe(300);
+        expect(call.debounce).toBeUndefined();
 
         // 검색 대상 select 에는 회원 갈래가 없다 — 그 축은 위 필터가 가져갔다.
         const select = findById(filterSection, 'search_field_select');

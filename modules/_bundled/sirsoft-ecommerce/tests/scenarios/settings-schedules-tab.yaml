@@ -1,0 +1,26 @@
+feature: 쇼핑몰 설정 — 스케줄 탭 (#17 D15)
+
+description: |
+  7.2.0 에서 예약 작업이 DB 등록제가 되면서 확장이 선언한 작업을 그 확장의 설정 화면에서 바로 켜고 끄는 탭을 둔다.
+  목록은 코어 스케줄 목록 API 를 소유 필터(extension_type=module, extension_identifier=sirsoft-ecommerce)로 재사용하고,
+  켜고 끄기는 코어 bulk-status 에 그 줄 하나만 보낸다 — 확장 전용 엔드포인트를 새로 두지 않는다(약한 엔드포인트 금지).
+  코어 스케줄 조회 권한이 없으면 탭 내용 대신 권한 안내를 보이고, 「스케줄 관리에서 변경」 안내의 링크는 같은 소유 쿼리를 싣는다.
+  화면 축(실제 토글 왕복·코어 화면 반영)은 라이브 매트릭스 M20 이 덮는다.
+
+axes:
+  case: [list, permission, toggle, link, i18n]
+
+effects:
+  # 목록은 코어 목록 API 를 이 모듈 소유 필터로 부르고 스케줄 탭에서만 부른다
+  - extension_tab_reuses_core_list_api
+  # 조회 403 이면 목록 대신 권한 안내
+  - extension_tab_forbidden_notice
+  # 활성 토글은 코어 bulk-status 에 한 줄만 보내고 결과와 무관하게 목록을 다시 받는다
+  - extension_tab_toggle_uses_bulk_status
+  # 스케줄 관리 링크가 같은 소유 쿼리를 싣는다
+  - extension_tab_links_core_screen_with_owner_query
+  # 탭이 쓰는 번역 키가 ko·en 양쪽에 있다
+  - extension_tab_i18n_keys
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsSchedulesTab.test.tsx

@@ -12,7 +12,8 @@
  * 테스트 대상:
  * - layouts/partials/admin_schedule_list/_modal_history.json — `initGlobal: scheduleHistory` 로 받아
  *   `_global.scheduleHistory.data`·`.pagination` 을 읽는다, 실행자는 `triggered_by?.name`.
- * - layouts/partials/admin_schedule_list/_tab_schedules.json — 「실행 이력」 을 열 때 앞 작업의 이력·쪽 번호를 비운다.
+ * - layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json — 「실행 이력」 을 열 때 앞 작업의 이력·쪽 번호를 비운다
+ *   (7.2.0 에서 표·행 메뉴가 `_tab_schedules` 에서 이 조각으로 옮겨졌다).
  *   「즉시 실행」 을 열 때 지난 실행 결과를 비운다(Esc·X 로 닫아도 다시 실행할 수 있게).
  */
 
@@ -83,7 +84,7 @@ describe('실행 이력 창', () => {
 });
 
 describe('실행 이력 열기 동작', () => {
-  const tab = require('../../layouts/partials/admin_schedule_list/_tab_schedules.json');
+  const tab = require('../../layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json');
 
   /**
    * @scenario surface=admin_schedule_history_modal
@@ -119,7 +120,7 @@ describe('실행 이력 열기 동작', () => {
 });
 
 describe('예약 작업 목록 — 실행 시각 칸', () => {
-  const tab = require('../../layouts/partials/admin_schedule_list/_tab_schedules.json');
+  const tab = require('../../layouts/partials/admin_schedule_list/_partial_schedule_datagrid.json');
   const raw = JSON.stringify(tab);
 
   /**

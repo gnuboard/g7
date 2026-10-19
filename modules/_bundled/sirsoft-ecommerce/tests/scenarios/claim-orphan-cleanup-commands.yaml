@@ -1,0 +1,27 @@
+feature: claim_orphan_cleanup_commands
+
+description: |
+  클레임 고아 데이터 정리 배치 2종 — 종결된 신청서에 남은 결제 대기 건 취소(cancel-orphan-claim-payments)와
+  신청으로 이어지지 않은 임시 첨부 삭제(prune-pending-claim-images). 지워야 할 것(보존 기간이 지난 고아)만 정리하고
+  남겨야 할 것(살아 있는 신청서의 대기 건·보존 기간 이내·귀속 첨부·결제 완료 건)은 남긴다. dry-run 은 아무것도
+  바꾸지 않고, 모듈은 두 커맨드를 매일 자정 스케줄로 선언한다(7.2.0 DB 스케줄 등록부 형식).
+
+coverage_strategy: full
+
+axes:
+  command: [cancel_orphan_claim_payments, prune_pending_claim_images]
+  path: [prune, dry_run, skip, schedule]
+
+exclusions:
+  - { command: cancel_orphan_claim_payments, path: skip, reason: "결제 대기 건 취소 커맨드에는 보존 일수 0 이하 건너뛰기 분기가 없다(보존 기간은 고정 경계)" }
+
+effects:
+  - only_stale_orphans_are_cleaned
+  - live_or_recent_rows_are_kept
+  - dry_run_changes_nothing
+  - non_positive_retention_skips_cleanup
+  - command_declared_in_module_schedules
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/CancelOrphanClaimPaymentsCommandTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/PrunePendingClaimImagesCommandTest.php

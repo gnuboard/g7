@@ -12,12 +12,12 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_kginicis.settings.title" description="$t:sirsoft-verification_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-verification_kginicis.plugin_read_only</span>
+        <span class="text-xs verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.plugin_read_only</span>
       </div>
       <div data-ref="info_panel" class="alert-info">
         <div class="flex gap-3">
           <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-          <div class="space-y-1 text-info-soft">
+          <div class="space-y-1 text-xs verification-kginicis-tone-info">
             <p>$t:sirsoft-verification_kginicis.settings.info.activation</p>
             <p>$t:sirsoft-verification_kginicis.settings.info.logs</p>
           </div>
@@ -49,8 +49,8 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-verification_kginicis.settings.live_mode_warning_title</h3>
-            <p class="mt-1 text-warning-soft">$t:sirsoft-verification_kginicis.settings.live_mode_warning_body</p>
+            <h3 class="text-sm font-semibold verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.settings.live_mode_warning_title</h3>
+            <p class="mt-1 text-xs verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
+                  <input type="radio" :autoBinding="false" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
                     <on type="change">
                       <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
                       <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
@@ -125,7 +125,7 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
+                  <input type="radio" :autoBinding="false" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
                     <on type="change">
                       <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
                       <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">

@@ -73,19 +73,8 @@ return [
         'user_agent' => 'g7-core/1.0 (+https://gnuboard.com)',
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | 스케줄 설정
-    |--------------------------------------------------------------------------
-    |
-    | frequency: weekly | daily
-    | MaxMind는 주 2회(화/금) DB를 갱신하므로 주 1회(수요일)로도 충분합니다.
-    |
-    */
-    'schedule' => [
-        'frequency' => env('GEOIP_SCHEDULE_FREQUENCY', 'weekly'),
-        'time' => env('GEOIP_SCHEDULE_TIME', '03:00'),
-    ],
+    // 갱신 주기는 7.2.0 부터 관리자 > 스케줄 관리의 코어 행 `geoip-update`(config/core.php schedules 카탈로그)가 정한다.
+    // 옛 환경변수 GEOIP_SCHEDULE_FREQUENCY·GEOIP_SCHEDULE_TIME 은 업그레이드 때 그 행으로 옮겨지고 더 이상 읽지 않는다.
 
     /*
     |--------------------------------------------------------------------------

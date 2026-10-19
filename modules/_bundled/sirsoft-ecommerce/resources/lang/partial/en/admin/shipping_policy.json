@@ -65,10 +65,7 @@
     "is_active_label": "Status:",
     "all": "All",
     "active": "Active",
-    "inactive": "Inactive",
-    "search_type": {
-      "name": "Policy Name"
-    }
+    "inactive": "Inactive"
   },
 
   "table": {

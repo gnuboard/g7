@@ -587,15 +587,25 @@ class Plugin extends AbstractPlugin
     /**
      * 개인정보 통지는 정책 버전 발행과 별개인 정기 작업입니다.
      *
-     * @return array 정기 실행 선언
+     * 실행 조건 `annual_notice.enabled` 는 설정 조회 실패 시 true 로 폴백한다(옛 등록 의미 보존) —
+     * 통지 서비스가 같은 설정을 false 폴백으로 다시 확인하므로 꺼진 사이트에는 보내지 않는다.
+     * 운영자는 관리자 > 스케줄 관리에서 주기·활성을 바꿀 수 있고, 시각은 사이트 시간대 기준이다.
+     *
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractPlugin::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [[
+            'name' => 'send-annual-notices',
+            'type' => 'artisan',
+            'label' => ['ko' => '개인정보 연간 통지', 'en' => 'Send annual privacy notices'],
+            'description' => ['ko' => '활성 회원에게 개인정보 이용내역을 연 1회 안내합니다(설정에서 켠 경우만).', 'en' => 'Sends the annual privacy notice to active members (only when enabled in settings).'],
             'command' => 'sirsoft-gdpr:send-annual-notices --scheduled',
-            'schedule' => 'daily',
-            'description' => '개인정보 연간 통지',
-            'enabled_config' => 'annual_notice.enabled',
+            'frequency' => 'daily',
+            'expression' => '0 0 * * *',
+            'enabled_condition' => [
+                ['source' => 'plugin_setting', 'key' => 'annual_notice.enabled', 'operator' => 'truthy', 'default' => true],
+            ],
         ]];
     }
 

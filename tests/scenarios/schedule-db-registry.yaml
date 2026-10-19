@@ -1,0 +1,109 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축이 서로 독립인 실행 경로 단계(등록·투입·실행·마감)라 각 테스트는 자기가 바꾸는 축만 @scenario 로 고정한다 — 전 축 곱(3×2×4×2×2×2×2×3×3)은 의미 없는 조합이 대부분이다. effects·test_files 는 그대로 검사한다.
+
+feature: DB 스케줄 등록·실행 경로 (#17)
+
+description: |
+  모든 예약 작업이 DB `schedules` 행을 거쳐 같은 실행기로 돈다.
+
+  배경:
+    - 7.1.x 까지 실제 예약은 routes/console.php 의 코드 등록과 확장 getSchedules() 였고,
+      화면에서 등록한 행은 틱마다 실행하는 경로가 없었다(즉시 실행만, HTTP 요청 안에서 동기).
+    - 옛 구현(d5a480400)은 이벤트명이 모두 같아 onOneServer 잠금을 공유하고, 중복 방지가
+      boolean 이라 TTL 이 뭉개지고, 큐 연결을 하드코딩했으며, 실행기가 Process/Http 를 직접 써서
+      보안 가드 테스트의 fake 가 무력화됐다.
+
+  적용 지점:
+    - routes/console.php 한 줄 → ScheduleRegistrar: 활성 행마다 `schedule:{id}` 이벤트(30초 주기 / cron +
+      행 시간대, onOneServer, 점검 모드, 실행 조건은 실행 시점 평가), 생존 신호 `schedule:heartbeat`.
+    - ScheduleDispatcher: 바로 실행(실행기 직접 호출) / 큐로 보내기(RunScheduledTaskJob — 등록된 연결·큐만,
+      timeout 은 retry_after 아래로). job 유형은 Job 자체를 선언 방식으로 보낸다(그 Job 의 큐·재시도·중복 방지 보존 설계).
+    - ScheduleExecutor: 비활성 확장 거부 → 중복 방지 캐시 잠금(분) → 이력(모든 실행 / 실패만) →
+      타입별 실행(Artisan::call · Process · Http · 허용목록 Job) → 행 상태(모델 이벤트 없이) → 훅.
+    - 실패 알림: run_failed 훅 → 알림 정의 schedule_failed, 데이터 리스너가 수동 실행·알림 꺼짐·하루 1회를 거른다.
+    - 활동 로그는 수동 실행만.
+
+axes:
+  trigger: [scheduled, manual, queue_worker]
+  dispatch_mode: [sync, queue]
+  schedule_type: [artisan, shell, url, job]
+  frequency: [every_thirty_seconds, cron]
+  history_mode: [all, failures_only]
+  overlap: [off, minutes]
+  condition: [met, unmet]
+  owner: [core, custom, module_inactive]
+  outcome: [success, failure, rejected]
+
+exclusions:
+  - { trigger: queue_worker, dispatch_mode: sync, reason: "큐 워커 계기는 큐로 보내기 행에서만 생긴다" }
+
+effects:
+  - run_rejection_message_follows_reason
+  - manual_run_registers_extension_command_in_web
+  # 등록 (틱)
+  - event_name_is_unique_per_row
+  - thirty_second_rows_repeat_every_thirty_seconds
+  - cron_rows_use_expression_and_timezone
+  - one_server_and_maintenance_follow_row
+  - conditions_are_evaluated_at_run_time
+  - inactive_rows_are_not_registered
+  - inactive_owner_is_blocked
+  - registration_order_light_first
+  - heartbeat_event_registered_every_minute
+  - managed_events_are_identifiable
+  - tick_dispatches_with_scheduled_trigger
+  - runner_runs_only_due_rows_in_row_timezone
+  - heartbeat_records_last_tick
+  - heartbeat_never_breaks_scheduler
+  # 투입
+  - sync_dispatch_runs_in_process_and_returns_history
+  - dispatch_accepts_id_and_ignores_missing_row
+  - queue_dispatch_pushes_run_job
+  - unregistered_queue_connection_falls_back
+  - queue_job_timeout_clamped_below_retry_after
+  - queued_run_rechecks_state_before_running
+  # 실행
+  - history_all_records_every_run
+  - row_state_updated_without_model_events
+  - failures_only_success_leaves_no_history
+  - after_run_keeps_history_argument
+  - failures_only_failure_records_one_history
+  - failure_returns_failed_history_without_throwing
+  - run_failed_hook_receives_string_error
+  - overlap_lock_ttl_preserves_minutes
+  - overlap_off_takes_no_lock
+  - overlapping_scheduled_run_is_skipped
+  - overlapping_manual_run_is_rejected
+  - nonzero_exit_code_is_failure
+  - job_runs_in_declared_dispatch_mode
+  - job_class_outside_allowlist_is_blocked
+  - job_allowlist_extends_via_filter
+  - run_blocks_job_class_outside_allowlist
+  - job_allowlist_extends_only_via_filter
+  # shell 유형 보안 가드 (KVE-2026-1567 — 실행 시점은 새 실행기로 이관, 저장 시점은 FormRequest)
+  - shell_store_rejected_while_gate_disabled
+  - shell_store_allowed_when_gate_enabled_and_allowlisted
+  - shell_update_falls_back_to_stored_type
+  - run_blocks_shell_while_gate_disabled
+  - run_executes_shell_as_argument_array
+  - abandoned_queue_run_is_closed_as_failed
+  - activity_log_records_manual_runs_only
+  # 실패 알림
+  - failure_notification_throttled_once_per_day
+  - failure_notification_respects_flag_and_skips_manual_runs
+  - failure_notification_sent_when_cache_down
+  - failure_notification_variables_filled
+  - failure_notification_schedule_url_uses_screen_url
+
+# E2E axis 없음: 이 매니페스트는 서버측 실행 경로(등록·투입·실행·알림)다. 화면(스케줄 목록·즉시 실행·
+# 상태 카드)은 관리자 템플릿의 레이아웃 Vitest 와 Playwright spec(schedule-list-filter·queue-failed-retry),
+# 라이브 점검 매트릭스(즉시 실행·틱·실패 알림 행)가 소유한다.
+
+test_files:
+  - tests/Feature/Schedule/ScheduleRegistrarTest.php
+  - tests/Feature/Schedule/ScheduleDispatcherTest.php
+  - tests/Feature/Schedule/ScheduleExecutorTest.php
+  - tests/Feature/Schedule/RunScheduledTaskJobTest.php
+  - tests/Feature/Schedule/DatabaseScheduleRunnerTest.php
+  - tests/Feature/Schedule/ScheduleFailureNotifierTest.php
+  - tests/Unit/Services/Schedule/ScheduleHeartbeatTest.php
+  - tests/Feature/Security/ScheduleCommandGuardTest.php

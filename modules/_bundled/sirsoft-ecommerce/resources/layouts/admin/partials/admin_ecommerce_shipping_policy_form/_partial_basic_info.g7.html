@@ -13,8 +13,7 @@
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.name</span>
             <span class="text-required">*</span>
           </label>
-          <multilingual-input data-type="composite" name="name" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder" :maxLength="200" :required="true" layout="tabs" disabled="{{_computed.isReadOnly}}"/>
-          <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
+          <multilingual-input data-type="composite" name="name" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder" :maxLength="200" :required="true" layout="tabs" disabled="{{_computed.isReadOnly}}" error="{{_local.errors?.name?.[0] ?? ''}}"/>
         </div>
       </div>
       <div data-ref="field_row_status" class="grid-2col-responsive">

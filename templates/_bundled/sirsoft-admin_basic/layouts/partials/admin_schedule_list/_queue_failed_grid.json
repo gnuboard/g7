@@ -1,0 +1,593 @@
+{
+    "comment": "큐 탭 — 실패 하위 탭의 표. failed_jobs 의 실패 작업을 보고 다시 넣거나(재시도) 지운다.\n\n  고르는 칸은 지금 쪽 안에서만 유지한다(`selectionScope=\"page\"`) — 재시도·삭제는 요청당 100건이 상한이고\n  쪽당 최대 100줄이라 한 번에 보낼 수 있는 만큼만 고른다. 고른 값은 행 번호가 아니라 **UUID** 다(API 가 UUID 로 받는다).\n  재시도·삭제는 개별(행 메뉴)·일괄(일괄 바) 모두 확인 창(`queue_confirm_modal`)을 거치고, 그 창이 건별 결과를 보인다 —\n  결과 줄에 작업명을 함께 보이도록 고른 줄의 UUID → 작업명 표(`queueConfirm.names`)를 담아 간다.\n  일괄 바·표 머리 줄은 스케줄 목록과 같은 두 줄이다 — [선택 수 ─ 선택 삭제 · 선택 재시도] / [총 N개 ─ 정렬 · 쪽당 개수].\n  행 메뉴 「상세보기」는 예외 전문과 payload 요약을 받아 상세 창(`queue_job_detail_modal`)에 띄운다.",
+    "meta": {
+        "is_partial": true
+    },
+    "layout_name": "queue_failed_grid",
+    "id": "queue_failed_section",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "id": "queue_failed_bulk_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "bulk-actions-bar flex-wrap"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-body font-medium whitespace-nowrap"
+                    },
+                    "text": "$t:admin.schedules.selected_count|count={{_global.selectedFailedJobUuids?.length ?? 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1"
+                    }
+                },
+                {
+                    "id": "queue_bulk_delete_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄 삭제 — 재시도와 같은 확인 창을 삭제 갈래로 연다. 지난 결과를 비워야 창이 확인 단계로 열린다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "queueConfirmResults": null,
+                                        "queueConfirmMessage": "",
+                                        "queueConfirm": {
+                                            "action": "delete",
+                                            "uuids": "{{_global.selectedFailedJobUuids}}",
+                                            "single": false,
+                                            "label": "$t:admin.schedules.queue.confirm.bulk_target|count={{_global.selectedFailedJobUuids?.length ?? 0}}",
+                                            "names": "{{Object.fromEntries((queue_failed?.data?.data ?? []).filter(r => (_global.selectedFailedJobUuids ?? []).includes(r.uuid)).map(r => [r.uuid, r.display_name]))}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "queue_confirm_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{!_global.selectedFailedJobUuids?.length || queue_failed?.data?.abilities?.can_delete !== true}}"
+                    },
+                    "text": "$t:admin.schedules.queue.action.delete_selected"
+                },
+                {
+                    "id": "queue_bulk_retry_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄 재시도 — 고른 UUID 를 확인 창에 담아 연다. 지난 결과를 비워야 창이 확인 단계로 열린다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "queueConfirmResults": null,
+                                        "queueConfirmMessage": "",
+                                        "queueConfirm": {
+                                            "action": "retry",
+                                            "uuids": "{{_global.selectedFailedJobUuids}}",
+                                            "single": false,
+                                            "label": "$t:admin.schedules.queue.confirm.bulk_target|count={{_global.selectedFailedJobUuids?.length ?? 0}}",
+                                            "names": "{{Object.fromEntries((queue_failed?.data?.data ?? []).filter(r => (_global.selectedFailedJobUuids ?? []).includes(r.uuid)).map(r => [r.uuid, r.display_name]))}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "queue_confirm_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{!_global.selectedFailedJobUuids?.length || queue_failed?.data?.abilities?.can_retry !== true}}"
+                    },
+                    "text": "$t:admin.schedules.queue.action.retry_selected"
+                }
+            ]
+        },
+        {
+            "id": "queue_failed_list_info",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between flex-wrap gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{queue_failed?.data?.pagination?.total_is_exact !== false}}",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:admin.schedules.total_count|count={{queue_failed?.data?.pagination?.total ?? 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{queue_failed?.data?.pagination?.total_is_exact === false}}",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:admin.schedules.total_at_least|count={{queue_failed?.data?.pagination?.total ?? 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "정렬 — 서버 허용 기준은 실패 failed_at|id. 쪽이 바뀌면 고른 줄도 뜻을 잃으므로 비운다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedFailedJobUuids": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules/queue",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "queue_failed_grid__body",
+                                                "query": {
+                                                    "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                    "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "name": "queue_failed_sort",
+                                "className": "w-40",
+                                "value": "{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'failed_at_desc'}}",
+                                "aria-label": "$t:admin.schedules.sort.label",
+                                "options": [
+                                    {
+                                        "value": "failed_at_desc",
+                                        "label": "$t:admin.schedules.queue.sort.failed_at_desc"
+                                    },
+                                    {
+                                        "value": "failed_at_asc",
+                                        "label": "$t:admin.schedules.queue.sort.failed_at_asc"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "한 쪽에 몇 줄을 볼지 — 첫 쪽으로 돌아가고, 쪽이 바뀌면 고른 줄도 뜻을 잃으므로 비운다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedFailedJobUuids": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/schedules/queue",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "transition_overlay_target": "queue_failed_grid__body",
+                                                "query": {
+                                                    "per_page": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "name": "queue_failed_per_page",
+                                "className": "w-24",
+                                "value": "{{query.per_page ?? '20'}}",
+                                "aria-label": "$t:admin.schedules.per_page_label",
+                                "options": [
+                                    {
+                                        "value": "10",
+                                        "label": "$t:admin.schedules.per_page|count=10"
+                                    },
+                                    {
+                                        "value": "20",
+                                        "label": "$t:admin.schedules.per_page|count=20"
+                                    },
+                                    {
+                                        "value": "50",
+                                        "label": "$t:admin.schedules.per_page|count=50"
+                                    },
+                                    {
+                                        "value": "100",
+                                        "label": "$t:admin.schedules.per_page|count=100"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "queue_failed_grid",
+            "type": "composite",
+            "name": "DataGrid",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "queue_failed"
+            },
+            "actions": [
+                {
+                    "comment": "쪽 이동 — 이력에 쌓지 않는다. 고른 줄은 지금 쪽 범위라 쪽을 넘기면 비운다.",
+                    "type": "change",
+                    "event": "onPageChange",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "selectedFailedJobUuids": []
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/schedules/queue",
+                                "mergeQuery": true,
+                                "replace": true,
+                                "transition_overlay_target": "queue_failed_grid__body",
+                                "query": {
+                                    "page": "{{$args[0]}}"
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "고른 UUID 를 전역에 둔다 — 일괄 바 버튼의 잠금과 대상 목록이 이 값을 읽는다.",
+                    "type": "action",
+                    "event": "onSelectionChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "selectedFailedJobUuids": "{{$args[0]}}"
+                    }
+                },
+                {
+                    "comment": "상세보기는 서버에서 예외 전문을 받아 창에 담고, 재시도·삭제는 그 한 건을 확인 창에 담아 연다.",
+                    "type": "action",
+                    "event": "onRowAction",
+                    "handler": "switch",
+                    "cases": {
+                        "detail": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "줄의 요약으로 먼저 열고(빈 창 방지) 전문을 받아 덮어쓴다. 받는 동안 전문 자리에 진행 표시를 둔다.",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "queueJobDetailKind": "failed",
+                                        "queueJobDetail": "{{$args[1]}}",
+                                        "queueJobDetailLoading": true
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "queue_job_detail_modal"
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/schedules/queue/failed/{{$args[1].uuid}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "GET"
+                                    },
+                                    "onSuccess": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "queueJobDetail": "{{response.data}}",
+                                            "queueJobDetailLoading": false
+                                        }
+                                    },
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "queueJobDetailLoading": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.schedules.queue.errors.detail_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "retry": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "queueConfirmResults": null,
+                                        "queueConfirmMessage": "",
+                                        "queueConfirm": {
+                                            "action": "retry",
+                                            "uuids": "{{[$args[1].uuid]}}",
+                                            "single": true,
+                                            "label": "{{$args[1].display_name}}",
+                                            "names": "{{ {[$args[1].uuid]: $args[1].display_name} }}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "queue_confirm_modal"
+                                }
+                            ]
+                        },
+                        "delete": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "queueConfirmResults": null,
+                                        "queueConfirmMessage": "",
+                                        "queueConfirm": {
+                                            "action": "delete",
+                                            "uuids": "{{[$args[1].uuid]}}",
+                                            "single": true,
+                                            "label": "{{$args[1].display_name}}",
+                                            "names": "{{ {[$args[1].uuid]: $args[1].display_name} }}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "queue_confirm_modal"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "selectedCountText": "",
+                "data": "{{queue_failed?.data?.data}}",
+                "pagination": true,
+                "serverSidePagination": true,
+                "serverCurrentPage": "{{queue_failed?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{queue_failed?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{queue_failed?.data?.pagination?.has_more_pages ?? false}}",
+                "pageSize": "{{+(query.per_page || 20)}}",
+                "alwaysShowPagination": true,
+                "idField": "uuid",
+                "selectable": "{{queue_failed?.data?.abilities?.can_retry === true || queue_failed?.data?.abilities?.can_delete === true}}",
+                "selectionScope": "page",
+                "selectedIds": "{{_global.selectedFailedJobUuids || []}}",
+                "showColumnSelector": false,
+                "responsiveBreakpoint": 768,
+                "actionsColumnHeader": "$t:common.actions",
+                "emptyMessage": "$t:admin.schedules.queue.empty.failed",
+                "rowActions": [
+                    {
+                        "id": "detail",
+                        "label": "$t:admin.schedules.queue.action.detail",
+                        "iconName": "eye"
+                    },
+                    {
+                        "id": "retry",
+                        "label": "$t:admin.schedules.queue.action.retry",
+                        "iconName": "rotate-right",
+                        "disabledField": "abilities.can_retry"
+                    },
+                    {
+                        "id": "divider",
+                        "divider": true
+                    },
+                    {
+                        "id": "delete",
+                        "label": "$t:common.delete",
+                        "iconName": "trash",
+                        "variant": "danger",
+                        "disabledField": "abilities.can_delete"
+                    }
+                ],
+                "columns": [
+                    {
+                        "field": "display_name",
+                        "header": "$t:admin.schedules.queue.columns.job",
+                        "sortable": false,
+                        "required": true,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "min-w-0"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-medium text-gray-900 dark:text-white break-all"
+                                        },
+                                        "text": "{{row.display_name}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 break-all"
+                                        },
+                                        "text": "{{row.job_class}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-xs text-gray-400 dark:text-gray-500 font-mono mt-0.5 break-all"
+                                        },
+                                        "text": "{{row.uuid}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "field": "queue",
+                        "header": "$t:admin.schedules.queue.columns.queue",
+                        "width": "140px",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm font-mono text-gray-900 dark:text-white"
+                                },
+                                "text": "{{row.queue}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.connection}}",
+                                "props": {
+                                    "className": "block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5"
+                                },
+                                "text": "{{row.connection}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "exception_summary",
+                        "header": "$t:admin.schedules.queue.columns.error",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "comment": "예외 첫 줄 요약 — 텍스트로만 그린다(전문은 상세 창).",
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.exception_summary}}",
+                                "props": {
+                                    "className": "block max-w-md text-xs text-red-700 dark:text-red-300 break-all"
+                                },
+                                "text": "{{row.exception_summary}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.exception_summary}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "attempts",
+                        "header": "$t:admin.schedules.queue.columns.attempts",
+                        "width": "90px",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-gray-900 dark:text-white whitespace-nowrap"
+                                },
+                                "text": "{{row.attempts ?? 0}}{{row.max_tries ? ' / ' + row.max_tries : ''}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "failed_at",
+                        "header": "$t:admin.schedules.queue.columns.failed_at",
+                        "width": "150px",
+                        "sortable": false,
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.failed_at}}",
+                                "props": {
+                                    "className": "text-label whitespace-nowrap"
+                                },
+                                "text": "{{row.failed_at | datetime}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!row.failed_at}}",
+                                "props": {
+                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                },
+                                "text": "-"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

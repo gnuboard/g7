@@ -5,7 +5,6 @@
     "defaults": {
         "auth_key": "",
         "auto_manage": false,
-        "update_time": "11:30",
         "run_days": [
             1,
             2,
@@ -26,9 +25,6 @@
         },
         "auto_manage": {
             "expose": true
-        },
-        "update_time": {
-            "expose": false
         },
         "run_days": {
             "expose": false

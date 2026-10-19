@@ -10,6 +10,12 @@
 
 - 게시판 설정 「비밀 답변 열람 범위」(「非公開返信の閲覧範囲」)의 일본어 번역을 추가했습니다 — 게시판 수정 화면의 칸 이름·안내·값 3개(「パスルール（既定）」「下位のみ」「返信ごとに個別」)와 값별 설명(`admin/form.fields.secret_reply_visibility.*`), 환경설정 기본값·일괄 적용 항목 이름(`admin/settings.fields.secret_reply_visibility`·`fields.descriptions.*`·`options.secret_reply_visibility*`·`bulk_apply.field_labels.*`), 값 이름(`enums.secret_reply_visibility.*`), 검증·변경 기록의 항목 이름(`validation.attributes.*`·`activity_log.fields.*`)입니다.
 - 답변 화면에서 원글 비밀번호로 답변을 열 때의 안내(`messages.posts.thread_password_verified` 「元の投稿のパスワードが確認されました。」·`thread_password_not_applicable` 「元の投稿のパスワードで開ける返信ではありません。」)의 일본어 번역을 추가했습니다.
+- 관리자 > 스케줄 관리에 보이는 게시판 정기 작업 2개의 이름·설명 일본어 번역을 추가했습니다.
+- 환경설정 「스케줄」 탭(스케줄 목록·활성/비활성 전환·읽기 전용 안내·스케줄 관리 이동) 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 코어 최소 요구 버전을 7.2.0 으로 상향
 
 ## [1.1.0] - 2026-10-10
 

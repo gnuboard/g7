@@ -14,7 +14,7 @@
   </data-source>
   <!-- 발송 이력. 조건은 전부 `query.*` 에서 읽는다. 403 은 빈 표 대신 에러 화면으로 갈아끼운다. -->
   <data-source id="notificationLogs" label_key="$t:editor.data_source.notificationLogs" type="api" endpoint="/api/admin/notification-logs" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" channel="{{query.channel}}" notification_type="{{query.notification_type}}" extension_type="{{query.extension_type}}" status="{{query.status}}" sort_by="{{query.sort_by || 'sent_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" channel="{{query.channel}}" notification_type="{{query.notification_type}}" extension_type="{{query['extension_type[]'] ?? query.extension_type}}" status="{{query['status[]'] ?? query.status}}" recipient_user_id="{{query.recipient_user_id}}" sender_user_id="{{query.sender_user_id}}" sort_by="{{query.sort_by || 'sent_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
@@ -42,11 +42,12 @@
     <wait-for>notificationChannels</wait-for>
     <wait-for>notificationLogs</wait-for>
   </transition-overlay>
-  <!-- 검색 실행 — 필터 조각이 공유한다. 확장 종류·상태는 화면에서 여러 개를 고를 수 있게 담아 두지만
-       **서버가 받는 것은 하나뿐**이라 첫 값만 보낸다(비었으면 조건에서 뺀다). 페이지는 1로 되돌린다. -->
+  <!-- 검색 실행 — 필터 조각이 공유한다. 확장 종류·상태는 고른 값 **전부**를 배열로 보낸다(`status[]=…`).
+       비었어도 빈 배열을 보낸다 — 빈 값(undefined)은 `status` 만 지우고 `status[]` 는 주소에 남기 때문이다.
+       같은 이유로 옛 단수 주소(`?status=failed`)도 이 배열이 덮어 지운다. 페이지는 1로 되돌린다. -->
   <action name="searchNotificationLogs">
     <navigate path="/admin/notification-logs" :mergeQuery="true" :replace="true" transition_overlay_target="notification_log_datagrid__body">
-      <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}" extension_type="{{_local.filter.extensionTypes?.length > 0 ? _local.filter.extensionTypes[0] : undefined}}" status="{{_local.filter.statuses?.length > 0 ? _local.filter.statuses[0] : undefined}}"/>
+      <query :page="1" search="{{_local.filter.search || undefined}}" search_type="{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}" extension_type="{{_local.filter.extensionTypes ?? []}}" status="{{_local.filter.statuses ?? []}}"/>
     </navigate>
   </action>
   <init>
@@ -55,8 +56,8 @@
         <field name="filter">
           <field name="searchType" value="{{query.search_type || 'all'}}"/>
           <field name="search" value="{{query.search || ''}}"/>
-          <field name="extensionTypes" value="{{query.extension_type ? [query.extension_type] : []}}"/>
-          <field name="statuses" value="{{query.status ? [query.status] : []}}"/>
+          <field name="extensionTypes" value="{{Array.isArray(query['extension_type[]']) ? query['extension_type[]'] : (query['extension_type[]'] ? [query['extension_type[]']] : (query.extension_type ? [query.extension_type] : []))}}"/>
+          <field name="statuses" value="{{Array.isArray(query['status[]']) ? query['status[]'] : (query['status[]'] ? [query['status[]']] : (query.status ? [query.status] : []))}}"/>
         </field>
       </field>
     </set-state>

@@ -5,11 +5,11 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 58개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 59개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 58개 |
+| `admin` | 59개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -69,6 +69,7 @@
 | `_tab_notification_definitions` | `admin` | partial | - |
 | `_tab_privacy_retention` | `admin` | partial | - |
 | `_tab_report_policy` | `admin` | partial | - |
+| `_tab_schedules` | `admin` | partial | - |
 | `_tab_seo` | `admin` | partial | - |
 | `_tab_spam_security` | `admin` | partial | - |
 <!-- @generated:layouts END -->

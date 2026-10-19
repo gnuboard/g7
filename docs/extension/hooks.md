@@ -315,6 +315,67 @@ public static function getSubscribedHooks(): array
 }
 ```
 
+### 예약 작업(스케줄) 실행 훅 (7.2.0)
+
+7.2.0 부터 예약 작업은 DB 에 저장된 스케줄을 실행기 한 곳(`ScheduleExecutor`)이 실행합니다. 매분 틱·관리자
+「즉시 실행」·큐로 보낸 실행 잡이 모두 이 실행기를 거치므로, 아래 실행 훅은 실행 계기와 관계없이 같은 자리에서
+발행됩니다. 소유 확장이 비활성이거나, 수동 실행인데 앞선 실행이 아직 끝나지 않아 **실행 전에 거부**되면 어떤 실행
+훅도 발행하지 않습니다. 예약 실행이 중복 방지 잠금으로 건너뛸 때도 마찬가지입니다.
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.schedule.before_run` | action | `(Schedule $schedule)` | 실행 직전 (인자 변경 없음) |
+| `core.schedule.after_run` | action | `(Schedule $schedule, ScheduleHistory $history)` | 실행이 끝나고 이력·스케줄 상태를 확정한 뒤 — **성공과 실패 모두**. 결과는 `$history->status` 로 구분한다 |
+| `core.schedule.run_failed` | action | `(Schedule $schedule, ?ScheduleHistory $history, \Throwable\|string $error)` | 실행이 실패했을 때 `after_run` 다음, 그리고 큐 워커가 실행 잡 도중 죽어(timeout·kill) 실행 중 이력을 실패로 마감할 때 |
+| `core.schedule.filter_allowed_job_classes` | filter | `(array $classes)` — 기본값 `config('schedule_security.job.allowed_classes')` | `job` 유형 스케줄의 저장 검증과 실행 직전 검증 |
+| `core.schedules.config` | filter | `(array $catalog)` — 스케줄 `name` ⇒ 선언 | 코어 예약 작업 카탈로그(`config('core.schedules')`)를 DB 와 동기화하기 직전 |
+| `seed.{확장 식별자}.schedules.translations` | filter | `(array $definitions)` — 정규화된 선언 목록 | 모듈·플러그인의 `getSchedules()` 선언을 새 형식으로 정규화한 뒤, DB 와 동기화하기 직전 |
+
+- **`after_run` 의 의미가 넓어졌습니다.** 7.2.0 이전에는 성공한 실행에서만 발행했습니다. 성공만 다뤄야 하는
+  구독자는 `$history->status` 를 확인하십시오. 실패를 따로 다루려면 `run_failed` 를 구독합니다.
+- 이력 방식이 「실패만 기록」인 스케줄이 성공하면 이력 행을 남기지 않지만, `after_run` 은 인자 모양을 지키기 위해
+  **저장되지 않은** `ScheduleHistory` 인스턴스를 넘깁니다(`$history->exists === false`, `id` 없음). 이력 ID 를
+  저장하거나 이력을 다시 조회하는 구독자는 `exists` 를 먼저 확인하십시오.
+- `run_failed` 는 수동·예약 실행을 가리지 않고 실패마다 발행합니다. 구독자는 `$error` 를 `\Throwable|string` 으로 받으십시오 — 코어 실행기는 실패 사유 **문자열**을 넘깁니다. 큐로
+  가는 리스너가 예외 객체를 직렬화하지 못하기 때문입니다. 워커가 죽어 마감하는 경로에서는 `after_run` 없이
+  `run_failed` 만 발행합니다. 코어 알림 정의 `schedule_failed` 가 이 훅을 구독하며, 스케줄의 「실패 시 알림」 설정·
+  수동 실행 제외·같은 스케줄 하루 1회 제한은 알림 쪽에서 판정합니다.
+- `filter_allowed_job_classes` 는 `job` 유형 스케줄이 실행할 수 있는 Job 클래스(FQCN, 앞 `\` 없이) 목록입니다.
+  확장은 자기 Job 을 **더하기만** 합니다. 저장 검증과 실행기가 같은 필터를 거치므로 두 곳의 목록이 어긋나지 않습니다.
+- `core.schedules.config` 는 코어 언어팩이 카탈로그의 `label`·`description` 에 자기 로케일 문구를 병합하는 데
+  씁니다. 반환한 카탈로그가 그대로 코어 스케줄로 동기화되므로, 항목을 더하거나 지우지 말고 기존 항목의 값만
+  보강하십시오. 확장이 자기 예약 작업을 등록하는 경로는 이 필터가 아니라 확장 자신의 스케줄 선언(`getSchedules()`)입니다.
+- `seed.{확장 식별자}.schedules.translations` 는 확장 언어팩이 자기 확장 스케줄의 `label`·`description` 에 로케일
+  문구를 병합하는 데 씁니다(매칭 키 `name`). 언어팩 병합 전용이므로 다른 확장이 구독해 선언을 바꾸지 않습니다.
+
+### 큐 관리 훅 (7.2.0)
+
+관리자 큐 관리 화면의 실패 작업 재시도·삭제와 처리 기록 정리(`queue:prune-records`)가 발행합니다.
+대상은 `failed_jobs.uuid` 문자열입니다. 결과 배열 원소는 `uuid` · `ok`(bool) · `message`(다국어 키)이며, 재시도
+결과에는 다시 넣은 `connection`·`queue` 가 더 붙을 수 있습니다. 한 건이 실패해도 나머지는 계속 처리하므로
+`after_*` 는 일부 실패가 섞인 결과로도 발행됩니다 — 성공 여부는 원소의 `ok` 로 판단합니다.
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.queue_job.before_retry` | action | `(string $uuid)` | 실패 작업 1건 재시도 전 |
+| `core.queue_job.after_retry` | action | `(string $uuid, array $result)` | 실패 작업 1건 재시도 후 |
+| `core.queue_job.before_retry_many` | action | `(array $uuids)` | 실패 작업 일괄 재시도 전 |
+| `core.queue_job.after_retry_many` | action | `(array $uuids, array $results)` — 건별 결과 목록 | 실패 작업 일괄 재시도 후 |
+| `core.queue_job.before_delete` | action | `(string $uuid)` | 실패 작업 1건 삭제 전 |
+| `core.queue_job.after_delete` | action | `(string $uuid, array $result)` | 실패 작업 1건 삭제 후 |
+| `core.queue_job.before_delete_many` | action | `(array $uuids)` | 실패 작업 일괄 삭제 전 |
+| `core.queue_job.after_delete_many` | action | `(array $uuids, array $results)` — 건별 결과 목록 | 실패 작업 일괄 삭제 후 |
+| `core.queue_job.before_prune` | action | `(int $days)` | 보관 기간이 지난 처리 기록·실패 작업 정리 전 |
+| `core.queue_job.after_prune` | action | `(int $days, array $result)` — `days` · `before`(기준 시각, ISO8601) · `logs`(지운 처리 기록 수) · `failed`(지운 실패 작업 수) | 정리 후 |
+| `core.queue_job.pending_list_validation_rules` | filter | `(array $rules, FormRequest $request)` | 대기 작업 목록 요청 검증 |
+| `core.queue_job.failed_list_validation_rules` | filter | `(array $rules, FormRequest $request)` | 실패 작업 목록 요청 검증 |
+| `core.queue_job.log_list_validation_rules` | filter | `(array $rules, FormRequest $request)` | 처리 기록 목록 요청 검증 |
+| `core.queue_job.bulk_retry_validation_rules` | filter | `(array $rules, FormRequest $request)` | 실패 작업 일괄 재시도 요청 검증 |
+| `core.queue_job.bulk_delete_validation_rules` | filter | `(array $rules, FormRequest $request)` | 실패 작업 일괄 삭제 요청 검증 |
+
+`core.queue_job.after_prune` 의 두 번째 인자는 다른 보존 기간 파기 훅(`(보존일, 삭제건수)`)과 달리 결과 배열입니다 —
+처리 기록과 실패 작업 두 대상을 한 번에 정리하기 때문입니다.
+
 ### 1. Action Hooks (액션 훅)
 
 **목적**: 특정 시점에 부가 작업 실행
@@ -405,6 +466,7 @@ core.storage.filter_url
 core.activity_log.before_prune          core.activity_log.after_prune
 core.notification_log.before_prune      core.notification_log.after_prune
 core.schedule.before_prune_history      core.schedule.after_prune_history
+core.queue_job.before_prune             core.queue_job.after_prune      # 7.2.0 — 두 번째 인자가 건수 대신 결과 배열 (아래 「큐 관리 훅」)
 
 # 개인정보 보유기간 파기 (7.1.0, privacy:process-retention) — 핸들러마다 자기 접두사로 발행한다.
 # 같은 (보존일) / (보존일, 처리건수) 인자 규약이다. --dry-run 에서는 발행하지 않는다 —

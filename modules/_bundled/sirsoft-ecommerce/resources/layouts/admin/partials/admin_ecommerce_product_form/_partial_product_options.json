@@ -555,6 +555,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "type": "radio",
+                                                                                "autoBinding": false,
                                                                                 "name": "default_option",
                                                                                 "className": "radio",
                                                                                 "checked": "{{opt.is_default === true}}",
@@ -1170,6 +1171,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "radio",
+                                                                "autoBinding": false,
                                                                 "name": "default_option_mobile",
                                                                 "className": "radio",
                                                                 "checked": "{{opt.is_default === true}}",
@@ -2133,6 +2135,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "radio",
+                                                                            "autoBinding": false,
                                                                             "name": "additional_options_{{addIdx}}_default",
                                                                             "checked": "{{addVal.is_default === true}}",
                                                                             "disabled": "{{_computed.isReadOnly}}"

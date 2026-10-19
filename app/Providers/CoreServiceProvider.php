@@ -31,6 +31,7 @@ use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
+use App\Contracts\Repositories\JobQueueRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
@@ -48,6 +49,7 @@ use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\PrivacyManualRunRepositoryInterface;
+use App\Contracts\Repositories\QueueJobLogRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
@@ -93,6 +95,7 @@ use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
 use App\Repositories\IdentityPolicyRepository;
 use App\Repositories\IdentityVerificationLogRepository;
+use App\Repositories\JobQueueRepository;
 use App\Repositories\JsonConfigRepository;
 use App\Repositories\LayoutExtensionRepository;
 use App\Repositories\LayoutExtensionVersionRepository;
@@ -111,6 +114,7 @@ use App\Repositories\PasswordResetTokenRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\PluginRepository;
 use App\Repositories\PrivacyManualRunRepository;
+use App\Repositories\QueueJobLogRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
@@ -129,6 +133,7 @@ use App\Services\AttachmentService;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Services\NotificationRecipientCapability;
+use App\Services\Schedule\ScheduleSecurityPolicy;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
@@ -285,6 +290,9 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(ScheduleHistoryRepositoryInterface::class, ScheduleHistoryRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, ScheduleRepository::class);
+        // 큐 운영(대기·실패·처리 기록) — #17
+        $this->app->bind(JobQueueRepositoryInterface::class, JobQueueRepository::class);
+        $this->app->bind(QueueJobLogRepositoryInterface::class, QueueJobLogRepository::class);
         $this->app->bind(SystemConfigRepositoryInterface::class, SystemConfigRepository::class);
         $this->app->bind(TemplateRepositoryInterface::class, TemplateRepository::class);
         $this->app->bind(TemplateCustomTranslationRepositoryInterface::class, TemplateCustomTranslationRepository::class);
@@ -339,6 +347,9 @@ class CoreServiceProvider extends ServiceProvider
 
         // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
         $this->app->singleton(ConsentManager::class);
+
+        // 스케줄 보안 유효 정책 해석기 — 저장 검증·실행기·조회 API 가 같은 인스턴스(파일 해석 메모)를 쓴다 (#17)
+        $this->app->singleton(ScheduleSecurityPolicy::class);
 
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);

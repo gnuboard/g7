@@ -1,14 +1,31 @@
-<!-- 예약 작업을 새로 만들거나 고치는 창. **한 창이 두 몫을 한다** — 목록이 「수정 중인가」를 먼저
+<!-- 예약 작업을 새로 만들거나 고치는 창(「스케줄 등록」/「스케줄 수정」). **한 창이 두 몫을 한다** — 목록이 「수정 중인가」를 먼저
   정해 주면 제목·보낼 곳·방식이 그 값 하나로 갈린다.
-  각 칸의 처음 값은 고른 작업에서 가져오고(새로 만들 때는 비어 있어 뒤의 기본값이 쓰인다),
-  주기를 「직접 지정」으로 골랐을 때만 식을 적는 칸이 나타난다. -->
-<partial description="스케줄 생성/수정 폼 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_form_modal">
-  <modal data-type="composite" data-ref="schedule_form_modal" title="{{_global.isEditMode ? '$t:admin.schedules.modals.edit_title' : '$t:admin.schedules.modals.create_title'}}" size="large">
-    <form id="schedule_form_modal" class="row-stack">
+
+  - 칸 순서는 작업명 / 설명 / 작업 유형 + 식별자 / 명령 / 실행 주기 + 제한 시간 / (사용자 정의면) Cron 표현식 / 실행 방식 + 실행 이력 /
+    (큐로 보내기면) 큐 연결 + 큐 / 켜고 끄는 설정이다 — 빈 칸이 생기지 않게 조건부 칸은 자기 줄을 갖는다.
+  - 작업명·설명은 다국어 입력(언어 탭)이다. 직접 등록은 작업명이 필수다. 식별자는 비우면 서버가 작업명으로 채운다 —
+    작업명이 비어 있으면 서버는 작업명 오류만 낸다(식별자 필수 오류는 내지 않는다).
+  - 명령은 전체 폭 여러 줄 칸이다. 줄바꿈·앞뒤 공백은 서버가 저장 전에 공백 하나로 접는다 — 긴 옵션을 나눠 적어도 한 줄로 저장된다.
+    자리 표시는 일반 글꼴, 입력값은 고정폭 글꼴이다. 안내와 자리 표시는 작업 유형마다 다르다.
+  - 서버가 Shell 실행을 꺼 두면(`schedule_status.data.shell_enabled === false`) Shell 유형을 고를 수 없고 그 이유를 유형 칸 아래에 적는다.
+    값을 아직 모르면(응답에 키가 없음) 막지 않는다 — 서버 검증이 마지막 관문이다.
+  - 코어·확장이 등록한 작업은 이름·유형·명령이 잠긴다(`locked_fields`) — 잠긴 칸은 필수 표시(*)를 숨기고 「바꿀 수 없음」 안내를 단다.
+    바꿀 수 있는 것은 주기·실행 방식 같은 운영 값뿐이고, 바꾼 값은 확장을 업데이트해도 보존된다(「운영자 수정됨」 배지).
+    실행 조건·시간대는 선언이 정하는 값이라 읽기 전용 배지로만 보인다.
+  - 중복 실행 방지는 켜고 끄는 스위치 + 잠금 유지 시간(분, 1 ~ 10080, 켜면 기본 1440)이다.
+  선택 상자·스위치 값은 폼 밖 전역(`scheduleForm`)에 담는다 — 커스텀 선택 상자·스위치는 폼 값에 실리지 않거나 "on" 으로 실린다.
+  글자 입력칸(식별자·명령·식·제한 시간)은 폼 값에서 읽는다. 잠긴 칸은 비활성이라 폼 값에서 빠지고, 서버는 보내지 않은 칸을 그대로 둔다.
+  브라우저 검증은 끈다(`noValidate`) — 언어 탭이 숨긴 기본 언어 칸의 필수 표시를 브라우저가 잡으면 「포커스할 수 없음」으로
+  제출이 조용히 멈춘다. 필수·범위 검증은 서버 422 가 맡고, 오류는 맨 위 요약 상자(숨은 언어 탭의 오류까지)와 각 칸 아래에 보인다. -->
+<partial description="스케줄 등록/수정 폼 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_form_modal">
+  <modal data-type="composite" data-ref="schedule_form_modal" title="{{_global.isEditMode ? '$t:admin.schedules.modals.edit_title' : '$t:admin.schedules.modals.create_title'}}" size="lg" :closeOnOverlayClick="false">
+    <form id="schedule_form_modal" :noValidate="true" class="row-stack">
       <on type="submit">
-        <!-- 만들기와 고치기가 같은 자리에서 갈린다 — 보낼 곳도 방식도 「수정 중인가」 하나로 정하고, 성공 문구까지 같은 값으로 고른다. 실패하면 창을 닫지 않아 적어 둔 내용이 남는다. -->
+        <!-- 만들기와 고치기가 같은 자리에서 갈린다 — 보낼 곳도 방식도 「수정 중인가」 하나로 정하고, 성공 문구까지 같은 값으로 고른다.
+             실패하면 창을 닫지 않고 오류를 남긴다(적어 둔 내용이 그대로 남는다). 칸 오류가 있으면 요약 상자가 알리므로 토스트는
+             칸 오류가 없는 실패(권한·서버 오류)에만 띄운다. -->
         <sequence>
-          <set-state target="global" :isSubmitting="true"/>
+          <set-state target="global" :isSubmitting="true" :scheduleFormErrors="null" scheduleFormErrorMessage=""/>
           <api-call :auth_required="true" target="{{_global.isEditMode ? '/api/admin/schedules/' + _global.selectedSchedule.id : '/api/admin/schedules'}}" method="{{_global.isEditMode ? 'PUT' : 'POST'}}">
             <success>
               <set-state target="global" :isSubmitting="false"/>
@@ -17,59 +34,100 @@
               <close-modal target="schedule_form_modal"/>
             </success>
             <fail>
-              <set-state target="global" :isSubmitting="false"/>
-              <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.save_failed'}}"/>
+              <set-state target="global" :isSubmitting="false" scheduleFormErrors="{{error.errors ?? null}}" scheduleFormErrorMessage="{{error.message ?? ''}}"/>
+              <toast if="{{!error.errors}}" type="error" message="{{error.message ?? '$t:admin.schedules.errors.save_failed'}}"/>
             </fail>
-            <body name="{{form.name}}" description="{{form.description}}" type="{{_global.scheduleForm?.type ?? 'artisan'}}" command="{{form.command}}" frequency="{{_global.scheduleForm?.frequency ?? 'daily'}}" expression="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ((_global.scheduleForm?.frequency ?? 'daily') === 'everyMinute' ? '* * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'hourly' ? '0 * * * *' : ((_global.scheduleForm?.frequency ?? 'daily') === 'weekly' ? '0 0 * * 0' : ((_global.scheduleForm?.frequency ?? 'daily') === 'monthly' ? '0 0 1 * *' : '0 0 * * *'))))}}" timeout="{{form.timeout}}" without_overlapping="{{_global.scheduleForm?.without_overlapping ?? true}}" run_in_maintenance="{{_global.scheduleForm?.run_in_maintenance ?? false}}" is_active="{{_global.scheduleForm?.is_active ?? true}}"/>
+            <body name="{{form.name}}" label="{{_global.scheduleForm?.label ?? {} }}" description="{{_global.scheduleForm?.description ?? {} }}" type="{{_global.scheduleForm?.type ?? 'artisan'}}" command="{{form.command}}" frequency="{{_global.scheduleForm?.frequency ?? 'daily'}}" expression="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ({everyThirtySeconds: '* * * * *', everyMinute: '* * * * *', hourly: '0 * * * *', daily: '0 0 * * *', weekly: '0 0 * * 0', monthly: '0 0 1 * *'})[_global.scheduleForm?.frequency ?? 'daily'] ?? '0 0 * * *'}}" timeout="{{form.timeout}}" without_overlapping="{{_global.scheduleForm?.overlapEnabled ? +(_global.scheduleForm?.without_overlapping ?? 1440) : 0}}" on_one_server="{{_global.scheduleForm?.on_one_server ?? false}}" dispatch_mode="{{_global.scheduleForm?.dispatch_mode ?? 'sync'}}" queue_connection="{{(_global.scheduleForm?.dispatch_mode === 'queue' &amp;&amp; _global.scheduleForm?.queue_connection) || null}}" queue_name="{{(_global.scheduleForm?.dispatch_mode === 'queue' &amp;&amp; _global.scheduleForm?.queue_name) || null}}" history_mode="{{_global.scheduleForm?.history_mode ?? 'all'}}" notify_on_failure="{{_global.scheduleForm?.notify_on_failure ?? true}}" run_in_maintenance="{{_global.scheduleForm?.run_in_maintenance ?? false}}" is_active="{{_global.scheduleForm?.is_active ?? true}}"/>
           </api-call>
         </sequence>
       </on>
-      <div class="grid-2col-responsive">
-        <div>
-          <label class="form-label">
-            <span>$t:admin.schedules.form.name</span>
-            <span class="text-red-500 ml-1">*</span>
-          </label>
-          <input type="text" name="name" defaultValue="{{_global.selectedSchedule?.name ?? ''}}" placeholder="$t:admin.schedules.form.name_placeholder" class="input"/>
+      <div data-ref="schedule_form_error_summary" data-if="{{!!_global.scheduleFormErrors &amp;&amp; Object.keys(_global.scheduleFormErrors).length &gt; 0}}" class="alert-danger">
+        <div class="flex gap-2">
+          <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div class="flex-1">
+            <p class="text-error-strong">{{_global.scheduleFormErrorMessage || '$t:common.validation_error'}}</p>
+            <ul data-each="msg in Object.values(_global.scheduleFormErrors ?? {}).flatMap(m => Array.isArray(m) ? m : [m])" class="mt-1 list-disc list-inside space-y-0.5">
+              <li class="text-danger-soft">{{msg}}</li>
+            </ul>
+          </div>
         </div>
-        <div>
+      </div>
+      <div data-ref="schedule_form_owner_badges" data-if="{{_global.isEditMode}}" class="flex-center flex-wrap gap-2">
+        <badge data-type="composite" data-if="{{_global.selectedSchedule?.is_owned}}" color="gray" size="md" icon="lock" text="$t:admin.schedules.form.owned_badge|owner={{_global.selectedSchedule?.owner?.name ?? ''}}"/>
+        <badge data-type="composite" data-if="{{(_global.selectedSchedule?.overridden_fields ?? []).length &gt; 0}}" color="yellow" size="md" text="$t:admin.schedules.form.overridden_badge"/>
+        <badge data-type="composite" data-if="{{!!_global.selectedSchedule?.timezone}}" color="gray" size="md" text="$t:admin.schedules.form.timezone_badge|timezone={{_global.selectedSchedule?.timezone ?? ''}}"/>
+      </div>
+      <div data-ref="schedule_form_conditions" data-if="{{(_global.selectedSchedule?.enabled_condition ?? []).length &gt; 0}}" class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <span class="text-heading">$t:admin.schedules.form.conditions</span>
+        <p class="text-label-subtle">$t:admin.schedules.form.conditions_help</p>
+        <div class="flex-center flex-wrap gap-1 mt-2">
+          <badge data-type="composite" data-each="cond in (_global.selectedSchedule?.enabled_condition ?? [])" color="{{(_global.selectedSchedule?.unmet_conditions ?? []).some(u => u.key === cond.key &amp;&amp; u.source === cond.source) ? 'yellow' : 'green'}}" size="md" text="{{cond.key}}" class="font-mono"/>
+        </div>
+      </div>
+      <div data-ref="schedule_form_label_field">
+        <label class="form-label">
+          <span>$t:admin.schedules.form.label</span>
+          <span data-if="{{!_global.selectedSchedule?.is_owned}}" class="text-red-500 ml-1">*</span>
+        </label>
+        <multilingual-input data-type="composite" data-ref="schedule_label_input" name="label" value="{{_global.scheduleForm?.label ?? {} }}" layout="tabs" placeholder="$t:admin.schedules.form.label_placeholder" :maxLength="255" required="{{!_global.selectedSchedule?.is_owned}}" error="{{(_global.scheduleFormErrors?.label ?? Object.entries(_global.scheduleFormErrors ?? {}).find(([k]) => k.startsWith('label.'))?.[1])?.[0] ?? ''}}">
+          <on type="change">
+            <!-- 작업명(다국어). 언어 탭마다 값이 쌓인다 — 객체 통째로 전역에 담는다. 화면 표시는 지금 언어 → 기본 언어 → 식별자 순이다. -->
+            <set-state target="global" scheduleForm.label="{{$event.target.value}}"/>
+          </on>
+        </multilingual-input>
+      </div>
+      <div data-ref="schedule_form_description_field">
+        <label class="form-label">$t:admin.schedules.form.description</label>
+        <multilingual-input data-type="composite" data-ref="schedule_description_input" name="description" value="{{_global.scheduleForm?.description ?? {} }}" layout="tabs" placeholder="$t:admin.schedules.form.description_placeholder" :maxLength="1000" inputType="textarea" :rows="2" error="{{(_global.scheduleFormErrors?.description ?? Object.entries(_global.scheduleFormErrors ?? {}).find(([k]) => k.startsWith('description.'))?.[1])?.[0] ?? ''}}">
+          <on type="change">
+            <!-- 설명(다국어). 작업명과 같이 객체 통째로 담는다. -->
+            <set-state target="global" scheduleForm.description="{{$event.target.value}}"/>
+          </on>
+        </multilingual-input>
+      </div>
+      <div class="grid-2col-responsive">
+        <div data-ref="schedule_form_type_field">
           <label class="form-label">
             <span>$t:admin.schedules.form.type</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('type')}}" class="text-red-500 ml-1">*</span>
           </label>
-          <select name="type" class="w-full" value="{{_global.scheduleForm?.type ?? 'artisan'}}">
-            <options>
-              <option value="artisan">$t:admin.schedules.type.artisan</option>
-              <option value="shell">$t:admin.schedules.type.shell</option>
-              <option value="url">$t:admin.schedules.type.url</option>
-            </options>
+          <select name="type" class="{{_global.scheduleFormErrors?.type ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.type ?? 'artisan'}}" disabled="{{(_global.selectedSchedule?.locked_fields ?? []).includes('type')}}" options="{{[{value: 'artisan', label: $t('admin.schedules.type.artisan')}, {value: 'shell', label: $t('admin.schedules.type.shell'), disabled: schedule_status?.data?.shell_enabled === false}, {value: 'url', label: $t('admin.schedules.type.url')}, {value: 'job', label: $t('admin.schedules.type.job')}]}}">
             <on type="change">
-              <!-- 스케줄 종류. 종류에 따라 아래 입력칸 구성이 달라지므로 값이 바뀌면 폼 전체가 다시 그려진다. 전역에 담는 것은 이 창이 목록과 별도 컨텍스트여서다 -->
+              <!-- 작업 유형. 유형에 따라 명령 칸의 뜻(명령·URL·Job 클래스)과 안내·자리 표시가 달라진다. 전역에 담는 것은 이 창이 목록과 별도 컨텍스트여서다 -->
               <set-state target="global" scheduleForm.type="{{$event.target.value}}"/>
             </on>
           </select>
+          <span data-if="{{_global.scheduleFormErrors?.type}}" class="form-error">{{_global.scheduleFormErrors?.type?.[0] ?? ''}}</span>
+          <p data-ref="schedule_form_shell_disabled" data-if="{{schedule_status?.data?.shell_enabled === false}}" class="form-hint">$t:admin.schedules.form.shell_disabled</p>
+          <p data-if="{{(_global.selectedSchedule?.locked_fields ?? []).includes('type')}}" class="form-hint">$t:admin.schedules.form.locked_hint</p>
+        </div>
+        <div data-ref="schedule_form_name_field">
+          <label class="form-label">$t:admin.schedules.form.name</label>
+          <input type="text" name="name" defaultValue="{{_global.selectedSchedule?.name ?? ''}}" placeholder="$t:admin.schedules.form.name_placeholder" class="{{_global.scheduleFormErrors?.name ? 'input font-mono placeholder:font-sans input-error' : 'input font-mono placeholder:font-sans'}}" disabled="{{(_global.selectedSchedule?.locked_fields ?? []).includes('name')}}"/>
+          <span data-if="{{_global.scheduleFormErrors?.name}}" class="form-error">{{_global.scheduleFormErrors?.name?.[0] ?? ''}}</span>
+          <p data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('name')}}" class="form-hint">$t:admin.schedules.form.name_help</p>
+          <p data-if="{{(_global.selectedSchedule?.locked_fields ?? []).includes('name')}}" class="form-hint">$t:admin.schedules.form.locked_hint</p>
         </div>
       </div>
-      <div>
-        <label class="form-label">$t:admin.schedules.form.description</label>
-        <textarea name="description" :rows="2" defaultValue="{{_global.selectedSchedule?.description ?? ''}}" placeholder="$t:admin.schedules.form.description_placeholder" class="input textarea-sm resize-none"/>
-      </div>
-      <div>
+      <div data-ref="schedule_form_command_field">
         <label class="form-label">
           <span>$t:admin.schedules.form.command</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="text-red-500 ml-1">*</span>
         </label>
-        <input type="text" name="command" defaultValue="{{_global.selectedSchedule?.command ?? ''}}" placeholder="$t:admin.schedules.form.command_placeholder" class="input font-mono"/>
-        <p class="form-hint">$t:admin.schedules.form.command_help</p>
+        <textarea name="command" :rows="3" defaultValue="{{_global.selectedSchedule?.command ?? ''}}" placeholder="{{$t('admin.schedules.form.command_placeholder.' + (_global.scheduleForm?.type ?? 'artisan'))}}" class="{{_global.scheduleFormErrors?.command ? 'textarea w-full font-mono placeholder:font-sans input-error' : 'textarea w-full font-mono placeholder:font-sans'}}" disabled="{{(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}"/>
+        <span data-if="{{_global.scheduleFormErrors?.command}}" class="form-error">{{_global.scheduleFormErrors?.command?.[0] ?? ''}}</span>
+        <p data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="form-hint">{{$t('admin.schedules.form.command_help.' + (_global.scheduleForm?.type ?? 'artisan')) + ' ' + $t('admin.schedules.form.command_multiline_hint')}}</p>
+        <p data-if="{{(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="form-hint">$t:admin.schedules.form.locked_hint</p>
       </div>
       <div class="grid-2col-responsive">
-        <div>
+        <div data-ref="schedule_form_frequency_field">
           <label class="form-label">
             <span>$t:admin.schedules.form.frequency</span>
             <span class="text-red-500 ml-1">*</span>
           </label>
-          <select name="frequency" class="w-full" value="{{_global.scheduleForm?.frequency ?? 'daily'}}">
+          <select name="frequency" class="{{_global.scheduleFormErrors?.frequency ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.frequency ?? 'daily'}}">
             <options>
+              <option value="everyThirtySeconds">$t:admin.schedules.frequency.everyThirtySeconds</option>
               <option value="everyMinute">$t:admin.schedules.frequency.everyMinute</option>
               <option value="hourly">$t:admin.schedules.frequency.hourly</option>
               <option value="daily">$t:admin.schedules.frequency.daily</option>
@@ -78,60 +136,157 @@
               <option value="custom">$t:admin.schedules.frequency.custom</option>
             </options>
             <on type="change">
-              <!-- 주기 선택을 폼 밖 전역에도 옮겨 둔다 — 옆의 식 입력칸이 이 값으로 나타나고 사라지는데, 그 판정은 폼 값이 아니라 이 자리를 본다(값이 없으면 고른 작업의 주기로 되돌아간다). -->
+              <!-- 주기 선택을 폼 밖 전역에도 옮겨 둔다 — 아래 식 입력칸이 이 값으로 나타나고 사라지는데, 그 판정은 폼 값이 아니라 이 자리를 본다.
+                   30초마다는 cron 식으로 나타낼 수 없어 등록기가 따로 처리한다(식은 매분으로 채워 보낸다). -->
               <set-state target="global" scheduleForm.frequency="{{$event.target.value}}"/>
             </on>
           </select>
+          <span data-if="{{_global.scheduleFormErrors?.frequency}}" class="form-error">{{_global.scheduleFormErrors?.frequency?.[0] ?? ''}}</span>
         </div>
-        <div data-if="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom'}}">
-          <label class="form-label">
-            <span>$t:admin.schedules.form.expression</span>
-            <span class="text-red-500 ml-1">*</span>
-          </label>
-          <input type="text" name="expression" defaultValue="{{_global.selectedSchedule?.expression ?? '* * * * *'}}" placeholder="* * * * *" class="input font-mono"/>
-          <p class="form-hint">$t:admin.schedules.form.expression_help</p>
-        </div>
-      </div>
-      <div class="grid-2col-responsive">
-        <div>
+        <div data-ref="schedule_form_timeout_field">
           <label class="form-label">$t:admin.schedules.form.timeout</label>
-          <input type="number" name="timeout" defaultValue="{{_global.selectedSchedule?.timeout ?? 60}}" :min="1" :max="86400" class="input"/>
+          <div class="flex-center gap-2">
+            <input type="number" name="timeout" defaultValue="{{_global.selectedSchedule?.timeout ?? 60}}" :min="1" :max="86400" class="{{_global.scheduleFormErrors?.timeout ? 'input input-w-md input-error' : 'input input-w-md'}}"/>
+            <span class="text-sm text-gray-700 dark:text-gray-300">$t:admin.schedules.form.seconds_suffix</span>
+          </div>
+          <span data-if="{{_global.scheduleFormErrors?.timeout}}" class="form-error">{{_global.scheduleFormErrors?.timeout?.[0] ?? ''}}</span>
           <p class="form-hint">$t:admin.schedules.form.timeout_help</p>
         </div>
       </div>
-      <div class="row-stack">
-        <div class="flex-between">
-          <div>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.without_overlapping</span>
-            <p class="text-tertiary">$t:admin.schedules.form.without_overlapping_help</p>
-          </div>
-          <toggle data-type="composite" name="without_overlapping" checked="{{_global.scheduleForm?.without_overlapping ?? true}}" size="sm">
+      <div data-ref="schedule_form_expression_field" data-if="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom'}}">
+        <label class="form-label">
+          <span>$t:admin.schedules.form.expression</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="text" name="expression" defaultValue="{{_global.selectedSchedule?.expression ?? '* * * * *'}}" placeholder="* * * * *" class="{{_global.scheduleFormErrors?.expression ? 'input font-mono input-w-lg input-error' : 'input font-mono input-w-lg'}}"/>
+        <span data-if="{{_global.scheduleFormErrors?.expression}}" class="form-error">{{_global.scheduleFormErrors?.expression?.[0] ?? ''}}</span>
+        <p class="form-hint">$t:admin.schedules.form.expression_help</p>
+      </div>
+      <div class="grid-2col-responsive">
+        <div data-ref="schedule_form_dispatch_mode_field">
+          <label class="form-label">$t:admin.schedules.form.dispatch_mode</label>
+          <select name="dispatch_mode" class="{{_global.scheduleFormErrors?.dispatch_mode ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.dispatch_mode ?? 'sync'}}">
+            <options>
+              <option value="sync">$t:admin.schedules.dispatch_mode.sync</option>
+              <option value="queue">$t:admin.schedules.dispatch_mode.queue</option>
+            </options>
             <on type="change">
-              <!-- 겹침 방지. 앞 실행이 끝나지 않았으면 이번 회차를 건너뛴다 -->
-              <set-state target="global" scheduleForm.without_overlapping="{{$event.target.checked}}"/>
+              <!-- 실행 방식. 바로 실행은 스케줄러 안에서 돌고(워커 없이도 동작), 큐로 보내기는 워커가 처리한다 — 오래 걸리는 작업을 스케줄러에서 떼어 낼 때 쓴다. -->
+              <set-state target="global" scheduleForm.dispatch_mode="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <span data-if="{{_global.scheduleFormErrors?.dispatch_mode}}" class="form-error">{{_global.scheduleFormErrors?.dispatch_mode?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:admin.schedules.form.dispatch_mode_help</p>
+        </div>
+        <div data-ref="schedule_form_history_mode_field">
+          <label class="form-label">$t:admin.schedules.form.history_mode</label>
+          <select name="history_mode" class="{{_global.scheduleFormErrors?.history_mode ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.history_mode ?? 'all'}}">
+            <options>
+              <option value="all">$t:admin.schedules.history_mode.all</option>
+              <option value="failures_only">$t:admin.schedules.history_mode.failures_only</option>
+            </options>
+            <on type="change">
+              <!-- 실행 이력을 남길 범위. 「실패만 기록」 은 30초 주기처럼 자주 도는 작업이 이력을 쌓지 않게 한다. -->
+              <set-state target="global" scheduleForm.history_mode="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <span data-if="{{_global.scheduleFormErrors?.history_mode}}" class="form-error">{{_global.scheduleFormErrors?.history_mode?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:admin.schedules.form.history_mode_help</p>
+        </div>
+      </div>
+      <div data-ref="schedule_form_queue_fields" data-if="{{_global.scheduleForm?.dispatch_mode === 'queue'}}" class="grid-2col-responsive">
+        <div>
+          <label class="form-label">$t:admin.schedules.form.queue_connection</label>
+          <select name="queue_connection" class="{{_global.scheduleFormErrors?.queue_connection ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.queue_connection ?? ''}}" options="{{[{ value: '', label: '$t:admin.schedules.form.queue_default' }, ...((queue_status?.data?.connections ?? []).map(c => ({ value: c, label: c })))]}}">
+            <on type="change">
+              <!-- 큐 연결. 선택지는 워커 등록 목록이다 — 등록되지 않은 연결로 보내면 아무도 처리하지 않아 서버가 기본값으로 돌린다. 연결이 바뀌면 큐 선택을 비운다. -->
+              <set-state target="global" scheduleForm.queue_connection="{{$event.target.value}}" scheduleForm.queue_name=""/>
+            </on>
+          </select>
+          <span data-if="{{_global.scheduleFormErrors?.queue_connection}}" class="form-error">{{_global.scheduleFormErrors?.queue_connection?.[0] ?? ''}}</span>
+        </div>
+        <div>
+          <label class="form-label">$t:admin.schedules.form.queue_name</label>
+          <select name="queue_name" class="{{_global.scheduleFormErrors?.queue_name ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.queue_name ?? ''}}" options="{{[{ value: '', label: '$t:admin.schedules.form.queue_default' }, ...((queue_status?.data?.entries ?? []).filter(e => !_global.scheduleForm?.queue_connection || e.connection === _global.scheduleForm?.queue_connection).map(e => ({ value: e.queue, label: e.queue })))]}}">
+            <on type="change">
+              <!-- 큐 이름 — 고른 연결에 등록된 큐만 나온다. -->
+              <set-state target="global" scheduleForm.queue_name="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <span data-if="{{_global.scheduleFormErrors?.queue_name}}" class="form-error">{{_global.scheduleFormErrors?.queue_name?.[0] ?? ''}}</span>
+        </div>
+      </div>
+      <div data-ref="schedule_form_toggles" class="row-stack">
+        <div class="flex-between gap-4">
+          <div>
+            <span class="text-heading">$t:admin.schedules.form.without_overlapping</span>
+            <p class="text-label-subtle">$t:admin.schedules.form.without_overlapping_help</p>
+          </div>
+          <toggle data-type="composite" name="overlapEnabled" checked="{{_global.scheduleForm?.overlapEnabled ?? false}}" size="md" ariaLabel="$t:admin.schedules.form.without_overlapping">
+            <on type="change">
+              <!-- 중복 실행 방지 켜고 끄기. 켜면 아래에 잠금 유지 시간이 나온다(기본 1440분 = 하루). 끄면 0분으로 보낸다. -->
+              <set-state target="global" scheduleForm.overlapEnabled="{{$event.target.checked}}"/>
             </on>
           </toggle>
         </div>
-        <div class="flex-between">
-          <div>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.run_in_maintenance</span>
-            <p class="text-tertiary">$t:admin.schedules.form.run_in_maintenance_help</p>
+        <div data-if="{{_global.scheduleForm?.overlapEnabled}}" data-ref="overlap_minutes_field">
+          <label class="form-label">$t:admin.schedules.form.overlap_minutes</label>
+          <div class="flex-center gap-2">
+            <input type="number" name="without_overlapping" value="{{_global.scheduleForm?.without_overlapping ?? 1440}}" :min="1" :max="10080" class="{{_global.scheduleFormErrors?.without_overlapping ? 'input input-w-md input-error' : 'input input-w-md'}}">
+              <on type="change">
+                <!-- 잠금 유지 시간(분) — 앞 회차가 이 시간 안에 끝나지 않으면 잠금이 풀려 다음 회차가 돈다. 최대 7일(10080분). -->
+                <set-state target="global" scheduleForm.without_overlapping="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span class="text-sm text-gray-700 dark:text-gray-300">$t:admin.schedules.form.minutes_suffix</span>
           </div>
-          <toggle data-type="composite" name="run_in_maintenance" checked="{{_global.scheduleForm?.run_in_maintenance ?? false}}" size="sm">
+          <span data-if="{{_global.scheduleFormErrors?.without_overlapping}}" class="form-error">{{_global.scheduleFormErrors?.without_overlapping?.[0] ?? ''}}</span>
+          <p class="form-hint">$t:admin.schedules.form.overlap_minutes_help</p>
+        </div>
+        <div class="flex-between gap-4">
+          <div>
+            <span class="text-heading">$t:admin.schedules.form.on_one_server</span>
+            <p class="text-label-subtle">$t:admin.schedules.form.on_one_server_help</p>
+          </div>
+          <toggle data-type="composite" name="on_one_server" checked="{{_global.scheduleForm?.on_one_server ?? false}}" size="md" ariaLabel="$t:admin.schedules.form.on_one_server">
+            <on type="change">
+              <!-- 여러 서버가 같은 스케줄러를 돌릴 때 한 대만 실행한다(공유 캐시가 있어야 지켜진다). -->
+              <set-state target="global" scheduleForm.on_one_server="{{$event.target.checked}}"/>
+            </on>
+          </toggle>
+        </div>
+        <div class="flex-between gap-4">
+          <div>
+            <span class="text-heading">$t:admin.schedules.form.notify_on_failure</span>
+            <p class="text-label-subtle">$t:admin.schedules.form.notify_on_failure_help</p>
+          </div>
+          <toggle data-type="composite" name="notify_on_failure" checked="{{_global.scheduleForm?.notify_on_failure ?? true}}" size="md" ariaLabel="$t:admin.schedules.form.notify_on_failure">
+            <on type="change">
+              <!-- 예약 실행이 실패하면 관리자에게 알린다(같은 작업은 하루 한 번). 즉시 실행의 실패는 알리지 않는다 — 실행 창에서 결과를 바로 본다. -->
+              <set-state target="global" scheduleForm.notify_on_failure="{{$event.target.checked}}"/>
+            </on>
+          </toggle>
+        </div>
+        <div class="flex-between gap-4">
+          <div>
+            <span class="text-heading">$t:admin.schedules.form.run_in_maintenance</span>
+            <p class="text-label-subtle">$t:admin.schedules.form.run_in_maintenance_help</p>
+          </div>
+          <toggle data-type="composite" name="run_in_maintenance" checked="{{_global.scheduleForm?.run_in_maintenance ?? false}}" size="md" ariaLabel="$t:admin.schedules.form.run_in_maintenance">
             <on type="change">
               <!-- 점검 모드에서도 실행. 꺼 두면 사이트를 점검 모드로 돌린 동안 이 작업은 쉰다 -->
               <set-state target="global" scheduleForm.run_in_maintenance="{{$event.target.checked}}"/>
             </on>
           </toggle>
         </div>
-        <div class="flex-between">
+        <div class="flex-between gap-4">
           <div>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.schedules.form.is_active</span>
-            <p class="text-tertiary">$t:admin.schedules.form.is_active_help</p>
+            <span class="text-heading">$t:admin.schedules.form.is_active</span>
+            <p class="text-label-subtle">$t:admin.schedules.form.is_active_help</p>
           </div>
-          <toggle data-type="composite" name="is_active" checked="{{_global.scheduleForm?.is_active ?? true}}" size="sm">
+          <toggle data-type="composite" name="is_active" checked="{{_global.scheduleForm?.is_active ?? true}}" size="md" ariaLabel="$t:admin.schedules.form.is_active">
             <on type="change">
-              <!-- 사용 여부. 정의는 남기고 실행만 멈추고 싶을 때 쓴다 -->
+              <!-- 활성/비활성. 정의는 남기고 실행만 멈추고 싶을 때 쓴다 — 코어·확장 작업은 지울 수 없어 이것으로 끈다 -->
               <set-state target="global" scheduleForm.is_active="{{$event.target.checked}}"/>
             </on>
           </toggle>
@@ -145,7 +300,7 @@
         </on>
         $t:common.cancel
       </button>
-      <button type="submit" form="schedule_form_modal" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSubmitting}}">
+      <button type="submit" form="schedule_form_modal" class="btn btn-primary flex-center gap-2" disabled="{{_global.isSubmitting}}">
         <icon data-if="{{_global.isSubmitting}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isSubmitting ? '$t:common.saving' : '$t:common.save'}}</span>
       </button>

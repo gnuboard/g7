@@ -41,16 +41,27 @@ test('settings tabs, masked key, channel editor and history survive navigation',
  * @scenario flow=validation
  * @effects admin_ui_contract
  */
-test('invalid update time returns 422 and valid correction saves through the UI',async({page})=>{
-  // Validate with the real endpoint; save a valid original value to leave settings unchanged.
+test('update time is managed by the schedule screen and invalid input still returns 422',async({page})=>{
+  // 갱신 시각은 코어 스케줄 행(plugin/sirsoft-koreaexim/update-rates)이 원천이다 — 설정 폼에는 입력 칸이 없고
+  // 다음 실행 시각과 스케줄 관리 링크(소유 필터 쿼리)만 있다(D10).
   await page.goto(path);
-  const field=page.locator('#koreaexim_update_time');
-  await expect(field).toHaveValue(/^\d{2}:\d{2}$/);
+  await expect(page.locator('#koreaexim_update_time')).toHaveCount(0);
+  const status=await page.evaluate(async()=>(await (await fetch('/api/plugins/sirsoft-koreaexim/admin/status',{headers:{Accept:'application/json'}})).json())?.data ?? null);
+  console.log(`status_next_run_at=${status?.next_run_at}, schedule=${JSON.stringify(status?.schedule ?? null)}`);
+  await expect(page.locator('#koreaexim_schedule_next_run')).toContainText(status?.next_run_at ?? '-');
+  const link=page.locator('#koreaexim_schedule_link');
+  await expect(link).toHaveAttribute('href','/admin/schedules?extension_type=plugin&extension_identifier=sirsoft-koreaexim');
+  // 범위 밖 값은 서버가 422 로 막고, 원래 값으로 고치면 저장된다.
+  const field=page.locator('#koreaexim_retry_max');
+  await expect(field).toHaveValue(/^\d+$/);
   const original=await field.inputValue();
-  await field.fill('25:99');
+  await field.fill('99');
   const invalid=page.waitForResponse(r=>r.url().includes('/api/admin/plugins/sirsoft-koreaexim/settings')&&r.request().method()==='PUT');
   await page.getByRole('button',{name:'저장',exact:true}).click();
-  expect((await invalid).status()).toBe(422);
+  const invalidResponse=await invalid;
+  expect(invalidResponse.status()).toBe(422);
+  // 저장 본문에 없어진 갱신 시각 키가 실리지 않는다.
+  expect(Object.keys(invalidResponse.request().postDataJSON() ?? {})).not.toContain('update_time');
   await expect(page.locator('.form-error').filter({hasText:/./}).first()).toBeVisible();
   await field.fill(original);
   const valid=page.waitForResponse(r=>r.url().includes('/api/admin/plugins/sirsoft-koreaexim/settings')&&r.request().method()==='PUT');
@@ -59,6 +70,8 @@ test('invalid update time returns 422 and valid correction saves through the UI'
   await expect(page.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
   await page.reload();
   await expect(field).toHaveValue(original);
+  await link.click();
+  await expect(page).toHaveURL(/\/admin\/schedules\?extension_type=plugin&extension_identifier=sirsoft-koreaexim/);
 });
 
 /**

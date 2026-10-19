@@ -103,6 +103,24 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 코어 예약 작업 목록 — 설정 탭의 「스케줄로 도는 작업」 안내(사이트맵·처리 기록 정리·활동 로그 파기·비밀번호 만료·GeoIP·
+       개인정보 파기·고아 첨부 정리)가 그 작업의 **다음 실행 일시**를 보이려고 받는다(고정 시각을 적어 두면 운영자가
+       주기를 바꿨을 때 문구가 틀린다). 코어 행은 서른 개 남짓이라 한 번에 받고 각 안내가 식별자로 고른다.
+       스케줄 조회 권한(core.schedules.read)이 없으면 서버가 403 을 주고 조용히 넘긴다 — 안내는 시각 없이 링크만 남는다
+       (데이터소스 조건 문맥에는 사용자 권한이 없어 요청 전에 거를 수 없다). -->
+  <data-source id="coreSchedules" label_key="$t:editor.data_source.coreSchedules" type="api" endpoint="/api/admin/schedules" method="GET" if="{{['seo', 'drivers', 'security', 'advanced', 'privacy', 'upload'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params extension_type="core" :per_page="100"/>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 큐 워커 상태 (#139) — 드라이버 탭에서만 받는다. 저장된 큐 드라이버 기준으로 등록 연결·큐마다 대기 건수·마지막 워커 신호·
        경고, 긴 작업 전용 워커 등록 단계, Supervisor 실행 명령을 서버가 판정해 돌려준다. progressive 로 받고 탭 전환 덮개는
        다른 progressive 소스와 같이 이 응답을 기다린다. 실패하면 구역에 실패 안내를 띄운다(응답이 없을 때 「신호 없음」으로
@@ -227,7 +245,7 @@
        운영자가 추가한 본인인증 정책 문구(admin)가 함께 들어온다. 확장이 들인 정의는 그 확장의 설정 화면 몫이다.
        `category` 는 분류 칩 값(빈 값=전체, general=일반 알림, identity=본인인증)이다. -->
   <data-source id="notificationDefinitions" label_key="$t:editor.data_source.notificationDefinitions" type="api" endpoint="/api/admin/notification-definitions" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" extension_type="core" category="{{query.category}}" template_channel="{{query.channel ?? 'mail'}}"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" extension_type="core" category="{{query.category}}" template_channel="{{query.channel ?? 'mail'}}"/>
     <fallback>
       <field name="data">
         <field name="data" :value="[]"/>
@@ -348,6 +366,7 @@
     <wait-for>staticCacheStatus</wait-for>
     <wait-for>trustedProxy</wait-for>
     <wait-for>queueStatus</wait-for>
+    <wait-for>coreSchedules</wait-for>
     <wait-for>privacyPreview</wait-for>
     <wait-for>privacyManualRuns</wait-for>
     <wait-for>passwordExpiryPreview</wait-for>
@@ -367,7 +386,6 @@
     <set-state target="local" filterScope="{{query.scope || ''}}" filterStatus="{{query.status || ''}}" filterLocale="{{query.locale || ''}}" filterSearch="{{query.search || ''}}" filterTarget="" :scopeLocked="false">
       <field name="notificationDefinitionFilter">
         <field name="search" value="{{query.search || ''}}"/>
-        <field name="searchType" value="{{query.search_type || 'all'}}"/>
       </field>
     </set-state>
     <!-- 주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두

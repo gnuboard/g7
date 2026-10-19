@@ -1,5 +1,5 @@
 {
-    "comment": "한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로\n  갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.\n  실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.",
+    "comment": "한 예약 작업이 지금까지 돌았던 기록을 보는 창. 예약대로 돈 것과 사람이 눌러 돌린 것을 표시로\n  갈라 보여 주므로, 「왜 이때 돌았나」를 여기서 가른다.\n  실패한 회차는 보통 출력이 두 덩이로 온다(정상 출력과 오류 출력) — 둘 다 있으면 나란히 실린다.\n  출력 상자는 즉시 실행 창·큐 작업 상세 창과 같은 상자다(줄 접기, 상자 안 세로 스크롤). 대상은 표시 명칭(작업명)으로 보이고\n  식별자는 작은 글씨로 덧붙인다. 이력을 받는 동안에는 진행 표시를 둔다(예전에는 빈 칸이었다).",
     "meta": {
         "is_partial": true,
         "description": "스케줄 실행 이력 모달",
@@ -27,10 +27,11 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.schedules.modals.history_title",
-        "size": "large"
+        "size": "lg"
     },
     "children": [
         {
+            "id": "history_target",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -41,9 +42,44 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-primary font-medium"
+                        "className": "text-primary font-medium break-all"
+                    },
+                    "text": "{{_global.selectedSchedule?.label_localized ?? _global.selectedSchedule?.name}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "block text-xs font-mono text-gray-500 dark:text-gray-400 mt-0.5 break-all"
                     },
                     "text": "{{_global.selectedSchedule?.name}}"
+                }
+            ]
+        },
+        {
+            "id": "history_loading",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.scheduleHistory}}",
+            "props": {
+                "className": "flex-center justify-center gap-2 py-8"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-tertiary"
+                    },
+                    "text": "$t:common.loading"
                 }
             ]
         },
@@ -105,49 +141,54 @@
                                     },
                                     "children": [
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.status === 'success'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                            },
-                                            "text": "$t:admin.schedules.result.success"
+                                                "color": "green",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.result.success"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.status === 'failed'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                            },
-                                            "text": "$t:admin.schedules.result.failed"
+                                                "color": "red",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.result.failed"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.status === 'running'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                            },
-                                            "text": "$t:admin.schedules.result.running"
+                                                "color": "yellow",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.result.running"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.trigger_type === 'manual'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                            },
-                                            "text": "$t:admin.schedules.trigger_type.manual"
+                                                "color": "blue",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.trigger_type.manual"
+                                            }
                                         },
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "if": "{{item.trigger_type === 'scheduled'}}",
                                             "props": {
-                                                "className": "text-secondary inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700"
-                                            },
-                                            "text": "$t:admin.schedules.trigger_type.scheduled"
+                                                "color": "gray",
+                                                "size": "md",
+                                                "text": "$t:admin.schedules.trigger_type.scheduled"
+                                            }
                                         }
                                     ]
                                 },
@@ -165,7 +206,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-4 text-label"
+                                "className": "flex-center flex-wrap gap-x-4 gap-y-1 text-label"
                             },
                             "children": [
                                 {
@@ -200,7 +241,7 @@
                                     "type": "basic",
                                     "name": "Pre",
                                     "props": {
-                                        "className": "text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-20 text-gray-700 dark:text-gray-300"
+                                        "className": "max-h-40 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg"
                                     },
                                     "text": "{{item.output}}"
                                 }
@@ -218,7 +259,7 @@
                                     "type": "basic",
                                     "name": "Pre",
                                     "props": {
-                                        "className": "text-danger-soft bg-red-50 dark:bg-red-900/20 p-2 rounded overflow-x-auto max-h-20"
+                                        "className": "max-h-40 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-3 rounded-lg"
                                     },
                                     "text": "{{item.error_output}}"
                                 }
@@ -265,10 +306,7 @@
                     "props": {
                         "currentPage": "{{_global.scheduleHistory?.pagination?.current_page ?? 1}}",
                         "totalPages": "{{_global.scheduleHistory?.pagination?.last_page ?? null}}",
-                        "hasMorePages": "{{_global.scheduleHistory?.pagination?.has_more_pages ?? false}}",
-                        "totalItems": "{{_global.scheduleHistory?.pagination?.total ?? 0}}",
-                        "perPage": 10,
-                        "showAlways": false
+                        "hasMorePages": "{{_global.scheduleHistory?.pagination?.has_more_pages ?? false}}"
                     }
                 }
             ]
@@ -277,7 +315,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end mt-6 pt-4"
+                "className": "modal-footer-buttons"
             },
             "children": [
                 {
@@ -304,7 +342,8 @@
                         }
                     ],
                     "props": {
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        "type": "button",
+                        "className": "btn btn-secondary"
                     },
                     "text": "$t:common.close"
                 }

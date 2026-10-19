@@ -218,6 +218,7 @@ composer require twig/twig -d custom
 | `admin.user.edit` | `/admin/users/{uuid}/edit` | admin |
 | `admin.settings.seo` · `admin.analytics.settings` | `/admin/settings?tab=seo` · `/admin/analytics/settings?tab=retention` | admin |
 | `admin.analytics` | 통계 알림이 가리키는 통계 화면 경로(`/admin/analytics/...`, 알림마다 다름) | admin |
+| `admin.schedules` | `/admin/schedules?search_field=identifier&search_keyword={name}` (예약 작업 실패 알림) | admin |
 | `board.admin.post` · `board.admin.reports` | `/admin/board/{slug}/post/{id}` · `/admin/boards/reports` | admin |
 | `ecommerce.admin.order` · `ecommerce.admin.claims` · `ecommerce.admin.claim.detail` · `ecommerce.admin.inquiries` | 이커머스 관리자 화면 | admin |
 

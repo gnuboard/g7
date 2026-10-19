@@ -5,20 +5,12 @@
   낱개 칸은 같은 코드를 먼저 걸러 낸 뒤 넣거나 뺀다. 그래서 두 번 눌러도 중복이 쌓이지 않는다.
   배송 방법과 나라 선택지는 하드코딩이 아니라 **이커머스 설정의 활성 항목**에서 온다 — 설정에서
   끈 방법·나라는 여기 나오지 않는다. 부과 방식만 코드가 마크업에 박혀 있다.
-  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다. -->
+  검색 실행은 명명 액션(`searchShippingPolicies`)이라 엔터와 버튼이 같은 것을 가리킨다.
+  검색어는 정책명에서만 찾는다 — 선택지가 하나뿐이던 검색대상 select 는 서버로 보내지도 않는 표시 전용이라 없앴다(#17). -->
 <partial description="Shipping Policy List Filter Section">
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select name="searchType" class="select-composite w-36" value="{{_local.filter.searchType || 'name'}}">
-          <options>
-            <option value="name">$t:sirsoft-ecommerce.admin.shipping_policy.filter.search_type.name</option>
-          </options>
-          <on type="change">
-            <!-- 검색 대상 — 지금은 선택지가 '정책명' 하나뿐이라 실질 선택지가 없다. 대상이 늘 때를 위한 자리다. -->
-            <set-state target="_local" filter.searchType="{{$event.target.value}}"/>
-          </on>
-        </select>
         <div class="relative flex-1">
           <icon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-gray-400 dark:text-gray-500"/>
           <input type="text" name="search" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.search.placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
@@ -269,7 +261,6 @@
         <on type="click">
           <set-state target="_local">
             <field name="filter">
-              <field name="searchType" value="name"/>
               <field name="search" value=""/>
               <field name="shipping_methods" :value="[]"/>
               <field name="charge_policies" :value="[]"/>

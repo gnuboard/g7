@@ -1422,26 +1422,25 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-ecommerce:cancel-pending-orders` | `daily` | 입금 기한 만료 주문 자동 취소 |
-| `sirsoft-ecommerce:prune-expired-carts` | `daily` | 보관기간 만료 장바구니 자동 삭제 |
-| `sirsoft-ecommerce:prune-temp-product-images` | `daily` | 미연결 임시 상품 이미지 자동 삭제 |
-| `sirsoft-ecommerce:prune-temp-orders` | `hourly` | 만료 임시 주문 자동 삭제 |
-| `sirsoft-ecommerce:earn-mileage` | `hourly` | 지연 마일리지 적립 |
-| `sirsoft-ecommerce:expire-mileage` | `daily` | 마일리지 자동 소멸 |
-| `sirsoft-ecommerce:notify-expiring-mileage` | `daily` | 소멸 예정 마일리지 알림 |
-| `sirsoft-ecommerce:reconcile-mileage-balance` | `daily` | 마일리지 잔액 캐시 정합 교정 |
-| `sirsoft-ecommerce:aggregate-stats` | `hourly` | 대시보드 판매 현황 집계 |
-| `sirsoft-ecommerce:prune-pending-claim-images` | `daily` | 신청으로 이어지지 않은 클레임 임시 첨부 자동 삭제 |
-| `sirsoft-ecommerce:cancel-orphan-claim-payments` | `daily` | 종결된 신청서에 남은 클레임 결제 대기 건 자동 취소 |
-| `sirsoft-ecommerce:claims:notify-overdue-collections` | `daily` | 선교환 헌 상품 회수 지연 관리자 알림 (1회) |
+| `cancel-pending-orders` | `0 0 * * *` | 입금 기한 만료 주문 취소 |
+| `prune-expired-carts` | `0 0 * * *` | 만료 장바구니 삭제 |
+| `prune-temp-product-images` | `0 0 * * *` | 임시 상품 이미지 삭제 |
+| `prune-temp-orders` | `0 * * * *` | 만료 임시 주문 삭제 |
+| `earn-mileage` | `0 * * * *` | 지연 마일리지 적립 |
+| `expire-mileage` | `0 0 * * *` | 마일리지 소멸 |
+| `notify-expiring-mileage` | `0 0 * * *` | 소멸 예정 마일리지 알림 |
+| `reconcile-mileage-balance` | `0 0 * * *` | 마일리지 잔액 교정 |
+| `aggregate-stats` | `0 * * * *` | 판매 현황 집계 |
+| `prune-pending-claim-images` | `0 0 * * *` | 클레임 임시 첨부 삭제 |
+| `cancel-orphan-claim-payments` | `0 0 * * *` | 고아 클레임 결제 취소 |
+| `notify-overdue-collections` | `0 0 * * *` | 회수 지연 알림 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
-11개 스케줄이 이 모듈의 **시간 축 동작 전부**입니다. 이 중 6개는 환경설정 토글
-(`enabled_config`)에 묶여 있어 그 설정이 꺼져 있으면 실행되지 않습니다 —
+12개 스케줄이 이 모듈의 **시간 축 동작 전부**입니다(7.2.0 부터 설치·업데이트 때 코어 스케줄 관리에 등록되고, 운영자는 관리자 > 스케줄 관리 또는 이커머스 설정의 「스케줄」 탭에서 켜고 끕니다). 이 중 5개는 실행 조건(`enabled_condition`, `module_setting` · `truthy`)이 모듈 설정 토글에 묶여 있어 그 설정이 꺼져 있으면 실행되지 않습니다 —
 `cancel-pending-orders`(주문 설정의 미입금 자동취소) · 마일리지 4종(마일리지 사용/소멸/소멸
-알림) · `aggregate-stats`(대시보드 집계). 임시 데이터 정리 3종과 클레임 정리 2종은 토글 없이 상시 동작하며 보존
-기간을 커맨드 안에서 판정합니다. `enabled_config` 가 가리키는 설정 키가 없으면 **켜진 것으로
+알림/잔액 교정). `aggregate-stats`(대시보드 집계)는 설정 화면이 없는 config 값 `dashboard.scheduler_enabled` 를 커맨드 안에서만 확인하고 스케줄 조건은 두지 않습니다. 임시 데이터 정리 3종과 클레임 정리 3종은 조건 없이 상시 동작하며 보존
+기간을 커맨드 안에서 판정합니다. 조건이 가리키는 설정 키가 없으면 선언한 `default`(이 모듈은 `true`)로 **켜진 것으로
 간주**되므로, 새 토글을 도입할 때는 설정 기본값을 먼저 넣어야 의도한 초기 상태가 됩니다.
 
 | 커맨드 | 없으면 생기는 일 |
@@ -1574,8 +1573,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **138종**입니다
-> (등록 건수는 140건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **139종**입니다
+> (등록 건수는 141건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
 > 구매자 관점 두 리스너가 각각 구독합니다).
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
@@ -1589,13 +1588,13 @@ _등록하는 브로드캐스트 채널이 없습니다._
 ### 이커머스 모듈 훅
 
 **모듈**: `sirsoft-ecommerce`
-**등록 140건 / 훅 138종** (8개 Listener)
+**등록 141건 / 훅 139종** (8개 Listener)
 
-#### OrderActivityLogListener (26훅)
+#### OrderActivityLogListener (27훅)
 
 **파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/OrderActivityLogListener.php`
 
-##### OrderService (9훅)
+##### OrderService (10훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -1608,6 +1607,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `sirsoft-ecommerce.order.after_send_email` | `handleOrderAfterSendEmail` | `order.send_email` | Admin | - |
 | `sirsoft-ecommerce.order.after_reset_guest_password` | `handleOrderAfterResetGuestPassword` | `order.reset_guest_password` | Admin | Order |
 | `sirsoft-ecommerce.order.after_deposit_recorded` | `handleOrderAfterDepositRecorded` | `order.deposit_record` | 요청 주체 | Order |
+| `sirsoft-ecommerce.order.after_manual_paid_effects` | `handleOrderManualPaidEffects` | `order.manual_paid_effects` | 요청 주체 | Order |
 
 ##### OrderOptionService (2훅)
 
@@ -1911,7 +1911,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ##### 송장 · 진행 방식 · 재고 복구 · 신청 내용 수정 (10훅)
 
-LogType 은 요청 주체로 정해진다(관리자 화면이면 Admin, 고객 화면이면 User — 코어 `ResolvesActivityLogType`). 신청 내용 수정은 운영자 대리 수정 여부를 `properties.operator` 로 싣는다.
+LogType 은 요청 주체로 정해진다(관리자 화면이면 Admin, 고객 화면이면 User, 배송 추적 자동 완료 같은 무요청 경로면 System — 코어 `ResolvesActivityLogType`). 신청 내용 수정은 운영자 대리 수정 여부를 `properties.operator` 로 싣는다. 송장·배송 완료는 `$direction`(회수 `collection`·교환 재발송 `redelivery`) 마다 설명 키가 갈리고, 재고 복원·신청서 수정은 처리 주체(운영자 대리 수정이면 `request_update_on_behalf` 설명)를 `properties` 에 싣는다. 바뀐 것이 없으면(`$changes === []`) 남기지 않는다.
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -1943,19 +1943,3 @@ LogType 은 요청 주체로 정해진다(관리자 화면이면 Admin, 고객 �
 | `sirsoft-ecommerce.claim-image.after_upload` | `handleImageUploaded` | `claim_image.upload` | User | ClaimImage |
 | `sirsoft-ecommerce.claim-image.after_delete` | `handleImageDeleted` | `claim_image.delete` | User | ClaimImage (`loggable_type`/`loggable_id` 직접 지정 — 행이 이미 삭제됨) |
 
-##### 회수·재발송 배송 추적 / 교환 방식 / 재고 복원 / 신청서 수정 (10훅)
-
-송장·배송 완료는 `$direction`(회수 `collection`·교환 재발송 `redelivery`) 마다 설명 키가 갈리고, 재고 복원·신청서 수정은 처리 주체(운영자 대리 수정이면 `request_update_on_behalf` 설명)를 `properties` 에 싣는다. 바뀐 것이 없으면(`$changes === []`) 남기지 않는다.
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `sirsoft-ecommerce.claim.exchange.after_tracking_update` | `handleTrackingUpdated` | `claim_exchange.tracking_update` | Admin / User | OrderExchange |
-| `sirsoft-ecommerce.claim.return.after_tracking_update` | `handleTrackingUpdated` | `claim_return.tracking_update` | Admin / User | OrderReturn |
-| `sirsoft-ecommerce.claim.exchange.after_tracking_deliver` | `handleTrackingDelivered` | `claim_exchange.tracking_deliver` | Admin / System | OrderExchange |
-| `sirsoft-ecommerce.claim.return.after_tracking_deliver` | `handleTrackingDelivered` | `claim_return.tracking_deliver` | Admin / System | OrderReturn |
-| `sirsoft-ecommerce.claim.exchange.after_mode_change` | `handleExchangeModeChanged` | `claim_exchange.mode_change` | Admin | OrderExchange |
-| `sirsoft-ecommerce.claim.exchange.after_stock_restore` | `handleStockRestored` | `claim_exchange.stock_restore` | Admin | OrderExchange |
-| `sirsoft-ecommerce.claim.return.after_stock_restore` | `handleStockRestored` | `claim_return.stock_restore` | Admin | OrderReturn |
-| `sirsoft-ecommerce.claim.exchange.request_updated` | `handleRequestUpdated` | `claim_exchange.request_update` | User / Admin | OrderExchange |
-| `sirsoft-ecommerce.claim.return.request_updated` | `handleRequestUpdated` | `claim_return.request_update` | User / Admin | OrderReturn |
-| `sirsoft-ecommerce.claim.refund.request_updated` | `handleRequestUpdated` | `claim_refund.request_update` | User / Admin | OrderRefund |

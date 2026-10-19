@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Listeners\Queue\RecordQueueJobLog;
 use App\Services\Queue\QueueWorkerRegistry;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\Looping;
 use Illuminate\Support\Facades\Event;
@@ -31,14 +34,19 @@ class EventServiceProvider extends ServiceProvider
         static::disableEventDiscovery();
 
         parent::register();
+
+        // 처리 기록 리스너는 시작 시각·sync 버퍼를 이벤트 사이에 공유한다 (#17)
+        $this->app->singleton(RecordQueueJobLog::class);
     }
 
     /**
-     * 큐 워커 생존 신호(하트비트) 리스너를 붙입니다 (#139).
+     * 큐 워커 생존 신호(하트비트)·작업 처리 기록 리스너를 붙입니다 (#139·#17).
      *
      * 워커 루프(`Looping` — 쉼표 큐 목록 포함)와 잡 시작(`JobProcessing` — `--once` 워커는 루프 이벤트가 없다)마다
      * 「이 연결·큐를 보는 워커가 살아 있다」를 캐시에 남긴다. 드라이버 탭 「큐 워커」 구역이 큐별로 표시한다.
      * 기록은 프로세스당 30초에 한 번이고, 실패해도 워커를 멈추지 않는다.
+     *
+     * 작업 처리 기록(queue_job_logs)은 시작·완료·최종 실패 세 이벤트로 남긴다(RecordQueueJobLog).
      *
      * @return void 반환값 없음
      */
@@ -53,6 +61,10 @@ class EventServiceProvider extends ServiceProvider
         Event::listen(JobProcessing::class, function (JobProcessing $event): void {
             app(QueueWorkerRegistry::class)->recordHeartbeat($event->connectionName, $event->job->getQueue());
         });
+
+        Event::listen(JobProcessing::class, [RecordQueueJobLog::class, 'handleProcessing']);
+        Event::listen(JobProcessed::class, [RecordQueueJobLog::class, 'handleProcessed']);
+        Event::listen(JobFailed::class, [RecordQueueJobLog::class, 'handleFailed']);
     }
 
     /**

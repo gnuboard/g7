@@ -225,10 +225,21 @@ Trait 이 적용되기 **이전에** 사용자가 수정한 row 는 user_overrid
 | `Role` | `name`, `description`, `is_active` |
 | `NotificationDefinition` | `name`, `is_active` |
 | `NotificationTemplate` | `subject`, `body`, `click_url`, `recipients`, `is_active` |
-| `Schedule` | `expression`, `command`, `timeout`, `is_active` |
+| `Schedule` | `expression`, `frequency`, `timeout`, `is_active`, `without_overlapping`, `on_one_server`, `dispatch_mode`, `queue_connection`, `queue_name`, `history_mode`, `notify_on_failure`, `run_in_maintenance` + 다국어 `label`·`description` (`translatableTrackableFields`, 로케일 단위) |
 | `BoardType` | `name` |
 | `ClaimReason` | `name`, `sort_order`, `is_active` |
 | `ShippingType` | `name`, `category`, `is_active`, `sort_order` |
+
+### 6.1 Schedule (7.2.0)
+
+스케줄 행은 코어 카탈로그(`CoreScheduleSeeder`)와 확장 `getSchedules()`(`ExtensionScheduleSyncHelper`)가 `syncOrCreateFromUpgrade()` 로 동기화합니다. finder 는 (`extension_type`, `extension_identifier`, `name`) 입니다.
+
+- **보존 대상** — 운영자가 관리자 > 스케줄 관리에서 바꾸는 주기·실행 방식·잠금·이력 방식·알림·명칭 필드(위 표). 운영자가 바꾼 필드만 업데이트 때 남고, 나머지는 새 선언 값으로 갱신됩니다.
+- **보존 대상이 아닌 필드** — `command`·`type`·`name`·`enabled_condition`·`timezone` 은 선언이 소유합니다. 소유 행에서는 관리자 API 가 이 필드 변경을 422 로 막으므로 운영자 수정이 생기지 않습니다.
+- **행 존재** — 카탈로그·선언에서 빠진 행은 같은 소유 범위에서 이력과 함께 지워집니다([5.1](#51-row-존재-여부-vs-필드-값)). 운영자가 직접 등록한 행(`extension_type` NULL)은 범위 밖입니다. 확장 선언이 통째로 비면 정리를 막습니다.
+- **업그레이드 스텝에서 값 옮기기** — 옛 설정값을 행으로 옮기는 스텝은 행의 값을 바꾸고 `user_overrides` 에 필드 이름(예: `expression`)을 더해 다음 동기화가 되돌리지 않게 합니다. 이미 그 필드가 기록돼 있으면 운영자 값이므로 건드리지 않습니다.
+
+상세: [scheduling.md](scheduling.md) · [module-schedules.md](../extension/module-schedules.md)
 
 ## 7. 참고
 

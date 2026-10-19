@@ -20,7 +20,6 @@ import pluginDetail from '../../layouts/partials/admin_plugin_list/_modal_detail
 import templateDetail from '../../layouts/partials/admin_template_list/_modal_detail.json';
 import moduleForceDeactivate from '../../layouts/partials/admin_module_list/_modal_force_deactivate.json';
 import pluginForceDeactivate from '../../layouts/partials/admin_plugin_list/_modal_force_deactivate.json';
-import moduleDeactivateWarning from '../../layouts/partials/admin_module_list/_modal_deactivate_warning.json';
 import moduleForceActivate from '../../layouts/partials/admin_module_list/_modal_force_activate.json';
 import pluginForceActivate from '../../layouts/partials/admin_plugin_list/_modal_force_activate.json';
 import templateForceActivate from '../../layouts/partials/admin_template_list/_modal_force_activate.json';
@@ -93,7 +92,6 @@ describe('상세·확인 창의 의존 확장 이름', () => {
     ['템플릿 정보', templateDetail],
     ['모듈 강제 비활성화', moduleForceDeactivate],
     ['플러그인 강제 비활성화', pluginForceDeactivate],
-    ['모듈 비활성화 경고', moduleDeactivateWarning],
     ['모듈 강제 활성화', moduleForceActivate],
     ['플러그인 강제 활성화', pluginForceActivate],
     ['템플릿 강제 활성화', templateForceActivate],

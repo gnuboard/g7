@@ -6,6 +6,8 @@ use App\Support\ScheduleCommandValidator;
 use Illuminate\Support\Facades\Artisan;
 use Modules\G7Testing\Console\FakeExtensionScheduleCommand;
 use Modules\G7Testing\Providers\FakeExtensionScheduleServiceProvider;
+use Modules\G7TestingWeb\Console\Commands\FakeWebScheduleCommand;
+use Modules\G7TestingWeb\Providers\FakeWebCommandServiceProvider;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -22,6 +24,7 @@ class ScheduleCommandValidatorTest extends TestCase
      * shell 게이트를 켜고 허용 실행 파일을 등록합니다.
      *
      * @param  array<int, string>  $binaries  허용 실행 파일 basename 목록
+     * @return void 반환값 없음
      */
     private function enableShell(array $binaries = ['backup.sh']): void
     {
@@ -37,6 +40,10 @@ class ScheduleCommandValidatorTest extends TestCase
 
     /**
      * 게이트가 꺼져 있으면 화이트리스트에 있는 명령도 거부한다 (기본 차단).
+     *
+     * @effects shell_gate_blocks_all_when_disabled
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_blocks_every_shell_command_when_the_gate_is_disabled(): void
@@ -51,6 +58,10 @@ class ScheduleCommandValidatorTest extends TestCase
 
     /**
      * 게이트가 켜져 있어도 화이트리스트가 비어 있으면 모두 거부한다.
+     *
+     * @effects shell_allowlist_bounds_binaries
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_blocks_every_shell_command_when_the_whitelist_is_empty(): void
@@ -68,6 +79,10 @@ class ScheduleCommandValidatorTest extends TestCase
      * 게이트 on + 화이트리스트 등록 실행 파일은 허용한다 (정상 운영 경로).
      *
      * @param  string  $command  허용되어야 하는 command
+     *
+     * @effects shell_allowlist_bounds_binaries
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('allowedShellCommandProvider')]
@@ -86,6 +101,10 @@ class ScheduleCommandValidatorTest extends TestCase
      *
      * @param  string  $command  차단되어야 하는 command
      * @param  string  $reason  차단 사유 (실패 메시지용)
+     *
+     * @effects shell_allowlist_bounds_binaries
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('blockedShellCommandProvider')]
@@ -108,6 +127,10 @@ class ScheduleCommandValidatorTest extends TestCase
      *
      * @param  string  $command  메타문자가 포함된 command
      * @param  string  $reason  차단 사유 (실패 메시지용)
+     *
+     * @effects shell_tokenizer_contract
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('shellMetacharacterCommandProvider')]
@@ -121,6 +144,10 @@ class ScheduleCommandValidatorTest extends TestCase
 
     /**
      * 메타문자 없는 명령은 공백 기준 인자 배열로 토큰화한다.
+     *
+     * @effects shell_tokenizer_contract
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_tokenizes_a_plain_command_into_an_argument_array(): void
@@ -133,6 +160,10 @@ class ScheduleCommandValidatorTest extends TestCase
 
     /**
      * 빈 문자열·공백만 있는 명령은 토큰화를 거부한다.
+     *
+     * @effects shell_tokenizer_contract
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_refuses_to_tokenize_a_blank_command(): void
@@ -155,6 +186,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=inline_code, enforcement_point=validator_unit
      *
      * @effects inline_code_flags_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('inlineCodeShellCommandProvider')]
@@ -182,6 +215,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=inline_code, enforcement_point=validator_unit
      *
      * @effects inline_code_flags_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('variantInterpreterShellCommandProvider')]
@@ -201,6 +236,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=script_ok, enforcement_point=validator_unit
      *
      * @effects interpreter_script_files_still_run
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_allows_variant_named_interpreters_running_absolute_scripts(): void
@@ -221,6 +258,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=script_ok, enforcement_point=validator_unit
      *
      * @effects interpreter_script_files_still_run
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('interpreterScriptShellCommandProvider')]
@@ -242,6 +281,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=artisan_bypass, enforcement_point=validator_unit
      *
      * @effects artisan_via_shell_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('artisanBypassShellCommandProvider')]
@@ -266,6 +307,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=reject_binary, enforcement_point=validator_unit
      *
      * @effects reject_binaries_blocked_even_when_allowlisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('rejectBinaryShellCommandProvider')]
@@ -287,6 +330,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=script_path, enforcement_point=validator_unit
      *
      * @effects script_path_traversal_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('scriptPathShellCommandProvider')]
@@ -308,6 +353,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=no_script, enforcement_point=validator_unit
      *
      * @effects interpreter_without_script_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('noScriptShellCommandProvider')]
@@ -329,6 +376,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=legit_plain_script, enforcement_point=validator_unit
      *
      * @effects plain_scripts_still_run_without_path_restrictions
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('plainScriptShellCommandProvider')]
@@ -348,6 +397,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=inline_code, enforcement_point=validator_unit
      *
      * @effects rejection_reason_is_reported_per_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_reports_disabled_when_the_shell_gate_is_off(): void
@@ -369,6 +420,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=inline_code, enforcement_point=validator_unit
      *
      * @effects rejection_reason_is_reported_per_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_reports_not_allowlisted_for_unregistered_binaries(): void
@@ -387,6 +440,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=reject_binary, enforcement_point=validator_unit
      *
      * @effects rejection_reason_is_reported_per_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_reports_metacharacter_for_commands_with_shell_metacharacters(): void
@@ -411,6 +466,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=denylisted, enforcement_point=validator_unit
      *
      * @effects denylist_blocks_destructive_and_code_executing_commands
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('deniedArtisanCommandProvider')]
@@ -430,6 +487,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=core_allowlisted, enforcement_point=validator_unit
      *
      * @effects allowlisted_maintenance_commands_still_run
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('allowedArtisanCommandProvider')]
@@ -443,6 +502,10 @@ class ScheduleCommandValidatorTest extends TestCase
 
     /**
      * artisan 명령명은 첫 토큰으로 추출한다.
+     *
+     * @effects extracted_name_equals_executed_name
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_extracts_the_artisan_command_name_from_the_first_token(): void
@@ -470,6 +533,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=parser_divergent, enforcement_point=validator_unit
      *
      * @effects parser_divergent_input_is_rejected, extracted_name_equals_executed_name
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('parserDivergenceArtisanCommandProvider')]
@@ -497,6 +562,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=malformed, enforcement_point=validator_unit
      *
      * @effects rejection_reason_is_reported_per_category
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_reports_malformed_as_the_reason_for_parser_divergent_input(): void
@@ -520,6 +587,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=core_not_allowlisted, enforcement_point=validator_unit
      *
      * @effects commands_outside_the_allowlist_are_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('notAllowlistedArtisanCommandProvider')]
@@ -540,6 +609,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=core_allowlisted, enforcement_point=validator_unit
      *
      * @effects undeclared_options_and_positional_arguments_are_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('blockedOptionArtisanCommandProvider')]
@@ -559,6 +630,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=core_allowlisted, enforcement_point=validator_unit
      *
      * @effects allowed_command_resolves_to_name_and_parameter_array
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_the_execution_plan_for_allowed_commands(): void
@@ -583,6 +656,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=denylisted, enforcement_point=validator_unit
      *
      * @effects denylist_is_evaluated_before_the_allowlist
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_evaluates_the_denylist_before_the_allowlist(): void
@@ -601,6 +676,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=code_generating, enforcement_point=validator_unit
      *
      * @effects make_prefix_blocks_all_code_generating_commands
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_blocks_every_command_matching_a_denylisted_prefix(): void
@@ -626,6 +703,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=extension_owned, enforcement_point=validator_unit
      *
      * @effects extension_owned_commands_are_allowed_by_namespace
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_allows_commands_owned_by_installed_extensions(): void
@@ -644,6 +723,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=extension_owned, enforcement_point=validator_unit
      *
      * @effects extension_gate_can_be_turned_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_blocks_extension_commands_when_the_gate_is_disabled(): void
@@ -664,6 +745,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=extension_owned, enforcement_point=validator_unit
      *
      * @effects extension_commands_only_accept_their_own_options
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_blocks_undefined_options_on_extension_commands(): void
@@ -689,6 +772,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=extension_owned, enforcement_point=validator_unit
      *
      * @effects extension_owned_commands_resolved_without_console_registration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_allows_provider_declared_extension_commands_without_console_registration(): void
@@ -711,11 +796,53 @@ class ScheduleCommandValidatorTest extends TestCase
     }
 
     /**
+     * 프로바이더가 명령을 등록도 선언도 하지 않은 웹 요청에서, 활성 확장의 명령 디렉터리
+     * (`src/Console/Commands`)에 있는 확장 소유 명령은 자동 허용된다.
+     *
+     * 번들 확장 대부분은 `boot()` 안에서 `runningInConsole()` 일 때만 `$this->commands([...])`
+     * 로 등록하고 `$commands` 프로퍼티를 두지 않는다 — 그래서 관리자 화면 「즉시 실행」이
+     * 페이지·GDPR·비즈뿌리오 스케줄을 「허용 목록에 없음」으로 막았다(2026-10-17 라이브 실측).
+     *
+     * @scenario command_class=extension_owned, enforcement_point=validator_unit
+     *
+     * @effects extension_commands_resolved_from_command_directory
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function it_allows_undeclared_extension_commands_from_the_command_directory_in_web_requests(): void
+    {
+        require_once __DIR__.'/../../Fixtures/ExtensionWebCommand/src/Providers/FakeWebCommandServiceProvider.php';
+        require_once __DIR__.'/../../Fixtures/ExtensionWebCommand/src/Console/Commands/FakeWebScheduleCommand.php';
+
+        $this->app->register(FakeWebCommandServiceProvider::class);
+
+        $verdict = ScheduleCommandValidator::inspectArtisanCommand('g7-testing-web-command --scope=all');
+
+        $this->assertTrue($verdict['allowed'], '명령 디렉터리의 확장 명령이 웹 요청에서 거부됨 — 사유 '.($verdict['reason'] ?? 'null'));
+        $this->assertSame('g7-testing-web-command', $verdict['name']);
+        $this->assertSame(
+            FakeWebScheduleCommand::class,
+            ScheduleCommandValidator::resolveExtensionCommandClass('g7-testing-web-command'),
+        );
+
+        // 자기 정의에 없는 옵션은 같은 경로에서도 거부된다.
+        $optionVerdict = ScheduleCommandValidator::inspectArtisanCommand('g7-testing-web-command --g7-not-a-real-option');
+        $this->assertFalse($optionVerdict['allowed']);
+        $this->assertSame(ScheduleCommandValidator::ARTISAN_REASON_OPTION, $optionVerdict['reason']);
+
+        // 활성 확장 프로바이더가 없는 이름은 여전히 거부된다(fail-closed).
+        $this->assertNull(ScheduleCommandValidator::resolveExtensionCommandClass('g7-testing-no-such-command'));
+    }
+
+    /**
      * 확장 네임스페이스를 비워도 코어 허용목록은 그대로 동작한다 (계층 독립성).
      *
      * @scenario command_class=core_allowlisted, enforcement_point=validator_unit
      *
      * @effects extension_gate_can_be_turned_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_keeps_core_allowlist_working_without_extension_namespaces(): void
@@ -738,6 +865,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=core_allowlisted, enforcement_point=validator_unit
      *
      * @effects allowlist_and_denylist_stay_disjoint
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_keeps_the_allowlist_and_denylist_disjoint(): void
@@ -767,6 +896,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * @scenario command_class=core_allowlisted, enforcement_point=validator_unit
      *
      * @effects allowlist_matches_real_command_signatures
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_keeps_the_allowlist_in_sync_with_real_command_signatures(): void
@@ -794,6 +925,8 @@ class ScheduleCommandValidatorTest extends TestCase
      * 계층 자체가 검증되지 않는다. `Modules\` 네임스페이스의 픽스처를 실제 레지스트리에
      * 등록해 판정 결과를 고정한다 — 판정은 이름이 아니라 등록된 인스턴스의
      * 클래스 네임스페이스로 이뤄지므로 이 등록이 실제 확장과 동일한 경로를 탄다.
+     *
+     * @return string 등록한 명령명
      */
     private function registerExtensionCommand(): string
     {
@@ -813,7 +946,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 허용되어야 하는 shell command 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function allowedShellCommandProvider(): array
     {
@@ -828,7 +961,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 차단되어야 하는 shell command 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 사례 이름 → 테스트 인자
      */
     public static function blockedShellCommandProvider(): array
     {
@@ -847,7 +980,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 셸 해석을 유발하는 메타문자가 포함된 command 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 사례 이름 → 테스트 인자
      */
     public static function shellMetacharacterCommandProvider(): array
     {
@@ -868,7 +1001,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 차단되어야 하는 artisan command 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function deniedArtisanCommandProvider(): array
     {
@@ -903,7 +1036,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 허용되어야 하는 artisan command 목록 (정상 운영 명령).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function allowedArtisanCommandProvider(): array
     {
@@ -921,7 +1054,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 무해하지만 허용목록에 없어 거부되어야 하는 artisan command 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function notAllowlistedArtisanCommandProvider(): array
     {
@@ -937,7 +1070,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 검증기와 Symfony 의 해석이 갈리는 command 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 사례 이름 → 테스트 인자
      */
     public static function parserDivergenceArtisanCommandProvider(): array
     {
@@ -954,7 +1087,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 허용목록에 있으나 사용법이 거부되어야 하는 command 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 사례 이름 → 테스트 인자
      */
     public static function blockedOptionArtisanCommandProvider(): array
     {
@@ -981,7 +1114,7 @@ class ScheduleCommandValidatorTest extends TestCase
      *
      * 인터프리터·완전거부형을 **등재한 상태**로 판정해 "등재돼도 차단됨" 을 증명한다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 사례 이름 → 테스트 인자
      */
     private static function interpreterBinaries(): array
     {
@@ -995,12 +1128,12 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 인터프리터에 인라인 코드/명령을 넘기는 command 목록 (전부 차단).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     /**
      * 변형 표기 인터프리터로 인라인 코드/감싼 명령을 넘기는 command 목록 (전부 차단).
      *
-     * @return array<string, array{0: string, 1: string, 2: string}>
+     * @return array<string, array{0: string, 1: string, 2: string}> 사례 이름 → 테스트 인자
      */
     public static function variantInterpreterShellCommandProvider(): array
     {
@@ -1023,6 +1156,11 @@ class ScheduleCommandValidatorTest extends TestCase
         ];
     }
 
+    /**
+     * 인터프리터 인라인 코드 플래그(-c/-e 등)를 쓰는 shell command 목록.
+     *
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
+     */
     public static function inlineCodeShellCommandProvider(): array
     {
         return [
@@ -1042,7 +1180,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 인터프리터 + 절대경로 스크립트 (전부 허용 — 범용 크론 회귀 가드).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function interpreterScriptShellCommandProvider(): array
     {
@@ -1061,7 +1199,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 인터프리터 뒤 스크립트 자리가 artisan 인 command 목록 (전부 차단).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function artisanBypassShellCommandProvider(): array
     {
@@ -1074,7 +1212,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 완전 거부형 실행기 command 목록 (전부 차단, 메타문자 없음).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function rejectBinaryShellCommandProvider(): array
     {
@@ -1091,7 +1229,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 인터프리터 뒤 스크립트 경로 형태 위반 command 목록 (전부 차단).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function scriptPathShellCommandProvider(): array
     {
@@ -1106,7 +1244,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 스크립트 없이 인터프리터만 있는 command 목록 (전부 차단).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function noScriptShellCommandProvider(): array
     {
@@ -1119,7 +1257,7 @@ class ScheduleCommandValidatorTest extends TestCase
     /**
      * 인터프리터가 아닌 일반 스크립트 command 목록 (전부 허용 — 기존 계약 보존).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → 테스트 인자
      */
     public static function plainScriptShellCommandProvider(): array
     {

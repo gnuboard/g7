@@ -39,8 +39,10 @@
                 "search_type": "{{query.search_type}}",
                 "channel": "{{query.channel}}",
                 "notification_type": "{{query.notification_type}}",
-                "extension_type": "{{query.extension_type}}",
-                "status": "{{query.status}}",
+                "extension_type": "{{query['extension_type[]'] ?? query.extension_type}}",
+                "status": "{{query['status[]'] ?? query.status}}",
+                "recipient_user_id": "{{query.recipient_user_id}}",
+                "sender_user_id": "{{query.sender_user_id}}",
                 "sort_by": "{{query.sort_by || 'sent_at'}}",
                 "sort_order": "{{query.sort_order || 'desc'}}"
             },
@@ -80,7 +82,7 @@
     },
     "named_actions": {
         "searchNotificationLogs": {
-            "comment": "검색 실행 — 필터 조각이 공유한다. 확장 종류·상태는 화면에서 여러 개를 고를 수 있게 담아 두지만\n       **서버가 받는 것은 하나뿐**이라 첫 값만 보낸다(비었으면 조건에서 뺀다). 페이지는 1로 되돌린다.",
+            "comment": "검색 실행 — 필터 조각이 공유한다. 확장 종류·상태는 고른 값 **전부**를 배열로 보낸다(`status[]=…`).\n       비었어도 빈 배열을 보낸다 — 빈 값(undefined)은 `status` 만 지우고 `status[]` 는 주소에 남기 때문이다.\n       같은 이유로 옛 단수 주소(`?status=failed`)도 이 배열이 덮어 지운다. 페이지는 1로 되돌린다.",
             "handler": "navigate",
             "params": {
                 "path": "/admin/notification-logs",
@@ -91,8 +93,8 @@
                     "page": 1,
                     "search": "{{_local.filter.search || undefined}}",
                     "search_type": "{{_local.filter.searchType !== 'all' ? _local.filter.searchType : undefined}}",
-                    "extension_type": "{{_local.filter.extensionTypes?.length > 0 ? _local.filter.extensionTypes[0] : undefined}}",
-                    "status": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses[0] : undefined}}"
+                    "extension_type": "{{_local.filter.extensionTypes ?? []}}",
+                    "status": "{{_local.filter.statuses ?? []}}"
                 }
             }
         }
@@ -106,8 +108,8 @@
                     "filter": {
                         "searchType": "{{query.search_type || 'all'}}",
                         "search": "{{query.search || ''}}",
-                        "extensionTypes": "{{query.extension_type ? [query.extension_type] : []}}",
-                        "statuses": "{{query.status ? [query.status] : []}}"
+                        "extensionTypes": "{{Array.isArray(query['extension_type[]']) ? query['extension_type[]'] : (query['extension_type[]'] ? [query['extension_type[]']] : (query.extension_type ? [query.extension_type] : []))}}",
+                        "statuses": "{{Array.isArray(query['status[]']) ? query['status[]'] : (query['status[]'] ? [query['status[]']] : (query.status ? [query.status] : []))}}"
                     }
                 }
             }

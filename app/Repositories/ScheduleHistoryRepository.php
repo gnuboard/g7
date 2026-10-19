@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
+use App\Enums\ScheduleResultStatus;
 use App\Models\ScheduleHistory;
 use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\FiltersByDateRange;
@@ -39,6 +40,36 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
     public function create(array $data): ScheduleHistory
     {
         return ScheduleHistory::create($data);
+    }
+
+    /**
+     * 저장하지 않은 실행 이력 인스턴스를 만듭니다.
+     *
+     * 「실패만 기록」 스케줄이 성공하면 이력 행을 남기지 않지만, 실행 후 훅은 이력 인자를 받으므로
+     * 같은 값을 담은 미저장 인스턴스를 넘긴다.
+     *
+     * @param  array  $data  이력 데이터
+     * @return ScheduleHistory 저장되지 않은 이력 모델
+     */
+    public function make(array $data): ScheduleHistory
+    {
+        return new ScheduleHistory($data);
+    }
+
+    /**
+     * 스케줄의 가장 최근 「실행 중」 이력을 찾습니다.
+     *
+     * @param  int  $scheduleId  스케줄 ID
+     * @return ScheduleHistory|null 실행 중 이력 또는 null
+     */
+    public function findLatestRunning(int $scheduleId): ?ScheduleHistory
+    {
+        return ScheduleHistory::query()
+            ->where('schedule_id', $scheduleId)
+            ->where('status', ScheduleResultStatus::Running)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->first();
     }
 
     /**

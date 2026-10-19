@@ -27,22 +27,23 @@ use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController;
 use App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController;
+use App\Http\Controllers\Api\Admin\JobQueueController as AdminJobQueueController;
 use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackController;
 use App\Http\Controllers\Api\Admin\LayoutController as AdminLayoutController;
 use App\Http\Controllers\Api\Admin\LayoutExtensionController as AdminLayoutExtensionController;
 use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Api\Admin\MemberNotificationController as AdminMemberNotificationController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
-use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 // Auth Controllers (Authenticated Users)
+use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
-use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
 // Identity Verification
+use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Api\Admin\NotificationDefinitionController as AdminNotificationDefinitionController;
 use App\Http\Controllers\Api\Admin\NotificationLogController as AdminNotificationLogController;
 use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotificationTemplateController;
-use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 // Public Controllers
+use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
 use App\Http\Controllers\Api\Admin\PrivacyManualRunController as AdminPrivacyManualRunController;
@@ -891,6 +892,26 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('statistics', [AdminScheduleController::class, 'statistics'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.statistics');
         Route::patch('bulk-status', [AdminScheduleController::class, 'bulkUpdateStatus'])->middleware('permission:admin,core.schedules.update')->name('api.admin.schedules.bulk-status');
         Route::delete('bulk', [AdminScheduleController::class, 'bulkDelete'])->middleware('permission:admin,core.schedules.delete')->name('api.admin.schedules.bulk-delete');
+        // 소유 필터 옵션·하트비트/큐 요약 — {schedule} 와일드카드보다 위에 둔다 (#17)
+        Route::get('owners', [AdminScheduleController::class, 'owners'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.owners');
+        Route::get('status', [AdminScheduleController::class, 'status'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.status');
+        // 실행 보안 유효 정책(읽기 전용) — 코어 config + 서버 관리자 덮어쓰기 파일 (#17)
+        Route::get('security', [AdminScheduleController::class, 'security'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.security');
+
+        // 큐 관리 (대기·실패·처리 기록) — {schedule} 와일드카드보다 위에 둔다 (#17)
+        Route::prefix('queue')->group(function () {
+            Route::get('status', [AdminJobQueueController::class, 'status'])->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.status');
+            Route::get('pending', [AdminJobQueueController::class, 'pending'])->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.pending');
+            Route::get('failed', [AdminJobQueueController::class, 'failed'])->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.failed');
+            Route::post('failed/retry', [AdminJobQueueController::class, 'retryBulk'])->middleware('permission:admin,core.queue_jobs.retry')->name('api.admin.schedules.queue.failed.retry-bulk');
+            Route::delete('failed', [AdminJobQueueController::class, 'destroyBulk'])->middleware('permission:admin,core.queue_jobs.delete')->name('api.admin.schedules.queue.failed.destroy-bulk');
+            Route::get('failed/{uuid}', [AdminJobQueueController::class, 'showFailed'])->whereUuid('uuid')->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.failed.show');
+            Route::post('failed/{uuid}/retry', [AdminJobQueueController::class, 'retry'])->whereUuid('uuid')->middleware('permission:admin,core.queue_jobs.retry')->name('api.admin.schedules.queue.failed.retry');
+            Route::delete('failed/{uuid}', [AdminJobQueueController::class, 'destroy'])->whereUuid('uuid')->middleware('permission:admin,core.queue_jobs.delete')->name('api.admin.schedules.queue.failed.destroy');
+            Route::get('logs', [AdminJobQueueController::class, 'logs'])->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.logs');
+            Route::get('logs/{id}', [AdminJobQueueController::class, 'showLog'])->whereNumber('id')->middleware('permission:admin,core.queue_jobs.read')->name('api.admin.schedules.queue.logs.show');
+        });
+
         Route::get('{schedule}', [AdminScheduleController::class, 'show'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.show');
         Route::put('{schedule}', [AdminScheduleController::class, 'update'])->middleware('permission:admin,core.schedules.update')->name('api.admin.schedules.update');
         Route::delete('{schedule}', [AdminScheduleController::class, 'destroy'])->middleware('permission:admin,core.schedules.delete')->name('api.admin.schedules.destroy');

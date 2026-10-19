@@ -11,6 +11,7 @@ use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ActivityLogType;
 use App\Enums\PrivacyManualRunStatus;
+use App\Enums\ScheduleTriggerType;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
@@ -1073,12 +1074,19 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 스케줄 수동 실행 후 로그 기록
      *
+     * 운영자가 「즉시 실행」한 것만 남긴다 — 예약 실행까지 남기면 30초 주기 작업만으로
+     * 하루 수천 건이 쌓여 활동 로그가 운영자 행위 기록으로서 쓸모를 잃는다(실행 결과는 실행 이력에 있다).
+     *
      * @param  Model  $schedule  실행된 스케줄
-     * @param  Model  $history  실행 이력
+     * @param  Model  $history  실행 이력 (「실패만 기록」 성공이면 저장되지 않은 인스턴스)
      * @return void 반환값 없음
      */
     public function handleScheduleAfterRun(Model $schedule, Model $history): void
     {
+        if ($history->getAttribute('trigger_type') !== ScheduleTriggerType::Manual) {
+            return;
+        }
+
         $this->logActivity('schedule.run', [
             'loggable' => $schedule,
             'description_key' => 'activity_log.description.schedule_run',

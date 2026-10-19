@@ -9,11 +9,13 @@
  * 1. SEO 탭 UI 구조 — TagInput(봇 UA), Toggle(캐시), NumberInput(TTL) 존재
  * 2. 봇 UA 관리 TagInput creatable 설정 — creatable=true
  * 3. 캐시 설정 Toggle 바인딩 — seo.cache_enabled 바인딩 확인
- * 4. Sitemap 설정 섹션 존재 — sitemap_enabled Toggle, schedule Select, time Input 존재
- * 5. sitemap_schedule Select 옵션 — hourly, daily, weekly 옵션 포함
- * 6. sitemap_schedule_time 조건부 표시 — schedule=daily/weekly 시에만 표시 (hourly 시 미표시)
+ * 4. Sitemap 설정 섹션 존재 — sitemap_enabled Toggle, 생성 주기 링크 블록 존재(픽스처 ↔ 실제 _tab_seo.json 동기 대조 포함)
+ * 5. 생성 주기·시각 입력 칸 없음 — 7.2.0(#17, D10) 부터 주기는 코어 스케줄 행(core/sitemap-generate)이 원천이다
+ * 6. 스케줄 관리 링크 — 소유=코어 + 식별자 검색 쿼리로 그 행을 걸러 연다, 저장 폼 값과 무관하게 보인다
  * 7. sitemap_cache_ttl NumberInput 존재 — seo.sitemap_cache_ttl 바인딩 확인
  * 8. 저장 버튼 apiCall params에 _tab=seo — body에 _tab, seo 데이터 포함
+ *
+ * 시나리오 매니페스트: settings-schedule-links (tests/scenarios — test_files 귀속)
  */
 
 import React from 'react';
@@ -167,6 +169,16 @@ const TestFragment: React.FC<{
 // 레지스트리 설정
 // ==============================
 
+const TestA: React.FC<{
+  href?: string;
+  className?: string;
+  children?: React.ReactNode;
+  text?: string;
+  id?: string;
+}> = ({ href, className, children, text, id }) => (
+  <a href={href} className={className} id={id} data-testid={id ? 'link-' + id : undefined}>{children || text}</a>
+);
+
 function setupTestRegistry(): ComponentRegistry {
   const registry = ComponentRegistry.getInstance();
 
@@ -182,6 +194,7 @@ function setupTestRegistry(): ComponentRegistry {
     TagInput: { component: TestTagInput, metadata: { name: 'TagInput', type: 'composite' } },
     Select: { component: TestSelect, metadata: { name: 'Select', type: 'composite' } },
     Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
+    A: { component: TestA, metadata: { name: 'A', type: 'basic' } },
   };
 
   return registry;
@@ -390,30 +403,22 @@ const seoTabPartial: any = {
               ],
             },
             {
-              id: 'field_sitemap_schedule', type: 'basic', name: 'Div',
+              id: 'field_sitemap_schedule_link', type: 'basic', name: 'Div',
+              props: { className: 'alert-info' },
+              // 실제 블록은 [아이콘 · 문장 · 다음 실행 · 링크] 묶음이다(#17 후속 H-42) — 픽스처는 아이콘과 다음 실행 줄을 뺀 골격만 베낀다.
               children: [
-                { type: 'basic', name: 'Label', props: { className: 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1' }, text: '$t:admin.settings.seo.sitemap_schedule' },
                 {
-                  type: 'composite', name: 'Select',
-                  props: {
-                    name: 'seo.sitemap_schedule',
-                    className: 'w-full',
-                    options: [
-                      { value: 'hourly', label: '$t:admin.settings.seo.sitemap_schedule_hourly' },
-                      { value: 'daily', label: '$t:admin.settings.seo.sitemap_schedule_daily' },
-                      { value: 'weekly', label: '$t:admin.settings.seo.sitemap_schedule_weekly' },
-                    ],
-                  },
+                  type: 'basic', name: 'Div', props: { className: 'flex gap-3' },
+                  children: [
+                    {
+                      type: 'basic', name: 'Div', props: { className: 'min-w-0 space-y-1' },
+                      children: [
+                        { type: 'basic', name: 'P', props: { className: 'text-label-subtle' }, text: '$t:admin.settings.seo.sitemap_schedule_managed' },
+                        { id: 'sitemap_schedule_link', type: 'basic', name: 'A', props: { href: '/admin/schedules?extension_type=core&search_field=identifier&search_keyword=sitemap-generate', className: 'text-link' }, text: '$t:admin.settings.schedule_link.change' },
+                      ],
+                    },
+                  ],
                 },
-              ],
-            },
-            {
-              id: 'field_sitemap_schedule_time', type: 'basic', name: 'Div',
-              if: "{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}",
-              children: [
-                { type: 'basic', name: 'Label', props: { className: 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1' }, text: '$t:admin.settings.seo.sitemap_schedule_time' },
-                { type: 'basic', name: 'Input', props: { type: 'text', name: 'seo.sitemap_schedule_time', placeholder: '02:00', className: 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' } },
-                { type: 'basic', name: 'P', props: { className: 'text-xs text-gray-500 dark:text-gray-400 mt-1' }, text: '$t:admin.settings.seo.sitemap_schedule_time_hint' },
               ],
             },
             {
@@ -469,6 +474,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('SEO 탭 UI 구조', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('봇 UA TagInput, 캐시 Toggle, 캐시 TTL NumberInput이 존재한다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
@@ -496,6 +503,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(screen.getByTestId('input-seo.cache_ttl')).toBeInTheDocument();
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('메타 설정 섹션 — meta_title_suffix, meta_description, meta_keywords 필드가 존재한다', () => {
       const tabContent = seoTabPartial;
       const metaCard = tabContent.children[0]; // card_meta_settings
@@ -510,6 +519,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(fieldsContainer.children[2].id).toBe('field_meta_keywords');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('분석 설정 섹션 — google_analytics_id 필드가 존재한다', () => {
       const tabContent = seoTabPartial;
       const analyticsCard = tabContent.children[1]; // card_analytics_settings
@@ -519,6 +530,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(fieldsContainer.children[0].id).toBe('field_google_analytics_id');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('검증 설정 섹션 — google, naver 사이트 인증 필드가 존재한다', () => {
       const tabContent = seoTabPartial;
       const verificationCard = tabContent.children[2]; // card_verification_settings
@@ -535,6 +548,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('봇 UA 관리 TagInput creatable 설정', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('TagInput의 creatable이 true로 설정되어 있다', () => {
       const tabContent = seoTabPartial;
       const botCard = tabContent.children[3]; // card_bot_settings
@@ -549,12 +564,16 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(tagInput.props.creatable).toBe(true);
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('TagInput name이 seo.bot_user_agents이다', () => {
       const botCard = seoTabPartial.children[3];
       const tagInput = botCard.children[2].children[1].children[1];
       expect(tagInput.props.name).toBe('seo.bot_user_agents');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('렌더링 시 TagInput에 creatable 속성이 전달된다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
@@ -582,6 +601,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('캐시 설정 Toggle 바인딩', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('Toggle name이 seo.cache_enabled이다', () => {
       const cacheCard = seoTabPartial.children[4]; // card_seo_cache_settings
       expect(cacheCard.id).toBe('card_seo_cache_settings');
@@ -595,6 +616,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(toggle.props.name).toBe('seo.cache_enabled');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('렌더링 시 Toggle이 seo.cache_enabled name으로 표시된다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
@@ -623,7 +646,9 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('Sitemap 설정 섹션', () => {
-    it('sitemap_enabled Toggle, schedule Select, time Input이 존재한다', () => {
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('sitemap_enabled Toggle 과 생성 주기 링크 블록이 존재한다', () => {
       const sitemapCard = seoTabPartial.children[5]; // card_sitemap_settings
       expect(sitemapCard.id).toBe('card_sitemap_settings');
 
@@ -636,22 +661,52 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(toggle.name).toBe('Toggle');
       expect(toggle.props.name).toBe('seo.sitemap_enabled');
 
-      // sitemap_schedule Select
-      const scheduleField = fieldsContainer.children[1];
-      expect(scheduleField.id).toBe('field_sitemap_schedule');
-      const select = scheduleField.children[1];
-      expect(select.name).toBe('Select');
-      expect(select.props.name).toBe('seo.sitemap_schedule');
-
-      // sitemap_schedule_time Input
-      const timeField = fieldsContainer.children[2];
-      expect(timeField.id).toBe('field_sitemap_schedule_time');
-      const timeInput = timeField.children[1];
-      expect(timeInput.name).toBe('Input');
-      expect(timeInput.props.name).toBe('seo.sitemap_schedule_time');
+      // 생성 주기 — 입력 칸 대신 스케줄 관리 링크 블록
+      const linkBlock = fieldsContainer.children[1];
+      expect(linkBlock.id).toBe('field_sitemap_schedule_link');
+      const link = linkBlock.children[0].children[0].children[1];
+      expect(link.name).toBe('A');
+      expect(link.id).toBe('sitemap_schedule_link');
     });
 
-    it('렌더링 시 sitemap 설정 컴포넌트들이 표시된다', async () => {
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('픽스처의 사이트맵 카드 항목이 실제 _tab_seo.json 에 같은 순서로 있다(손 복사 픽스처 낡음 방지)', () => {
+      const real = require('../../../../../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_seo.json');
+      const findCard = (root: any): any => {
+        let found: any = null;
+        const visit = (n: any) => {
+          if (found || !n || typeof n !== 'object') return;
+          if (Array.isArray(n)) { n.forEach(visit); return; }
+          if (n.id === 'card_sitemap_settings') { found = n; return; }
+          Object.values(n).forEach(visit);
+        };
+        visit(root);
+        return found;
+      };
+      const ids = (node: any): string[] => {
+        const out: string[] = [];
+        const visit = (n: any) => {
+          if (!n || typeof n !== 'object') return;
+          if (Array.isArray(n)) { n.forEach(visit); return; }
+          if (typeof n.id === 'string' && /^(toggle_sitemap|field_sitemap|sitemap_)/.test(n.id)) out.push(n.id);
+          Object.values(n).forEach(visit);
+        };
+        visit(node);
+        return out;
+      };
+      const realCard = findCard(real);
+      expect(realCard).toBeTruthy();
+      // 픽스처는 실제 카드의 일부만 베낀다 — 픽스처가 가진 항목이 실제에도 **같은 순서로** 있어야 한다(없어진 칸을 단언하지 않는다).
+      const fixtureIds = ids(seoTabPartial.children[5]);
+      const realIds = ids(realCard);
+      expect(fixtureIds.length).toBeGreaterThan(0);
+      expect(realIds.filter((id) => fixtureIds.includes(id))).toEqual(fixtureIds);
+    });
+
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('렌더링 시 sitemap 토글과 스케줄 관리 링크가 표시된다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
           isAuthenticated: true,
@@ -669,36 +724,42 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       await testUtils.render();
 
       expect(screen.getByTestId('toggle-seo.sitemap_enabled')).toBeInTheDocument();
-      expect(screen.getByTestId('select-seo.sitemap_schedule')).toBeInTheDocument();
+      expect(screen.getByTestId('link-sitemap_schedule_link')).toBeInTheDocument();
     });
   });
 
   // ==============================
-  // 5. sitemap_schedule Select 옵션
+  // 5. 생성 주기·시각 입력 칸 없음 (7.2.0 #17 D10)
   // ==============================
 
-  describe('sitemap_schedule Select 옵션', () => {
-    it('hourly, daily, weekly 옵션이 포함되어 있다', () => {
-      const sitemapCard = seoTabPartial.children[5];
-      const scheduleField = sitemapCard.children[2].children[1]; // field_sitemap_schedule
-      const select = scheduleField.children[1]; // Select
+  describe('사이트맵 생성 주기·시각 입력 칸 없음', () => {
+    const allNames = (node: any): string[] => {
+      const out: string[] = [];
+      const visit = (n: any) => {
+        if (!n || typeof n !== 'object') return;
+        if (Array.isArray(n)) { n.forEach(visit); return; }
+        if (typeof n.props?.name === 'string') out.push(n.props.name);
+        Object.values(n).forEach(visit);
+      };
+      visit(node);
+      return out;
+    };
 
-      const options = select.props.options;
-      const values = options.map((opt: any) => opt.value);
-
-      expect(values).toContain('hourly');
-      expect(values).toContain('daily');
-      expect(values).toContain('weekly');
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('seo.sitemap_schedule 이름의 입력이 없다', () => {
+      expect(allNames(seoTabPartial)).not.toContain('seo.sitemap_schedule');
     });
 
-    it('옵션이 정확히 3개이다', () => {
-      const sitemapCard = seoTabPartial.children[5];
-      const select = sitemapCard.children[2].children[1].children[1];
-
-      expect(select.props.options).toHaveLength(3);
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('seo.sitemap_schedule_time 이름의 입력이 없다', () => {
+      expect(allNames(seoTabPartial)).not.toContain('seo.sitemap_schedule_time');
     });
 
-    it('렌더링 시 Select에 3개 옵션이 표시된다', async () => {
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('렌더링 시 주기 선택 상자·시각 입력이 나타나지 않는다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
           isAuthenticated: true,
@@ -715,76 +776,45 @@ describe('환경설정 SEO 탭 레이아웃', () => {
 
       await testUtils.render();
 
-      const selectContainer = screen.getByTestId('select-seo.sitemap_schedule');
-      const optionElements = selectContainer.querySelectorAll('option');
-      expect(optionElements).toHaveLength(3);
+      expect(screen.queryByTestId('select-seo.sitemap_schedule')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('input-seo.sitemap_schedule_time')).not.toBeInTheDocument();
     });
   });
 
   // ==============================
-  // 6. sitemap_schedule_time 조건부 표시
+  // 6. 스케줄 관리 링크
   // ==============================
 
-  describe('sitemap_schedule_time 조건부 표시', () => {
-    it('if 조건이 hourly가 아닐 때만 표시하는 표현식이다', () => {
-      const sitemapCard = seoTabPartial.children[5];
-      const timeField = sitemapCard.children[2].children[2]; // field_sitemap_schedule_time
-      expect(timeField.id).toBe('field_sitemap_schedule_time');
+  describe('스케줄 관리 링크', () => {
+    const link = () => seoTabPartial.children[5].children[2].children[1].children[0].children[0].children[1];
 
-      // hourly가 아닐 때만 표시 (기본값 daily)
-      expect(timeField.if).toBe(
-        "{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}"
-      );
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('href 가 스케줄 관리 화면의 코어 사이트맵 행을 거르는 주소다', () => {
+      expect(link().props.href).toBe('/admin/schedules?extension_type=core&search_field=identifier&search_keyword=sitemap-generate');
     });
 
-    it('기본값(daily)에서는 time 필드가 표시된다', async () => {
-      testUtils = createLayoutTest(seoTabLayout, {
-        auth: {
-          isAuthenticated: true,
-          user: { id: 1, name: 'Admin', role: 'super_admin' },
-          authType: 'admin',
-        },
-        locale: 'ko',
-        componentRegistry: registry,
-        initialState: {
-          _global: { activeSettingsTab: 'seo' },
-          _local: {
-            form: { seo: { sitemap_schedule: 'daily' } },
-          },
-        },
-        queryParams: { tab: 'seo' },
-      });
-
-      await testUtils.render();
-
-      // daily일 때 time 필드 표시됨
-      expect(screen.getByTestId('input-seo.sitemap_schedule_time')).toBeInTheDocument();
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('href 쿼리가 스케줄 목록 서버 키(extension_type·search_field·search_keyword)만 쓴다', () => {
+      const url = new URL(link().props.href, 'http://localhost');
+      expect(url.pathname).toBe('/admin/schedules');
+      expect([...url.searchParams.keys()].sort()).toEqual(['extension_type', 'search_field', 'search_keyword']);
+      expect(url.searchParams.get('extension_type')).toBe('core');
+      expect(url.searchParams.get('search_field')).toBe('identifier');
     });
 
-    it('schedule=weekly일 때도 time 필드가 표시된다', async () => {
-      testUtils = createLayoutTest(seoTabLayout, {
-        auth: {
-          isAuthenticated: true,
-          user: { id: 1, name: 'Admin', role: 'super_admin' },
-          authType: 'admin',
-        },
-        locale: 'ko',
-        componentRegistry: registry,
-        initialState: {
-          _global: { activeSettingsTab: 'seo' },
-          _local: {
-            form: { seo: { sitemap_schedule: 'weekly' } },
-          },
-        },
-        queryParams: { tab: 'seo' },
-      });
-
-      await testUtils.render();
-
-      expect(screen.getByTestId('input-seo.sitemap_schedule_time')).toBeInTheDocument();
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('안내·링크 문구는 번역 키다', () => {
+      const block = seoTabPartial.children[5].children[2].children[1].children[0].children[0];
+      expect(block.children[0].text).toBe('$t:admin.settings.seo.sitemap_schedule_managed');
+      expect(link().text).toBe('$t:admin.settings.schedule_link.change');
     });
 
-    it('schedule=hourly일 때 time 필드가 숨겨진다', async () => {
+    // @scenario screen=seo
+    // @effects seo_sitemap_schedule_link_replaces_inputs
+    it('저장된 폼 값(옛 주기 hourly 등)과 무관하게 링크가 보인다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
           isAuthenticated: true,
@@ -804,7 +834,7 @@ describe('환경설정 SEO 탭 레이아웃', () => {
 
       await testUtils.render();
 
-      expect(screen.queryByTestId('input-seo.sitemap_schedule_time')).not.toBeInTheDocument();
+      expect(screen.getByTestId('link-sitemap_schedule_link')).toHaveAttribute('href', '/admin/schedules?extension_type=core&search_field=identifier&search_keyword=sitemap-generate');
     });
   });
 
@@ -813,9 +843,11 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('sitemap_cache_ttl NumberInput', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('Input type=number, name=seo.sitemap_cache_ttl이다', () => {
       const sitemapCard = seoTabPartial.children[5];
-      const cacheTtlField = sitemapCard.children[2].children[3]; // field_sitemap_cache_ttl
+      const cacheTtlField = sitemapCard.children[2].children[2]; // field_sitemap_cache_ttl
       expect(cacheTtlField.id).toBe('field_sitemap_cache_ttl');
 
       const input = cacheTtlField.children[1];
@@ -824,14 +856,18 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(input.props.name).toBe('seo.sitemap_cache_ttl');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('min=3600, max=604800으로 설정되어 있다', () => {
       const sitemapCard = seoTabPartial.children[5];
-      const input = sitemapCard.children[2].children[3].children[1];
+      const input = sitemapCard.children[2].children[2].children[1];
 
       expect(input.props.min).toBe(3600);
       expect(input.props.max).toBe(604800);
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('렌더링 시 sitemap_cache_ttl Input이 표시된다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
@@ -858,6 +894,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('저장 버튼 apiCall params에 _tab=seo', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('부모 레이아웃의 apiCall body에 _tab과 해당 탭 데이터가 포함된다', () => {
       // 부모 레이아웃(admin_settings.g7.html)의 저장 버튼 apiCall body 표현식 검증
       // body: "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; return { _tab: tab, [tab]: form[tab] || {} }; })()}}"
@@ -872,14 +910,20 @@ describe('환경설정 SEO 탭 레이아웃', () => {
       expect(bodyExpr).toContain('query.tab');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('apiCall target이 /api/admin/settings이다', () => {
       expect(saveButtonApiCall.target).toBe('/api/admin/settings');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('apiCall method가 POST이다', () => {
       expect(saveButtonApiCall.params.method).toBe('POST');
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('seo 탭 활성 시 body에 _tab=seo, seo 데이터가 포함된다', () => {
       // body 표현식을 직접 평가하여 검증
       // activeSettingsTab = 'seo' 일 때:
@@ -902,12 +946,16 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('SEO 탭 전체 if 조건', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('최상위 if 조건이 activeSettingsTab === seo일 때만 렌더링한다', () => {
       expect(seoTabPartial.if).toBe(
         "{{(_global.activeSettingsTab || query.tab || 'general') === 'seo'}}"
       );
     });
 
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('탭이 seo가 아닌 경우 콘텐츠가 렌더링되지 않는다', async () => {
       testUtils = createLayoutTest(seoTabLayout, {
         auth: {
@@ -936,6 +984,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('봇 감지 토글', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('bot_detection_enabled Toggle이 존재한다', () => {
       const botCard = seoTabPartial.children[3]; // card_bot_settings
       const toggleRow = botCard.children[2].children[0]; // toggle_bot_detection_enabled
@@ -952,6 +1002,8 @@ describe('환경설정 SEO 탭 레이아웃', () => {
   // ==============================
 
   describe('SEO 캐시 TTL', () => {
+    // @scenario screen=seo
+    // @effects seo_tab_layout_contract
     it('cache_ttl Input이 type=number, min=60, max=86400이다', () => {
       const cacheCard = seoTabPartial.children[4]; // card_seo_cache_settings
       const cacheTtlField = cacheCard.children[2].children[1]; // field_seo_cache_ttl

@@ -220,6 +220,36 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   // 현재 선택된 언어 탭 (tabs 레이아웃용)
   const [currentLocale, setCurrentLocale] = useState<string>(actualDefaultLocale);
 
+  // ── 비어 있는 필수 언어 탭 열기 (#17 P10) ──
+  // tabs 배치는 지금 탭이 아닌 언어 칸을 hidden 으로 숨긴다. 필수 칸이 빈 채 다른 탭에서 저장하면 브라우저 검증이
+  // 숨은 칸에서 「포커스할 수 없음」으로 멈춰 안내 없이 제출이 끝났다. invalid 가 오면 그 탭을 열고, 칸이 보인 뒤
+  // 포커스·검증 말풍선을 띄운다(다시 오는 invalid 는 이미 그 탭이라 되풀이되지 않는다).
+  const pendingRevealRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  const handleHiddenInvalid = useCallback((localeCode: string, target: HTMLInputElement | HTMLTextAreaElement) => {
+    if (localeCode === currentLocale) return;
+    pendingRevealRef.current = target;
+    setCurrentLocale(localeCode);
+  }, [currentLocale]);
+
+  useEffect(() => {
+    const target = pendingRevealRef.current;
+    if (!target) return;
+    pendingRevealRef.current = null;
+    target.focus();
+    target.reportValidity?.();
+  }, [currentLocale]);
+
+  // 서버 검증 오류(noValidate 폼)는 칸 아래 문구로 오는데, 필수 언어 칸이 숨은 탭이면 문구도 가려진다.
+  // 오류가 새로 왔고 필수 언어 칸이 비어 있으면 그 탭으로 옮긴다 — 채워져 있으면 다른 이유의 오류라 지금 탭을 둔다.
+  useEffect(() => {
+    if (!error || !required) return;
+    if (layout !== 'tabs' && layout !== 'compact') return;
+    if (localValueRef.current[actualDefaultLocale]?.trim()) return;
+    setCurrentLocale(actualDefaultLocale);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
   // 추가 가능한 언어 목록 (이미 활성화된 언어 제외)
   const addableLocales = useMemo(() => {
     return actualAvailableLocales.filter(locale => !activeLocales.includes(locale.code));
@@ -447,6 +477,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             name={`${name}[${localeCode}]`}
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
+            onInvalid={(e) => handleHiddenInvalid(localeCode, e.currentTarget)}
             placeholder={localizedPlaceholder}
             required={required && localeCode === actualDefaultLocale}
             disabled={disabled}
@@ -460,6 +491,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             name={`${name}[${localeCode}]`}
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
+            onInvalid={(e) => handleHiddenInvalid(localeCode, e.currentTarget)}
             placeholder={localizedPlaceholder}
             required={required && localeCode === actualDefaultLocale}
             disabled={disabled}
@@ -469,7 +501,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
         )}
       </Div>
     );
-  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError]);
+  }, [name, localValue, handleInputChange, handleHiddenInvalid, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError]);
 
   // Inline 레이아웃 렌더링
   const renderInlineLayout = () => (

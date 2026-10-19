@@ -3,6 +3,7 @@
         "data_source": {
             "availableChannels": "Available Channels",
             "boardIdentityPolicies": "Board Identity Policies",
+            "boardSchedules": "Board schedules",
             "boardIdentityPurposes": "Board Identity Purposes",
             "boardPrivacyRetentionPreview": "Board Privacy Retention Targets",
             "boardNotificationDefinitions": "Board Notification Definitions",

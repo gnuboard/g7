@@ -24,7 +24,7 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="targetType" value="all" checked="{{(_local.filter.targetType || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="targetType" value="all" checked="{{(_local.filter.targetType || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 혜택 대상 — 전체. 하나만 고르는 값이라 "전체" 도 값(`all`)이다. -->
                 <set-state target="_local" filter.targetType="all"/>
@@ -33,7 +33,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="targetType" value="product_amount" checked="{{_local.filter.targetType === 'product_amount'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="targetType" value="product_amount" checked="{{_local.filter.targetType === 'product_amount'}}" class="radio">
               <on type="change">
                 <!-- 상품금액 할인. 장바구니의 해당 상품 값에서 깎인다. -->
                 <set-state target="_local" filter.targetType="product_amount"/>
@@ -42,7 +42,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.product_amount</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="targetType" value="order_amount" checked="{{_local.filter.targetType === 'order_amount'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="targetType" value="order_amount" checked="{{_local.filter.targetType === 'order_amount'}}" class="radio">
               <on type="change">
                 <!-- 주문금액 할인. 주문 전체 합계에서 깎이므로 상품금액 할인과 함께 쓰면 적용 순서가 결과를 가른다. -->
                 <set-state target="_local" filter.targetType="order_amount"/>
@@ -51,7 +51,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_target_type.order_amount</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="targetType" value="shipping_fee" checked="{{_local.filter.targetType === 'shipping_fee'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="targetType" value="shipping_fee" checked="{{_local.filter.targetType === 'shipping_fee'}}" class="radio">
               <on type="change">
                 <!-- 배송비 할인. 상품 값은 그대로 두고 배송비만 낮춘다. -->
                 <set-state target="_local" filter.targetType="shipping_fee"/>
@@ -71,7 +71,7 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueStatus" value="all" checked="{{(_local.filter.issueStatus || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueStatus" value="all" checked="{{(_local.filter.issueStatus || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 발급상태 — 전체. -->
                 <set-state target="_local" filter.issueStatus="all"/>
@@ -80,7 +80,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueStatus" value="issuing" checked="{{_local.filter.issueStatus === 'issuing'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueStatus" value="issuing" checked="{{_local.filter.issueStatus === 'issuing'}}" class="radio">
               <on type="change">
                 <!-- 발급중. 새 발급이 열려 있는 상태다. -->
                 <set-state target="_local" filter.issueStatus="issuing"/>
@@ -89,7 +89,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueStatus" value="stopped" checked="{{_local.filter.issueStatus === 'stopped'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueStatus" value="stopped" checked="{{_local.filter.issueStatus === 'stopped'}}" class="radio">
               <on type="change">
                 <!-- 발급중지. 새 발급만 막히고 **이미 나간 쿠폰은 그대로 살아 있다**(회수는 발급취소다). -->
                 <set-state target="_local" filter.issueStatus="stopped"/>
@@ -224,7 +224,7 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueMethod" value="all" checked="{{(_local.filter.issueMethod || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueMethod" value="all" checked="{{(_local.filter.issueMethod || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 발급방법 — 전체. -->
                 <set-state target="_local" filter.issueMethod="all"/>
@@ -233,7 +233,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueMethod" value="direct" checked="{{_local.filter.issueMethod === 'direct'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueMethod" value="direct" checked="{{_local.filter.issueMethod === 'direct'}}" class="radio">
               <on type="change">
                 <!-- 직접발급. 관리자가 회원을 지정해 주는 방식이다(즉시발급 창). -->
                 <set-state target="_local" filter.issueMethod="direct"/>
@@ -242,7 +242,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.direct</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueMethod" value="download" checked="{{_local.filter.issueMethod === 'download'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueMethod" value="download" checked="{{_local.filter.issueMethod === 'download'}}" class="radio">
               <on type="change">
                 <!-- 다운로드. 회원이 쇼핑몰에서 직접 받아 가는 방식이다. -->
                 <set-state target="_local" filter.issueMethod="download"/>
@@ -251,7 +251,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_method.download</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueMethod" value="auto" checked="{{_local.filter.issueMethod === 'auto'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueMethod" value="auto" checked="{{_local.filter.issueMethod === 'auto'}}" class="radio">
               <on type="change">
                 <!-- 자동발급. 아래 "발급조건" 이 맞을 때 시스템이 준다 — 그래서 이 둘은 함께 보는 일이 많다. -->
                 <set-state target="_local" filter.issueMethod="auto"/>
@@ -271,7 +271,7 @@
         <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueCondition" value="all" checked="{{(_local.filter.issueCondition || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueCondition" value="all" checked="{{(_local.filter.issueCondition || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 발급조건 — 전체. -->
                 <set-state target="_local" filter.issueCondition="all"/>
@@ -280,7 +280,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueCondition" value="manual" checked="{{_local.filter.issueCondition === 'manual'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueCondition" value="manual" checked="{{_local.filter.issueCondition === 'manual'}}" class="radio">
               <on type="change">
                 <!-- 수동. 조건 없이 관리자가 줄 때다. -->
                 <set-state target="_local" filter.issueCondition="manual"/>
@@ -289,7 +289,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.manual</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueCondition" value="signup" checked="{{_local.filter.issueCondition === 'signup'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueCondition" value="signup" checked="{{_local.filter.issueCondition === 'signup'}}" class="radio">
               <on type="change">
                 <!-- 회원가입. 가입 시점에 자동으로 나간다. -->
                 <set-state target="_local" filter.issueCondition="signup"/>
@@ -298,7 +298,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.signup</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueCondition" value="first_purchase" checked="{{_local.filter.issueCondition === 'first_purchase'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueCondition" value="first_purchase" checked="{{_local.filter.issueCondition === 'first_purchase'}}" class="radio">
               <on type="change">
                 <!-- 첫 구매. 첫 주문이 확정될 때 나간다. -->
                 <set-state target="_local" filter.issueCondition="first_purchase"/>
@@ -307,7 +307,7 @@
             <span class="text-body">$t:sirsoft-ecommerce.enums.coupon_issue_condition.first_purchase</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="issueCondition" value="birthday" checked="{{_local.filter.issueCondition === 'birthday'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="issueCondition" value="birthday" checked="{{_local.filter.issueCondition === 'birthday'}}" class="radio">
               <on type="change">
                 <!-- 생일. 생일 정보가 없는 회원에게는 나가지 않는다. -->
                 <set-state target="_local" filter.issueCondition="birthday"/>

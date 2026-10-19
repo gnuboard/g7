@@ -78,6 +78,8 @@ effects:
   # 동기화 (S3)
   - scheduler_skips_kapi_when_no_requested_rows
   - scheduler_uses_list_batch_not_per_row_detail
+  - scheduler_list_failure_keeps_rows_and_exits_zero
+  - schedule_declared_every_thirty_minutes
   - approval_transition_freezes_content_into_approved_content
   - rejection_transition_stores_comments_detail
   - manual_sync_updates_single_row

@@ -272,7 +272,7 @@
         <span class="filter-label w-32">$t:admin.users.filter.admin_scope</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="adminScope" value="all" checked="{{(_local.filter.adminScope || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="adminScope" value="all" checked="{{(_local.filter.adminScope || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 관리자 여부 — 전체. 하나만 고르는 값이라 「전체」도 값(`all`)이다. -->
                 <set-state target="_local" filter.adminScope="all"/>
@@ -281,7 +281,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="adminScope" value="admin" checked="{{_local.filter.adminScope === 'admin'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="adminScope" value="admin" checked="{{_local.filter.adminScope === 'admin'}}" class="radio">
               <on type="change">
                 <!-- 관리자만. 슈퍼관리자이거나 관리자 권한이 든 역할을 가진 회원이다(역할 이름이 아니라 권한으로 판정). -->
                 <set-state target="_local" filter.adminScope="admin"/>
@@ -290,7 +290,7 @@
             <span class="text-body">$t:admin.users.filter.admin_scope_options.admin</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="adminScope" value="member" checked="{{_local.filter.adminScope === 'member'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="adminScope" value="member" checked="{{_local.filter.adminScope === 'member'}}" class="radio">
               <on type="change">
                 <!-- 일반회원만. -->
                 <set-state target="_local" filter.adminScope="member"/>
@@ -311,7 +311,7 @@
         <span class="filter-label w-32">$t:admin.users.filter.lock_state</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="lockState" value="all" checked="{{(_local.filter.lockState || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="lockState" value="all" checked="{{(_local.filter.lockState || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 계정 잠금 — 전체. -->
                 <set-state target="_local" filter.lockState="all"/>
@@ -320,7 +320,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="lockState" value="locked" checked="{{_local.filter.lockState === 'locked'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="lockState" value="locked" checked="{{_local.filter.lockState === 'locked'}}" class="radio">
               <on type="change">
                 <!-- 잠김. 영구 잠금이거나 해제 시각이 아직 오지 않은 계정이다 — 해제 시각이 지난 잠금은 정상으로 본다. -->
                 <set-state target="_local" filter.lockState="locked"/>
@@ -329,7 +329,7 @@
             <span class="text-body">$t:admin.users.filter.lock_state_options.locked</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="lockState" value="unlocked" checked="{{_local.filter.lockState === 'unlocked'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="lockState" value="unlocked" checked="{{_local.filter.lockState === 'unlocked'}}" class="radio">
               <on type="change">
                 <!-- 정상. -->
                 <set-state target="_local" filter.lockState="unlocked"/>
@@ -458,7 +458,7 @@
         <span class="filter-label w-32">$t:admin.users.filter.email_verified</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="emailVerified" value="all" checked="{{(_local.filter.emailVerified || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="emailVerified" value="all" checked="{{(_local.filter.emailVerified || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 이메일 인증 — 전체. -->
                 <set-state target="_local" filter.emailVerified="all"/>
@@ -467,7 +467,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="emailVerified" value="verified" checked="{{_local.filter.emailVerified === 'verified'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="emailVerified" value="verified" checked="{{_local.filter.emailVerified === 'verified'}}" class="radio">
               <on type="change">
                 <!-- 인증 완료 — 인증 시각이 있는 회원. -->
                 <set-state target="_local" filter.emailVerified="verified"/>
@@ -476,7 +476,7 @@
             <span class="text-body">$t:admin.users.filter.verified_options.verified</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="emailVerified" value="unverified" checked="{{_local.filter.emailVerified === 'unverified'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="emailVerified" value="unverified" checked="{{_local.filter.emailVerified === 'unverified'}}" class="radio">
               <on type="change">
                 <!-- 미완료. -->
                 <set-state target="_local" filter.emailVerified="unverified"/>
@@ -497,7 +497,7 @@
         <span class="filter-label w-32">$t:admin.users.filter.identity_verified</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="identityVerified" value="all" checked="{{(_local.filter.identityVerified || 'all') === 'all'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="identityVerified" value="all" checked="{{(_local.filter.identityVerified || 'all') === 'all'}}" class="radio">
               <on type="change">
                 <!-- 본인인증 — 전체. -->
                 <set-state target="_local" filter.identityVerified="all"/>
@@ -506,7 +506,7 @@
             <span class="text-body">$t:common.all</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="identityVerified" value="verified" checked="{{_local.filter.identityVerified === 'verified'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="identityVerified" value="verified" checked="{{_local.filter.identityVerified === 'verified'}}" class="radio">
               <on type="change">
                 <!-- 본인인증 완료 — 최종 성공 시각이 있는 회원. -->
                 <set-state target="_local" filter.identityVerified="verified"/>
@@ -515,7 +515,7 @@
             <span class="text-body">$t:admin.users.filter.verified_options.verified</span>
           </label>
           <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" name="identityVerified" value="unverified" checked="{{_local.filter.identityVerified === 'unverified'}}" class="radio">
+            <input type="radio" :autoBinding="false" name="identityVerified" value="unverified" checked="{{_local.filter.identityVerified === 'unverified'}}" class="radio">
               <on type="change">
                 <!-- 미완료. -->
                 <set-state target="_local" filter.identityVerified="unverified"/>

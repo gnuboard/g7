@@ -853,7 +853,8 @@
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies"
+        "identity_policies": "Identity Policies",
+        "schedules": "Schedules"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -866,7 +867,6 @@
       "refresh_layouts_description": "Database layouts will be replaced with layouts from module files. All previously modified layout content will be deleted.",
       "deactivate_warning_title": "Module Deactivation Warning",
       "deactivate_warning_message": "There are active extensions (templates, modules, plugins) that depend on this module.",
-      "affected_templates": "The following templates will be affected:",
       "dependent_templates": "Dependent Templates",
       "dependent_modules": "Dependent Modules",
       "dependent_plugins": "Dependent Plugins",
@@ -1078,7 +1078,8 @@
         "permissions": "Permissions",
         "menus": "Admin Menus",
         "notification_definitions": "Notification Definitions",
-        "identity_policies": "Identity Policies"
+        "identity_policies": "Identity Policies",
+        "schedules": "Schedules"
       },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
@@ -1363,102 +1364,104 @@
     "page_title": "Schedule Management",
     "page_description": "Manage system scheduled tasks.",
     "title": "Schedule Management",
-    "description": "View and manage schedules (crontab, Jobs) registered in the system.",
-    "add_schedule": "Add Schedule",
-    "register_schedule": "Register Schedule",
-    "search_placeholder": "Search by schedule name...",
-    "search_input_placeholder": "Enter search term...",
-    "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
-    "advanced_search": "Advanced Search",
-    "apply_filters": "Apply Filters",
-    "reset_filters": "Reset",
-    "column_select": "Columns ({{count}})",
+    "description": "View and manage schedules (crontab, jobs) registered in the system.",
+    "search_input_placeholder": "Enter a search term...",
     "total_count": "Total {{count}}",
+    "total_at_least": "Total {{count}}+",
     "selected_count": "{{count}} selected",
+    "per_page": "{{count}}",
+    "per_page_label": "Rows per page",
     "duration_display": "{{duration}} elapsed",
+    "empty": "No schedules registered.",
     "tabs": {
-      "schedules": "Scheduled Tasks",
-      "queue": "Queue Monitoring"
+      "schedules": "Scheduled tasks",
+      "queue": "Queue monitoring"
     },
-    "stats": {
-      "total": "Total",
-      "active": "Active",
-      "success": "Success",
-      "failed": "Failed"
+    "action": {
+      "register": "Register schedule",
+      "security_policy": "Security policy",
+      "edit": "Edit",
+      "run": "Run now",
+      "history": "Run history",
+      "duplicate": "Copy",
+      "delete": "Delete",
+      "delete_disabled_reason": "Only custom tasks can be deleted.",
+      "bulk_apply": "Apply to selected",
+      "bulk_delete": "Delete selected",
+      "advanced_search": "Advanced search",
+      "edit_search": "Edit search",
+      "reset": "Reset"
     },
     "search_fields": {
       "all": "All",
-      "name": "Task Name",
-      "command": "Command",
-      "description": "Description"
+      "name": "Task name",
+      "identifier": "Identifier",
+      "command": "Command"
     },
-    "filters": {
-      "type": "Task Type",
+    "filter": {
+      "detail_title": "Advanced search",
+      "owner": "Owner",
+      "owner_schedule_count": "Schedules",
+      "owner_search": "Search extension name or identifier",
+      "owner_select": "Select extension",
+      "show_in_basic": "Show the {{label}} filter in basic search",
+      "type": "Task type",
       "status": "Status",
-      "result": "Execution Result",
-      "last_result": "Last Result",
-      "all_types": "All Types",
-      "all_status": "All Status",
-      "all_results": "All Results",
-      "all": "All",
+      "last_result": "Last run result",
       "frequency": "Frequency",
-      "created_at": "Created Date",
-      "start_date": "Start Date",
-      "end_date": "End Date",
-      "without_overlapping": "Without Overlapping",
-      "run_in_maintenance": "Run in Maintenance",
-      "module": "Module",
-      "yes": "Yes",
-      "no": "No",
-      "use": "Use",
-      "not_use": "Not Use",
-      "allow": "Allow",
-      "disallow": "Disallow",
+      "created_at": "Created date",
+      "without_overlapping": "Overlap prevention",
+      "overlap_on": "On",
+      "overlap_off": "Off",
+      "dispatch_mode": "Dispatch mode",
+      "history_mode": "Run history",
       "preset": {
         "today": "Today",
-        "week": "1 Week",
-        "month": "1 Month",
-        "3months": "3 Months",
-        "6months": "6 Months",
-        "year": "1 Year"
+        "week": "1 week",
+        "month": "1 month",
+        "3months": "3 months",
+        "6months": "6 months",
+        "1year": "1 year"
       }
     },
     "bulk": {
-      "status_change": "Status Change",
-      "action_run": "Run Action",
-      "apply": "Apply"
+      "select_status": "Select a status",
+      "action_select": "Bulk actions",
+      "to_active": "Set to active",
+      "to_inactive": "Set to inactive",
+      "delete_owned_blocked": "The selection includes tasks registered by the core or an extension, which cannot be deleted. Select only custom tasks."
     },
     "sort": {
-      "created_at_desc": "Newest First",
-      "created_at_asc": "Oldest First",
-      "name_asc": "Name (A-Z)",
-      "name_desc": "Name (Z-A)",
-      "next_run_at_asc": "Next Run (Soonest)",
-      "next_run_at_desc": "Next Run (Latest)"
-    },
-    "per_page": {
-      "10": "10",
-      "20": "20",
-      "50": "50",
-      "100": "100"
+      "label": "Sort",
+      "created_at_desc": "Newest first",
+      "created_at_asc": "Oldest first",
+      "name_asc": "Task name A→Z",
+      "name_desc": "Task name Z→A",
+      "next_run_at_asc": "Next run (soonest)",
+      "next_run_at_desc": "Next run (latest)",
+      "last_run_at_desc": "Last run (newest)",
+      "last_run_at_asc": "Last run (oldest)"
     },
     "columns": {
-      "name": "Task Name",
-      "type": "Type",
-      "command": "Command",
+      "name": "Task name",
+      "owner": "Owner",
+      "type": "Task type",
       "frequency": "Frequency",
-      "last_result": "Last Result",
-      "last_run": "Last Run",
-      "next_run": "Next Run",
+      "without_overlapping": "Overlap",
+      "next_run": "Next run",
+      "last_run": "Last run",
+      "last_result": "Last run result",
       "status": "Status"
     },
     "type": {
       "artisan": "Artisan",
       "shell": "Shell",
-      "url": "URL"
+      "url": "URL",
+      "job": "Job"
     },
     "frequency": {
-      "everyMinute": "Every Minute",
+      "everyThirtySeconds": "Every 30 seconds",
+      "everyMinute": "Every minute",
       "hourly": "Hourly",
       "daily": "Daily",
       "weekly": "Weekly",
@@ -1469,7 +1472,7 @@
       "success": "Success",
       "failed": "Failed",
       "running": "Running",
-      "never": "Never Run"
+      "never": "Not run yet"
     },
     "status": {
       "active": "Active",
@@ -1479,69 +1482,311 @@
       "scheduled": "Scheduled",
       "manual": "Manual"
     },
-    "actions": {
-      "run": "Run Now",
-      "history": "History",
-      "duplicate": "Duplicate"
+    "dispatch_mode": {
+      "sync": "Run immediately",
+      "queue": "Send to queue"
     },
+    "history_mode": {
+      "all": "Record all runs",
+      "failures_only": "Record failures only"
+    },
+    "owner": {
+      "core": "Core",
+      "module": "Module",
+      "plugin": "Plugin",
+      "custom": "Custom"
+    },
+    "condition_unmet": "Off in settings",
+    "overlap_minutes": "{{minutes}} min",
+    "overlap_off": "Off",
     "form": {
-      "name": "Name",
-      "name_placeholder": "Enter schedule name",
+      "label": "Task name",
+      "label_placeholder": "Enter a task name",
       "description": "Description",
-      "description_placeholder": "Enter schedule description",
-      "type": "Task Type",
+      "description_placeholder": "Enter a description of the task",
+      "type": "Task type",
+      "name": "Identifier",
+      "name_placeholder": "e.g. cleanup_temp_files",
+      "name_help": "Machine identifier. Left empty, it is filled from the task name.",
       "command": "Command",
-      "command_placeholder": "Enter command to execute",
-      "command_help": "Enter an Artisan command, shell command, or URL",
+      "command_placeholder": {
+        "artisan": "e.g. cache:prune-stale-tags",
+        "shell": "e.g. /usr/bin/php -v",
+        "url": "e.g. https://example.com/ping",
+        "job": "e.g. App\\Jobs\\GenerateSitemapJob"
+      },
+      "command_help": {
+        "artisan": "Enter the command and options that follow php artisan. Only commands on the security allowlist run.",
+        "shell": "Enter a command that starts with an executable allowed by the server settings.",
+        "url": "Enter the URL to call. Private network addresses may be blocked by the security settings.",
+        "job": "Enter the fully qualified name of a Job class on the security allowlist."
+      },
+      "command_multiline_hint": "Line breaks are joined into one line when saved.",
+      "shell_disabled": "Shell execution is turned off in the server settings. To turn it on, set SCHEDULE_SHELL_ENABLED=true and the allowed executables (SCHEDULE_SHELL_ALLOWED_BINARIES, e.g. php,python3) in the server .env.",
+      "locked_hint": "Registered by the core or an extension, so it cannot be changed.",
       "frequency": "Frequency",
-      "expression": "Cron Expression",
-      "expression_help": "e.g., * * * * * (every minute), 0 0 * * * (daily at midnight)",
-      "timeout": "Timeout (seconds)",
-      "timeout_help": "Maximum execution time (1-86400 seconds)",
-      "without_overlapping": "Prevent Overlapping",
-      "without_overlapping_help": "Skip new task when previous is still running",
-      "run_in_maintenance": "Run in Maintenance Mode",
-      "run_in_maintenance_help": "Execute task even during system maintenance",
+      "expression": "Cron expression",
+      "expression_help": "e.g. * * * * * (every minute), 0 0 * * * (daily at midnight)",
+      "timeout": "Time limit",
+      "timeout_help": "The run stops when it exceeds this time. (1 – 86400 seconds)",
+      "seconds_suffix": "sec",
+      "minutes_suffix": "min",
+      "without_overlapping": "Overlap prevention",
+      "without_overlapping_help": "Skip a new run while the previous one is still running.",
+      "overlap_minutes": "Lock duration",
+      "overlap_minutes_help": "If the previous run does not finish within this time, the lock is released. (1 – 10080 minutes)",
+      "on_one_server": "Run on one server only",
+      "on_one_server_help": "When several servers run the scheduler, only one runs this task (requires a shared cache).",
+      "notify_on_failure": "Failure notification",
+      "notify_on_failure_help": "Notify administrators when a scheduled run fails (at most once a day per task).",
+      "run_in_maintenance": "Run in maintenance mode",
+      "run_in_maintenance_help": "Run the task even while the site is in maintenance mode.",
       "is_active": "Active",
-      "is_active_help": "Inactive schedules will not run automatically"
+      "is_active_help": "When off, the task does not run on schedule.",
+      "conditions": "Run conditions",
+      "conditions_help": "Scheduled runs happen only when all of these settings are on (yellow = currently off). Conditions are set by the core or extension and cannot be changed here.",
+      "dispatch_mode": "Dispatch mode",
+      "dispatch_mode_help": "Run immediately works without a worker. Send long-running tasks to the queue so a worker processes them.",
+      "history_mode": "Run history",
+      "history_mode_help": "\"Record failures only\" keeps frequently running tasks from piling up history.",
+      "queue_connection": "Queue connection",
+      "queue_name": "Queue",
+      "queue_default": "Default",
+      "overridden_badge": "Modified by operator",
+      "owned_badge": "Registered by {{owner}} — name, type and command are locked",
+      "timezone_badge": "Timezone: {{timezone}}"
     },
     "modals": {
-      "create_title": "Add Schedule",
-      "edit_title": "Edit Schedule",
-      "delete_title": "Delete Schedule",
-      "delete_confirm": "Are you sure you want to delete this schedule? Related execution history will also be deleted.",
-      "run_title": "Run Schedule Now",
-      "run_confirm": "Are you sure you want to run this schedule now?",
-      "run_duration": "Duration: {{duration}}",
+      "create_title": "Register schedule",
+      "edit_title": "Edit schedule",
+      "bulk_status_title": "Change status of selected",
+      "bulk_status_confirm_active": "Set the {{count}} selected schedules to active?",
+      "bulk_status_confirm_active_one": "Set the selected schedule to active?",
+      "bulk_status_confirm_inactive": "Set the {{count}} selected schedules to inactive?",
+      "bulk_status_confirm_inactive_one": "Set the selected schedule to inactive?",
+      "delete_title": "Delete schedule",
+      "delete_confirm": "Delete this schedule?",
+      "delete_confirm_bulk": "Delete the {{count}} selected schedules?",
+      "delete_confirm_bulk_one": "Delete the selected schedule?",
+      "delete_warning": "Deleted schedules and their run history cannot be restored.",
+      "run_title": "Run schedule now",
+      "run_confirm": "Run this schedule now?",
+      "duration": "Duration",
       "output": "Output",
+      "error_output": "Error output",
       "running": "Running...",
-      "history_title": "Execution History",
-      "no_history": "No execution history.",
-      "duplicate_title": "Duplicate Schedule",
-      "duplicate_confirm": "Are you sure you want to duplicate this schedule?",
-      "duplicate_note": "Duplicated schedule will be created as inactive.",
-      "duplicating": "Duplicating..."
+      "run_not_recorded": "This task records failures only, so no history was kept for the successful run.",
+      "run_queue_hint": "This task is sent to the queue. It will be recorded in the run history once a worker processes it.",
+      "run_queued": "Sent to the queue. It will be recorded in the run history once a worker processes it.",
+      "run_unmet_warning": "Its run conditions are off, so scheduled runs skip this task. Running it now still runs it.",
+      "history_title": "Run history",
+      "no_history": "No run history.",
+      "duplicate_title": "Copy schedule",
+      "duplicate_confirm": "Copy this schedule?",
+      "duplicate_note": "The copy is created as inactive.",
+      "duplicate_owned_note": "Copying a task registered by the core or an extension creates a custom task.",
+      "duplicating": "Copying..."
     },
     "history": {
-      "duration": "Duration: {{duration}}",
-      "memory": "Memory: {{memory}}",
-      "triggered_by": "Triggered by: {{user}}"
+      "duration": "Duration {{duration}}",
+      "memory": "Memory {{memory}}",
+      "triggered_by": "Run by {{user}}"
     },
     "messages": {
-      "create_success": "Schedule created successfully.",
-      "update_success": "Schedule updated successfully.",
-      "delete_success": "Schedule deleted successfully.",
-      "duplicate_success": "Schedule duplicated successfully.",
-      "status_updated": "Schedule status updated.",
-      "bulk_status_updated": "Selected schedules status updated."
+      "create_success": "Schedule registered.",
+      "update_success": "Schedule updated.",
+      "delete_success": "Schedule deleted.",
+      "bulk_delete_success": "Selected schedules deleted.",
+      "duplicate_success": "Schedule copied.",
+      "status_updated": "Schedule status changed.",
+      "bulk_status_updated": "Status of the selected schedules changed."
     },
     "errors": {
-      "save_failed": "Failed to save schedule.",
-      "delete_failed": "Failed to delete schedule.",
-      "run_failed": "Failed to run schedule.",
-      "duplicate_failed": "Failed to duplicate schedule.",
-      "status_update_failed": "Failed to update status.",
-      "bulk_status_failed": "Failed to update bulk status."
+      "save_failed": "Failed to save the schedule.",
+      "delete_failed": "Failed to delete the schedule.",
+      "run_failed": "Failed to run the schedule.",
+      "duplicate_failed": "Failed to copy the schedule.",
+      "status_update_failed": "Failed to change the status.",
+      "bulk_status_failed": "Failed to change the status of the selected schedules."
+    },
+    "security": {
+      "title": "Schedule security policy",
+      "description": "What scheduled tasks are allowed to run. This screen is read-only.",
+      "guide": "A server administrator can add entries in storage/app/schedule_security.json (the core denylist cannot be lifted). Shell execution and its allowed executables are set by SCHEDULE_SHELL_ENABLED and SCHEDULE_SHELL_ALLOWED_BINARIES in .env.",
+      "load_failed": "Could not load the security policy.",
+      "none": "None",
+      "count": "{{count}} items",
+      "count_one": "{{count}} item",
+      "allowed": "Allowed",
+      "not_allowed": "Not allowed",
+      "source": {
+        "core": "Core",
+        "override": "Added",
+        "extension": "Extension"
+      },
+      "denied": "Denied",
+      "override": {
+        "title": "Override file",
+        "path": "Path",
+        "status": "Status",
+        "applied": "Applied",
+        "missing": "None — core defaults only",
+        "invalid": "Invalid — the whole file is ignored"
+      },
+      "shell": {
+        "title": "Shell execution",
+        "enabled": "On",
+        "disabled": "Off",
+        "allowed_binaries": "Allowed executables",
+        "no_binaries": "SCHEDULE_SHELL_ENABLED is on, but no executables are allowed, so Shell tasks cannot be used."
+      },
+      "artisan": {
+        "allowlist": "Allowed Artisan commands",
+        "allow_extension_commands": "Allow extension commands automatically",
+        "denylist": "Denied commands",
+        "denylist_prefixes": "Denied prefixes",
+        "denylist_hint": "When an allowed entry overlaps the denylist, the denylist wins."
+      },
+      "job": {
+        "allowed_classes": "Allowed Job classes"
+      },
+      "url": {
+        "block_private_hosts": "Block private network addresses"
+      }
+    },
+    "status_card": {
+      "scheduler": "Scheduler",
+      "healthy": "Running",
+      "stopped": "Stopped",
+      "last_tick": "Last tick {{minutes}} min ago",
+      "never_ticked": "No ticks recorded",
+      "cron_hint": "Register this line in the server cron.",
+      "schedules": "Registered tasks",
+      "active_inactive": "Active {{active}} · Inactive {{inactive}}",
+      "results": "Last run results",
+      "failed_count": "{{count}} failed",
+      "success_never": "Succeeded {{success}} · Not run yet {{never}}",
+      "queue": "Queue ({{driver}})",
+      "pending_count": "{{count}} pending",
+      "pending_unmeasurable": "Pending count not measurable",
+      "queue_detail": "{{failed}} failed · Workers {{alive}}/{{registered}}",
+      "mobile_summary": "{{minutes}} min ago · Workers {{alive}}/{{registered}} · Failed {{failed}}",
+      "mobile_summary_never": "Not run yet · Workers {{alive}}/{{registered}} · Failed {{failed}}",
+      "detail_open": "Details",
+      "detail_close": "Hide"
+    },
+    "queue": {
+      "views": {
+        "pending": "Pending",
+        "failed": "Failed",
+        "logs": "Processing log"
+      },
+      "status": {
+        "driver": "Driver",
+        "connection": "Connection {{connection}}",
+        "pending": "Pending",
+        "failed": "Failed",
+        "count": "{{count}}",
+        "unmeasurable": "Not measurable",
+        "workers": "Workers",
+        "workers_hint": "Running / registered",
+        "worker_warnings": "{{count}} worker warnings",
+        "worker_warnings_one": "{{count}} worker warning"
+      },
+      "notice": {
+        "unmeasurable": "The current queue driver ({{driver}}) cannot count pending jobs. The pending list is only available with the database driver.",
+        "no_worker": "The default queue driver is {{driver}}, so there is no worker to process retried jobs. Retries will be rejected."
+      },
+      "filter": {
+        "queue": "Queue",
+        "connection": "Connection",
+        "connection_all": "All connections",
+        "result": "Result",
+        "failed_at": "Failed at",
+        "processed_at": "Processed at"
+      },
+      "search_fields": {
+        "label": "Search in",
+        "all": "All",
+        "job": "Queue job",
+        "error": "Error",
+        "uuid": "UUID"
+      },
+      "search_placeholder": "Enter a search term",
+      "sort": {
+        "created_at_desc": "Queued (newest)",
+        "created_at_asc": "Queued (oldest)",
+        "available_at_asc": "Available (soonest)",
+        "available_at_desc": "Available (latest)",
+        "attempts_desc": "Most attempts",
+        "attempts_asc": "Fewest attempts",
+        "failed_at_desc": "Failed (newest)",
+        "failed_at_asc": "Failed (oldest)",
+        "finished_at_desc": "Processed (newest)",
+        "finished_at_asc": "Processed (oldest)",
+        "duration_ms_desc": "Longest duration",
+        "duration_ms_asc": "Shortest duration"
+      },
+      "columns": {
+        "job": "Queue job",
+        "queue": "Queue",
+        "state": "State",
+        "attempts": "Attempts",
+        "queued_at": "Queued at",
+        "available_at": "Available at",
+        "error": "Error",
+        "failed_at": "Failed at",
+        "result": "Result",
+        "duration": "Duration",
+        "processed_at": "Processed at"
+      },
+      "state": {
+        "waiting": "Waiting",
+        "delayed": "Delayed",
+        "running": "Running"
+      },
+      "log_status": {
+        "processed": "Processed",
+        "failed": "Failed"
+      },
+      "schedule_ref": "Schedule #{{id}}",
+      "duration_ms": "{{ms}} ms",
+      "empty": {
+        "pending": "No pending jobs.",
+        "failed": "No failed jobs.",
+        "logs": "No processing records."
+      },
+      "action": {
+        "detail": "View details",
+        "retry": "Retry",
+        "retry_selected": "Retry selected",
+        "delete_selected": "Delete selected"
+      },
+      "confirm": {
+        "retry_title": "Retry failed jobs",
+        "retry_message": "The jobs below will be pushed back onto their original queue.",
+        "delete_title": "Delete failed jobs",
+        "delete_message": "The jobs below will be removed from the failed list. This cannot be undone.",
+        "bulk_target": "{{count}} selected jobs",
+        "bulk_target_one": "{{count}} selected job"
+      },
+      "detail": {
+        "title": "Queue job details",
+        "uuid": "UUID",
+        "period": "Processing period",
+        "schedule": "Schedule",
+        "exception": "Error",
+        "payload": "Job payload"
+      },
+      "messages": {
+        "retry_done": "Retry requested.",
+        "delete_done": "Deleted."
+      },
+      "errors": {
+        "retry_failed": "Could not retry the job.",
+        "delete_failed": "Could not delete the job.",
+        "detail_failed": "Could not load the job details."
+      }
     }
   },
   "settings": {
@@ -1672,20 +1917,23 @@
       "orphan_cleanup": "Orphan Attachment Cleanup",
       "orphan_cleanup_desc": "Clean up attachments left without an owner because a form was abandoned before saving.",
       "orphan_cleanup_enabled": "Auto cleanup orphan attachments",
-      "orphan_cleanup_enabled_hint": "Off by default — the operator must turn it on. When on, files and records of orphan attachments past the retention period are deleted daily. Attachments currently in use, such as the site logo, are never deleted.",
+      "orphan_cleanup_enabled_hint": "Off by default — an operator must turn it on. When on, a cleanup schedule deletes the files and records of orphan attachments past the retention period. Attachments in use, such as the site logo, are not deleted.",
       "orphan_retention_days": "Orphan attachment retention (days)",
-      "orphan_retention_days_hint": "Only orphan attachments older than this period are eligible for cleanup. Allow generous headroom for forms left open. (1 ~ 3650 days)"
+      "orphan_retention_days_hint": "Only orphan attachments older than this period are eligible for cleanup. Allow generous headroom for forms left open. (1 ~ 3650 days)",
+      "orphan_cleanup_schedule_notice": "Orphan attachment cleanup is run by the attachment cleanup schedule."
     },
     "seo": {
       "meta_settings": "Meta Tag Settings",
       "meta_settings_desc": "Configure meta tags for search engine optimization.",
       "meta_title_suffix": "Title Suffix",
       "meta_title_suffix_hint": "Text appended to all page titles. (e.g., ' | Gnuboard7')",
+      "meta_title_suffix_placeholder": " | Gnuboard7",
       "meta_description": "Default Meta Description",
       "meta_description_placeholder": "Enter the default meta description for your site.",
       "meta_description_hint": "Description shown in search results. Max 160 characters recommended.",
       "meta_keywords": "Meta Keywords",
       "meta_keywords_hint": "Enter keywords separated by commas.",
+      "meta_keywords_placeholder": "CMS, Gnuboard7, open source",
       "generator_settings": "Generator Meta Tag",
       "generator_settings_desc": "Generator meta tag for CMS identification. W3Techs and similar market-share trackers use this to classify the site as GnuBoard7.",
       "generator_enabled": "Show Generator Tag",
@@ -1734,12 +1982,7 @@
       "sitemap_settings_desc": "Configure automatic sitemap.xml generation.",
       "sitemap_enabled": "Enable Sitemap Generation",
       "sitemap_enabled_desc": "Automatically generate sitemap.xml for search engines.",
-      "sitemap_schedule": "Generation Schedule",
-      "sitemap_schedule_hourly": "Hourly",
-      "sitemap_schedule_daily": "Daily",
-      "sitemap_schedule_weekly": "Weekly",
-      "sitemap_schedule_time": "Generation Time",
-      "sitemap_schedule_time_hint": "Enter in HH:mm format. (e.g., 02:00)",
+      "sitemap_schedule_managed": "The sitemap generation frequency and time are managed in Schedule Management.",
       "sitemap_cache_ttl": "Sitemap Cache TTL (seconds)",
       "sitemap_cache_ttl_hint": "Leave empty to follow the sitemap cache TTL in Advanced settings. Enter a value to override it here — min 3600s (1 hour), max 604800s (7 days)",
       "sitemap_last_updated_at": "Last generated",
@@ -1883,7 +2126,7 @@
         "remind_days_hint": "1-90 days. Members who chose \"Change later\" are asked again after this period.",
         "batch_size": "Limit per run (members)",
         "batch_size_hint": "Applies to advance notices and expiry processing separately. Members closest to expiry go first; the rest are handled in the next run. Enter 0 for no limit.",
-        "schedule_notice": "The scheduler sends notice emails and site notifications every day at 05:15. Mail settings and the \"Password expiry notice\" / \"Password expired\" notifications must be on. Tell members about the password change cycle in your privacy policy in advance.",
+        "schedule_notice": "The scheduler sends the notice mail and site notifications. They are sent only when \"Password expiry advance notice\" and \"Password expired\" are on in the mail and notification settings. Announce the password change cycle in your privacy policy in advance.",
         "rows": {
           "notice": "Expiry notice",
           "expire": "Expiry processing"
@@ -1923,11 +2166,12 @@
       },
       "activity_log_retention": {
         "title": "Activity log (access record) retention",
-        "desc": "How long to keep the activity log — the record of admin and member access and actions. Records older than this are deleted automatically every day at 04:45.",
+        "desc": "How long to keep access and action records (activity logs) of administrators and members. Records past this period are deleted automatically by a cleanup schedule.",
         "days": "Retention period",
         "days_suffix": "days",
         "days_hint": "{{min}}–{{max}} days. It cannot be shorter than the legal minimum.",
-        "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value."
+        "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value.",
+        "schedule_notice": "Activity logs past the period are removed by a cleanup schedule."
       }
     },
     "identity": {
@@ -2108,6 +2352,16 @@
             "title": "Supervisor commands",
             "desc": "Start a worker for each registered connection with the commands below. Long-job connections must be started under that connection name."
           }
+        },
+        "records": {
+          "title": "Processing records",
+          "job_log_enabled": "Record job processing",
+          "job_log_enabled_desc": "Keep a record every time a queue job finishes or fails.",
+          "retention_days": "Retention period",
+          "retention_days_hint": "Processing records and failed jobs are kept for this period. ({{min}} – {{max}} days)",
+          "view_link": "View processing log",
+          "days_suffix": "days",
+          "schedule_managed": "Older processing records and failed jobs are removed by a cleanup schedule."
         }
       },
       "log": {
@@ -2217,7 +2471,7 @@
       "geoip_license_key": "MaxMind License Key",
       "geoip_license_key_desc": "Enter the license key issued from your free MaxMind account. Get one at https://www.maxmind.com/en/geolite2/signup.",
       "geoip_auto_update_enabled": "Auto-update GeoIP DB",
-      "geoip_auto_update_enabled_desc": "Automatically re-downloads the MaxMind GeoLite2-City DB once a week (Wednesday 03:00).",
+      "geoip_auto_update_enabled_desc": "Re-download the MaxMind GeoLite2-City DB automatically on a schedule.",
       "geoip_last_updated_at": "Last updated",
       "geoip_manual_update": "Update now",
       "geoip_updating": "Updating...",
@@ -2241,7 +2495,8 @@
       "trusted_proxy_client_ip": "Address recognized as the visitor IP",
       "trusted_proxy_remote_addr": "Immediate caller IP (REMOTE_ADDR)",
       "trusted_proxy_same_ip_hint": "These two values match while proxy headers are being received — every visitor is being recorded as the same person.",
-      "trusted_proxy_doc_hint": "Configuration and post-adoption steps:"
+      "trusted_proxy_doc_hint": "Configuration and post-adoption steps:",
+      "geoip_schedule_notice": "Automatic updates are run by the GeoIP update schedule."
     },
     "notification_definitions": {
       "title": "Notification Settings",
@@ -2295,7 +2550,8 @@
         "dormant_converted": "Dormancy Applied",
         "dormant_withdraw_notice": "Dormant Account Withdrawal Notice",
         "password_expiry_notice": "Password Expiry Advance Notice",
-        "password_expired": "Password Expired"
+        "password_expired": "Password Expired",
+        "schedule_failed": "Scheduled Task Failed"
       },
       "channels_label": "Channels:",
       "edit_modal": {
@@ -2529,10 +2785,11 @@
         "title": "Erasing residual data of withdrawn members",
         "desc": "On withdrawal the original name and email are kept with a suffix so disputes can still be handled. Once the retention period passes, that residual data is actually erased.",
         "enabled": "Erase automatically after the retention period",
-        "enabled_desc": "Off by default. When on, the nightly batch processes matching members.",
+        "enabled_desc": "Off by default. When on, the personal data retention schedule processes the targets.",
         "days": "Retention period after withdrawal (days)",
         "days_hint": "Members whose withdrawal is older than this are affected. Default 365 days.",
-        "irreversible_warning": "Contact details, address, bio and identity-verification identifiers are erased and cannot be recovered. The name becomes a fixed placeholder and the email an unidentifiable form."
+        "irreversible_warning": "Contact details, address, bio and identity-verification identifiers are erased and cannot be recovered. The name becomes a fixed placeholder and the email an unidentifiable form.",
+        "schedule_notice": "Withdrawn member data is destroyed by the personal data retention schedule."
       },
       "dormant": {
         "title": "Dormant accounts",
@@ -2605,6 +2862,11 @@
         "preview_failed": "Could not load the target count.",
         "editor_label": "Run privacy action now"
       }
+    },
+    "schedule_link": {
+      "next_run": "Next run",
+      "inactive": "This schedule is inactive, so it does not run now.",
+      "change": "Change in Schedule Management"
     }
   },
   "templates": {
@@ -4166,9 +4428,9 @@
       },
       "reports": {
         "weekly": "Weekly report mail",
-        "weekly_hint": "Sent to the admin role every Monday at 08:00.",
+        "weekly_hint": "Sends the weekly report to the admin role.",
         "monthly": "Monthly report mail",
-        "monthly_hint": "Sent to the admin role on the 1st at 08:00.",
+        "monthly_hint": "Sends the monthly report to the admin role.",
         "definitions_title": "Notification definitions",
         "definitions_description": "Whether report and alert notifications are active and their channels. Edit templates in Settings › Notification definitions.",
         "definition_inactive_alert": "Report mail is on but its notification definition is off, so no mail will be sent — enable the definition below.",
@@ -4257,7 +4519,6 @@
       "module_refresh_layouts_modal": "Refresh Module Layouts",
       "module_uninstall_modal": "Uninstall Module",
       "module_update_modal": "Update Module",
-      "module_deactivate_warning_modal": "Module Deactivation Warning",
       "module_detail_modal": "Module Details",
       "module_manifest_preview_drawer": "Module Manifest Preview"
     },
@@ -4341,10 +4602,14 @@
     },
     "admin_schedule_list": {
       "schedule_delete_modal": "Delete Schedule",
-      "schedule_duplicate_modal": "Duplicate Schedule",
+      "schedule_duplicate_modal": "Copy schedule",
       "schedule_form_modal": "Add or Edit Schedule",
       "schedule_history_modal": "Schedule Run History",
-      "schedule_run_modal": "Run Schedule Now"
+      "schedule_run_modal": "Run Schedule Now",
+      "queue_job_detail_modal": "Queue job details",
+      "queue_confirm_modal": "Retry or delete failed queue jobs",
+      "schedule_bulk_status_modal": "Change schedule status in bulk",
+      "schedule_security_modal": "Schedule security policy"
     },
     "admin_notification_log_list": {
       "modal_notification_log_detail": "Notification Log Details"

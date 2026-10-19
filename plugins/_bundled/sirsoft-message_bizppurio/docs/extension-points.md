@@ -200,7 +200,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `bizppurio:sync-template-status` | `everyThirtyMinutes` | 비즈뿌리오 알림톡 템플릿 검수 상태 동기화 |
+| `sync-template-status` | `*/30 * * * *` | 알림톡 템플릿 검수 상태 동기화 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

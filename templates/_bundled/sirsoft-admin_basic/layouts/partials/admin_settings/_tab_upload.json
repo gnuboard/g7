@@ -471,6 +471,104 @@
                             ]
                         },
                         {
+                            "comment": "스케줄로 도는 작업 안내 — 고정 시각 대신 그 작업의 다음 실행 일시(조회 권한이 있을 때)와 스케줄 관리 링크를 보인다. 끈 스케줄이면 그 사실을 알린다.",
+                            "id": "orphan_cleanup_schedule_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.orphan_cleanup_schedule_notice"
+                                                },
+                                                {
+                                                    "id": "orphan_cleanup_schedule_notice_next_run",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.is_active !== false && !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.next_run_at}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.schedule_link.next_run"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.next_run_at | datetime}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "orphan_cleanup_schedule_notice_inactive",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.is_active === false}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.schedule_link.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "orphan_cleanup_schedule_notice_link",
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "props": {
+                                                                "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=attachments-prune-orphans",
+                                                                "className": "text-link"
+                                                            },
+                                                            "text": "$t:admin.settings.schedule_link.change"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
                             "id": "field_orphan_retention_days",
                             "type": "basic",
                             "name": "Div",

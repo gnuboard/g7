@@ -1497,7 +1497,8 @@
       "connection": "Connection tab",
       "alimtalk_templates": "Alimtalk templates tab",
       "settings": "Settings tab",
-      "history": "Run history tab"
+      "history": "Run history tab",
+      "schedules": "Schedules"
     },
     "extensions_list_view_gallery": "Extension list — gallery view",
     "extensions_list_view_list": "Extension list — list view",
@@ -1771,6 +1772,13 @@
     "analytics_row_trend": "Analytics item trend",
     "passwordExpiryPreview": "Password expiry target counts",
     "passwordExpiryManualRuns": "Password expiry manual run status",
-    "user_check": "User Create Check"
+    "user_check": "User Create Check",
+    "schedule_owners": "Schedule owners",
+    "schedule_status": "Scheduler status",
+    "queue_status": "Queue registry",
+    "queue_pending": "Pending queue jobs",
+    "queue_failed": "Failed queue jobs",
+    "queue_logs": "Queue processing log",
+    "coreSchedules": "Core scheduled tasks"
   }
 }

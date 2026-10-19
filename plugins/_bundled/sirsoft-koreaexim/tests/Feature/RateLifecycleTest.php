@@ -313,7 +313,7 @@ class RateLifecycleTest extends PluginTestCase
     }
 
     /**
-     * 인증키와 실행 시각 및 요일을 검증하고 다른 플러그인 설정을 건드리지 않는지 검증합니다.
+     * 인증키와 실행 요일을 검증하고(갱신 시각은 스케줄 관리로 옮겨 규칙 없음) 다른 플러그인 설정을 건드리지 않는지 검증합니다.
      *
      * @effects settings_validate_key_time_weekdays_and_leave_other_plugins_untouched
      *
@@ -323,11 +323,13 @@ class RateLifecycleTest extends PluginTestCase
     {
         $listener = new ValidatePluginSettingsListener;
         $this->assertSame(['existing' => ['required']], $listener->rules(['existing' => ['required']], 'other'));
-        foreach ([['auto_manage' => true, 'auth_key' => ''], ['update_time' => '24:00'], ['run_days' => [1, 1]], ['run_days' => [8]]] as $input) {
+        foreach ([['auto_manage' => true, 'auth_key' => ''], ['run_days' => [1, 1]], ['run_days' => [8]]] as $input) {
             $this->assertTrue(Validator::make($input, $listener->rules([], 'sirsoft-koreaexim', $input))->fails());
         }
-        $input = ['auto_manage' => true, 'auth_key' => '••••••••', 'update_time' => '23:59', 'run_days' => []];
+        $input = ['auto_manage' => true, 'auth_key' => '••••••••', 'run_days' => []];
         $this->assertFalse(Validator::make($input, $listener->rules([], 'sirsoft-koreaexim', $input))->fails());
+        // 갱신 시각은 스케줄 관리로 옮겼다(1.0.1) — 설정 검증 규칙에 남지 않는다
+        $this->assertArrayNotHasKey('update_time', $listener->rules([], 'sirsoft-koreaexim', $input));
     }
 
     /**
