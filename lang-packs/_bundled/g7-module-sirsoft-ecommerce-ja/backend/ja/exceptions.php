@@ -204,5 +204,6 @@ return [
         'declaration_missing_personal' => ':model のエクスポート宣言 :column に personal(個人情報の有無)がありません。',
         'declaration_invalid_type' => ':model のエクスポート宣言 :column の type が正しくありません。',
         'source_unavailable' => 'eコマース一覧条件を読み込むことができません(:class)。eコマースモジュールのバージョンを確認してください。',
+        'no_rows' => '現在の条件に合致する行がないため、再度リクエストしませんでした。一覧から期間または検索条件を変更して新たにリクエストしてください。',
     ],
 ];

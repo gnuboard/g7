@@ -478,6 +478,32 @@ class ExportControllerTest extends ExportTestCase
     }
 
     /**
+     * 다시 요청할 조건에 지금 내보낼 행이 없으면 새 작업을 만들지 않고 422 로 알린다 — 일반 요청 창이 예상 0행이면
+     * 막는 것과 같은 기준이다(빈 파일과 「0행 완료」 알림을 만들지 않는다).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario action=retry
+     *
+     * @effects retry_with_no_rows_is_rejected
+     */
+    public function test_retry_without_rows_is_rejected(): void
+    {
+        $order = $this->makeOrder();
+        $id = (int) $this->request($this->admin, $this->body([$order->id]))->json('data.id');
+        app(ExportService::class)->markFailed($id, 'timeout');
+        $order->delete();
+        $before = Export::count();
+
+        $this->actingAs($this->admin)->postJson($this->exportsUrl("/{$id}/retry"))
+            ->assertStatus(422)
+            ->assertJsonPath('message', __('sirsoft-ecommerce::exceptions.export.no_rows'));
+
+        $this->assertSame($before, Export::count(), '0행 조건으로 새 작업이 만들어졌다');
+        $this->assertSame(0, ActivityLog::where('action', 'export.retry')->count());
+    }
+
+    /**
      * 보관 기간이 지난 완료 파일은 정리 때 지워지고 「만료」가 된다(작업 기록은 남는다).
      *
      * @return void 반환값 없음

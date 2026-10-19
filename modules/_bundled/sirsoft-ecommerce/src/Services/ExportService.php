@@ -1100,6 +1100,12 @@ class ExportService
             'reason' => (int) $export->requested_by === (int) $user->id ? ($reason ?: $export->reason) : $reason,
         ];
 
+        // 지금 내보낼 행이 없으면 만들지 않는다 — 요청 창이 예상 0행이면 막는 것과 같은 기준(빈 파일·「0행 완료」 알림 방지).
+        // 다시 요청한 사람의 권한 범위로 센다(새 작업도 그 범위로 뽑힌다)
+        if ($this->estimate($type, $data, $user) === 0) {
+            throw new ExportException('no_rows', 422);
+        }
+
         $new = $this->request($type, $data, $user, 'retry-'.$export->uuid.'-'.Str::random(8));
 
         HookManager::doAction('sirsoft-ecommerce.export.after_retry', $new, $export, $user);

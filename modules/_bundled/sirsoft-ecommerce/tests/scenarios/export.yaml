@@ -95,6 +95,7 @@ effects:
   - retry_of_others_personal_job_needs_own_reason
   - bulk_delete_skips_processing
   - failed_job_can_be_retried
+  - retry_with_no_rows_is_rejected
   - expired_files_pruned
   - date_only_values_keep_calendar_day
   - stored_file_removed_when_record_update_fails

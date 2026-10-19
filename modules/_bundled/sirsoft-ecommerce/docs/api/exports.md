@@ -188,7 +188,7 @@
 ### POST /api/modules/sirsoft-ecommerce/admin/exports/{export}/retry
 
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.retry` · **권한**: `exports.create` + 원본 조회 권한 · `throttle:sirsoft-ecommerce.export-request`
-- 실패한 작업과 같은 조건으로 **새 작업**을 만든다(202) — 새 작업은 다시 요청한 사람의 권한·범위로 뽑힌다. 실패가 아니면 409(`not_retryable`)
+- 실패한 작업과 같은 조건으로 **새 작업**을 만든다(202) — 새 작업은 다시 요청한 사람의 권한·범위로 뽑힌다. 실패가 아니면 409(`not_retryable`), 지금 조건에 내보낼 행이 없으면 422(`no_rows` — 새 작업을 만들지 않는다)
 - 본문: `reason`(문자열, 500자) — 다른 운영자가 요청한 개인정보 작업이면 필수(없으면 422). 자기 작업이면 비워도 원래 사유를 쓴다
 - 목록·상세의 `abilities.retry_needs_reason` 이 참이면 창이 사유 칸을 연다
 

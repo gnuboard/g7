@@ -221,6 +221,7 @@ return [
         'file_missing' => 'The file could not be found.',
         'processing_not_deletable' => 'A job that is processing cannot be deleted.',
         'not_retryable' => 'Only failed jobs can be requested again.',
+        'no_rows' => 'No rows match these conditions now, so the export was not requested again. Change the period or search conditions in the list and request a new export.',
         'download_link_expired' => 'The download link has expired or was already used. Click the file name again in Export Management.',
         'ecommerce_unavailable' => 'The ecommerce module is turned off, so the export cannot be created. Turn the ecommerce module on and request again.',
         'scope_denied' => 'This export was requested by another operator. Permission to manage all exports is required.',

@@ -20,7 +20,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { authenticatePage, issueToken, issueScopedToken } from '../../../../../../../tests/Playwright/fixtures/auth';
+import { authenticatePage, issueToken, issueScopedToken, purgeTrackedExports } from '../../fixtures/export-cleanup';
 
 const CORE_ROOT = process.env.G7_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../../../');
 const SERVICE_CLASS = '\\Modules\\Sirsoft\\Ecommerce\\Services\\ExportService';
@@ -107,6 +107,12 @@ async function openExportAndReadFilters(page: Page, type: string): Promise<Recor
 }
 
 test.describe.configure({ mode: 'serial' });
+
+// 이 사양이 발급한 시험 계정이 만든 내보내기 작업·파일을 지운다 — `playwright:cleanup` 은 계정만 회수한다
+test.afterAll(() => {
+  purgeTrackedExports();
+});
+
 
 test.describe('내보내기 요청·관리', () => {
   // @scenario type=orders, scope=filter, permission=personal_data
@@ -373,7 +379,8 @@ test.describe('내보내기 요청·관리', () => {
       headers: { Authorization: `Bearer ${ownerToken}`, 'Idempotency-Key': `e2e-retry-${Date.now()}`, Accept: 'application/json' },
       data: {
         type: 'orders', format: 'csv', column_mode: 'custom', fields: ['order.order_number', 'order.ip_address'], row_unit: 'order', scope: 'all',
-        period: { mode: 'custom', date_type: 'ordered_at', start_date: day(new Date(Date.now() - 86_400_000)), end_date: day(new Date()) },
+        // 다시 요청은 지금 내보낼 행이 있어야 받는다 — 시드 주문이 들어 있는 최근 1년으로 둔다
+        period: { mode: 'custom', date_type: 'ordered_at', start_date: day(new Date(Date.now() - 364 * 86_400_000)), end_date: day(new Date()) },
         locale_mode: 'locale', include_totals: false, reason: '원래 요청자의 사유',
       },
     });

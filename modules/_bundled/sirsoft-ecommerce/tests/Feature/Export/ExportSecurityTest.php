@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
 use Modules\Sirsoft\Ecommerce\Jobs\GenerateExportJob;
 use Modules\Sirsoft\Ecommerce\Models\Export;
@@ -141,6 +142,8 @@ class ExportSecurityTest extends ExportTestCase
             'sirsoft-ecommerce.exports.all',
         ];
         $owner = $this->createAdminUser($permissions);
+        // 다시 요청은 지금 내보낼 행이 있어야 받는다 — 조건(전체 주문)에 걸리는 주문 하나
+        OrderFactory::new()->paid()->create();
         $failed = $this->export($owner, ['status' => ExportStatusEnum::FAILED->value, 'file_path' => null, 'contains_personal_data' => true, 'reason' => '원래 요청자의 사유']);
 
         $other = $this->createAdminUser($permissions);

@@ -15,7 +15,7 @@
  * @effects estimate_failure_blocks_request, custom_item_row_unit_selects_item_fields, export_actions_fit_on_mobile, empty_estimate_blocks_request, validation_errors_shown_inline, list_period_option_disabled_when_unusable, estimate_recalculates_automatically, download_history_shows_field_count_and_totals
  */
 import { test, expect, type Page } from '@playwright/test';
-import { authenticatePage, issueToken } from '../../../../../../../tests/Playwright/fixtures/auth';
+import { authenticatePage, issueToken, purgeTrackedExports } from '../../fixtures/export-cleanup';
 
 const ORDER_LIST_URL = '/admin/ecommerce/orders';
 const PRODUCT_LIST_URL = '/admin/ecommerce/products';
@@ -55,6 +55,11 @@ async function openExportDialog(page: Page) {
   await expect(dialog.getByText('파일 형식')).toBeVisible({ timeout: 20_000 });
   return dialog;
 }
+
+// 이 사양이 발급한 시험 계정이 만든 내보내기 작업·파일을 지운다 — `playwright:cleanup` 은 계정만 회수한다
+test.afterAll(() => {
+  purgeTrackedExports();
+});
 
 test.describe('내보내기 창 쓰임새', () => {
   // @scenario type=orders, row_unit=order_option
