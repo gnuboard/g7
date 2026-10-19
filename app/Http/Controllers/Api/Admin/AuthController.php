@@ -76,10 +76,9 @@ class AuthController extends AdminBaseController
 
             $user = $data['user'];
 
-            // 관리자 권한 확인
+            // 관리자 권한 확인 — 서비스가 세션을 열기 전에 이미 거절한다(아래 AuthorizationException). 여기는 방어선이다:
+            // 이 시점에는 토큰과 web 세션이 발급되어 있으므로, 도달하면 회수하고 거절한다.
             if (! $user->isAdmin()) {
-                // 이 시점에는 이미 토큰과 web 세션이 발급되어 있다 — 거절하면서 남겨 두면
-                // 관리자가 아닌 사용자가 응답만 403 을 받을 뿐 세션은 그대로 유효해진다.
                 $this->authService->revokeIssuedSession($user, $data['token']);
 
                 return $this->forbidden($this->adminRequiredMessageKey($data));
@@ -89,6 +88,9 @@ class AuthController extends AdminBaseController
             $data['user'] = new UserResource($user);
 
             return $this->success('auth.admin_login_success', $data);
+        } catch (AuthorizationException $e) {
+            // 관리자가 아닌 회원 — 휴면 해제·로그인 완료 훅·2단계 인증 메일 전에 거절됐다.
+            return $this->forbidden('auth.admin_required');
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
         } catch (TwoFactorEnrollmentRequiredException $e) {
@@ -128,10 +130,8 @@ class AuthController extends AdminBaseController
 
             $user = $data['user'];
 
+            // 방어선 — 서비스가 세션을 열기 전에 거절한다(아래 AuthorizationException). 도달하면 발급분을 회수한다.
             if (! $user->isAdmin()) {
-                // completeTwoFactor() 는 코드 확인에 성공한 시점에 토큰을 발급한다.
-                // 관리자 판정으로 거절하면서 그 발급분을 회수하지 않으면 관리자가 아닌
-                // 사용자가 유효한 세션을 손에 쥔 채 응답만 403 을 받는다.
                 $this->authService->revokeIssuedSession($user, $data['token']);
 
                 return $this->forbidden($this->adminRequiredMessageKey($data));
@@ -140,6 +140,8 @@ class AuthController extends AdminBaseController
             $data['user'] = new UserResource($user);
 
             return $this->success('auth.admin_login_success', $data);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
         } catch (AccountLockedException $e) {
             // 세션을 여는 지점이므로 `login` 과 같은 423 계약을 따른다.
             return $this->lockedResponse($e);
@@ -231,11 +233,11 @@ class AuthController extends AdminBaseController
 
             $data = $this->authService->resendTwoFactorChallenge(
                 $request->validated()['challenge_id'],
-                $resolvedUser
+                $resolvedUser,
+                'admin'
             );
 
-            // 이 단계는 토큰을 발급하지 않으므로 회수할 것이 없다 — 다만 완료할 수 없는
-            // 상대에게 새 인증번호를 계속 보내지는 않는다.
+            // 서비스가 재발송 전에 관리자 판정을 하므로 여기는 방어선이다(도달하지 않음을 시험이 고정).
             if ($resolvedUser === null || ! $resolvedUser->isAdmin()) {
                 return $this->forbidden('auth.admin_required');
             }
@@ -243,6 +245,8 @@ class AuthController extends AdminBaseController
             return $this->success($this->twoFactorRequiredMessageKey($data), $data);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
         } catch (TwoFactorEnrollmentRequiredException $e) {
             return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {

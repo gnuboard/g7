@@ -23,6 +23,7 @@ return [
     'channel_skipped_no_template' => 'Skipped :channel channel for :type — no active template found.',
     'channel_disabled_by_extension' => 'Skipped because the channel is disabled in extension settings.',
     'channel_guest_not_allowed' => 'Skipped because this channel does not allow sending to guests.',
+    'recipient_email_undeliverable' => 'Skipped because the recipient address cannot receive mail (placeholder email).',
     'channel_unavailable' => 'Skipped because the extension providing this channel is inactive or removed.',
 
     // Notification templates

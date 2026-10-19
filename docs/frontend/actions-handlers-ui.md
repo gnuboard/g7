@@ -22,7 +22,7 @@
 14. [ensureIdentityVerified / resolveIdentityChallenge](#ensureidentityverified--resolveidentitychallenge)
 15. [실전 예시](#실전-예시)
 
-> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` · `loginPasswordChange` · `loginPasswordChangePostpone` 가 함께 설명되어 있습니다.
+> `login` 절에 `loginTwoFactor` · `loginTwoFactorResend` · `loginPasswordChange` · `loginPasswordChangePostpone` 가 함께 설명되어 있고, 로그인 인계 코드를 교환하는 `loginHandoff` 는 그 뒤 절에 있습니다.
 
 ---
 
@@ -303,6 +303,37 @@
 ```
 
 반환값은 `{ user, password_change_required: false, postponed_until, dormancy_restored? }` 입니다. 마크업 태그는 `<login-password-change-postpone>` 입니다.
+
+### loginHandoff
+
+외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 **로그인 인계 코드**를 교환해 로그인합니다(engine-v1.81.0+).
+확장이 회원을 `/login?login_handoff={코드}` 로 보내면 로그인 화면이 진입 시 이 액션을 실행합니다. 서버가 계정 잠금·회원 상태·
+2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, **반환값은 `login` 과 키 단위로 같습니다** —
+로그인 화면은 `login` 의 성공 분기를 그대로 씁니다(명명 액션으로 두고 두 액션이 함께 부르는 것을 권장).
+
+```html
+<init>
+  <sequence if="{{!!query?.login_handoff}}">
+    <set-state target="global" :isLoggingIn="true" :loginError="null"/>
+    <action handler="loginHandoff" target="user">
+      <success>
+        <action-ref name="applyLoginResult"/>
+      </success>
+      <fail>
+        <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}"/>
+        <replace-url path="/login"/>
+      </fail>
+      <body code="{{query.login_handoff}}"/>
+    </action>
+  </sequence>
+</init>
+```
+
+- `body.code` 가 없으면 요청하지 않고 실패합니다.
+- 코드는 한 번·120초만 통합니다. 만료·재사용·위조는 422(`errors.code`) — 실패하면 주소에서 코드를 지워(`replaceUrl`) 새로고침이 다시 교환하지 않게 합니다.
+- `/api/auth/*` 패턴의 `globalHeaders`(장바구니 키 등)가 함께 실립니다.
+- `target` 은 `user` 만 지원합니다(관리자 인계는 서버가 아직 지원하지 않음 — `admin` 이면 요청 없이 실패).
+- 확장이 코드를 발급하는 쪽 계약은 [인증 및 세션 처리 — 외부 인증 로그인 · 로그인 인계](../backend/authentication.md#외부-인증-로그인--로그인-인계-720) 를 봅니다.
 
 ### logout
 

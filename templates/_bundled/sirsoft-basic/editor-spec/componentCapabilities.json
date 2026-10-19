@@ -820,60 +820,6 @@
       "onUploadError"
     ]
   },
-  "SocialLoginButtons": {
-    "label": "$t:editor.component.social_login_buttons",
-    "propControls": [
-      "slbMode",
-      "slbVariant"
-    ],
-    "styleControls": [
-      "marginAll",
-      "paddingAll",
-      "width",
-      "selfAlign"
-    ],
-    "events": [
-      "onClick"
-    ],
-    "nodeEditor": {
-      "kind": "array",
-      "params": {
-        "arrayProp": "providers",
-        "itemLabel": "$t:editor.array_item.provider",
-        "newItem": "google",
-        "fields": [
-          {
-            "key": "value",
-            "widget": "select",
-            "label": "$t:editor.array_field.provider",
-            "primary": true,
-            "options": [
-              {
-                "value": "google",
-                "label": "Google"
-              },
-              {
-                "value": "naver",
-                "label": "$t:editor.provider.naver"
-              },
-              {
-                "value": "kakao",
-                "label": "$t:editor.provider.kakao"
-              },
-              {
-                "value": "facebook",
-                "label": "Facebook"
-              },
-              {
-                "value": "apple",
-                "label": "Apple"
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
   "Input": {
     "label": "$t:editor.component.input",
     "propControls": [

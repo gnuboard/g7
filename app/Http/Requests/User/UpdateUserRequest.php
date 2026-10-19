@@ -9,6 +9,7 @@ use App\Http\Requests\Concerns\ChecksPasswordReuse;
 use App\Models\Role;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
+use App\Services\Auth\ReauthenticationService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -95,8 +96,25 @@ class UpdateUserRequest extends FormRequest
 
         // 관리자 본인 계정의 비밀번호를 바꾸면 현재 비밀번호를 확인한다(D19) — 자리를 비운 사이 열린 세션으로
         // 비밀번호를 바꿔 계정을 가져가는 경로를 막는다. 다른 회원의 비밀번호를 정하는 것은 종전대로다.
+        // 비밀번호가 없는 관리자(외부 인증 전용)는 확인할 현재 비밀번호가 없다 — 비밀번호를 처음 정할 때는 이메일 인증번호
+        // 확인으로 받은 재확인 토큰을 대신 받는다(같은 위협: 자리를 비운 사이 열린 세션). 토큰은 검증이 모두 끝난 뒤 소비한다.
         if ($this->isSelfUpdate()) {
-            $rules['current_password'] = ['required_with:password', 'nullable', 'string', 'current_password:sanctum'];
+            if ($this->targetUser()?->hasPassword() === false) {
+                $rules['current_password'] = ['prohibited'];
+                $rules['verification_token'] = ['required_with:password', 'nullable', 'string', 'max:128', function (string $attribute, mixed $value, \Closure $fail) {
+                    if (! is_string($value) || $value === '') {
+                        return;
+                    }
+
+                    $target = $this->targetUser();
+
+                    if ($target === null || app(ReauthenticationService::class)->check($target, ['verification_token' => $value]) !== ReauthenticationService::PASSED) {
+                        $fail(__('user.reauthentication_invalid'));
+                    }
+                }];
+            } else {
+                $rules['current_password'] = ['required_with:password', 'nullable', 'string', 'current_password:sanctum'];
+            }
         }
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -121,8 +139,23 @@ class UpdateUserRequest extends FormRequest
         $this->appendPasswordReuseCheck(
             $validator,
             fn () => $this->targetUser(),
-            ['current_password'],
+            ['current_password', 'verification_token'],
         );
+    }
+
+    /**
+     * 검증이 모두 통과하면 재확인 토큰을 소비합니다 (한 번만 쓸 수 있게).
+     *
+     * @return void
+     */
+    protected function passedValidation(): void
+    {
+        $token = $this->input('verification_token');
+        $target = $this->targetUser();
+
+        if ($this->isSelfUpdate() && $target !== null && is_string($token) && $token !== '') {
+            app(ReauthenticationService::class)->consume($target, ['verification_token' => $token]);
+        }
     }
 
     /**
@@ -197,6 +230,8 @@ class UpdateUserRequest extends FormRequest
             'password_expiry_policy.in' => __('user.validation.password_expiry_policy_invalid'),
             'current_password.required_with' => __('user.validation.current_password_required'),
             'current_password.current_password' => __('user.validation.current_password_invalid'),
+            'current_password.prohibited' => __('user.validation.current_password_not_set'),
+            'verification_token.required_with' => __('user.password_not_set'),
 
             // 연락처 정보
             'homepage.url' => __('user.validation.homepage_url'),

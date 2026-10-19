@@ -367,6 +367,20 @@ class InicisIdentityProvider implements IdentityVerificationInterface
                     );
                 }
             }
+
+            // [동일인 충돌] 로그인 회원의 본인인증이 **다른 회원**에 이미 묶인 DI/CI 면 실패 처리하고 기록을 만들지 않는다.
+            // 가입 경로(AssertNoDuplicateInicisIdentity)와 같은 판정·같은 설정·같은 문구 — 가입만 막으면 일단 가입한 뒤
+            // 마이페이지에서 남의 본인인증 결과를 자기 계정에 붙여 「본인인증 회원」이 될 수 있다.
+            if ($this->isDuplicateOfOtherUser((int) $log->user_id, $duplicateField, $userDiHashCandidate, $userCiHashCandidate)) {
+                $log->update(['status' => 'failed']);
+
+                return VerificationResult::failure(
+                    challengeId: $challengeId,
+                    providerId: self::PROVIDER_ID,
+                    failureCode: 'IDENTITY_DUPLICATE',
+                    failureReason: 'sirsoft-verification_kginicis::exceptions.duplicate_register',
+                );
+            }
         }
 
         $isAdult = $this->isAdult((string) ($input['userBirthday'] ?? ''));
@@ -469,6 +483,37 @@ class InicisIdentityProvider implements IdentityVerificationInterface
             identityHash: $identityHash,
             claims: ['verification_token' => $verificationToken],
         );
+    }
+
+    /**
+     * 로그인 회원의 본인인증 식별값이 다른 회원의 기록과 겹치는지 판정합니다.
+     *
+     * 운영자가 동일인 중복 차단을 껐으면(`duplicate_block_enabled=false` — 가족 휴대폰 공유 등) 겹쳐도 통과한다.
+     * 판정 키는 설정의 `duplicate_field`(DI 또는 CI)이며, 식별값이 없으면(외국인 등) 통과한다 — 가입 경로와 같다.
+     *
+     * @param  int  $userId  본인인증을 하는 로그인 회원
+     * @param  InicisDuplicateField  $duplicateField  판정 키
+     * @param  string|null  $diHash  이번 인증의 DI 해시
+     * @param  string|null  $ciHash  이번 인증의 CI 해시
+     * @return bool 다른 회원과 겹치면 true
+     */
+    private function isDuplicateOfOtherUser(int $userId, InicisDuplicateField $duplicateField, ?string $diHash, ?string $ciHash): bool
+    {
+        if (! (bool) g7_plugin_settings('sirsoft-verification_kginicis', 'duplicate_block_enabled', true)) {
+            return false;
+        }
+
+        $hash = $duplicateField === InicisDuplicateField::Di ? $diHash : $ciHash;
+
+        if ($hash === null) {
+            return false;
+        }
+
+        $existing = $duplicateField === InicisDuplicateField::Di
+            ? $this->recordRepository->findByDiHash($hash)
+            : $this->recordRepository->findByCiHash($hash);
+
+        return $existing !== null && (int) $existing->user_id !== $userId;
     }
 
     /**

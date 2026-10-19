@@ -809,6 +809,10 @@ return [
             'challenge_invalid' => '인증 요청 정보가 올바르지 않습니다.',
             'code_required' => '인증번호를 입력해주세요.',
         ],
+        // 로그인 인계 (#40)
+        'login_handoff' => [
+            'code_required' => '로그인 인계 코드가 없습니다. 다시 로그인해 주세요.',
+        ],
         // 로그인 비밀번호 변경 단계 (#736)
         'password_change' => [
             'challenge_required' => '비밀번호 변경 단계 정보가 없습니다. 처음부터 다시 로그인해주세요.',
@@ -1519,6 +1523,8 @@ return [
         'current_password' => '현재 비밀번호',
         'password_confirmation' => '비밀번호 확인',
         'challenge_id' => '변경 단계 식별자',
+        'verification_token' => '본인 확인 인증',
+        'login_handoff_code' => '로그인 인계 코드',
         'two_factor_auth' => '2단계 인증',
         'two_factor_scope' => '2단계 인증 적용 범위',
         'allow_internal_outbound_urls' => '내부 네트워크 주소 호출 허용',

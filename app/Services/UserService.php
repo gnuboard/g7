@@ -198,7 +198,8 @@ class UserService
             // 원본 데이터 보관 (after_update 훅에서 사용) — 비밀번호 원문은 뺀다(after_create 와 같은 이유).
             // 현재 비밀번호(정보수정·관리자 본인 변경의 본인 확인용)도 같은 원문이라 함께 뺀다 — 큐 구독자마다
             // 작업 표에 평문 사본이 남는다(D18).
-            $originalData = Arr::except($data, ['password', 'password_confirmation', 'current_password']);
+            // 재확인 토큰(비밀번호 없는 관리자 본인 수정의 이메일 인증번호 확인 결과)도 같은 자격 증명이라 뺀다.
+            $originalData = Arr::except($data, ['password', 'password_confirmation', 'current_password', 'verification_token']);
 
             // Before 훅: 데이터 검증/전처리
             HookManager::doAction('core.user.before_update', $user, $data);
@@ -214,7 +215,7 @@ class UserService
             // 비밀번호 처리 — 변경 기록(이력)에 남길 이전 해시는 update 전에 잡아 둔다.
             $passwordChanged = ! empty($data['password']);
             $oldPasswordHash = $passwordChanged ? $user->getRawOriginal('password') : null;
-            unset($data['current_password']);
+            unset($data['current_password'], $data['verification_token']);
             if ($passwordChanged) {
                 $data['password'] = Hash::make($data['password']);
             } else {

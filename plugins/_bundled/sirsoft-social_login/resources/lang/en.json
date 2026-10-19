@@ -1,0 +1,91 @@
+{
+    "plugin_read_only": "You do not have permission to change these settings. You can only view them.",
+    "editor": {
+        "data_source": {
+            "settings": "Social login settings"
+        }
+    },
+    "settings": {
+        "title": "Social Login Settings",
+        "description": "Manage the signup, linking and retention policies of social login.",
+        "sections": {
+            "policy": "Signup and Linking Policy",
+            "limits": "Time, Retention and Notice Thresholds"
+        },
+        "fields": {
+            "email_conflict_policy": {
+                "label": "Existing Member With Same Email",
+                "hint": "What to do when the social account email matches an existing member email.",
+                "options": {
+                    "verify_link": "Link after confirming the existing account (recommended)",
+                    "auto_link_verified": "Link at once when the provider verified the email (caution: trusts the provider check as is)",
+                    "never_link": "Never link"
+                }
+            },
+            "extra_info_mode": {
+                "label": "Signup Extra Info Screen",
+                "hint": "When to show the extra info screen on social signup.",
+                "options": {
+                    "when_missing": "Only when required info is missing",
+                    "always": "Always"
+                }
+            },
+            "webhook_unlink_policy": {
+                "label": "Provider Unlink Notice",
+                "hint": "What to do when the provider reports that the member removed the app connection.",
+                "options": {
+                    "unlink_only": "Remove the link only",
+                    "withdraw_user": "Withdraw the member (administrators excluded)"
+                }
+            },
+            "two_factor_enabled": {
+                "label": "Two-Factor For Social Login",
+                "hint": "When off, even members with an authenticator app skip two-factor on social login."
+            },
+            "allow_admin_social_login": {
+                "label": "Allow Administrators",
+                "hint": "Allow members with an administrator role to sign in with a social account."
+            },
+            "allow_unlink_last_method": {
+                "label": "Allow Unlinking Last Method",
+                "hint": "Allow a member without a password to remove their last social link. They can then only return through password reset."
+            },
+            "revoke_on_unlink": {
+                "label": "Revoke Provider Access On Unlink",
+                "hint": "Also revoke the app authorization at the provider when a member or administrator removes a link."
+            },
+            "state_ttl_minutes": {
+                "label": "Sign-In Round Trip Lifetime (Minutes)",
+                "hint": "The member must return from the provider within this time. 3 to 30."
+            },
+            "pending_signup_ttl_minutes": {
+                "label": "Pending Signup Lifetime (Minutes)",
+                "hint": "Time to finish the signup screen after the provider check. 5 to 120."
+            },
+            "custom_provider_limit": {
+                "label": "Custom Provider Limit",
+                "hint": "Number of OIDC providers an administrator can add. 0 to 10."
+            },
+            "profile_raw_retention_days": {
+                "label": "Raw Profile Retention (Days)",
+                "hint": "How long to keep the raw provider profile for troubleshooting. 0 keeps nothing. 0 to 90."
+            },
+            "attempt_log_retention_days": {
+                "label": "Attempt Log Retention (Days)",
+                "hint": "How long to keep attempt records used by stats and diagnostics. 7 to 365."
+            },
+            "webhook_event_retention_days": {
+                "label": "Webhook Log Retention (Days)",
+                "hint": "How long to keep provider notice records. 7 to 365."
+            },
+            "signup_surge_threshold_per_hour": {
+                "label": "Signup Surge Threshold (Per Hour)",
+                "hint": "Notify administrators when this many members sign up through one provider within an hour. 0 disables the notice."
+            },
+            "provider_failure_streak_threshold": {
+                "label": "Provider Failure Streak Threshold",
+                "hint": "Notify administrators when one provider fails this many times in a row. 0 disables the notice."
+            }
+        }
+    }
+}

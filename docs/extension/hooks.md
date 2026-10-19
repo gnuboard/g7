@@ -205,6 +205,20 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 다시 계산하면 집행 시점과 하루 어긋날 수 있습니다. 배치 훅은 표지(이번 주기 처리 기록)를 먼저 남긴 뒤 발행하고,
 발행이 던지면 표지를 되돌립니다(휴면 사전 안내와 같은 규칙) — 큐 안에서 실패한 발송은 표지를 되돌리지 못합니다.
 
+### 로그인 완료 훅의 로그인 수단 (7.2.0)
+
+`core.auth.after_login` 의 두 번째 인자(컨텍스트 배열)에 `login_method` 키가 더해졌습니다. 기존 키(`email`·`login_time`·
+`ip_address`·`user_agent`)는 그대로입니다.
+
+| 값 | 언제 |
+| --- | --- |
+| `password` | 비밀번호 로그인(일반·관리자) |
+| 외부 인증이 정한 이름(예 `social:kakao`) | 로그인 인계(`LoginHandoffService::issue()`) 또는 `AuthService::loginVerifiedUser()` 로 들어온 로그인 — 2단계 인증(인증번호 재발송 포함)·비밀번호 변경 단계를 거쳐도 같은 이름이 실린다 |
+
+- 외부 인증은 이름을 반드시 넘깁니다 — 비어 있으면 `issue()`·`loginVerifiedUser()` 가 거절합니다(비밀번호 로그인으로 잘못 기록되지 않게).
+- 활동 로그·통계처럼 수단별로 세는 리스너는 이 키로 가릅니다. 키가 없는 경우(7.2.0 이전 코어)는 `password` 로 봅니다.
+- 계약 전체는 [인증 문서 — 외부 인증 로그인·로그인 인계](../backend/authentication.md) 를 봅니다.
+
 ### 회원 역할 변경 훅 (7.1.0)
 
 회원 등록·수정(`UserService::createUser`·`updateUser`)으로 역할이나 최고관리자 지정이 **실제로 바뀌면**
@@ -238,7 +252,18 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 - 그 데이터를 볼 권한이 없는 운영자에게는 조건을 **적용하지 않는다**(화면 행도 같은 권한의 노드 `<permissions>`
   로 숨긴다). 조건을 적용하면 결과 건수로 값을 추정할 수 있다.
 - 목록 응답 행에 확장 값을 싣는 `core.user.filter_resource_data` 는 쓰지 않는다 — 행마다 발화해 N+1 이 된다.
-  목록에 값을 보여야 하면 자기 데이터소스로 현재 페이지 id 를 배치 조회한다.
+  목록 열에 값을 보여야 하면 아래 `core.user.filter_list_rows` 로 현재 페이지 회원을 **한 번에** 조회해 붙인다
+  (또는 자기 데이터소스로 현재 페이지 id 를 배치 조회한다).
+
+**목록 열 데이터 — `core.user.filter_list_rows`** (7.2.0)
+
+| 훅 | 타입 | 인자 | 용도 |
+| --- | --- | --- | --- |
+| `core.user.filter_list_rows` | filter | `(array $rows, Collection $users)` | 관리자 회원 목록 응답의 한 페이지 행 전체와 그 회원 모델 묶음을 요청당 **한 번** 받는다. `$users->pluck('id')` 로 한 번 조회해 각 행에 자기 키를 **더한다** |
+
+- 행 수와 순서를 바꾸지 않는다 — 돌려준 값이 배열이 아니거나 행 수가 다르면 코어가 원래 행을 쓰고 경고를 남긴다.
+- 기존 키를 덮어쓰지 않는다. 키 이름은 자기 확장을 알 수 있게 짓는다(예: `social_providers`).
+- 볼 권한이 없는 운영자에게 보이면 안 되는 값은 싣지 않는다(응답에 실리면 화면이 숨겨도 노출이다).
 
 예제: 이커머스 `UserListMileageFilterListener`(마일리지 잔액 범위)·`UserListAddressFilterListener`(배송지 국가·등록 여부).
 화면 쪽 규약은 [관리자 목록 필터 컨벤션](../frontend/admin-list-filter-convention.md) 을 본다.

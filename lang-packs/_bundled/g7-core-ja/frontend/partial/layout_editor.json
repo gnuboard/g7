@@ -1319,6 +1319,10 @@
       "label": "パスワード変更を後回しにする",
       "param_body": "変更リクエスト情報"
     },
+    "login_handoff": {
+      "label": "ログイン引き継ぎコードでログイン",
+      "param_body": "引き継ぎリクエスト情報"
+    },
     "logout": {
       "label": "ログアウト処理",
       "param_target": "移動先"

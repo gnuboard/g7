@@ -92,6 +92,13 @@ effects:
   - off_mode_allows_multiple_records_with_same_di_hash
   - off_mode_self_idv_binding_still_blocks_third_party_hijacking
 
+  # 로그인 회원 본인인증의 동일인 충돌 (#40 R11)
+  - verify_fails_when_logged_in_identity_belongs_to_other_user
+  - no_record_for_duplicate_logged_in_identity
+  - same_user_reverification_passes
+  - logged_in_duplicate_allowed_when_block_disabled
+  - guest_flow_unchanged_by_logged_in_duplicate_check
+
 design_rationale: |
   - 정책 시스템 (identity_policies) 은 "verify 했는가?" 만 답하는 시스템이고
     "이미 가입한 사람인가? / 본인인가?" 는 의미가 다른 도메인 검증이므로 plugin 책임.
@@ -131,3 +138,4 @@ scope:
 test_files:
   - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/AssertNoDuplicateInicisIdentityTest.php
   - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Identity/InicisIdentityProviderBindingTest.php
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Identity/InicisLoggedInDuplicateIdentityTest.php

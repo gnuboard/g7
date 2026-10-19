@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.3.0] - 2026-10-19
+
+### Added
+
+- 비밀번호 없는 회원(소셜 로그인으로만 가입)의 마이페이지 문구 일본어 번역을 추가했습니다 — 비밀번호 처음 설정 안내(`mypage.profile.change_password_first_time_notice`), 정보 수정 전 이메일 인증번호 확인(`mypage.profile.reauth_*`).
+- 템플릿 1.3.0 에 맞춰 버전을 올렸습니다.
+
 ## [1.2.1] - 2026-10-21
 
 ### Added

@@ -1358,6 +1358,10 @@
       "label": "Postpone password change",
       "param_body": "Change request info"
     },
+    "login_handoff": {
+      "label": "Sign in with handoff code",
+      "param_body": "Handoff request info"
+    },
     "logout": {
       "label": "Handle logout",
       "param_target": "Destination"

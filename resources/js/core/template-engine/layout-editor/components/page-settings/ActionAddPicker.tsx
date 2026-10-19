@@ -62,6 +62,7 @@ const GROUP_OF: Record<string, string> = {
   loginTwoFactorResend: 'etc',
   loginPasswordChange: 'etc',
   loginPasswordChangePostpone: 'etc',
+  loginHandoff: 'etc',
   logout: 'etc',
   setLocale: 'locale',
   emitEvent: 'etc',

@@ -36,14 +36,31 @@ class ChangePasswordRequest extends FormRequest
      */
     public function rules(): array
     {
+        // 비밀번호가 없는 회원(외부 인증 전용)은 확인할 현재 비밀번호가 없다 — 처음 정하는 것이므로 보내면 거절한다.
+        $currentPasswordRules = $this->userHasPassword()
+            ? ['required', 'string', 'current_password:sanctum']
+            : ['prohibited'];
+
         $rules = [
-            'current_password' => ['required', 'string', 'current_password:sanctum'],
+            'current_password' => $currentPasswordRules,
             'password' => ['required', 'string', 'confirmed', ...PasswordPolicy::rules($this->user()?->email)],
             'password_confirmation' => ['required', 'string'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.user.change_password_validation_rules', $rules, $this);
+    }
+
+    /**
+     * 요청 회원에게 비밀번호가 있는지 반환합니다 (회원을 알 수 없으면 있다고 본다 — 종전 규칙 유지).
+     *
+     * @return bool 비밀번호가 있으면 true
+     */
+    private function userHasPassword(): bool
+    {
+        $user = $this->user();
+
+        return ! $user instanceof User || $user->hasPassword();
     }
 
     /**
@@ -71,6 +88,7 @@ class ChangePasswordRequest extends FormRequest
         return [
             'current_password.required' => __('user.validation.current_password_required'),
             'current_password.current_password' => __('user.validation.current_password_invalid'),
+            'current_password.prohibited' => __('user.validation.current_password_not_set'),
             'password.required' => __('user.validation.password_required'),
             'password.confirmed' => __('user.validation.password_confirmed'),
             'password.min' => __('user.validation.password_min'),

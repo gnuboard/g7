@@ -1,0 +1,17 @@
+feature: 방문 수집 요청의 관리자 표지 (TrackingRequestFactory)
+
+description: |
+  「관리자 제외」 토글이 쓰는 수집 요청의 관리자 표지를 정한다.
+    - 관리자 역할 보유 또는 최고관리자 표지(`users.is_super`)면 관리자 방문이다.
+    - 코어에 없는 역할 이름(`superadmin`)으로 판정하지 않는다 — 관리자 역할이 없는 최고관리자가 일반 회원으로 셈되던 결함(#40 S1 라운드 6).
+
+axes:
+  role: [super_flag_only, admin, member, guest]
+
+effects:
+  - super_admin_counted_as_admin_traffic
+  - admin_role_counted_as_admin_traffic
+  - member_and_guest_not_admin_traffic
+
+test_files:
+  - tests/Feature/Analytics/TrackingRequestAdminFlagTest.php

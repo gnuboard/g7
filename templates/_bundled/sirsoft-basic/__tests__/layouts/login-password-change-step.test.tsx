@@ -27,7 +27,14 @@ function flatten(node: Node | Node[] | undefined): Node[] {
 
 function flattenActions(actions: Action[] | Action | undefined): Action[] {
   if (!actions) return [];
-  return asArray<Action>(actions).flatMap((a) => [a, ...flattenActions(a.actions), ...flattenActions(a.onSuccess), ...flattenActions(a.onError)]);
+  // `actionRef` 는 로그인 화면의 명명 액션으로 펼친다 — `login` 성공 분기가 `applyLoginResult` 를 부른다(#40).
+  return asArray<Action>(actions).flatMap((a) => [
+    a,
+    ...flattenActions((a as any).actionRef ? (login as any).named_actions?.[(a as any).actionRef] : undefined),
+    ...flattenActions(a.actions),
+    ...flattenActions(a.onSuccess),
+    ...flattenActions(a.onError),
+  ]);
 }
 
 const STEP_ONE = '{{!_global.twoFactor?.required && !_global.passwordChange?.required}}';

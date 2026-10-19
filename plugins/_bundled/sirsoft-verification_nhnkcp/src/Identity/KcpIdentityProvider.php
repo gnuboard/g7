@@ -442,7 +442,8 @@ class KcpIdentityProvider implements IdentityVerificationInterface
             );
         }
 
-        // [중복 가입 조기 차단] 가입 목적의 비로그인 challenge 는 이 시점에 동일인 여부를 판정한다.
+        // [동일인 충돌 차단] 가입 목적의 비로그인 challenge 와 로그인 회원의 본인인증은 이 시점에 다른 회원과의
+        // 동일인 충돌을 판정한다(로그인 회원은 본인 기록을 빼고 본다).
         // 실제 가입 차단은 AssertNoDuplicateKcpIdentity listener 가 담당하며(권위 게이트),
         // 판정 로직은 KcpDuplicateIdentityChecker 한 곳을 공유해 두 지점이 어긋나지 않는다.
         if ($this->shouldBlockDuplicate($log)) {
@@ -787,19 +788,26 @@ class KcpIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * 이 challenge 가 중복 가입 차단 대상인지 판정한다.
+     * 이 challenge 가 동일인 충돌 판정 대상인지 판정한다.
      *
-     * 가입(signup) 목적 + 비로그인 challenge 에만 적용한다 — 로그인 사용자의 재인증이나
-     * 비밀번호 재설정은 동일인이 존재하는 것이 정상이다.
+     * - 가입(signup) 목적 + 비로그인 challenge — 같은 사람이 다른 계정으로 또 가입하는 것을 막는다.
+     * - 로그인 회원의 본인인증(대상 회원이 있는 challenge) — **다른 회원**에 이미 묶인 DI/CI 를 자기 계정에 붙이지
+     *   못하게 막는다. 판정은 본인을 뺀 다른 회원과의 충돌만 보므로(`findConflictColumn(..., exceptUserId: 본인)`)
+     *   같은 회원의 재인증은 그대로 통과한다. 가입만 막으면 다른 정보로 가입한 뒤 마이페이지 본인인증으로 남의
+     *   본인인증 결과를 붙여 「본인인증 회원」이 될 수 있었다(#40 R11).
+     * - 그 밖(비로그인 비밀번호 재설정 등)은 동일인이 존재하는 것이 정상이라 대상이 아니다.
      *
      * @param  IdentityVerificationLog  $log  대상 로그
      * @return bool 차단 판정 수행 여부
      */
     protected function shouldBlockDuplicate(IdentityVerificationLog $log): bool
     {
-        return (bool) ($this->config['duplicate_block_enabled'] ?? true)
-            && $log->purpose === 'signup'
-            && $log->user_id === null;
+        if (! (bool) ($this->config['duplicate_block_enabled'] ?? true)) {
+            return false;
+        }
+
+        return $log->user_id !== null
+            || ($log->purpose === 'signup' && $log->user_id === null);
     }
 
     /**

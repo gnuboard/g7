@@ -227,6 +227,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `s
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-05 19:15:16` | 마지막 로그인 일시 (사용자 시간대 기준) |
 | email_verified_at | string\|null | `null` | 이메일 인증 완료 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 식별자 |
 | created_at | string\|null | `2026-07-06 19:15:16` | 가입 일시 |
 | updated_at | string\|null | `2026-07-08 10:41:24` | 최종 수정 일시 |
@@ -408,6 +409,7 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `P
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-05 19:15:16` | 마지막 로그인 일시 |
 | email_verified_at | string\|null | `null` | 이메일 인증 완료 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 식별자 |
 | created_at | string\|null | `2026-07-06 19:15:16` | 가입 일시 |
 | updated_at | string\|null | `2026-07-08 10:41:24` | 최종 수정 일시 |

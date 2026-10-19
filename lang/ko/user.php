@@ -108,6 +108,8 @@ return [
     // 비밀번호 확인 관련 메시지
     'password_verified' => '비밀번호가 확인되었습니다.',
     'password_incorrect' => '비밀번호가 일치하지 않습니다.',
+    'password_not_set' => '비밀번호가 설정되지 않은 계정입니다. 이메일 인증번호로 확인하거나 비밀번호를 먼저 설정하세요.',
+    'reauthentication_invalid' => '본인 확인이 만료되었거나 올바르지 않습니다. 인증번호를 다시 받아 주세요.',
     'password_verify_failed' => '비밀번호 확인에 실패했습니다.',
 
     // 비밀번호 변경 관련 메시지
@@ -153,6 +155,7 @@ return [
         'password_min' => '비밀번호는 최소 :min자 이상이어야 합니다.',
         'current_password_required' => '현재 비밀번호를 입력해주세요.',
         'current_password_invalid' => '현재 비밀번호가 올바르지 않습니다.',
+        'current_password_not_set' => '비밀번호가 없는 계정은 현재 비밀번호 없이 새 비밀번호를 설정합니다.',
         'password_expiry_policy_invalid' => '비밀번호 만료는 따름·적용·제외 중 하나여야 합니다.',
         'password_confirmation_required' => '비밀번호 확인을 입력해주세요.',
         'language_required' => '언어를 선택해주세요.',

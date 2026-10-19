@@ -1347,6 +1347,10 @@
       "label": "비밀번호 변경 미루기",
       "param_body": "변경 요청 정보"
     },
+    "login_handoff": {
+      "label": "로그인 인계 코드로 로그인",
+      "param_body": "인계 요청 정보"
+    },
     "logout": {
       "label": "로그아웃 처리",
       "param_target": "이동할 곳"

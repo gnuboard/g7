@@ -321,6 +321,12 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     params: [{ key: 'body', label: `$t:${L}.login_password_change_postpone.param_body`, widget: 'key-value' }],
     build: { handler: 'loginPasswordChangePostpone', params: { body: '{{body}}' } },
   },
+  // C18-5 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.81.0)
+  loginHandoff: {
+    label: `$t:${L}.login_handoff.label`,
+    params: [{ key: 'body', label: `$t:${L}.login_handoff.param_body`, widget: 'key-value' }],
+    build: { handler: 'loginHandoff', params: { body: '{{body}}' } },
+  },
   // C19 로그아웃 처리
   logout: {
     label: `$t:${L}.logout.label`,

@@ -30,6 +30,7 @@ use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTimezone;
 use App\Http\Middleware\StartApiSession;
+use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\SyncBoostWithDebugMode;
 use App\Seo\SeoMiddleware;
 use App\Support\TrustedHosts;
@@ -196,6 +197,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'check.user_status' => CheckUserStatus::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
+            // 최고관리자 전용 — 판정은 회원의 최고관리자 표지(is_super). 코어에 최고관리자 역할은 없다.
+            'super.admin' => SuperAdminMiddleware::class,
             'template.dependencies' => CheckTemplateDependencies::class,
             'optional.sanctum' => OptionalSanctumMiddleware::class,
             'start.api.session' => StartApiSession::class,

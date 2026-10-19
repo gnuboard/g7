@@ -1,0 +1,52 @@
+<?php
+
+return [
+    'test_login' => [
+        'started' => '연결 테스트를 시작합니다. 열린 창에서 제공자 동의를 마쳐 주세요.',
+    ],
+    'errors' => [
+        'provider_unknown' => '제공자를 찾을 수 없거나 사용할 수 없습니다.',
+    ],
+    'redirect_notes' => [
+        'exact_match' => '제공자 콘솔에 등록하는 콜백 주소는 위 주소와 글자 하나까지 같아야 합니다.',
+    ],
+    'test_result' => [
+        'title' => '소셜 로그인 연결 테스트 결과',
+        'expired' => '결과가 없거나 이미 확인했습니다. 결과는 한 번만 볼 수 있습니다. 관리자 화면에서 테스트를 다시 시작해 주세요.',
+        'success' => '연결에 성공했습니다. 제공자가 아래 정보를 보냈습니다.',
+        'failure' => '연결에 실패했습니다. 오류 코드: :code',
+        'provider' => '제공자',
+        'provider_user_id' => '제공자 사용자 ID',
+        'email' => '이메일',
+        'email_verified' => '이메일 검증',
+        'verified_yes' => '검증됨',
+        'verified_no' => '검증 안 됨',
+        'verified_unknown' => '제공자가 알려 주지 않음',
+        'name' => '이름',
+        'nickname' => '별명',
+        'received_fields' => '받은 항목',
+        'missing_required' => '가입에 빠진 항목',
+        'missing_none' => '없음',
+        'raw_keys' => '제공자 원본 키',
+        'tested_at' => '테스트 시각',
+        'note' => '테스트는 로그인하지 않습니다. 이 창을 닫아도 됩니다.',
+    ],
+    'mock' => [
+        'title' => '모의 제공자 동의 화면',
+        'notice' => '개발·검수용 모의 제공자입니다(응답 모양: :style). 실제 제공자에는 아무 요청도 가지 않습니다.',
+        'variant' => '응답 변종',
+        'email' => '이메일',
+        'subject' => '제공자 사용자 ID',
+        'approve' => '동의하고 계속',
+        'deny' => '거부',
+        'label' => '모의 :provider',
+    ],
+    'mock_cli' => [
+        'choose_one' => '--enable, --disable, --status 가운데 하나만 지정하세요.',
+        'minutes_range' => '--minutes 는 1~:max 사이여야 합니다.',
+        'enabled' => '모의 제공자를 켰습니다. :until 에 저절로 꺼집니다.',
+        'disabled' => '모의 제공자를 껐습니다.',
+        'status_on' => '모의 제공자가 켜져 있습니다. :until 에 꺼집니다.',
+        'status_off' => '모의 제공자가 꺼져 있습니다.',
+    ],
+];

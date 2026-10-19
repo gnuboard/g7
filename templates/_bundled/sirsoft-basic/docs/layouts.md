@@ -743,7 +743,8 @@ slots.content:
 
 **특수사항**:
 - `_redirect_if_logged_in.g7.html`: 이미 로그인한 사용자를 홈으로 리다이렉트하는 partial
-- 로그인 폼은 `SocialLoginButtons` 포함 (소셜 로그인 지원)
+- 로그인 화면은 폼 아래에 확장점 `auth_login_extensions`, 회원가입 화면은 폼 위에 `auth_register_extensions` 를 둔다 — 소셜 로그인 버튼처럼 다른 로그인·가입 수단은 확장이 이 자리에 붙인다(템플릿은 소셜 로그인 부품을 갖지 않는다)
+- 로그인 화면은 `?login_handoff={코드}` 로 들어오면 진입 시 코드를 교환한다(`loginHandoff`) — 외부 인증 확장이 본인 확인을 마친 회원을 넘기는 통로이며, 응답 분기(2단계 인증·비밀번호 변경·로그인 완료)는 비밀번호 로그인과 같은 명명 액션 `applyLoginResult` 를 쓴다
 - 회원가입 폼은 `PasswordInput` 사용 (비밀번호 규칙 검증, 확인 일치)
 - 약관 동의 모달: `_modal_terms.g7.html`, `_modal_privacy.g7.html`
 - `blur_until_loaded`: 현재 사용자 정보 로드 전까지 폼 블러 처리

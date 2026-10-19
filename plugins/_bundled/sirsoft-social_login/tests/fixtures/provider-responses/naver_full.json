@@ -1,0 +1,11 @@
+{
+    "resultcode": "00",
+    "message": "success",
+    "response": {
+        "id": "AbCdEf123_xyz",
+        "email": "naver.user@example.test",
+        "name": "네이버 사용자",
+        "nickname": "네이버닉",
+        "profile_image": "https://example.test/avatar.png"
+    }
+}

@@ -870,6 +870,40 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "비밀번호 설정 여부 — 읽기 전용(상세와 같은 자리). 외부 인증(소셜 로그인 등)으로만 가입한 회원은 비밀번호가 없다.\n                 등록 화면에서는 보이지 않는다(새 회원은 이 화면에서 비밀번호를 정한다).",
+                                                "id": "field_has_password",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.state"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!route?.id && user?.data?.has_password === false}}",
+                                                        "props": {
+                                                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.not_set"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!route?.id || user?.data?.has_password !== false}}",
+                                                        "props": {
+                                                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                        },
+                                                        "text": "$t:admin.users.detail.password.set"
+                                                    }
+                                                ]
+                                            },
+                                            {
                                                 "comment": "이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는\n                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에\n                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.\n                 `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,\n                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 실측). 새 회원은 늘 미인증으로 시작한다.",
                                                 "id": "field_email_verified",
                                                 "type": "basic",
@@ -1087,7 +1121,7 @@
                                                 "id": "field_current_password",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password}}",
+                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password !== false}}",
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -1138,6 +1172,205 @@
                                                             "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
                                                         },
                                                         "text": "$t:admin.users.form.password_policy.current_password_hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "비밀번호가 없는 관리자(외부 인증 전용)가 자기 비밀번호를 처음 정할 때 — 현재 비밀번호 대신 이메일 인증번호로 본인을 확인한다.\n                 확인해 받은 토큰을 폼 값(`verification_token`)에 넣어 저장 요청에 함께 보낸다. 서버가 본인 것인지·한 번만 쓰는지 확인한다.",
+                                                "id": "password_reauth_verification",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password === false}}",
+                                                "props": {
+                                                    "className": "space-y-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:admin.users.form.password_policy.reauth_notice"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!_local.form?.verification_token}}",
+                                                        "props": {
+                                                            "className": "text-sm text-green-700 dark:text-green-300",
+                                                            "role": "status"
+                                                        },
+                                                        "text": "$t:admin.users.form.password_policy.reauth_verified"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{!_local.form?.verification_token}}",
+                                                        "props": {
+                                                            "className": "flex flex-wrap gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "인증번호 받기 — 본인(로그인 관리자) 대상 재확인 요청을 메일 수단으로 보낸다.",
+                                                                        "type": "click",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "isRequestingReauthCode": true
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "apiCall",
+                                                                                "target": "/api/identity/challenges",
+                                                                                "auth_required": true,
+                                                                                "params": {
+                                                                                    "method": "POST",
+                                                                                    "body": {
+                                                                                        "purpose": "sensitive_action",
+                                                                                        "provider_id": "g7:core.mail"
+                                                                                    }
+                                                                                },
+                                                                                "onSuccess": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "isRequestingReauthCode": false,
+                                                                                            "reauthChallengeId": "{{response.data?.id}}",
+                                                                                            "reauthCode": ""
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "info",
+                                                                                            "message": "$t:admin.users.form.password_policy.reauth_code_sent"
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "onError": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "isRequestingReauthCode": false
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message}}"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn btn-secondary",
+                                                                    "disabled": "{{_local.isRequestingReauthCode ?? false}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "{{_local.reauthChallengeId ? '$t:admin.users.form.password_policy.reauth_resend_code' : '$t:admin.users.form.password_policy.reauth_request_code'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "if": "{{!!_local.reauthChallengeId}}",
+                                                                "actions": [
+                                                                    {
+                                                                        "event": "onChange",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "reauthCode": "{{$event.target.value}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "value": "{{_local.reauthCode ?? ''}}",
+                                                                    "inputMode": "numeric",
+                                                                    "autoComplete": "one-time-code",
+                                                                    "maxLength": "10",
+                                                                    "placeholder": "$t:admin.users.form.password_policy.reauth_code_placeholder",
+                                                                    "className": "input"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "if": "{{!!_local.reauthChallengeId}}",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "확인 — 인증번호를 확인해 받은 토큰을 폼 값에 넣는다(저장할 때 함께 나간다).",
+                                                                        "type": "click",
+                                                                        "handler": "apiCall",
+                                                                        "target": "/api/identity/challenges/{{_local.reauthChallengeId}}/verify",
+                                                                        "auth_required": true,
+                                                                        "params": {
+                                                                            "method": "POST",
+                                                                            "body": {
+                                                                                "code": "{{_local.reauthCode}}"
+                                                                            }
+                                                                        },
+                                                                        "onSuccess": {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.verification_token": "{{response.data?.verification_token}}",
+                                                                                "reauthCode": "",
+                                                                                "reauthChallengeId": null
+                                                                            }
+                                                                        },
+                                                                        "onError": {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "error",
+                                                                                "message": "{{error.message}}"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn btn-primary",
+                                                                    "disabled": "{{!_local.reauthCode || _local.reauthCode.length < 4}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:admin.users.form.password_policy.reauth_confirm"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.verification_token}}",
+                                                        "props": {
+                                                            "className": "text-red-500 dark:text-red-400 text-xs"
+                                                        },
+                                                        "text": "{{_local.errors?.verification_token?.[0] ?? ''}}"
                                                     }
                                                 ]
                                             }

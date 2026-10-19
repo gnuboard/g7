@@ -1128,9 +1128,10 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| password | body | string | 예 | — | 비밀번호 |
+| password | body | string | verification_token 이 없으면 예 | — | 최고관리자 비밀번호 — 비밀번호가 없는 관리자가 보내면 422 `user.password_not_set` |
+| verification_token | body | string | 아니오 | 최대 128자 | 비밀번호가 없는 관리자(외부 인증 전용)의 대체 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰(본인 것·1회) (7.2.0) |
 
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.regenerate_app_key_validation_rules`).
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.regenerate_app_key_validation_rules`). 최고관리자 검사는 라우트 미들웨어(`super.admin` — 회원의 최고관리자 표지 `is_super`)가 한다.
 
 **요청 예시**
 
@@ -1171,7 +1172,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthorized | 본문 `password` 가 요청자 본인의 비밀번호와 일치하지 않는 경우 (`settings.invalid_password`) |
-| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없거나, FormRequest 가 `super_admin` 역할이 아닌 사용자를 거부한 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.update`)이 없거나, 최고관리자(`is_super`)가 아닌 관리자인 경우 (`auth.super_admin_required`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | `.env` 기록/config 캐시 재생성 실패 (`settings.app_key_regenerate_failed`) |
 
@@ -1179,7 +1180,7 @@ _단건 응답: `data` 객체의 필드._
 
 **설명**
 
-애플리케이션 키(`APP_KEY`)를 재생성합니다. FormRequest 단계에서 `super_admin` 역할만 허용하고, Service 단계에서 요청자 본인의 비밀번호가 일치하는지 다시 확인합니다(불일치 시 401). 성공 시 새 키를 `.env` 의 `APP_KEY` 에 기록하고 config 캐시를 재생성하며, 응답 `data.app_key` 에 새 키를 반환합니다. 앱 키 변경은 기존 암호화 값/서명 무효화를 동반하므로 주의가 필요합니다.
+애플리케이션 키(`APP_KEY`)를 재생성합니다. 라우트 미들웨어 단계에서 최고관리자(`is_super`)만 허용하고, Service 단계에서 요청자 본인의 비밀번호가 일치하는지 다시 확인합니다(불일치 시 401). 성공 시 새 키를 `.env` 의 `APP_KEY` 에 기록하고 config 캐시를 재생성하며, 응답 `data.app_key` 에 새 키를 반환합니다. 앱 키 변경은 기존 암호화 값/서명 무효화를 동반하므로 주의가 필요합니다.
 
 
 ### POST /api/admin/settings/restore

@@ -235,6 +235,7 @@ export type ActionType =
   | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
   | 'loginPasswordChange' // 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
   | 'loginPasswordChangePostpone' // 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
+  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.81.0)
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -2981,6 +2982,14 @@ export class ActionDispatcher {
           );
           break;
 
+        case 'loginHandoff':
+          result = await this.handleLoginHandoff(
+            resolvedTarget!,
+            resolvedParams,
+            context
+          );
+          break;
+
         case 'logout':
           result = await this.handleLogout(resolvedTarget!, context);
           break;
@@ -4514,26 +4523,83 @@ export class ActionDispatcher {
         this.buildAuthRequestOptions(loginEndpoint, _context)
       );
 
-      // 2단계 인증이 켜진 사이트에서는 아직 로그인이 끝나지 않았다. 레이아웃이 그 사실을
-      // 알 통로가 없으면 인증번호 입력 단계로 넘어갈 방법이 없다.
-      if (result.status === 'two_factor_required') {
-        return {
-          user: null,
-          two_factor_required: true,
-          password_change_required: false,
-          challenge_id: result.challenge.challengeId,
-          provider_id: result.challenge.providerId,
-          expires_at: result.challenge.expiresAt,
-        };
-      }
-
-      // `user`·`two_factor_required` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 읽는다.
-      // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored` 등)도 함께 넘긴다 — 버리면 로그인 화면의
-      // `<toast if="{{response.dormancy_restored}}">` 가 한 번도 뜨지 않는다 (engine-v1.76.0).
-      return { ...this.toLoginStepResponse(result), two_factor_required: false };
+      return this.toLoginResponse(result);
     } catch (error: any) {
       throw this.toLoginActionError(error, 'Login failed');
     }
+  }
+
+  /**
+   * loginHandoff 액션을 처리합니다.
+   *
+   * 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 발급한 일회용 인계 코드를 교환해 로그인합니다.
+   * 서버가 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, 반환 모양도 `login` 액션과
+   * 같다 — 로그인 화면은 같은 `onSuccess` 분기(2단계 인증 블록·비밀번호 변경 블록·휴면 해제 안내)를 그대로 쓴다.
+   *
+   * @param target 인증 타입 (지금은 user 만 — admin 은 서버가 인계를 지원하지 않는다)
+   * @param params 요청 파라미터 (body에 code 포함)
+   * @param context 액션 컨텍스트
+   * @since engine-v1.81.0
+   */
+  private async handleLoginHandoff(
+    target: string,
+    params: Record<string, any>,
+    context: ActionContext
+  ): Promise<any> {
+    const { body } = params;
+
+    if (!body || !body.code) {
+      throw new ActionError(
+        'loginHandoff requires code in body params'
+      );
+    }
+
+    const authType = this.resolveAuthType(target);
+    // ApiClient 는 baseURL 이 '/api' 이므로 globalHeaders 패턴 매칭용 경로에 '/api' 를 붙인다 — `login` 과 같은
+    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다.
+    const endpoint = '/api/auth/login/handoff';
+
+    try {
+      const result = await AuthManager.getInstance().loginWithHandoff(
+        authType,
+        String(body.code),
+        this.buildAuthRequestOptions(endpoint, context)
+      );
+
+      return this.toLoginResponse(result);
+    } catch (error: any) {
+      throw this.toLoginActionError(error, 'Login failed');
+    }
+  }
+
+  /**
+   * 로그인 첫 단계 결과(인증 완료 / 2단계 인증 / 비밀번호 변경)를 레이아웃이 읽는 응답 모양으로 바꿉니다.
+   *
+   * `login` 과 `loginHandoff` 가 같은 모양을 돌려주도록 단일 지점에 둔다 — 갈라지면 한쪽 경로에서만 로그인 화면의
+   * `onSuccess` 분기가 깨진다.
+   *
+   * @param result AuthManager 로그인 결과
+   * @returns 레이아웃 `response`
+   * @since engine-v1.81.0
+   */
+  private toLoginResponse(result: LoginResult): Record<string, any> {
+    // 2단계 인증이 켜진 사이트에서는 아직 로그인이 끝나지 않았다. 레이아웃이 그 사실을
+    // 알 통로가 없으면 인증번호 입력 단계로 넘어갈 방법이 없다.
+    if (result.status === 'two_factor_required') {
+      return {
+        user: null,
+        two_factor_required: true,
+        password_change_required: false,
+        challenge_id: result.challenge.challengeId,
+        provider_id: result.challenge.providerId,
+        expires_at: result.challenge.expiresAt,
+      };
+    }
+
+    // `user`·`two_factor_required` 는 종전 계약 그대로 유지한다 — 기존 레이아웃이 읽는다.
+    // 서버가 덧붙인 안내(휴면 해제 `dormancy_restored` 등)도 함께 넘긴다 — 버리면 로그인 화면의
+    // `<toast if="{{response.dormancy_restored}}">` 가 한 번도 뜨지 않는다 (engine-v1.76.0).
+    return { ...this.toLoginStepResponse(result), two_factor_required: false };
   }
 
   /**

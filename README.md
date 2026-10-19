@@ -468,6 +468,7 @@ The setup wizard creates the application key, configures the database connection
 | **sirsoft-verification_kginicis** | KG Inicis identity verification (Korean identity verification) |
 | **sirsoft-verification_nhnkcp** | NHN KCP mobile identity verification (Korean identity verification) |
 | **sirsoft-totp** | Authenticator app two-factor login (RFC 6238 TOTP) |
+| **sirsoft-social_login** | Social login (Kakao, Naver, Google, Facebook, generic OIDC) |
 | **sirsoft-daum_postcode** | Daum postcode lookup (Korean address search) |
 | **sirsoft-marketing** | Marketing tools |
 | **sirsoft-koreaexim** | Korea Eximbank exchange rate updates and history |

@@ -23,6 +23,7 @@ return [
     'channel_skipped_no_template' => ':channel 채널에 :type 타입의 활성 템플릿이 없어 발송을 건너뛰었습니다.',
     'channel_disabled_by_extension' => '확장 환경설정에서 해당 채널이 비활성화되어 있어 발송을 건너뛰었습니다.',
     'channel_guest_not_allowed' => '해당 채널은 비회원 발송을 허용하지 않아 발송을 건너뛰었습니다.',
+    'recipient_email_undeliverable' => '메일을 보낼 수 없는 수신 주소(대체 이메일)라 메일 발송을 건너뛰었습니다.',
     'channel_unavailable' => '해당 채널을 제공하는 확장이 비활성 또는 삭제되어 발송을 건너뛰었습니다.',
 
     // 알림 템플릿

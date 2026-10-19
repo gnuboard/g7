@@ -35,7 +35,8 @@ describe('관리자 회원 폼 — 비밀번호 정책 (#736)', () => {
    */
   it('현재 비밀번호 칸은 본인 계정 + 새 비밀번호 입력일 때만 보이고 저장에 실린다', () => {
     const field = find('field_current_password');
-    expect(field?.if).toBe(`{{${SELF} && !!_local.form?.password}}`);
+    // 비밀번호가 없는 회원(외부 인증 전용)은 확인할 현재 비밀번호가 없어 이 칸 대신 이메일 인증번호 확인을 쓴다(#40).
+    expect(field?.if).toBe(`{{${SELF} && !!_local.form?.password && user?.data?.has_password !== false}}`);
     const input = flatten(field).find((n) => n.name === 'Input');
     expect(input?.props?.name).toBe('current_password');
     expect(input?.props?.type).toBe('password');

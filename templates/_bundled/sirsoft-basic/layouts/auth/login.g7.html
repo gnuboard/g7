@@ -1,10 +1,77 @@
 <!-- 로그인 화면 — 이미 로그인한 사람은 조각(_redirect_if_logged_in)이 즉시 되돌려 보내므로 폼이 보이지 않는다. 결제로 가던 길에 들어온 경우(redirect 에 checkout 포함)에만 비회원 결제 계속 버튼을 함께 보여 준다. -->
 <layout name="auth/login" version="1.0.0" extends="_user_base">
   <meta title="$t:auth.login" :guest_only="true"/>
+  <!-- 로그인 응답 분기 — 비밀번호 로그인(`_login_form` 의 `login`)과 로그인 인계 교환(아래 `<init>` 의 `loginHandoff`)이 같은 분기를 쓴다.
+       2단계 인증이면 `_global.twoFactor`, 비밀번호 변경이면 `_global.passwordChange` 만 심고, 로그인이 끝났으면 사용자·안내·이동을 처리한다. -->
+  <action name="applyLoginResult">
+    <sequence>
+      <!-- 2단계 인증이 켜진 사이트는 아직 로그인이 끝나지 않았다 — 토큰도 사용자도 없다. -->
+      <set-state if="{{response.two_factor_required}}" target="global" :isLoggingIn="false">
+        <field name="twoFactor">
+          <field name="required" :value="true"/>
+          <field name="challenge_id" value="{{response.challenge_id}}"/>
+          <field name="provider_id" value="{{response.provider_id}}"/>
+          <field name="expires_at" value="{{response.expires_at}}"/>
+          <field name="code" value=""/>
+          <field name="error" :value="null"/>
+          <field name="verifying" :value="false"/>
+          <field name="resending" :value="false"/>
+          <field name="resent" :value="false"/>
+        </field>
+      </set-state>
+      <!-- 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호다 — 토큰 없이 변경 단계 식별자만 왔다. -->
+      <set-state if="{{response.password_change_required}}" target="global" :isLoggingIn="false">
+        <field name="passwordChange">
+          <field name="required" :value="true"/>
+          <field name="challenge_id" value="{{response.challenge_id}}"/>
+          <field name="reason" value="{{response.reason}}"/>
+          <field name="can_postpone" value="{{response.can_postpone}}"/>
+          <field name="postpone_days" value="{{response.postpone_days}}"/>
+          <field name="expired_at" value="{{response.expired_at}}"/>
+          <field name="error" :value="null"/>
+          <field name="errors" :value="null"/>
+        </field>
+      </set-state>
+      <set-state if="{{response.password_change_required}}" target="local" :passwordChangeInput="null"/>
+      <set-state if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" target="global" currentUser="{{response.user}}"/>
+      <set-state if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" target="global" :isLoggingIn="false"/>
+      <!-- 로그인 직전에 비회원으로 발급받은 주문 조회 토큰은 회원 컨텍스트에 무효 — 잔존 시 동일 브라우저로 회원/비회원 페이지 동시 열람 가능. sessionStorage 3개 키 (token/orderNumber/expiresAt) 와 _global.guestOrderToken 을 한 번에 정리하는 모듈 커스텀 핸들러 사용. -->
+      <action handler="clearGuestOrderToken" if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}"/>
+      <toast if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" type="success" message="$t:auth.login_success"/>
+      <!-- 휴면이 풀린 로그인에만 실린다 — 서버가 해제했을 때만 이 키를 보내므로
+           평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다
+           풀린 사실을 끝내 모른다. -->
+      <toast if="{{!response.two_factor_required &amp;&amp; !response.password_change_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
+      <navigate if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
+    </sequence>
+  </action>
   <init>
     <!-- 2단계 인증·비밀번호 변경(#736) 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다. -->
     <set-state target="global" :twoFactor="null" :passwordChange="null"/>
     <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
+    <!-- 로그인 인계 — 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원을 `/login?login_handoff={코드}` 로 보낸다. 코드를 교환하면
+         비밀번호 로그인과 같은 응답이 와서 2단계 인증·비밀번호 변경·휴면 해제 안내를 그대로 쓴다. 코드는 한 번만 통하므로
+         교환 뒤에는 주소에서 지운다(새로고침해도 다시 교환하지 않게). 실패(만료·재사용·상태 거절)는 오류 자리에 싣는다. -->
+    <sequence if="{{!!query?.login_handoff}}">
+      <!-- 로그인 진행 표지 — 비밀번호 로그인과 같다. 없으면 회원이 서는 순간 「이미 로그인됨 → 홈」 조각이 복귀 주소를 무시하고 홈으로 보낸다. -->
+      <set-state target="local" :isLoginAction="true"/>
+      <set-state target="global" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
+      <action handler="loginHandoff" target="user">
+        <success>
+          <replace-url if="{{response.two_factor_required || response.password_change_required}}" path="/login">
+            <query redirect="{{query.redirect || undefined}}"/>
+          </replace-url>
+          <action-ref name="applyLoginResult"/>
+        </success>
+        <fail>
+          <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
+          <replace-url path="/login">
+            <query redirect="{{query.redirect || undefined}}"/>
+          </replace-url>
+        </fail>
+        <body code="{{query.login_handoff}}"/>
+      </action>
+    </sequence>
   </init>
   <slot name="content">
     <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" align="start" class="min-h-[60vh] py-12">
@@ -18,6 +85,8 @@
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.login</h2>
         <include src="partials/auth/_login_form.g7.html"/>
+        <!-- 확장 영역 — 소셜 로그인 버튼처럼 다른 로그인 수단을 확장이 붙이는 자리. 붙인 확장이 없으면 아무것도 그리지 않는다. -->
+        <extension-point name="auth_login_extensions" data-ref="auth_login_extensions_slot"/>
         <!-- 하단 링크 영역 -->
         <div class="mt-4 flex items-center justify-between text-sm">
           <a href="/forgot-password" class="inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">

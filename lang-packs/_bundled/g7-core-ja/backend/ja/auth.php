@@ -3,6 +3,7 @@
 return [
     'login_success' => 'ログインが成功しました。',
     'login_failed' => '認証に失敗しました。',
+    'login_handoff_invalid' => 'ログイン情報の有効期限が切れているか、正しくありません。もう一度ログインしてください。',
     'two_factor_required' => '認証番号を送信しました。受け取った番号を入力してログインを完了してください。',
     'two_factor_failed' => '認証番号が正しくないか、有効期限が過ぎています。',
     'two_factor_invalid_challenge' => '認証リクエストが見つかりません。最初からログインし直してください。',
@@ -15,6 +16,7 @@ return [
     'invalid_credentials' => '無効な認証情報です。',
     'admin_login_success' => '管理者ログインが成功しました。',
     'admin_required' => '管理者権限が必要です。',
+    'super_admin_required' => 'この操作は最高管理者のみ実行できます。',
     'admin_required_dormancy_restored' => '管理者権限が必要です。休眠状態だったアカウントは解除されましたので、通常のログイン画面をご利用ください。',
     'unauthenticated' => '認証が必要です。',
     'permission_denied' => '該当する権限がありません。',

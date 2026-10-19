@@ -4,6 +4,7 @@ return [
     // Authentication related messages
     'login_success' => 'Login successful.',
     'login_failed' => 'Authentication failed.',
+    'login_handoff_invalid' => 'Your sign-in link has expired or is invalid. Please sign in again.',
     'two_factor_required' => 'A verification code has been sent. Enter it to finish signing in.',
     'two_factor_required_app' => 'Enter the 6-digit code from your authenticator app to finish signing in.',
     'two_factor_enrollment_required' => 'You must enroll an authenticator app before signing in. Please contact the administrator.',
@@ -28,6 +29,7 @@ return [
     'invalid_credentials' => 'Invalid credentials.',
     'admin_login_success' => 'Admin login successful.',
     'admin_required' => 'Administrator privileges required.',
+    'super_admin_required' => 'Only a super administrator can perform this action.',
     'admin_required_dormancy_restored' => 'Administrator privileges required. Your dormant account has been reactivated — please use the regular sign-in page.',
     'unauthenticated' => 'Authentication required.',
     'permission_denied' => 'Permission denied.',

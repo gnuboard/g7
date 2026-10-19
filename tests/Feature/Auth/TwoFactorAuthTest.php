@@ -346,7 +346,10 @@ class TwoFactorAuthTest extends TestCase
     }
 
     /**
-     * 관리자가 아닌 사용자가 관리자 2단계 인증을 완료하면 403 이고 발급된 토큰이 회수돼 남지 않는다.
+     * 관리자가 아닌 사용자가 관리자 2단계 인증을 완료하면 403 이고 토큰이 남지 않는다.
+     *
+     * 관리자 로그인은 비관리자에게 challenge 자체를 내주지 않으므로(#40 R12 — 인증번호도 보내지 않는다), 사용자
+     * 로그인에서 받은 challenge 를 관리자 완료 경로에 들고 오는 경우를 잰다.
      *
      * @scenario two_factor=on, controller=admin, actor=non_admin, code=valid
      *
@@ -359,10 +362,13 @@ class TwoFactorAuthTest extends TestCase
     {
         $this->setTwoFactor(true);
 
-        $challengeId = $this->postJson('/api/auth/admin/login', [
+        // 관리자 로그인은 비관리자를 challenge 발급 전에 거절한다.
+        $this->postJson('/api/auth/admin/login', [
             'email' => 'two-factor@test.com',
             'password' => 'Passw0rd!2fa',
-        ])->json('data.challenge_id');
+        ])->assertStatus(403)->assertJsonMissingPath('data.challenge_id');
+
+        $challengeId = $this->login()->json('data.challenge_id');
 
         $response = $this->postJson('/api/auth/admin/login/two-factor', [
             'challenge_id' => $challengeId,
@@ -576,10 +582,8 @@ class TwoFactorAuthTest extends TestCase
     {
         $this->setTwoFactor(true);
 
-        $challengeId = $this->postJson('/api/auth/admin/login', [
-            'email' => 'two-factor@test.com',
-            'password' => 'Passw0rd!2fa',
-        ])->json('data.challenge_id');
+        // 관리자 로그인은 비관리자에게 challenge 를 내주지 않는다(#40 R12) — 사용자 로그인 challenge 로 잰다.
+        $challengeId = $this->login()->json('data.challenge_id');
 
         // 완료할 수 없는 상대에게 새 인증번호를 계속 보내지 않는다.
         $this->postJson('/api/auth/admin/login/two-factor/resend', [

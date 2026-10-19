@@ -8,7 +8,9 @@ use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
+use App\Models\User;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use App\Services\Auth\ReauthenticationService;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
 use App\Support\EnvPriority;
@@ -1490,14 +1492,29 @@ class SettingsService
     /**
      * 어플리케이션 키를 재생성합니다.
      *
-     * @param  string  $password  최고 관리자 비밀번호
-     * @return array 결과 (success, app_key 또는 error)
+     * 실행 직전에 요청 관리자 본인을 다시 확인한다 — 비밀번호가 있으면 비밀번호, 없으면(외부 인증 전용) 이메일 인증번호로
+     * 받은 `verification_token`.
+     *
+     * @param  array{password?: string|null, verification_token?: string|null}  $credentials  재확인 입력
+     * @return array 결과 (success, app_key 또는 error·status)
      */
-    public function regenerateAppKey(string $password): array
+    public function regenerateAppKey(array $credentials): array
     {
         $admin = Auth::user();
-        if (! $admin || ! Hash::check($password, $admin->password)) {
-            return ['success' => false, 'error' => __('settings.invalid_password')];
+        $check = $admin instanceof User
+            ? app(ReauthenticationService::class)->verify($admin, $credentials)
+            : ReauthenticationService::MISSING;
+
+        if ($check === ReauthenticationService::PASSWORD_NOT_SET) {
+            return ['success' => false, 'error' => __('user.password_not_set'), 'status' => 422];
+        }
+
+        if ($check === ReauthenticationService::TOKEN_INVALID) {
+            return ['success' => false, 'error' => __('user.reauthentication_invalid'), 'status' => 422];
+        }
+
+        if ($check !== ReauthenticationService::PASSED) {
+            return ['success' => false, 'error' => __('settings.invalid_password'), 'status' => 401];
         }
 
         try {

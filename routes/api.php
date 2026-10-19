@@ -347,6 +347,10 @@ Route::prefix('auth')->group(function () {
             ->name('api.auth.login.password-change');
         Route::post('login/password-change/postpone', [UserAuthController::class, 'postponePasswordChange'])
             ->name('api.auth.login.password-change.postpone');
+        // 로그인 인계 — 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 발급한 일회용 코드를 교환한다.
+        // 응답은 `login` 과 같은 모양(인증 완료·2단계 인증·비밀번호 변경)이고, 로그인과 같은 제한을 적용한다.
+        Route::post('login/handoff', [UserAuthController::class, 'loginHandoff'])
+            ->name('api.auth.login.handoff');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -784,7 +788,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.
         Route::get('password-expiry-preview', [AdminSettingsController::class, 'passwordExpiryPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.password-expiry-preview');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
-        Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
+        // 앱 키 재생성은 최고관리자(is_super)만 — 판정은 FormRequest 가 아니라 미들웨어가 한다(권한 로직 위치 규율).
+        Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware(['permission:admin,core.settings.update', 'super.admin'])->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');
         Route::post('optimize-system', [AdminSettingsController::class, 'optimizeSystem'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.optimize-system');
         Route::post('backup-database', [AdminSettingsController::class, 'backupDatabase'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.backup-database');

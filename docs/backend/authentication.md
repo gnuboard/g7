@@ -20,14 +20,16 @@
 
 1. [Laravel Sanctum 토큰 전용 인증](#laravel-sanctum-토큰-전용-인증)
 2. [StartApiSession 미들웨어](#startapisession-미들웨어)
-3. [토큰 슬라이딩 만료](#토큰-슬라이딩-만료)
-4. [로그아웃 구현 원칙](#로그아웃-구현-원칙)
-5. [401 응답 시 세션 쿠키 정리](#401-응답-시-세션-쿠키-정리)
-6. [Laravel Sanctum plainTextToken 구조](#laravel-sanctum-plaintexttoken-구조)
-7. [세션 존재 확인](#세션-존재-확인)
-8. [세션 무효화 3단계](#세션-무효화-3단계)
-9. [완전한 로그아웃 구현 예시](#완전한-로그아웃-구현-예시)
-10. [안티 패턴](#안티-패턴)
+3. [외부 인증 로그인 · 로그인 인계](#외부-인증-로그인--로그인-인계-720)
+4. [비밀번호 없는 회원](#비밀번호-없는-회원-720)
+5. [토큰 슬라이딩 만료](#토큰-슬라이딩-만료)
+6. [로그아웃 구현 원칙](#로그아웃-구현-원칙)
+7. [401 응답 시 세션 쿠키 정리](#401-응답-시-세션-쿠키-정리)
+8. [Laravel Sanctum plainTextToken 구조](#laravel-sanctum-plaintexttoken-구조)
+9. [세션 존재 확인](#세션-존재-확인)
+10. [세션 무효화 3단계](#세션-무효화-3단계)
+11. [완전한 로그아웃 구현 예시](#완전한-로그아웃-구현-예시)
+12. [안티 패턴](#안티-패턴)
 
 ---
 
@@ -102,6 +104,63 @@ Route::post('logout', ...)->middleware('start.api.session');
 - 개발자 화면 요청도 토큰 만료를 연장한다(`TokenExpirySlider` — API 의 `RefreshTokenExpiration` 과 같은 규칙).
 
 사용법은 [개발자 화면 가이드](../custom-development.md#3-로그인-판정과-내부-api-도구).
+
+---
+
+## 외부 인증 로그인 · 로그인 인계 (7.2.0)
+
+소셜 로그인처럼 **비밀번호가 아닌 수단으로 본인을 확인하는 확장**이 회원을 로그인시키는 공용 계약이다. 확장은 토큰을 직접
+만들지 않는다(`createToken()`·`Auth::login()` 금지) — 그러면 계정 잠금·회원 상태·2단계 인증(인증 앱 포함)·비밀번호 변경·휴면 해제·
+로그인 완료 훅(장바구니 병합 등)이 빠진다.
+
+### 흐름
+
+```text
+확장: 본인 확인 완료(예: OAuth 콜백) → 회원 확정
+  → LoginHandoffService::issue($user, ['login_method' => 'social:kakao', 'skip_two_factor' => false])
+  → 302 /login?login_handoff={코드}&redirect={복귀 경로}
+로그인 화면: 진입 시 엔진 액션 loginHandoff → POST /api/auth/login/handoff {code}
+코어: 코드 소비(1회) → AuthService::loginVerifiedUser($user, $context)
+  → 잠금 → 회원 상태 → 관리자 경로 판정 → 2단계 인증 → 비밀번호 변경(비밀번호 회원만) → 휴면 해제 + 토큰
+  → 응답은 POST /api/auth/login 과 같은 세 형태(인증 완료 · two_factor_required · password_change_required)
+```
+
+| 항목 | 값 |
+| --- | --- |
+| 코드 | 32바이트 난수(base64url), **120초**, 한 번만 통한다. 캐시 키는 코드 원문이 아니라 해시다 |
+| `context.login_method` | 로그인 수단 이름(**필수** — 예 `social:kakao`, 비면 `issue()`·`loginVerifiedUser()` 가 `InvalidArgumentException`). 로그인 완료 훅 `core.auth.after_login` 둘째 인자의 `login_method` 로 실린다 — 2단계 인증(인증번호 재발송 포함)·비밀번호 변경을 거쳐도 이어진다. 비밀번호 로그인은 `password` |
+| `context.skip_two_factor` | `true` 면 2단계 인증 단계만 건너뛴다(운영자가 그 수단에 2단계 인증을 끈 경우). 잠금·상태·비밀번호 변경·휴면은 그대로 |
+| 실패 | 코드 없음·만료·재사용·관리자 경로 코드·회원 삭제 → 같은 **422** (`errors.code`, `auth.login_handoff_invalid`). 회원 상태 거절 → **401** + `errors.email`(상태 문구). 잠금 → **423** |
+| 관리자 경로 | 아직 지원하지 않는다 — `issue(..., 'admin')` 로 발급한 코드는 교환 시 422 |
+
+- 서버 쪽에서 바로 로그인 결과가 필요하면 `AuthService::loginVerifiedUser(User $user, array $context = [], string $guard = 'user')` 를
+  부를 수 있다. 본인 확인 책임은 호출자에게 있다 — 이 메서드는 「이 회원이 본인이다」를 믿고 관문만 적용한다.
+- 관리자 로그인 경로(`guard = admin`)는 관리자가 아닌 회원을 **세션을 열기 전에** 거절한다(휴면 해제·로그인 완료 훅·2단계 인증 메일보다 앞).
+- 이메일이 없거나 받을 수 없는 대체 주소(`.invalid`)인 회원은 메일 2단계 인증 대상이 아니다(인증 앱을 등록했으면 인증 앱으로 진행).
+
+## 비밀번호 없는 회원 (7.2.0)
+
+외부 인증으로만 가입한 회원은 `users.password` 가 `NULL` 이다. 판정은 `User::hasPassword()`(저장 속성을 직접 본다 — 접근자·
+`hashed` 캐스트를 거치지 않는다). 응답에는 `has_password`(bool)만 싣고 값은 싣지 않는다.
+
+| 면 | 동작 |
+| --- | --- |
+| 가입 | 확장이 `AuthService::register($data, ['issue_token' => false])` 로 비밀번호·토큰 없이 만든다(동의 기록·역할·가입 훅·본인인증 정책은 그대로). 공개 가입 API 는 비밀번호 필수 그대로 |
+| 비밀번호 로그인 | 항상 실패(`invalid_credentials`). 틀린 시도를 세지 않아 계정이 잠기지 않는다 — 응답은 같아 비밀번호 부재가 드러나지 않는다 |
+| 비밀번호 처음 설정 | 마이페이지 비밀번호 변경·정보 수정 API 는 현재 비밀번호 없이 받는다(보내면 `prohibited` 422). 비밀번호 재설정 메일도 설정 경로로 쓰인다 |
+| 비밀번호 만료 정책 | 비대상 — 판정·배치 후보·사전 안내·만료 처리(토큰 회수)·로그인 변경 관문·관리자 지정 변경 요구에서 빠진다 |
+| 본인 재확인 | 아래 「민감 작업 재확인」 |
+
+### 민감 작업 재확인
+
+비밀번호 확인 관문(마이페이지 정보 수정 진입 `POST /api/me/verify-password` · 앱 키 재생성 `POST /api/admin/settings/regenerate-app-key` ·
+관리자 본인 정보 수정 `PUT /api/admin/users/{본인}`)은 `ReauthenticationService` 를 함께 쓴다.
+
+- 비밀번호 회원: 종전대로 `password`.
+- 비밀번호 없는 회원: 코어 본인인증으로 확인한 토큰 `verification_token` — 화면은 `POST /api/identity/challenges`
+  (`purpose: sensitive_action`, `provider_id: g7:core.mail`)로 인증번호를 받고, `POST /api/identity/challenges/{id}/verify` 로 확인해
+  받은 토큰을 관문 요청에 싣는다. 토큰은 그 회원 본인 것·그 목적·미소비·미만료여야 하고, 관문을 통과하면 소비된다.
+- 비밀번호 없는 회원이 `password` 를 보내면 **422** `user.password_not_set`, 토큰이 무효면 **422** `user.reauthentication_invalid`.
 
 ---
 

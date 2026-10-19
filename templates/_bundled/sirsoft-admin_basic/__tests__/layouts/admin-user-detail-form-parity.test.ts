@@ -75,6 +75,8 @@ const FORM_ONLY = [
  */
 const RECORD_ONLY = [
   'field_uuid',
+  // 비밀번호 설정 여부(#40) — 회원이 비밀번호를 정했는지의 기록이다(값은 비밀번호 칸으로 정한다).
+  'field_has_password',
   'field_email_verified',
   'field_created_at',
   'field_last_login_at',

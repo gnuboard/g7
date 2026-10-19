@@ -279,6 +279,7 @@ export interface PasswordChangeChallenge {
 |--------|---------|
 | `completePasswordChange(type, { challengeId, password, passwordConfirmation }, options?)` | 새 비밀번호로 로그인 완료. 서버가 모든 기기를 로그아웃시키고 새 토큰을 발급. `LoginResult`(authenticated) |
 | `postponePasswordChange(type, { challengeId }, options?)` | 변경을 미루고 로그인 완료. `extras.postponed_until` 포함 |
+| `loginWithHandoff(type, code, options?)` | 외부 인증이 발급한 로그인 인계 코드를 교환해 로그인(engine-v1.81.0+). 결과는 `login()` 과 같은 `LoginResult` 세 형태. 실패해도 상태를 지우지 않는다. 인계 엔드포인트(`AuthConfig.handoffEndpoint`)가 없는 타입(관리자)은 요청 없이 오류 |
 
 레이아웃 핸들러와 `response` 모양:
 
@@ -288,6 +289,7 @@ export interface PasswordChangeChallenge {
 | `loginTwoFactor` | 위와 같음(`two_factor_required` 없음) | `{ user, password_change_required: false, dormancy_restored? }` |
 | `loginPasswordChange` (body `challenge_id`·`password`·`password_confirmation`) | — | `{ user, password_change_required: false, dormancy_restored? }` |
 | `loginPasswordChangePostpone` (body `challenge_id`) | — | `{ user, password_change_required: false, postponed_until, dormancy_restored? }` |
+| `loginHandoff` (body `code`, engine-v1.81.0+) | `login` 과 같음 | `login` 과 같음 (`two_factor_required` 형태도 같음) |
 
 `dormancy_restored` 는 휴면이 그 로그인으로 풀렸을 때만 실립니다. 네 핸들러 모두 결과의 `extras` 를 `response` 에
 펼쳐 전달합니다(engine-v1.76.0 전에는 엔진이 버려 휴면 해제 안내가 뜨지 않았습니다).

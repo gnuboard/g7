@@ -27,7 +27,8 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| password | body | string | 예 | — | 비밀번호 |
+| password | body | string | verification_token 이 없으면 예 | — | 비밀번호 — 비밀번호가 없는 회원(외부 인증 전용)이 보내면 422 `user.password_not_set` |
+| verification_token | body | string | 아니오 | 최대 128자 | 비밀번호가 없는 회원의 대체 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰. 본인 것·미사용·미만료여야 하고 통과하면 소비된다(무효면 422 `user.reauthentication_invalid`) (7.2.0) |
 
 **요청 예시**
 

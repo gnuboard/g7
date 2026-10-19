@@ -1,0 +1,91 @@
+{
+    "plugin_read_only": "이 설정을 바꿀 권한이 없습니다. 값만 볼 수 있습니다.",
+    "editor": {
+        "data_source": {
+            "settings": "소셜 로그인 설정"
+        }
+    },
+    "settings": {
+        "title": "소셜 로그인 설정",
+        "description": "소셜 로그인의 가입, 연결, 보존 정책을 관리합니다.",
+        "sections": {
+            "policy": "가입·연결 정책",
+            "limits": "시간·보존·알림 기준"
+        },
+        "fields": {
+            "email_conflict_policy": {
+                "label": "같은 이메일의 기존 회원",
+                "hint": "소셜 계정 이메일이 기존 회원 이메일과 같을 때 어떻게 할지 정합니다.",
+                "options": {
+                    "verify_link": "기존 계정을 확인한 뒤 연결 (권장)",
+                    "auto_link_verified": "제공자가 검증한 이메일이면 바로 연결 (주의: 제공자 검증을 그대로 믿습니다)",
+                    "never_link": "연결하지 않음"
+                }
+            },
+            "extra_info_mode": {
+                "label": "가입 추가 정보 화면",
+                "hint": "소셜 가입 때 추가 정보 화면을 언제 보여 줄지 정합니다.",
+                "options": {
+                    "when_missing": "필수 정보가 빌 때만",
+                    "always": "늘"
+                }
+            },
+            "webhook_unlink_policy": {
+                "label": "제공자의 연결 해제 알림",
+                "hint": "회원이 제공자 쪽에서 앱 연결을 끊었다는 알림을 받았을 때 처리 방법입니다.",
+                "options": {
+                    "unlink_only": "연결만 지움",
+                    "withdraw_user": "회원 탈퇴 처리 (관리자는 제외)"
+                }
+            },
+            "two_factor_enabled": {
+                "label": "소셜 로그인에도 2단계 인증",
+                "hint": "끄면 인증 앱을 등록한 회원도 소셜 로그인 때 2단계 인증을 건너뜁니다."
+            },
+            "allow_admin_social_login": {
+                "label": "관리자 소셜 로그인 허용",
+                "hint": "관리자 역할 회원도 소셜 계정으로 로그인할 수 있게 합니다."
+            },
+            "allow_unlink_last_method": {
+                "label": "마지막 로그인 수단 해제 허용",
+                "hint": "비밀번호가 없는 회원이 마지막 소셜 연결을 끊을 수 있게 합니다. 끊으면 비밀번호 찾기로만 다시 들어올 수 있습니다."
+            },
+            "revoke_on_unlink": {
+                "label": "연결을 끊을 때 제공자 권한도 회수",
+                "hint": "회원이나 관리자가 연결을 끊을 때 제공자 쪽 앱 권한도 회수합니다."
+            },
+            "state_ttl_minutes": {
+                "label": "로그인 왕복 유효 시간(분)",
+                "hint": "제공자 화면에서 이 시간 안에 돌아와야 합니다. 3~30."
+            },
+            "pending_signup_ttl_minutes": {
+                "label": "가입 대기 유효 시간(분)",
+                "hint": "제공자 확인 뒤 가입 화면을 마칠 때까지의 시간입니다. 5~120."
+            },
+            "custom_provider_limit": {
+                "label": "커스텀 제공자 최대 수",
+                "hint": "관리자가 추가할 수 있는 OIDC 제공자 수입니다. 0~10."
+            },
+            "profile_raw_retention_days": {
+                "label": "원본 프로필 보존(일)",
+                "hint": "제공자가 보낸 원본 프로필을 문제 확인용으로 보존하는 기간입니다. 0 이면 저장하지 않습니다. 0~90."
+            },
+            "attempt_log_retention_days": {
+                "label": "시도 기록 보존(일)",
+                "hint": "통계와 진단에 쓰는 시도 기록 보존 기간입니다. 7~365."
+            },
+            "webhook_event_retention_days": {
+                "label": "웹훅 기록 보존(일)",
+                "hint": "제공자 알림 수신 기록 보존 기간입니다. 7~365."
+            },
+            "signup_surge_threshold_per_hour": {
+                "label": "가입 급증 알림 기준(시간당)",
+                "hint": "한 제공자로 한 시간에 이 수 이상 가입하면 관리자에게 알립니다. 0 이면 알리지 않습니다."
+            },
+            "provider_failure_streak_threshold": {
+                "label": "제공자 연속 실패 알림 기준",
+                "hint": "한 제공자에서 이 수만큼 연달아 실패하면 관리자에게 알립니다. 0 이면 알리지 않습니다."
+            }
+        }
+    }
+}

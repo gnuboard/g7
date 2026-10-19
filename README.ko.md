@@ -455,6 +455,7 @@ cp .env.example .env
 | **sirsoft-verification_kginicis** | KG이니시스 본인인증 |
 | **sirsoft-verification_nhnkcp** | NHN KCP 휴대폰 본인확인 |
 | **sirsoft-totp** | 인증 앱 2단계 인증 (RFC 6238 TOTP) |
+| **sirsoft-social_login** | 소셜 로그인 (카카오, 네이버, 구글, 페이스북, 일반 OIDC) |
 | **sirsoft-daum_postcode** | 다음 우편번호 검색 |
 | **sirsoft-marketing** | 마케팅 도구 |
 | **sirsoft-koreaexim** | 수출입은행 환율 자동 갱신·갱신 이력 |

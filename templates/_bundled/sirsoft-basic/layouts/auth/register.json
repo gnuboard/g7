@@ -81,6 +81,12 @@
                                 "text": "$t:auth.register.title"
                             },
                             {
+                                "comment": "확장 영역 — 소셜 계정으로 가입하기 버튼처럼 다른 가입 수단을 확장이 붙이는 자리(가입 폼 위). 붙인 확장이 없으면 아무것도 그리지 않는다.",
+                                "id": "auth_register_extensions_slot",
+                                "type": "extension_point",
+                                "name": "auth_register_extensions"
+                            },
+                            {
                                 "partial": "partials/auth/_register_form.json"
                             },
                             {
