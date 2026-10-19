@@ -92,6 +92,7 @@ effects:
   - failure_notification_respects_flag_and_skips_manual_runs
   - failure_notification_sent_when_cache_down
   - failure_notification_variables_filled
+  - failure_notification_schedule_url_uses_screen_url
 
 # E2E axis 없음: 이 매니페스트는 서버측 실행 경로(등록·투입·실행·알림)다. 화면(스케줄 목록·즉시 실행·
 # 상태 카드)은 관리자 템플릿의 레이아웃 Vitest 와 Playwright spec(schedule-list-filter·queue-failed-retry),

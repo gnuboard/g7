@@ -5,10 +5,12 @@ namespace Tests\Feature\Schedule;
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
+use App\Extension\HookManager;
 use App\Listeners\ScheduleNotificationDataListener;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
 use App\Services\Schedule\ScheduleFailureNotifier;
+use App\Support\ScreenUrl;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Carbon;
 use Mockery;
@@ -133,6 +135,50 @@ class ScheduleFailureNotifierTest extends TestCase
         $this->assertStringContainsString('/admin/schedules', $data['schedule_url']);
         foreach (['app_name', 'site_url', 'name'] as $key) {
             $this->assertArrayHasKey($key, $data);
+        }
+    }
+
+    /**
+     * 실패 알림의 스케줄 관리 링크는 화면 키 `admin.schedules` 로 주소 필터를 거치고, 베이스는 사이트 주소다
+     * (#792 화면 주소 계약 — 리베이스 접합부).
+     *
+     * @scenario trigger=scheduled, outcome=failure
+     *
+     * @effects failure_notification_schedule_url_uses_screen_url
+     *
+     * @return void 반환값 없음
+     */
+    public function test_schedule_url_goes_through_screen_url_filter(): void
+    {
+        config([
+            'app.url' => 'https://site.example.test',
+            'g7_settings.core.general.user_screen_url' => 'https://front.example.test',
+        ]);
+        $listener = app(ScheduleNotificationDataListener::class);
+        $default = ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
+        // 같은 작업은 하루 한 번만 알리므로 호출마다 새 스케줄을 쓴다.
+        $urlOf = function (Schedule $schedule) use ($listener, $default): string {
+            $result = $listener->extractData($default, 'schedule_failed', [$schedule, $this->failedHistory($schedule, ScheduleTriggerType::Scheduled), 'boom']);
+
+            return $result['data']['schedule_url'];
+        };
+        $newSchedule = fn () => Schedule::factory()->create(['name' => 'nightly sync/'.uniqid(), 'notify_on_failure' => true]);
+
+        try {
+            $plain = $newSchedule();
+            $this->assertSame('https://site.example.test/admin/schedules?search_field=identifier&search_keyword='.rawurlencode($plain->name), $urlOf($plain));
+
+            $seen = [];
+            HookManager::addFilter(ScreenUrl::FILTER, function (string $path, string $key, array $params, string $scope) use (&$seen) {
+                $seen = [$key, $params['name'] ?? null, $scope];
+
+                return $key === 'admin.schedules' ? '/ops/jobs' : $path;
+            });
+            $filtered = $newSchedule();
+            $this->assertSame('https://site.example.test/ops/jobs', $urlOf($filtered));
+            $this->assertSame(['admin.schedules', $filtered->name, ScreenUrl::SCOPE_ADMIN], $seen);
+        } finally {
+            HookManager::clearFilter(ScreenUrl::FILTER);
         }
     }
 

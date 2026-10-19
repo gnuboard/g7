@@ -140,7 +140,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
         $this->assertStringContainsString('schedules?.data?.abilities?.can_update !== true', $select[0]['props']['disabled']);
         $this->assertCount(0, $this->findNodes($tab, fn (array $n) => ($n['props']['name'] ?? null) === 'bulk_action'));
 
-        $apply = $this->nodesWithText($tab, 'admin.schedules.bulk.apply');
+        $apply = $this->nodesWithText($tab, 'admin.schedules.action.bulk_apply');
         $this->assertCount(1, $apply);
         $this->assertStringContainsString('schedules?.data?.abilities?.can_update !== true', $apply[0]['props']['disabled']);
 

@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (613)
+- [코어](#코어) (631)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -519,6 +519,7 @@
 | `core.schedule.list_validation_rules` | filter | 2 |  |
 | `core.schedule.run_failed` | action | 3 |  |
 | `core.schedule.update_validation_rules` | filter | 2 |  |
+| `core.schedules.config` | filter | 1 |  |
 | `core.screen_url.filter_path` | filter | 4 |  |
 | `core.search.after_search` | action | 1 |  |
 | `core.search.build_response` | filter | 3 |  |
