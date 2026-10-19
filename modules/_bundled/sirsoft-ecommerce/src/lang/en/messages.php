@@ -1495,6 +1495,23 @@ return [
             'order_custom_email' => [
                 'app_name' => 'Site name',
             ],
+            // 내보내기(#787)
+            'export_completed' => [
+                'name' => 'Recipient (requester) name',
+                'type_label' => 'Export type (orders, products, mileage)',
+                'exports_url' => 'Export management URL',
+                'exports_path' => 'Export management path (without the site address)',
+                'file_name' => 'File name',
+                'row_count' => 'Row count',
+                'expires_at' => 'File expiry date',
+            ],
+            'export_failed' => [
+                'name' => 'Recipient (requester) name',
+                'type_label' => 'Export type (orders, products, mileage)',
+                'exports_url' => 'Export management URL',
+                'exports_path' => 'Export management path (without the site address)',
+                'error_message' => 'Failure reason',
+            ],
         ],
     ],
     // Console command output
@@ -1834,5 +1851,20 @@ return [
             'done' => 'Created :count shipping policy dummy records successfully.',
             'purged' => 'Deleted :count existing shipping policies.',
         ],
+    ],
+    // 내보내기(#787)
+    'export' => [
+        'download_link_issued' => 'A download link has been issued.',
+        'catalog_retrieved' => 'Export options loaded.',
+        'estimated' => 'Estimated row count calculated.',
+        'requested' => 'Export requested. When it finishes you can download it from Export Management.',
+        'list_retrieved' => 'Export list loaded.',
+        'retrieved' => 'Export job loaded.',
+        'downloads_retrieved' => 'Download history loaded.',
+        'deleted' => 'Export file deleted.',
+        'bulk_deleted' => 'Deleted :count. (Skipped :skipped)',
+    ],
+    'lifecycle' => [
+        'purge_failed' => 'Removal stopped because the exported files could not be deleted. Check the storage permissions and status, then remove the module again (files that may hold personal data are not left behind).',
     ],
 ];

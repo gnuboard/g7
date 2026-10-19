@@ -1,0 +1,196 @@
+{
+    "comment": "방금 요청한 내보내기의 진행 표시 — 상품·주문·마일리지 목록이 함께 쓴다(#787). 요청 창이 접수 응답으로\n  `_global.ecommerceExportTracking` 을 채우고 5초마다 작업 상세를 받아 갱신한다(대기·진행중이 끝나면 멈춘다). 목록에 들어올 때\n  `<init>` 이 비우므로 이 화면에서 요청한 1건만 보인다. [받기]는 내보내기 관리의 파일명 단추와 같은 일회용 주소 경로이고\n  권한·범위 검사도 같다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Ecommerce Export - Tracking Status"
+    },
+    "id": "ecommerce_export_tracking",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global.ecommerceExportTracking?.id}}",
+    "props": {
+        "role": "status",
+        "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Span",
+            "if": "{{_global.ecommerceExportTracking?.status === 'pending' || _global.ecommerceExportTracking?.status === 'processing'}}",
+            "props": {
+                "className": "flex items-center gap-1"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-ecommerce.admin.export.tracking.processing"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Span",
+            "if": "{{_global.ecommerceExportTracking?.status === 'completed'}}",
+            "props": {
+                "className": "text-green-700 dark:text-green-400"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.export.tracking.ready"
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "if": "{{_global.ecommerceExportTracking?.status === 'completed' && _global.ecommerceExportTracking?.can_download === true}}",
+            "actions": [
+                {
+                    "comment": "그 자리에서 받기 — 서버가 다운로드 이력·횟수를 남긴다. 성공·실패 모두 진행 표시를 푼다",
+                    "type": "click",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "ecommerceExportTrackingDownloading": true
+                            }
+                        },
+                        {
+                            "handler": "sirsoft-ecommerce.downloadExportFile",
+                            "params": {
+                                "url": "/api/modules/sirsoft-ecommerce/admin/exports/{{_global.ecommerceExportTracking?.id}}/download-link",
+                                "filename": "{{_global.ecommerceExportTracking?.file_name}}"
+                            },
+                            "onSuccess": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "ecommerceExportTrackingDownloading": false
+                                }
+                            },
+                            "onError": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "ecommerceExportTrackingDownloading": false
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "error",
+                                        "message": "$t:sirsoft-ecommerce.admin.export.messages.download_failed"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "type": "button",
+                "className": "flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_global.ecommerceExportTrackingDownloading === true}}"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "if": "{{_global.ecommerceExportTrackingDownloading === true}}",
+                    "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-ecommerce.admin.export.tracking.download"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Span",
+            "if": "{{_global.ecommerceExportTracking?.status === 'failed' || _global.ecommerceExportTracking?.status === 'expired'}}",
+            "props": {
+                "className": "text-red-600 dark:text-red-400"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.export.tracking.failed"
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "if": "{{['completed', 'failed', 'expired'].includes(_global.ecommerceExportTracking?.status) && !(_global.ecommerceExportTracking?.status === 'completed' && _global.ecommerceExportTracking?.can_download === true)}}",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/ecommerce/exports"
+                    }
+                }
+            ],
+            "props": {
+                "type": "button",
+                "className": "text-blue-600 dark:text-blue-400 hover:underline"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:sirsoft-ecommerce.admin.export.tracking.open_manage"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "comment": "표시 닫기 — 따라가던 반복도 멈춘다",
+                    "type": "click",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "stopInterval",
+                            "params": {
+                                "id": "ecommerce_export_track_poll"
+                            }
+                        },
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "ecommerceExportTracking": null
+                            }
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "type": "button",
+                "aria-label": "$t:sirsoft-ecommerce.admin.export.tracking.dismiss",
+                "className": "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "xmark",
+                        "className": "text-xs"
+                    }
+                }
+            ]
+        }
+    ]
+}

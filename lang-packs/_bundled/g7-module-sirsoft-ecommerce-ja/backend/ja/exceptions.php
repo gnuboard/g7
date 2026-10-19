@@ -69,12 +69,10 @@ return [
     'order_cancel_failed' => '注文キャンセル処理に失敗しました。',
     'order_estimate_refund_failed' => '返金予定金額の計算に失敗しました。',
     'order_create_failed' => '注文作成に失敗しました。',
-    // 手動決済処理の確認ウィンドウ — 在庫不足 (Q13)
     'manual_paid' => [
         'stock_insufficient' => '在庫が不足しているため状態を変更できません。:reason',
         'stock_insufficient_for_order' => '注文（:order_number）— :reason 「在庫を差し引く」をオフにすると差し引かずに変更できます。',
     ],
-    // キャンセル注文の再有効化 — クーポン競合 (Q27)
     'reactivation' => [
         'coupon_unavailable' => '注文（:order_number）で使ったクーポン（:coupons）が他の注文で使用済み、または回収済みのため、注文を復活できません。',
         'coupon_unavailable_bulk' => 'クーポンの問題で復活できない注文が:count件あるため、一括変更を行いませんでした。（注文番号：:order_numbers）',
@@ -184,4 +182,27 @@ return [
     'claim_withdraw_reason_required' => '取り下げ理由を入力してください。',
     'claim_admin_request_not_allowed' => 'この商品は現在のステータス(:status)では受け付けできません。',
     'no_purchasable_option' => '現在、購入可能なオプションがない商品です。',
+    'export' => [
+        'enqueue_failed' => 'エクスポート作業をキューに入れることができませんでした。しばらく経ってからもう一度お試しください。',
+        'requester_missing' => '要求された管理者アカウントが見つからないため、ファイルを作成しませんでした。',
+        'type_unavailable' => 'このエクスポートタイプは現在利用できません。このタイプを提供する拡張が無効になっていないか確認してください。',
+        'format_unavailable' => 'このファイル形式は現在利用できません。',
+        'no_fields' => 'エクスポートする項目がありません。権限が変更され、選択した項目が使用できなくなった可能性があります。',
+        'storage_write_failed' => 'ファイルを保存できませんでした。ストレージ設定と残りスペースを確認してください。',
+        'generation_failed' => 'ファイル作成中にエラーが発生しました。',
+        'permission_revoked' => '要求された管理者の権限が変更されたため、ファイルを作成しませんでした。',
+        'timeout' => '処理時間が制限を超えたため、中止しました。期間または範囲を縮小して再度要求してください。',
+        'file_expired' => '保管期間が経過したため、ファイルが削除されました。',
+        'not_downloadable' => 'まだダウンロード可能な状態ではありません。',
+        'file_missing' => 'ファイルが見つかりません。',
+        'processing_not_deletable' => '進行中の作業は削除できません。',
+        'not_retryable' => '失敗した作業のみ再度要求できます。',
+        'download_link_expired' => 'ダウンロードアドレスが期限切れまたは既に使用されています。エクスポート管理でファイル名をもう一度クリックしてください。',
+        'ecommerce_unavailable' => 'eコマースモジュールが無効になっているため、エクスポートを作成できません。eコマースモジュールを有効化した後、再度要求してください。',
+        'scope_denied' => '別の管理者が要求したエクスポートです。全エクスポート管理権限が必要です。',
+        'domain_permission_required' => 'このファイルの元のデータを表示する権限がありません。',
+        'declaration_missing_personal' => ':model のエクスポート宣言 :column に personal(個人情報の有無)がありません。',
+        'declaration_invalid_type' => ':model のエクスポート宣言 :column の type が正しくありません。',
+        'source_unavailable' => 'eコマース一覧条件を読み込むことができません(:class)。eコマースモジュールのバージョンを確認してください。',
+    ],
 ];

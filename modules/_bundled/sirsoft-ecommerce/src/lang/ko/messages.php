@@ -1484,6 +1484,23 @@ return [
             'order_custom_email' => [
                 'app_name' => '사이트명',
             ],
+            // 내보내기(#787)
+            'export_completed' => [
+                'name' => '수신자(요청자) 이름',
+                'type_label' => '작업유형 (주문내역·상품내역·마일리지 내역)',
+                'exports_url' => '내보내기 관리 URL',
+                'exports_path' => '내보내기 관리 경로 (사이트 주소 없이)',
+                'file_name' => '파일명',
+                'row_count' => '행 수',
+                'expires_at' => '파일 만료일',
+            ],
+            'export_failed' => [
+                'name' => '수신자(요청자) 이름',
+                'type_label' => '작업유형 (주문내역·상품내역·마일리지 내역)',
+                'exports_url' => '내보내기 관리 URL',
+                'exports_path' => '내보내기 관리 경로 (사이트 주소 없이)',
+                'error_message' => '실패 사유',
+            ],
         ],
     ],
     // 콘솔 명령 출력
@@ -1823,5 +1840,20 @@ return [
             'done' => '배송정책 더미 데이터 :count건이 성공적으로 생성되었습니다.',
             'purged' => '기존 배송정책 :count건을 삭제했습니다.',
         ],
+    ],
+    // 내보내기(#787)
+    'export' => [
+        'download_link_issued' => '다운로드 주소를 발급했습니다.',
+        'catalog_retrieved' => '내보내기 설정을 불러왔습니다.',
+        'estimated' => '예상 건수를 계산했습니다.',
+        'requested' => '내보내기를 요청했습니다. 완료되면 「내보내기 관리」에서 내려받을 수 있습니다.',
+        'list_retrieved' => '내보내기 목록을 불러왔습니다.',
+        'retrieved' => '내보내기 작업을 불러왔습니다.',
+        'downloads_retrieved' => '다운로드 이력을 불러왔습니다.',
+        'deleted' => '내보내기 파일을 삭제했습니다.',
+        'bulk_deleted' => ':count건을 삭제했습니다. (건너뜀 :skipped건)',
+    ],
+    'lifecycle' => [
+        'purge_failed' => '내보낸 파일을 지우지 못해 제거를 멈췄습니다. 저장소의 권한·상태를 확인한 뒤 다시 제거해 주세요(개인정보가 담길 수 있는 파일이라 남긴 채 제거하지 않습니다).',
     ],
 ];

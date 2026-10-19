@@ -35,6 +35,29 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 창 카탈로그 — 목록 화면이 열릴 때는 받지 않고, [내보내기] 버튼이 유형을 깔고 창을 연 뒤 다시 받는다(데이터 소스는 레이아웃 최상위에만 둘 수 있어 세 목록 레이아웃이 같은 선언을 갖는다) -->
+  <data-source id="ecommerceExportCatalog" :auto_fetch="false" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceExportCatalog" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/exports/catalog" :auth_required="true" initGlobal="ecommerceExportCatalog">
+    <params type="{{_global.ecommerceExportContext?.type ?? ''}}" start_date="{{_global.ecommerceExportContext?.filters?.start_date ?? ''}}" end_date="{{_global.ecommerceExportContext?.filters?.end_date ?? ''}}"/>
+    <success>
+      <!-- 기본값 채우기 — 형식은 첫 형식, 행 단위는 서버 기본, 화면 컬럼은 목록에 보이던 컬럼(카탈로그에 있는 것만)이고 없으면 전부, 언어는 서버 기본.
+           기간이 필수인데 목록의 조회 기간을 쓸 수 없으면(없거나 1년 초과) 서버가 준 「오늘 포함 최근 1개월」을 채우고 안내를 켠다 -->
+      <set-state target="global" ecommerceExportForm.format="{{response?.data?.data?.formats?.[0]?.key ?? 'csv'}}" ecommerceExportForm.row_unit="{{response?.data?.data?.default_row_unit}}" ecommerceExportForm.screen_columns="{{(_global.ecommerceExportContext?.screen_columns ?? []).filter(k => (response?.data?.data?.screen_columns ?? []).some(c => c.key === k)).length > 0 ? (_global.ecommerceExportContext?.screen_columns ?? []).filter(k => (response?.data?.data?.screen_columns ?? []).some(c => c.key === k)) : (response?.data?.data?.screen_columns ?? []).map(c => c.key)}}" ecommerceExportForm.locale="{{response?.data?.data?.default_locale}}" ecommerceExportForm.period="{{(response?.data?.data?.list_period_usable === false &amp;&amp; response?.data?.data?.default_period) ? response.data.data.default_period : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}" ecommerceExportPeriodDefaulted="{{(response?.data?.data?.list_period_usable === false &amp;&amp; response?.data?.data?.default_period) ? true : false}}" :ecommerceExportIsEstimating="true"/>
+      <!-- 첫 예상 건수 — 위에서 채운 기본값으로 예상 건수 데이터 소스를 부른다 -->
+      <refetch-data-source dataSourceId="ecommerceExportEstimateSource"/>
+    </success>
+  </data-source>
+  <!-- 예상 건수 — 요청 창이 조건을 바꿀 때마다 다시 부른다(본문은 이 한 곳에만 둔다 — 데이터 소스는 부르는 순간의 전역 값을 읽는다).
+       사유 오류(요청 때만 나온다)는 그대로 두고 나머지 오류는 이번 결과로 바꾼다. 첫 계산이 검증에서 걸리면(예: 목록 조건이 목록 검증을
+       통과하지 못한다) 그 사유를 보여 준다 — 「0」만 보이면 왜 비었는지 알 수 없다 -->
+  <data-source id="ecommerceExportEstimateSource" :auto_fetch="false" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerceExportEstimateSource" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/exports/estimate" method="POST" :auth_required="true">
+    <params type="{{_global.ecommerceExportContext?.type}}" format="{{_global.ecommerceExportForm?.format}}" column_mode="{{_global.ecommerceExportForm?.column_mode ?? 'current'}}" screen_columns="{{_global.ecommerceExportForm?.screen_columns ?? []}}" fields="{{_global.ecommerceExportForm?.fields ?? []}}" row_unit="{{_global.ecommerceExportForm?.row_unit}}" scope="{{_global.ecommerceExportForm?.scope ?? 'filter'}}" filters="{{_global.ecommerceExportForm?.scope === 'selected' ? {} : (_global.ecommerceExportContext?.filters ?? {}) }}" selected_ids="{{_global.ecommerceExportForm?.scope === 'selected' ? (_global.ecommerceExportContext?.selected_ids ?? []) : []}}" period="{{_global.ecommerceExportForm?.scope === 'selected' ? null : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}" locale_mode="{{_global.ecommerceExportForm?.locale_mode ?? 'locale'}}" locale="{{_global.ecommerceExportForm?.locale}}"/>
+    <success>
+      <set-state target="global" merge="shallow" ecommerceExportEstimate="{{response?.data?.data?.count ?? null}}" :ecommerceExportIsEstimating="false" :ecommerceExportEstimateFailed="false" ecommerceExportErrors="{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0] === 'reason'))}}"/>
+    </success>
+    <fail>
+      <set-state target="global" merge="shallow" :ecommerceExportEstimate="null" :ecommerceExportIsEstimating="false" :ecommerceExportEstimateFailed="true" ecommerceExportErrors="{{Object.fromEntries([...Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0] === 'reason'), ...(error.errors ? Object.entries(error.errors) : [['_general', [error.message]]])])}}"/>
+    </fail>
+  </data-source>
   <init-local>
     <field name="filter">
       <field name="searchField" value="member"/>
@@ -83,6 +106,8 @@
         <field name="dateQuick" value=""/>
       </field>
     </set-state>
+    <!-- 내보내기(#787) — 목록에 들어올 때 다른 화면에서 따라가던 진행 표시를 비운다(반복은 페이지가 바뀔 때 코어가 멈춘다) -->
+    <set-state target="global" :ecommerceExportTracking="null" :ecommerceExportTrackingDownloading="false"/>
   </init>
   <slot name="content">
     <div data-ref="mileage_transactions_content" class="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -144,7 +169,7 @@
       </div>
       <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}</span>
-        <div data-ref="table_header_controls" class="flex items-center gap-3">
+        <div data-ref="table_header_controls" class="flex flex-wrap items-center justify-end gap-3">
           <select data-ref="sort_select" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc</option>
@@ -173,6 +198,44 @@
               </navigate>
             </on>
           </select>
+          <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 「내보내기 요청」 권한과 이 목록의 조회 권한이 둘 다
+               있는 운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다 -->
+          <div data-ref="ecommerce_export_mileage_actions" class="flex flex-wrap items-center justify-end gap-3">
+            <include src="partials/admin_ecommerce_export/_partial_tracking_status.g7.html"/>
+            <!-- 내보내기 — 마일리지 내역의 지금 조건으로 파일을 만든다. 창은 별도 컨텍스트라 지금 검색 조건(데이터 소스와 같은 매개변수)·선택 id·보이는 컬럼을 전역에 실어 건넨다. 중복 방지 키는 열 때마다 새로 만든다 -->
+            <button data-ref="ecommerce_export_mileage_button" data-if="{{(current_user?.data?.is_super === true || ((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'sirsoft-ecommerce.exports.create') &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'sirsoft-ecommerce.mileage.read')))}}" type="button" class="btn btn-outline whitespace-nowrap">
+              <on type="click">
+                <sequence>
+                  <set-state target="global" ecommerceExportContext="{{ { type: 'mileage', label: $t('sirsoft-ecommerce.enums.export_type.mileage'), filters: Object.fromEntries(Object.entries({ search_field: query.search_field || 'member', search_keyword: query.search_keyword, type: query.type, currency: query.currency, start_date: query.start_date, end_date: query.end_date }).filter(([k, v]) => v !== undefined &amp;&amp; v !== null &amp;&amp; v !== '' &amp;&amp; !(Array.isArray(v) &amp;&amp; v.length === 0))), selected_ids: (_local.selectedItems ?? []), total: (transactions?.data?.pagination?.total ?? 0), screen_columns: null } }}" ecommerceExportIdempotencyKey="{{$uuid()}}" :ecommerceExportCatalog="null" :ecommerceExportEstimate="null" :ecommerceExportErrors="null" :ecommerceExportIsRequesting="false" :ecommerceExportIsEstimating="false" :ecommerceExportEstimateFailed="false"/>
+                  <set-state target="global">
+                  <field name="ecommerceExportForm">
+                    <field name="format" :value="null"/>
+                    <field name="column_mode" value="current"/>
+                    <field name="screen_columns" :value="null"/>
+                    <field name="fields" :value="[]"/>
+                    <field name="row_unit" :value="null"/>
+                    <field name="scope" value="{{(_local.selectedItems ?? []).length > 0 ? 'selected' : 'filter'}}"/>
+                    <field name="period">
+                      <field name="mode" value="current"/>
+                      <field name="date_type" :value="null"/>
+                      <field name="start_date" value=""/>
+                      <field name="end_date" value=""/>
+                    </field>
+                    <field name="locale_mode" value="locale"/>
+                    <field name="locale" :value="null"/>
+                    <field name="include_totals" :value="false"/>
+                    <field name="reason" value=""/>
+                  </field>
+                  </set-state>
+                  <set-state target="global" :ecommerceExportPeriodDefaulted="false"/>
+                  <open-modal target="ecommerce_export_request_modal"/>
+                  <refetch-data-source dataSourceId="ecommerceExportCatalog"/>
+                </sequence>
+              </on>
+              <icon name="file-export" class="text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.export.button</span>
+            </button>
+          </div>
         </div>
       </div>
       <include src="partials/admin_ecommerce_mileage_transaction_index/_transactions_table.g7.html"/>
@@ -184,4 +247,6 @@
   <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.g7.html"/>
   <!-- 기록 수정 — 표 행에서 열며 사유·만료일 같은 부수 항목만 고친다 -->
   <modal src="partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.g7.html"/>
+  <!-- 내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창(#787) -->
+  <modal src="partials/admin_ecommerce_export/_modal_export_request.g7.html"/>
 </layout>

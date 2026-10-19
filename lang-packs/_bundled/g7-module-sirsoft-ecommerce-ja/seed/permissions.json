@@ -382,5 +382,33 @@
   "sirsoft-ecommerce.claims.create": {
     "name": "クレーム職権受付",
     "description": "注文詳細から顧客に代わって交換・返品・キャンセル・返金を受け付け"
+  },
+  "sirsoft-ecommerce.exports": {
+    "name": "エクスポート",
+    "description": "商品·注文·マイレージ エクスポート要求とファイル管理権限"
+  },
+  "sirsoft-ecommerce.exports.read": {
+    "name": "エクスポート管理 閲覧",
+    "description": "エクスポート管理 メニュー·一覧·ダウンロード履歴 閲覧"
+  },
+  "sirsoft-ecommerce.exports.create": {
+    "name": "エクスポート要求",
+    "description": "一覧画面からエクスポート要求 (その一覧の閲覧権限も必要)"
+  },
+  "sirsoft-ecommerce.exports.download": {
+    "name": "エクスポートファイル ダウンロード",
+    "description": "完了されたエクスポートファイル ダウンロード (その一覧の閲覧権限も必要)"
+  },
+  "sirsoft-ecommerce.exports.delete": {
+    "name": "エクスポート 削除",
+    "description": "エクスポート作業とファイル 削除 (ダウンロード履歴は残る)"
+  },
+  "sirsoft-ecommerce.exports.personal_data": {
+    "name": "個人情報 含む エクスポート",
+    "description": "連絡先·住所 等 個人情報フィールドを選んでエクスポートしてそのファイルを受け取る (理由入力必須)"
+  },
+  "sirsoft-ecommerce.exports.all": {
+    "name": "他の運営者のエクスポート管理",
+    "description": "他の運営者が要求したエクスポートも見て·受け取って·削除する (ない場合は本人要求のみ)"
   }
 }

@@ -258,5 +258,17 @@
   "claim_shipping_fee_mode": {
     "fixed": "고정 금액",
     "original_policy": "원래 배송정책 재계산"
+  },
+  "export_status": {
+    "pending": "대기",
+    "processing": "진행중",
+    "completed": "완료",
+    "failed": "실패",
+    "expired": "만료"
+  },
+  "export_type": {
+    "orders": "주문내역",
+    "products": "상품내역",
+    "mileage": "마일리지 내역"
   }
 }

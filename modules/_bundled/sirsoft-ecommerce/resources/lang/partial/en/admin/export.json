@@ -1,0 +1,205 @@
+{
+  "title": "Export Management",
+  "description": "Track and download export files requested from products, orders and mileage history.",
+  "button": "Export",
+  "warnings": {
+    "queue_sync": {
+      "title": "Synchronous processing",
+      "message": "The queue connection is sync, so exports run inside the request. Large exports may freeze the screen or fail with a timeout. Set up a queue worker in production."
+    },
+    "storage_public": {
+      "title": "Public storage in use",
+      "message": "Export files are stored on a public disk. Anyone who knows a file URL can download it, so use this at your own risk. A private disk is recommended."
+    },
+    "pending_stalled": {
+      "title": "Pending delay",
+      "message": "Some jobs have been Pending for more than 10 minutes. Check that the queue worker is running."
+    }
+  },
+  "modal": {
+    "title": "Export {type}",
+    "loading": "Loading export options…",
+    "format": "File format",
+    "data": "Data to export",
+    "data_current": "Current list columns",
+    "data_current_hint": "Exports the columns shown in the list. Columns that combine several values are split into one column per value.",
+    "data_custom": "Choose fields",
+    "data_custom_hint": "Pick the fields to export.",
+    "select_all": "Select all",
+    "clear_all": "Clear all",
+    "group_extra": "Other fields",
+    "personal_badge": "Personal",
+    "parent_level_badge": "Per order",
+    "personal_locked": "Only operators with the personal data export permission can choose personal fields.",
+    "row_unit": "Row unit",
+    "scope": "Scope",
+    "scope_filter": "Current search conditions ({count})",
+    "scope_selected": "Selected items ({count})",
+    "scope_all": "Everything (no conditions)",
+    "scope_selected_hint": "You can export up to {max} selected items at once.",
+    "period": "Period",
+    "period_current": "List period",
+    "period_custom": "Custom",
+    "period_hint": "The period can be at most one year.",
+    "period_required_hint": "A period is required for this export.",
+    "period_defaulted": "The list has no usable period (none, or longer than one year), so the last month up to today was filled in. You can change the dates.",
+    "period_selected_hint": "Selected items are exported regardless of period.",
+    "date_type": "Date type",
+    "start_date": "Start date",
+    "end_date": "End date",
+    "locale": "Multilingual data",
+    "locale_language": "One language",
+    "locale_per_column": "One column per language",
+    "locale_single_column": "All languages in one column",
+    "locale_select": "Language",
+    "options": "Options",
+    "include_totals": "Add a totals row at the end",
+    "reason": "Download reason",
+    "reason_placeholder": "e.g. Month-end settlement report",
+    "reason_hint": "You selected fields containing personal data. The reason is kept in the activity log and Export Management.",
+    "estimate": "About {count} rows",
+    "estimate_one": "About {count} row",
+    "estimate_unknown": "Conditions changed. Recalculate the estimated row count.",
+    "estimate_recalc": "Recalculate",
+    "estimating": "Calculating…",
+    "estimate_large": "This is a large export and may take a while.",
+    "submit": "Export",
+    "submitting": "Requesting…",
+    "close": "Close",
+    "requested": "Export requested. You can track it and download the file in Export Management.",
+    "requested_notice": "Export requested. You will get a notification (bell) when the file is ready, and you can download it from the progress indicator above the list or from Export Management.",
+    "scope_filter_list": "Current filters ({count} in list)",
+    "period_current_range": "List period: {start} ~ {end}",
+    "period_current_unavailable": "The list has no usable period (missing or longer than a year), so \"List period\" cannot be selected.",
+    "estimate_empty": "There are no rows to export. Try changing the period or filters.",
+    "estimate_failed": "The estimate cannot be calculated with these conditions. Fix the highlighted field and it will recalculate."
+  },
+  "tracking": {
+    "processing": "Creating the file…",
+    "ready": "File ready",
+    "download": "Download",
+    "failed": "The file could not be created",
+    "open_manage": "View in Export Management",
+    "dismiss": "Close progress indicator"
+  },
+  "filter": {
+    "search_field": {
+      "all": "All",
+      "file_name": "File name",
+      "requester": "Requester"
+    },
+    "search_placeholder": "File name or requester name/email",
+    "status": "Status",
+    "type": "Job type",
+    "personal": "Personal data",
+    "personal_with": "Included",
+    "personal_without": "Not included",
+    "requested_at": "Requested",
+    "mine": "My requests only",
+    "all": "All",
+    "search": "Search",
+    "reset": "Reset"
+  },
+  "table": {
+    "column": {
+      "requested_at": "Requested at",
+      "requester": "Requester",
+      "file_name": "File name",
+      "type": "Job type",
+      "status": "Status"
+    },
+    "empty": "No export requests.",
+    "download_count": "{count}×",
+    "rows": "{count} rows",
+    "rows_one": "{count} row",
+    "file_waiting": "Not created yet",
+    "personal_badge": "Personal",
+    "requester_menu": {
+      "view_member": "View member",
+      "search_member": "Show only this requester's exports"
+    }
+  },
+  "sub_row": {
+    "scope": "Scope",
+    "period": "Period",
+    "row_unit": "Row unit",
+    "locale_mode": "Languages",
+    "fields": "Fields",
+    "field_count": "{count}",
+    "selected_count": "{count} selected",
+    "totals": "Totals row",
+    "yes": "Included",
+    "no": "None",
+    "reason": "Reason",
+    "warnings": "Warnings at request",
+    "cutoff_at": "Snapshot time",
+    "completed_at": "Completed at",
+    "expires_at": "File expires",
+    "file_size": "File size",
+    "error": "Failure reason"
+  },
+  "action": {
+    "download": "Download",
+    "view_downloads": "Download history",
+    "retry": "Request again",
+    "delete": "Delete",
+    "bulk_delete": "Delete selected"
+  },
+  "bulk": {
+    "selected_count": "{count} selected"
+  },
+  "pagination": {
+    "total": "{count} total"
+  },
+  "sort": {
+    "requested_at_desc": "Newest first",
+    "requested_at_asc": "Oldest first",
+    "completed_at_desc": "Recently completed",
+    "file_size_desc": "Largest file",
+    "download_count_desc": "Most downloaded"
+  },
+  "modal_delete": {
+    "title": "Delete export",
+    "message": "This export job and its file will be deleted.",
+    "warning": "Deleted files cannot be restored. Download history and activity logs are kept."
+  },
+  "modal_bulk_delete": {
+    "title": "Delete selected",
+    "message": "Delete {count} selected export jobs and their files.",
+    "message_one": "Delete {count} selected export job and its file.",
+    "warning": "Jobs that are processing or outside your permission scope are skipped. Deleted files cannot be restored."
+  },
+  "modal_retry": {
+    "title": "Request again",
+    "message": "Request a new export with the same conditions as the failed job.",
+    "hint": "The snapshot time becomes now, so data changed since then is included.",
+    "reason_hint": "Another operator requested this job and it contains personal data. Enter your own reason for requesting it again — it is kept in the activity log and Export Management."
+  },
+  "modal_downloads": {
+    "title": "Download history",
+    "file": "File",
+    "requested": "Requested",
+    "conditions": "Conditions",
+    "reason": "Reason",
+    "warnings": "Warnings at request",
+    "column": {
+      "sequence": "No.",
+      "user": "Downloaded by",
+      "downloaded_at": "Downloaded at",
+      "ip": "IP"
+    },
+    "empty": "No downloads yet."
+  },
+  "messages": {
+    "deleted": "Export deleted.",
+    "retried": "Requested again.",
+    "download_failed": "Could not download the file. Refresh the list and try again."
+  },
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "confirm": "Confirm",
+    "processing": "Processing…"
+  }
+}

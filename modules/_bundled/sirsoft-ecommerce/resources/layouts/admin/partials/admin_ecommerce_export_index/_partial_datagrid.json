@@ -1,0 +1,931 @@
+{
+    "comment": "내보내기 작업 표. 쪽 넘김은 서버가 하고(`serverSidePagination`), 쪽 번호는 URL 에 남는다.\n  파일명은 내려받을 수 있을 때(완료 + 다운로드 권한 + 범위 + 원본 조회 권한 — 서버 `abilities.can_download`)만\n  링크 모양 버튼이고 그 밖에는 글자다. 응답이 파일이라 코어 apiCall 로는 받지 못해 이 모듈의\n  `sirsoft-ecommerce.downloadExportFile` 이 60초·1회용 주소를 발급받아 브라우저가 그 주소를 직접 열게 한다(파일을\n  메모리에 올리지 않는다) — 받은 뒤 목록을 다시 불러 「n회」를 갱신한다.\n  「n회」를 누르면 다운로드 이력 창이 열린다. 행마다 **펼침 줄**(`<sub-row>`)에 요청 조건 요약이 붙는다 —\n  같은 유형의 파일이 여럿일 때 무엇으로 뽑은 파일인지 이름만으로는 알 수 없다.\n  행 메뉴(내려받기·다운로드 이력·다시 요청·삭제)는 서버 abilities 로 잠긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Export Index DataGrid"
+    },
+    "id": "export_datagrid",
+    "type": "composite",
+    "name": "DataGrid",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "exports"
+    },
+    "actions": [
+        {
+            "comment": "체크한 작업 id 묶음 — 일괄 작업 줄과 확인 창이 함께 보므로 지역이 아니라 전역에 둔다.",
+            "type": "change",
+            "event": "onSelectionChange",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "ecommerceExportBulkSelectedItems": "{{$args[0]}}"
+            }
+        },
+        {
+            "comment": "쪽 이동 — 쪽 번호만 갈아끼우고 나머지 조건은 그대로 둔다. 표 본문에만 전환 효과를 건다.",
+            "type": "change",
+            "event": "onPageChange",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/exports",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "export_datagrid__body",
+                "query": {
+                    "page": "{{$args[0]}}"
+                }
+            }
+        },
+        {
+            "comment": "행 메뉴 — 내려받기는 곧장 받고, 이력·다시 요청·삭제는 그 행 전체를 `_global.ecommerceExportTarget` 에 담은 뒤 창을 연다(창들이 조회 없이 이 값을 읽는다).",
+            "type": "action",
+            "event": "onRowAction",
+            "handler": "switch",
+            "cases": {
+                "download": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "ecommerceExportDownloadingId": "{{$args[1].id}}"
+                            }
+                        },
+                        {
+                            "handler": "sirsoft-ecommerce.downloadExportFile",
+                            "params": {
+                                "url": "/api/modules/sirsoft-ecommerce/admin/exports/{{$args[1].id}}/download-link",
+                                "filename": "{{$args[1].file_name}}"
+                            },
+                            "onSuccess": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "ecommerceExportDownloadingId": null
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "exports"
+                                    }
+                                }
+                            ],
+                            "onError": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "ecommerceExportDownloadingId": null
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "error",
+                                        "message": "$t:sirsoft-ecommerce.admin.export.messages.download_failed"
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "exports"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "view_downloads": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "ecommerceExportTarget": "{{$args[1]}}",
+                                "ecommerceExportDownloadsPage": 1
+                            }
+                        },
+                        {
+                            "handler": "openModal",
+                            "target": "export_downloads_modal"
+                        }
+                    ]
+                },
+                "retry": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "ecommerceExportTarget": "{{$args[1]}}",
+                                "ecommerceExportRetryReason": null
+                            }
+                        },
+                        {
+                            "handler": "openModal",
+                            "target": "export_retry_modal"
+                        }
+                    ]
+                },
+                "delete": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "ecommerceExportTarget": "{{$args[1]}}"
+                            }
+                        },
+                        {
+                            "handler": "openModal",
+                            "target": "export_delete_modal"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "props": {
+        "data": "{{exports?.data?.data || []}}",
+        "idField": "id",
+        "selectable": true,
+        "selectionScope": "page",
+        "selectedIds": "{{_global.ecommerceExportBulkSelectedItems || []}}",
+        "selectedCountText": "",
+        "emptyMessage": "$t:sirsoft-ecommerce.admin.export.table.empty",
+        "pagination": true,
+        "serverSidePagination": true,
+        "serverCurrentPage": "{{exports?.data?.pagination?.current_page ?? 1}}",
+        "serverTotalPages": "{{exports?.data?.pagination?.last_page ?? null}}",
+        "serverHasMorePages": "{{exports?.data?.pagination?.has_more_pages ?? false}}",
+        "pageSize": "{{+(query.per_page || 20)}}",
+        "alwaysShowPagination": true,
+        "subRowClassName": "px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm",
+        "rowActions": [
+            {
+                "id": "download",
+                "label": "$t:sirsoft-ecommerce.admin.export.action.download",
+                "iconName": "download",
+                "disabledField": "abilities.can_download"
+            },
+            {
+                "id": "view_downloads",
+                "label": "$t:sirsoft-ecommerce.admin.export.action.view_downloads",
+                "iconName": "clock-rotate-left",
+                "disabledField": "abilities.can_view_downloads"
+            },
+            {
+                "id": "retry",
+                "label": "$t:sirsoft-ecommerce.admin.export.action.retry",
+                "iconName": "rotate-right",
+                "disabledField": "abilities.can_retry"
+            },
+            {
+                "id": "divider",
+                "divider": true
+            },
+            {
+                "id": "delete",
+                "label": "$t:sirsoft-ecommerce.admin.export.action.delete",
+                "iconName": "fa-regular fa-trash-can",
+                "variant": "danger",
+                "disabledField": "abilities.can_delete"
+            }
+        ],
+        "columns": [
+            {
+                "field": "requested_at",
+                "header": "$t:sirsoft-ecommerce.admin.export.table.column.requested_at",
+                "width": "150px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-body whitespace-nowrap"
+                        },
+                        "text": "{{row.requested_at ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "requester",
+                "header": "$t:sirsoft-ecommerce.admin.export.table.column.requester",
+                "width": "160px",
+                "cellChildren": [
+                    {
+                        "type": "composite",
+                        "name": "ActionMenu",
+                        "if": "{{!!row.requester?.uuid}}",
+                        "actions": [
+                            {
+                                "comment": "요청자 메뉴 — 회원 상세는 **새 창**으로 열고(이 목록의 검색 조건을 잃지 않게), 요청자로 거르기는 같은 창에서 검색 조건만 갈아끼운다.\n                 거르기는 필터 칸의 「요청자」 검색과 같은 조건이라 진입 `<init>` 이 필터 칸에도 그대로 되돌려 담는다.",
+                                "event": "onItemClick",
+                                "handler": "switch",
+                                "cases": {
+                                    "view_member": {
+                                        "handler": "openWindow",
+                                        "params": {
+                                            "path": "/admin/users/{{row.requester.uuid}}"
+                                        }
+                                    },
+                                    "search_member": {
+                                        "comment": "같은 화면 안에서 주소만 바뀌면 진입 `<init>` 이 다시 돌지 않으므로 필터 칸도 함께 채운다",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "_local",
+                                                    "filter.searchField": "requester",
+                                                    "filter.search": "{{row.requester?.name ?? ''}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/exports",
+                                                    "mergeQuery": true,
+                                                    "replace": true,
+                                                    "transition_overlay_target": "export_datagrid__body",
+                                                    "query": {
+                                                        "search_field": "requester",
+                                                        "search_keyword": "{{row.requester?.name}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "position": "right",
+                            "items": [
+                                {
+                                    "id": "view_member",
+                                    "label": "$t:sirsoft-ecommerce.admin.export.table.requester_menu.view_member",
+                                    "iconName": "user"
+                                },
+                                {
+                                    "id": "search_member",
+                                    "label": "$t:sirsoft-ecommerce.admin.export.table.requester_menu.search_member",
+                                    "iconName": "magnifying-glass"
+                                }
+                            ]
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "fa-regular fa-user",
+                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-col min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-body font-medium truncate"
+                                                },
+                                                "text": "{{row.requester?.name ?? '-'}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{row.requester?.email}}",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate"
+                                                },
+                                                "text": "{{row.requester?.email}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "회원이 탈퇴·삭제돼 연결이 끊긴 요청자는 요청 때 남긴 이름만 글자로 보인다",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!row.requester?.uuid}}",
+                        "props": {
+                            "className": "flex flex-col min-w-0"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-body truncate"
+                                },
+                                "text": "{{row.requester?.name ?? '-'}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.requester?.email}}",
+                                "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate"
+                                },
+                                "text": "{{row.requester?.email}}"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "file_name",
+                "header": "$t:sirsoft-ecommerce.admin.export.table.column.file_name",
+                "width": "320px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center gap-2 flex-wrap min-w-0"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{row.abilities?.can_download === true && row.file_name}}",
+                                "actions": [
+                                    {
+                                        "comment": "내려받기 — 서버가 다운로드 이력을 남기고 횟수를 올린다. 성공·실패 모두 진행 표시를 풀고, 성공이면 목록을 다시 불러 「n회」를 갱신한다(만료·삭제 직후라 실패하면 목록이 최신 상태를 보여 주도록 실패 갈래도 다시 부른다).",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "ecommerceExportDownloadingId": "{{row.id}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "sirsoft-ecommerce.downloadExportFile",
+                                                "params": {
+                                                    "url": "/api/modules/sirsoft-ecommerce/admin/exports/{{row.id}}/download-link",
+                                                    "filename": "{{row.file_name}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "ecommerceExportDownloadingId": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "exports"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "ecommerceExportDownloadingId": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "$t:sirsoft-ecommerce.admin.export.messages.download_failed"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "exports"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "text-left text-sm text-blue-600 dark:text-blue-400 hover:underline break-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{_global.ecommerceExportDownloadingId === row.id}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.ecommerceExportDownloadingId === row.id}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{row.file_name}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!(row.abilities?.can_download === true && row.file_name)}}",
+                                "props": {
+                                    "className": "text-sm text-gray-600 dark:text-gray-400 break-all"
+                                },
+                                "text": "{{row.file_name ?? $t('sirsoft-ecommerce.admin.export.table.file_waiting')}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.contains_personal_data}}",
+                                "props": {
+                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.table.personal_badge"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{row.abilities?.can_view_downloads === true}}",
+                                "actions": [
+                                    {
+                                        "comment": "다운로드 횟수 — 누르면 이 작업의 다운로드 이력 창을 연다(창이 열릴 때 이력을 받는다. 서버가 「이력 조회」 활동 로그를 남긴다).",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "ecommerceExportTarget": "{{row}}",
+                                                    "ecommerceExportDownloadsPage": 1
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "export_downloads_modal"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "text-xs text-gray-500 dark:text-gray-400 hover:underline whitespace-nowrap"
+                                },
+                                "text": "$t:defer:sirsoft-ecommerce.admin.export.table.download_count|count={{row.download_count ?? 0}}"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "field": "type_label",
+                "header": "$t:sirsoft-ecommerce.admin.export.table.column.type",
+                "width": "120px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-body"
+                        },
+                        "text": "{{row.type_label}}"
+                    }
+                ]
+            },
+            {
+                "field": "status",
+                "header": "$t:sirsoft-ecommerce.admin.export.table.column.status",
+                "width": "170px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex flex-col gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "{{row.status === 'completed' ? 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : row.status === 'processing' ? 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : row.status === 'failed' ? 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}"
+                                },
+                                "text": "{{row.status_label}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{row.status === 'processing'}}",
+                                "props": {
+                                    "className": "flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "w-24 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "h-full bg-blue-500 dark:bg-blue-400",
+                                                    "style": {
+                                                        "width": "{{row.progress_percent ?? 0}}%"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        },
+                                        "text": "{{row.progress_percent ?? 0}}%"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.status === 'completed'}}",
+                                "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:defer:sirsoft-ecommerce.admin.export.table.rows|count={{(row.processed_rows ?? 0).toLocaleString()}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{row.status === 'failed' && row.error_message}}",
+                                "props": {
+                                    "className": "text-xs text-red-600 dark:text-red-400 whitespace-normal"
+                                },
+                                "text": "{{row.error_message}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "subRowChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "flex flex-wrap gap-x-6 gap-y-1.5"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.scope"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.summary?.scope}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.summary?.selected_count > 0}}",
+                        "text": "$t:defer:sirsoft-ecommerce.admin.export.sub_row.selected_count|count={{row.summary?.selected_count}}"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.period"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.summary?.period}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.row_unit"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.summary?.row_unit}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.fields"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:defer:sirsoft-ecommerce.admin.export.sub_row.field_count|count={{row.summary?.field_count ?? 0}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.locale_mode"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.summary?.locale_mode}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.totals"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.summary?.include_totals ? $t('sirsoft-ecommerce.admin.export.sub_row.yes') : $t('sirsoft-ecommerce.admin.export.sub_row.no')}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.cutoff_at}}",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.cutoff_at"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.cutoff_at}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.completed_at}}",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.completed_at"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.completed_at}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.file_size_label}}",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.file_size"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.file_size_label}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "if": "{{row.expires_at}}",
+                        "props": {
+                            "className": "flex gap-1"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-gray-500 dark:text-gray-400"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.export.sub_row.expires_at"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.expires_at}}"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Div",
+                "if": "{{row.reason}}",
+                "props": {
+                    "className": "mt-2 flex gap-1"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400 shrink-0"
+                        },
+                        "text": "$t:sirsoft-ecommerce.admin.export.sub_row.reason"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "whitespace-pre-line break-all"
+                        },
+                        "text": "{{row.reason}}"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Div",
+                "if": "{{(row.warnings ?? []).length > 0}}",
+                "props": {
+                    "className": "mt-2 flex items-center gap-2 flex-wrap"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400"
+                        },
+                        "text": "$t:sirsoft-ecommerce.admin.export.sub_row.warnings"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "iteration": {
+                            "source": "row.warnings ?? []",
+                            "item_var": "warning"
+                        },
+                        "props": {
+                            "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                        },
+                        "text": "{{warning.label}}"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Div",
+                "if": "{{row.error_message}}",
+                "props": {
+                    "className": "mt-2 flex gap-1"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-gray-500 dark:text-gray-400 shrink-0"
+                        },
+                        "text": "$t:sirsoft-ecommerce.admin.export.sub_row.error"
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-red-600 dark:text-red-400"
+                        },
+                        "text": "{{row.error_message}}"
+                    }
+                ]
+            }
+        ]
+    }
+}

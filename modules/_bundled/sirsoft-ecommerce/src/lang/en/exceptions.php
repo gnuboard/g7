@@ -205,4 +205,28 @@ return [
     // Shipping Carrier related
     'shipping_carrier_not_found' => 'Shipping carrier not found.',
     'shipping_carrier_in_use' => 'Cannot delete a shipping carrier in use by orders. (Used :count time)|Cannot delete a shipping carrier in use by orders. (Used :count times)',
+    // 내보내기(#787)
+    'export' => [
+        'enqueue_failed' => 'Could not queue the export job. Please try again shortly.',
+        'requester_missing' => 'The requesting operator account no longer exists, so the file was not created.',
+        'type_unavailable' => 'This export type is not available. Check whether the extension that provides it is disabled.',
+        'format_unavailable' => 'This file format is not available.',
+        'no_fields' => 'There are no fields to export. Your permissions may have changed.',
+        'storage_write_failed' => 'Could not save the file. Check the storage settings and free space.',
+        'generation_failed' => 'An error occurred while creating the file.',
+        'permission_revoked' => 'The requester\'s permissions changed, so the file was not created.',
+        'timeout' => 'Processing exceeded the time limit. Narrow the period or scope and try again.',
+        'file_expired' => 'The file was deleted because its retention period ended.',
+        'not_downloadable' => 'This file is not ready to download yet.',
+        'file_missing' => 'The file could not be found.',
+        'processing_not_deletable' => 'A job that is processing cannot be deleted.',
+        'not_retryable' => 'Only failed jobs can be requested again.',
+        'download_link_expired' => 'The download link has expired or was already used. Click the file name again in Export Management.',
+        'ecommerce_unavailable' => 'The ecommerce module is turned off, so the export cannot be created. Turn the ecommerce module on and request again.',
+        'scope_denied' => 'This export was requested by another operator. Permission to manage all exports is required.',
+        'domain_permission_required' => 'You do not have permission to view the source data of this file.',
+        'declaration_missing_personal' => 'Export declaration :column of :model is missing "personal".',
+        'declaration_invalid_type' => 'Export declaration :column of :model has an invalid "type".',
+        'source_unavailable' => 'Could not read the ecommerce list conditions (:class). Check the ecommerce module version.',
+    ],
 ];

@@ -1,0 +1,1810 @@
+{
+    "comment": "내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창(#787). 목록의 [내보내기] 버튼이 열 때 깐\n  `_global.ecommerceExportContext`(목록 조건)·`ecommerceExportForm`(입력값)을 읽고, 예상 건수는 목록 레이아웃의 데이터 소스\n  (`ecommerceExportEstimateSource`)가, 요청은 아래 [내보내기]가 보낸다. 카탈로그·예상 건수 데이터 소스는 레이아웃 최상위에만\n  둘 수 있어 세 목록 레이아웃이 같은 선언을 갖는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Ecommerce Export - Request Modal"
+    },
+    "id": "ecommerce_export_request_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.export.modal.title|type={{_global.ecommerceExportContext?.label ?? ''}}",
+        "size": "large"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col gap-5"
+            },
+            "children": [
+                {
+                    "comment": "설치 경고 — sync 큐·공개 디스크는 허용하되 창 맨 위에 알린다(운영자 책임)",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "_global.ecommerceExportCatalog?.warnings ?? []",
+                        "item_var": "code"
+                    },
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-xs text-yellow-700 dark:text-yellow-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "font-medium"
+                                    },
+                                    "text": "{{$t('sirsoft-ecommerce.admin.export.warnings.' + code + '.title')}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "mt-1"
+                                    },
+                                    "text": "{{$t('sirsoft-ecommerce.admin.export.warnings.' + code + '.message')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.ecommerceExportCatalog}}",
+                    "props": {
+                        "className": "flex-center gap-2 py-8 justify-center text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.export.modal.loading"
+                        }
+                    ]
+                },
+                {
+                    "comment": "서버 검증 오류 — 항목·기간·사유 오류는 그 칸 아래에 보이고, 나머지(작업 유형·동시 요청 수 등 칸이 없는 오류)만 위에 모은다",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{Object.entries(_global.ecommerceExportErrors || []).some(e => !['fields', 'screen_columns', 'reason'].includes(e[0]) && !e[0].startsWith('period') && (e[1] ?? []).length > 0)}}",
+                    "props": {
+                        "className": "alert-danger"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-1 text-sm text-red-700 dark:text-red-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "iteration": {
+                                        "source": "Object.entries(_global.ecommerceExportErrors || []).filter(e => !['fields', 'screen_columns', 'reason'].includes(e[0]) && !e[0].startsWith('period')).flatMap(e => e[1])",
+                                        "item_var": "message"
+                                    },
+                                    "text": "{{message}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.ecommerceExportCatalog}}",
+                    "props": {
+                        "className": "flex flex-col gap-5"
+                    },
+                    "children": [
+                        {
+                            "comment": "파일 형식",
+                            "id": "export_format_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.format"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "w-full md:w-64"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "comment": "형식은 건수와 무관하다 — 예상 건수를 지우지 않는다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerceExportForm.format": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "exportFormat",
+                                                "className": "w-full",
+                                                "value": "{{_global.ecommerceExportForm?.format ?? ''}}",
+                                                "options": "{{(_global.ecommerceExportCatalog?.formats ?? []).map(f => ({ value: f.key, label: f.label }))}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "내보낼 데이터 — 현재 화면 컬럼(합쳐진 컬럼은 항목별 열로 나눈다) 또는 직접 고르기",
+                            "id": "export_data_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.data"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "현재 화면 컬럼 — 고른 필드는 지우지 않는다(「데이터 선택」으로 돌아오면 그대로 보인다). 열 구성만 바뀌어 건수와 무관하다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.column_mode": "current"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_column_mode",
+                                                        "className": "radio",
+                                                        "checked": "{{(_global.ecommerceExportForm?.column_mode ?? 'current') === 'current'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.data_current"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "직접 고르기로 넘어갈 때 비어 있으면 지금 화면 컬럼이 덮는 필드로 시작한다 — 빈 목록에서 하나씩 고르게 하지 않는다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.column_mode": "custom",
+                                                                "ecommerceExportForm.fields": "{{(_global.ecommerceExportForm?.fields ?? []).length > 0 ? _global.ecommerceExportForm.fields : (_global.ecommerceExportForm?.screen_columns ?? []).flatMap(sc => _global.ecommerceExportCatalog?.screen_column_fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit]?.[sc] ?? [])}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_column_mode",
+                                                        "className": "radio",
+                                                        "checked": "{{_global.ecommerceExportForm?.column_mode === 'custom'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.data_custom"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.ecommerceExportForm?.column_mode ?? 'current') === 'current'}}",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.data_current_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.ecommerceExportForm?.column_mode ?? 'current') === 'current'}}",
+                                    "props": {
+                                        "className": "flex flex-wrap gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "iteration": {
+                                                "source": "_global.ecommerceExportCatalog?.screen_columns ?? []",
+                                                "item_var": "column"
+                                            },
+                                            "props": {
+                                                "className": "inline-clickable px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "화면 컬럼 낱개 — 같은 키를 먼저 걸러 낸 뒤 넣거나 뺀다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.screen_columns": "{{$event.target.checked ? [...(_global.ecommerceExportForm?.screen_columns ?? []).filter(k => k !== column.key), column.key] : (_global.ecommerceExportForm?.screen_columns ?? []).filter(k => k !== column.key)}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox",
+                                                        "checked": "{{(_global.ecommerceExportForm?.screen_columns ?? []).includes(column.key)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "{{column.label}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ecommerceExportForm?.column_mode === 'custom'}}",
+                                    "props": {
+                                        "className": "flex flex-col gap-3 max-h-80 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between gap-2 flex-wrap"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.data_custom_hint"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "전체 선택 — 이 행 단위에서 고를 수 있는 필드 전부",
+                                                                    "type": "click",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.fields": "{{(_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).map(f => f.key)}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "btn btn-secondary btn-sm"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.export.modal.select_all"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "전체 해제 — 고른 필드를 모두 비운다",
+                                                                    "type": "click",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.fields": []
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "btn btn-secondary btn-sm"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.export.modal.clear_all"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "[...(_global.ecommerceExportCatalog?.screen_columns ?? []), { key: 'extra', label: $t('sirsoft-ecommerce.admin.export.modal.group_extra') }].filter(g => (_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).some(f => f.group === g.key))",
+                                                "item_var": "group"
+                                            },
+                                            "props": {
+                                                "className": "flex flex-col gap-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs font-semibold text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{group.label}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-4 gap-y-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "iteration": {
+                                                                "source": "(_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).filter(f => f.group === group.key)",
+                                                                "item_var": "field"
+                                                            },
+                                                            "props": {
+                                                                "className": "inline-clickable"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "필드 낱개 — 같은 키를 먼저 걸러 낸 뒤 넣거나 뺀다(고른 순서가 곧 열 순서다)",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "ecommerceExportForm.fields": "{{$event.target.checked ? [...(_global.ecommerceExportForm?.fields ?? []).filter(k => k !== field.key), field.key] : (_global.ecommerceExportForm?.fields ?? []).filter(k => k !== field.key)}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "checkbox",
+                                                                        "className": "checkbox",
+                                                                        "checked": "{{(_global.ecommerceExportForm?.fields ?? []).includes(field.key)}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-label"
+                                                                    },
+                                                                    "text": "{{field.label}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{field.personal}}",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.personal_badge"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{field.parent_level}}",
+                                                                    "props": {
+                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                                                    },
+                                                                    "text": "{{_global.ecommerceExportCatalog?.parent_level_label || $t('sirsoft-ecommerce.admin.export.modal.parent_level_badge')}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "iteration": {
+                                        "source": "[...((_global.ecommerceExportErrors || []).fields ?? []), ...((_global.ecommerceExportErrors || []).screen_columns ?? [])]",
+                                        "item_var": "message"
+                                    },
+                                    "props": {
+                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                    },
+                                    "text": "{{message}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.ecommerceExportCatalog?.can_personal_data !== true}}",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.personal_locked"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.ecommerceExportCatalog?.row_units ?? []).length > 1}}",
+                                    "props": {
+                                        "className": "flex-center gap-3 flex-wrap mt-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label shrink-0 whitespace-nowrap"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.export.modal.row_unit"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "w-full md:w-64"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "행 단위가 바뀌면 고를 수 있는 필드도 달라진다. 데이터 선택이면 화면 컬럼이 새 단위에서 덮는 필드를 화면 순서로\n                       다시 세운다 — 두 단위에 함께 있는 필드는 운영자가 고른 대로 두고, 새 단위에만 있는 필드(주문상품의 상품명·수량 등)는\n                       골라 넣는다(빠뜨리면 같은 주문번호 줄만 반복되는 파일이 된다). 화면 컬럼에 없는 필드는 고른 순서대로 뒤에 둔다.\n                       건수도 달라지므로 예상 건수를 다시 계산하게 한다",
+                                                            "type": "change",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.row_unit": "{{$event.target.value}}",
+                                                                        "ecommerceExportForm.fields": "{{_global.ecommerceExportForm?.column_mode === 'custom' ? ((u, c, picked) => ((oldKeys, newKeys) => ((mapped) => [...mapped.filter(k => picked.includes(k) || !oldKeys.includes(k)), ...picked.filter(k => newKeys.includes(k) && !mapped.includes(k))])((_global.ecommerceExportForm?.screen_columns ?? []).flatMap(sc => c?.screen_column_fields?.[u]?.[sc] ?? []).filter((k, i, a) => a.indexOf(k) === i && newKeys.includes(k))))((c?.fields?.[_global.ecommerceExportForm?.row_unit ?? c?.default_row_unit] ?? []).map(f => f.key), (c?.fields?.[u] ?? []).map(f => f.key)))($event.target.value, _global.ecommerceExportCatalog, _global.ecommerceExportForm?.fields ?? []) : (_global.ecommerceExportForm?.fields ?? []).filter(k => (_global.ecommerceExportCatalog?.fields?.[$event.target.value] ?? []).some(f => f.key === k))}}",
+                                                                        "ecommerceExportEstimate": null,
+                                                                        "ecommerceExportIsEstimating": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "exportRowUnit",
+                                                        "className": "w-full",
+                                                        "value": "{{_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit}}",
+                                                        "options": "{{(_global.ecommerceExportCatalog?.row_units ?? []).map(u => ({ value: u.key, label: u.label }))}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "범위 — 현재 검색 조건 / 선택한 항목 / 조건 없이 전체",
+                            "id": "export_scope_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.scope"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "범위를 바꾸면 행 수가 달라진다 — 예상 건수를 다시 부른다",
+                                                            "type": "change",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.scope": "filter",
+                                                                        "ecommerceExportEstimate": null,
+                                                                        "ecommerceExportIsEstimating": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_scope",
+                                                        "className": "radio",
+                                                        "checked": "{{(_global.ecommerceExportForm?.scope ?? 'filter') === 'filter'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.scope_filter_list|count={{(_global.ecommerceExportContext?.total ?? 0).toLocaleString()}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "선택한 항목만 — 기간은 보지 않는다. 행 수가 달라지므로 예상 건수를 다시 부른다",
+                                                            "type": "change",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.scope": "selected",
+                                                                        "ecommerceExportEstimate": null,
+                                                                        "ecommerceExportIsEstimating": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_scope",
+                                                        "className": "radio",
+                                                        "checked": "{{_global.ecommerceExportForm?.scope === 'selected'}}",
+                                                        "disabled": "{{(_global.ecommerceExportContext?.selected_ids ?? []).length === 0}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.scope_selected|count={{(_global.ecommerceExportContext?.selected_ids ?? []).length}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "조건 없이 전체 — 목록의 기간만 남긴다. 행 수가 달라지므로 예상 건수를 다시 부른다",
+                                                            "type": "change",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.scope": "all",
+                                                                        "ecommerceExportEstimate": null,
+                                                                        "ecommerceExportIsEstimating": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_scope",
+                                                        "className": "radio",
+                                                        "checked": "{{_global.ecommerceExportForm?.scope === 'all'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.scope_all"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.ecommerceExportForm?.scope === 'selected'}}",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.scope_selected_hint|max={{_global.ecommerceExportCatalog?.max_selected_ids ?? 1000}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "기간 — 선택한 항목이면 기간을 보지 않는다. 목록의 조회 기간을 그대로 쓰거나 직접 정한다(최대 1년)",
+                            "id": "export_period_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ecommerceExportForm?.scope !== 'selected'}}",
+                            "props": {
+                                "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.period"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "목록의 조회 기간 — 기간 칸 오류를 지우고 예상 건수를 다시 부른다(오류 객체는 통째로 바꿔야 뺀 키가 남지 않는다)",
+                                                            "type": "change",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.period.mode": "current",
+                                                                        "ecommerceExportEstimate": null,
+                                                                        "ecommerceExportIsEstimating": true,
+                                                                        "ecommerceExportPeriodDefaulted": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "merge": "shallow",
+                                                                        "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => !e[0].startsWith('period')))}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_period_mode",
+                                                        "className": "radio",
+                                                        "checked": "{{(_global.ecommerceExportForm?.period?.mode ?? 'current') === 'current'}}",
+                                                        "disabled": "{{_global.ecommerceExportCatalog?.list_period_usable === false}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.period_current"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "직접 지정 — 기간 기준이 비어 있으면 카탈로그의 첫 기준으로, 날짜가 비어 있으면 목록의 조회 기간으로 시작한다(빈 칸이면 바로 오류가 난다)",
+                                                            "type": "change",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.period.mode": "custom",
+                                                                        "ecommerceExportForm.period.date_type": "{{_global.ecommerceExportForm?.period?.date_type ?? _global.ecommerceExportCatalog?.date_types?.[0]?.key}}",
+                                                                        "ecommerceExportForm.period.start_date": "{{_global.ecommerceExportForm?.period?.start_date || _global.ecommerceExportContext?.filters?.start_date || ''}}",
+                                                                        "ecommerceExportForm.period.end_date": "{{_global.ecommerceExportForm?.period?.end_date || _global.ecommerceExportContext?.filters?.end_date || ''}}",
+                                                                        "ecommerceExportEstimate": null,
+                                                                        "ecommerceExportIsEstimating": true,
+                                                                        "ecommerceExportPeriodDefaulted": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "merge": "shallow",
+                                                                        "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => !e[0].startsWith('period')))}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_period_mode",
+                                                        "className": "radio",
+                                                        "checked": "{{_global.ecommerceExportForm?.period?.mode === 'custom'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.period_custom"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "목록의 조회 기간을 쓸 수 없어(없거나 1년 초과) 서버가 준 「오늘 포함 최근 1개월」로 채웠을 때만 보인다 — 기간 방식을 바꾸면 사라진다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.ecommerceExportPeriodDefaulted === true && _global.ecommerceExportForm?.period?.mode === 'custom'}}",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.period_defaulted"
+                                },
+                                {
+                                    "comment": "목록의 조회 기간을 쓰면 그 기간을 보여 준다 / 쓸 수 없으면(없거나 1년 초과) 고를 수 없는 이유를 알린다",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.ecommerceExportForm?.period?.mode ?? 'current') === 'current' && !!_global.ecommerceExportContext?.filters?.start_date && !!_global.ecommerceExportContext?.filters?.end_date}}",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.period_current_range|start={{_global.ecommerceExportContext?.filters?.start_date}}|end={{_global.ecommerceExportContext?.filters?.end_date}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.ecommerceExportCatalog?.list_period_usable === false && _global.ecommerceExportPeriodDefaulted !== true}}",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.period_current_unavailable"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ecommerceExportForm?.period?.mode === 'custom'}}",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "w-full md:w-64"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "기간 기준이 바뀌면 그 칸 오류를 지우고 예상 건수를 다시 부른다",
+                                                            "type": "change",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ecommerceExportForm.period.date_type": "{{$event.target.value}}",
+                                                                        "ecommerceExportEstimate": null,
+                                                                        "ecommerceExportIsEstimating": true
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "merge": "shallow",
+                                                                        "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => !e[0].startsWith('period')))}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "exportDateType",
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.export.modal.date_type",
+                                                        "className": "w-full",
+                                                        "value": "{{_global.ecommerceExportForm?.period?.date_type ?? ''}}",
+                                                        "options": "{{(_global.ecommerceExportCatalog?.date_types ?? []).map(d => ({ value: d.key, label: d.label }))}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "시작일이 바뀌면 기간 오류를 지우고 예상 건수를 다시 부른다 — 역순·1년 초과면 계산이 거절되고 이유가 칸 아래에 보인다",
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.period.start_date": "{{$event.target.value}}",
+                                                                "ecommerceExportEstimate": null,
+                                                                "ecommerceExportIsEstimating": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "merge": "shallow",
+                                                                "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => !e[0].startsWith('period')))}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "ecommerceExportEstimateSource"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.export.modal.start_date",
+                                                "type": "date",
+                                                "value": "{{_global.ecommerceExportForm?.period?.start_date ?? ''}}",
+                                                "className": "input w-40"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-400 dark:text-gray-500"
+                                            },
+                                            "text": "~"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "종료일이 바뀌면 기간 오류를 지우고 예상 건수를 다시 부른다 — 역순·1년 초과면 계산이 거절되고 이유가 칸 아래에 보인다",
+                                                    "type": "change",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.period.end_date": "{{$event.target.value}}",
+                                                                "ecommerceExportEstimate": null,
+                                                                "ecommerceExportIsEstimating": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "merge": "shallow",
+                                                                "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => !e[0].startsWith('period')))}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "ecommerceExportEstimateSource"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.export.modal.end_date",
+                                                "type": "date",
+                                                "value": "{{_global.ecommerceExportForm?.period?.end_date ?? ''}}",
+                                                "className": "input w-40"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "iteration": {
+                                        "source": "Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0].startsWith('period')).flatMap(e => e[1])",
+                                        "item_var": "message"
+                                    },
+                                    "props": {
+                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                    },
+                                    "text": "{{message}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "{{_global.ecommerceExportCatalog?.period_required ? $t('sirsoft-ecommerce.admin.export.modal.period_required_hint') + ' ' : ''}}$t:sirsoft-ecommerce.admin.export.modal.period_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.ecommerceExportForm?.scope === 'selected'}}",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.export.modal.period_selected_hint"
+                        },
+                        {
+                            "comment": "다국어 데이터 — 한 언어 / 언어별 열 / 한 열에 모든 언어",
+                            "id": "export_locale_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.locale"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "한 언어로 — 열 구성만 바뀌어 건수와 무관하다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.locale_mode": "locale"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_locale_mode",
+                                                        "className": "radio",
+                                                        "checked": "{{(_global.ecommerceExportForm?.locale_mode ?? 'locale') === 'locale'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.locale_language"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "언어별로 열 나누기 — 열 구성만 바뀌어 건수와 무관하다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.locale_mode": "per_column"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_locale_mode",
+                                                        "className": "radio",
+                                                        "checked": "{{_global.ecommerceExportForm?.locale_mode === 'per_column'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.locale_per_column"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "inline-clickable"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "한 열에 모든 언어 — 열 구성만 바뀌어 건수와 무관하다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.locale_mode": "single_column"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "export_locale_mode",
+                                                        "className": "radio",
+                                                        "checked": "{{_global.ecommerceExportForm?.locale_mode === 'single_column'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.locale_single_column"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.ecommerceExportForm?.locale_mode ?? 'locale') === 'locale' && (_global.ecommerceExportCatalog?.locales ?? []).length > 1}}",
+                                    "props": {
+                                        "className": "flex-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label shrink-0 whitespace-nowrap"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.export.modal.locale_select"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "w-full md:w-64"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "한 언어로 낼 때 쓸 언어 — 건수와 무관하다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ecommerceExportForm.locale": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "exportLocale",
+                                                        "className": "w-full",
+                                                        "value": "{{_global.ecommerceExportForm?.locale ?? _global.ecommerceExportCatalog?.default_locale}}",
+                                                        "options": "{{(_global.ecommerceExportCatalog?.locales ?? []).map(l => ({ value: l.code, label: l.label }))}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "옵션",
+                            "id": "export_options_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.options"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "마지막 줄 합계 행 — 예상 행 수에는 넣지 않는다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerceExportForm.include_totals": "{{$event.target.checked}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{_global.ecommerceExportForm?.include_totals === true}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.export.modal.include_totals"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "다운로드 사유 — 고른 필드에 개인정보가 하나라도 있으면 필수(서버도 같은 기준으로 본다)",
+                            "id": "export_reason_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(((_global.ecommerceExportForm?.column_mode ?? 'current') === 'custom') ? (_global.ecommerceExportForm?.fields ?? []) : (_global.ecommerceExportForm?.screen_columns ?? []).flatMap(sc => _global.ecommerceExportCatalog?.screen_column_fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit]?.[sc] ?? [])).some(k => (_global.ecommerceExportCatalog?.fields?.[_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit] ?? []).some(f => f.key === k && f.personal))}}",
+                            "props": {
+                                "className": "flex flex-col gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.reason"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Textarea",
+                                    "actions": [
+                                        {
+                                            "comment": "사유를 적으면 사유 칸 오류를 지운다 — 비었는지는 요청 때 서버가 다시 본다",
+                                            "type": "change",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerceExportForm.reason": "{{$event.target.value}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "merge": "shallow",
+                                                        "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0] !== 'reason'))}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "exportReason",
+                                        "rows": "2",
+                                        "maxlength": "500",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.export.modal.reason_placeholder",
+                                        "className": "input w-full {{((_global.ecommerceExportErrors || []).reason ?? []).length > 0 ? 'input-error' : ''}}",
+                                        "value": "{{_global.ecommerceExportForm?.reason ?? ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "iteration": {
+                                        "source": "(_global.ecommerceExportErrors || []).reason ?? []",
+                                        "item_var": "message"
+                                    },
+                                    "props": {
+                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                    },
+                                    "text": "{{message}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.reason_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "예상 행 수 — 범위·기간·행 단위가 바뀌면 그 자리에서 목록 레이아웃의 예상 건수 데이터 소스(`ecommerceExportEstimateSource`)를\n               다시 부른다(요청 본문은 그 데이터 소스 한 곳에만 있고, 데이터 소스는 부르는 순간의 전역 값을 읽는다). 0행이면 요청을 막는다",
+                            "id": "export_estimate_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-3 flex-wrap bg-gray-50 dark:bg-gray-700/50 rounded-lg px-4 py-3 text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.ecommerceExportIsEstimating}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.ecommerceExportIsEstimating}}",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.estimating"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.ecommerceExportIsEstimating && _global.ecommerceExportEstimate !== null && _global.ecommerceExportEstimate !== undefined}}",
+                                    "props": {
+                                        "className": "text-primary font-medium"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.estimate|count={{(_global.ecommerceExportEstimate ?? 0).toLocaleString()}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.ecommerceExportIsEstimating && _global.ecommerceExportEstimateFailed !== true && (_global.ecommerceExportEstimate === null || _global.ecommerceExportEstimate === undefined)}}",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.estimate_unknown"
+                                },
+                                {
+                                    "comment": "계산이 검증에서 걸리면(기간 역순·1년 초과 등) 이유는 그 칸 아래에 있고, 여기서는 고치면 다시 계산한다고 알린다",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.ecommerceExportIsEstimating && _global.ecommerceExportEstimateFailed === true}}",
+                                    "props": {
+                                        "className": "text-amber-700 dark:text-amber-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.estimate_failed"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.ecommerceExportIsEstimating && (_global.ecommerceExportEstimate ?? 0) > 50000}}",
+                                    "props": {
+                                        "className": "text-amber-700 dark:text-amber-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.estimate_large"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.ecommerceExportIsEstimating && _global.ecommerceExportEstimate === 0}}",
+                                    "props": {
+                                        "className": "text-amber-700 dark:text-amber-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.estimate_empty"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "다시 계산 — 목록 레이아웃의 예상 건수 데이터 소스를 지금 입력값으로 다시 부른다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerceExportIsEstimating": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "ecommerceExportEstimateSource"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.ecommerceExportIsEstimating}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal.estimate_recalc"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.ecommerceExportIsRequesting}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.export.modal.close"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "내보내기 요청 — 중복 방지 키는 창을 열 때 만든 것을 그대로 보낸다(연속 클릭·재시도가 같은 작업을 돌려받는다).\n                 검증 오류는 창 위에 모아 보이고, 접수되면 안내를 띄우고 창을 닫는다. 진행 깃발은 성공·실패 양쪽에서 푼다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "ecommerceExportIsRequesting": true,
+                                        "ecommerceExportErrors": null
+                                    }
+                                },
+                                {
+                                    "comment": "「전체」도 화면 조건을 보낸다 — 「현재 조회 기간」이 그 안의 기간 값을 쓰고, 서버가 기간 밖의 조건은 버린다",
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/exports",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "type": "{{_global.ecommerceExportContext?.type}}",
+                                            "format": "{{_global.ecommerceExportForm?.format}}",
+                                            "column_mode": "{{_global.ecommerceExportForm?.column_mode ?? 'current'}}",
+                                            "screen_columns": "{{_global.ecommerceExportForm?.screen_columns ?? []}}",
+                                            "fields": "{{_global.ecommerceExportForm?.fields ?? []}}",
+                                            "row_unit": "{{_global.ecommerceExportForm?.row_unit}}",
+                                            "scope": "{{_global.ecommerceExportForm?.scope ?? 'filter'}}",
+                                            "filters": "{{_global.ecommerceExportForm?.scope === 'selected' ? {} : (_global.ecommerceExportContext?.filters ?? {}) }}",
+                                            "selected_ids": "{{_global.ecommerceExportForm?.scope === 'selected' ? (_global.ecommerceExportContext?.selected_ids ?? []) : []}}",
+                                            "period": "{{_global.ecommerceExportForm?.scope === 'selected' ? null : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}",
+                                            "locale_mode": "{{_global.ecommerceExportForm?.locale_mode ?? 'locale'}}",
+                                            "locale": "{{_global.ecommerceExportForm?.locale}}",
+                                            "include_totals": "{{_global.ecommerceExportForm?.include_totals === true}}",
+                                            "reason": "{{_global.ecommerceExportForm?.reason ?? ''}}"
+                                        },
+                                        "headers": {
+                                            "Idempotency-Key": "{{_global.ecommerceExportIdempotencyKey}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "ecommerceExportIsRequesting": false
+                                            }
+                                        },
+                                        {
+                                            "comment": "목록의 진행 표시를 켠다 — 방금 접수한 작업 1건만 따라가며 5초마다 상세를 받고, 대기·진행중이 끝나면 멈춘다.\n                       상세를 못 받으면(조회 권한 없음 등) 표시를 끈다. 페이지를 옮기면 코어가 반복을 멈추고 목록의 init 이 표시를 비운다.\n                       작업 id 는 방금 넣은 전역 값이 아니라 접수 응답에서 읽는다 — 같은 흐름에서 전역 값은 아직 낡은 값으로 읽힌다",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "ecommerceExportTracking": "{{ { id: response?.data?.id, status: response?.data?.status ?? 'pending', file_name: response?.data?.file_name ?? null, can_download: false } }}",
+                                                "ecommerceExportTrackingDownloading": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "startInterval",
+                                            "params": {
+                                                "id": "ecommerce_export_track_poll",
+                                                "intervalMs": 5000,
+                                                "actions": [
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/modules/sirsoft-ecommerce/admin/exports/{{response?.data?.id}}",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "GET"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "ecommerceExportTracking.status": "{{response?.data?.status}}",
+                                                                    "ecommerceExportTracking.file_name": "{{response?.data?.file_name ?? null}}",
+                                                                    "ecommerceExportTracking.can_download": "{{response?.data?.abilities?.can_download === true}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "stopInterval",
+                                                                "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
+                                                                "params": {
+                                                                    "id": "ecommerce_export_track_poll"
+                                                                }
+                                                            },
+                                                            {
+                                                                "comment": "끝나면 종 모양 알림을 다시 부른다 — 실시간 전송(웹소켓)이 꺼진 사이트는 새 알림이 와도 개수가 그대로다",
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "notification_unread_count"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{response?.data?.status !== 'pending' && response?.data?.status !== 'processing'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "notifications"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "stopInterval",
+                                                                "params": {
+                                                                    "id": "ecommerce_export_track_poll"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "ecommerceExportTracking": null
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.export.modal.requested_notice"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "ecommerceExportIsRequesting": false,
+                                                "ecommerceExportErrors": "{{error.errors ?? { _general: [error.message] } }}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{!_global.ecommerceExportCatalog || _global.ecommerceExportIsRequesting || _global.ecommerceExportIsEstimating === true || _global.ecommerceExportEstimate === 0 || _global.ecommerceExportEstimateFailed === true}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.ecommerceExportIsRequesting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{!_global.ecommerceExportIsRequesting}}",
+                            "props": {
+                                "name": "download",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.ecommerceExportIsRequesting ? '$t:sirsoft-ecommerce.admin.export.modal.submitting' : '$t:sirsoft-ecommerce.admin.export.modal.submit'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,174 @@
+<!-- 내보내기 관리의 검색 조건. 배송정책 목록 필터와 같은 규약이다 — 입력하는 동안에는 아무것도 조회하지 않고
+  `_local.filter` 에 모아 두었다가 [검색](또는 엔터)에서 명명 액션 `searchExports` 로 한 번에 내보낸다.
+  복수 선택(진행 상황·작업 유형)은 '전체' 칸이 목록을 **비우는 것**이고(비었으면 곧 전체), 낱개 칸은 같은 값을
+  먼저 걸러 낸 뒤 넣거나 빼서 두 번 눌러도 중복이 쌓이지 않는다. 진행 상황·작업 유형의 선택지는 서버 enum 과
+  같은 고정 값이고 라벨은 서버 다국어(목록 행의 `status_label`·`type_label`)와 같은 문장을 쓴다. -->
+<partial description="Export Index Filter Section">
+  <div data-ref="filter_section" class="admin-card">
+    <div data-ref="search_row" class="mb-4">
+      <div class="flex-center gap-2">
+        <select name="searchField" class="select-composite w-36" value="{{_local.filter.searchField || 'all'}}">
+          <options>
+            <option value="all">$t:sirsoft-ecommerce.admin.export.filter.search_field.all</option>
+            <option value="file_name">$t:sirsoft-ecommerce.admin.export.filter.search_field.file_name</option>
+            <option value="requester">$t:sirsoft-ecommerce.admin.export.filter.search_field.requester</option>
+          </options>
+          <on type="change">
+            <!-- 검색 대상 — 파일명·요청자(이름·이메일) 중 고른다. 조회는 하지 않는다. -->
+            <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="relative flex-1">
+          <icon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-gray-400 dark:text-gray-500"/>
+          <input type="text" name="search" placeholder="$t:sirsoft-ecommerce.admin.export.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <on type="change">
+              <!-- 검색어 담기 — 조회는 하지 않는다. 엔터와 [검색] 버튼이 같은 명명 액션을 부른다. -->
+              <set-state target="_local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <action-ref name="searchExports"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_grid" class="filter-grid">
+      <div data-ref="status_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.export.filter.status</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.statuses || _local.filter.statuses.length === 0}}">
+              <on type="change">
+                <!-- 진행 상황 '전체' — 목록을 비우는 것이 곧 전체다. 체크 표시도 '목록이 비었는가' 로 판단한다. -->
+                <set-state target="_local" :filter.statuses="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.export.filter.all</span>
+          </label>
+          <label data-each="status in ['pending', 'processing', 'completed', 'failed', 'expired']" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.statuses || []).includes(status)}}">
+              <on type="change">
+                <!-- 진행 상황 낱개 — 넣기 전에 같은 값을 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. -->
+                <set-state target="_local" filter.statuses="{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== status), status] : (_local.filter.statuses || []).filter(s => s !== status)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{$t('sirsoft-ecommerce.enums.export_status.' + status)}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="type_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.export.filter.type</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.types || _local.filter.types.length === 0}}">
+              <on type="change">
+                <!-- 작업 유형 '전체' — 진행 상황과 같은 규약(목록을 비우면 전체). -->
+                <set-state target="_local" :filter.types="[]"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.export.filter.all</span>
+          </label>
+          <label data-each="exportType in ['orders', 'products', 'mileage']" class="inline-clickable">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.types || []).includes(exportType)}}">
+              <on type="change">
+                <!-- 작업 유형 낱개 — 같은 값을 먼저 걸러 낸 뒤 넣거나 뺀다. -->
+                <set-state target="_local" filter.types="{{$event.target.checked ? [...(_local.filter.types || []).filter(t => t !== exportType), exportType] : (_local.filter.types || []).filter(t => t !== exportType)}}"/>
+              </on>
+            </input>
+            <span class="text-label">{{$t('sirsoft-ecommerce.enums.export_type.' + exportType)}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="personal_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.export.filter.personal</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable">
+            <input type="radio" name="personal_filter" class="radio" checked="{{!_local.filter.personal}}">
+              <on type="change">
+                <!-- 개인정보 '전체' — 택일이라 배열이 아니라 **빈 글자**가 전체를 뜻한다. -->
+                <set-state target="_local" filter.personal=""/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.export.filter.all</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="radio" name="personal_filter" class="radio" checked="{{_local.filter.personal === 'with'}}">
+              <on type="change">
+                <!-- 개인정보가 담긴 파일만 -->
+                <set-state target="_local" filter.personal="with"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.export.filter.personal_with</span>
+          </label>
+          <label class="inline-clickable">
+            <input type="radio" name="personal_filter" class="radio" checked="{{_local.filter.personal === 'without'}}">
+              <on type="change">
+                <!-- 개인정보가 없는 파일만 -->
+                <set-state target="_local" filter.personal="without"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.export.filter.personal_without</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="requested_at_filter" class="filter-row">
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.export.filter.requested_at</span>
+        <div class="flex-center flex-wrap gap-2">
+          <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.export.filter.requested_at')}}" type="date" value="{{_local.filter.startDate ?? ''}}" class="input w-36">
+            <on type="change">
+              <!-- 요청일 시작 — 보는 사람 시간대의 하루로 서버가 해석한다. -->
+              <set-state target="_local" filter.startDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.export.filter.requested_at')}}" type="date" value="{{_local.filter.endDate ?? ''}}" class="input w-36">
+            <on type="change">
+              <!-- 요청일 종료. 두 날짜의 앞뒤 관계는 서버가 판단한다. -->
+              <set-state target="_local" filter.endDate="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <label class="inline-clickable ml-2">
+            <input type="checkbox" class="checkbox" checked="{{_local.filter.mine === true}}">
+              <on type="change">
+                <!-- 내 요청만 — 「전체」 범위 권한이 있는 운영자가 자기 것만 추릴 때 쓴다(본인 범위면 원래 자기 것만 보인다). -->
+                <set-state target="_local" filter.mine="{{$event.target.checked}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:sirsoft-ecommerce.admin.export.filter.mine</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div data-ref="filter_buttons" class="flex justify-center gap-3 mt-6">
+      <responsive on="portable" class="flex gap-3 mt-6"/>
+      <button type="button" class="btn btn-primary px-6">
+        <responsive on="portable" class="btn btn-primary flex-1"/>
+        <on type="click">
+          <action-ref name="searchExports"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.export.filter.search
+      </button>
+      <!-- 검색 조건 초기화. 폼 상태를 비우고 목록을 조건 없는 상태로 다시 세운다 -->
+      <button type="button" class="btn btn-secondary px-6">
+        <responsive on="portable" class="btn btn-secondary flex-1"/>
+        <on type="click">
+          <set-state target="_local">
+            <field name="filter">
+              <field name="searchField" value="all"/>
+              <field name="search" value=""/>
+              <field name="statuses" :value="[]"/>
+              <field name="types" :value="[]"/>
+              <field name="personal" value=""/>
+              <field name="startDate" value=""/>
+              <field name="endDate" value=""/>
+              <field name="mine" :value="false"/>
+            </field>
+          </set-state>
+          <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+          <navigate path="/admin/ecommerce/exports" :mergeQuery="false"/>
+        </on>
+        $t:sirsoft-ecommerce.admin.export.filter.reset
+      </button>
+    </div>
+  </div>
+</partial>

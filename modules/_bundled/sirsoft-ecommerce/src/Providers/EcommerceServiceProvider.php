@@ -25,10 +25,13 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedOrderRetention;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedSiteDayOrders;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredCartsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExpiredTempOrdersCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PruneExportsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PrunePendingClaimImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PruneTempProductImagesCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ReconcileMileageBalanceCommand;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Exports\ExportFormatRegistry;
+use Modules\Sirsoft\Ecommerce\Exports\ExportTypeRegistry;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\DetectDevice;
 use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
@@ -55,6 +58,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceStatRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportDownloadRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExportRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
@@ -96,6 +101,8 @@ use Modules\Sirsoft\Ecommerce\Repositories\CouponIssueRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CouponRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\EcommerceStatRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\EcommerceUserProfileRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ExportDownloadRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ExportRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ExtraFeeTemplateRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\MileageBalanceRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\MileageTransactionRepository;
@@ -138,6 +145,7 @@ use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
+use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
@@ -170,6 +178,9 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // 그래서 카테고리 배선이 아니라 기본 디스크를 주입한다. 저장 경로 접두사는 종전대로
         // 서비스가 `put('images', …)` 로 넘기는 값이 정하므로 기존 행의 경로는 바뀌지 않는다.
         ClaimAttachmentService::class,
+        // 내보내기 파일에는 개인정보가 담길 수 있어 공개 자산 디스크에 올리지 않는다 — 기본(비공개) 디스크에
+        // `exports` 카테고리로 저장하고, 받을 때는 권한을 다시 보는 일회용 주소로만 내보낸다.
+        ExportService::class,
     ];
 
     /**
@@ -186,6 +197,17 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         CategoryImageService::class => 'images',
         ProductImageService::class => 'images',
         ProductReviewImageService::class => 'images',
+    ];
+
+    /**
+     * 모듈 캐시(CacheInterface)가 필요한 서비스 목록
+     *
+     * 내보내기 일회용 다운로드 토큰을 모듈 캐시 영역에 둔다 — 코어 도메인 캐시와 키가 섞이지 않는다.
+     *
+     * @var array<int, class-string>
+     */
+    protected array $cacheServices = [
+        ExportService::class,
     ];
 
     /**
@@ -243,6 +265,8 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         EcommerceUserProfileRepositoryInterface::class => EcommerceUserProfileRepository::class,
         MileageTransactionRepositoryInterface::class => MileageTransactionRepository::class,
         MileageBalanceRepositoryInterface::class => MileageBalanceRepository::class,
+        ExportRepositoryInterface::class => ExportRepository::class,
+        ExportDownloadRepositoryInterface::class => ExportDownloadRepository::class,
     ];
 
     /**
@@ -267,6 +291,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         PruneExpiredTempOrdersCommand::class,
         PrunePendingClaimImagesCommand::class,
         PruneTempProductImagesCommand::class,
+        PruneExportsCommand::class,
         ReconcileMileageBalanceCommand::class,
     ];
 
@@ -297,6 +322,10 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         // 비대칭도 함께 생긴다. 같은 요청(작업) 안에서만 공유한다 — 쓰기 메서드가 모두 자기 캐시를
         // 무효화하므로 요청 안 공유는 안전하고, 작업 경계에서는 새로 만들어 저장된 설정을 다시 읽는다.
         $this->app->scoped(EcommerceSettingsService::class);
+
+        // 내보내기 유형·형식 레지스트리 — 확장 필터 훅을 요청(작업)당 한 번만 해석한다
+        $this->app->scoped(ExportTypeRegistry::class);
+        $this->app->scoped(ExportFormatRegistry::class);
     }
 
     /**
@@ -386,6 +415,25 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
                     429,
                     null,
                     // `count` 로 「1 second」/「2 seconds」 를 고른다.
+                    ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
+                )->withHeaders($headers)));
+        }
+
+        // 내보내기 — 로그인한 운영자 단위로 센다(사무실 하나가 IP 를 공유해도 서로 막지 않게).
+        $userLimits = [
+            'sirsoft-ecommerce.export-estimate' => 60,
+            'sirsoft-ecommerce.export-request' => 5,
+            // 일회용 다운로드 주소 — 토큰을 추측하는 시도를 막는다(정상 사용은 파일당 1회)
+            'sirsoft-ecommerce.export-file' => 30,
+        ];
+
+        foreach ($userLimits as $name => $perMinute) {
+            RateLimiter::for($name, fn (Request $request) => Limit::perMinute($perMinute)
+                ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()))
+                ->response(fn (Request $request, array $headers) => ResponseHelper::error(
+                    'auth.too_many_attempts',
+                    429,
+                    null,
                     ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
                 )->withHeaders($headers)));
         }

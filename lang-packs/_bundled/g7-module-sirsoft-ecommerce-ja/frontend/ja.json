@@ -395,6 +395,9 @@
     },
     "claim": {
       "$partial": "partial/admin/claim.json"
+    },
+    "export": {
+      "$partial": "partial/admin/export.json"
     }
   },
   "user": {
@@ -478,7 +481,11 @@
       "claims": "キャンセル·返品·交換一覧",
       "orderClaims": "注文クレーム履歴",
       "claim_settings": "配送ポリシークレーム設定",
-      "claimRequestContext": "職権受付文脈"
+      "claimRequestContext": "職権受付文脈",
+      "exports": "エクスポート一覧",
+      "ecommerceExportCatalog": "エクスポート設定(カタログ)",
+      "exportDownloads": "エクスポートダウンロード履歴",
+      "ecommerceExportEstimateSource": "エクスポート予想件数"
     },
     "action": {
       "request_pg_payment": {

@@ -35,11 +35,11 @@
                     ]
                 },
                 {
-                    "comment": "우측: 정렬, 페이지당 개수, 엑셀 다운로드",
+                    "comment": "우측: 정렬, 페이지당 개수, 엑셀 다운로드, 내보내기 — 좁은 화면에서는 내보내기 묶음이 다음 줄로 내려간다",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "flex-center flex-wrap justify-end gap-2"
                     },
                     "children": [
                         {
@@ -210,6 +210,109 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "$t:sirsoft-ecommerce.admin.order.action.excel_download"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 「내보내기 요청」 권한과 이 목록의 조회 권한이 둘 다\n             있는 운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다",
+                            "id": "ecommerce_export_order_actions",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center justify-end gap-3"
+                            },
+                            "children": [
+                                {
+                                    "partial": "../admin_ecommerce_export/_partial_tracking_status.json"
+                                },
+                                {
+                                    "comment": "내보내기 — 주문 목록의 지금 조건으로 파일을 만든다. 창은 별도 컨텍스트라 지금 검색 조건(데이터 소스와 같은 매개변수)·선택 id·보이는 컬럼을 전역에 실어 건넨다. 중복 방지 키는 열 때마다 새로 만든다",
+                                    "id": "ecommerce_export_order_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{(current_user?.data?.is_super === true || ((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'sirsoft-ecommerce.exports.create') && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'sirsoft-ecommerce.orders.read')))}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerceExportContext": "{{ { type: 'orders', label: $t('sirsoft-ecommerce.enums.export_type.orders'), filters: Object.fromEntries(Object.entries({ search_field: query.search_field, search_keyword: query.search_keyword, date_type: query.date_type, start_date: query.start_date, end_date: query.end_date, date_basis: query.date_basis === 'site' ? 'site' : undefined, order_status: [].concat(query['order_status[]'] ?? []), shipping_type: [].concat(query['shipping_type[]'] ?? []), payment_method: [].concat(query['payment_method[]'] ?? []), category_id: query.category4 || query.category3 || query.category2 || query.category1, min_amount: query.min_amount, max_amount: query.max_amount, country_codes: [].concat(query['country_codes[]'] ?? []), order_device: [].concat(query['order_device[]'] ?? []), shipping_policy_id: query.shipping_policy_id, min_shipping_amount: query.min_shipping_amount, max_shipping_amount: query.max_shipping_amount, orderer_uuid: query.orderer_uuid, member_type: query.member_type, claim_presence: query.claim_presence, claim_exchange_statuses: [].concat(query['claim_exchange_statuses[]'] ?? []), claim_return_statuses: [].concat(query['claim_return_statuses[]'] ?? []), claim_refund_statuses: [].concat(query['claim_refund_statuses[]'] ?? []), claim_cancel_types: [].concat(query['claim_cancel_types[]'] ?? []), claim_fault_types: [].concat(query['claim_fault_types[]'] ?? []), claim_requested_from: query.claim_requested_from && query.claim_requested_to && query.claim_requested_from > query.claim_requested_to ? query.claim_requested_to : query.claim_requested_from, claim_requested_to: query.claim_requested_from && query.claim_requested_to && query.claim_requested_from > query.claim_requested_to ? query.claim_requested_from : query.claim_requested_to }).filter(([k, v]) => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0))), selected_ids: (_local.selectedItems ?? []), total: (orders?.data?.pagination?.total ?? 0), screen_columns: (_local.visibleColumns ?? null) } }}",
+                                                        "ecommerceExportIdempotencyKey": "{{$uuid()}}",
+                                                        "ecommerceExportCatalog": null,
+                                                        "ecommerceExportEstimate": null,
+                                                        "ecommerceExportErrors": null,
+                                                        "ecommerceExportIsRequesting": false,
+                                                        "ecommerceExportIsEstimating": false,
+                                                        "ecommerceExportEstimateFailed": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerceExportForm": {
+                                                            "format": null,
+                                                            "column_mode": "current",
+                                                            "screen_columns": null,
+                                                            "fields": [],
+                                                            "row_unit": null,
+                                                            "scope": "{{(_local.selectedItems ?? []).length > 0 ? 'selected' : 'filter'}}",
+                                                            "period": {
+                                                                "mode": "current",
+                                                                "date_type": null,
+                                                                "start_date": "",
+                                                                "end_date": ""
+                                                            },
+                                                            "locale_mode": "locale",
+                                                            "locale": null,
+                                                            "include_totals": false,
+                                                            "reason": ""
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerceExportPeriodDefaulted": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "ecommerce_export_request_modal"
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "ecommerceExportCatalog"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline whitespace-nowrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "file-export",
+                                                "className": "text-base"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.admin.export.button"
+                                        }
+                                    ]
                                 }
                             ]
                         }

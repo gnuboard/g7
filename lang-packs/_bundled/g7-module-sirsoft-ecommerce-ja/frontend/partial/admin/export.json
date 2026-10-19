@@ -1,0 +1,202 @@
+{
+  "title": "エクスポート管理",
+  "description": "商品·注文·マイレージ履歴からリクエストしたエクスポートファイルの進行状況を確認してダウンロードします。",
+  "button": "エクスポート",
+  "warnings": {
+    "queue_sync": {
+      "title": "同期処理中",
+      "message": "キュー接続がsyncのため、エクスポートがリクエスト内で直ちに処理されます。件数が多い場合、画面が長時間フリーズするか、タイムアウトで失敗する可能性があります。運用環境ではキューワーカーを設定してください。"
+    },
+    "storage_public": {
+      "title": "公開リポジトリ使用中",
+      "message": "エクスポートファイルが公開ディスクに保存されます。ファイルアドレスを知っている人は誰でも受け取ることができるため、運用者の責任の下で使用してください。非公開ディスクをお勧めします。"
+    },
+    "pending_stalled": {
+      "title": "待機遅延",
+      "message": "10分以上「待機」している作業があります。キューワーカーが実行中かどうかを確認してください。"
+    }
+  },
+  "modal": {
+    "title": "{type}エクスポート",
+    "loading": "エクスポート設定を読み込み中です…",
+    "format": "ファイル形式",
+    "data": "エクスポートするデータ",
+    "data_current": "現在の画面列",
+    "data_current_hint": "一覧に表示されている列をそのままエクスポートします。複数の値が1つのセルに集約された列は項目ごとに列に分割されます。",
+    "data_custom": "データ選択",
+    "data_custom_hint": "エクスポートする項目を直接選択します。",
+    "select_all": "すべて選択",
+    "clear_all": "すべて解除",
+    "group_extra": "その他の項目",
+    "personal_badge": "個人情報",
+    "parent_level_badge": "注文単位",
+    "personal_locked": "個人情報項目は「個人情報エクスポート」権限を持つ運用者のみ選択できます。",
+    "row_unit": "行単位",
+    "scope": "範囲",
+    "scope_filter": "現在の検索条件 ({count}件)",
+    "scope_selected": "選択した項目 ({count}件)",
+    "scope_all": "条件なしですべて",
+    "scope_selected_hint": "選択した項目は一度に最大{max}件までエクスポートできます。",
+    "period": "期間",
+    "period_current": "一覧の照会期間",
+    "period_custom": "直接指定",
+    "period_hint": "期間は最大1年まで選択できます。",
+    "period_required_hint": "この履歴は期間を指定してエクスポートする必要があります。",
+    "period_defaulted": "一覧で使用可能な照会期間がない(ないか1年を超える)ため、本日まで最近1ヶ月で満たされました。日付は変更可能です。",
+    "period_selected_hint": "選択した項目は期間に関係なくエクスポートされます。",
+    "date_type": "期間基準",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "locale": "多言語データ",
+    "locale_language": "1言語で",
+    "locale_per_column": "言語ごとに列を分割",
+    "locale_single_column": "1列にすべての言語",
+    "locale_select": "言語",
+    "options": "オプション",
+    "include_totals": "最後の行に金額合計行を追加",
+    "reason": "ダウンロード理由",
+    "reason_placeholder": "例:月末精算資料提出",
+    "reason_hint": "個人情報が含まれている項目が選択されました。理由はアクティビティログとエクスポート管理に記録されます。",
+    "estimate": "予想{count}行",
+    "estimate_unknown": "条件が変更されました。予想行数を再計算してください。",
+    "estimate_recalc": "再計算",
+    "estimating": "計算中…",
+    "estimate_large": "行数が多い場合、処理に時間がかかる可能性があります。",
+    "submit": "エクスポート",
+    "submitting": "リクエスト中…",
+    "close": "閉じる",
+    "requested": "エクスポートをリクエストしました。「エクスポート管理」で進行状況を確認してダウンロードできます。",
+    "requested_notice": "エクスポートをリクエストしました。ファイルが準備できたら通知(ベルアイコン)でお知らせし、一覧上部の進行表示または「エクスポート管理」でダウンロードできます。",
+    "scope_filter_list": "現在の検索条件(一覧{count}件)",
+    "period_current_range": "一覧照会期間:{start}~{end}",
+    "period_current_unavailable": "一覧で使用可能な照会期間がない(ないか1年を超える)ため、「一覧の照会期間」は選択できません。",
+    "estimate_empty": "エクスポートする行がありません。期間または検索条件を変更してみてください。",
+    "estimate_failed": "入力した条件では計算できません。表示されているフィールドを修正すると、予想行数が再計算されます。"
+  },
+  "tracking": {
+    "processing": "ファイルを作成中…",
+    "ready": "ファイル準備完了",
+    "download": "受け取る",
+    "failed": "ファイルを作成できませんでした",
+    "open_manage": "エクスポート管理で表示",
+    "dismiss": "進行表示を閉じる"
+  },
+  "filter": {
+    "search_field": {
+      "all": "すべて",
+      "file_name": "ファイル名",
+      "requester": "リクエスト者"
+    },
+    "search_placeholder": "ファイル名またはリクエスト者の名前·メールアドレス",
+    "status": "進行状況",
+    "type": "作業タイプ",
+    "personal": "個人情報",
+    "personal_with": "含む",
+    "personal_without": "含まない",
+    "requested_at": "リクエスト日",
+    "mine": "自分がリクエストしたもののみ",
+    "all": "すべて",
+    "search": "検索",
+    "reset": "初期化"
+  },
+  "table": {
+    "column": {
+      "requested_at": "リクエスト時刻",
+      "requester": "リクエスター",
+      "file_name": "ファイル名",
+      "type": "作業タイプ",
+      "status": "進行状況"
+    },
+    "empty": "エクスポートリクエストはありません。",
+    "download_count": "{count}回",
+    "rows": "{count}行",
+    "file_waiting": "ファイル生成前",
+    "personal_badge": "個人情報",
+    "requester_menu": {
+      "view_member": "会員情報を表示",
+      "search_member": "このリクエスターのエクスポートのみ表示"
+    }
+  },
+  "sub_row": {
+    "scope": "範囲",
+    "period": "期間",
+    "row_unit": "行単位",
+    "locale_mode": "多言語",
+    "fields": "項目数",
+    "field_count": "{count}個",
+    "selected_count": "{count}件選択",
+    "totals": "合計行",
+    "yes": "含む",
+    "no": "なし",
+    "reason": "理由",
+    "warnings": "リクエスト時の警告",
+    "cutoff_at": "基準時刻",
+    "completed_at": "完了時刻",
+    "expires_at": "ファイル有効期限",
+    "file_size": "ファイルサイズ",
+    "error": "失敗理由"
+  },
+  "action": {
+    "download": "ダウンロード",
+    "view_downloads": "ダウンロード履歴",
+    "retry": "再度リクエスト",
+    "delete": "削除",
+    "bulk_delete": "選択削除"
+  },
+  "bulk": {
+    "selected_count": "{count}個が選択されました"
+  },
+  "pagination": {
+    "total": "合計{count}件"
+  },
+  "sort": {
+    "requested_at_desc": "最近のリクエスト順",
+    "requested_at_asc": "古いリクエスト順",
+    "completed_at_desc": "最近の完了順",
+    "file_size_desc": "ファイルサイズの大きい順",
+    "download_count_desc": "ダウンロード数の多い順"
+  },
+  "modal_delete": {
+    "title": "エクスポート削除",
+    "message": "このエクスポート作業とファイルを削除します。",
+    "warning": "削除したファイルは復元できません。ダウンロード履歴とアクティビティログは残ります。"
+  },
+  "modal_bulk_delete": {
+    "title": "選択削除",
+    "message": "選択した{count}件のエクスポート作業とファイルを削除します。",
+    "warning": "進行中の作業と削除権限外の作業はスキップされます。削除したファイルは復元できません。"
+  },
+  "modal_retry": {
+    "title": "再度リクエスト",
+    "message": "失敗した作業と同じ条件で新しいエクスポートをリクエストします。",
+    "hint": "基準時刻は現在に変更されます。その間に変更されたデータが反映されます。",
+    "reason_hint": "別の管理者がリクエストした個人情報作業です。再度リクエストする理由を記入してください。アクティビティログとエクスポート管理に記録されます。"
+  },
+  "modal_downloads": {
+    "title": "ダウンロード履歴",
+    "file": "ファイル",
+    "requested": "リクエスト",
+    "conditions": "条件",
+    "reason": "理由",
+    "warnings": "リクエスト時の警告",
+    "column": {
+      "sequence": "順番",
+      "user": "ダウンロードした人",
+      "downloaded_at": "ダウンロード時刻",
+      "ip": "IP"
+    },
+    "empty": "ダウンロード記録はまだありません。"
+  },
+  "messages": {
+    "deleted": "エクスポートを削除しました。",
+    "retried": "再度リクエストしました。",
+    "download_failed": "ファイルをダウンロードできませんでした。リストを更新した後、もう一度お試しください。"
+  },
+  "common": {
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "deleting": "削除中…",
+    "confirm": "確認",
+    "processing": "処理中…"
+  }
+}
