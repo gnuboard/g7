@@ -135,6 +135,26 @@ class ProductRepository implements ProductRepositoryInterface
             'stock_quantity'
         );
 
+        // 검색어·필터 — 내보내기와 같은 한 경로(applyListFilters)를 지난다
+        $this->applyListFilters($query, $filters);
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $this->resolveAdminSortSpec($filters),
+            perPage: $perPage,
+            relations: $listRelations,
+            withCount: $listWithCount,
+            outerUsing: $listOuterUsing,
+            resultCap: PaginationLimits::resultCap('admin.products'),
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function applyListFilters(Builder $query, array $filters): void
+    {
         // 문자열 검색
         if (! empty($filters['search_keyword'])) {
             $keyword = $filters['search_keyword'];
@@ -149,49 +169,23 @@ class ProductRepository implements ProductRepositoryInterface
             // total 계산 경로와 결과 조회 경로가 같은 술어를 공유한다는 성질도 유지된다.
             if (in_array($field, ['all', 'name', 'description'])) {
                 $this->applyKeywordMatch($query, $keyword, includeAuxFields: $field === 'all');
-
-                // 필터 적용
-                $this->applyAdminFilters($query, $filters);
-
-                return $this->paginateWithDeferredJoin(
-                    query: $query,
-                    columns: ['*'],
-                    sort: $this->resolveAdminSortSpec($filters),
-                    perPage: $perPage,
-                    relations: $listRelations,
-                    withCount: $listWithCount,
-                    outerUsing: $listOuterUsing,
-                    resultCap: PaginationLimits::resultCap('admin.products'),
-                );
+            } else {
+                // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
+                $query->where(function ($q) use ($keyword, $field) {
+                    if ($field === 'product_code') {
+                        $q->where('product_code', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'sku') {
+                        $q->where('sku', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'barcode') {
+                        $q->where('barcode', 'like', "%{$keyword}%");
+                    }
+                });
             }
-
-            // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
-            $query->where(function ($q) use ($keyword, $field) {
-                if ($field === 'product_code') {
-                    $q->where('product_code', 'like', "%{$keyword}%");
-                }
-                if ($field === 'sku') {
-                    $q->where('sku', 'like', "%{$keyword}%");
-                }
-                if ($field === 'barcode') {
-                    $q->where('barcode', 'like', "%{$keyword}%");
-                }
-            });
         }
 
-        // 필터 적용
         $this->applyAdminFilters($query, $filters);
-
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: $this->resolveAdminSortSpec($filters),
-            perPage: $perPage,
-            relations: $listRelations,
-            withCount: $listWithCount,
-            outerUsing: $listOuterUsing,
-            resultCap: PaginationLimits::resultCap('admin.products'),
-        );
     }
 
     /**

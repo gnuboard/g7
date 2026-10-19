@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -110,6 +111,18 @@ interface OrderRepositoryInterface
      * @return LengthAwarePaginator 페이지네이션된 주문 목록
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 주문 목록과 같은 필터 조건을 쿼리에 겁니다.
+     *
+     * 목록·엑셀 내려받기·내보내기가 이 한 경로를 지나야 화면 건수와 파일 행 수가 어긋나지 않는다.
+     * 권한 범위는 걸지 않는다 — 호출자(화면·내보내기 요청자)가 각자 건다.
+     *
+     * @param  Builder  $query  주문 쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    public function applyListFilters(Builder $query, array $filters): void;
 
     /**
      * 관리자 주문 목록과 같은 권한 범위·필터로 주문 수를 셉니다. (목록과 같은 출발 쿼리·필터 단일 출처를 그대로 쓴다)

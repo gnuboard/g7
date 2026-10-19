@@ -385,13 +385,13 @@
               <icon name="download" class="text-base"/>
               <span>$t:sirsoft-ecommerce.admin.product.excel_download</span>
             </button>
-            <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 「내보내기 요청」 권한과 이 목록의 조회 권한이 둘 다
-                 있는 운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다 -->
+            <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
+                 운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다 -->
             <div data-ref="ecommerce_export_product_actions" class="flex flex-wrap items-center justify-end gap-3">
               <include src="partials/admin_ecommerce_export/_partial_tracking_status.g7.html"/>
               <!-- 내보내기 — 상품 목록의 지금 조건으로 파일을 만든다. 창은 별도 컨텍스트라 지금 검색 조건(데이터 소스와 같은 매개변수)·선택 id·보이는 컬럼을 전역에 실어 건넨다. 중복 방지 키는 열 때마다 새로 만든다.
                  조건은 통째로 바꾼다(merge="shallow") — 깊은 병합이면 지운 검색어·다른 목록의 조건이 남아 화면과 다른 파일이 된다 -->
-              <button data-ref="ecommerce_export_product_button" data-if="{{(current_user?.data?.is_super === true || ((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'sirsoft-ecommerce.exports.create') &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'sirsoft-ecommerce.products.read')))}}" type="button" class="btn btn-outline whitespace-nowrap">
+              <button data-ref="ecommerce_export_product_button" data-if="{{products?.data?.abilities?.can_export === true}}" type="button" class="btn btn-outline whitespace-nowrap">
                 <on type="click">
                   <sequence>
                     <set-state target="global" merge="shallow" ecommerceExportContext="{{ { type: 'products', label: $t('sirsoft-ecommerce.enums.export_type.products'), filters: Object.fromEntries(Object.entries({ search_field: query.search_field, search_keyword: query.search_keyword, category_id: query.category_id4 || query.category_id3 || query.category_id2 || query.category_id1, no_category: query.no_category === 'true' ? true : undefined, sales_status: [].concat(query['sales_status[]'] ?? []), display_status: query.display_status, brand_id: query.brand_id, no_brand: query.no_brand === 'true' ? true : undefined, tax_status: query.tax_status, date_type: query.date_type, start_date: query.start_date, end_date: query.end_date, price_type: query.price_type, min_price: query.min_price, max_price: query.max_price, min_stock: query.min_stock, max_stock: query.max_stock, shipping_policy_id: query.shipping_policy_id }).filter(([k, v]) => v !== undefined &amp;&amp; v !== null &amp;&amp; v !== '' &amp;&amp; !(Array.isArray(v) &amp;&amp; v.length === 0))), selected_ids: (_local.selectedItems ?? []), total: (products?.data?.pagination?.total ?? 0), screen_columns: (_local.visibleColumns ?? null) } }}" ecommerceExportIdempotencyKey="{{$uuid()}}" :ecommerceExportCatalog="null" :ecommerceExportEstimate="null" :ecommerceExportErrors="null" :ecommerceExportIsRequesting="false" :ecommerceExportIsEstimating="false" :ecommerceExportEstimateFailed="false"/>

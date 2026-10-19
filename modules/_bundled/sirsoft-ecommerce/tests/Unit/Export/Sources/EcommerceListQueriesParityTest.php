@@ -204,7 +204,7 @@ class EcommerceListQueriesParityTest extends ExportTestCase
     }
 
     /**
-     * 마일리지 목록 메서드 소스에서 파생한 필터 키마다 파리티 케이스가 있다(옮겨 둔 필터가 낡지 않았다).
+     * 마일리지 목록 필터(`applyListFilters`) 소스에서 파생한 필터 키마다 파리티 케이스가 있다(축이 늘면 케이스도 는다).
      *
      * @return void 반환값 없음
      *
@@ -215,7 +215,7 @@ class EcommerceListQueriesParityTest extends ExportTestCase
     #[Test]
     public function derived_mileage_filter_axes_all_have_a_parity_case(): void
     {
-        $method = (new ReflectionClass(MileageTransactionRepository::class))->getMethod('paginateWithFilters');
+        $method = (new ReflectionClass(MileageTransactionRepository::class))->getMethod('applyListFilters');
         $source = implode('', array_slice(file($method->getFileName()), $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         preg_match_all("/\\\$filters\['([a-z_]+)'\]/", $source, $m);
         $derived = array_values(array_unique($m[1]));
@@ -225,7 +225,7 @@ class EcommerceListQueriesParityTest extends ExportTestCase
         $covered = [...array_keys($this->mileageExcludingPayloads()), ...array_keys($this->mileageNonFilterKeys())];
         $missing = array_values(array_diff($derived, $covered));
 
-        $this->assertSame([], $missing, '마일리지 목록에 새 필터 축이 생겼다 — EcommerceListQueries::mileageTransactions() 에 옮기고 케이스를 더하세요: '.implode(', ', $missing));
+        $this->assertSame([], $missing, '마일리지 목록에 새 필터 축이 생겼다 — 파리티 케이스를 더하세요: '.implode(', ', $missing));
     }
 
     /**
@@ -268,7 +268,7 @@ class EcommerceListQueriesParityTest extends ExportTestCase
     }
 
     /**
-     * 목록 저장소가 다른 구현으로 바뀌면 조용히 다른 조건으로 읽지 않고 실패한다.
+     * 목록 저장소가 다른 구현으로 바뀌면 내보내기도 그 구현의 목록 필터를 그대로 쓴다 — 목록과 같은 경로를 지난다.
      *
      * @return void 반환값 없음
      *
@@ -277,13 +277,14 @@ class EcommerceListQueriesParityTest extends ExportTestCase
      * @effects export_filter_matches_list_filter
      */
     #[Test]
-    public function foreign_repository_binding_fails_loudly(): void
+    public function bound_repository_list_filter_is_used(): void
     {
-        $this->app->instance(OrderRepositoryInterface::class, $this->createStub(OrderRepositoryInterface::class));
-        $sources = $this->app->make(EcommerceListQueries::class);
+        $filters = ['order_status' => ['x']];
+        $repository = $this->createMock(OrderRepositoryInterface::class);
+        $repository->expects($this->once())->method('applyListFilters')->with($this->isInstanceOf(Builder::class), $filters);
+        $this->app->instance(OrderRepositoryInterface::class, $repository);
 
-        $this->expectException(\LogicException::class);
-        $sources->orders(['order_status' => ['x']], null, $this->operator);
+        $this->app->make(EcommerceListQueries::class)->orders($filters, null, $this->operator);
     }
 
     /**

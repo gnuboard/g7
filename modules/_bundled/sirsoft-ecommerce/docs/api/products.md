@@ -71,6 +71,7 @@
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.products.index`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductController@index`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.products.read`
+- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
 
 **요청 파라미터**
 

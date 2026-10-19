@@ -42,6 +42,8 @@ axes:
     - no_domain_read  # 원본 조회 권한 없음
     - personal_data   # 개인정보 권한·사유
     - self_scope      # 전체 범위 권한(all) 없음
+    - export_create   # 내보내기 요청 권한 있음 (목록 abilities.can_export)
+    - no_export_create # 내보내기 요청 권한 없음
   action:
     - bulk_delete
     - retry
@@ -67,6 +69,7 @@ effects:
   - export_domain_read_required
   - export_personal_fields_need_permission_and_reason
   - self_scope_hides_others_jobs
+  - list_abilities_carry_can_export
   - all_permission_reveals_others_jobs
   - download_requires_domain_read
   # 범위·생성
@@ -140,6 +143,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportRobustnessTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportScaleTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportSecurityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportListAbilityTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Exports/CsvExportWriterTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Exports/ExportDeclarationCoverageTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Listeners/ExportActivityLogDescriptionResolverTest.php

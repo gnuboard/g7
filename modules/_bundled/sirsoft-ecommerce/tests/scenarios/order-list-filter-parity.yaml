@@ -1,0 +1,21 @@
+feature: 주문 목록 필터와 엑셀 내려받기 대상의 일치
+
+description: |
+  주문 목록과 엑셀 내려받기(`OrderRepository::getForExport`)는 같은 목록 필터(`applyListFilters`)를 지난다.
+  축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면은 걸러진 건수인데 파일은 전건이 되므로,
+  축 모집단을 필터 소스에서 파생하고 축마다 두 경로의 결과가 같은지 본다. 단독으로 거르지 못하는 수식어
+  (검색 대상·기간 시작/끝·하루 경계 date_basis·숨김 상태 포함 여부)는 그 축의 케이스 안에서 도달한다.
+
+axes:
+  path:
+    - excel_download   # 엑셀 내려받기(getForExport)
+  axis:
+    - derived          # 소스에서 파생한 축 모집단
+    - excluding_payload # 그 주문을 제외하는 축별 payload
+
+effects:
+  - order_list_filter_axes_all_covered
+  - order_excel_download_matches_list_filter
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/OrderExportFilterParityTest.php

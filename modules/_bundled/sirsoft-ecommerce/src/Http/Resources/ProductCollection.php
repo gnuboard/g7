@@ -29,6 +29,9 @@ class ProductCollection extends BaseApiCollection
             'can_create' => 'sirsoft-ecommerce.products.create',
             'can_update' => 'sirsoft-ecommerce.products.update',
             'can_delete' => 'sirsoft-ecommerce.products.delete',
+            // [내보내기] 버튼(#787) — 목록 API 가 이미 이 목록의 조회 권한을 요구하므로 내보내기 요청 권한 하나로 정한다
+            // audit:allow abilitymap-permission-matches-route-ssot reason: 이 플래그가 여는 동작은 내보내기 요청 API(POST admin/exports)이고 그 라우트 권한(SSoT)이 exports.create 다 — 목록 리소스 권한으로 게이팅하면 내보내기 권한 없는 운영자에게 버튼이 보인다
+            'can_export' => 'sirsoft-ecommerce.exports.create',
         ];
     }
 
@@ -58,6 +61,8 @@ class ProductCollection extends BaseApiCollection
      *
      * 상품마다 예열하면 예열 쿼리가 상품 수만큼 반복됩니다. 카테고리는 이미 적재돼
      * 있으므로 path 를 메모리에서 읽어 조상 조회를 응답당 1회로 고정합니다.
+     *
+     * @return void 반환값 없음 (카테고리 모델의 조상 캐시를 채운다)
      */
     private function prefetchCategoryAncestors(): void
     {

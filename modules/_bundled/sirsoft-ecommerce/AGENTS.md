@@ -76,9 +76,10 @@
 `ClaimShippingFeeService` 가 주문 시점 배송정책 스냅샷에서 다시 산출합니다.
 
 **내보내기(상품·주문·마일리지 내역 → 파일)는 목록의 필터 경로를 그대로 지난다.** 파일 대상 행은
-`Sources\EcommerceListQueries` 가 각 목록 Repository 의 필터 메서드를 불러 만들고(같은 축·같은 권한 범위 — 요청자를
-명시해 큐 작업에서도 범위가 빠지지 않는다), `EcommerceListQueriesParityTest` 가 축마다 목록 결과와 같은지 잠급니다 —
-필터를 복제하면 화면은 걸러진 건수인데 파일은 전건이 되는 어긋남이 조용히 생깁니다. 파일은 큐 작업(`GenerateExportJob`)이
+`Sources\EcommerceListQueries` 가 각 목록 Repository 의 공개 메서드 `applyListFilters()`(목록 메서드도 같은 메서드를 부른다)로
+만들고, 권한 범위는 요청자를 명시해 건다(큐 작업에서도 범위가 빠지지 않는다). `EcommerceListQueriesParityTest` 가 축마다
+목록 결과와 같은지 잠급니다 — 필터를 복제하면 화면은 걸러진 건수인데 파일은 전건이 되는 어긋남이 조용히 생깁니다. 목록의 [내보내기] 버튼은
+다른 목록 버튼처럼 목록 응답의 `abilities.can_export` 로 보일지 정합니다. 파일은 큐 작업(`GenerateExportJob`)이
 요청 시각(`cutoff_at`) 기준으로 500행씩 순회해 비공개 기본 디스크 `exports` 카테고리에 쓰고, 내려받기는 60초·1회용 주소로만
 하며 받는 시점에 권한·범위·원본 조회 권한을 다시 봅니다. 「본인/전체」 범위는 `exports.all` 권한이 나눕니다(`Support\ExportAccess`).
 열은 `Exports\Declarations\*` 의 모델 선언(`type`·`personal` 필수)에서 오고, 선언도 제외 사유도 없는 컬럼은
@@ -381,10 +382,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 712개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 713개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 273개 | `vitest.config.ts` |
 | Playwright | 74개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 371개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 372개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

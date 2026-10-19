@@ -405,7 +405,8 @@
         "data": {
           "abilities": {
             "can_create": true,
-            "can_update": true
+            "can_update": true,
+            "can_export": true
           },
           "data": [
             {
@@ -1214,7 +1215,8 @@
             "has_more_pages": false
           },
           "abilities": {
-            "can_update": true
+            "can_update": true,
+            "can_export": true
           }
         }
       },
@@ -5022,7 +5024,8 @@
             }
           ],
           "abilities": {
-            "can_manage": true
+            "can_manage": true,
+            "can_export": true
           },
           "currencies": [
             "KRW"

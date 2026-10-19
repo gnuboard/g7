@@ -214,7 +214,7 @@
                             ]
                         },
                         {
-                            "comment": "내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 「내보내기 요청」 권한과 이 목록의 조회 권한이 둘 다\n             있는 운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다",
+                            "comment": "내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인\n             운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다",
                             "id": "ecommerce_export_order_actions",
                             "type": "basic",
                             "name": "Div",
@@ -230,7 +230,7 @@
                                     "id": "ecommerce_export_order_button",
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{(current_user?.data?.is_super === true || ((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'sirsoft-ecommerce.exports.create') && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'sirsoft-ecommerce.orders.read')))}}",
+                                    "if": "{{orders?.data?.abilities?.can_export === true}}",
                                     "actions": [
                                         {
                                             "type": "click",

@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
@@ -49,6 +50,18 @@ interface ProductRepositoryInterface
      * @return LengthAwarePaginator 페이지네이션된 상품 목록
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 상품 목록과 같은 검색어·필터 조건을 쿼리에 겁니다.
+     *
+     * 목록과 내보내기가 이 한 경로를 지나야 화면 건수와 파일 행 수가 어긋나지 않는다.
+     * 권한 범위는 걸지 않는다 — 호출자(화면·내보내기 요청자)가 각자 건다.
+     *
+     * @param  Builder  $query  상품 쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    public function applyListFilters(Builder $query, array $filters): void;
 
     /**
      * 여러 상품의 옵션을 상품 ID 로 묶어 한 번에 조회합니다 (비활성 옵션 포함).
@@ -155,6 +168,8 @@ interface ProductRepositoryInterface
      * 상품 통계 캐시를 무효화합니다.
      *
      * 상품이 바뀌면 통계도 곧바로 달라져야 합니다.
+     *
+     * @return void 반환값 없음
      */
     public function forgetStatisticsCache(): void;
 
