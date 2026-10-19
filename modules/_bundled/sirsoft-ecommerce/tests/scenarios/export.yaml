@@ -131,6 +131,7 @@ effects:
   - field_change_recalculates_estimate
   - totals_hint_when_nothing_summable
   - reason_field_announces_required_and_invalid
+  - export_request_sources_identical_across_lists
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportControllerTest.php
@@ -150,5 +151,6 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Services/ExportServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Sources/EcommerceListQueriesParityTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/downloadExportFile.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/exportRequestSourcesIdentical.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-export-request-and-manage.spec.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-export-modal-usability.spec.ts

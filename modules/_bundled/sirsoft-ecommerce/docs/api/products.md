@@ -71,7 +71,6 @@
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.products.index`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductController@index`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.products.read`
-- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
 
 **요청 파라미터**
 
@@ -236,6 +235,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
 
 **설명** 관리자 상품 목록을 페이지네이션으로 조회합니다. `auth:sanctum` + `sirsoft-ecommerce.products.read` 권한이 필요하며, `ProductService::getList()`가 검색어/카테고리/판매·전시상태/가격·재고 범위 등 다양한 필터를 적용해 목록을 반환하고 `getStatistics()`로 집계 통계를 함께 제공합니다. 응답은 `ProductCollection`으로 감싸져 `withStatistics()`로 통계가 병합됩니다. 확장은 `sirsoft-ecommerce.product.list_validation_rules` 훅으로 추가 필터 파라미터를 주입할 수 있습니다.
 
