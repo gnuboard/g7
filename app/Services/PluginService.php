@@ -14,6 +14,7 @@ use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Vendor\VendorMode;
 use App\Services\Extension\ExtensionIconResolver;
+use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -487,10 +488,8 @@ class PluginService
 
         // 다국어 필드인 경우 (name, description)
         if (is_array($value)) {
-            // 현재 로케일 우선, 없으면 ko, 그 다음 en
-            $locale = app()->getLocale();
-
-            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            return LocalizedValue::pick($value);
         }
 
         return (string) $value;

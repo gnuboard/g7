@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -111,9 +112,7 @@ class ProductListResource extends BaseApiResource
                 ->filter(fn ($a) => $a->label && $a->label->is_active)
                 ->sortBy(fn ($a) => $a->label->sort_order)
                 ->map(fn ($a) => [
-                    'name' => $a->label->name[app()->getLocale()]
-                        ?? $a->label->name[config('app.fallback_locale')]
-                        ?? array_values($a->label->name ?? [])[0] ?? '',
+                    'name' => LocalizedValue::pick($a->label->name ?? []) ?? '',
                     'color' => $a->label->color,
                 ])->values()
             ),
@@ -261,6 +260,8 @@ class ProductListResource extends BaseApiResource
 
     /**
      * 소유자 필드명을 반환합니다.
+     *
+     * @return string|null 소유자 필드명 (없으면 null)
      */
     protected function ownerField(): ?string
     {

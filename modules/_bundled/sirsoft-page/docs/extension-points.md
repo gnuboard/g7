@@ -25,11 +25,11 @@
 | `sirsoft-page.page.before_delete` | action | — | `src/Services/PageService.php:179` |
 | `sirsoft-page.page.before_publish` | action | — | `src/Services/PageService.php:209` 외 1곳 |
 | `sirsoft-page.page.before_update` | action | — | `src/Services/PageService.php:127` |
-| `sirsoft-page.page.filter_content_thumbnail` | filter | — | `src/Models/Page.php:128` |
+| `sirsoft-page.page.filter_content_thumbnail` | filter | — | `src/Models/Page.php:133` |
 | `sirsoft-page.page.filter_create_data` | filter | — | `src/Services/PageService.php:77` |
 | `sirsoft-page.page.filter_list_query` | filter | — | `src/Services/PageService.php:60` |
 | `sirsoft-page.page.filter_update_data` | filter | — | `src/Services/PageService.php:131` |
-| `sirsoft-page.search.page.index_should_update` | filter | — | `src/Models/Page.php:270` |
+| `sirsoft-page.search.page.index_should_update` | filter | — | `src/Models/Page.php:275` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

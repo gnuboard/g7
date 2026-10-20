@@ -139,6 +139,7 @@
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-marketing` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 동의 상태를 바꾸는 경로를 추가했다면 이력 적재(`user_marketing_consent_histories`)가 같은 트랜잭션에 있는지 확인
 - [ ] 코어 회원·가입 훅 11종 중 하나라도 이름·페이로드가 바뀌면 이 플러그인이 조용히 끊기므로, 코어 회원 흐름 변경 시 함께 확인
 - [ ] 레이아웃 조각 5개는 대상 화면의 슬롯이 사라지면 오류 없이 빠진다 — 템플릿·코어 회원 화면 업그레이드 후 노출 확인

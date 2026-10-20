@@ -623,7 +623,7 @@ public function getHookListeners(): array
 
 ### 다국어 이름 처리
 
-이름이 다국어 배열(`['ko' => '한국어', 'en' => 'English']`)인 경우 현재 로케일에 맞게 해석합니다.
+이름이 다국어 배열(`['ko' => '한국어', 'en' => 'English']`)인 경우 현재 로케일에 맞게 해석합니다. 현재 로케일 값이 없거나 비면 사이트 기본 언어 → en → 첫 값 순입니다.
 
 ```php
 private function resolveI18nName(mixed $name): string
@@ -632,8 +632,7 @@ private function resolveI18nName(mixed $name): string
         return $name;
     }
     if (is_array($name)) {
-        $locale = app()->getLocale();
-        return $name[$locale] ?? $name['ko'] ?? (array_values($name)[0] ?? '');
+        return LocalizedValue::pick($name, app()->getLocale()) ?? '';
     }
     return '';
 }

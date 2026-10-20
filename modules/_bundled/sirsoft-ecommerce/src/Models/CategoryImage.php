@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,6 +21,8 @@ class CategoryImage extends Model
 
     /**
      * 모델 부팅
+     *
+     * @return void 반환값 없음
      */
     protected static function boot(): void
     {
@@ -35,6 +38,8 @@ class CategoryImage extends Model
 
     /**
      * 고유 해시 생성 (12자리)
+     *
+     * @return string 12자리 고유 해시
      */
     protected static function generateHash(): string
     {
@@ -106,7 +111,7 @@ class CategoryImage extends Model
         $locale = $locale ?? app()->getLocale();
         $altText = $this->alt_text;
 
-        return $altText[$locale] ?? $altText[config('app.fallback_locale', 'ko')] ?? null;
+        return LocalizedValue::pick($altText, $locale, anyAsLast: false);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Support\LocalizedValue;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
@@ -139,10 +140,7 @@ class PaymentMethodResolver
         $name = $this->catalogValue($methodId, '_cached_name');
 
         if (is_array($name)) {
-            $locale = app()->getLocale();
-            $resolved = $name[$locale]
-                ?? $name[config('app.fallback_locale', 'ko')]
-                ?? (! empty($name) ? array_values($name)[0] : null);
+            $resolved = LocalizedValue::pick($name);
 
             if (is_string($resolved) && $resolved !== '') {
                 return $resolved;

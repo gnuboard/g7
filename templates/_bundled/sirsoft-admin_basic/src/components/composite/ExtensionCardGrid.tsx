@@ -256,8 +256,9 @@ const ExtensionIcon: React.FC<{
       )}
       {item.iconBadge && (
         <Span
-          className="absolute bottom-0 right-0 px-1 rounded-tl-md rounded-br-xl text-[10px] leading-4 font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white"
+          className={`absolute bottom-0 right-0 max-w-full truncate px-1 rounded-tl-md rounded-br-xl ${item.iconBadge.text.length > 3 ? 'text-[8px] tracking-tight' : 'text-[10px]'} leading-4 font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white`}
           aria-label={item.iconBadge.srLabel}
+          title={item.iconBadge.text}
           data-ref="ext_icon_badge"
         >
           {item.iconBadge.text}

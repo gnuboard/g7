@@ -147,6 +147,7 @@
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-page` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 관리자 템플릿의 빌드된 CSS 에 존재하는지 확인하고 없으면 `resources/css/main.css` 에 `page-` 접두 클래스로 정의한 뒤 `php artisan module:build sirsoft-page --production`
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 페이지 저장 경로를 추가·변경했다면 버전 스냅샷 적재와 `current_version` 증가가 같은 트랜잭션에 있는지 확인
 - [ ] 첨부를 내보내는 경로를 추가하면 발행 상태 게이트를 그 자리에서 재적용 (부모에서 한 번 판정하고 끝나지 않는다)
 - [ ] 코어 검색·SEO·ckeditor5 의 훅 이름이 바뀌면 이 모듈의 구독 5종이 조용히 끊기므로 함께 확인

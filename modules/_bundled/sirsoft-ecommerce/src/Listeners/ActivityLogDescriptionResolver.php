@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\LocalizedValue;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
@@ -332,9 +333,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
         }
 
         if (is_array($name)) {
-            $locale = app()->getLocale();
-
-            return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? (array_values($name)[0] ?? '');
+            return LocalizedValue::pick($name) ?? '';
         }
 
         return '';

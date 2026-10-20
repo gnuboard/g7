@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Search\KeywordSearch;
+use App\Support\LocaleTag;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -104,10 +105,12 @@ class ProductInquiryRepository implements ProductInquiryRepositoryInterface
             $locales = config('app.translatable_locales', ['ko', 'en']);
             $query->where(function ($q) use ($keyword, $locales) {
                 foreach ($locales as $locale) {
-                    $q->orWhereRaw(
-                        "JSON_UNQUOTE(JSON_EXTRACT(product_name_snapshot, '$.{$locale}')) LIKE ?",
-                        ["%{$keyword}%"]
-                    );
+                    // 하이픈 로케일(fil-PH)은 따옴표 없는 JSON 경로가 무효(MySQL 3143)였다 — 형식을 검증하고
+                    // 빌더의 JSON 경로 문법으로 넘겨 키 인용·DB 별 함수를 문법기에 맡긴다 (#148)
+                    if (! LocaleTag::isValid($locale)) {
+                        continue;
+                    }
+                    $q->orWhere("product_name_snapshot->{$locale}", 'like', "%{$keyword}%");
                 }
             });
         }

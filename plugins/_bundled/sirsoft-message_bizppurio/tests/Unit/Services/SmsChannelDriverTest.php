@@ -434,7 +434,7 @@ class SmsChannelDriverTest extends PluginTestCase
      * 게이트만 통과시키고 끝내면 그 수신자의 로케일에 본문이 없을 때 빈 SMS 가 나간다.
      *
      * 로케일 해석은 코어 NotificationContentBehavior 와 동일한 체인이다 —
-     * `수신자 로케일 → fallback_locale → ''`. fallback_locale(ko) 이 비어 있으면
+     * `수신자 로케일 → 사이트 기본 언어 → 영어 → ''`(#148). 대체 언어에도 본문이 없으면
      * 발송하지 않는다(개편 전 코어 템플릿 경로와 같은 결과).
      *
      * @effects sms_skipped_when_fallback_locale_body_missing
@@ -444,10 +444,11 @@ class SmsChannelDriverTest extends PluginTestCase
     public function test_fallback_locale에_본문이_없으면_발송하지_않는다(): void
     {
         Bus::fake();
+        config(['app.site_locale' => 'ko']);
         $member = User::factory()->create(['mobile' => '01011112222']);
 
-        // en 만 채운 행 — 행 게이트(hasSmsBody)는 통과하지만 ko 수신자용 본문이 없다.
-        $row = $this->templateRow(smsBody: ['en' => '[Shop] Done']);
+        // ja 만 채운 행 — 행 게이트(hasSmsBody)는 통과하지만 ko 수신자의 대체 언어(ko·en)에 본문이 없다.
+        $row = $this->templateRow(smsBody: ['ja' => '[Shop] 完了']);
         $this->assertTrue($row->hasSmsBody(), '행 게이트는 어느 로케일에든 본문이 있으면 통과한다.');
 
         $this->expectException(NotificationSendSkippedException::class);

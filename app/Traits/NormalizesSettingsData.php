@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use App\Support\LocaleTag;
+
 /**
  * 환경설정 데이터 정규화 Trait
  *
@@ -288,10 +290,10 @@ trait NormalizesSettingsData
             return false;
         }
 
-        // 키가 로케일 코드 형식인지 확인 (2-3자 알파벳)
+        // 키가 로케일 코드 형식인지 확인 (언어팩 설치 규칙 BCP 47 — ko, fil, zh-Hant, es-419)
         $keys = array_keys($array);
         foreach ($keys as $key) {
-            if (! is_string($key) || ! preg_match('/^[a-z]{2,3}(-[A-Z]{2})?$/', $key)) {
+            if (! LocaleTag::isValid($key)) {
                 return false;
             }
         }

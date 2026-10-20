@@ -149,6 +149,29 @@ class ExtensionIconServingTest extends TestCase
     }
 
     /**
+     * 지역 표기(대문자)가 든 언어팩 식별자의 아이콘도 서빙됩니다 (#148 — 종전 422).
+     *
+     * @scenario extension_type=language_pack, location=bundled, declaration=manifest_path, surface=public_route
+     *
+     * @effects language_pack_icon_source_derivation, region_tagged_pack_icon_is_served
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function region_tagged_language_pack_identifier_icon_is_served(): void
+    {
+        $this->makeExtension(
+            'lang-packs/_bundled/g7-test-serve-fil-PH',
+            'language-pack.json',
+            ['icon' => 'assets/brand/mark.svg'],
+            ['assets/brand/mark.svg' => self::VALID_SVG]
+        );
+
+        $this->get('/api/extensions/language-pack/g7-test-serve-fil-PH/icon')->assertOk();
+        $this->get('/api/extensions/language-pack/G7-TEST-SERVE-fil-PH/icon')->assertStatus(422);
+    }
+
+    /**
      * 아이콘이 없는 확장은 404 입니다.
      *
      * @scenario extension_type=module, location=bundled, declaration=none, surface=public_route

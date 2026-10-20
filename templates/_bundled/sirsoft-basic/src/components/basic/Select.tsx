@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
+import { getLocaleDisplayName } from '../../support/localeName';
 
 /** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 validate R4, admin_basic D-J11 대칭) */
 const selectSearchPlaceholder = (): string => {
@@ -61,20 +62,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
 function getLocaleName(locale: string): string {
-  const fromAppConfig = (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale];
-  if (fromAppConfig) {
-    return fromAppConfig;
-  }
-  const fallback: Record<string, string> = {
-    ko: '한국어',
-    en: 'English',
-    ja: '日本語',
-    zh: '中文',
-    es: 'Español',
-    fr: 'Français',
-    de: 'Deutsch',
-  };
-  return fallback[locale] || locale;
+  // 언어팩 이름 → 번역 → 내장 표 → 코드 (#148 — 종전 state.get(경로) 는 인자를 무시해 언어팩 이름을 못 읽었다)
+  return getLocaleDisplayName(locale);
 }
 
 /**

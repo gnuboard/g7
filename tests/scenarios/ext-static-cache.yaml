@@ -139,9 +139,12 @@ effects:
   - status_command_warns_root_and_hints_web_account
   - publish_command_warns_root_but_continues
   - status_command_consumes_service_report
+  # #148 — 언어팩 설치 규칙(BCP 47)의 세 글자·문자 표기 로케일(fil·zh-Hant)도 lang 게시 대상이다
+  - published_lang_covers_bcp47_pack_locales
 
 test_files:
   - tests/Feature/Services/ExtensionStaticCacheServiceTest.php
+  - tests/Feature/Services/ExtensionStaticCacheBcp47LocaleTest.php
   - tests/Feature/Api/Public/PublicComponentsCachingTest.php
   - tests/Feature/Template/PublicTemplateControllerTest.php
   - tests/Feature/Template/TemplateAssetServingTest.php

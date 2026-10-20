@@ -267,10 +267,9 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       const nameCell = findByIdPrefix(modal, 'bt_td_name');
       expect(nameCell.text).toContain('btItem.name');
 
-      // 엔진은 현재 로케일을 전역 변수 `$locale` 로만 노출한다. `_global.locale` 은 심는 곳이
-      // 없어 항상 undefined 이고, 그러면 뒤의 `?? 'ko'` 가 걸려 **모든 언어에서 한국어**가
-      // 나간다. 같은 폴더의 `board-locale-fallback.test.ts` 가 이미 요구하던 형태다.
-      expect(nameCell.text).toContain('$locale');
+      // 엔진의 `$localized()` 가 현재 로케일($locale) → 사이트 기본 언어 → 영어 순으로 고른다(#148).
+      // `_global.locale` 은 심는 곳이 없어 항상 undefined 라 쓰면 **모든 언어에서 한국어**가 나간다.
+      expect(nameCell.text).toContain('$localized(btItem.name)');
       expect(nameCell.text).not.toContain('_global.locale');
     });
   });

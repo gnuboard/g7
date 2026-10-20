@@ -347,6 +347,8 @@ return [
             'privacy_policy_url' => '개인정보처리방침 URL',
             'privacy_policy_link' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)',
             'notice_sections' => '확장이 기여한 처리 내역',
+            'introduction_text' => '운영자 서문 (평문 — 사이트내 알림·문자용)',
+            'notice_sections_text' => '확장이 기여한 처리 내역 (평문 — 사이트내 알림·문자용)',
         ],
     ],
     'validation' => [

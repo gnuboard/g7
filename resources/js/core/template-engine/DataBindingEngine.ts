@@ -16,6 +16,7 @@ import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
 import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { getCompiledExpression } from './ExpressionCompileCache';
+import { pickLocalized } from '../support/localeTag';
 import { getEngineFlags } from './EngineFlags';
 
 const logger = createLogger('DataBindingEngine');
@@ -606,7 +607,9 @@ export class DataBindingEngine {
     }
 
     // 파이프 체인 실행
-    const result = executePipeChain(value, pipes);
+    const result = executePipeChain(value, pipes, {
+      locale: typeof extendedContext.$locale === 'string' ? extendedContext.$locale : undefined,
+    });
 
     // DevTools: 파이프 표현식 평가 추적
     if (devTools?.isEnabled()) {
@@ -1305,9 +1308,9 @@ export class DataBindingEngine {
         if (typeof value === 'string') {
           return value;
         }
-        // 1. 객체의 활성 로케일 키
-        if (value && typeof value === 'object' && value[locale]) {
-          return value[locale];
+        // 1. 객체의 활성 로케일 키 (빈 칸·공백만 있는 값은 건너뜀 — 백엔드 LocalizedValue 와 같다)
+        if (value && typeof value === 'object' && pickLocalized({ [locale]: value[locale] }, locale, false) !== null) {
+          return String(value[locale]);
         }
         // 2. fallbackKey 가 있으면 $t() 로 lang pack 보강 시도
         if (fallbackKey && typeof fallbackKey === 'string') {
@@ -1316,9 +1319,9 @@ export class DataBindingEngine {
             return translated;
           }
         }
-        // 3. 객체의 ko / en / 첫 번째 값
+        // 3. 사이트 기본 언어 → en → 첫 번째 값 (engine-v1.81.0 — 종전 ko 고정)
         if (value && typeof value === 'object') {
-          return value.ko || value.en || Object.values(value)[0] || '';
+          return pickLocalized(value, locale) ?? '';
         }
         if (value == null) {
           return '';

@@ -69,6 +69,7 @@ import {
 } from '../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
+import { getSiteLocale, pickLocalized } from '../support/localeTag';
 import { isPlainLeftClick, mergeQueryIntoHref, type LinkClickLike } from './navigationLinks';
 import {
   notifyAssetFailure,
@@ -2857,6 +2858,21 @@ function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
       const state = deps.getState();
       return state.templateMetadata?.locales || ['ko', 'en'];
     },
+    /**
+     * 사이트 기본 언어(환경설정 「기본 언어」)를 반환합니다. 모르면 현재 로케일.
+     *
+     * @since engine-v1.81.0
+     */
+    site: (): string => getSiteLocale() ?? G7Core.locale.current(),
+    /**
+     * 다국어 값에서 보여 줄 글자를 고릅니다 — 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값(빈 칸 건너뜀).
+     * 백엔드 `LocalizedValue::pick()` 과 같은 규칙이다. 고를 값이 없으면 null.
+     *
+     * @param value 다국어 값(`{ ko, en, … }`) 또는 문자열
+     * @param locale 우선 언어 (생략 시 현재 로케일)
+     * @since engine-v1.81.0
+     */
+    pick: (value: unknown, locale?: string): string | null => pickLocalized(value, locale),
     /**
      * 로케일을 변경합니다.
      * @param locale 변경할 로케일 (예: 'ko', 'en')

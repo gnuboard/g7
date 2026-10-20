@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -159,7 +160,7 @@ class ShippingPolicy extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**

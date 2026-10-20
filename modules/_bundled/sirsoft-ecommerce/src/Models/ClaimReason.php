@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\Concerns\HasUserOverrides;
 use App\Models\User;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -103,7 +104,7 @@ class ClaimReason extends Model
             return '';
         }
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**

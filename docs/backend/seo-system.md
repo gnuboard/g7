@@ -1068,7 +1068,7 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 
 - `$t()`: 기존 `$t:key` prefix 방식의 함수 호출 구문. 삼항 내부에서 사용 가능. 두 번째 인수가 객체면 값(산술·`||`·삼항 식 포함)을 글자로 풀어 치환하고, 객체가 아니면 인자 없는 호출과 같다. 비어 있는 값은 빈 글자
 - 인자 치환은 `$t:키|…`·`$t()` 모두 한 번에(`strtr`) 한다 — 앞 인자 값에 든 뒤 인자 자리표시자(`{{column}}`)를 다시 치환하지 않는다
-- `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: ko → 첫 번째 값
+- `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: 사이트 기본 언어(`app.site_locale`) → en → 첫 번째 값, 빈 문자열은 건너뜀(`App\Support\LocalizedValue::pick()` — 화면 `$localized` 와 같은 규칙)
 
 ### ExpressionEvaluator — 객체 리터럴 / 스프레드 연산자
 

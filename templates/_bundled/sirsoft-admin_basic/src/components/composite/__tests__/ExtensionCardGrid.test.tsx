@@ -220,6 +220,22 @@ describe('ExtensionCardGrid — 아이콘', () => {
     expect(badge.className).toContain('dark:bg-blue-500');
   });
 
+  // @scenario shape=region_tagged
+  // @effects language_pack_composite_badge, long_locale_badge_is_not_clipped
+  it('긴 로케일 배지(fil-PH)는 작은 글자·말줄임·title 로 상자 안에 둔다 (#148)', () => {
+    setContainerWidth(1072);
+    const { container } = render(
+      <ExtensionCardGrid items={[baseItem({ iconBadge: { text: 'fil-PH', srLabel: 'Filipino (Pilipinas) 언어팩' } })]} />
+    );
+    const badge = container.querySelector('[data-ref="ext_icon_badge"]') as HTMLElement;
+
+    expect(badge.textContent).toBe('fil-PH');
+    expect(badge.getAttribute('title')).toBe('fil-PH');
+    expect(badge.className).toContain('text-[8px]');
+    expect(badge.className).toContain('truncate');
+    expect(badge.className).toContain('max-w-full');
+  });
+
   // @scenario icon_state=lp_manifest
   // @effects language_pack_composite_badge
   it('자기 아이콘을 담은 언어팩에는 배지를 붙이지 않는다', () => {

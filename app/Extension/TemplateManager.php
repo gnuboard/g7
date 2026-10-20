@@ -33,6 +33,7 @@ use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\ExtensionIntegrations;
+use App\Support\LocalizedValue;
 use App\Support\StateContracts;
 use Composer\Semver\Semver;
 use Illuminate\Support\Arr;
@@ -386,11 +387,8 @@ class TemplateManager implements TemplateManagerInterface
 
         // 배열인 경우 로케일에 맞는 값 반환
         if (is_array($value)) {
-            // 요청 언어 → fallback 언어 → 첫 번째 값 → 빈 문자열
-            return $value[$locale]
-                ?? $value[config('app.fallback_locale')]
-                ?? (! empty($value) ? array_values($value)[0] : '')
-                ?? '';
+            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (#148)
+            return LocalizedValue::pick($value, $locale) ?? '';
         }
 
         return '';

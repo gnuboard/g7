@@ -12,6 +12,8 @@
  * @module textareaFallback
  */
 
+import { getLocaleLabel } from './localeLabel';
+
 /** 폴백 요소를 식별하는 data 속성 */
 const FALLBACK_ATTR = 'data-ckeditor5-fallback';
 
@@ -187,7 +189,8 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
             if (index === 0) {
                 button.classList.add('is-default');
             }
-            button.textContent = locale.toUpperCase();
+            // 언어팩 이름 → 내장 표 → 코드 (#148)
+            button.textContent = getLocaleLabel(locale);
 
             const check = document.createElement('span');
             check.dataset.check = '1';

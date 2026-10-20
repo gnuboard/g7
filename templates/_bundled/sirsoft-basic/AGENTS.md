@@ -149,6 +149,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 새 화면을 추가했다면 `_user_base` 를 상속하는지, `routes.json` 에 경로가 등록됐는지 확인
 - [ ] 상점 관련 경로·링크는 표현식(`route_path` · `no_route`)을 유지 — 문자열로 굳히지 않는다
 - [ ] 목록 클러스터(목록 → 상세 → 형제 상세 → 폼 → 복귀) 이동 전 leg 에 `mergeQuery: true`
@@ -194,7 +195,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 290개 | `vitest.config.ts` |
+| Vitest | 291개 | `vitest.config.ts` |
 | Playwright | 17개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 82개 | `tests/scenarios` |
 

@@ -2,6 +2,7 @@
 
 namespace App\Seo;
 
+use App\Support\LocalizedValue;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
@@ -25,6 +26,9 @@ class PipeRegistry
      */
     private string $locale = 'ko';
 
+    /**
+     * 빌트인 파이프를 등록한 레지스트리를 생성합니다.
+     */
     public function __construct()
     {
         $this->registerBuiltInPipes();
@@ -34,6 +38,7 @@ class PipeRegistry
      * 현재 로케일을 설정합니다.
      *
      * @param  string  $locale  로케일 코드
+     * @return void 반환값 없음
      */
     public function setLocale(string $locale): void
     {
@@ -244,6 +249,8 @@ class PipeRegistry
      * 빌트인 파이프를 등록합니다.
      *
      * 프론트엔드 PipeRegistry.ts의 builtInPipes와 동일한 파이프를 PHP로 구현합니다.
+     *
+     * @return void 반환값 없음
      */
     private function registerBuiltInPipes(): void
     {
@@ -457,9 +464,8 @@ class PipeRegistry
                 return (string) $value;
             }
 
-            $targetLocale = $locale ?? $this->locale;
-
-            return $value[$targetLocale] ?? $value['ko'] ?? $value['en'] ?? (string) (reset($value) ?: '');
+            // 대상 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — 화면 localized 파이프와 같은 SSoT)
+            return LocalizedValue::pick($value, $locale ?? $this->locale) ?? '';
         };
     }
 

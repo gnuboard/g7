@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Support\LocalizedValue;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -3500,7 +3501,6 @@ class OrderExchangeService
 
         if (isset($values[0]['key'])) {
             $locales = config('app.supported_locales', ['ko', 'en']);
-            $fallback = config('app.fallback_locale', 'ko');
             $result = [];
 
             foreach ($locales as $locale) {
@@ -3510,8 +3510,8 @@ class OrderExchangeService
                     $key = $entry['key'] ?? [];
                     $value = $entry['value'] ?? [];
 
-                    $localizedKey = is_array($key) ? ($key[$locale] ?? $key[$fallback] ?? array_values($key)[0] ?? '') : $key;
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[$fallback] ?? array_values($value)[0] ?? '') : $value;
+                    $localizedKey = is_array($key) ? (LocalizedValue::pick($key, $locale) ?? '') : $key;
+                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale) ?? '') : $value;
 
                     if ($localizedKey !== '' && $localizedValue !== '') {
                         $parts[] = $localizedKey.': '.$localizedValue;

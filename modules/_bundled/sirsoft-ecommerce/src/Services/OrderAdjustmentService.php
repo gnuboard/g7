@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Support\LocalizedValue;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AdjustmentResult;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
@@ -833,7 +834,7 @@ class OrderAdjustmentService
             return '';
         }
 
-        $text = $value[app()->getLocale()] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value);
+        $text = LocalizedValue::pick($value);
 
         return is_string($text) ? $text : '';
     }

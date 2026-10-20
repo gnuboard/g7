@@ -20,6 +20,10 @@
 
 - 상품 공통정보 관리에서 편집 중 다른 항목을 고를 때 뜨는 확인 창 문구가 「別の商品グループ」(상품정보고시 용어)였던 것을 「別の共通情報」로 바로잡았습니다(`admin/common_info.modal.editing.confirm_message`).
 
+### Changed
+
+- 알림 템플릿 편집 창 「사용 가능한 변수」 설명의 일본어 번역을 선언과 맞췄습니다 — 클레임 완료 알림의 환불 금액·실제 환불 수단·현금/마일리지 환불 금액·수단별 환불 금액 줄(`notification_variables.common.refund_*`)과 취소 후 입금 알림(운영자)의 수신자·주문 화면 주소·입금 금액(`notification_variables.by_type.deposit_after_cancel_admin.*`)입니다.
+
 ## [1.2.0] - 2026-10-10
 
 ### Added

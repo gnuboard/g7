@@ -690,30 +690,28 @@ $query->orderBy("name->{$locale}", $sortOrder);
 
 #### 다국어 필드 fallback chain
 
-Model 의 `getLocalizedX()` / Resource 의 다국어 컬럼 출력 / Service 의 다국어 매핑 등에서 현재 locale 값을 반환할 때는 `config('app.fallback_locale', 'ko')` 기반 fallback chain 을 사용합니다.
+Model 의 `getLocalizedX()` / Resource 의 다국어 컬럼 출력 / Service 의 다국어 매핑 등에서 현재 locale 값을 반환할 때는 `App\Support\LocalizedValue::pick()` 을 사용합니다. 대체 순서는 요청 언어 → 사이트 기본 언어(환경설정 「기본 언어」, `app.site_locale`) → 영어 → (기본) 첫 값이고, 빈 문자열·공백만 있는 값은 건너뜁니다.
 
 ```php
-// ✅ DO: app.fallback_locale config 기반
+use App\Support\LocalizedValue;
+
+// ✅ DO: LocalizedValue::pick — 요청 언어 → 사이트 기본 언어 → en → 첫 값
 public function getLocalizedName(?string $locale = null): string
 {
-    $locale = $locale ?? app()->getLocale();
-    if (! is_array($this->name)) {
-        return (string) $this->name;
-    }
-    return $this->name[$locale]
-        ?? $this->name[config('app.fallback_locale', 'ko')]
-        ?? (! empty($this->name) ? array_values($this->name)[0] : '')
-        ?? '';
+    return LocalizedValue::pick($this->name, $locale ?? app()->getLocale()) ?? '';
 }
 
-// ❌ DON'T: ko / en 하드코딩
+// ✅ 첫 값까지 내려가지 않아야 하는 자리(메일 제목·본문 등)는 anyAsLast: false
+return LocalizedValue::pick($this->subject, $locale, anyAsLast: false) ?? '';
+
+// ❌ DON'T: fallback_locale 색인 · ko / en 하드코딩
 return $this->name[$locale]
+    ?? $this->name[config('app.fallback_locale', 'ko')]
     ?? $this->name['ko']
-    ?? $this->name['en']
     ?? '';
 ```
 
-운영자가 `APP_FALLBACK_LOCALE` 환경변수로 폴백 locale 을 변경할 수 있도록 보장하는 정합성 정책입니다.
+`app.fallback_locale`(env `APP_FALLBACK_LOCALE`)은 번역 키(`__()`)의 대체 언어 전용이고 다국어 **값** 대체에는 쓰지 않습니다 — 한국어가 기본이 아닌 사이트에서 빈 값이 한국어로 채워지던 문제(#148)의 원인이었습니다. 화면 코드는 `G7Core.locale.pick(값)`·`$localized(값)` 를 씁니다. 새 직접 색인은 `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php` 가 막습니다(값 표시가 아닌 동등 비교·필수 언어 검증·로케일별 생성은 허용 목록에 사유와 함께).
 
 #### 다국어 라벨이 들어간 비즈니스 로직 (copy 접미사 등)
 

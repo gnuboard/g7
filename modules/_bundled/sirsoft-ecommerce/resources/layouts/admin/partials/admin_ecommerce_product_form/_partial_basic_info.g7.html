@@ -188,7 +188,7 @@
         <div data-ref="selected_categories" data-if="{{((_local.selectedCategoryInfos ?? []).length > 0) || ((_local.form?.categories ?? []).length > 0)}}" class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <div class="text-body font-medium mb-3">$t:sirsoft-ecommerce.admin.product.category.selected ({{((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []).length : (_local.form?.categories ?? []).length}}/5)</div>
           <div class="flex-center flex-row flex-wrap gap-2">
-            <div data-each="catInfo, catIdx in ((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || c.name?.ko || '' })))" class="inline-flex items-center flex-shrink-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full px-3 py-1.5 text-sm">
+            <div data-each="catInfo, catIdx in ((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || $localized(c.name) })))" class="inline-flex items-center flex-shrink-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full px-3 py-1.5 text-sm">
               <span class="text-gray-700 dark:text-gray-200">{{catInfo.breadcrumb}}</span>
               <button data-if="{{!_computed.isReadOnly}}" type="button" class="ml-2 text-gray-400 hover:text-red-500 dark:text-red-400 dark:text-gray-500 dark:hover:text-red-400" aria-label="$t:sirsoft-ecommerce.common.remove">
                 <on type="click">

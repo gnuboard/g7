@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Extension\HookManager;
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\MissingValue;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
@@ -332,7 +333,7 @@ class OrderListResource extends BaseApiResource
             if (is_array($name)) {
                 $locale = app()->getLocale();
 
-                return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null;
+                return LocalizedValue::pick($name, $locale);
             }
 
             return null;

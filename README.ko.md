@@ -580,6 +580,7 @@ cp .env.example .env
   <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
   <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
   <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
+  <a href="https://github.com/digitalnomadxxx" title="digitalnomadxxx"><img src="https://github.com/digitalnomadxxx.png" width="48" alt="digitalnomadxxx"></a>
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>

@@ -40,6 +40,7 @@ import { SlotContainer } from './SlotContainer';
 
 // NotificationCenter 컴포넌트 import
 import { NotificationCenter, type NotificationItem } from './NotificationCenter';
+import { getLocaleDisplayName } from '../../support/localeName';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -376,10 +377,8 @@ const Header: React.FC<HeaderProps> = ({
     closeLangMenu(true);
   };
 
-  // 로케일 코드 → 표시명 (활성 언어팩 native_name 우선, 폴백 사전)
-  const getLocaleName = (locale: string): string =>
-    (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale] ??
-    (locale === 'ko' ? '한국어' : locale === 'en' ? 'English' : locale === 'ja' ? '日本語' : locale === 'zh' ? '中文' : locale === 'es' ? 'Español' : locale === 'fr' ? 'Français' : locale === 'de' ? 'Deutsch' : locale.toUpperCase());
+  // 로케일 코드 → 표시명 (활성 언어팩 native_name 우선, 폴백 사전 — #148: state.get(경로) 는 인자를 받지 않아 언어팩 이름을 못 읽었다)
+  const getLocaleName = (locale: string): string => getLocaleDisplayName(locale);
 
   return (
     <HeaderBasic

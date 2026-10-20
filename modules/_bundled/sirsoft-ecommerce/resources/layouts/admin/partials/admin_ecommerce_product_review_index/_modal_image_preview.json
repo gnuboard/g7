@@ -115,7 +115,7 @@
                                             "props": {
                                                 "className": "text-secondary inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                             },
-                                            "text": "{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}"
+                                            "text": "{{$localized(opt.key)}}: {{$localized(opt.value)}}"
                                         }
                                     ]
                                 }

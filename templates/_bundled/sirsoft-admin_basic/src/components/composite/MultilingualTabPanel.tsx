@@ -14,19 +14,13 @@ import { Nav } from '../basic/Nav';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { MultilingualLocaleContext } from './MultilingualLocaleContext';
+import { getLocaleDisplayName } from '../../support/localeName';
 
 // G7Core 로케일 API
 const getG7Core = () => (window as any).G7Core;
 const getSupportedLocales = (): string[] => getG7Core()?.locale?.supported?.() ?? ['ko', 'en'];
 const getCurrentLocale = (): string => getG7Core()?.locale?.current?.() ?? 'ko';
 
-// 로케일 표시명
-const LOCALE_NAMES: Record<string, string> = {
-  ko: '한국어',
-  en: 'English',
-  ja: '日本語',
-  zh: '中文',
-};
 
 /**
  * MultilingualTabPanel Props
@@ -149,7 +143,7 @@ export const MultilingualTabPanel: React.FC<MultilingualTabPanelProps> = ({
             onClick={() => handleTabClick(locale)}
             className={getTabClasses(locale)}
           >
-            <Span>{LOCALE_NAMES[locale] || locale}</Span>
+            <Span>{getLocaleDisplayName(locale)}</Span>
           </Button>
         ))}
       </Nav>

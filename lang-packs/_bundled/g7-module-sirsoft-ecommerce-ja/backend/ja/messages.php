@@ -1308,8 +1308,11 @@ return [
             'reject_reason' => '差し戻し理由',
             'tracking_lines' => '送り状ごとの商品行（配送業者・送り状・商品×数量、改行区切り）',
             'advance_exchange_notice' => '先行交換の旧商品返送期限の案内（通常交換の場合は空）',
-            'refund_amount' => '返金金額',
-            'refund_method_label' => '返金手段',
+            'refund_amount' => '返金金額（現金＋マイレージの合計）',
+            'refund_method_label' => '実際の返金手段（現金返金がない場合はマイレージ）',
+            'refund_cash_amount' => '現金で返金された金額（ない場合は空）',
+            'refund_points_amount' => 'マイレージで返金された金額（ない場合は空）',
+            'refund_breakdown' => '手段別の返金金額の行（改行区切り）',
             'withdraw_origin_notice' => '販売者による代理撤回の案内（顧客撤回の場合は空）',
             'processed_count' => '今回処理された商品数',
             'remaining_count' => 'まだ処理されていない商品数',
@@ -1336,6 +1339,11 @@ return [
             'order_completed_admin' => [
                 'name' => '受信者（運営者）名',
                 'order_url' => '注文画面URL（運営者には管理画面のアドレスに置換）',
+            ],
+            'deposit_after_cancel_admin' => [
+                'name' => '受信者（運営者）名',
+                'order_url' => '注文画面URL（運営者には管理画面のアドレスに置換）',
+                'deposit_amount' => 'キャンセル後に入金された金額',
             ],
             'inquiry_received' => [
                 'name' => '受信者（管理者）名',

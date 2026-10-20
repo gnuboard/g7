@@ -344,7 +344,7 @@ class ExpressionEvaluatorTest extends TestCase
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
-     * @effects localized_object_picks_current_then_fallback_locale
+     * @effects localized_object_picks_current_then_site_locale
      *
      * @return void 없음
      */
@@ -360,18 +360,20 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * 다국어 객체에서 현재 로케일이 없으면 fallback 로케일 값을 반환합니다.
+     * 다국어 객체에서 현재 로케일이 없으면 사이트 기본 언어 값을 반환합니다 (#148 D7).
+     *
+     * 대체 언어는 env 고정 `app.fallback_locale` 이 아니라 환경설정 「기본 언어」(`app.site_locale`)다.
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
-     * @effects localized_object_picks_current_then_fallback_locale
+     * @effects localized_object_picks_current_then_site_locale
      *
      * @return void 없음
      */
-    public function test_localized_object_falls_back_to_fallback_locale(): void
+    public function test_localized_object_falls_back_to_site_locale(): void
     {
         app()->setLocale('ja');
-        config(['app.fallback_locale' => 'en']);
+        config(['app.site_locale' => 'en', 'app.fallback_locale' => 'ko']);
 
         $context = ['product' => ['data' => ['name' => ['ko' => '무선 마우스', 'en' => 'Wireless Mouse']]]];
 
@@ -4219,7 +4221,7 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * $localized(): 현재 로케일이 없으면 ko fallback합니다.
+     * $localized(): 현재 로케일이 없으면 사이트 기본 언어(ko)로 대체합니다 (#148 D7).
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
@@ -4227,14 +4229,35 @@ class ExpressionEvaluatorTest extends TestCase
      *
      * @return void 없음
      */
-    public function test_localized_fallback_to_ko(): void
+    public function test_localized_falls_back_to_site_locale(): void
     {
         app()->setLocale('ja');
+        config(['app.site_locale' => 'ko']);
         $context = ['product' => ['name' => ['ko' => '운동화', 'en' => 'Sneakers']]];
 
         $result = $this->evaluator->evaluate('{{$localized(product.name)}}', $context);
 
         $this->assertSame('운동화', $result);
+    }
+
+    /**
+     * $localized(): 사이트 기본 언어가 영어면 한국어 값이 있어도 영어로 대체합니다 (#148 D7 — 종전 ko 고정).
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_function_follows_locale_fallback_chain, localized_object_picks_current_then_site_locale
+     *
+     * @return void 없음
+     */
+    public function test_localized_site_locale_en_wins_over_ko(): void
+    {
+        app()->setLocale('fil');
+        config(['app.site_locale' => 'en', 'app.fallback_locale' => 'ko']);
+        $context = ['product' => ['name' => ['ko' => '운동화', 'en' => 'Sneakers', 'fil' => '']]];
+
+        $result = $this->evaluator->evaluate('{{$localized(product.name)}}', $context);
+
+        $this->assertSame('Sneakers', $result);
     }
 
     /**

@@ -347,6 +347,8 @@ return [
             'privacy_policy_url' => 'Privacy policy URL',
             'privacy_policy_link' => 'Privacy policy link line (empty if there is no address)',
             'notice_sections' => 'Processing details contributed by extensions',
+            'introduction_text' => 'Operator introduction (plain text — for in-site notifications and SMS)',
+            'notice_sections_text' => 'Processing details contributed by extensions (plain text — for in-site notifications and SMS)',
         ],
     ],
     'validation' => [

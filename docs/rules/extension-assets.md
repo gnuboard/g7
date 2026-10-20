@@ -68,6 +68,7 @@
 | 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
 | SEO | `app/Seo/SeoRenderRequest.php` | 게시판 |
 | 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
+| 언어 코드·다국어 값 | `app/Support/LocaleTag.php`(BCP 47 판정·정규화·협상), `app/Support/LocalizedValue.php`(다국어 값 대체 순서) | 게시판, 이커머스, 페이지, 마케팅, gdpr, 결제 2종, 비즈뿌리오 |
 
 ### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
 

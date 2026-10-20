@@ -74,7 +74,7 @@
         <label data-ref="field_type_label" :required="true" class="block text-heading mb-1">
           <span>$t:sirsoft-board.admin.form.fields.type</span>
         </label>
-        <select data-ref="field_type_select" name="type" options="{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" placeholder="$t:sirsoft-board.admin.form.placeholders.select_type" disabled="{{_computed.isReadOnly}}" class="w-full"/>
+        <select data-ref="field_type_select" name="type" options="{{boards?.data?.board_types?.map(t => ({value: t.slug, label: ($localized(t.name) || t.slug) + ' (' + t.slug + ')'})) ?? []}}" placeholder="$t:sirsoft-board.admin.form.placeholders.select_type" disabled="{{_computed.isReadOnly}}" class="w-full"/>
         <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.type</p>
       </div>
       <div data-ref="field_categories" class="space-y-2">

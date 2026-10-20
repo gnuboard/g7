@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Models;
 use App\Casts\AsUnicodeJson;
 use App\Models\Permission;
 use App\Models\User;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -296,10 +297,8 @@ class Board extends Model
             return (string) $this->name;
         }
 
-        return $this->name[$locale]
-            ?? $this->name[config('app.fallback_locale')]
-            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
-            ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($this->name, $locale) ?? '';
     }
 
     /**
@@ -328,10 +327,8 @@ class Board extends Model
             return (string) $this->description;
         }
 
-        return $this->description[$locale]
-            ?? $this->description[config('app.fallback_locale')]
-            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
-            ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($this->description, $locale) ?? '';
     }
 
     /**
