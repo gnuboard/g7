@@ -340,6 +340,7 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 |---------|--------|----------|
 | 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` (환경설정 → 드라이버 → 「큐 워커」 등록대로. 큐 드라이버가 `sync` 면 등록·워커 모두 필요 없음) | Supervisor 등 |
 | 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | Supervisor 등 (`numprocs=1`) |
+| 사이트맵 워커 | `php artisan queue:work {연결} --queue=sitemap --timeout=1800` (사이트맵 생성 전용 큐 — 등록과 무관하게 늘 필요, 큐 드라이버가 `sync` 면 불필요) | Supervisor 등 (`numprocs=1`) |
 | 스케줄러 | `php artisan schedule:run` | cron (매분 실행) |
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 

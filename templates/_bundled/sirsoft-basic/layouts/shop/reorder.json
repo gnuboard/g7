@@ -117,7 +117,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "alert-triangle",
-                                            "className": "text-2xl text-amber-500"
+                                            "className": "text-2xl text-amber-600"
                                         }
                                     },
                                     {

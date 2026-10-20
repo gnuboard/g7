@@ -8,7 +8,7 @@ namespace Tests\Feature\Analytics\Api;
  * 집계표(`analytics_dimension_stats`)는 유입처를 호스트까지만 쌓는다. 그래서 유입 사이트
  * 목록은 「google.com 에서 340」까지만 말하고, 어느 검색 결과·어느 글에서 왔는지는 답하지
  * 못한다. 전체 주소는 원장의 `referrer_url` 에만 있으므로 이 API 만 원장을 직접 읽는다.
- * (#682 라운드 4, PO 지적 ⑥ — 「도메인만 나오면 어디서 왔는지 모르지 않겠어?」)
+ * (#682 라운드 4 지적 — 「도메인만 나오면 어디서 왔는지 모르지 않겠어?」)
  *
  * @scenario endpoint=referrer_urls, role=read, period=valid
  */

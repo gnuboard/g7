@@ -141,7 +141,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
         </Div>
         <Icon
           name="chevron-down"
-          className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-500 dark:text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </Button>
 
@@ -178,7 +178,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
                   <Icon name={option.faIcon} className="w-4 h-4" />
                   <Span>{option.label}</Span>
                   {selectedOption?.faIcon === option.faIcon && (
-                    <Icon name="check" className="w-4 h-4 ml-auto text-blue-600" />
+                    <Icon name="check" className="w-4 h-4 ml-auto text-blue-600 dark:text-blue-500" />
                   )}
                 </Button>
               ))

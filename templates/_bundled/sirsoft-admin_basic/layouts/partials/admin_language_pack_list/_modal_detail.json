@@ -175,7 +175,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{language_pack_detail?.data?.icon_source !== 'manifest'}}",
                                                                     "props": {
-                                                                        "className": "absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase whitespace-nowrap bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800",
+                                                                        "className": "absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase whitespace-nowrap bg-blue-600 dark:bg-blue-600 text-white dark:text-white ring-2 ring-white dark:ring-gray-800",
                                                                         "title": "{{language_pack_detail?.data?.locale ?? ''}}",
                                                                         "aria-label": "$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}"
                                                                     },
@@ -442,7 +442,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{language_pack_detail?.data?.status === 'active'}}",
                                                                     "props": {
-                                                                        "className": "text-success-soft px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900"
+                                                                        "className": "text-success-soft px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900"
                                                                     },
                                                                     "text": "$t:admin.language_packs.status.active"
                                                                 },

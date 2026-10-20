@@ -96,7 +96,20 @@
         "escrow_delivery_change_button": "Update",
         "escrow_delivery_registering": "Registering...",
         "escrow_delivery_success": "Delivery info registered with KCP.",
-        "escrow_delivery_error": "Failed to register delivery info."
+        "escrow_delivery_error": "Failed to register delivery info.",
+        "escrow_couriers": {
+            "kyungdong": "Kyungdong Express",
+            "ilyang": "Ilyang Logis",
+            "hapdong": "Hapdong Express",
+            "dream": "Dream Express",
+            "chunil": "Chunil Express",
+            "kunyoung": "Kunyoung Express",
+            "cj": "CJ Logistics",
+            "hanjin": "Hanjin Express",
+            "logen": "Logen",
+            "lotte_parcel": "Lotte Parcel",
+            "epost": "Korea Post Parcel"
+        }
     },
     "settings": {
         "title": "NHN KCP Settings",

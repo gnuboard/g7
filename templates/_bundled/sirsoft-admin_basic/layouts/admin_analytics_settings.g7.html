@@ -14,20 +14,27 @@
   두 자리가 서로 다른 식으로 판정하면 같은 사실을 한쪽만 말한다. 이 화면은 저장 전 라디오 선택에도
   반응해야 해서 「동의 출처가 없다」를 함께 본다(저장 전에는 서버가 아직 폴백 사유를 내지 않는다). -->
 <layout name="admin_analytics_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:admin.analytics.settings.title"/>
-  <!-- 설정 전체. 응답 `{settings}` 를 폼 초기값으로 담는다 → `_local.form.settings.*`. 403 은 에러 화면.
-    그 밖의 실패(500·네트워크)에서도 `settings` 가 객체로 서 있어야 탭·입력이 그려진다 — 빈 객체라
-    저장 본문 조립이 `s[k] !== undefined` 에서 전부 걸러져 빈 값을 덮어쓰지 않는다. -->
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:admin.analytics.settings.title"/>
+  <!-- 설정 전체. 응답 `{settings}` 를 폼 초기값으로 담는다 → `_local.form.settings.*`. 받기에 실패하면(403 포함)
+    본문 오류 화면이다 — 기본값으로 서 있는 폼을 저장하면 실제 설정을 덮어쓰므로 폼을 그리지 않는다. 첫 설치·빈 설정은
+    서버가 기본값을 담은 성공 응답으로 주므로 실패와 섞이지 않는다(그래서 fallback 을 두지 않는다 — 두면 실패가 성공으로
+    처리되어 `_dataSourceErrors` 에도 남지 않는다). -->
   <data-source id="analytics_settings" label_key="$t:editor.data_source.analytics_settings" type="api" endpoint="/api/admin/analytics/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" initLocal="form">
-    <fallback>
-      <field name="data">
-        <field name="settings" :value="{}"/>
-      </field>
-    </fallback>
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
       </on-code>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
   </data-source>
   <!-- 내 브라우저의 수집 제외 상태(수집 탭). -->
@@ -121,7 +128,7 @@
     <field name="optOutBusy" :value="false"/>
     <field name="cloudRefreshing" :value="false"/>
   </init-local>
-  <computed name="isReadOnly">{{!!analytics_settings?.error}}</computed>
+  <computed name="isReadOnly">{{!!_dataSourceErrors?.analytics_settings}}</computed>
   <computed name="canReadAnalytics">{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}</computed>
   <computed name="siteTimezoneDiffers">{{_computed.canReadAnalytics === true &amp;&amp; analytics_status?.data?.timezone_differs === true}}</computed>
   <computed name="siteTimezoneName">{{_computed.canReadAnalytics === true ? (analytics_status?.data?.timezone ?? '') : ''}}</computed>
@@ -391,7 +398,7 @@
             떨어질 것을 미리 알린다. -->
           <div data-ref="consent_warning" data-if="{{_computed.consentFallback}}" class="alert-warning">
             <div class="flex-center gap-3">
-              <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+              <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
               <!-- 사유별로 말이 다르다 — 쿠키 차단 폴백에 「플러그인이 비활성」이라고 하면 켜 둔
                 운영자가 플러그인을 찾아 헤맨다. 공통 조각(`_partial_status_alerts`)과 같은 분기다. -->
               <p class="text-warning-soft">{{_computed.consentFallbackReason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.alerts.consent_cookie_fallback') : $t('admin.analytics.alerts.consent_fallback')}}</p>

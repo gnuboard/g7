@@ -4,7 +4,7 @@
   구획은 전부 `_local.form` 하나를 나눠 쓴다. 신규 진입은 아직 상품 id 가 없어 이미지 업로드를
   임시키(`ui.imageTempKey`)로 묶어 두었다가 저장할 때 서버에서 상품에 붙인다. -->
 <layout name="admin_ecommerce_product_form" version="1.0.0" extends="_admin_base">
-  <meta title="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}" description="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}" description="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"/>
   <!-- 수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌린다 — 목록을 거치지 않고 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다 -->
   <data-source id="product" label_key="$t:sirsoft-ecommerce.editor.data_source.product" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}" method="GET" if="{{!!route.itemCode}}" initLocal="form" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
     <error-handling>
@@ -14,6 +14,17 @@
       <on-code code="404">
         <show-error-page target="content"/>
       </on-code>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
     <field name="errorCondition">
       <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
@@ -32,6 +43,19 @@
       <field name="_merge" value="replace"/>
       <field name="form" value="{{data}}"/>
     </init-local>
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
   </data-source>
   <!-- 분류 선택 트리. 아래 선택지 소스들은 상품마다 달라지지 않아 5분간 캐시해 두고 재진입에서 다시 부르지 않는다 -->
   <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories/tree" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
@@ -50,7 +74,15 @@
         <suppress/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -72,7 +104,15 @@
         <suppress/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -94,7 +134,15 @@
         <suppress/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -116,7 +164,15 @@
         <suppress/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -138,7 +194,15 @@
         <suppress/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -159,7 +223,15 @@
         <suppress/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -180,7 +252,15 @@
         <suppress/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -242,7 +322,7 @@
     <set-state if="{{!!route.itemCode || !!query?.copy_id}}" target="local" ui.useDefaultShippingPolicy="{{(product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) == null ? true : (shipping_policies?.data?.data ?? shipping_policies?.data ?? []).some(p =&gt; p.id === (product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) &amp;&amp; p.is_default === true)}}"/>
   </init>
   <slot name="content">
-    <div data-ref="product_form_content" data-key="form" data-debounce="300" class="admin-page-content">
+    <div data-ref="product_form_content" data-key="form" data-track-changes data-debounce="300" class="admin-page-content">
       <div data-ref="page_header_section" class="mb-6">
         <div data-ref="page_header" class="page-header-padded flex items-start justify-between gap-3">
           <div>
@@ -310,7 +390,7 @@
               <responsive on="portable" class="flex-center flex-col gap-3"/>
               <img data-if="{{copy_source?.data?.thumbnail_url}}" src="{{copy_source?.data?.thumbnail_url}}" alt="{{$localized(copy_source?.data?.name)}}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0"/>
               <div data-if="{{!copy_source?.data?.thumbnail_url}}" class="flex-center w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
-                <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+                <icon name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
               </div>
               <div class="flex-1 min-w-0">
                 <responsive on="portable" class="w-full text-center"/>
@@ -395,7 +475,7 @@
                     <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
                     <toast type="success" message="{{route.itemCode ? '$t:sirsoft-ecommerce.messages.product_updated' : '$t:sirsoft-ecommerce.messages.product_created'}}"/>
                     <!-- 신규 저장 후 편집 화면으로 전환 — 같은 목록 클러스터 안의 이동이므로 목록 상태를 유지한다 (#75). -->
-                    <navigate if="{{!route.itemCode}}" path="{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}" :mergeQuery="true">
+                    <navigate :bypassLeaveGuard="true" if="{{!route.itemCode}}" path="{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}" :mergeQuery="true">
                       <query/>
                     </navigate>
                   </success>

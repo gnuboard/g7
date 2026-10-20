@@ -720,7 +720,7 @@ class BoardService
         if ($boardStepIds !== null) {
             $syncData['board_step_ids'] = $boardStepIds;
         }
-        // 새 게시판 — 생성자 본인 한 명만 관리자로 두는 것은 상한 밖 위임 관리자에게도 허용된다(K4F-2)
+        // 새 게시판 — 생성자 본인 한 명만 관리자로 두는 것은 상한 밖 위임 관리자에게도 허용된다
         $this->syncBoardRoleUsers($board, $syncData, isNewBoard: true);
 
         return $board;
@@ -1125,7 +1125,7 @@ class BoardService
      * 않는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있으므로(syncBoardRoleUsers 의
      * 생성자 본인 예외), 폼은 이 판정이 거짓이어도 본인을 관리자로 채우고(복사는 원본 명단 대신, 스텝은
      * 비움) `_meta.can_assign_board_members=false` 로 다른 담당자를 지정할 수 없음만 알린다 — 화면은 이
-     * 값으로 담당자 칸을 잠그고 이유를 보인다(7.1.0 전수 실측 O-K4-3, K4F-2).
+     * 값으로 담당자 칸을 잠그고 이유를 보인다(7.1.0 전수 실측).
      *
      * @param  array<string, mixed>  $permissionRoles  권한 키 => 역할 식별자 목록 (설정 기본값 또는 복사 원본 ACL, 프론트 형식 `{roles:[…]}` 도 받음)
      * @return bool 지정할 수 있으면 true
@@ -1172,7 +1172,7 @@ class BoardService
      *
      * 예외 하나: 같은 요청에서 **새로 만든 게시판**의 관리자 명단이 생성자 본인 한 명뿐이면 상한을 보지 않는다.
      * 새로 만드는 게시판의 관리자가 되는 것은 기존 게시판에 대한 권한 상승이 아니고, 이것이 없으면 기본 ACL
-     * 밖의 위임 관리자는 게시판 생성 권한이 있어도 게시판을 만들 수 없었다(7.1.0 실측 K4F-2, 결정
+     * 밖의 위임 관리자는 게시판 생성 권한이 있어도 게시판을 만들 수 없었다(7.1.0 실측, 결정
      * 2026-10-08). 다른 회원을 함께 넣거나 스텝을 지정하면 종전대로 상한을 받는다.
      *
      * @param  Board  $board  대상 게시판

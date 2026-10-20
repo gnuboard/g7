@@ -32,6 +32,8 @@ class PluginResource extends BaseApiResource
             'config' => $this->getValue('config', []),
             'hooks' => $this->getValue('hooks', []),
             'status' => $this->getValue('status', 'uninstalled'),
+            // 멈춘 업데이트 — 관리자 카드가 「업데이트 멈춤」 표시와 정리(다시 업데이트)·활성화 단추를 보인다
+            'stuck_update' => (bool) $this->getValue('stuck_update', false),
             'is_installed' => $this->getValue('is_installed', false),
             'has_settings' => $this->getValue('has_settings', false),
             'settings_route' => $this->getValue('settings_route'),

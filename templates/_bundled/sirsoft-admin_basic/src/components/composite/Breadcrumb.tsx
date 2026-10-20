@@ -62,7 +62,7 @@ export interface BreadcrumbProps {
  */
 export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   items,
-  separator = <Icon name={IconName.ChevronRight} className="w-4 h-4 text-gray-400 dark:text-gray-500" />,
+  separator = <Icon name={IconName.ChevronRight} className="w-4 h-4 text-gray-500 dark:text-gray-500" />,
   showHome = false,
   homeHref = '/',
   maxItems,
@@ -107,12 +107,12 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               {hasEllipsis && isFirst && (
                 <>
                   <BreadcrumbLink item={item} isLast={false} />
-                  <Span className="text-gray-400 dark:text-gray-500" aria-hidden="true">
+                  <Span className="text-gray-500 dark:text-gray-400" aria-hidden="true">
                     {separator}
                   </Span>
                   <Span className="text-gray-500 dark:text-gray-400">...</Span>
                   {displayItems.length > 1 && (
-                    <Span className="text-gray-400 dark:text-gray-500" aria-hidden="true">
+                    <Span className="text-gray-500 dark:text-gray-400" aria-hidden="true">
                       {separator}
                     </Span>
                   )}
@@ -124,7 +124,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 <>
                   <BreadcrumbLink item={item} isLast={isLast} />
                   {!isLast && (
-                    <Span className="text-gray-400 dark:text-gray-500" aria-hidden="true">
+                    <Span className="text-gray-500 dark:text-gray-400" aria-hidden="true">
                       {separator}
                     </Span>
                   )}

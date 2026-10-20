@@ -70,7 +70,7 @@ class CooldownRule implements ValidationRule
      *
      * 시간·분·초를 단위마다 따로 읽어 공백으로 잇는다(「1시간 30분」, 「1 hour 30 minutes」).
      * en 은 단위 수가 1 이면 단수를 써야 하므로 trans_choice 로 고른다 — 종전에는 복수형 고정이라
-     * 기본 쿨다운 60초가 「1 minutes」로 나왔다(7.1.0 실측 O-K2-4).
+     * 기본 쿨다운 60초가 「1 minutes」로 나왔다(7.1.0 실측).
      *
      * @param  int  $seconds  초 단위 시간
      * @return string 변환된 시간 문자열

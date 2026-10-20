@@ -3,15 +3,15 @@
   별도 컨텍스트라 넘길 값은 모두 _global 을 거친다. -->
 <partial description="Product Form - Other Info Section">
   <div data-ref="other" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.otherInfoExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.otherInfoExpanded="{{!_local.ui.otherInfoExpanded}}"/>
       </on>
       <icon name="ellipsis-h" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.other_info</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.otherInfoExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.otherInfoExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="other_info_body" data-if="{{_local.ui.otherInfoExpanded !== false}}" class="row-stack">
       <div data-ref="field_labels" class="space-y-3">
         <div data-ref="labels_header" class="flex-between">
@@ -45,7 +45,7 @@
               </on>
             </chip-checkbox>
           </div>
-          <div data-ref="no_labels_available" data-if="{{product_labels?.data?.unavailable !== true &amp;&amp; !(product_labels?.data?.data ?? []).length}}" class="w-full text-center text-label-subtle py-2">$t:sirsoft-ecommerce.admin.product.labels.no_available</div>
+          <div data-ref="no_labels_available" data-if="{{product_labels !== undefined &amp;&amp; (product_labels?.data?.unavailable !== true &amp;&amp; !(product_labels?.data?.data ?? []).length)}}" class="w-full text-center text-label-subtle py-2">$t:sirsoft-ecommerce.admin.product.labels.no_available</div>
           <!-- 라벨 조회 권한이 없어 선택지가 비었을 때는 「라벨 없음」 이 아니라 권한이 없다고 말한다 -->
           <div data-ref="label_forbidden_notice" data-if="{{product_labels?.data?.unavailable === true}}" class="w-full flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
             <icon name="circle-exclamation" class="text-base"/>
@@ -56,13 +56,14 @@
           <div data-ref="label_info_row" class="flex-between">
             <responsive on="portable" class="row-stack"/>
             <div class="flex-center gap-3">
-              <span class="px-2 py-0.5 rounded text-xs font-medium" style="background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280'}}">{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.name) ?? ''}}</span>
+              <!-- 라벨 칩 — 운영자 색은 바탕에만 쓰고 글자색은 Badge 가 바탕과 4.5 이상이 되도록 계산한다 -->
+              <badge data-type="composite" size="md" customColor="{{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280'}}">{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.name) ?? ''}}</badge>
               <span data-if="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}" class="text-label-subtle">{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}} ~ {{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}</span>
-              <span data-if="{{!(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-ecommerce.admin.product.labels.no_period</span>
+              <span data-if="{{!(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}" class="text-sm text-gray-500 dark:text-gray-400 italic">$t:sirsoft-ecommerce.admin.product.labels.no_period</span>
             </div>
             <div class="flex-center gap-3 text-sm">
               <!-- 라벨 고치기 — 지금 값을 창 입력값으로 옮겨 담아 편집 모드로 연다 -->
-              <button data-ref="label_edit_button" data-if="{{!_computed.isReadOnly &amp;&amp; product_labels?.data?.abilities?.can_update === true}}" type="button" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium">
+              <button data-ref="label_edit_button" data-if="{{!_computed.isReadOnly &amp;&amp; product_labels?.data?.abilities?.can_update === true}}" type="button" class="text-blue-600 hover:text-blue-700 dark:hover:text-blue-400 dark:text-blue-400 font-medium">
                 <on type="click">
                   <set-state target="global" editingLabelId="{{_local.ui.lastClickedLabelId}}">
                     <field name="labelFormData">
@@ -78,7 +79,7 @@
                 $t:sirsoft-ecommerce.admin.product.labels.edit
               </button>
               <!-- 이 상품에서만 떼기 — 라벨 자체는 남는다 -->
-              <button data-ref="label_unassign_button" data-if="{{!_computed.isReadOnly &amp;&amp; (_local.form.label_assignments ?? []).some(a => a.label_id === _local.ui.lastClickedLabelId)}}" type="button" class="text-amber-600 hover:text-amber-700 dark:text-amber-400 font-medium">
+              <button data-ref="label_unassign_button" data-if="{{!_computed.isReadOnly &amp;&amp; (_local.form.label_assignments ?? []).some(a => a.label_id === _local.ui.lastClickedLabelId)}}" type="button" class="text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 font-medium">
                 <on type="click">
                   <set-state target="global" labelToUncheckId="{{_local.ui.lastClickedLabelId}}"/>
                   <open-modal target="modal_label_uncheck_confirm"/>
@@ -86,7 +87,7 @@
                 $t:sirsoft-ecommerce.admin.product.labels.unassign
               </button>
               <!-- 라벨 자체 지우기 — 이 라벨을 쓰는 다른 상품에서도 함께 떨어진다 -->
-              <button data-ref="label_delete_button" data-if="{{!_computed.isReadOnly &amp;&amp; product_labels?.data?.abilities?.can_delete === true}}" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 font-medium">
+              <button data-ref="label_delete_button" data-if="{{!_computed.isReadOnly &amp;&amp; product_labels?.data?.abilities?.can_delete === true}}" type="button" class="text-red-600 hover:text-red-700 dark:hover:text-red-400 dark:text-red-400 font-medium">
                 <on type="click">
                   <set-state target="global" labelToDeleteId="{{_local.ui.lastClickedLabelId}}"/>
                   <open-modal target="modal_label_delete_confirm"/>
@@ -98,28 +99,28 @@
           <div data-ref="inline_period_section" class="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
             <div data-ref="period_preset_buttons" class="flex flex-wrap gap-2">
               <!-- 노출 기간 빠른 지정 — 오늘부터 7일 -->
-              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <action handler="sirsoft-ecommerce.setLabelDatePresetInline" preset="7d"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_7d
               </button>
               <!-- 14일 -->
-              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <action handler="sirsoft-ecommerce.setLabelDatePresetInline" preset="14d"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_14d
               </button>
               <!-- 30일 -->
-              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <action handler="sirsoft-ecommerce.setLabelDatePresetInline" preset="30d"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_30d
               </button>
               <!-- 기간 없음 — 뗄 때까지 계속 붙어 있다 -->
-              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+              <button type="button" class="px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <action handler="sirsoft-ecommerce.setLabelDatePresetInline" preset="permanent"/>
                 </on>
@@ -128,14 +129,14 @@
             </div>
             <div data-ref="period_date_inputs" class="flex-center gap-2">
               <responsive on="portable" class="row-stack"/>
-              <input type="date" class="input" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.started_at" disabled="{{_computed.isReadOnly}}">
+              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product.labels.title')}}" class="input" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.started_at" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 노출 시작일 직접 지정 — 지금 고른 라벨의 배정에만 적용된다 -->
                   <action handler="sirsoft-ecommerce.updateLabelPeriodInline" labelId="{{_local.ui.lastClickedLabelId}}" field="started_at" value="{{$event.target.value}}"/>
                 </on>
               </input>
               <span class="text-gray-500 dark:text-gray-400">~</span>
-              <input type="date" class="input" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.ended_at" disabled="{{_computed.isReadOnly}}">
+              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product.labels.title')}}" class="input" value="{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.labels.ended_at" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 노출 종료일 직접 지정 -->
                   <action handler="sirsoft-ecommerce.updateLabelPeriodInline" labelId="{{_local.ui.lastClickedLabelId}}" field="ended_at" value="{{$event.target.value}}"/>
@@ -151,7 +152,7 @@
           <!-- 최소 구매 수량 — 값은 폼 자동 바인딩이 담고 여기서는 변경 표시만 세운다 -->
           <input name="min_purchase_qty" type="number" :min="1" class="{{_local.errors?.min_purchase_qty ? 'input input-error w-24' : 'input w-24'}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
-              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              <set-state target="local" :hasChanges="true"/>
             </on>
           </input>
           <span class="text-label">{{_local.form.min_purchase_qty ?? 1}}$t:sirsoft-ecommerce.admin.product.purchase.min_suffix</span>
@@ -164,7 +165,7 @@
           <!-- 최대 구매 수량 — 0 은 제한 없음이다 -->
           <input name="max_purchase_qty" type="number" :min="0" class="{{_local.errors?.max_purchase_qty ? 'input input-error w-24' : 'input w-24'}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
-              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              <set-state target="local" :hasChanges="true"/>
             </on>
           </input>
           <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.purchase.unlimited_hint</span>
@@ -179,7 +180,7 @@
             <input type="radio" name="purchase_restriction" value="none" checked="{{(_local.form.purchase_restriction ?? 'none') === 'none'}}" :autoBinding="false" class="radio" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 제한 없음 — 골라 둔 등급을 함께 비운다(제한을 껐는데 등급이 남아 있으면 다시 켤 때 지난 선택이 살아난다) -->
-                <set-state target="local" form.purchase_restriction="none" :form.allowed_roles="[]" hasChanges="{{!!route?.itemCode}}"/>
+                <set-state target="local" form.purchase_restriction="none" :form.allowed_roles="[]" :hasChanges="true"/>
               </on>
             </input>
             <span class="text-body">$t:sirsoft-ecommerce.admin.product.restriction.none</span>
@@ -188,7 +189,7 @@
             <input type="radio" name="purchase_restriction" value="restricted" checked="{{_local.form.purchase_restriction === 'restricted'}}" :autoBinding="false" class="radio" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 등급 제한 — 아래 등급 고르개가 열린다. 여기서도 등급을 비워 새로 고르게 한다 -->
-                <set-state target="local" form.purchase_restriction="restricted" :form.allowed_roles="[]" hasChanges="{{!!route?.itemCode}}"/>
+                <set-state target="local" form.purchase_restriction="restricted" :form.allowed_roles="[]" :hasChanges="true"/>
               </on>
             </input>
             <span class="text-body">$t:sirsoft-ecommerce.admin.product.restriction.restricted</span>
@@ -203,7 +204,7 @@
             </on>
             <on type="change">
               <!-- 같은 이벤트를 두 블록으로 나눈 것은 값 담기와 변경 표시가 서로 다른 자리를 건드리기 때문이다 -->
-              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              <set-state target="local" :hasChanges="true"/>
             </on>
           </tag-input>
           <!-- 등급 목록을 받지 못했을 때(403)의 안내 — 다른 선택지 소스와 같은 처리다 -->
@@ -212,7 +213,7 @@
             <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.roles</span>
           </div>
           <!-- 허용 역할 검증 에러 (구매대상제한 선택 시 역할 미선택 차단) -->
-          <span data-if="{{_local.errors?.allowed_roles}}" class="block text-red-500 dark:text-red-400 text-xs mt-1">{{_local.errors?.allowed_roles?.[0] ?? ''}}</span>
+          <span data-if="{{_local.errors?.allowed_roles}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.allowed_roles?.[0] ?? ''}}</span>
         </div>
       </div>
     </div>

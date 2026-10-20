@@ -2,7 +2,7 @@
  * 카테고리 선택 — 경로 표시가 categories 데이터소스 트리를 읽는다
  *
  * @description
- * 7.1.0 출시 점검 D3-2: `addCategoryToSelection` 이 코어에 없는 `G7Core.state.getDataSources()` 로 카테고리 트리를
+ * 7.1.0 출시 점검: `addCategoryToSelection` 이 코어에 없는 `G7Core.state.getDataSources()` 로 카테고리 트리를
  * 읽어 늘 빈 트리였다 — 수정 화면에서 기존 카테고리(경로 정보 없는 form.categories)를 이어 받을 때 「상위 > 하위」
  * 경로 대신 이름만 남았다. 코어 공개 API `G7Core.dataSource.get('categories')`(응답 본문) 로 읽는다.
  *

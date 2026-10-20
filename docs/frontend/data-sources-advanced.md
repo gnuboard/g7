@@ -521,6 +521,8 @@ CAUTION: if와 conditions 동시 사용 시 if 우선
 
 데이터 소스 오류 처리기 안에서는 `{{error.*}}` 와 함께 `{{route.*}}`·`{{query.*}}` 를 읽을 수 있다(engine-v1.80.0) — 작성·수정을 한 레이아웃으로 처리하는 화면이 같은 404 를 주소로 가를 때 쓴다. 예와 제약은 [오류 처리 — 데이터소스 오류 처리 문맥](layout-json-features-error.md).
 
+이 화면에서 이미 값을 받은 소스의 다시 받기(`refetchDataSource`·`G7Core.dataSource.refetch`·같은 화면 `navigate replace`) 실패에는 `{{error.refetch}}` 가 `true` 로 실린다(engine-v1.82.0 — 아직 값이 없는 소스의 첫 다시 받기 실패는 거짓) — 처음 받기 실패만 본문 오류 화면으로 보내고 다시 받기 실패는 토스트로 알려 받아 둔 값을 지킬 때 쓴다. 예는 [오류 처리 — 다시 받기 실패](layout-json-features-error.md).
+
 #### 기본 구조
 
 ```html
@@ -641,8 +643,11 @@ fallback이 있어도 errorHandling은 반드시 실행됨
 errorHandling 없이 fallback만 있으면 조용히 fallback 데이터 사용 (시스템 기본 에러 핸들링 적용)
 ```
 
-> **fallback 은 첫 그림용이다 (engine-v1.72.0)** — 한 번이라도 성공한 소스는 다시 부르다 실패해도
-> **마지막으로 받은 값을 그대로 둡니다**. 폴링이 한 번 실패했다고 `fallback`(0·빈 배열)으로 되돌아가면
+> **fallback 은 첫 그림용이다 (engine-v1.72.0)** — 한 번이라도 성공한 **같은 요청**은 다시 부르다 실패해도
+> **마지막으로 받은 값을 그대로 둡니다**. 같은 요청은 식을 푼 주소의 경로(`?` 앞)와 경로 파라미터가 같은 요청입니다 — 같은 주소에서
+> 선택·검색어·쪽·폴링 시각(파라미터·쿼리)만 바뀐 요청은 같은 자원의 갱신으로 보고 값을 지킵니다. 주소 경로가 다르면
+> (`/coupons/{{_global.coupon.id}}/issues` 의 대상 변경) 다른 요청이라 `fallback`, 없으면 `null` 입니다(engine-v1.81.2 — 종전에는
+> 주소를 식 원문으로 비교해 대상만 다른 주소에도 앞 대상의 값을 남겼습니다). 폴링이 한 번 실패했다고 `fallback`(0·빈 배열)으로 되돌아가면
 > 화면이 거짓을 말하기 때문입니다(실시간 화면의 「지금 0명」). 실패는 `errorHandling`·토스트로 알립니다.
 > 아직 성공한 적이 없으면 종전대로 `fallback` 이 첫 그림을 채웁니다.
 > 단, 권한 오류(401·403)는 예외입니다(engine-v1.73.0) — 마지막 값을 지우고 `fallback` 으로 그립니다. 마지막 값은
@@ -737,6 +742,22 @@ blocking + showErrorPage(target: "content") 조합 시 주의:
 ### 에러 상태 접근 (engine-v1.2.0+)
 
 데이터 소스 fetch 실패 시 `_dataSourceErrors` 객체를 통해 에러 정보에 접근할 수 있습니다.
+
+| 받는 방식 | 실패했을 때 값 | `_dataSourceErrors[id]` |
+|-----------|----------------|-------------------------|
+| blocking | 받지 못함(`undefined`) | 기록 |
+| progressive·background(화면 진입 때 자동) | `null`(받기 끝 · 실패) | 기록 |
+| `refetchDataSource`·`G7Core.dataSource.refetch` (engine-v1.81.2) | `null` | 기록. 다시 성공하면 지운다 |
+
+- 위 표는 `fallback` 도, 같은 요청의 마지막 값도 없을 때다. 처음 받기·다시 받기의 기록은 화면마다 하나라 서로 덮지 않고, init_actions 안 다시 받기의 실패도 첫 렌더에 실린다. 둘 중 하나가 있으면 그 값이 성공으로 들어가고 기록하지 않는다(오류 처리기 `errorHandling` 은 어느 경우든 먼저 실행된다).
+- 종전(engine-v1.81.1 이하) 다시 받기 실패는 값을 그대로 두고 기록도 하지 않아, 다른 대상을 연 창에 앞 대상 값이 남거나 처음 여는 창이 받는 중(`undefined`)에 머물렀다.
+- **다시 받기를 다른 대상으로 시작하면**(앞 값과 식을 푼 주소 경로가 다름 — `/coupons/{{_global.coupon.id}}/issues` 의 대상 변경) 응답 전까지 값은 받기 전(`undefined`)이다 — 받는 중은 `{{id === undefined}}` 로 가른다. 같은 경로(같은 대상 재조회·쪽·선택·폴링)는 받는 동안 앞 값을 그대로 두고 흐림으로 보인다. 겹친 다시 받기는 마지막으로 시작한 것만 적용된다 (engine-v1.81.2).
+- 실패 계약은 **데이터소스 id 의 값**에 적용된다. 성공 때 `initLocal`·`initGlobal` 로 옮겨 둔 상태 값은 실패로 지워지지 않으므로, 그 상태를 읽는 창은 `errorHandling` 으로 실패 표시를 세워 가린다.
+- 같은 요청의 마지막 값으로 버틴 다시 받기(`refetchDataSource`) 실패는 그 값으로 `initLocal`·`initGlobal` 을 **다시 심지 않는다**(engine-v1.82.0) — 종전에는 `refetchOnMount` 소스에서 사용자가 바꾼 선택·입력이 예전 값으로 돌아갔다. 남아 있던 `_dataSourceErrors` 기록도 그대로 둔다(새 성공이 아니므로).
+- 같은 화면 쿼리 갱신(`navigate replace` — 탭 전환)의 재조회는 편집 중이어도 받은 값으로 폼(`initLocal`)을 다시 심는다(저장은 지금 탭 구획만 보내므로 다른 탭의 미저장 편집을 남기지 않는 계약 — 미저장 변경은 레이아웃이 이동 전에 확인 창으로 알린다). 실패해 마지막 값으로 버틴 경우도 그 값을 심는다.
+- 같은 경로를 앞 값을 둔 채 다시 받는 동안(같은 화면 쪽 넘김·검색 — 쿼리 갱신·같은 화면 이동) 그 소스는 「받는 중」으로 알려져 `blur_until_loaded` 의 `data_sources` 판정이 흐림을 세운다(engine-v1.82.0). `refetchDataSource`(폴링 등)는 이 표시를 쓰지 않는다 — 폴링마다 흐려지지 않게.
+- 화면을 옮긴 뒤에 끝난 앞 화면 fetch 의 `onSuccess`·오류 처리기는 실행하지 않는다(engine-v1.82.0, 경로 세대 판정 — `G7Core.navigation.getRouteGeneration()` 과 같은 값).
+- 레이아웃의 받기 상태 구분: 받기 전 `{{id === undefined}}` · 실패 `{{id === null}}` 또는 `{{_dataSourceErrors?.id}}` · 0건 `{{id && (id.data?.data ?? []).length === 0}}`.
 
 #### 데이터 구조
 
@@ -1767,13 +1788,13 @@ Network 탭 > WS 필터에서 WebSocket 메시지를 직접 확인할 수도 있
 
 - ✅ `auth_required: true` 시 ApiClient 사용 (토큰 자동 포함)
 - ✅ 동일 페이지에서 여러 데이터 소스 병렬 fetch 가능
-- ✅ 데이터 소스 ID는 레이아웃 내에서 고유해야 함
+- ✅ 데이터 소스 ID는 레이아웃 내에서 고유해야 함 — 예외: 같은 ID 의 **모든 판에** `if`·`conditions` 를 둔 조건부 판([조건부 데이터 소스 로딩](#조건부-데이터-소스-로딩-if)). 설치·저장 검증도 이 경우만 허용한다
 
 ### 금지 사항
 
 - ❌ 순환 참조 금지 (A → B → A)
 - ❌ 외부 URL 사용 금지 (보안)
-- ❌ 동일 ID 중복 정의 금지
+- ❌ 조건 없는 동일 ID 중복 정의 금지(조건 없는 판이 하나라도 섞이면 설치·저장 검증이 거부)
 
 ---
 

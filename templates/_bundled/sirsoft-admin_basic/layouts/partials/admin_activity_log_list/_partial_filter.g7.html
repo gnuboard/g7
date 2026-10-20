@@ -19,7 +19,7 @@
           </on>
         </select>
         <div class="relative flex-1">
-          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
           <input name="search" type="text" placeholder="$t:admin.activity_log.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
             <on type="change">
               <!-- 타이핑은 담아만 둔다. 실제 조회는 Enter 또는 아래 검색 버튼이 한다. -->
@@ -99,7 +99,7 @@
               <set-state target="local" filter.createdBy="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.createdBy}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
             <on type="click">
               <!-- 고른 사람을 물릴 때 검색 결과까지 비운다 — 남겨 두면 지운 이름이 드롭다운에 계속 떠 있다. -->
               <set-state target="local" filter.createdBy="" :actorSearchResults="[]"/>
@@ -117,7 +117,7 @@
               <set-state target="local" filter.dateFrom="{{$event.target.value}}" filter.dateQuick=""/>
             </on>
           </input>
-          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <span class="text-gray-500 dark:text-gray-400">~</span>
           <input name="dateTo" type="datetime-local" aria-label="$t:common.range_end|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateTo || ''}}">
             <on type="change">
               <!-- 끝 시각도 마찬가지다. 초 단위까지 받으므로 같은 날 안에서 시간대를 좁혀 볼 수 있다. -->

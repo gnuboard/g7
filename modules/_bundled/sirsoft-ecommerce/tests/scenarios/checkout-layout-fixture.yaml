@@ -1,0 +1,24 @@
+feature: 주문서 레이아웃 렌더 시험용 인라인 픽스처 — 구조·렌더·상태·오류 처리
+
+description: |
+  `checkoutLayouts.test.tsx` 는 실 레이아웃이 아니라 주문서 모양의 인라인 픽스처를 createLayoutTest() 로 렌더해
+  데이터소스 선언·초기 상태·상태 쓰기·이동·API 오류 생존을 본다(실 주문서 레이아웃은 sirsoft-basic 실구조 시험이 덮는다).
+  7.1.1: 실 레이아웃에서 지운 미사용 중복 불가 쿠폰 확인 창(exclusiveCouponConfirm)을 픽스처에서도 걷었다.
+
+# axis 의미:
+#   aspect — 시험이 보는 측면(구조 선언 / 렌더 / 상태 쓰기 / 오류 처리)
+axes:
+  aspect: [structure, render, state, error]
+
+effects:
+  - fixture_layout_loads              # 픽스처 레이아웃 정보가 로드된다
+  - fixture_declares_data_sources     # checkoutData·paymentMethods 데이터소스 선언
+  - fixture_declares_submit_action    # submitOrder 액션 선언
+  - fixture_renders_with_mocked_api   # 모킹 API 로 렌더된다
+  - fixture_initial_state_applies     # 초기 _local 상태가 적용된다
+  - fixture_cart_button_navigates     # 장바구니 이동
+  - fixture_state_updates             # 결제 방법·쿠폰·마일리지 상태 쓰기
+  - fixture_survives_api_error        # 500·404 에도 레이아웃 유지
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/checkoutLayouts.test.tsx

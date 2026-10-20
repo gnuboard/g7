@@ -150,6 +150,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "iconName": "refresh",
                                     "variant": "outline",
                                     "size": "md"
@@ -279,6 +280,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                     "disabled": "{{templates?.data?.abilities?.can_install !== true}}"
                                 },
@@ -311,6 +313,7 @@
                                     }
                                 },
                                 "props": {
+                                    "type": "button",
                                     "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                                 },
                                 "children": [
@@ -358,6 +361,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                     "disabled": "{{templates?.data?.abilities?.can_install !== true}}"
                                 },
@@ -383,6 +387,7 @@
                                 "name": "Button",
                                 "if": "{{false}}",
                                 "props": {
+                                    "type": "button",
                                     "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                                 },
                                 "children": [
@@ -748,7 +753,7 @@
                                                 }
                                             },
                                             {
-                                                "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.\n                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0 O-G3-4). 꺼져 있으면 빈 값이라 주소에 붙지 않는다.",
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.\n                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0). 꺼져 있으면 빈 값이라 주소에 붙지 않는다.",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/templates/{{$args[0]}}",

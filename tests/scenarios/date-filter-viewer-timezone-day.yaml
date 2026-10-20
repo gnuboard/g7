@@ -2,7 +2,7 @@ feature: 날짜 필터의 「하루」 기준 — 보는 사람의 시간대 (�
 
 description: |
   화면에서 고른 날짜(Y-m-d)를 UTC 하루로 잘라, 한국 시간 새벽에 생긴 행이 목록에는 그날로 보이는데
-  그날로 거르면 빠졌다(7.1.0 영역 C C-D1·O-C2). 목록은 날짜를 보는 사람의 시간대로 그리므로
+  그날로 거르면 빠졌다(7.1.0). 목록은 날짜를 보는 사람의 시간대로 그리므로
   (`BaseApiResource::formatDateForUser` 계열) 필터도 `FiltersByDateRange::applyViewerDateRangeFilter()`
   로 같은 하루를 자른다. 회원 통계의 「오늘 가입」 도 보는 사람의 오늘이다.
 
@@ -16,7 +16,7 @@ axes:
 effects:
   - date_filters_follow_viewer_timezone_day
   - analytics_side_ledgers_follow_site_timezone_day
-  # 7.1.0 R-B: 스케줄 목록 빠른 기간의 「오늘」은 브라우저가 아니라 계정 시간대(회원 → 사이트 기본)의 날짜
+  # 7.1.0 전수 실측: 스케줄 목록 빠른 기간의 「오늘」은 브라우저가 아니라 계정 시간대(회원 → 사이트 기본)의 날짜
   - schedule_quick_dates_use_account_timezone
   # 화면이 사이트 기본 시간대를 알아야 회원 시간대가 없을 때·통계 기간에서 서버와 같은 「오늘」을 만든다
   - site_timezone_exposed_to_frontend

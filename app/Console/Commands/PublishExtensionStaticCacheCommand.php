@@ -33,7 +33,7 @@ class PublishExtensionStaticCacheCommand extends Command
     public function handle(ExtensionStaticCacheService $service): int
     {
         if (! $service->isEnabled()) {
-            $this->warn('정적 게시가 비활성화되어 있습니다 (G7_STATIC_CACHE=false). 게시를 건너뜁니다.');
+            $this->warn(__('extensions.commands.ext_static_publish.disabled'));
 
             return self::SUCCESS;
         }
@@ -42,19 +42,19 @@ class PublishExtensionStaticCacheCommand extends Command
         // 두지 않는다(#651 D3). 게시가 만드는 캐시 락 샤드·병합 번들이 root 소유로 남으면 이후 웹 요청의
         // 캐시 쓰기가 Permission denied 로 죽으므로(전면 500 실사례) 웹 계정 실행 형태를 함께 적는다.
         if (StatusExtensionStaticCacheCommand::isRootProcess()) {
-            $this->warn('root 로 실행 중입니다 — 이 계정으로 게시하면 캐시 폴더·병합 번들이 root 소유가 되어 이후 웹 요청이 실패할 수 있습니다.');
-            $this->warn('웹 계정으로 실행하세요: '.StatusExtensionStaticCacheCommand::publishCommandHint());
+            $this->warn(__('extensions.commands.ext_static_publish.root_warning'));
+            $this->warn(__('extensions.commands.ext_static_publish.run_as_web', ['command' => StatusExtensionStaticCacheCommand::publishCommandHint()]));
         }
 
         $published = $service->publishCurrent(force: (bool) $this->option('force'));
 
         if (! $published) {
-            $this->error('정적 게시에 실패했습니다. 로그를 확인하세요 — 사이트는 API 폴백으로 정상 동작합니다.');
+            $this->error(__('extensions.commands.ext_static_publish.failed'));
 
             return self::FAILURE;
         }
 
-        $this->info('부트스트랩 리소스 정적 게시가 완료되었습니다.');
+        $this->info(__('extensions.commands.ext_static_publish.done'));
 
         return self::SUCCESS;
     }

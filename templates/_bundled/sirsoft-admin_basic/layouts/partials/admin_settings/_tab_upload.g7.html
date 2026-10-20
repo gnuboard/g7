@@ -10,7 +10,7 @@
           <div data-ref="field_max_file_size">
             <label class="form-label">
               <span>$t:admin.settings.upload.max_file_size</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['upload.max_file_size'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <div class="flex-center gap-2">
@@ -22,7 +22,7 @@
           <div data-ref="field_allowed_extensions">
             <label class="form-label">
               <span>$t:admin.settings.upload.allowed_extensions</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </label>
             <input type="text" name="upload.allowed_extensions" placeholder="jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['upload.allowed_extensions'] ? 'input-error' : ''}}"/>
             <p class="form-hint">$t:admin.settings.upload.allowed_extensions_hint</p>

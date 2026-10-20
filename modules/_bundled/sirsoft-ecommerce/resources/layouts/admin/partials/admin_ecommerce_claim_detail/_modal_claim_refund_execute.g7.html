@@ -2,6 +2,10 @@
   <!-- 환불 실행 확인 모달 (D18). 환불은 되돌릴 수 없는 처리라 실행 전에 무엇이 나가는지 한 번 더 보인다. 모달은 부모 화면의 `_local` 을 해석하지 못하므로(별도 컨텍스트) 여는 핸들러가 `_global.claimRefundExecuteContext` 로 값을 넘긴다 — 그 하나를 모달 표시와 실행 본문이 함께 읽어야 '예고한 값 = 실행하는 값' 이 성립한다. 모달이 제 사본을 들면 왕복 중 입력이 바뀌었을 때 둘이 갈린다. -->
   <modal data-type="composite" data-ref="modal_claim_refund_execute" title="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.title" size="md">
     <div class="space-y-4">
+      <on event="unmount">
+        <!-- 창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1) -->
+        <set-state target="global" :claimRefundExecuteContext="null" :claimRefundExecuteBankCode="null" :claimRefundExecuteBankAccount="null" :claimRefundExecuteBankHolder="null" :claimRefundExecuteForce="null"/>
+      </on>
       <p data-ref="crm_001_description" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.modal.description|number={{_global.claimRefundExecuteContext?.claimNumber ?? ''}}</p>
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
         <div class="flex justify-between text-sm">
@@ -46,7 +50,7 @@
           <span data-ref="crm_005_total" class="text-gray-900 dark:text-gray-100">{{_global.claimRefundExecuteContext?.refundTotalFormatted ?? ''}}</span>
         </div>
       </div>
-      <!-- 환불받을 계좌 (T2-D6 · #599 3차 실측 L-8) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다). -->
+      <!-- 환불받을 계좌 (#599 실측) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다). -->
       <div data-if="{{_global.claimRefundExecuteContext?.refundAccountRequired === true}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <div>
           <p class="text-primary text-sm font-medium">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_input_title</p>
@@ -89,7 +93,11 @@
       <div class="flex justify-end gap-2 pt-2">
         <button data-ref="crm_007_cancel" type="button" class="btn btn-outline" disabled="{{_global.isProcessing}}">
           <on type="click">
-            <close-modal/>
+            <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
+            <sequence>
+              <close-modal/>
+              <set-state target="global" :claimRefundExecuteContext="null" :claimRefundExecuteBankCode="null" :claimRefundExecuteBankAccount="null" :claimRefundExecuteBankHolder="null" :claimRefundExecuteForce="null"/>
+            </sequence>
           </on>
           $t:common.cancel
         </button>

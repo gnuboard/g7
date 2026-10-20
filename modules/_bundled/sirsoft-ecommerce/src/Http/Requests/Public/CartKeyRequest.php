@@ -4,17 +4,23 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesGuestCartKeyHeader;
 
 /**
  * X-Cart-Key 헤더 검증 베이스 클래스
  *
  * 장바구니/체크아웃 관련 요청에서 비회원 cart_key 헤더를 검증합니다.
+ * 판정은 {@see ValidatesGuestCartKeyHeader} 한 곳에 있다 — 본문 규칙이 따로 있는 임시 주문 생성·갱신 요청도 같은 판정을 쓴다.
  */
 abstract class CartKeyRequest extends FormRequest
 {
+    use ValidatesGuestCartKeyHeader;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
+     *
+     * @return bool 항상 허용(주인 판정은 헤더 검증이 맡음)
      */
     public function authorize(): bool
     {
@@ -53,7 +59,7 @@ abstract class CartKeyRequest extends FormRequest
     /**
      * 추가 검증 수행
      *
-     * @param \Illuminate\Validation\Validator $validator
+     * @param  Validator  $validator
      * @return void
      */
     public function withValidator($validator): void
@@ -61,41 +67,6 @@ abstract class CartKeyRequest extends FormRequest
         $validator->after(function ($validator) {
             $this->validateCartKeyHeader($validator);
         });
-    }
-
-    /**
-     * X-Cart-Key 헤더 검증
-     *
-     * @param \Illuminate\Validation\Validator $validator
-     * @return void
-     */
-    protected function validateCartKeyHeader($validator): void
-    {
-        $userId = Auth::id();
-        $cartKey = $this->header('X-Cart-Key');
-
-        // 회원인 경우 cart_key 검증 불필요
-        if ($userId !== null) {
-            return;
-        }
-
-        // 비회원인 경우 cart_key 필수
-        if (empty($cartKey)) {
-            $validator->errors()->add(
-                'cart_key',
-                __('sirsoft-ecommerce::validation.cart.cart_key_required')
-            );
-
-            return;
-        }
-
-        // cart_key 형식 검증: ck_ + 32자 영숫자
-        if (! preg_match('/^ck_[a-zA-Z0-9]{32}$/', $cartKey)) {
-            $validator->errors()->add(
-                'cart_key',
-                __('sirsoft-ecommerce::validation.cart.invalid_cart_key')
-            );
-        }
     }
 
     /**

@@ -117,12 +117,12 @@
             <div class="text-xs font-medium text-warning-soft mb-2">$t:admin.modules.modals.modified_layouts_list_title|count={{_global.modifiedModuleLayouts?.length ?? 0}}</div>
             <div class="space-y-1 max-h-40 overflow-y-auto">
               <div data-each="modLayout in _global.modifiedModuleLayouts" class="flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded">
-                <icon name="file-alt" class="text-amber-500 dark:text-amber-400 shrink-0"/>
+                <icon name="file-alt" class="text-amber-600 dark:text-amber-400 shrink-0"/>
                 <span class="font-mono flex-1 text-gray-700 dark:text-gray-300">{{modLayout.name}}</span>
-                <span class="text-gray-400 dark:text-gray-500 shrink-0">{{modLayout.updated_at}}</span>
+                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{modLayout.updated_at}}</span>
               </div>
             </div>
-            <div class="flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1">
+            <div class="flex-center mt-2 text-xs text-amber-700 dark:text-amber-400 gap-1">
               <icon name="info-circle" size="xs"/>
               <span>$t:admin.modules.modals.modified_layouts_keep_notice</span>
             </div>
@@ -196,7 +196,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUpdating || (_global.selectedModule?.is_compatible === false &amp;&amp; _global.moduleForceUpdate !== true)}}" type="button">
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleUpdating || (_global.selectedModule?.is_compatible === false &amp;&amp; _global.moduleForceUpdate !== true)}}" type="button">
         <on type="click">
           <!-- 업데이트 실행. 레이아웃 처리 방식과 강행 여부를 함께 보낸다.
                성공 갈래가 대상·선택을 기본값으로 되돌리므로 다음 모듈에 옛 값이 새지 않는다. -->
@@ -207,6 +207,8 @@
                 <set-state target="global" :isModuleUpdating="false"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
                 <toast type="success" message="{{response?.message ?? '$t:admin.modules.update_success'}}"/>
+                <!-- 멈춘 업데이트를 정리하고 다시 업데이트했으면 확장은 비활성으로 남는다(정리 규칙) — 다시 켜라고 알린다 -->
+                <toast if="{{_global.selectedModule?.stuck_update === true}}" type="info" message="$t:admin.modules.stuck_update_reactivate_hint"/>
                 <refetch-data-source dataSourceId="modules"/>
                 <close-modal/>
                 <set-state target="global" :selectedModule="null" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :moduleRebuildSearchIndex="false"/>

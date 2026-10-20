@@ -1,0 +1,18 @@
+feature: 알림 설정 [편집] 창의 알림톡 상세 응답 — 창을 닫거나 다른 알림을 연 뒤 도착하면 쓰지 않는다
+
+description: |
+  코어 알림 템플릿 [편집] 창이 열리면 비즈뿌리오 조각이 이름 공간 _global.bz_tpl_modal 을 시딩하고, 저장된 행이 있으면
+  상세(content)를 받아 온다. 창을 닫으면 조각 unmount 가 이름 공간을 null 로 비운다.
+  상세 응답이 닫힌 뒤 도착하면 점 경로 쓰기가 이름 공간을 되살렸고, 닫고 다른 알림을 연 뒤 도착하면 앞 알림의 상태·내용이
+  새 창 이름 공간에 섞였다(그대로 저장하면 앞 알림 내용이 저장된다 — 7.1.1).
+  응답 콜백은 값 식의 최신 _global 로 「열린 창의 알림 종류 = 요청한 알림 종류」 일 때만 쓴다(액션 if 는 요청 시점 상태라 쓸 수 없다).
+
+axes:
+  window: [closed, reopened_other, same_open]
+  outcome: [success, fail]
+
+effects:
+  - edit_modal_late_detail_response_not_written_to_closed_or_other_window
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/editModalLateDetailResponse.test.ts

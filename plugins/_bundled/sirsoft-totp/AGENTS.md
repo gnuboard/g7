@@ -192,6 +192,7 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 - [ ] 평문 시크릿·백업 코드를 내려주는 응답을 추가·변경했다면 "1회 노출" 계약이 깨지지 않는지 확인 — 조회 경로로는 절대 내려가지 않습니다
 - [ ] 프론트 핸들러를 추가했다면 `resources/js/handlers/index.ts` 의 `handlerMap` 에 넣는다 — 부팅 등록과 로케일 전환 뒤 재등록(`window.__SirsoftTotp.initPlugin()`)이 모두 이 맵을 읽는다. `initPlugin()` 에는 QR 관측자 같은 1회성 부팅 작업을 넣지 않는다
 - [ ] `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 후 `dist/js/plugin.iife.js` 를 함께 커밋 (`sourceMappingURL` 잔존 금지)
+- [ ] 레이아웃의 뜻이 있는 글자색(경고 등)은 템플릿 의미 클래스(`text-warning-soft` 등)가 아니라 `resources/css/main.css` 의 `totp-tone-*`(다크 모드 짝 포함)를 쓴다. 이 파일을 고쳤다면 `php artisan plugin:build --production` 후 `dist/css/plugin.css` 를 함께 커밋
 
 ## 6. 금지 패턴
 
@@ -224,7 +225,7 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | PHPUnit | 8개 | `plugins/_bundled/sirsoft-totp/tests` |
 | Vitest | 9개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 7개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -113,6 +113,7 @@
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
@@ -120,8 +121,15 @@
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-프론트 산출물은 `dist/js/plugin.iife.js` 하나이고 커밋 대상입니다. 확장 아이콘은
+프론트 산출물은 `dist/js/plugin.iife.js` 와 `dist/css/plugin.css` 둘이고 모두 커밋 대상입니다. 확장 아이콘은
 `assets/icon.svg` 입니다.
+
+`dist/css/plugin.css` 는 엔트리가 import 하는 `resources/css/main.css` 를 빌드가 뽑아낸 것이고,
+`plugin.json` 의 `assets.css` 가 그 경로를 선언합니다. 설정 화면의 경고 문구 색(`totp-tone-warning`,
+다크 모드 짝 포함)을 이 플러그인이 직접 싣습니다 — 관리자 템플릿의 의미 색 클래스(`text-warning-soft`)에
+기대면 템플릿이 그 이름이나 색을 바꿀 때 이 화면의 경고 색이 오류 없이 함께 바뀌기 때문입니다. 글자 크기는
+레이아웃의 `text-xs` 가 정하고 이 클래스는 색만 맡습니다. 새 의미 색이 필요하면 같은 파일에
+`totp-tone-{success|danger|info}` 로 더하고 다시 빌드합니다.
 
 `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 으로 다시 만들고
 (`sourceMappingURL` 잔존 금지) `php artisan plugin:update sirsoft-totp --force` 로 반영합니다.

@@ -14,7 +14,7 @@ class BrandSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('브랜드 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.brand.start'));
 
         $this->deleteExistingBrands();
 
@@ -330,11 +330,11 @@ class BrandSeeder extends Seeder
 
         foreach ($brands as $brand) {
             Brand::create($brand);
-            $this->command->line("  - 브랜드 생성: {$brand['name']['ko']} ({$brand['name']['en']})");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.brand.created', ['name' => $brand['name']['ko'], 'name_en' => $brand['name']['en']]));
         }
 
         $count = Brand::count();
-        $this->command->info("브랜드 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.brand.done', ['count' => $count]));
     }
 
     /**
@@ -348,7 +348,7 @@ class BrandSeeder extends Seeder
 
         if ($deletedCount > 0) {
             Brand::withTrashed()->forceDelete();
-            $this->command->warn("기존 브랜드 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.brand.purged', ['count' => $deletedCount]));
         }
     }
 }

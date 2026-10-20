@@ -1,0 +1,19 @@
+/**
+ * sirsoft-totp 화면 스타일 — 플러그인 설정 화면의 경고 글자색
+ *
+ * 관리자 템플릿의 의미 클래스(`text-warning-soft` 등)에 기대지 않고 이 플러그인이 직접 제공한다.
+ * 템플릿이 의미 클래스의 이름·색을 바꿔도 이 화면의 경고 문구 색은 따라 바뀌지 않는다.
+ *
+ * - 글자 크기·굵기는 레이아웃의 유틸리티 클래스(`text-xs` 등)가 정한다 — 여기서는 색만
+ * - 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다
+ * - 색값은 관리자 템플릿 `text-warning-soft` 와 같은 Tailwind 4 기본 팔레트(yellow-700, 다크는 yellow-300)
+ */
+
+/* 경고 — 읽기 전용 안내, 메일 폴백을 끈 상태의 결과 안내 */
+.totp-tone-warning {
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+}
+
+.dark .totp-tone-warning {
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
+}

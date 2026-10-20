@@ -56,7 +56,7 @@
                                             "props": {
                                                 "name": "star",
                                                 "size": "sm",
-                                                "className": "{{star <= (reviews.data?.rating_stats?.avg ?? 0) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                                "className": "{{star <= (reviews.data?.rating_stats?.avg ?? 0) ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-400'}}"
                                             }
                                         }
                                     ]
@@ -114,7 +114,7 @@
                                     "props": {
                                         "name": "star",
                                         "size": "sm",
-                                        "className": "text-yellow-400 dark:text-yellow-400 shrink-0"
+                                        "className": "text-yellow-700 dark:text-yellow-400 shrink-0"
                                     }
                                 },
                                 {
@@ -262,6 +262,14 @@
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
+                                {
+                                    "comment": "깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1). 종전에는 초기화를 눌러도 옵션 필터가 「블랙 (0)」 으로 남고 요청도 걸러진 채였다.",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "reviewOptionFilters": null
+                                    }
+                                },
                                 {
                                     "handler": "setState",
                                     "params": {
@@ -484,7 +492,7 @@
                                                     "props": {
                                                         "name": "star",
                                                         "size": "sm",
-                                                        "className": "{{star <= review.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                                        "className": "{{star <= review.rating ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
                                                     }
                                                 }
                                             ]
@@ -515,7 +523,7 @@
                                             "name": "Span",
                                             "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
                                             "props": {
-                                                "className": "inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                                                "className": "inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
                                             },
                                             "text": "{{$localized(opt.key)}}: {{$localized(opt.value)}}"
                                         }
@@ -532,7 +540,7 @@
                             "text": "{{review.content}}"
                         },
                         {
-                            "comment": "리뷰 이미지 (최대 4개, 초과 시 +N 오버레이)",
+                            "comment": "리뷰 이미지 (최대 4개, 초과 시 +N 오버레이) — 사진마다 단추라 Tab 으로 닿고 Enter·Space 로 큰 사진 창을 그 사진부터 연다(7.1.1 — 종전 클릭만 받는 img). 사진은 장식(alt 빈 값)이고 이름은 단추의 aria-label(몇 번째 사진인지)이 맡는다",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{review.image_count > 0}}",
@@ -543,7 +551,7 @@
                                 {
                                     "comment": "이미지 1",
                                     "type": "basic",
-                                    "name": "Img",
+                                    "name": "Button",
                                     "if": "{{(review.images ?? []).length > 0}}",
                                     "actions": [
                                         {
@@ -574,15 +582,26 @@
                                         }
                                     ],
                                     "props": {
-                                        "src": "{{review.images[0].download_url}}",
-                                        "alt": "",
-                                        "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                                    }
+                                        "type": "button",
+                                        "aria-label": "$t:shop.product.review_image_open|n=1",
+                                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Img",
+                                            "props": {
+                                                "src": "{{review.images[0].download_url}}",
+                                                "alt": "",
+                                                "className": "w-full h-full object-cover"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "comment": "이미지 2",
                                     "type": "basic",
-                                    "name": "Img",
+                                    "name": "Button",
                                     "if": "{{(review.images ?? []).length > 1}}",
                                     "actions": [
                                         {
@@ -613,15 +632,26 @@
                                         }
                                     ],
                                     "props": {
-                                        "src": "{{review.images[1].download_url}}",
-                                        "alt": "",
-                                        "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                                    }
+                                        "type": "button",
+                                        "aria-label": "$t:shop.product.review_image_open|n=2",
+                                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Img",
+                                            "props": {
+                                                "src": "{{review.images[1].download_url}}",
+                                                "alt": "",
+                                                "className": "w-full h-full object-cover"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "comment": "이미지 3",
                                     "type": "basic",
-                                    "name": "Img",
+                                    "name": "Button",
                                     "if": "{{(review.images ?? []).length > 2}}",
                                     "actions": [
                                         {
@@ -652,15 +682,26 @@
                                         }
                                     ],
                                     "props": {
-                                        "src": "{{review.images[2].download_url}}",
-                                        "alt": "",
-                                        "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                                    }
+                                        "type": "button",
+                                        "aria-label": "$t:shop.product.review_image_open|n=3",
+                                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Img",
+                                            "props": {
+                                                "src": "{{review.images[2].download_url}}",
+                                                "alt": "",
+                                                "className": "w-full h-full object-cover"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "comment": "이미지 4 (4장 정확히일 때 일반 이미지)",
                                     "type": "basic",
-                                    "name": "Img",
+                                    "name": "Button",
                                     "if": "{{(review.images ?? []).length == 4}}",
                                     "actions": [
                                         {
@@ -691,15 +732,26 @@
                                         }
                                     ],
                                     "props": {
-                                        "src": "{{review.images[3].download_url}}",
-                                        "alt": "",
-                                        "className": "w-20 h-20 shrink-0 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                                    }
+                                        "type": "button",
+                                        "aria-label": "$t:shop.product.review_image_open|n=4",
+                                        "className": "w-20 h-20 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Img",
+                                            "props": {
+                                                "src": "{{review.images[3].download_url}}",
+                                                "alt": "",
+                                                "className": "w-full h-full object-cover"
+                                            }
+                                        }
+                                    ]
                                 },
                                 {
                                     "comment": "+N 오버레이 (5장 이상일 때 4번째 자리)",
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Button",
                                     "if": "{{(review.images ?? []).length >= 5}}",
                                     "actions": [
                                         {
@@ -730,6 +782,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:shop.product.review_image_open_more|n=4|count={{(review.images ?? []).length - 3}}",
                                         "className": "relative w-20 h-20 shrink-0 cursor-pointer rounded-lg overflow-hidden"
                                     },
                                     "children": [
@@ -744,9 +798,10 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Span",
                                             "props": {
-                                                "className": "absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg"
+                                                "className": "absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg",
+                                                "aria-hidden": "true"
                                             },
                                             "children": [
                                                 {
@@ -791,7 +846,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{review.replied_at}}"
                                         }
@@ -815,9 +870,9 @@
             "comment": "리뷰 없음",
             "type": "basic",
             "name": "Div",
-            "if": "{{!reviews.data?.reviews?.data || reviews.data.reviews.data.length === 0}}",
+            "if": "{{reviews !== undefined && (!reviews.data?.reviews?.data || reviews.data.reviews.data.length === 0)}}",
             "props": {
-                "className": "text-center py-12 text-gray-500 dark:text-gray-400"
+                "className": "text-center py-12 text-gray-800 dark:text-gray-300"
             },
             "children": [
                 {

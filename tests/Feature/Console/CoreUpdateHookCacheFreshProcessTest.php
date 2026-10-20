@@ -63,7 +63,8 @@ class CoreUpdateHookCacheFreshProcessTest extends TestCase
         $this->assertNotFalse($hook, '라우트 캐시를 되살린 뒤 새 프로세스로 훅 캐시를 굽지 않는다');
         $this->assertLessThan($prompt, $hook, '훅 캐시는 모든 파일이 안착하고 라우트 캐시까지 되살린 뒤, 일괄 업데이트 질문 전에 굽는다');
         $this->assertStringContainsString("HookCacheFreshProcess::run(['hooks:cache'])", $code, '재굽기 헬퍼가 새 프로세스 실행기를 쓰지 않는다');
-        $this->assertStringContainsString('php artisan hooks:cache', $source, '실패 시 수동 명령 안내가 없다');
+        $this->assertStringContainsString("__('settings.core_update.console.hook_cache_failed'", $code, '실패 시 수동 명령 안내가 없다');
+        $this->assertStringContainsString('php artisan hooks:cache', __('settings.core_update.console.hook_cache_failed', ['output' => '']), '실패 시 수동 명령 안내가 없다');
     }
 
     /**

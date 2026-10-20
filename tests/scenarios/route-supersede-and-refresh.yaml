@@ -1,0 +1,41 @@
+feature: 경로 이동 중 다시 이동·늦은 응답·받는 동안 앞 화면·다시 받기 실패 문맥·같은 화면 받는 중 표시·덮개 해제 (engine-v1.82.0)
+
+description: |
+  진행 중인 이동 뒤에 새 이동이 대기열에 들어오면 진행 중인 화면 처리를 밀어내고(세대 증가), 화면을 옮긴 뒤 도착한 앞 화면 fetch 의
+  성공 처리·오류 처리기를 실행하지 않는다. 이동 시작부터 전환 상태를 켜고, 새 화면 폼을 blocking initLocal 로 통째로 채우는 이동은 받는
+  동안 앞 화면 내용(덮개 대상)을 inert 로 잠근다. 데이터 소스 오류 처리기 문맥에 다시 받기 여부(error.refetch)를 싣고, 마지막 값으로
+  버틴 다시 받기는 initLocal 을 다시 심지 않는다. 같은 화면 쿼리 갱신이 앞 값을 둔 채 받는 소스는 data_sources 흐림이 받는 중으로 보고,
+  덮개는 새 화면 커밋 뒤(wait_for 만 기다림) 걷는다. 쿼리 갱신(탭 전환) 재조회가 폼을 서버 값으로 다시 심는 계약은 그대로다.
+  실물 Router·TemplateApp·DataSourceManager·DynamicRenderer 로 잰다.
+
+axes:
+  case:
+    - queued_navigation_during_blocking
+    - superseded_then_not_found
+    - late_previous_route_on_success
+    - edit_to_write_blocking_window
+    - cart_selection_refetch_500
+    - manual_source_first_fetch_failure
+    - same_list_page_replace
+    - overlay_slow_aux_sources
+    - overlay_wait_for_contract
+    - same_path_replace_after_typing
+    - replace_changes_request_reseeds
+    - render_cycle_budget_other_screen
+    - render_cycle_budget_same_screen
+    - return_during_cancelled_init
+
+effects:
+  - queued_navigation_supersedes_in_flight                # 대기열의 새 이동이 앞 이동 응답을 기다리지 않고 곧바로 시작한다
+  - late_previous_route_response_dropped                  # 늦게 온 앞 경로 응답(성공 처리 포함)이 새 화면·폼에 들어가지 않는다
+  - previous_screen_input_locked_while_form_replaced      # 새 폼을 blocking initLocal 로 받는 동안 앞 화면은 흐림·inert, 렌더 뒤 풀린다
+  - refetch_failure_context_flag                          # 다시 받기 실패는 error.refetch=true, 처음 받기 실패는 거짓
+  - refetch_kept_value_does_not_reseed                    # 마지막 값으로 버틴 다시 받기는 initLocal 을 다시 심지 않는다(바꾼 선택 유지)
+  - same_screen_refresh_blur                              # 같은 화면 쿼리 갱신 동안 data_sources 흐림이 앞 값 위에 선다
+  - overlay_released_after_commit                         # 덮개는 커밋 뒤 걷히고 wait_for 소스만 기다린다
+  - render_cycles_not_increased                           # 화면 이동 1회의 루트급 렌더 주기(startRenderCycle)가 수정 전 엔진 이하
+  - replace_refetch_reseeds_form                          # 쿼리 갱신(탭 전환) 재조회는 편집 중이어도 서버 값으로 다시 심는다(계약 가드)
+  - cancelled_screen_data_not_carried                     # init 대기 중 취소된 화면이 받아 둔 같은 id 값은 돌아온 앞 화면 첫 렌더에 심기지 않는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/TemplateApp.routeSupersedeAndRefresh.test.tsx

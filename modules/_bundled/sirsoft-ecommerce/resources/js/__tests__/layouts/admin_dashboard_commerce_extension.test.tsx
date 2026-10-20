@@ -296,9 +296,9 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=no_reviews
     // @effects latest_reviews_card_empty_state_when_no_reviews, pending_inquiries_card_empty_state_when_no_inquiries
-    it('빈 상태 메시지는 length === 0 조건으로 노출된다', () => {
-        expect(findById(commerceExt as any, 'latest_reviews_empty').if).toBe('{{(commerce_recent_reviews?.data ?? []).length === 0}}');
-        expect(findById(commerceExt as any, 'pending_inquiries_empty').if).toBe('{{(commerce_pending_inquiries?.data?.items ?? []).length === 0}}');
+    it('빈 상태 메시지는 받은 뒤 length === 0 일 때만 노출된다(받는 중에는 숨김)', () => {
+        expect(findById(commerceExt as any, 'latest_reviews_empty').if).toBe('{{commerce_recent_reviews !== undefined && ((commerce_recent_reviews?.data ?? []).length === 0)}}');
+        expect(findById(commerceExt as any, 'pending_inquiries_empty').if).toBe('{{commerce_pending_inquiries !== undefined && ((commerce_pending_inquiries?.data?.items ?? []).length === 0)}}');
     });
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_reviews

@@ -55,11 +55,11 @@
             <p class="mb-2">$t:sirsoft-ecommerce.admin.product.modal.save_template.fields_count: {{Object.keys(_local.form.product_notice ?? {}).length}}</p>
             <div class="grid grid-cols-2 gap-2 text-xs">
               <div data-each="entry, entryIdx in {{Object.entries(_local.form.product_notice ?? {}).slice(0, 6)}}" class="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
-                <span class="text-gray-500 dark:text-gray-400">{{entry[0]}}: </span>
+                <span class="text-gray-600 dark:text-gray-300">{{entry[0]}}: </span>
                 <span class="text-gray-700 dark:text-gray-300">{{(entry[1] ?? '').toString().substring(0, 20)}}{{(entry[1] ?? '').toString().length > 20 ? '...' : ''}}</span>
               </div>
             </div>
-            <p data-if="{{Object.keys(_local.form.product_notice ?? {}).length > 6}}" class="mt-2 text-gray-400 dark:text-gray-500 italic">... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields</p>
+            <p data-if="{{Object.keys(_local.form.product_notice ?? {}).length > 6}}" class="mt-2 text-gray-500 dark:text-gray-400 italic">... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields</p>
           </div>
         </div>
       </div>

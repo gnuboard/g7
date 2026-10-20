@@ -151,7 +151,7 @@ const GRID_GAP_PX = 16;
 /** 배지 색조 → Tailwind 클래스. 정적 문자열이라 JIT 가 전부 수집한다. */
 const BADGE_TONE: Record<string, string> = {
   neutral: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
-  success: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+  success: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300',
   info: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
   warning: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300',
   danger: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
@@ -256,7 +256,7 @@ const ExtensionIcon: React.FC<{
       )}
       {item.iconBadge && (
         <Span
-          className={`absolute bottom-0 right-0 max-w-full truncate px-1 rounded-tl-md rounded-br-xl ${item.iconBadge.text.length > 3 ? 'text-[8px] tracking-tight' : 'text-[10px]'} leading-4 font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white`}
+          className={`absolute bottom-0 right-0 max-w-full truncate px-1 rounded-tl-md rounded-br-xl ${item.iconBadge.text.length > 3 ? 'text-[8px] tracking-tight' : 'text-[10px]'} leading-4 font-semibold uppercase bg-blue-600 dark:bg-blue-600 text-white`}
           aria-label={item.iconBadge.srLabel}
           title={item.iconBadge.text}
           data-ref="ext_icon_badge"
@@ -330,7 +330,7 @@ const MetaBlock: React.FC<{ item: ExtensionCardItem; stacked: boolean }> = ({ it
               <Span key={`${dep.name}-${i}`} className="inline-flex items-center gap-1 min-w-0">
                 <Icon
                   name={dep.type === 'module' ? 'cube' : 'puzzle-piece'}
-                  className="text-xs text-gray-400 dark:text-gray-500 shrink-0"
+                  className="text-xs text-gray-500 dark:text-gray-500 shrink-0"
                 />
                 <Span className="truncate">{dep.name}</Span>
               </Span>
@@ -457,7 +457,7 @@ const ControlRow: React.FC<{
           checked={pendingChecked ?? serverChecked}
           disabled={item.toggle.disabled}
           name={item.toggle.label ?? item.name}
-          // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다(O-Q2-1).
+          // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다.
           ariaLabel={item.toggle.label ?? item.name}
           onChange={(next: any) => {
             const value = typeof next === 'boolean' ? next : Boolean(next?.target?.checked);

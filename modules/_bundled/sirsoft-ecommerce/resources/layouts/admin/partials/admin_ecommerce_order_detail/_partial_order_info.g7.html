@@ -76,11 +76,11 @@
               $t:sirsoft-ecommerce.admin.order.claim_request.button_cancel_refund
             </button>
             <!-- 꺼진 이유 — 고른 상품이 있는데 버튼이 하나라도 꺼졌으면 그 까닭(교환·반품은 보낸 뒤, 취소·환불은 보내기 전)을 곁에 둔다. 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다(Chrome 실측 P-1). -->
-            <span data-ref="crb_004_disabled_hint" data-if="{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; claimRequestContext?.data?.unavailable !== true &amp;&amp; (_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true)}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.gate_hint</span>
+            <span data-ref="crb_004_disabled_hint" data-if="{{(_local.selectedProducts ?? []).length > 0 &amp;&amp; claimRequestContext?.data?.unavailable !== true &amp;&amp; (_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true)}}" class="text-xs text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.gate_hint</span>
             <!-- 접수 권한(`claims.create`)이 없으면 버튼 셋이 꺼진 채 서고 그 까닭을 곁에 둔다 — 버튼을 숨기면 기능이 있는지조차 모른다(Chrome 실측 P-6). -->
-            <span data-ref="crb_005_no_permission_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError !== 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.no_permission</span>
+            <span data-ref="crb_005_no_permission_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError !== 'failed'}}" class="text-xs text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.no_permission</span>
             <!-- 권한은 있는데 문맥을 못 받은 경우(500·네트워크) — 「권한 없음」 으로 뜨면 운영자는 권한을 요청하러 간다. 실패 종류는 데이터 소스 `error-handling` 이 `_local.claimRequestContextError` 에 남긴다(403=forbidden, 그 밖=failed). -->
-            <span data-ref="crb_005b_context_error_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError === 'failed'}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.context_load_failed</span>
+            <span data-ref="crb_005b_context_error_hint" data-if="{{claimRequestContext?.data?.unavailable === true &amp;&amp; _local.claimRequestContextError === 'failed'}}" class="text-xs text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.context_load_failed</span>
           </div>
           <!-- 고른 상품만 부분 취소·환불한다. 대상 선택이 표 안에 있고 그 표는 페이지를 나누지 않으므로 선택 범위를 free 로 둔다 -->
           <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedProducts || _local.selectedProducts.length === 0 || order?.data?.abilities?.can_update !== true}}">
@@ -97,7 +97,7 @@
                 <a href="{{'/admin/ecommerce/products/' + (row.product_snapshot?.product_code ?? row.product_id) + '/edit'}}" target="_blank" class="flex-shrink-0">
                   <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.product_name}}" class="w-14 h-14 object-cover rounded border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"/>
                   <div data-if="{{!row.thumbnail_url}}" class="w-14 h-14 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                    <icon name="image" class="text-xl text-gray-400 dark:text-gray-500"/>
+                    <icon name="image" class="text-xl text-gray-500 dark:text-gray-400"/>
                   </div>
                 </a>
                 <div>
@@ -115,7 +115,7 @@
           <column field="price" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.price" width="130px" :sortable="false">
             <cell>
               <div class="text-right whitespace-nowrap">
-                <span data-if="{{row.list_price_formatted &amp;&amp; Number(row.list_price) !== Number(row.unit_price)}}" class="text-sm text-gray-400 dark:text-gray-500 line-through block">{{row.list_price_formatted}}</span>
+                <span data-if="{{row.list_price_formatted &amp;&amp; Number(row.list_price) !== Number(row.unit_price)}}" class="text-sm text-gray-500 dark:text-gray-400 line-through block">{{row.list_price_formatted}}</span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{row.unit_price_formatted}}</span>
                 <!-- 판매가 보조 통화 — 윗줄은 주문의 기준 통화 금액이므로 목록에서 빼는 것도 기준 통화다(이 표의 보조 통화 줄 다섯 곳이 같은 규칙).
                   관리자가 헤더에서 고른 표시 통화를 빼면, 기준 통화가 그와 다른 상점(기준 엔화·표시 원화)에서 원화가 사라지고 엔화가 두 번 선다(실측 2026-10-03).
@@ -129,7 +129,7 @@
           <column field="quantity" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.quantity" width="110px" :sortable="false">
             <cell>
               <div class="flex flex-col items-end gap-1 whitespace-nowrap">
-                <span class="text-sm text-gray-900 dark:text-gray-100">{{row.quantity}} 개</span>
+                <span class="text-sm text-gray-900 dark:text-gray-100">$t:defer:sirsoft-ecommerce.admin.order.detail.order_info.quantity_value|count={{row.quantity}}</span>
                 <!-- 재고 적용 여부 배지 -->
                 <badge data-type="composite" data-if="{{row.is_stock_deducted}}" size="sm" color="green">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.deducted</badge>
                 <badge data-type="composite" data-if="{{!row.is_stock_deducted}}" size="sm" color="gray">$t:sirsoft-ecommerce.admin.order.detail.order_info.stock_status.not_deducted</badge>
@@ -139,25 +139,25 @@
           <column field="discount" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.discount" width="260px" :sortable="false">
             <cell>
               <div class="text-right whitespace-normal">
-                <span data-if="{{row.subtotal_discount_amount > 0}}" class="text-sm text-red-600 dark:text-red-400 font-medium block">-{{row.subtotal_discount_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_discount_amount > 0}}" class="text-sm text-red-700 dark:text-red-400 font-medium block">-{{row.subtotal_discount_amount_formatted}}</span>
                 <!-- 적용 쿠폰 목록 -->
                 <div data-if="{{(row.promotions_applied_snapshot?.coupons ?? []).length > 0}}">
                   <div data-each="coupon in {{row.promotions_applied_snapshot?.coupons ?? []}}" class="flex items-center justify-end gap-1 mt-0.5">
-                    <icon name="ticket" class="text-xs text-red-400 dark:text-red-500"/>
+                    <icon name="ticket" class="text-xs text-red-500 dark:text-red-500"/>
                     <span class="text-tertiary">{{coupon.name ?? ''}} -{{coupon.total_discount_formatted ?? ''}}</span>
                   </div>
                 </div>
                 <!-- 적용 할인코드 목록 -->
                 <div data-if="{{(row.promotions_applied_snapshot?.discount_codes ?? []).length > 0}}">
                   <div data-each="discountCode in {{row.promotions_applied_snapshot?.discount_codes ?? []}}" class="flex items-center justify-end gap-1 mt-0.5">
-                    <icon name="tag" class="text-xs text-orange-400 dark:text-orange-500"/>
+                    <icon name="tag" class="text-xs text-orange-600 dark:text-orange-500"/>
                     <span class="text-tertiary">{{discountCode.name ?? discountCode.code ?? ''}} -{{discountCode.total_discount_formatted ?? ''}}</span>
                   </div>
                 </div>
                 <!-- 적용 이벤트 목록 -->
                 <div data-if="{{(row.promotions_applied_snapshot?.events ?? []).length > 0}}">
                   <div data-each="event in {{row.promotions_applied_snapshot?.events ?? []}}" class="flex items-center justify-end gap-1 mt-0.5">
-                    <icon name="gift" class="text-xs text-purple-400 dark:text-purple-500"/>
+                    <icon name="gift" class="text-xs text-purple-500 dark:text-purple-500"/>
                     <span class="text-tertiary">{{event.name ?? ''}} -{{event.total_discount_formatted ?? ''}}</span>
                   </div>
                 </div>
@@ -171,8 +171,8 @@
                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{row.final_amount_formatted}}</span>
                 <span data-if="{{row.subtotal_tax_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.taxable: {{row.subtotal_tax_amount_formatted}}</span>
                 <span data-if="{{row.subtotal_vat_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{row.subtotal_vat_amount_formatted}}</span>
-                <span data-if="{{row.subtotal_points_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{row.subtotal_points_used_amount_formatted}}</span>
-                <span data-if="{{row.subtotal_deposit_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{row.subtotal_deposit_used_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_points_used_amount > 0}}" class="text-xs text-red-700 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{row.subtotal_points_used_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_deposit_used_amount > 0}}" class="text-xs text-red-700 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{row.subtotal_deposit_used_amount_formatted}}</span>
               </div>
             </cell>
           </column>
@@ -235,7 +235,7 @@
               </div>
             </div>
           </footer-cell>
-          <footer-cell field="quantity" text="{{order.data?.total_quantity ?? 0}}개" class="text-center text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"/>
+          <footer-cell field="quantity" text="$t:sirsoft-ecommerce.admin.order.detail.order_info.quantity_value|count={{order.data?.total_quantity ?? 0}}" class="text-center text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"/>
           <footer-cell field="discount">
             <div class="text-right whitespace-normal">
               <span data-if="{{order.data?.total_discount_amount > 0}}" class="text-sm text-red-600 dark:text-red-400 font-medium block">-{{order.data?.total_discount_amount_formatted}}</span>
@@ -306,8 +306,8 @@
                     </case>
                   </switch>
                 </on>
-                <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
-                  <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+                  <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                   <div class="min-w-0 flex-1">
                     <span class="text-sm text-gray-900 dark:text-gray-100 truncate block">{{order.data?.orderer_name}} ({{order.data?.orderer_email ?? order.data?.user_login_id ?? ''}})</span>
                   </div>
@@ -315,11 +315,11 @@
               </action-menu>
               <!-- 비회원 주문자명 -->
               <div data-if="{{!order.data?.user_id}}" class="flex-center gap-2 px-1 py-0.5">
-                <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-500 flex-shrink-0"/>
                 <span class="text-secondary">{{order.data?.orderer_name}}</span>
-                <span class="text-sm text-gray-400 dark:text-gray-500">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)</span>
                 <!-- 비회원 조회 비밀번호 재설정 버튼 — 주문 수정 권한(can_update)으로 잠근다(형제 [메일 보내기]와 같은 키, 서버도 403). -->
-                <button data-ref="order_reset_guest_password_button" type="button" class="ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
+                <button data-ref="order_reset_guest_password_button" type="button" class="ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
                   <on type="click">
                     <open-modal target="modal_reset_guest_password"/>
                   </on>
@@ -387,7 +387,7 @@
             <div>
               <div class="flex-center gap-1 mb-1">
                 <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.name</span>
-                <span class="text-red-500 dark:text-red-400">*</span>
+                <span class="text-red-600 dark:text-red-400">*</span>
               </div>
               <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_name ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_name}}" name="recipient_name" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.name" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
               <span data-if="{{_local.errors?.recipient_name}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_name?.[0] ?? ''}}</span>
@@ -395,7 +395,7 @@
             <div>
               <div class="flex-center gap-1 mb-1">
                 <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone</span>
-                <span class="text-red-500 dark:text-red-400">*</span>
+                <span class="text-red-600 dark:text-red-400">*</span>
               </div>
               <div class="flex-center gap-2">
                 <input type="text" class="input flex-1 disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_phone ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_phone}}" name="recipient_phone" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
@@ -407,7 +407,7 @@
             <div>
               <div class="flex-center gap-1 mb-1">
                 <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel</span>
-                <span class="text-red-500 dark:text-red-400">*</span>
+                <span class="text-red-600 dark:text-red-400">*</span>
               </div>
               <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_tel ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_tel}}" name="recipient_tel" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
               <span data-if="{{_local.errors?.recipient_tel}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_tel?.[0] ?? ''}}</span>
@@ -417,7 +417,7 @@
             <div data-if="{{(_local.form.recipient_country_code ?? 'KR') === 'KR'}}">
               <div class="flex-center gap-1 mb-1">
                 <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.zipcode</span>
-                <span class="text-red-500 dark:text-red-400">*</span>
+                <span class="text-red-600 dark:text-red-400">*</span>
               </div>
               <div class="flex-center gap-2">
                 <input type="text" class="{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}" value="{{_local.form.recipient_zipcode}}" name="recipient_zipcode" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.zipcode" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
@@ -443,7 +443,7 @@
           <div data-if="{{(_local.form.recipient_country_code ?? 'KR') === 'KR'}}">
             <div class="flex-center gap-1 mb-1">
               <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address_detail</span>
-              <span class="text-red-500 dark:text-red-400">*</span>
+              <span class="text-red-600 dark:text-red-400">*</span>
             </div>
             <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_detail_address ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_detail_address}}" name="recipient_detail_address" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address_detail" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.recipient_detail_address}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_detail_address?.[0] ?? ''}}</span>
@@ -452,7 +452,7 @@
           <div data-if="{{(_local.form.recipient_country_code ?? 'KR') !== 'KR'}}" class="space-y-2">
             <div class="flex-center gap-1 mb-1">
               <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address</span>
-              <span class="text-red-500 dark:text-red-400">*</span>
+              <span class="text-red-600 dark:text-red-400">*</span>
             </div>
             <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.address_line_1 ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.address_line_1 ?? ''}}" name="address_line_1" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address1_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.address_line_1}}" class="form-error-xs mt-1 block">{{_local.errors?.address_line_1?.[0] ?? ''}}</span>
@@ -514,7 +514,7 @@
                 <span data-if="{{cancel.cancel_type_label}}" class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 shrink-0">{{cancel.cancel_type_label ?? ''}}</span>
                 <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{cancel.cancel_reason_label ?? ''}}</span>
               </div>
-              <span data-if="{{cancel.cancelled_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{cancel.cancelled_at_formatted ?? ''}}</span>
+              <span data-if="{{cancel.cancelled_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-300 shrink-0">{{cancel.cancelled_at_formatted ?? ''}}</span>
             </div>
             <!-- 상세 사유 (기타 입력 시) -->
             <div data-if="{{cancel.cancel_reason_detail}}" class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">

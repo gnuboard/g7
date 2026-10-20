@@ -1105,8 +1105,11 @@ describe('Partial 레이아웃 구조 검증', () => {
             const extract = (node: any) => {
                 if (!node) return;
                 if (typeof node === 'string') {
-                    const matches = node.match(/\$t:[a-zA-Z0-9._-]+/g);
-                    if (matches) keys.push(...matches);
+                    // 표 칸(cellChildren) 안에서 행 값을 넘기는 문구는 `$t:defer:` 로 쓴다
+                    // (data-binding-i18n.md 「지연 번역」, admin-cell-children-defer-translation 시험).
+                    // defer 접두는 네임스페이스가 아니므로 떼고 키만 검사한다.
+                    const matches = node.match(/\$t:(?:defer:)?[a-zA-Z0-9._-]+/g);
+                    if (matches) keys.push(...matches.map((m) => m.replace(/^\$t:defer:/, '$t:')));
                 }
                 if (typeof node === 'object') {
                     for (const value of Object.values(node)) extract(value);

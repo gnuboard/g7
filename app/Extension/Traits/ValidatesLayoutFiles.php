@@ -5,6 +5,7 @@ namespace App\Extension\Traits;
 use App\Exceptions\LayoutIncludeException;
 use App\Extension\Layout\BackupLayoutReader;
 use App\Support\Filesystem\PathGuard;
+use App\Support\LayoutDataSourceIds;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
@@ -367,25 +368,12 @@ trait ValidatesLayoutFiles
      */
     protected function validateDataSourceIds(array $dataSources, string $filePath): ?string
     {
-        $ids = [];
-        $duplicates = [];
+        // 같은 id 를 조건(if·conditions)으로 여러 판 선언한 것은 허용한다 — 조건 없는 판이 섞인 중복만 거부(7.1.1 출시 전)
+        $duplicates = LayoutDataSourceIds::conflictingDuplicates($dataSources);
 
-        foreach ($dataSources as $dataSource) {
-            if (! isset($dataSource['id'])) {
-                continue;
-            }
-
-            $id = $dataSource['id'];
-            if (in_array($id, $ids, true)) {
-                $duplicates[] = $id;
-            } else {
-                $ids[] = $id;
-            }
-        }
-
-        if (! empty($duplicates)) {
+        if ($duplicates !== []) {
             return __('exceptions.layout.duplicate_data_source_id_in_file', [
-                'ids' => implode(', ', array_unique($duplicates)),
+                'ids' => implode(', ', $duplicates),
                 'file' => $filePath,
             ]);
         }
@@ -880,7 +868,11 @@ trait ValidatesLayoutFiles
             $e = new LayoutIncludeException(
                 __('exceptions.layout.include_file_not_found', [
                     'path' => $partialPath,
-                    'resolved' => $absolutePath,
+                    // 찾아본 후보 전부 — 1순위(소스 `.g7.html`)만 적으면 `.json` 참조인데 `.g7.html` 만 보였다(7.1.1 출시 전 보강)
+                    'resolved' => implode(', ', array_map(
+                        fn (string $path): string => str_replace('\\', '/', $path),
+                        $source['tried'] ?? [$absolutePath],
+                    )),
                 ]),
                 $partialPath,
                 $this->partialStack
@@ -945,7 +937,7 @@ trait ValidatesLayoutFiles
      *
      * @param  string  $partialPath  `<include src>` 값
      * @param  string  $basePath  기준 경로
-     * @return array{path: string, markup: bool, exists: bool} 소스 디스크립터 (부재 시 1순위 후보 경로)
+     * @return array{path: string, markup: bool, exists: bool, tried?: array<int, string>} 소스 디스크립터 (부재 시 1순위 후보 경로 + 찾아본 후보 전부)
      *
      * @throws LayoutIncludeException layouts 디렉토리를 벗어나는 참조일 때
      */
@@ -954,6 +946,7 @@ trait ValidatesLayoutFiles
         $jsonForced = $this->layoutInstallSourceIsJsonForced();
         $layoutsDir = $this->getLayoutsBaseDirectory($basePath);
         $primary = null;
+        $tried = [];
 
         // 실재하는 첫 후보를 먼저 고르고, 보안 검증은 고른 경로 하나에만 한다 (#144).
         // 종전에는 후보마다 보안 검증을 먼저 했는데, 없는 `.g7.html` 후보가 검증에서 "layouts 밖" 으로 오판되면
@@ -962,6 +955,7 @@ trait ValidatesLayoutFiles
             $location = $this->locatePartialFile($candidate['path'], $basePath, $layoutsDir);
 
             $primary ??= ['path' => $location, 'markup' => $candidate['markup']];
+            $tried[] = $location;
 
             if (! file_exists($location)) {
                 continue;
@@ -984,6 +978,7 @@ trait ValidatesLayoutFiles
             'path' => $this->assertPartialWithinLayouts($partialPath, $primary['path'], $layoutsDir),
             'markup' => $primary['markup'],
             'exists' => false,
+            'tried' => $tried,
         ];
     }
 

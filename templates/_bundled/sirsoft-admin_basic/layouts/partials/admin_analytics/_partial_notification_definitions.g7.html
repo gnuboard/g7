@@ -19,14 +19,14 @@
     </div>
     <div data-ref="definition_state_alert" data-if="{{(_local.form?.settings?.report_weekly_enabled === true &amp;&amp; (analytics_notification_definitions?.data?.data ?? []).some(d => d.type === 'analytics_weekly_report' &amp;&amp; d.is_active !== true)) || (_local.form?.settings?.report_monthly_enabled === true &amp;&amp; (analytics_notification_definitions?.data?.data ?? []).some(d => d.type === 'analytics_monthly_report' &amp;&amp; d.is_active !== true))}}" class="alert-warning mb-3">
       <div class="flex-center gap-3">
-        <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+        <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
         <p class="text-warning-soft">$t:admin.analytics.settings.reports.definition_inactive_alert</p>
       </div>
     </div>
     <!-- 이 카드가 읽는 API 는 알림 설정 권한 소관이다. 통계 설정 권한만 받은 운영자에게는 403 이라
          목록이 비는데, 「정의가 없다」로 그리면 거짓이 된다 — 권한이 없다고 말한다(#682 S3 라운드 2). -->
     <p data-ref="definitions_permission_notice" data-if="{{!_computed.canReadDefinitions}}" class="text-hint py-4 text-center">$t:admin.analytics.settings.reports.definitions_permission_required</p>
-    <p data-if="{{_computed.canReadDefinitions &amp;&amp; !analytics_notification_definitions?.loading &amp;&amp; (analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics').length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.settings.reports.definitions_empty</p>
+    <p data-if="{{_computed.canReadDefinitions &amp;&amp; analytics_notification_definitions !== undefined &amp;&amp; (analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics').length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.settings.reports.definitions_empty</p>
     <div data-ref="definition_list" class="divide-y divide-gray-200 dark:divide-gray-700">
       <div data-ref="definition_item_{{$idx}}" data-each="def, $idx in {{(analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics')}}" class="flex-between flex-wrap gap-3 py-3">
         <div class="min-w-0 flex-1">

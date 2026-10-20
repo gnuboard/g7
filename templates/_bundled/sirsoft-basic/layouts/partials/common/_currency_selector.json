@@ -25,6 +25,8 @@
                 }
             ],
             "props": {
+                "type": "button",
+                "aria-expanded": "{{!!_local.showCurrencyDropdown}}",
                 "className": "flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             },
             "children": [
@@ -102,7 +104,9 @@
                                 }
                             ],
                             "props": {
-                                "className": "justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}}"
+                                "type": "button",
+                                "aria-pressed": "{{_global.preferredCurrency === currency.code}}",
+                                "className": "justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}}"
                             },
                             "children": [
                                 {
@@ -115,7 +119,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "flex-1"
                                     },
@@ -132,7 +136,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                                "className": "text-gray-600 dark:text-gray-300 ml-1"
                                             },
                                             "text": "({{currency.symbol}})"
                                         }
@@ -154,7 +158,7 @@
             ]
         },
         {
-            "comment": "배경 클릭 시 닫기",
+            "comment": "배경 클릭 시 닫기 — 마우스용 덮개라 단추로 바꾸지 않는다. 키보드는 위 여닫기 단추(aria-expanded)로 같은 목록을 닫는다(7.1.1 판정)",
             "type": "basic",
             "name": "Div",
             "if": "{{_local.showCurrencyDropdown}}",

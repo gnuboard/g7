@@ -72,7 +72,7 @@ class ProcessDormantAccountsCommand extends Command
     public function handle(): int
     {
         if (! $this->service->isEnabled()) {
-            $this->info('휴면 계정 기능이 꺼져 있어 실행하지 않았습니다. (privacy.dormant_enabled = false)');
+            $this->info(__('privacy.console.process_dormant.disabled'));
 
             return Command::SUCCESS;
         }
@@ -86,7 +86,7 @@ class ProcessDormantAccountsCommand extends Command
         $lock = $isDryRun ? null : Cache::lock(DormantStageRunner::LOCK_KEY, 3600);
 
         if ($lock !== null && ! $lock->get()) {
-            $this->warn('관리자 직권 실행이 휴면 단계를 처리 중이라 이번 주기는 건너뛰었습니다.');
+            $this->warn(__('privacy.console.process_dormant.locked'));
 
             return Command::SUCCESS;
         }
@@ -118,14 +118,14 @@ class ProcessDormantAccountsCommand extends Command
         $withdrawNotice = $this->runStage('withdraw_notice', fn (): int => $this->service->notifyUpcomingWithdrawal($isDryRun), $failed);
         $withdrawn = $this->runStage('withdraw', fn (): int => $this->service->withdrawDormant($isDryRun), $failed);
 
-        $this->info("{$prefix}휴면 전환 사전 안내: {$preNotice}건");
-        $this->info("{$prefix}휴면 전환: {$converted}건");
+        $this->info($prefix.__('privacy.console.process_dormant.pre_notice', ['count' => $preNotice]));
+        $this->info($prefix.__('privacy.console.process_dormant.converted', ['count' => $converted]));
 
         if ($this->service->isWithdrawEnabled()) {
-            $this->info("{$prefix}탈퇴 예정 안내: {$withdrawNotice}건");
-            $this->info("{$prefix}탈퇴 처리: {$withdrawn}건");
+            $this->info($prefix.__('privacy.console.process_dormant.withdraw_notice', ['count' => $withdrawNotice]));
+            $this->info($prefix.__('privacy.console.process_dormant.withdrawn', ['count' => $withdrawn]));
         } else {
-            $this->line("{$prefix}휴면 후 자동 탈퇴는 꺼져 있어 실행하지 않았습니다. (privacy.dormant_withdraw_enabled = false)");
+            $this->line($prefix.__('privacy.console.process_dormant.withdraw_disabled'));
         }
 
         if (! $isDryRun) {
@@ -167,7 +167,7 @@ class ProcessDormantAccountsCommand extends Command
         } catch (\Throwable $e) {
             $failed++;
 
-            $this->error("단계 실패 — {$stage}: {$e->getMessage()}");
+            $this->error(__('privacy.console.process_dormant.stage_failed', ['stage' => $stage, 'error' => $e->getMessage()]));
 
             Log::error('ProcessDormantAccountsCommand: 단계 실패 — 나머지 단계는 계속합니다', [
                 'stage' => $stage,

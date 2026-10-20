@@ -1,0 +1,22 @@
+feature: 알림 목록 — 안전하지 않은 이동 주소의 착지점 브라우저 회귀 (7.1.1)
+
+description: |
+  알림 응답의 이동 주소를 실행 주소·다른 사이트·같은 사이트 뒤 //host·/host 로 바꿔, 카드 링크 href 와 클릭 착지점이
+  모두 알림 목록인지 본다. 사이트 안 주소는 그대로인 대조군을 둔다. 읽은 알림·수정 권한 없음으로 두어 쓰기가 없다.
+
+axes:
+  case:
+    - unsafe_urls
+    - safe_url_control
+
+effects:
+  - unsafe_notification_href_is_list
+  - unsafe_notification_click_lands_on_list
+  - no_external_open
+  - safe_notification_href_kept
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/notification-unsafe-url-fallback.spec.ts
+
+notes: |
+  계정은 실행 환경변수(G7_E2E_TOKEN 또는 G7_E2E_ADMIN_EMAIL + G7_E2E_ADMIN_PASSWORD_FILE)로만 받는다.

@@ -583,7 +583,8 @@
       "value": "Quantity",
       "preview_increase": "Increase stock by {{value}}.",
       "preview_decrease": "Decrease stock by {{value}}.",
-      "preview_set": "Set stock to {{value}}."
+      "preview_set": "Set stock to {{value}}.",
+      "quantity_unit": " ea"
     },
     "bulk_confirm": {
       "title": "Confirm Bulk Change",
@@ -647,7 +648,10 @@
       "related_data_notice": "The following data will also be deleted:",
       "warning_message": "Deleted products cannot be recovered.",
       "permanent_warning": "This action cannot be undone. All data related to this product (images, options, inventory, etc.) will be permanently deleted.",
-      "confirm_button": "Delete"
+      "confirm_button": "Delete",
+      "related_images": "- Images: {{count}}",
+      "related_options": "- Options: {{count}}",
+      "related_additional_options": "- Additional options: {{count}}"
     },
     "mode_change": {
       "title": "Change Description Mode",

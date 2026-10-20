@@ -318,7 +318,7 @@ class ImageUploadAdminControllerTest extends PluginTestCase
     }
 
     /**
-     * 목록 응답이 삭제·설정 열기 권한 판정을 싣는다 — 화면이 행 선택·삭제·[설정 열기]를 잠그는 근거(7.1.0 abilities 게이트 plugins #9·#13).
+     * 목록 응답이 삭제·설정 열기 권한 판정을 싣는다 — 화면이 행 선택·삭제·[설정 열기]를 잠그는 근거(7.1.0 abilities 게이트).
      *
      * @effects admin_index_reports_abilities
      *

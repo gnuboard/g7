@@ -25,6 +25,7 @@
                     },
                     "children": [
                         {
+                            "id": "post_form_back_link",
                             "type": "basic",
                             "name": "A",
                             "actions": [
@@ -129,7 +130,7 @@
                                     "name": "Span",
                                     "if": "{{form_meta?.data?.is_guest_post}}",
                                     "props": {
-                                        "className": "ml-1 text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "ml-1 text-xs text-gray-600 dark:text-gray-400"
                                     },
                                     "text": "($t:userinfo.guest_badge)"
                                 }

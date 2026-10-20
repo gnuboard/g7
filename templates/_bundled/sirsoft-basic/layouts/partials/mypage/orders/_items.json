@@ -233,7 +233,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                                "className": "text-gray-500 dark:text-gray-400"
                                                             }
                                                         }
                                                     ]
@@ -263,6 +263,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
                                             },
                                             "children": [
@@ -290,7 +291,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                                "className": "text-gray-500 dark:text-gray-400"
                                                             }
                                                         }
                                                     ]
@@ -352,6 +353,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "type": "button",
                                                         "className": "justify-start text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
                                                     },
                                                     "text": "{{$localized(item.product_name)}}"
@@ -415,7 +417,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"
+                                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}"
                                                             },
                                                             "children": [
                                                                 {
@@ -494,7 +496,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                                "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                             },
                                                             "text": "$t:mypage.order_detail.confirm_purchase"
                                                         },
@@ -531,7 +533,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                                "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                             },
                                                             "text": "$t:mypage.order_detail.write_review"
                                                         },
@@ -541,7 +543,7 @@
                                                             "name": "Span",
                                                             "if": "{{item.has_review === true}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg"
+                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs font-medium rounded-lg"
                                                             },
                                                             "children": [
                                                                 {
@@ -565,7 +567,7 @@
                                                             "name": "Span",
                                                             "if": "{{item.review_deadline_passed === true}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium"
+                                                                "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 dark:text-gray-400 text-xs font-medium"
                                                             },
                                                             "children": [
                                                                 {
@@ -620,7 +622,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-xs text-red-500 dark:text-red-400"
+                                                                        "className": "text-xs text-red-600 dark:text-red-400"
                                                                     },
                                                                     "text": "{{coupon.name ?? ''}} -{{coupon.total_discount_formatted ?? ''}}"
                                                                 }
@@ -644,7 +646,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "tag",
-                                                                        "className": "text-orange-500 dark:text-orange-400",
+                                                                        "className": "text-orange-600 dark:text-orange-400",
                                                                         "size": "xs"
                                                                     }
                                                                 },
@@ -652,7 +654,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-xs text-orange-500 dark:text-orange-400"
+                                                                        "className": "text-xs text-orange-700 dark:text-orange-400"
                                                                     },
                                                                     "text": "{{discountCode.name ?? discountCode.code ?? ''}} -{{discountCode.total_discount_formatted ?? ''}}"
                                                                 }
@@ -684,7 +686,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-xs text-purple-500 dark:text-purple-400"
+                                                                        "className": "text-xs text-purple-600 dark:text-purple-400"
                                                                     },
                                                                     "text": "{{event.name ?? ''}} -{{event.total_discount_formatted ?? ''}}"
                                                                 }
@@ -706,7 +708,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "truck",
-                                                                "className": "text-gray-400 dark:text-gray-500",
+                                                                "className": "text-gray-500 dark:text-gray-500",
                                                                 "size": "xs"
                                                             }
                                                         },
@@ -722,7 +724,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "/"
                                                         },
@@ -742,7 +744,7 @@
                                                             "name": "Span",
                                                             "if": "{{((order.data.shipping_policy_applied_snapshot?.items ?? []).find(sp => sp.product_option_id === item.product_option_id)?.policy?.standalone_shipping_amount ?? 0) === 0}}",
                                                             "props": {
-                                                                "className": "text-xs text-green-600 dark:text-green-400 font-medium"
+                                                                "className": "text-xs text-green-700 dark:text-green-400 font-medium"
                                                             },
                                                             "text": "$t:mypage.order_detail.free_shipping"
                                                         }
@@ -780,12 +782,12 @@
                                                             "responsive": {
                                                                 "portable": {
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-400 dark:text-gray-500 line-through"
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
                                                                     }
                                                                 }
                                                             },
                                                             "props": {
-                                                                "className": "text-sm text-gray-400 dark:text-gray-500 line-through"
+                                                                "className": "text-sm text-gray-500 dark:text-gray-400 line-through"
                                                             },
                                                             "text": "{{item.subtotal_price_formatted ?? ''}}"
                                                         },
@@ -839,7 +841,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                                         }
@@ -856,7 +858,7 @@
                                                         }
                                                     },
                                                     "props": {
-                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}}"
+                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{item.option_status_variant === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : item.option_status_variant === 'danger' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : item.option_status_variant === 'warning' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : item.option_status_variant === 'secondary' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}"
                                                     },
                                                     "children": [
                                                         {
@@ -952,7 +954,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                     },
                                                     "text": "$t:mypage.order_detail.confirm_purchase"
                                                 },
@@ -994,7 +996,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                                        "className": "px-3 py-1.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer"
                                                     },
                                                     "text": "$t:mypage.order_detail.write_review"
                                                 },
@@ -1009,7 +1011,7 @@
                                                         }
                                                     },
                                                     "props": {
-                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-lg"
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 text-xs font-medium rounded-lg"
                                                     },
                                                     "children": [
                                                         {
@@ -1038,7 +1040,7 @@
                                                         }
                                                     },
                                                     "props": {
-                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-400 dark:text-gray-500 text-xs font-medium"
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 dark:text-gray-400 text-xs font-medium"
                                                     },
                                                     "children": [
                                                         {

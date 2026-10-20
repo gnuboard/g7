@@ -362,7 +362,7 @@
                                     {
                                         "type": "basic",
                                         "name": "P",
-                                        "if": "{{(analytics_realtime?.data?.visitors ?? []).length === 0}}",
+                                        "if": "{{analytics_realtime !== undefined && (analytics_realtime?.data?.visitors ?? []).length === 0}}",
                                         "props": {
                                             "className": "text-label-subtle py-4 text-center"
                                         },
@@ -454,13 +454,17 @@
                                                 "id": "realtime_visitors_grid",
                                                 "type": "composite",
                                                 "name": "DataGrid",
+                                                "blur_until_loaded": {
+                                                    "enabled": true,
+                                                    "data_sources": "analytics_realtime"
+                                                },
                                                 "props": {
                                                     "data": "{{analytics_realtime?.data?.visitors ?? []}}",
                                                     "pagination": false,
                                                     "idField": "visitor_key",
                                                     "selectable": false,
                                                     "sortable": false,
-                                                    "emptyMessage": "$t:admin.analytics.realtime.empty",
+                                                    "emptyMessage": "{{analytics_realtime === undefined ? '' : $t('admin.analytics.realtime.empty')}}",
                                                     "columns": [
                                                         {
                                                             "field": "last_action_at",

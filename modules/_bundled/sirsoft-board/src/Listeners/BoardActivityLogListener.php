@@ -647,7 +647,7 @@ class BoardActivityLogListener implements HookListenerInterface
      * 신고 생성 후 로그 기록
      *
      * 사유는 케이스(`Report`)가 아니라 이번 신고자 로그(`ReportLog`)에 있다 — 케이스 모델에서
-     * `reason`·`reportable_type` 을 읽던 동안 두 값이 늘 빈 문자열로 남았다(7.1.0 실측 O-K2-6).
+     * `reason`·`reportable_type` 을 읽던 동안 두 값이 늘 빈 문자열로 남았다(7.1.0 실측).
      * 대상 유형은 케이스의 `target_type`(post|comment)이다. 속성 키 이름은 기존 행과 맞춰 둔다.
      *
      * @param  Report|null  $report  생성(또는 합류)된 신고 케이스

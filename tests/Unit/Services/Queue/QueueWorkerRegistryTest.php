@@ -303,11 +303,58 @@ class QueueWorkerRegistryTest extends TestCase
     {
         $this->registry('database', ['database', 'database-long'], ['database' => ['default', 'mail']]);
 
-        $commands = collect($this->make()->statusReport()['commands'])->keyBy('connection');
+        // 전용 큐(사이트맵) 명령은 같은 연결로 따로 나온다 — 운영자 등록 연결의 명령만 연결별로 본다.
+        $commands = collect($this->make()->statusReport()['commands'])->reject(fn (array $c): bool => $c['dedicated'] ?? false)->keyBy('connection');
 
         $this->assertSame('php artisan queue:work database --queue=default,mail --sleep=3 --tries=3 --max-time=3600', $commands['database']['command']);
         $this->assertSame('php artisan queue:work database-long --queue=long --sleep=3 --tries=3 --max-time=3600 --timeout=3600', $commands['database-long']['command']);
         $this->assertSame('registered', $this->make()->statusReport()['long_worker']['status']);
+    }
+
+    /**
+     * 사이트맵 생성 잡의 전용 큐(`sitemap`)는 운영자가 등록하지 않아도 상태표와 Supervisor 명령에 나온다 (7.1.1 출시 전).
+     *
+     * 잡은 기본 연결의 `sitemap` 큐로 가는데 상태표·명령이 등록 큐만 보여, 안내대로 띄운 워커가 사이트맵을 처리하지 않았고
+     * 대기 건수·경고도 보이지 않았다. 전용 큐는 워커 1개 전용 명령(`--timeout` = 잡 제한 시간)으로 따로 안내한다.
+     *
+     * @scenario driver=database, registration=empty
+     *
+     * @effects supervisor_commands_listed, pending_counted_per_queue
+     *
+     * @return void 반환값 없음
+     */
+    public function test_status_report_always_covers_sitemap_queue(): void
+    {
+        $this->registry('database', ['database'], []);
+        DB::table('jobs')->insert([
+            ['queue' => 'sitemap', 'payload' => '{}', 'attempts' => 0, 'reserved_at' => null, 'available_at' => time(), 'created_at' => time()],
+        ]);
+
+        $report = $this->make()->statusReport();
+        $rows = collect($report['rows'])->keyBy(fn ($r) => $r['connection'].':'.$r['queue']);
+
+        $this->assertArrayHasKey('database:sitemap', $rows->all(), '사이트맵 큐가 상태표에 없다');
+        $this->assertSame(1, $rows['database:sitemap']['pending']);
+        $this->assertSame(['pending_without_worker'], $rows['database:sitemap']['warnings']);
+        $this->assertTrue($rows['database:sitemap']['dedicated']);
+        $this->assertFalse($rows['database:default']['dedicated']);
+
+        $sitemapCommands = collect($report['commands'])->where('queues', 'sitemap')->values();
+        $this->assertCount(1, $sitemapCommands, '사이트맵 워커 명령이 없다');
+        $this->assertSame('php artisan queue:work database --queue=sitemap --sleep=3 --tries=3 --max-time=3600 --timeout=1800', $sitemapCommands[0]['command']);
+        $this->assertTrue($sitemapCommands[0]['dedicated']);
+
+        // 운영자가 기본 연결에 sitemap 을 직접 등록했으면 행·명령을 겹쳐 내지 않는다.
+        $this->registry('database', ['database'], ['database' => ['default', 'sitemap']]);
+        $report = $this->make()->statusReport();
+        $this->assertCount(1, collect($report['rows'])->where('queue', 'sitemap'));
+        $this->assertSame([], collect($report['commands'])->where('dedicated', true)->values()->all());
+
+        // 워커가 필요 없는 드라이버(sync)면 아무것도 싣지 않는다.
+        $this->registry('sync', [], []);
+        $report = $this->make()->statusReport();
+        $this->assertSame([], $report['rows']);
+        $this->assertSame([], $report['commands']);
     }
 
     /**

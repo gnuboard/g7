@@ -22,23 +22,23 @@
       </div>
       <div data-ref="edit_readonly_info" class="grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <div>
-          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_member</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_member</span>
           <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{_global.mileageEdit?.memberName ?? '-'}}</span>
         </div>
         <div>
-          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_amount</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_amount</span>
           <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{(_global.mileageEdit?.amountFormatted ?? '-') + ' ' + (_global.mileageEdit?.currency ?? '')}}</span>
         </div>
         <div>
-          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_type</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_type</span>
           <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{_global.mileageEdit?.typeLabel ?? '-'}}</span>
         </div>
         <div>
-          <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_earned_at</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_earned_at</span>
           <span class="block text-sm font-medium text-gray-500 dark:text-gray-400">{{_global.mileageEdit?.createdAtFormatted ?? '-'}}</span>
         </div>
       </div>
-      <p class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.readonly_hint</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.readonly_hint</p>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.reason</label>
         <input type="text" value="{{_global.mileageEdit?.memo ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.reason_placeholder" class="{{_global.mileageEdit?.errors?.errors?.memo ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}">
@@ -51,14 +51,14 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_date</label>
-        <input data-if="{{_global.mileageEdit?.canEditExpiry === true}}" type="date" value="{{_global.mileageEdit?.expiresAt ?? ''}}" min="{{_global.mileageEdit?.earnedAtDate ?? ''}}" class="{{_global.mileageEdit?.errors?.errors?.expires_at ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}">
+        <input data-if="{{_global.mileageEdit?.canEditExpiry === true}}" type="date" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_date" value="{{_global.mileageEdit?.expiresAt ?? ''}}" min="{{_global.mileageEdit?.earnedAtDate ?? ''}}" class="{{_global.mileageEdit?.errors?.errors?.expires_at ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}">
           <on type="change">
             <!-- 만료일. 적립일보다 앞선 날짜를 못 고르도록 입력칸 자체에 하한(`min`)이 걸려 있고, 그 하한도 여는 쪽이 넘겨 준 값이다. -->
             <set-state target="global" mileageEdit.expiresAt="{{$event.target.value}}"/>
           </on>
         </input>
-        <div data-if="{{_global.mileageEdit?.canEditExpiry !== true}}" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
-          <icon name="lock" class="text-gray-400 dark:text-gray-500"/>
+        <div data-if="{{_global.mileageEdit?.canEditExpiry !== true}}" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <icon name="lock" class="text-gray-500 dark:text-gray-500"/>
           <span>$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_locked</span>
         </div>
         <span data-if="{{_global.mileageEdit?.errors?.errors?.expires_at}}" class="form-error">{{_global.mileageEdit?.errors?.errors?.expires_at?.[0] ?? ''}}</span>

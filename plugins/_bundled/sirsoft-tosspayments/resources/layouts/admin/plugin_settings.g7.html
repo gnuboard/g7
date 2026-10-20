@@ -1,8 +1,22 @@
 <!-- 토스페이먼츠 결제 연동 설정 화면. 결제창을 하나로 띄우는 통합 모드와 주문서에서 결제수단을 직접 고르게 하는 모드를 여기서 가른다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-tosspayments.settings.title" description="$t:sirsoft-tosspayments.settings.description"/>
   <!-- 저장된 플러그인 설정을 폼 초기값으로 싣는다. refetchOnMount 라 저장하고 돌아와도 서버 값이 다시 실린다 -->
-  <data-source id="settings" label_key="$t:sirsoft-tosspayments.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <data-source id="settings" label_key="$t:sirsoft-tosspayments.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
   <!-- 가상계좌 입금통보 웹훅 URL — 토스 개발자센터에 그대로 붙여 넣는 값이라 사이트 주소까지 붙은 전체 URL 을 서버에서 받아 보여 준다 -->
   <data-source id="webhook_info" label_key="$t:sirsoft-tosspayments.editor.data_source.webhook_info" type="api" endpoint="/api/plugins/sirsoft-tosspayments/admin/webhook-url" method="GET" :auto_fetch="true" :auth_required="true" initLocal="webhookInfo"/>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
@@ -286,11 +300,11 @@
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
         <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate/>
+            <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button type="button" data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장. 직전 오류를 먼저 지워야 이번 시도의 결과만 화면에 남는다. 성공 후 설정을 다시 불러오는 것은 서버가 비밀키를 마스크해 돌려주기 때문이다 — 다시 싣지 않으면 화면의 폼 값과 저장값이 어긋난 채 다음 저장이 나간다 -->
             <sequence>

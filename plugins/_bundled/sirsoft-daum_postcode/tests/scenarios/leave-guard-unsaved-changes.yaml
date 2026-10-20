@@ -1,0 +1,21 @@
+feature: 편집 화면 이탈 확인 — 저장하지 않은 변경이 있을 때 다른 화면으로 떠나면 확인 (7.1.1 출시 전 점검)
+
+description: |
+  플러그인 환경설정 화면(플러그인 환경설정)에서 저장하지 않은 변경이 있을 때 사이드바·링크·뒤로가기·새로고침으로 떠나면 확인 창을 띄운다.
+  엔진(engine-v1.82.0)이 레이아웃 meta.leave_guard 식을 떠나는 순간 한 번 읽어 판정하고, 취소 단추·저장 성공 뒤 이동은
+  bypassLeaveGuard 로 묻지 않는다. 같은 화면 안 이동(쿼리만 바뀜 — 탭·필터·항목 선택)은 묻지 않는다.
+
+axes:
+  surface:
+    - edit_screen   # 플러그인 환경설정
+
+effects:
+  - layout_declares_leave_guard            # meta.leave_guard 에 화면별 변경 조건(+ 필요한 화면은 data-track-changes)
+  - dirty_leave_asks_and_stays_on_decline  # 변경 있음 → 다른 화면 이동 시 확인 1회, 거절하면 주소 그대로 · beforeunload 막음
+  - clean_or_saved_leave_does_not_ask      # 변경 없음·저장 처리 뒤 → 묻지 않음
+  - same_screen_move_does_not_ask          # 같은 pathname(쿼리만) → 묻지 않음
+  - only_cancel_and_saved_moves_bypass     # 우회는 취소 단추·저장 성공 뒤 이동뿐, 목록·다른 화면 링크는 묻는다
+  - bypass_move_leaves_without_asking      # 우회 이동을 엔진으로 실행하면 확인 없이 이동
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/layouts/leave-guard-unsaved-changes.test.ts

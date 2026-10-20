@@ -510,6 +510,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "iconName": "refresh",
                                     "variant": "outline",
                                     "size": "md"
@@ -728,6 +729,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-success",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -751,6 +753,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-neutral",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -774,6 +777,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-danger",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -797,6 +801,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-warning",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -1184,6 +1189,7 @@
                             "showColumnSelector": false,
                             "visibleColumns": "{{_global.visibleColumns_admin_users}}",
                             "responsiveBreakpoint": 768,
+                            "emptyMessage": "{{users === undefined ? '' : $t('common.no_data')}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "rowActions": [
                                 {
@@ -1431,6 +1437,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -1518,6 +1525,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
@@ -1590,6 +1598,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -1677,6 +1686,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
@@ -1749,6 +1759,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "btn btn-secondary",
                                 "disabled": "{{_global.isDeleting}}"
                             },
@@ -1829,6 +1840,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
@@ -1900,6 +1912,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [
@@ -1961,6 +1974,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -2048,6 +2062,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
@@ -2120,6 +2135,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -2207,8 +2223,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {

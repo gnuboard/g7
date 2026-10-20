@@ -1,5 +1,5 @@
 {
-    "comment": "배송지 등록·수정 창 — 한 창이 두 모드고 `_global.editingAddress.id` 유무로 갈린다. 폼 값이 전역인 이유는\n     모달이 별도 컨텍스트라 부모 `_local` 을 읽지 못해서이고, 반대로 검증 오류(`_local.addressErrors`)는\n     이 창 안에서만 쓰이므로 로컬에 둔다.",
+    "comment": "배송지 등록·수정 창 — 한 창이 두 모드고 `_global.editingAddress.id` 유무로 갈린다(여는 쪽이 매번 null 로 비운 뒤 채워\n     id 가 남지 않는다 — 7.1.1). 폼 값이 전역인 이유는\n     모달이 별도 컨텍스트라 부모 `_local` 을 읽지 못해서이고, 반대로 검증 오류(`_local.addressErrors`)는\n     이 창 안에서만 쓰이므로 로컬에 둔다. 칸마다 value 를 상태에서 읽고 change 로 전역 점 경로에 쓴다 — 폼 자동바인딩(data-key)은 «마지막 렌더 때의 전역 스냅샷»에 이번 칸만 얹어 통째로 쓰므로, 다음 칸 입력이 미뤄진 다시 그리기보다 먼저 오면 앞 칸 값을 지웠다(7.1.1 무거운 주문서에서 20ms 간격 입력 1/4).\n     편집 대상은 배송지(받는 분·연락처·주소)라 창을 닫으면 비운다 — 취소는 직접, 창 머리 닫기·Esc·바깥 클릭·저장 성공(창이 닫힌다)은\n     열려 있는 동안 내내 붙어 있는 폼의 unmount 에서 비운다. 409 덮어쓰기 확인 창이 위에 떠 있는 동안은 이 창이 열려 있어 남는다\n     (7.1.1 security.md 「_global 민감 정보 금지」 의 창 이름 공간 예외).",
     "meta": {
         "is_partial": true,
         "description": "배송지 추가/수정 모달 - Nexibase 스타일",
@@ -16,13 +16,24 @@
         {
             "type": "basic",
             "name": "Form",
-            "dataKey": "_global.editingAddress",
             "responsive": {
                 "portable": {
                     "props": {
                         "className": "space-y-3"
                     }
                 }
+            },
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창이 닫혀 폼이 내려갈 때(어느 갈래로 닫든) 편집 대상 배송지를 지운다",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "editingAddress": null
+                        }
+                    }
+                ]
             },
             "props": {
                 "className": "space-y-4"
@@ -49,7 +60,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-0.5"
+                                        "className": "text-red-600 dark:text-red-400 ml-0.5"
                                     },
                                     "text": "*"
                                 }
@@ -95,7 +106,7 @@
                             "name": "Span",
                             "if": "{{_local.addressErrors?.name}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                             },
                             "text": "{{_local.addressErrors?.name?.[0] ?? ''}}"
                         }
@@ -175,7 +186,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-500 ml-0.5"
+                                                "className": "text-red-600 dark:text-red-400 ml-0.5"
                                             },
                                             "text": "*"
                                         }
@@ -195,10 +206,21 @@
                                             }
                                         }
                                     },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingAddress.recipient_name": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
                                         "aria-label": "$t:mypage.addresses.form.recipient",
                                         "type": "text",
                                         "name": "recipient_name",
+                                        "value": "{{_global.editingAddress?.recipient_name ?? ''}}",
                                         "placeholder": "$t:mypage.addresses.form.recipient_placeholder",
                                         "required": true,
                                         "error": "{{_local.addressErrors?.recipient_name?.[0] ?? ''}}",
@@ -210,7 +232,7 @@
                                     "name": "Span",
                                     "if": "{{_local.addressErrors?.recipient_name}}",
                                     "props": {
-                                        "className": "text-red-500 text-xs mt-1"
+                                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                     },
                                     "text": "{{_local.addressErrors?.recipient_name?.[0] ?? ''}}"
                                 }
@@ -237,7 +259,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-500 ml-0.5"
+                                                "className": "text-red-600 dark:text-red-400 ml-0.5"
                                             },
                                             "text": "*"
                                         }
@@ -257,10 +279,21 @@
                                             }
                                         }
                                     },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingAddress.recipient_phone": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
                                         "aria-label": "$t:mypage.addresses.form.phone",
                                         "type": "tel",
                                         "name": "recipient_phone",
+                                        "value": "{{_global.editingAddress?.recipient_phone ?? ''}}",
                                         "placeholder": "$t:mypage.addresses.form.phone_placeholder",
                                         "required": true,
                                         "error": "{{_local.addressErrors?.recipient_phone?.[0] ?? ''}}",
@@ -272,7 +305,7 @@
                                     "name": "Span",
                                     "if": "{{_local.addressErrors?.recipient_phone}}",
                                     "props": {
-                                        "className": "text-red-500 text-xs mt-1"
+                                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                     },
                                     "text": "{{_local.addressErrors?.recipient_phone?.[0] ?? ''}}"
                                 }
@@ -302,7 +335,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-0.5"
+                                        "className": "text-red-600 dark:text-red-400 ml-0.5"
                                     },
                                     "text": "*"
                                 }
@@ -327,8 +360,10 @@
                                             "type": "basic",
                                             "name": "Input",
                                             "props": {
+                                                "aria-label": "$t:shop.checkout.zipcode",
                                                 "type": "text",
                                                 "name": "zipcode",
+                                                "value": "{{_global.editingAddress?.zipcode ?? ''}}",
                                                 "placeholder": "$t:shop.checkout.zipcode_placeholder",
                                                 "className": "{{_local.addressErrors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}",
                                                 "readOnly": true
@@ -365,8 +400,10 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.address",
                                         "type": "text",
                                         "name": "address",
+                                        "value": "{{_global.editingAddress?.address ?? ''}}",
                                         "placeholder": "$t:shop.checkout.address_placeholder",
                                         "className": "{{_local.addressErrors?.address ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}",
                                         "readOnly": true
@@ -377,7 +414,7 @@
                                     "name": "Span",
                                     "if": "{{_local.addressErrors?.zipcode || _local.addressErrors?.address}}",
                                     "props": {
-                                        "className": "text-red-500 text-xs mt-1"
+                                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                     },
                                     "text": "{{_local.addressErrors?.zipcode?.[0] ?? _local.addressErrors?.address?.[0] ?? ''}}"
                                 }
@@ -410,7 +447,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-0.5"
+                                        "className": "text-red-600 dark:text-red-400 ml-0.5"
                                     },
                                     "text": "*"
                                 }
@@ -419,10 +456,21 @@
                         {
                             "type": "basic",
                             "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress.address_line_1": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "aria-label": "$t:mypage.addresses.form.address",
                                 "type": "text",
                                 "name": "address_line_1",
+                                "value": "{{_global.editingAddress?.address_line_1 ?? ''}}",
                                 "placeholder": "$t:shop.checkout.intl_address1_placeholder",
                                 "className": "{{_local.addressErrors?.address_line_1 ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"
                             }
@@ -430,9 +478,21 @@
                         {
                             "type": "basic",
                             "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress.address_line_2": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.detail_address",
                                 "type": "text",
                                 "name": "address_line_2",
+                                "value": "{{_global.editingAddress?.address_line_2 ?? ''}}",
                                 "placeholder": "$t:shop.checkout.intl_address2_placeholder",
                                 "className": "w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                             }
@@ -447,9 +507,21 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingAddress.intl_city": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.intl_city",
                                         "type": "text",
                                         "name": "intl_city",
+                                        "value": "{{_global.editingAddress?.intl_city ?? ''}}",
                                         "placeholder": "$t:shop.checkout.intl_city_placeholder",
                                         "className": "{{_local.addressErrors?.intl_city ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"
                                     }
@@ -457,9 +529,21 @@
                                 {
                                     "type": "basic",
                                     "name": "Input",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingAddress.intl_state": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.intl_state",
                                         "type": "text",
                                         "name": "intl_state",
+                                        "value": "{{_global.editingAddress?.intl_state ?? ''}}",
                                         "placeholder": "$t:shop.checkout.intl_state_placeholder",
                                         "className": "w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                                     }
@@ -469,9 +553,21 @@
                         {
                             "type": "basic",
                             "name": "Input",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress.intl_postal_code": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.intl_postal_code",
                                 "type": "text",
                                 "name": "intl_postal_code",
+                                "value": "{{_global.editingAddress?.intl_postal_code ?? ''}}",
                                 "placeholder": "$t:shop.checkout.intl_postal_code_placeholder",
                                 "className": "{{_local.addressErrors?.intl_postal_code ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"
                             }
@@ -481,7 +577,7 @@
                             "name": "Span",
                             "if": "{{_local.addressErrors?.address_line_1 || _local.addressErrors?.intl_city || _local.addressErrors?.intl_postal_code}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{_local.addressErrors?.address_line_1?.[0] ?? _local.addressErrors?.intl_city?.[0] ?? _local.addressErrors?.intl_postal_code?.[0] ?? ''}}"
                         }
@@ -514,10 +610,21 @@
                                     }
                                 }
                             },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress.address_detail": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
                             "props": {
                                 "aria-label": "$t:mypage.addresses.form.detail_address",
                                 "type": "text",
                                 "name": "address_detail",
+                                "value": "{{_global.editingAddress?.address_detail ?? ''}}",
                                 "placeholder": "$t:mypage.addresses.form.detail_placeholder",
                                 "className": "{{_local.addressErrors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"
                             }
@@ -592,8 +699,28 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "취소 — 쓰던 값과 오류 표시를 버린다. 창 자신의 오류(_local)는 닫기 전에, 편집 대상(전역)은 닫은 뒤 비운다\n                 (모달 문맥 규칙). 닫기 단추·Esc 는 이 동작을 타지 않으므로 여는 쪽도 매번 비운다(7.1.1)",
                                     "type": "click",
-                                    "handler": "closeModal"
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "addressErrors": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingAddress": null
+                                            }
+                                        }
+                                    ]
                                 }
                             ],
                             "props": {

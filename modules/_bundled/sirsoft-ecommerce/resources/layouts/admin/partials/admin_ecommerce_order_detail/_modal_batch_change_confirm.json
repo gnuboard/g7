@@ -542,7 +542,7 @@
                                             "name": "P",
                                             "if": "{{_global.manualPaidPreview?.orders?.[0]?.restoration?.legacy_snapshot === true}}",
                                             "props": {
-                                                "className": "text-xs text-amber-600 dark:text-amber-400"
+                                                "className": "text-xs text-amber-700 dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_legacy_snapshot_single"
                                         }
@@ -606,7 +606,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.apply_stock_deduction === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_off_warning"
                                                 }
@@ -682,7 +682,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.apply_mileage_deduction === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_off_warning"
                                                 }
@@ -748,7 +748,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.record_paid_amount === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_off_warning"
                                                 }
@@ -774,7 +774,7 @@
                                     "name": "P",
                                     "if": "{{_global.manualPaidPreview?.orders?.[0]?.paid_amount_record?.reason === 'never_paid'}}",
                                     "props": {
-                                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                                        "className": "text-xs text-amber-700 dark:text-amber-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.never_paid_note_single"
                                 },
@@ -785,7 +785,7 @@
                                     "name": "P",
                                     "if": "{{(_global.manualPaidPreview?.orders?.[0]?.warnings ?? []).includes('pg_already_cancelled')}}",
                                     "props": {
-                                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                                        "className": "text-xs text-amber-700 dark:text-amber-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled"
                                 }
@@ -813,7 +813,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isProcessing}}"
                     },
                     "children": [
@@ -876,7 +876,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{(!$parent._local.batchOrderStatus && !$parent._local.batchCarrierId && !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') && (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}"
                     },
                     "children": [

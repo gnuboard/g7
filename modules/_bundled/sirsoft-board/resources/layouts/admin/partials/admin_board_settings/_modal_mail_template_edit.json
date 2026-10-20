@@ -17,13 +17,6 @@
             "id": "board_edit_form_container",
             "type": "basic",
             "name": "Div",
-            "classMap": {
-                "key": "{{$parent._computed.isReadOnly ? 'readonly' : 'normal'}}",
-                "variants": {
-                    "readonly": "opacity-60",
-                    "normal": ""
-                }
-            },
             "blur_until_loaded": "{{$parent._local.isSaving}}",
             "props": {
                 "className": "flex flex-col max-h-[70vh]"
@@ -127,7 +120,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                        "className": "text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                     },
                                     "text": "{{$parent._local.editingTemplate?.type ?? ''}}"
                                 }

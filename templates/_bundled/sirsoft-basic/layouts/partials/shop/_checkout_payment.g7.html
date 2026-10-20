@@ -63,8 +63,8 @@
     <!-- 카드결제 선택 시 안내 -->
     <div data-if="{{_computed.selectedPaymentMethod === 'card'}}" class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
       <responsive on="portable" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"/>
-      <p class="text-sm text-gray-500 dark:text-gray-400">
-        <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
+      <p class="text-sm text-gray-600 dark:text-gray-300">
+        <responsive on="portable" class="text-xs text-gray-600 dark:text-gray-300"/>
         $t:shop.checkout.card_payment_info
       </p>
     </div>
@@ -115,7 +115,7 @@
             <set-state target="local" refundBankHolder="{{$event.target.value}}"/>
           </on>
         </input>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:shop.checkout.refund_bank_partial_notice</p>
+        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">$t:shop.checkout.refund_bank_partial_notice</p>
       </div>
     </div>
     <!-- 무통장입금 선택 시 계좌 선택 및 입금자명 -->
@@ -129,7 +129,7 @@
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           <span>$t:shop.checkout.dbank_select_account</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-300 ml-1">*</span>
         </label>
         <div class="{{_local.errors?.['dbank.bank_code'] ? 'space-y-2 p-2 border-2 border-red-500 rounded-lg' : 'space-y-2'}}">
           <div data-each="bank, bankIdx in {{paymentSettings.data?.order_settings?.bank_accounts?.filter(b => b.is_active) ?? []}}">
@@ -141,23 +141,23 @@
               <!-- 라디오 스타일 — 왼쪽에 선택/비선택 동그라미, 오른쪽에 은행명/계좌번호. 결제수단 선택 카드(상단)와 시각적 일관성을 맞추되, 무통장 계좌는 다중 선택 가능성이 있어 명시적 라디오 표시 유지 -->
               <div class="flex items-center gap-3">
                 <!-- 라디오 아이콘 — 선택: 채워진 체크 동그라미 / 비선택: 빈 동그라미 -->
-                <icon name="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'circle-check' : 'circle'}}" iconStyle="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'solid' : 'regular'}}" class="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 flex-shrink-0' : 'text-xl text-gray-300 dark:text-gray-600 flex-shrink-0'}}"/>
+                <icon name="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'circle-check' : 'circle'}}" iconStyle="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'solid' : 'regular'}}" class="{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-xl text-gray-500 dark:text-gray-400 flex-shrink-0'}}"/>
                 <div class="flex-1">
                   <p class="font-medium text-gray-900 dark:text-white">{{$localized(bank.bank_name) || bank.bank_code}}</p>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">{{bank.account_number}} ({{bank.account_holder}})</p>
+                  <p class="text-sm text-gray-600 dark:text-gray-300">{{bank.account_number}} ({{bank.account_holder}})</p>
                 </div>
               </div>
             </button>
           </div>
         </div>
-        <span data-if="{{_local.errors?.['dbank.bank_code']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['dbank.bank_code']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['dbank.bank_code']}}" class="text-red-600 dark:text-red-300 text-xs mt-1 block">{{_local.errors?.['dbank.bank_code']?.[0] ?? ''}}</span>
       </div>
       <!-- 입금자명 입력 -->
       <div class="mt-4">
         <responsive on="portable" class="mt-3"/>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:shop.checkout.depositor_name</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-300 ml-1">*</span>
         </label>
         <input aria-label="$t:shop.checkout.depositor_name" type="text" name="depositor_name" value="{{_local.depositorName ?? _computed.ordererDefaults?.name ?? ''}}" placeholder="$t:shop.checkout.depositor_name_placeholder" class="{{_local.errors?.depositor_name ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.depositor_name ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
@@ -166,7 +166,7 @@
             <set-state target="local" depositorName="{{$event.target.value}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.depositor_name}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.depositor_name?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.depositor_name}}" class="text-red-600 dark:text-red-300 text-xs mt-1 block">{{_local.errors?.depositor_name?.[0] ?? ''}}</span>
       </div>
       <!-- 환불 계좌 (선택 입력) — 무통장은 PG 를 경유하지 않아 관리자가 수동 이체한다. 여기 입력된 계좌가 그 대상이다. 3필드 중 하나라도 채우면 나머지도 필수(CreateOrderRequest::withValidator 의 required_with). -->
       <div data-ref="checkout_refund_bank_dbank" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
@@ -204,7 +204,7 @@
         <default/>
       </extension-point>
       <!-- 입금 기한 안내 — 가상계좌 안내와 동일 규칙(서버 resolveAutoCancelDays 일치). 빈 문자열/0/음수/비숫자는 기본치 3 으로 되돌린다. -->
-      <p class="text-xs text-amber-600 dark:text-amber-400 mt-3">$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
+      <p class="text-xs text-amber-700 dark:text-amber-400 mt-3">$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}</p>
     </div>
   </div>
 </partial>

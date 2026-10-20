@@ -141,7 +141,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "circle-info",
-                        "className": "text-2xl text-gray-300 dark:text-gray-600"
+                        "className": "text-2xl text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
@@ -262,7 +262,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "lg",
-                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                                "className": "text-gray-500 dark:text-gray-400"
                                                             }
                                                         }
                                                     ]
@@ -301,7 +301,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.claimType === 'refund' && !!claimItem.refund_branch}}",
                                                     "props": {
-                                                        "className": "{{(claimItem.refund_branch === 'auto' && (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}}"
+                                                        "className": "{{(claimItem.refund_branch === 'auto' && (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'inline-block mt-1 px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}}"
                                                     },
                                                     "text": "{{(claimItem.refund_branch === 'auto' && (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.refund_branch_cancel_badge') : $t('claim.apply.refund_branch_refund_badge')}}"
                                                 },
@@ -329,7 +329,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "{{unitPriceCurrency.formatted ?? ''}}"
                                                         }
@@ -341,7 +341,7 @@
                                                     "name": "P",
                                                     "if": "{{(claimItem.locked_quantity ?? 0) > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-600 dark:text-amber-400 mt-1"
+                                                        "className": "text-xs text-amber-700 dark:text-amber-400 mt-1"
                                                     },
                                                     "text": "$t:claim.apply.locked_quantity|count={{claimItem.locked_quantity ?? 0}}"
                                                 }
@@ -394,7 +394,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "$t:claim.apply.available_quantity|count={{claimItem.available_quantity ?? 0}}"
                                                 },

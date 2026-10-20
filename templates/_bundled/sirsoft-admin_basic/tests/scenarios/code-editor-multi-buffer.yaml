@@ -36,6 +36,8 @@ effects:
   - code_workspace_uses_one_monaco_model_per_file         # 파일별 모델 — 커서·되돌리기가 섞이지 않는다
   - code_editor_keeps_unsaved_edits_across_file_switches  # 브라우저에서 파일 왕복 후에도 편집분 유지
   - code_editor_guards_reload_with_unsaved_edits          # 미저장 상태의 새로고침을 막아 세운다
+  - code_editor_keeps_one_monaco_model_per_file           # 브라우저에서 파일마다 되돌리기 기록이 따로다
+  - code_editor_shows_open_files_as_tabs                  # 브라우저에서 연 파일이 탭으로 보인다
   - custom_asset_editor_keeps_unsaved_draft_across_files  # 커스텀 자산 모달도 같은 규칙 (D2)
   - custom_asset_editor_confirms_before_discarding_on_target_switch # 대상 전환 시 확인 (D3)
   - custom_asset_editor_indents_with_tab                  # 코드 입력칸의 Tab 은 들여쓰기 (§4.7)
@@ -89,7 +91,7 @@ effects:
   - code_workspace_keeps_edits_typed_after_save_dirty # 저장을 보낸 뒤 더 친 글자는 dirty 로 남는다
   - code_workspace_still_flags_conflict_for_other_saves # 내 저장보다 판본이 더 올랐거나 다른 파일 기록이면 여전히 충돌
   - code_editor_save_records_last_save_for_workspace # 저장 동작이 보낸 파일·본문과 응답 판본을 lastSave 로 넘긴다
-  # --- 7.1.0 전수 실측 I1 (2026-10-06) 에서 드러난 결함의 잠금
+  # --- 7.1.0 전수 실측 (2026-10-06) 에서 드러난 결함의 잠금
   - code_workspace_close_dialog_reports_save_failure # «저장하고 닫기» 가 실패하면 창에 알리고 버튼을 다시 푼다
   - code_workspace_restores_drafts_of_unopened_files # 열려 있지 않은 파일의 복원 초안이 서버 본문 도착 뒤에도 남는다
   - code_workspace_does_not_resurrect_drafts_removed_by_other_tab # 다른 탭이 지운 초안을 병합 사본으로 되살리지 않는다

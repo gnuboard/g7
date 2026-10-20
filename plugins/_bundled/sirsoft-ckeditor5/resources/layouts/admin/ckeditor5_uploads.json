@@ -300,7 +300,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-solid fa-search",
-                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
                                                 }
                                             },
                                             {
@@ -535,7 +535,7 @@
                                 }
                             },
                             {
-                                "comment": "정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다",
+                                "comment": "정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다.\n               서버가 정렬하는 열은 올린 시각·파일 크기·원래 이름 셋뿐이라(IndexUploadsRequest::SORTABLE) 썸네일·업로더·참조 열은 정렬 불가로 둔다 —\n               종전에는 그 머리를 누르면 422 가 났다(7.1.1)",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "navigate",
@@ -599,7 +599,7 @@
                             "selectable": "{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}",
                             "selectionScope": "page",
                             "selectedIds": "{{_global.selectedIds_ckeditor5_uploads || []}}",
-                            "emptyMessage": "$t:sirsoft-ckeditor5.admin.uploads.empty",
+                            "emptyMessage": "{{ckeditor5Uploads === undefined ? '' : $t('sirsoft-ckeditor5.admin.uploads.empty')}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "rowActions": [
                                 {
@@ -613,6 +613,7 @@
                             "columns": [
                                 {
                                     "field": "thumbnail",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-ckeditor5.admin.uploads.col.thumbnail",
                                     "width": "90px",
                                     "cellChildren": [
@@ -676,6 +677,7 @@
                                 },
                                 {
                                     "field": "uploader_name",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-ckeditor5.admin.uploads.col.uploader",
                                     "width": "140px",
                                     "cellChildren": [
@@ -707,6 +709,7 @@
                                 },
                                 {
                                     "field": "referenced",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-ckeditor5.admin.uploads.col.referenced",
                                     "width": "110px",
                                     "cellChildren": [

@@ -119,7 +119,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         >
           <Icon name={IconName.Bell} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           {unreadCount > 0 && (
-            <Span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+            <Span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 dark:bg-red-600 rounded-full">
               {unreadCount > 9 ? '9+' : unreadCount}
             </Span>
           )}
@@ -161,15 +161,15 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                         <Div className="font-semibold text-gray-900 dark:text-white text-sm">
                           {notification.title}
                         </Div>
-                        <Div className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                        <Div className="text-gray-600 dark:text-gray-300 text-sm mt-1">
                           {notification.message}
                         </Div>
-                        <Div className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                        <Div className="text-gray-600 dark:text-gray-300 text-xs mt-1">
                           {notification.time}
                         </Div>
                       </Div>
                       {!notification.read && (
-                        <Span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5" />
+                        <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />
                       )}
                     </Div>
                   </Button>
@@ -194,13 +194,13 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             />
           ) : (
             <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-              <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </Div>
           )}
           <Div className="hidden md:block text-left">
             <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
             {user.role && (
-              <Div className="text-gray-500 dark:text-gray-400 text-xs">{user.role}</Div>
+              <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>
             )}
           </Div>
           <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -229,7 +229,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                   onLogoutClick?.();
                   setShowProfileMenu(false);
                 }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-red-600 dark:text-red-300 transition-colors"
               >
                 <Icon name={IconName.ArrowRight} className="w-5 h-5" />
                 <Span>{t('common.logout')}</Span>

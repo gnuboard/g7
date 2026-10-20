@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 종결은 돈을 닫는다 (#599 3차 실측 F-8·F-9)
+# 시나리오 매니페스트 — 종결은 돈을 닫는다 (#599 실측)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: claim_termination_closes_the_money

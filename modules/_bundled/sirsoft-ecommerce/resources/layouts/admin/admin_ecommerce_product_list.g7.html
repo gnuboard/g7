@@ -11,7 +11,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -296,7 +304,7 @@
           </div>
           <div class="flex-1"/>
           <!-- 일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다 -->
-          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
+          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
             <on type="click">
               <set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/>
               <action handler="sirsoft-ecommerce.buildConfirmData"/>
@@ -344,7 +352,7 @@
               </on>
             </select>
             <!-- 엑셀 다운로드 미제공 - 숨김 처리 -->
-            <button :data-if="false" type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <button :data-if="false" type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:hover:bg-gray-700">
               <on type="click">
                 <open-modal target="modal_excel_download"/>
               </on>

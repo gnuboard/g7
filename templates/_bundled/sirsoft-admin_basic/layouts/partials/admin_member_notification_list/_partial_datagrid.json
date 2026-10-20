@@ -7,6 +7,10 @@
     "id": "member_notification_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "memberNotifications"
+    },
     "actions": [
         {
             "comment": "쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다.",
@@ -70,9 +74,8 @@
         "selectionScope": "page",
         "selectedIds": "{{_global.selectedIds_admin_member_notifications || []}}",
         "selectedCountText": "",
-        "loading": "{{memberNotifications?.loading}}",
         "expandable": true,
-        "emptyMessage": "$t:admin.member_notification.empty_message",
+        "emptyMessage": "{{memberNotifications === undefined ? '' : $t('admin.member_notification.empty_message')}}",
         "actionsColumnHeader": "$t:common.actions",
         "rowActions": [
             {
@@ -117,7 +120,7 @@
                                 "name": "Span",
                                 "if": "{{!row.body_excerpt}}",
                                 "props": {
-                                    "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                    "className": "text-sm text-gray-500 dark:text-gray-400 italic"
                                 },
                                 "text": "$t:admin.member_notification.detail.no_body"
                             }
@@ -264,7 +267,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-user",
-                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                         }
                                     },
                                     {

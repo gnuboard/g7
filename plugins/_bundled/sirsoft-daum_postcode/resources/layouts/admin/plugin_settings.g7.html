@@ -1,9 +1,23 @@
 <!-- 다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다
 e2e:allow 표시 방식 선택지 번역·의미 클래스 위치 교정 — 구조 Vitest(pluginSettingsDisplay.test.ts) + Playwright 격리 브라우저 ko/en·1440·375px 재실측 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-daum_postcode.settings.title" description="$t:sirsoft-daum_postcode.settings.description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-daum_postcode.settings.title" description="$t:sirsoft-daum_postcode.settings.description"/>
   <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
-  <data-source id="settings" label_key="$t:sirsoft-daum_postcode.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <data-source id="settings" label_key="$t:sirsoft-daum_postcode.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
@@ -92,11 +106,11 @@ e2e:allow 표시 방식 선택지 번역·의미 클래스 위치 교정 — 구
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
         <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate/>
+            <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button type="button" data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 -->
             <sequence>

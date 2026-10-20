@@ -36,6 +36,10 @@ effects:
   - dangerous_href_neutralized
   - external_link_preserved
   - new_window_link_has_noopener
+  - static_blank_link_has_noopener      # 봇 화면 정적 A 의 target=_blank 에도 rel noopener noreferrer (7.1.1)
+  - static_link_fallback_href_applied   # 봇 화면 정적 A 의 fallbackHref — 이 사이트 주소가 아니면 대체 주소 (사람 화면 A 와 같음)
+  - static_root_href_kept              # 봇 화면 홈 링크 href="/" 유지(정적·바인딩·대체 주소·이동 액션)
+  - static_disabled_link_has_no_href    # 봇 화면 정적 A 의 disabled — href 없음
 
 test_files:
   # 배포 번들 종단 — 실 로그인 흐름의 javascript:/외부 redirect
@@ -48,3 +52,5 @@ test_files:
   - resources/js/core/template-engine/__tests__/DynamicRenderer.urlSchemeSanitize.test.tsx
   # 봇(SEO) 렌더러 패리티 — 클라이언트가 막는 값을 봇 HTML 이 `<a href>` 로 되살리지 않는다
   - tests/Unit/Seo/ComponentHtmlMapperUrlSchemeTest.php
+  # 봇(SEO) 정적 링크 — 템플릿 A 컴포넌트(target·rel·fallbackHref·disabled)와 같은 규칙
+  - tests/Unit/Seo/ComponentHtmlMapperStaticAnchorTest.php

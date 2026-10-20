@@ -1,0 +1,20 @@
+feature: 관리자 회원 검색의 탈퇴 회원 제외 옵션
+
+description: |
+  관리자 알림 문안 편집 창(코어·게시판·이커머스·GDPR·수출입은행)의 「특정 회원」 수신자 검색이 GET /api/admin/users/search 로
+  탈퇴 회원까지 돌려줘 고를 수 있었다(2026-10-18 관찰). 탈퇴 회원은 연락처가 익명화되고 바깥 채널 발송이 막혀
+  골라도 받지 못한다. 같은 API 를 쓰는 활동 로그·주문·쿠폰·배송지 목록의 「회원」 필터는 탈퇴 회원의 기록도 찾아야
+  하므로 기본 동작은 그대로 두고, exclude_withdrawn=1 을 실은 호출만 탈퇴 회원(withdrawn_at 있음 또는 status=withdrawn)을
+  뺀다. 차단·비활성·휴면 회원은 빼지 않는다(탈퇴가 아님).
+
+axes:
+  mode: [exclude_withdrawn, default, invalid_option, recipient_picker_layouts]
+
+effects:
+  - withdrawn_members_excluded_from_recipient_search
+  - default_search_still_finds_withdrawn_members
+  - exclude_withdrawn_option_is_validated
+  - search_validation_messages_use_field_labels   # 검증 문구에 필드 키 대신 칸 표시 이름(uuid·exclude_withdrawn)
+
+test_files:
+  - tests/Feature/Api/Admin/UserSearchExcludeWithdrawnTest.php

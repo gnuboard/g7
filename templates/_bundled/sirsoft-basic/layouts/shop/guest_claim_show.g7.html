@@ -91,7 +91,7 @@
                     <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
                     <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
                     <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
-                    <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                    <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300</variant>
                     <variant when="secondary">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
                     <variant when="dark">bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200</variant>
                   </class-map>
@@ -101,7 +101,7 @@
                 </span>
               </div>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{claim.data?.claim?.claim_number ?? ''}}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:claim.list.requested_at|at={{claim.data?.claim?.requested_at_formatted ?? ''}}</p>
+              <p data-if="{{!!claim.data?.claim?.requested_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:claim.list.requested_at|at={{claim.data?.claim?.requested_at_formatted ?? ''}}</p>
               <!-- 원 주문으로 — 신청서에서 주문을 되짚어 볼 수 있어야 한다. 비회원의 주문 상세는 조회 토큰으로 열리며 같은 토큰이 이 화면도 열었다. -->
               <button data-if="{{!!claim.data?.claim?.order_number}}" type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 cursor-pointer">
                 <on type="click">
@@ -124,7 +124,7 @@
                 $t:claim.list.edit
               </button>
               <!-- [철회] — 회원 상세와 같은 확인 모달을 연다. 비회원 철회 주소는 주문 스코프가 붙은 모양이라, 그 앞부분은 이 셸이 진입 때 세운 값을 모달이 읽는다. -->
-              <button data-if="{{claim.data?.claim?.is_withdrawable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
+              <button data-if="{{claim.data?.claim?.is_withdrawable === true}}" type="button" class="px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
                 <on type="click">
                   <action handler="sirsoft-ecommerce.openClaimWithdraw" claimNumber="{{claim.data?.claim?.claim_number}}" claimLabel="{{claim.data?.claim?.claim_type_label ?? ''}}"/>
                 </on>

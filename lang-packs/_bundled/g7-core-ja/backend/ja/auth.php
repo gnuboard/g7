@@ -55,4 +55,14 @@ return [
     'two_factor_required_app' => '認証アプリの6桁コードを入力してログインを完了してください。',
     'two_factor_enrollment_required' => 'ログインするには認証アプリの登録が必要です。管理者にお問い合わせください。',
     'account_dormant' => '長期間アクセスがないため、休眠状態のアカウントです。本人確認後、利用することができます。',
+    // `auth:process-password-expiry` コマンド出力
+    'console' => [
+        'process_password_expiry' => [
+            'disabled' => 'パスワード有効期限機能が無効のため実行しませんでした。(security.password_expiry_enabled = false)',
+            'locked' => '管理者の職権実行がパスワード有効期限の処理中のため、今回の周期はスキップしました。',
+            'notice' => '有効期限の事前通知: :count 件 (残りの対象 :remaining 件)',
+            'expire' => '有効期限日の処理: :count 件 (残りの対象 :remaining 件)',
+            'stage_failed' => '段階失敗 — :stage: :error',
+        ],
+    ],
 ];

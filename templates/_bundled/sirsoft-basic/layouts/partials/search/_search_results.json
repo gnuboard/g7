@@ -52,7 +52,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-5 text-gray-300 dark:text-gray-600"
+                        "className": "mb-5 text-gray-500 dark:text-gray-500"
                     },
                     "children": [
                         {
@@ -96,7 +96,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-5 text-red-300 dark:text-red-500/60"
+                        "className": "mb-5 text-red-500 dark:text-red-500/60"
                     },
                     "children": [
                         {
@@ -164,7 +164,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-5 text-gray-300 dark:text-gray-600"
+                        "className": "mb-5 text-gray-500 dark:text-gray-500"
                     },
                     "children": [
                         {
@@ -208,7 +208,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-5 text-red-300 dark:text-red-500/60"
+                        "className": "mb-5 text-red-500 dark:text-red-500/60"
                     },
                     "children": [
                         {
@@ -263,7 +263,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-5 text-gray-300 dark:text-gray-600"
+                        "className": "mb-5 text-gray-500 dark:text-gray-500"
                     },
                     "children": [
                         {
@@ -307,7 +307,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-5 text-red-300 dark:text-red-500/60"
+                        "className": "mb-5 text-red-500 dark:text-red-500/60"
                     },
                     "children": [
                         {

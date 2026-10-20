@@ -48,6 +48,14 @@ interface BoardRepositoryInterface
     public function findBySlug(string $slug): ?Board;
 
     /**
+     * 슬러그의 게시판이 있는지 확인합니다(행을 읽지 않는 존재 확인).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 게시판 존재 여부
+     */
+    public function existsBySlug(string $slug): bool;
+
+    /**
      * 게시판을 수정합니다.
      *
      * @param  int  $id  게시판 ID

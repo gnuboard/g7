@@ -74,8 +74,8 @@ class ProcessPrivacyRetentionCommand extends Command
         // 오타·빈 변수 치환이 코어와 모든 확장의 되돌릴 수 없는 파기로 번진다. 옵션을 아예
         // 주지 않은 것만 전 핸들러 실행이다.
         if ($only !== null && trim((string) $only) === '') {
-            $this->error('--handler 에 핸들러 식별자를 지정하세요. 전 핸들러를 실행하려면 옵션을 빼세요.');
-            $this->line('등록된 핸들러: '.(implode(', ', array_keys($this->manager->handlers())) ?: '없음'));
+            $this->error(__('privacy.console.process_retention.handler_required'));
+            $this->line(__('privacy.console.process_retention.registered_handlers', ['handlers' => implode(', ', array_keys($this->manager->handlers())) ?: __('privacy.console.process_retention.none')]));
 
             return Command::FAILURE;
         }
@@ -83,8 +83,8 @@ class ProcessPrivacyRetentionCommand extends Command
         $only = $only === null ? null : trim((string) $only);
 
         if ($only !== null && $this->manager->handler($only) === null) {
-            $this->error("등록되지 않은 보유기간 핸들러입니다: {$only}");
-            $this->line('등록된 핸들러: '.(implode(', ', array_keys($this->manager->handlers())) ?: '없음'));
+            $this->error(__('privacy.console.process_retention.unknown_handler', ['handler' => $only]));
+            $this->line(__('privacy.console.process_retention.registered_handlers', ['handlers' => implode(', ', array_keys($this->manager->handlers())) ?: __('privacy.console.process_retention.none')]));
 
             return Command::FAILURE;
         }
@@ -92,7 +92,7 @@ class ProcessPrivacyRetentionCommand extends Command
         $results = $this->manager->process($isDryRun, $only);
 
         if ($results === []) {
-            $this->info('등록된 보유기간 핸들러가 없습니다.');
+            $this->info(__('privacy.console.process_retention.no_handlers'));
 
             return Command::SUCCESS;
         }
@@ -103,7 +103,7 @@ class ProcessPrivacyRetentionCommand extends Command
 
         foreach ($results as $id => $result) {
             if ($result['status'] === 'disabled') {
-                $this->line("{$prefix}{$id} ({$result['label']}): 꺼져 있어 실행하지 않았습니다.");
+                $this->line($prefix.__('privacy.console.process_retention.handler_disabled', ['id' => $id, 'label' => $result['label']]));
 
                 continue;
             }
@@ -111,23 +111,23 @@ class ProcessPrivacyRetentionCommand extends Command
             if ($result['status'] === 'locked') {
                 // 관리자가 화면에서 직권 실행한 큐 작업이 이 도메인을 처리하는 중이다 — 겹쳐 돌리지
                 // 않고 다음 주기에 맡긴다. 실패가 아니므로 종료 코드에 반영하지 않는다.
-                $this->warn("{$prefix}{$id} ({$result['label']}): 관리자 직권 실행이 처리 중이라 건너뛰었습니다.");
+                $this->warn($prefix.__('privacy.console.process_retention.handler_locked', ['id' => $id, 'label' => $result['label']]));
 
                 continue;
             }
 
             if ($result['status'] === 'failed') {
                 $failed++;
-                $this->error("{$prefix}{$id} ({$result['label']}): 실패 — {$result['error']}");
+                $this->error($prefix.__('privacy.console.process_retention.handler_failed', ['id' => $id, 'label' => $result['label'], 'error' => $result['error']]));
 
                 continue;
             }
 
             $total += $result['count'];
-            $this->info("{$prefix}{$id} ({$result['label']}): {$result['count']}건 ({$result['mode']})");
+            $this->info($prefix.__('privacy.console.process_retention.handler_done', ['id' => $id, 'label' => $result['label'], 'count' => $result['count'], 'mode' => $result['mode']]));
         }
 
-        $this->line($prefix.'합계: '.$total.'건');
+        $this->line($prefix.__('privacy.console.process_retention.total', ['count' => $total]));
 
         if (! $isDryRun) {
             Log::info('ProcessPrivacyRetentionCommand: 보유기간 처리 완료', [

@@ -196,7 +196,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 49개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 32개 | `vitest.config.ts` |
+| Vitest | 37개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 36개 | `tests/scenarios` |
 

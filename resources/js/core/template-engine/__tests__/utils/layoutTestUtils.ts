@@ -528,7 +528,17 @@ export function createLayoutTest(
     navigationHistory.push(path);
   });
 
-  const mockSetState = vi.fn((updates: Record<string, any>, target: string = 'local') => {
+  const mockSetState = vi.fn((updates: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>), target: string = 'local') => {
+    // 함수형 갱신 — 실제 writer(렌더러 handleLocalSetState·setGlobalState)처럼 최신 상태를 넘기고 결과를 쓴다.
+    // apiCall 로딩 플래그(engine-v1.81.2)·setLocal shallow/replace 가 이 모양으로 쓴다
+    if (typeof updates === 'function') {
+      if (target === 'global') {
+        state._global = updates(state._global);
+      } else {
+        state._local = updates(state._local);
+      }
+      return;
+    }
     if (target === 'local') {
       state._local = { ...state._local, ...updates };
     } else if (target === 'global') {

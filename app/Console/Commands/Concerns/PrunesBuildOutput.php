@@ -46,11 +46,7 @@ trait PrunesBuildOutput
         }
 
         if (! $this->isBundledSourcePath($buildPath)) {
-            $this->warn(
-                '   ⚠️  활성 디렉토리 빌드 — 이전 산출물을 정리하지 않습니다 '
-                .'(정리하면 빌드 완료까지 서빙이 끊깁니다). stale 산출물이 누적될 수 있으니 '
-                .'개발은 _bundled 에서 하고 활성 반영은 update 커맨드로 하세요.'
-            );
+            $this->warn('   ⚠️  '.__('extensions.commands.prune_build_output.active_dir_skipped'));
 
             return [];
         }

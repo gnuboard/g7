@@ -33,7 +33,7 @@ effects:
   - user_list_and_search_log_query_and_count
   # 인증
   - admin_login_and_logout_logged_as_admin
-  - login_logout_description_follows_auth_route   # 설명 키는 인증 경로로 고른다(사용자 로그인 ≠ 「관리자 로그인」, 7.1.0 실측 O-B3)
+  - login_logout_description_follows_auth_route   # 설명 키는 인증 경로로 고른다(사용자 로그인 ≠ 「관리자 로그인」, 7.1.0 실측)
   - public_auth_actions_logged_as_user_type
   - consent_log_records_client_ip
   # 도메인 공통 (역할·메뉴·스케줄·회원)

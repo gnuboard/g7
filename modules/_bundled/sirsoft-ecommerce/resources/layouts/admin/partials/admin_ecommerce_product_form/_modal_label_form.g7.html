@@ -8,7 +8,8 @@
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.labels.preview</label>
           <div class="flex-center justify-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <span class="px-3 py-1.5 rounded-full text-sm font-medium" style="background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}">{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}</span>
+            <!-- 미리보기 칩 — 상품 목록의 라벨 칩(ChipCheckbox)과 같은 규칙: 운영자 색은 바탕에만, 글자색은 바탕과 4.5 이상이 되도록 계산 -->
+            <badge data-type="composite" size="lg" customColor="{{_global.labelFormData?.color ?? '#6B7280'}}">{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}</badge>
           </div>
         </div>
       </div>
@@ -40,7 +41,7 @@
               </on>
             </input>
             <!-- 색 지우기 — 색이 없으면 기본 회색으로 그려진다 -->
-            <button data-if="{{_global.labelFormData?.color}}" type="button" class="btn btn-ghost btn-sm text-gray-500 dark:text-gray-400">
+            <button data-if="{{_global.labelFormData?.color}}" type="button" class="btn btn-ghost btn-sm text-gray-600 dark:text-gray-300">
               <on type="click">
                 <set-state target="global" :labelFormData.color="null"/>
               </on>

@@ -20,6 +20,8 @@
     "no_reports": "通報されたコンテンツがありません",
     "updated_at": "最終更新: {{time}}",
     "go_to_boards": "すべての掲示板",
-    "go_to_reports": "すべて表示"
+    "go_to_reports": "すべて表示",
+    "untitled": "（タイトルなし）",
+    "anonymous": "匿名"
   }
 }

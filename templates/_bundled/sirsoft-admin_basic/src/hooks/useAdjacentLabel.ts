@@ -4,7 +4,7 @@
  * 관리자 화면 레이아웃은 라벨과 입력을 형제로 늘어놓는다(`<label class="form-label">` 다음 `<input>`,
  * 스위치는 `<span class="text-heading">` 옆 `<toggle>`). 라벨에 `for` 가 없어 화면에는 붙어 보여도
  * 접근성 트리에서는 서로 모르는 사이라, 입력칸은 placeholder 값(「30」)으로, 스위치는 필드 키
- * (「security.force_https」)로, 선택 상자는 고른 값(「Artisan」)으로 읽혔다(7.1.0 영역 J D-J7, 관측 O-G2·O-H2).
+ * (「security.force_https」)로, 선택 상자는 고른 값(「Artisan」)으로 읽혔다(7.1.0).
  *
  * 부품이 스스로 이름(aria-label·aria-labelledby·`<label for>`)을 갖지 않을 때만, 가까운 조상 안에서
  * **앞에 놓인 가장 가까운 라벨**을 찾아 `aria-labelledby` 로 잇는다. 레이아웃을 한 줄도 고치지 않고
@@ -211,7 +211,7 @@ export function findRowTitle(anchor: HTMLElement): HTMLElement | null {
   const walker = [prev, ...Array.from(prev.querySelectorAll<HTMLElement>('*'))];
   for (const node of walker) {
     // 단추·링크 안 글자는 건너뛴다 — 확장 카드에서 스위치 앞 「업데이트」·「레이아웃 편집」 단추 글자가
-    // 스위치 이름이 되어 화면 읽기가 확장 이름 대신 단추 글자를 읽었다(O-Q2-1).
+    // 스위치 이름이 되어 화면 읽기가 확장 이름 대신 단추 글자를 읽었다.
     // 앞 형제(prev) 안의 단추·링크만 본다 — 행 전체를 감싼 클릭 카드(role=button)까지 단추로 보면 모든 글자를 건너뛴다.
     const interactive = node.closest(INTERACTIVE_SELECTOR);
     if (interactive && prev.contains(interactive)) continue;

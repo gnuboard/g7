@@ -20,7 +20,7 @@ class CheckLanguagePackUpdatesCommandTest extends TestCase
     /**
      * 테스트 정리.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -28,6 +28,15 @@ class CheckLanguagePackUpdatesCommandTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 확인할 언어팩이 없으면 「없음」 안내를 출력하고 성공 종료하는지 검증한다.
+     *
+     * @scenario case=no_packs
+     *
+     * @effects language_pack_check_updates_prints_none_message_when_no_packs
+     *
+     * @return void 반환값 없음
+     */
     public function test_outputs_no_packs_message_when_empty(): void
     {
         $service = Mockery::mock(LanguagePackService::class);
@@ -38,10 +47,19 @@ class CheckLanguagePackUpdatesCommandTest extends TestCase
         $this->app->instance(LanguagePackService::class, $service);
 
         $this->artisan('language-pack:check-updates')
-            ->expectsOutputToContain('GitHub 기반 언어팩이 없습니다')
+            ->expectsOutputToContain(__('language_packs.commands.check_updates.none'))
             ->assertSuccessful();
     }
 
+    /**
+     * 서비스가 돌려준 언어팩마다 상세 줄을 출력하는지 검증한다.
+     *
+     * @scenario case=with_details
+     *
+     * @effects language_pack_check_updates_lists_each_pack_detail
+     *
+     * @return void 반환값 없음
+     */
     public function test_renders_each_detail_line(): void
     {
         $service = Mockery::mock(LanguagePackService::class);
@@ -64,6 +82,15 @@ class CheckLanguagePackUpdatesCommandTest extends TestCase
             ->assertSuccessful();
     }
 
+    /**
+     * --identifier 옵션 값을 서비스의 checkUpdates() 에 그대로 넘기는지 검증한다.
+     *
+     * @scenario case=identifier_option
+     *
+     * @effects language_pack_check_updates_passes_identifier_option_to_service
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_identifier_option(): void
     {
         $service = Mockery::mock(LanguagePackService::class);

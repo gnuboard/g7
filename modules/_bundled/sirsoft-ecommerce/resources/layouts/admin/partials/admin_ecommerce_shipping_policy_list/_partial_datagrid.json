@@ -96,7 +96,7 @@
         "selectionScope": "page",
         "selectedIds": "{{_global.bulkSelectedItems || []}}",
         "selectedCountText": "",
-        "emptyMessage": "$t:sirsoft-ecommerce.admin.shipping_policy.empty.title",
+        "emptyMessage": "{{shipping_policies === undefined ? '' : $t('sirsoft-ecommerce.admin.shipping_policy.empty.title')}}",
         "pagination": true,
         "serverSidePagination": true,
         "serverCurrentPage": "{{shipping_policies?.data?.pagination?.current_page ?? 1}}",
@@ -109,6 +109,7 @@
             {
                 "id": "edit",
                 "href": "/admin/ecommerce/shipping-policies/{{row.id}}/edit",
+                "mergeQuery": true,
                 "label": "$t:sirsoft-ecommerce.admin.shipping_policy.action.edit",
                 "iconName": "fa-regular fa-pen-to-square",
                 "disabledField": "abilities.can_update"
@@ -294,7 +295,7 @@
                         "name": "Div",
                         "if": "{{(row.country_settings ?? []).length === 0}}",
                         "props": {
-                            "className": "text-gray-400 dark:text-gray-500 text-sm"
+                            "className": "text-gray-600 dark:text-gray-400 text-sm"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.shipping_policy.table.no_country_settings"
                     },
@@ -353,7 +354,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-gray-400 dark:text-gray-500"
+                                            "className": "text-gray-600 dark:text-gray-400"
                                         },
                                         "text": "|"
                                     },
@@ -379,7 +380,7 @@
                                         "name": "Span",
                                         "if": "{{cs.free_threshold > 0}}",
                                         "props": {
-                                            "className": "text-xs text-green-600 dark:text-green-400"
+                                            "className": "text-xs text-green-800 dark:text-green-400"
                                         },
                                         "text": "($t:sirsoft-ecommerce.admin.shipping_policy.table.free_above {{(cs.free_threshold ?? 0).toLocaleString()}})"
                                     },

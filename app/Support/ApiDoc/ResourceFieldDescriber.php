@@ -64,6 +64,7 @@ class ResourceFieldDescriber
         'update_source' => '업데이트 감지 출처 (github, bundled 등)',
         'latest_version' => '감지된 최신 배포 버전',
         'file_version' => '설치된 파일의 manifest 버전',
+        'stuck_update' => '업데이트가 도중에 멈춰 「업데이트 중」에 남아 있는지 (10분 경과·진행 프로세스 없음)',
         'incompatible_required_version' => '요구 코어 버전 미충족 시 필요한 버전 (호환되면 null)',
         'status_variant_label' => '상태 표시용 라벨/변형',
         'dependencies' => '의존하는 확장 맵 (manifest 파생 — {modules, plugins})',

@@ -17,7 +17,7 @@
       <p data-if="{{_global.identityChallenge?.purpose !== 'inicis.adult_verification'}}" class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-verification_kginicis.modal.description</p>
     </div>
     <!-- 본인인증 시작 버튼 — 사용자 제스처 컨텍스트에서 window.open 호출 (popup blocker 회피) -->
-    <button type="button" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-semibold transition-colors">
+    <button type="button" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-semibold transition-colors">
       <on type="click">
         <action handler="sirsoft-verification_kginicis.startAuth"/>
       </on>

@@ -35,7 +35,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-2xl text-amber-500"
+                                "className": "text-2xl text-amber-600"
                             }
                         },
                         {
@@ -106,7 +106,7 @@
                                                             "props": {
                                                                 "name": "image",
                                                                 "size": "md",
-                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                                "className": "text-gray-500 dark:text-gray-300"
                                                             }
                                                         }
                                                     ]

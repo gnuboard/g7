@@ -133,9 +133,9 @@ function navigatePaths(a: any, withReplace = false): string[] {
 
 /**
  * 액션(순서 갈래 포함)이 쿼리의 쪽·탭 키만 바꾸는 이동(navigate·replace·주소만 바꾸는 replaceUrl)인지 봅니다 — 같은
- * 라우트라도 쿼리가 바뀌면 다른 주소다(L0 판정 2026-10-15: W6 새로고침은 이동 뒤 주소가 지금과 같을 때만).
- * 키는 이름 끝으로 본다 — `sub_tab`·`*_page`·`*_channel` 처럼 접두가 붙은 쪽·탭 키도 같은 이동이다(BP1 이 `tab` 만 보다
- * `channel` 탭을 놓친 결함군, L0 재점검 2026-10-15).
+ * 라우트라도 쿼리가 바뀌면 다른 주소다(판정 2026-10-15: W6 새로고침은 이동 뒤 주소가 지금과 같을 때만).
+ * 키는 이름 끝으로 본다 — `sub_tab`·`*_page`·`*_channel` 처럼 접두가 붙은 쪽·탭 키도 같은 이동이다(`tab` 키만 보다
+ * `channel` 탭을 놓친 결함군 — 2026-10-15 재점검).
  *
  * @param a 액션
  * @return 쪽·탭 이동 여부
@@ -194,7 +194,7 @@ function directNavigates(a: any): any[] {
 
 /**
  * 경로가 그 화면 자신인지 봅니다 — 삼항 식(`{{x ? '/a' : '/b'}}`)이면 안의 경로 글자를 모두 보고 전부 자기 화면일 때만
- * 자신으로 본다(라운드 6 — 식 글자를 통째로 비교하면 자기 화면으로만 가는 삼항도 다른 화면으로 셌다).
+ * 자신으로 본다(2026-10-16 사각 대조 — 식 글자를 통째로 비교하면 자기 화면으로만 가는 삼항도 다른 화면으로 셌다).
  *
  * @param p 경로(식 포함)
  * @param isOwn 단일 경로 판정
@@ -231,7 +231,7 @@ function openWindowPaths(a: any): string[] {
 /**
  * 클릭 진입점인지 봅니다 — `type`·`event` 어느 키로 적었든(생략·`click`·`onClick`) 엔진은 같은 클릭 핸들러로 붙인다
  * (ActionDispatcher `DOM_EVENT_PROP_MAP` 의 `click → onClick`). `event` 만 보면 `event="onClick"` 형식의 이동을 놓친다
- * (validate-plan 라운드 3 대조 C, L0 2026-10-15).
+ * (2026-10-15 계획 대조).
  *
  * @param a 액션
  * @return 클릭 진입점 여부
@@ -296,7 +296,7 @@ function hasSelectionLinkInside(n: any, a: any): boolean {
 }
 
 /**
- * 링크 대상이 아닌 칸 — 판정식이 이동으로 잡지만 계획서상 대상이 아닌 자리. 사유와 함께 둔다(EB 판정, handoff/EB-p2-EA-nav-links-exclusions.md).
+ * 링크 대상이 아닌 칸 — 판정식이 이동으로 잡지만 계획서상 대상이 아닌 자리. 사유와 함께 둔다.
  * 쓰이지 않게 된 항목은 시험이 알린다(아래 「제외 목록이 낡지 않았다」).
  */
 const EXCLUDE: { file: string; reason: string; match: (n: any, a: any) => boolean }[] = [
@@ -314,8 +314,28 @@ const EXCLUDE: { file: string; reason: string; match: (n: any, a: any) => boolea
     },
     {
         file: 'layouts/admin/partials/admin_ecommerce_shipping_policy_list/_modal_copy.json',
-        reason: 'D13 — 복사 확인 창 안의 「복사 진행」(창을 닫고 원본 id 를 실어 등록 화면으로 — 확인 창이 뜨는 이동). 라운드 6 에서 sequence 안 이동을 보게 되며 잡혔다',
+        reason: 'D13 — 복사 확인 창 안의 「복사 진행」(창을 닫고 원본 id 를 실어 등록 화면으로 — 확인 창이 뜨는 이동). 2026-10-16 사각 대조에서 sequence 안 이동을 보게 되며 잡혔다',
         match: (_n, a) => /"path":"\/admin\/ecommerce\/shipping-policies\/create"/.test(JSON.stringify(a)) && /copy_id/.test(JSON.stringify(a)),
+    },
+    {
+        file: 'layouts/admin/partials/admin_ecommerce_product_common_info_index/_modal_editing_confirm.json',
+        reason: 'D13 — 편집 중 이탈 확인 창의 「취소하고 이동」(대기 항목으로 선택·주소를 옮긴다 — 확인 창이 뜨는 이동. 새 탭 링크는 목록의 이름 링크가 맡는다)',
+        match: (_n, a) => /pendingItemId/.test(JSON.stringify(a)),
+    },
+    {
+        file: 'layouts/admin/partials/admin_ecommerce_product_notice_index/_modal_editing_confirm.json',
+        reason: 'D13 — 편집 중 이탈 확인 창의 「취소하고 이동」(목록이 잡아 둔 대기 항목으로 선택·주소를 옮긴다 — 확인 창이 뜨는 이동. 새 탭 링크는 목록의 이름 링크가 맡는다)',
+        match: (_n, a) => /pendingTemplateId/.test(JSON.stringify(a)),
+    },
+    {
+        file: 'layouts/admin/partials/admin_ecommerce_brand_index/_modal_editing_confirm.json',
+        reason: 'D13 — 편집 중 이탈 확인 창의 「취소하고 나가기」(대기 브랜드로 선택·주소를 옮긴다 — 확인 창이 뜨는 이동. 새 탭 링크는 목록의 itemHref 가 맡는다)',
+        match: (_n, a) => /pendingBrandId/.test(JSON.stringify(a)),
+    },
+    {
+        file: 'layouts/admin/partials/admin_ecommerce_category_index/_modal_editing_confirm.json',
+        reason: 'D13 — 편집 중 이탈 확인 창의 「취소하고 이동」(대기 분류로 선택·주소를 옮긴다 — 확인 창이 뜨는 이동. 새 탭 링크는 트리의 itemHref 가 맡는다)',
+        match: (_n, a) => /pendingCategoryId/.test(JSON.stringify(a)),
     },
     // 목록-편집 패널의 항목 고르기(replaceUrl ?id&mode)는 한때 「같은 화면 안 패널 선택」으로 뺐으나 결정
     // (2026-10-15)으로 이번에 링크화 — 제외하지 않는다(①''''' 가 링크인지 본다).
@@ -387,7 +407,7 @@ function judgeFile(rel: string, json: any, mine: Set<string>, acc: Judged): void
                 if (!a) continue;
                 const label = `${rel}: ${n.name}${n.props?.['data-ref'] ? '#' + n.props['data-ref'] : ''}`;
                 // ① click 진입점이 곧바로 이동(navigate)인 노드는 링크여야 한다. path 없는 navigate 는 누른 A 의
-                //    href 로 간다(E1 handoff/E1-p2-api.md) — 변환된 칸도 이동으로 센다
+                //    href 로 간다 — 변환된 칸도 이동으로 센다
                 //    클릭에서 동기로 곧바로 닿는 이동(switch·conditions 갈래, sequence·parallel 안)도 같다 — 라운드 6 사각 대조
                 const hrefOfA = n.name === 'A' && realHref(n.props?.href) ? String(n.props.href) : '';
                 const targets = isClickEntry(a)
@@ -408,13 +428,13 @@ function judgeFile(rel: string, json: any, mine: Set<string>, acc: Judged): void
                     notLinks.push({ file: rel, what: `${label} (href 가 실제 주소가 아님)` });
                 }
                 // ①'' 손으로 그린 쪽·탭 단추 — 같은 화면이라도 쿼리가 쪽·탭(page·tab·channel·type)만 바꾸는 이동은
-                //      새 탭으로 그 쪽·탭을 여는 대상이다(D13 「페이지 번호·탭」, L0 판정 2026-10-15). 필터·검색은 W6 로 뺀다.
+                //      새 탭으로 그 쪽·탭을 여는 대상이다(D13 「페이지 번호·탭」 판정 2026-10-15). 필터·검색은 W6 로 뺀다.
                 if (isClickEntry(a) && !directMove && n.name !== 'A' && pageOrTabMove(a) && !excluded(rel, n, a)) {
                     acc.moves++;
                     notLinks.push({ file: rel, what: `${label} (쪽·탭 이동)` });
                 }
                 // ①''''' 클릭·항목 고르기(onSelect)가 주소만 바꿔(replaceUrl) 쿼리를 남기면 새 탭으로 그 상태를 열 수 있는
-                //        자리다 — 링크이거나 사유와 함께 제외 목록에 있어야 한다(쪽·탭이면 ①'' 가 이미 셈). L0 재점검 2026-10-15
+                //        자리다 — 링크이거나 사유와 함께 제외 목록에 있어야 한다(쪽·탭이면 ①'' 가 이미 셈). 재점검 2026-10-15
                 const selectEntry = isClickEntry(a) || a.event === 'onSelect';
                 if (selectEntry && !pageOrTabMove(a) && replaceUrlWithQuery(a) && !excluded(rel, n, a)) {
                     acc.moves++;
@@ -448,7 +468,7 @@ function judgeFile(rel: string, json: any, mine: Set<string>, acc: Judged): void
                     }
                 }
                 // ②' 탭 컴포넌트(onTabChange)가 주소를 바꾸면(navigate·replaceUrl — 키 이름과 무관) 탭 항목마다 href.
-                //     주소에 남는 탭은 새 탭으로 그 탭을 여는 대상이다(L0 재점검 2026-10-15)
+                //     주소에 남는 탭은 새 탭으로 그 탭을 여는 대상이다(재점검 2026-10-15)
                 if (a.event === 'onTabChange' && /"handler":"(navigate|replaceUrl)"/.test(JSON.stringify(a))) {
                     const tabs: any[] = Array.isArray(n.props?.tabs) ? n.props.tabs : [];
                     acc.moves++;
@@ -525,7 +545,7 @@ describe('이커머스 화면 이동은 링크 (#757 WP-L)', () => {
         expect(isClickEntry({ type: 'click', event: 'onSelect' })).toBe(false);
     });
 
-    // 판정식 사각 대조(라운드 6, L0 2026-10-16 — U1 사용자 잠금 시험이 switch 갈래·삼항 path 를 못 보던 결함군).
+    // 판정식 사각 대조(2026-10-16 — 사용자 잠금 시험이 switch 갈래·삼항 path 를 못 보던 결함군).
     // 실제 레이아웃이 아니라 판정식 자체를 픽스처로 잰다 — 모양마다 「잡아야 할 것」과 「빼야 할 것」을 함께 둔다.
     describe('판정식 픽스처 — 갈래 안 이동·삼항 경로', () => {
         const SELF = new Set(['/admin/ecommerce/self']);

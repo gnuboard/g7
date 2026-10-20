@@ -420,7 +420,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                                            "className": "alert-danger text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                                             "disabled": "{{(_global.selectedIds_admin_member_notifications ?? []).length === 0 || memberNotifications?.data?.abilities?.can_delete !== true}}"
                                         },
                                         "text": "$t:admin.member_notification.delete.bulk_button"

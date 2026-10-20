@@ -20,10 +20,10 @@ var SirsoftCkeditor5=function(v){"use strict";var Le=Object.defineProperty;var x
             line-height: 1;
             transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
         }
-        /* 비활성 - 기본언어 (blue) */
+        /* 비활성 - 기본언어 (blue) — 글자는 hover 바탕(#dbeafe)에서도 4.5 이상인 단계 */
         .ckeditor5-locale-tabs button.is-default {
             background: #eff6ff;
-            color: #2563eb;
+            color: #1d4ed8;
         }
         .ckeditor5-locale-tabs button.is-default:hover {
             background: #dbeafe;
@@ -36,9 +36,9 @@ var SirsoftCkeditor5=function(v){"use strict";var Le=Object.defineProperty;var x
         .ckeditor5-locale-tabs button:not(.is-default):hover {
             background: #e5e7eb;
         }
-        /* 활성 - 기본언어 */
+        /* 활성 - 기본언어 — 흰 글자가 4.5 이상인 바탕(종전 #3b82f6 은 3.68) */
         .ckeditor5-locale-tabs button.is-active.is-default {
-            background: #3b82f6;
+            background: #2563eb;
             color: #ffffff;
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             transform: scale(1.05);
@@ -54,14 +54,16 @@ var SirsoftCkeditor5=function(v){"use strict";var Le=Object.defineProperty;var x
             font-size: 0.75rem;
             line-height: 1;
         }
+        /* 필수 표시 — 비활성(연한 바탕)은 진한 빨강, 활성(진한 바탕)은 탭 글자색(흰색)을 따른다 */
         .ckeditor5-locale-tabs button .ck5-required {
-            color: #ef4444;
+            color: #b91c1c;
         }
         .ckeditor5-locale-tabs button.is-active .ck5-required {
-            color: #fca5a5;
+            color: currentColor;
         }
+        /* 입력 완료 표시(아이콘 3:1) — 회색 hover 바탕(#e5e7eb)에서도 3 이상 */
         .ckeditor5-locale-tabs button .ck5-check {
-            color: #22c55e;
+            color: #15803d;
         }
         /* 다크 모드 - 비활성 기본언어 */
         html.dark .ckeditor5-locale-tabs button.is-default {
@@ -91,6 +93,12 @@ var SirsoftCkeditor5=function(v){"use strict";var Le=Object.defineProperty;var x
         }
         html.dark .ckeditor5-locale-tabs button .ck5-check {
             color: #4ade80;
+        }
+        html.dark .ckeditor5-locale-tabs button .ck5-required {
+            color: #fca5a5;
+        }
+        html.dark .ckeditor5-locale-tabs button.is-active .ck5-required {
+            color: currentColor;
         }
         /* 표 너비 인라인 스타일 무력화 - 컨테이너에 맞게 100% */
         .ck-content figure.table { width: 100%; }

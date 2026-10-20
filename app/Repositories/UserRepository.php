@@ -589,9 +589,10 @@ class UserRepository implements UserRepositoryInterface
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
      *
      * @param  string  $keyword  검색할 키워드
+     * @param  bool  $excludeWithdrawn  탈퇴 회원을 뺄지 여부 — 알림 수신자처럼 고르는 자리는 true, 기록을 찾는 목록 필터는 false(기본)
      * @return Collection 검색된 사용자 컬렉션
      */
-    public function searchByKeyword(string $keyword): Collection
+    public function searchByKeyword(string $keyword, bool $excludeWithdrawn = false): Collection
     {
         // 목록 검색과 같이 `%`·`_` 는 글자 그대로 찾는다 — 그대로 두면 `%` 한 글자가 범위 안 전체 회원을 돌려준다.
         $contains = '%'.KeywordSearch::escapeLikeWildcards($keyword).'%';
@@ -602,6 +603,8 @@ class UserRepository implements UserRepositoryInterface
                     ->orWhere('nickname', 'like', $contains)
                     ->orWhere('email', 'like', $contains);
             })
+            // 탈퇴 판정은 User::scopeActive()(「탈퇴 아님」 — 차단·비활성·휴면은 통과)와 같다.
+            ->when($excludeWithdrawn, fn (Builder $q) => $q->active())
             ->get();
     }
 

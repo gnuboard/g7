@@ -4,6 +4,7 @@
     "layout_name": "admin_page_form",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}",
         "description": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"
     },
@@ -25,6 +26,31 @@
                     "params": {
                         "target": "content"
                     }
+                },
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "fallback": {
@@ -76,6 +102,14 @@
         ]
     },
     "init_actions": [
+        {
+            "comment": "들어올 때마다 「고친 것 있음」 을 끈다 — 이탈 확인(meta.leave_guard)이 읽는 값이라, 같은 레이아웃의 다른 페이지로 넘어와도 직전 표시가 남지 않게 한다",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "hasChanges": false
+            }
+        },
         {
             "comment": "생성 모드: 직전 페이지(수정)에서 같은 레이아웃을 재사용하므로 _local.form 잔존을 먼저 제거 (form=null → deep merge 가 객체 대신 null 로 덮어써 이전 id/title/attachments 완전 삭제)",
             "handler": "setState",
@@ -134,6 +168,7 @@
                 "type": "basic",
                 "name": "Div",
                 "dataKey": "form",
+                "trackChanges": true,
                 "blur_until_loaded": true,
                 "props": {
                     "className": "admin-page-content-responsive-fluid"
@@ -249,7 +284,7 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "text-yellow-600 dark:text-yellow-400"
+                                    "className": "text-yellow-700 dark:text-yellow-400"
                                 }
                             },
                             {
@@ -431,7 +466,7 @@
                                                                 "props": {
                                                                     "type": "button",
                                                                     "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
-                                                                    "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
+                                                                    "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 whitespace-nowrap'}}"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -472,7 +507,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.slugChecked && _local.slugAvailable}}",
                                                         "props": {
-                                                            "className": "block text-xs text-green-600 dark:text-green-400"
+                                                            "className": "block text-xs text-green-700 dark:text-green-400"
                                                         },
                                                         "text": "$t:sirsoft-page.admin.page.form.fields.slug_available"
                                                     },
@@ -1003,6 +1038,7 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
+                                            "bypassLeaveGuard": true,
                                             "mergeQuery": true,
                                             "query": {}
                                         }
@@ -1101,6 +1137,7 @@
                                                             {
                                                                 "handler": "navigate",
                                                                 "params": {
+                                                                    "bypassLeaveGuard": true,
                                                                     "path": "/admin/pages/{{route?.id ?? response.data.id}}",
                                                                     "mergeQuery": true,
                                                                     "query": {}

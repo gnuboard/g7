@@ -79,7 +79,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{!user?.data?.ecommerce_default_address}}",
+                            "if": "{{user !== undefined && user !== null && (!user?.data?.ecommerce_default_address)}}",
                             "props": {
                                 "className": "block text-sm text-gray-500 dark:text-gray-400"
                             },

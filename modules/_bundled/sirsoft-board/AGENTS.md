@@ -139,7 +139,7 @@
 | 구독 훅 | 104개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 22개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
-| 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
+| 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 2개 | [스케줄](docs/extension-points.md#스케줄) |
 | 알림 정의 | 7개 | [알림 정의](docs/extension-points.md#알림-정의) |

@@ -46,7 +46,10 @@
           <span class="flex-1">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.columns.event</span>
         </div>
       </div>
-      <div data-ref="log_empty" data-if="{{(claim_logs.data?.data ?? []).length === 0}}" class="py-12 text-center text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.empty</div>
+      <!-- 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「활동 로그가 없습니다」를 보이면 기록이 없는 줄 안다 -->
+      <div data-ref="log_load_failed" data-if="{{claim_logs === null}}" role="alert" class="py-12 text-center text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</div>
+      <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+      <div data-ref="log_empty" data-if="{{claim_logs !== undefined &amp;&amp; claim_logs !== null &amp;&amp; (claim_logs.data?.data ?? []).length === 0}}" class="py-12 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.activity_log.empty</div>
       <div data-ref="log_rows_{{logIdx}}" data-each="log, logIdx in {{claim_logs.data?.data ?? []}}">
         <div class="hidden md:block py-3 px-2 border-b border-gray-100 dark:border-gray-800">
           <div class="flex-center gap-4">
@@ -82,7 +85,7 @@
                 <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
                   <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
                   <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
-                  <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+                  <span class="w-28 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
                 </div>
               </div>
               <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
@@ -95,7 +98,7 @@
                   <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
                     <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
                     <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
-                    <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+                    <span class="w-28 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
                   </div>
                 </div>
               </div>
@@ -136,7 +139,7 @@
             <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
               <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
               <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
-              <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+              <span class="w-20 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
             </div>
           </div>
           <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
@@ -149,7 +152,7 @@
               <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
                 <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
                 <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old ?? '-'}}</span>
-                <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
+                <span class="w-20 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new ?? '-'}}</span>
               </div>
             </div>
           </div>

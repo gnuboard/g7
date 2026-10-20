@@ -12,7 +12,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Group;
 
 /**
- * 게시판 API 검증 문구의 한국어 조사 자리표시 회귀 테스트 (7.1.0 전수 실측 O-K4-2)
+ * 게시판 API 검증 문구의 한국어 조사 자리표시 회귀 테스트 (7.1.0 전수 실측)
  *
  * 게시판 요청 규칙 중 자기 문구가 없는 것(in·exists·required_with 등)은 코어 기본 문구
  * 「선택한 :attribute이(가) 올바르지 않습니다.」로 떨어져, 회원이 댓글 상태를 조작하면

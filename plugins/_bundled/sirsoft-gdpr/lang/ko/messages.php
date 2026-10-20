@@ -367,4 +367,14 @@ return [
             'different' => ':attribute 값은 :other 값과 달라야 합니다.',
         ],
     ],
+    // 콘솔 명령 출력
+    'console' => [
+        'playwright_seed' => [
+            'cli_only' => 'CLI 전용 커맨드입니다.',
+            'bypass_required' => 'G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.',
+        ],
+        'seed_gdpr_guest_login' => [
+            'done' => 'GDPR 게스트→로그인 시나리오 시드 완료: :email',
+        ],
+    ],
 ];

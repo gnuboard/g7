@@ -330,7 +330,8 @@ describe('mypage/mileage _list partial', () => {
   it('비활성화 안내 블록이 enabled=false 조건으로 노출된다', () => {
     const notice = collectNodes(
       listPartial,
-      (n) => n.if === '{{!mileage_balance?.data?.mileage?.enabled}}'
+      // 받는 동안(값 undefined)에는 꺼짐 안내를 보이지 않는다 — list-loading-empty-state.test.tsx
+      (n) => n.if === '{{mileage_balance !== undefined && !mileage_balance?.data?.mileage?.enabled}}'
     );
     expect(notice.length).toBeGreaterThanOrEqual(1);
     expect(serialize(notice)).toContain('$t:mypage.mileage.disabled_notice');

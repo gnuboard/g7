@@ -368,7 +368,7 @@
                         "id": "dimensions_none",
                         "type": "composite",
                         "name": "EmptyState",
-                        "if": "{{(query.tab || 'search') === 'dimensions' && !query.dimension && (analytics_registered?.data?.dimensions ?? []).length === 0}}",
+                        "if": "{{(query.tab || 'search') === 'dimensions' && !query.dimension && analytics_registered !== undefined && (analytics_registered?.data?.dimensions ?? []).length === 0}}",
                         "props": {
                             "iconName": "puzzle-piece",
                             "title": "$t:admin.analytics.actions.dimensions_none_title",

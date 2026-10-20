@@ -849,7 +849,7 @@
                                     "props": {
                                         "type": "button",
                                         "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsSimulating)}}",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-700 hover:bg-green-800 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
                                         {
@@ -1047,7 +1047,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.order_verify_description"
                                 }
@@ -1155,6 +1155,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "type": "button",
                                                         "disabled": "{{_local._kginicisQuerying && _local._kginicisActiveTid === payment.transaction_id}}",
                                                         "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                                                     },
@@ -1182,7 +1183,7 @@
                                             "name": "Div",
                                             "if": "{{_local._kginicisActiveTid === payment.transaction_id && _local._kginicisError}}",
                                             "props": {
-                                                "className": "mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
+                                                "className": "mt-2 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
                                             },
                                             "text": "{{_local._kginicisError}}"
                                         },
@@ -2020,6 +2021,7 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "type": "button",
                                                                 "className": "flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                                                             },
                                                             "children": [
@@ -2102,7 +2104,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_description"
                                 }
@@ -2309,7 +2311,7 @@
                                                     "props": {
                                                         "value": "hanjin"
                                                     },
-                                                    "text": "한진택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.hanjin"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2317,7 +2319,7 @@
                                                     "props": {
                                                         "value": "cjgls"
                                                     },
-                                                    "text": "CJ대한통운"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cj"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2325,7 +2327,7 @@
                                                     "props": {
                                                         "value": "loge"
                                                     },
-                                                    "text": "롯데택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_parcel"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2333,7 +2335,7 @@
                                                     "props": {
                                                         "value": "epost"
                                                     },
-                                                    "text": "우체국택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.epost"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2341,7 +2343,7 @@
                                                     "props": {
                                                         "value": "lotte"
                                                     },
-                                                    "text": "롯데글로벌로지스"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_global"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2349,7 +2351,7 @@
                                                     "props": {
                                                         "value": "kdexp"
                                                     },
-                                                    "text": "경동택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.kyungdong"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2357,7 +2359,7 @@
                                                     "props": {
                                                         "value": "cvs"
                                                     },
-                                                    "text": "편의점택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvs"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2365,7 +2367,7 @@
                                                     "props": {
                                                         "value": "ilyang"
                                                     },
-                                                    "text": "일양로지스"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.ilyang"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2373,7 +2375,7 @@
                                                     "props": {
                                                         "value": "chunil"
                                                     },
-                                                    "text": "천일택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.chunil"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2381,7 +2383,7 @@
                                                     "props": {
                                                         "value": "cvsnet"
                                                     },
-                                                    "text": "CVSnet편의점"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvsnet"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2389,7 +2391,7 @@
                                                     "props": {
                                                         "value": "daesin"
                                                     },
-                                                    "text": "대신택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.daesin"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2397,7 +2399,7 @@
                                                     "props": {
                                                         "value": "kunyoung"
                                                     },
-                                                    "text": "건영택배"
+                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.kunyoung"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -2490,6 +2492,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === '')}}",
                                                 "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             },
@@ -2530,7 +2533,7 @@
                                     "name": "Div",
                                     "if": "{{_local._ed_error}}",
                                     "props": {
-                                        "className": "text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
+                                        "className": "text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
                                     },
                                     "text": "{{_local._ed_error}}"
                                 }
@@ -2573,7 +2576,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 hidden sm:inline"
                                     },
                                     "text": "$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description"
                                 }
@@ -2622,7 +2625,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400"
+                                                "className": "text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied_at"
                                         },
@@ -2732,6 +2735,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._dncf_processing)}}",
                                         "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
@@ -2766,7 +2770,7 @@
                             "name": "Div",
                             "if": "{{_local._dncf_error}}",
                             "props": {
-                                "className": "mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
+                                "className": "mt-2 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
                             },
                             "text": "{{_local._dncf_error}}"
                         }

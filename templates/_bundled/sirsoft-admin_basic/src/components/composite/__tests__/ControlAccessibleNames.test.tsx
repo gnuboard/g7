@@ -87,7 +87,7 @@ describe('새 공용 키 — 세 언어', () => {
   });
 });
 
-describe('C1 SortableMenuItem — 스위치 이름', () => {
+describe('SortableMenuItem — 스위치 이름', () => {
   const renderItem = (name: string) =>
     render(
       <DndContext>
@@ -184,7 +184,7 @@ describe('C3 MultilingualInput — 이름·언어명·곁 라벨', () => {
 
   // @scenario component=multilingual_input
   // @effects controls_have_accessible_name
-  it('이름 prop 이 없으면 바깥 상자 곁의 form-label 을 잇는다(compact·tabs)', () => {
+  it('이름 prop 이 없으면 바깥 상자 곁의 form-label 글자를 이름으로 삼고 언어명을 붙인다(compact·tabs)', () => {
     render(
       <div>
         <div>
@@ -197,8 +197,47 @@ describe('C3 MultilingualInput — 이름·언어명·곁 라벨', () => {
         </div>
       </div>
     );
-    expect(screen.getByRole('textbox', { name: '상품명' })).toBeTruthy();
-    expect(screen.getAllByRole('textbox', { name: '짧은 설명' })).toHaveLength(2);
+    expect(screen.getByRole('textbox', { name: '상품명 (한국어)' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: '짧은 설명 (한국어)' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: '짧은 설명 (English)' })).toBeTruthy();
+  });
+
+  // @scenario component=multilingual_input
+  // @effects controls_have_accessible_name
+  it('역할 폼처럼 라벨에 필수 표시(*)가 붙어도 「{칸 이름} ({언어})」 로 읽힌다 — 언어 없이 「역할명*」 이 아니다', () => {
+    render(
+      <div>
+        <div>
+          <label className="form-label">
+            <span>역할명</span>
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <MultilingualInput name="name_raw" layout="tabs" availableLocales={two} defaultLocale="ko" required value={{}} />
+        </div>
+        <div>
+          <label className="form-label">설명</label>
+          <MultilingualInput name="description_raw" layout="tabs" inputType="textarea" availableLocales={two} defaultLocale="ko" value={{}} />
+        </div>
+      </div>
+    );
+    expect(screen.getByRole('textbox', { name: '역할명 (한국어)' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: '역할명 (English)' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: '설명 (한국어)' })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: /^역할명\s*\*?$/ })).toBeNull();
+  });
+
+  // @scenario component=multilingual_input
+  // @effects controls_have_accessible_name
+  it('곁 라벨 이름은 일본어 화면에서 언어팩 형식 「{칸 이름}（{언어}）」 을 따른다', () => {
+    installCore('ja');
+    render(
+      <div>
+        <label className="form-label">ロール名</label>
+        <MultilingualInput layout="tabs" availableLocales={[{ code: 'ko', name: '한국어' }, { code: 'ja', name: '日本語' }]} defaultLocale="ko" value={{}} />
+      </div>
+    );
+    expect(screen.getByRole('textbox', { name: 'ロール名（한국어）' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'ロール名（日本語）' })).toBeTruthy();
   });
 });
 

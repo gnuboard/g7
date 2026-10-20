@@ -26,7 +26,7 @@
             <div data-ref="target_status_info" data-if="{{report_detail?.data?.target_status}}" class="flex-center text-primary gap-1.5">
               <icon name="circle-info" class="text-base"/>
               <span class="font-bold">$t:sirsoft-board.admin.reports.detail.target_status_label</span>
-              <span class="text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-600 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}">{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}</span>
+              <span class="text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-700 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-700 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}">{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}</span>
               <span data-if="{{report_detail?.data?.target_status === 'blinded' &amp;&amp; report_detail?.data?.blind_trigger_type_label}}" class="text-tertiary">({{report_detail?.data?.blind_trigger_type_label}})</span>
             </div>
           </div>
@@ -66,7 +66,7 @@
             <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.board?.name}}</span>
             <icon name="arrow-up-right-from-square" class="text-xs"/>
           </a>
-          <span data-if="{{!report_detail?.data?.board?.slug}}" class="inline-flex items-center gap-1.5 text-label-subtle">
+          <span data-if="{{report_detail !== undefined &amp;&amp; report_detail !== null &amp;&amp; (!report_detail?.data?.board?.slug)}}" class="inline-flex items-center gap-1.5 text-label-subtle">
             <span>{{report_detail?.data?.board?.name}}</span>
             <span class="text-xs board-muted-note">($t:sirsoft-board.admin.reports.detail.board_deleted)</span>
           </span>

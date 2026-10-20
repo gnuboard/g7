@@ -1,0 +1,22 @@
+feature: 사용자 게시판 [신고] 창 — 제출 실패 뒤 창과 사유 유지 (7.1.1)
+
+description: |
+  제출이 실패(422 검증·409 중복·403)하면 창을 닫고 토스트만 남겨(#413-60 「모달 닫고 토스트」), 422 에 적은 사유까지 사라졌다.
+  같은 기능의 관리자 신고 창처럼 실패해도 창과 사유를 유지하고 오류 토스트를 띄우며, 서버 칸별 오류(error.errors)를 칸 아래에 보인다.
+  성공 시 닫힘·처음 열기 빈 값·취소 뒤 초기화는 그대로다.
+
+axes:
+  result: [validation_failed, conflict, succeeded]
+
+effects:
+  - report_modal_stays_open_on_failure          # 실패해도 창 스택에 신고 창이 남는다
+  - report_reason_kept_on_failure               # 실패해도 고른 사유·적은 상세가 남는다
+  - report_field_error_shown_below_field        # 422 칸별 오류 문구가 칸 아래에 보인다
+  - report_modal_closes_and_resets_on_success   # 성공하면 닫히고 사유·오류가 비워진다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-report-modal-fail-keeps-open.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-report-modal-feedback.test.tsx
+
+validation:
+  browser_check: 재실측 — 게시글 [신고] 창 기준 ①처음 열기 빈 값 ②취소 뒤 초기화 ③성공 시 닫힘 ④422 실패 뒤 창·사유 유지 + 칸 아래 오류

@@ -182,22 +182,53 @@
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "handler": "setState",
+                                    "comment": "편집·등록 중이면 곧바로 넘어가지 않고 고른 브랜드를 대기 자리(_global.pendingBrand*)에 두고 이탈 확인 창을 연다 —\n              이동을 완결하는 것은 그 창이다(공통정보·고시 목록과 같은 규칙, 7.1.1 출시 전 실측).",
+                                    "handler": "switch",
                                     "params": {
-                                        "target": "global",
-                                        "selectedBrandId": "{{$args[0].id}}",
-                                        "selectedBrand": "{{$args[0]}}",
-                                        "panelMode": "view"
-                                    }
-                                },
-                                {
-                                    "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어·정렬은 그대로 둔다. 병합하지 않으면 항목을 고르는 순간 목록이 초기화된다 (#75).",
-                                    "handler": "replaceUrl",
-                                    "params": {
-                                        "mergeQuery": true,
-                                        "query": {
-                                            "id": "{{$args[0].id}}",
-                                            "mode": "view"
+                                        "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}"
+                                    },
+                                    "cases": {
+                                        "true": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "pendingBrandId": "{{$args[0].id}}",
+                                                        "pendingBrand": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "editing_confirm_modal"
+                                                }
+                                            ]
+                                        },
+                                        "false": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "selectedBrandId": "{{$args[0].id}}",
+                                                        "selectedBrand": "{{$args[0]}}",
+                                                        "panelMode": "view"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어·정렬은 그대로 둔다. 병합하지 않으면 항목을 고르는 순간 목록이 초기화된다 (#75).",
+                                                    "handler": "replaceUrl",
+                                                    "params": {
+                                                        "mergeQuery": true,
+                                                        "query": {
+                                                            "id": "{{$args[0].id}}",
+                                                            "mode": "view"
+                                                        }
+                                                    }
+                                                }
+                                            ]
                                         }
                                     }
                                 }
@@ -290,7 +321,7 @@
             "id": "empty_brand_state",
             "type": "basic",
             "name": "Div",
-            "if": "{{(brands?.data?.data?.length ?? 0) === 0}}",
+            "if": "{{brands !== undefined && ((brands?.data?.data?.length ?? 0) === 0)}}",
             "props": {
                 "className": "flex-center flex-1 justify-center gap-3 px-4"
             },
@@ -300,7 +331,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "tag",
-                        "className": "text-xl text-gray-400 dark:text-gray-500"
+                        "className": "text-xl text-gray-500 dark:text-gray-500"
                     }
                 },
                 {

@@ -70,22 +70,53 @@
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "handler": "setState",
+                                    "comment": "편집·등록 중이면 곧바로 넘어가지 않고 고른 분류를 대기 자리(_global.pendingCategory*)에 두고 이탈 확인 창을 연다 —\n              이동을 완결하는 것은 그 창이다(브랜드·공통정보·고시 목록과 같은 규칙, 7.1.1 출시 전).",
+                                    "handler": "switch",
                                     "params": {
-                                        "target": "global",
-                                        "selectedCategoryId": "{{$args[0]?.id}}",
-                                        "selectedCategory": "{{$args[0]}}",
-                                        "panelMode": "view"
-                                    }
-                                },
-                                {
-                                    "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
-                                    "handler": "replaceUrl",
-                                    "params": {
-                                        "mergeQuery": true,
-                                        "query": {
-                                            "id": "{{$args[0]?.id}}",
-                                            "mode": "view"
+                                        "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}"
+                                    },
+                                    "cases": {
+                                        "true": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "pendingCategoryId": "{{$args[0]?.id}}",
+                                                        "pendingCategory": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "editing_confirm_modal"
+                                                }
+                                            ]
+                                        },
+                                        "false": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "selectedCategoryId": "{{$args[0]?.id}}",
+                                                        "selectedCategory": "{{$args[0]}}",
+                                                        "panelMode": "view"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
+                                                    "handler": "replaceUrl",
+                                                    "params": {
+                                                        "mergeQuery": true,
+                                                        "query": {
+                                                            "id": "{{$args[0]?.id}}",
+                                                            "mode": "view"
+                                                        }
+                                                    }
+                                                }
+                                            ]
                                         }
                                     }
                                 }
@@ -207,7 +238,7 @@
             "id": "empty_category_state",
             "type": "basic",
             "name": "Div",
-            "if": "{{(categories?.data?.data?.length ?? 0) === 0}}",
+            "if": "{{categories !== undefined && ((categories?.data?.data?.length ?? 0) === 0)}}",
             "props": {
                 "className": "flex-center flex-1 justify-center gap-3 px-4"
             },
@@ -217,7 +248,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "folder",
-                        "className": "text-xl text-gray-400 dark:text-gray-500"
+                        "className": "text-xl text-gray-500 dark:text-gray-500"
                     }
                 },
                 {

@@ -128,7 +128,7 @@ describe('admin_page_list.json', () => {
     // @scenario case=list_abilities
     // @effects admin_page_list_actions_follow_abilities
     it('DataGrid의 selectable 은 수정 권한(can_update)일 때만 켜진다', () => {
-        // 일괄 공개·비공개가 수정 권한이라 그 권한이 없으면 행 선택 자체를 그리지 않는다(7.1.0 abilities 게이트 page-hello #5)
+        // 일괄 공개·비공개가 수정 권한이라 그 권한이 없으면 행 선택 자체를 그리지 않는다(7.1.0 abilities 게이트)
         const grids = findComponentsByName(adminPageList, 'DataGrid');
         expect(grids[0].props.selectable).toBe('{{pages?.data?.abilities?.can_update === true}}');
     });
@@ -415,11 +415,11 @@ describe('admin_page_list.json', () => {
         expect(inputChange?.params?.target).not.toBe('global');
     });
 
-    // ─── C1·C2·C5: 시맨틱 클래스 정리 ───
+    // ─── C2·C5: 시맨틱 클래스 정리 ───
 
     // @scenario case=list_styles
     // @effects admin_page_list_buttons_use_semantic_classes
-    it('[C1] 검색바 안 필드 셀렉트는 pill(select-composite), 툴바 발행/정렬/개수는 테두리(border+bg-white) — 이커머스 목록 관행', () => {
+    it('검색바 안 필드 셀렉트는 pill(select-composite), 툴바 발행/정렬/개수는 테두리(border+bg-white) — 이커머스 목록 관행', () => {
         // 관행(이커머스 shipping_policy/order/product 목록): 검색바 내부 필드 셀렉트 = pill,
         // 목록 툴바의 필터/정렬/개수 셀렉트 = 테두리(bg-white border). 위치에 따라 외형이 다름.
         const searchField = findById(adminPageList, 'search_field_select');
@@ -1257,7 +1257,8 @@ describe('admin_page_detail.json', () => {
         // 회귀 배경: "hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50" 는
         // 다크모드에서 hover 가 아닌 기본 상태에 bg-gray-800 을 상시 적용 → admin-card 배경과 중복.
         const attachmentsSection = findById(adminPageDetail, 'attachments_section');
-        const cards = findComponentsByName(attachmentsSection, 'Div').filter(
+        // 첨부 카드는 7.1.1 부터 키보드로 누르는 Button 이다 — 이름과 무관하게 hover 배경 카드를 모은다
+        const cards = [...findComponentsByName(attachmentsSection, 'Div'), ...findComponentsByName(attachmentsSection, 'Button')].filter(
             (n: any) => typeof n.props?.className === 'string' && n.props.className.includes('hover:bg-gray-50'),
         );
         expect(cards.length).toBeGreaterThan(0);

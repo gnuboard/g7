@@ -485,7 +485,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-green-600 dark:text-green-400"
+                                                                "className": "text-green-700 dark:text-green-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.deposit_used"
                                                         },
@@ -493,7 +493,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-green-600 dark:text-green-400"
+                                                                "className": "text-green-700 dark:text-green-400"
                                                             },
                                                             "text": "-{{claim?.data?.order?.total_deposit_used_amount_formatted}}"
                                                         }
@@ -593,7 +593,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-orange-600 dark:text-orange-400"
+                                                                        "className": "text-orange-700 dark:text-orange-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount"
                                                                 },
@@ -601,7 +601,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-orange-600 dark:text-orange-400"
+                                                                        "className": "text-orange-700 dark:text-orange-400"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_refunded_amount_formatted}}"
                                                                 }
@@ -1402,7 +1402,7 @@
                                                     "name": "Span",
                                                     "if": "{{(claimPayment.refunded_amount ?? 0) > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-orange-600 dark:text-orange-400"
+                                                        "className": "text-xs text-orange-700 dark:text-orange-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.payment_refunded|amount={{claimPayment.refunded_amount_formatted ?? ''}}"
                                                 }
@@ -1587,7 +1587,7 @@
                                                         "claimId": "{{claim?.data?.claim?.id ?? null}}"
                                                     },
                                                     "onError": {
-                                                        "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다.",
+                                                        "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 실측에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다.",
                                                         "handler": "suppress"
                                                     }
                                                 }
@@ -1608,7 +1608,7 @@
                                     "name": "P",
                                     "if": "{{(claim?.data?.settlement?.blocked_reason ?? '') !== ''}}",
                                     "props": {
-                                        "className": "text-sm text-amber-600 dark:text-amber-400"
+                                        "className": "text-sm text-amber-700 dark:text-amber-400"
                                     },
                                     "text": "{{claim?.data?.settlement?.blocked_reason === 'claim_refund_request_exists' ? $t('sirsoft-ecommerce.admin.claim.detail.settlement.blocked_already_filed') : $t('sirsoft-ecommerce.admin.claim.detail.settlement.blocked_not_applicable')}}"
                                 },
@@ -1679,7 +1679,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-orange-600 dark:text-orange-400 font-medium"
+                                                "className": "text-orange-700 dark:text-orange-400 font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.expected_refund"
                                         },
@@ -1687,7 +1687,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-orange-600 dark:text-orange-400 font-medium"
+                                                "className": "text-orange-700 dark:text-orange-400 font-medium"
                                             },
                                             "text": "{{claim?.data?.settlement?.refund_amount_formatted ?? ''}}"
                                         }
@@ -1929,7 +1929,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-amber-600 dark:text-amber-400"
+                                                        "className": "text-amber-700 dark:text-amber-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.reserved"
                                                 },
@@ -1937,7 +1937,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-amber-600 dark:text-amber-400"
+                                                        "className": "text-amber-700 dark:text-amber-400"
                                                     },
                                                     "text": "{{claim?.data?.cancellable?.reserved_formatted ?? ''}}"
                                                 }

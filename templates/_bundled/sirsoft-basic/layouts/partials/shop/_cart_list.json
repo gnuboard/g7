@@ -68,7 +68,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "text-sm text-gray-600 dark:text-gray-300"
                                     },
                                     "text": "({{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}})"
                                 }
@@ -101,7 +101,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0}}"
                             },
                             "children": [
@@ -160,7 +161,7 @@
                     "comment": "장바구니 비어있음",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!cartItems.data.items || cartItems.data.items.length === 0}}",
+                    "if": "{{cartItems !== undefined && (!cartItems.data.items || cartItems.data.items.length === 0)}}",
                     "props": {
                         "className": "text-center py-16"
                     },
@@ -170,7 +171,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "shopping-cart",
-                                "className": "text-[4rem] mx-auto mb-4 text-gray-300 dark:text-gray-600"
+                                "className": "text-[4rem] mx-auto mb-4 text-gray-500 dark:text-gray-500"
                             }
                         },
                         {

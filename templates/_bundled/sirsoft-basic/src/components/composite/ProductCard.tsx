@@ -18,6 +18,7 @@ import { H3 } from '../basic/H3';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
 import { LinkButton } from '../../support/LinkButton';
+import { solidChipColors } from '../../support/accessibleColor';
 import { mergeQueryIntoHref } from '../../support/navigationLink';
 
 /**
@@ -261,9 +262,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* 판매 상태 오버레이 */}
         {isNotOnSale && (
-          <Div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <Div className="absolute inset-0 bg-black/70 flex items-center justify-center">
             <Span className={`text-lg font-bold ${
-              product.sales_status === 'sold_out' ? 'text-red-300' :
+              product.sales_status === 'sold_out' ? 'text-red-200' :
               product.sales_status === 'suspended' ? 'text-amber-300' :
               'text-blue-300'
             }`} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
@@ -274,7 +275,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* 할인율 뱃지 (좌상단) - 품절/판매중단 시 숨김 */}
         {hasDiscount && product.sales_status !== 'sold_out' && product.sales_status !== 'suspended' && (
-          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-500 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded">
+          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded">
             {product.discount_rate}%
           </Span>
         )}
@@ -282,15 +283,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* 상품 라벨/뱃지 (우하단) */}
         {labels.length > 0 && (
           <Div className="absolute bottom-2 right-2 flex gap-1 flex-wrap justify-end">
-            {labels.map((label, idx) => (
-              <Span
-                key={idx}
-                className="text-xs text-white font-medium px-1.5 py-0.5 rounded"
-                style={{ backgroundColor: label.color || '#6b7280' }}
-              >
-                {label.name}
-              </Span>
-            ))}
+            {labels.map((label, idx) => {
+              // 바탕은 운영자 라벨 색 그대로, 글자는 검정·흰색 중 그 바탕과 대비가 큰 쪽 — 흰 글자 고정이면 밝은 라벨 색
+              // (초록·노랑 500 등)에서 2 안팎으로 읽히지 않는다. 읽을 수 없는 색 값은 기본 회색으로 그린다.
+              const chip = solidChipColors(label.color) ?? solidChipColors('#6b7280')!;
+              return (
+                <Span
+                  key={idx}
+                  className="text-xs font-medium px-1.5 py-0.5 rounded"
+                  style={{ backgroundColor: chip.background, color: chip.color }}
+                >
+                  {label.name}
+                </Span>
+              );
+            })}
           </Div>
         )}
       </Div>
@@ -336,7 +342,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {getStarTypes(product.rating_avg ?? 0).map((type, idx) => (
             <Span
               key={idx}
-              className={`text-xs ${type === 'empty' ? 'text-gray-300 dark:text-gray-600' : 'text-yellow-400'}`}
+              className={`text-xs ${type === 'empty' ? 'text-gray-500 dark:text-gray-500' : 'text-yellow-700 dark:text-yellow-400'}`}
             >
               {type === 'full' && <i className="fa-solid fa-star" />}
               {type === 'half' && <i className="fa-solid fa-star-half-stroke" />}
@@ -346,7 +352,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Span className="text-xs text-gray-600 dark:text-gray-400 ml-0.5">
             {(product.rating_avg ?? 0).toFixed(1)}
           </Span>
-          <Span className="text-xs text-gray-400 dark:text-gray-500">
+          <Span className="text-xs text-gray-500 dark:text-gray-400">
             ({product.review_count ?? 0})
           </Span>
         </Div>

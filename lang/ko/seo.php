@@ -35,4 +35,12 @@ return [
     'stats_total' => '합계',
     'stats_by_module' => '모듈별 통계',
     'stats_module_identifier' => '모듈',
+    // `seo:generate-sitemap` 명령 출력
+    'console' => [
+        'generate_sitemap' => [
+            'invalid_mode' => '잘못된 모드입니다. 허용: :allowed',
+            'generated' => 'Sitemap이 생성되었습니다. (모드: :mode)',
+            'dispatched' => 'Sitemap 생성이 큐에 디스패치되었습니다. (모드: :mode)',
+        ],
+    ],
 ];

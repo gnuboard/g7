@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 직권 접수의 부가 동작 권한 게이트 Feature 테스트 (7.1.0 abilities 게이트 R1·S3·G03)
+ * 직권 접수의 부가 동작 권한 게이트 Feature 테스트 (7.1.0 abilities 게이트)
  *
  * 검증 축:
  * - 「환불까지 한 번에 처리」(`auto_advance_refund`)는 환불 실행 권한(`claims.execute-refund`)이 있어야 한다.
@@ -138,7 +138,7 @@ class AdminClaimGatePermissionTest extends ModuleTestCase
     }
 
     /**
-     * 호환용 구 경로(`orders/{order}/cancel`)도 자동 환불은 환불 실행 권한을 요구합니다. (R1-b)
+     * 호환용 구 경로(`orders/{order}/cancel`)도 자동 환불은 환불 실행 권한을 요구합니다.
      *
      * @return void 반환값 없음
      *
@@ -187,7 +187,7 @@ class AdminClaimGatePermissionTest extends ModuleTestCase
     }
 
     /**
-     * 상태 변경 권한이 없으면 「접수와 함께 승인」(기본 켜짐) 반품 접수가 403 이고 신청서도 생기지 않습니다. (S3)
+     * 상태 변경 권한이 없으면 「접수와 함께 승인」(기본 켜짐) 반품 접수가 403 이고 신청서도 생기지 않습니다.
      *
      * @return void 반환값 없음
      *
@@ -209,7 +209,7 @@ class AdminClaimGatePermissionTest extends ModuleTestCase
     }
 
     /**
-     * 승인을 끄면 상태 변경 권한 없이도 신청 상태로 접수됩니다. (S3)
+     * 승인을 끄면 상태 변경 권한 없이도 신청 상태로 접수됩니다.
      *
      * @return void 반환값 없음
      *
@@ -233,7 +233,7 @@ class AdminClaimGatePermissionTest extends ModuleTestCase
     }
 
     /**
-     * 교환 접수도 「접수와 함께 승인」 이면 상태 변경 권한을 요구합니다. (S3)
+     * 교환 접수도 「접수와 함께 승인」 이면 상태 변경 권한을 요구합니다.
      *
      * @return void 반환값 없음
      *
@@ -267,7 +267,7 @@ class AdminClaimGatePermissionTest extends ModuleTestCase
     }
 
     /**
-     * 취소 창의 환불 예상금액 조회는 접수 권한(`claims.create`)으로 열리고, 주문 수정 권한만으로는 열리지 않습니다. (G03)
+     * 취소 창의 환불 예상금액 조회는 접수 권한(`claims.create`)으로 열리고, 주문 수정 권한만으로는 열리지 않습니다.
      *
      * @return void 반환값 없음
      *

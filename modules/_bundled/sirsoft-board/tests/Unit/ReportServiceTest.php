@@ -5,13 +5,16 @@ namespace Modules\Sirsoft\Board\Tests\Unit;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../ModuleTestCase.php';
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Mockery;
+use Mockery\MockInterface;
 use Modules\Sirsoft\Board\Enums\ReportReasonType;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
+use Modules\Sirsoft\Board\Enums\ReportType;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Models\ReportLog;
@@ -27,10 +30,9 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  */
 class ReportServiceTest extends ModuleTestCase
 {
-
     private ReportService $service;
 
-    /** @var \Mockery\MockInterface&ReportRepositoryInterface */
+    /** @var MockInterface&ReportRepositoryInterface */
     private $reportRepository;
 
     private PostRepositoryInterface $postRepository;
@@ -45,6 +47,11 @@ class ReportServiceTest extends ModuleTestCase
 
     private Board $board;
 
+    /**
+     * Mock 저장소와 실제 저장소로 신고 서비스와 시험 게시판을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,7 +73,7 @@ class ReportServiceTest extends ModuleTestCase
             $this->commentRepository,
             $this->boardRepository,
             $this->userRepository,
-            app(\App\Contracts\Extension\CacheInterface::class)
+            app(CacheInterface::class)
         );
 
         $this->user = User::factory()->create();
@@ -90,6 +97,11 @@ class ReportServiceTest extends ModuleTestCase
         );
     }
 
+    /**
+     * Mockery 기대를 검증하고 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -98,6 +110,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * createReport() - 훅 실행 테스트
+     *
+     * @scenario case=create_report_executes_hooks
+     *
+     * @effects create_report_executes_hooks
+     *
+     * @return void 반환값 없음
      */
     public function test_create_report_executes_hooks(): void
     {
@@ -143,6 +161,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * updateReportStatus() 메서드 테스트
+     *
+     * @scenario case=update_report_status_changes_status
+     *
+     * @effects update_report_status_changes_status
+     *
+     * @return void 반환값 없음
      */
     public function test_update_report_status_changes_status(): void
     {
@@ -185,6 +209,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * deleteReport() 메서드 테스트
+     *
+     * @scenario case=delete_report_soft_deletes
+     *
+     * @effects delete_report_soft_deletes
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_report_soft_deletes(): void
     {
@@ -214,6 +244,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * updateReportStatus() - 게시글 상태 동기화 테스트 (suspended)
+     *
+     * @scenario case=update_report_status_blinds_post_content
+     *
+     * @effects update_report_status_blinds_post_content
+     *
+     * @return void 반환값 없음
      */
     public function test_update_report_status_blinds_post_content(): void
     {
@@ -261,6 +297,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * updateReportStatus() - 게시글 상태 동기화 테스트 (deleted)
+     *
+     * @scenario case=update_report_status_deletes_post_content
+     *
+     * @effects update_report_status_deletes_post_content
+     *
+     * @return void 반환값 없음
      */
     public function test_update_report_status_deletes_post_content(): void
     {
@@ -308,6 +350,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * updateReportStatus() - 게시글 복구 테스트 (suspended -> rejected)
+     *
+     * @scenario case=update_report_status_restores_post_content
+     *
+     * @effects update_report_status_restores_post_content
+     *
+     * @return void 반환값 없음
      */
     public function test_update_report_status_restores_post_content(): void
     {
@@ -361,6 +409,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * 댓글 신고 시 reportable에 상위 게시글 제목이 포함되는지 테스트
+     *
+     * @scenario case=comment_report_reportable_includes_post_title
+     *
+     * @effects comment_report_reportable_includes_post_title
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_report_reportable_includes_post_title(): void
     {
@@ -410,6 +464,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * 게시글 신고 시 reportable의 title이 정상적으로 반환되는지 테스트
+     *
+     * @scenario case=post_report_reportable_includes_post_title_directly
+     *
+     * @effects post_report_reportable_includes_post_title_directly
+     *
+     * @return void 반환값 없음
      */
     public function test_post_report_reportable_includes_post_title_directly(): void
     {
@@ -451,6 +511,8 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * 테스트용 게시글 생성 헬퍼
+     *
+     * @return int 생성된 게시글 ID
      */
     private function createTestPost(): int
     {
@@ -476,6 +538,12 @@ class ReportServiceTest extends ModuleTestCase
      *
      * 수정 전: pending/review 조건으로 카운트 → 실제 복구 조건(suspended/deleted)과 불일치
      * 수정 후: suspended/deleted 케이스 + blinded 게시글 → 복구 대상으로 카운트
+     *
+     * @scenario case=restorable_blind_count_includes_cases_with_multiple_reporters
+     *
+     * @effects restorable_blind_count_includes_cases_with_multiple_reporters
+     *
+     * @return void 반환값 없음
      */
     public function test_restorable_blind_count_includes_cases_with_multiple_reporters(): void
     {
@@ -506,6 +574,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * createReport() - 동일 대상 중복 신고 시 기존 케이스 재사용 (1케이스 구조)
+     *
+     * @scenario case=create_report_reuses_existing_case_for_same_target
+     *
+     * @effects create_report_reuses_existing_case_for_same_target
+     *
+     * @return void 반환값 없음
      */
     public function test_create_report_reuses_existing_case_for_same_target(): void
     {
@@ -515,9 +589,9 @@ class ReportServiceTest extends ModuleTestCase
         $existingReport = new Report;
         $existingReport->id = 99;
         $existingReport->board_id = $this->board->id;
-        $existingReport->target_type = \Modules\Sirsoft\Board\Enums\ReportType::Post;
+        $existingReport->target_type = ReportType::Post;
         $existingReport->target_id = $postId;
-        $existingReport->status = \Modules\Sirsoft\Board\Enums\ReportStatus::Pending;
+        $existingReport->status = ReportStatus::Pending;
         $existingReport->process_histories = [];
 
         // 두 번째 신고 시: created=false (기존 케이스 반환)
@@ -532,6 +606,12 @@ class ReportServiceTest extends ModuleTestCase
         $this->reportRepository->shouldReceive('countActiveReportsByTarget')
             ->once()
             ->andReturn(2);
+
+        // 처리 중 케이스의 추가 신고는 마지막 신고 시각을 이 신고 시각으로 앞당긴다(늦은 시각만 — 조건부 UPDATE)
+        $this->reportRepository->shouldReceive('advanceLastReportedAt')
+            ->once()
+            ->with(99, Mockery::type(\DateTimeInterface::class))
+            ->andReturn(true);
 
         $data = [
             'board_id' => $this->board->id,
@@ -552,6 +632,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * createReport() - rejected 케이스에 재신고 시 pending 재활성화
+     *
+     * @scenario case=create_report_reactivates_rejected_case
+     *
+     * @effects create_report_reactivates_rejected_case
+     *
+     * @return void 반환값 없음
      */
     public function test_create_report_reactivates_rejected_case(): void
     {
@@ -561,9 +647,9 @@ class ReportServiceTest extends ModuleTestCase
         $rejectedReport = new Report;
         $rejectedReport->id = 100;
         $rejectedReport->board_id = $this->board->id;
-        $rejectedReport->target_type = \Modules\Sirsoft\Board\Enums\ReportType::Post;
+        $rejectedReport->target_type = ReportType::Post;
         $rejectedReport->target_id = $postId;
-        $rejectedReport->status = \Modules\Sirsoft\Board\Enums\ReportStatus::Rejected;
+        $rejectedReport->status = ReportStatus::Rejected;
         $rejectedReport->process_histories = [['action' => 'rejected']];
 
         // 재신고: created=false, status=Rejected → isReactivation=true
@@ -596,6 +682,12 @@ class ReportServiceTest extends ModuleTestCase
 
     /**
      * updateReportStatus() - comment 신고 블라인드 처리 (suspended)
+     *
+     * @scenario case=update_report_status_blinds_comment_content
+     *
+     * @effects update_report_status_blinds_comment_content
+     *
+     * @return void 반환값 없음
      */
     public function test_update_report_status_blinds_comment_content(): void
     {

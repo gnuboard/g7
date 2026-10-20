@@ -399,3 +399,53 @@ describe('#75 주문 목록 ↔ 상세 왕복 — 실행 결과 URL', () => {
         expect(q.get('order_status')).toBe('confirmed');
     });
 });
+
+describe('행 메뉴 링크(href)도 목록 조건을 싣는다 (7.1.1 출시 전 실측)', () => {
+    /**
+     * 행 메뉴 항목의 href 는 가운데 클릭·Ctrl+클릭·주소 복사가 쓰는 주소다. 보통 클릭(onRowAction 의 navigate)은
+     * `mergeQuery: true` 로 목록 조건을 싣는데 항목에 `mergeQuery` 가 없으면 새 탭만 조건 없이 열린다
+     * (실측: 상품·쿠폰·배송정책 「수정」, 주문·클레임 「상세보기」). 관리자 템플릿 ActionMenu 는 항목의
+     * `mergeQuery` 가 참일 때만 href 에 현재 쿼리를 병합하므로, 이 확장 목록 화면으로 가는 항목에 켠다.
+     * 다른 화면으로 가는 항목(「회원 보기」 `/admin/users/…`)은 목록 조건을 실으면 안 되므로 모집단에서 뺀다.
+     */
+    function rowActionItems(node: any, file: string, acc: Array<[string, any]> = []): Array<[string, any]> {
+        if (Array.isArray(node)) {
+            node.forEach((child) => rowActionItems(child, file, acc));
+
+            return acc;
+        }
+        if (node === null || typeof node !== 'object') return acc;
+        if (Array.isArray(node.props?.rowActions)) {
+            node.props.rowActions.forEach((item: any) => acc.push([file, item]));
+        }
+        Object.entries(node).forEach(([k, v]) => {
+            if (k !== 'props' && v && typeof v === 'object') rowActionItems(v, file, acc);
+        });
+
+        return acc;
+    }
+
+    function jsonFiles(dir: string): string[] {
+        return fs.readdirSync(dir).flatMap((entry) => {
+            const full = path.join(dir, entry);
+            if (fs.statSync(full).isDirectory()) return jsonFiles(full);
+
+            return full.endsWith('.json') ? [full] : [];
+        });
+    }
+
+    /**
+     * @scenario leg=entry
+     * @effects row_menu_href_carries_list_query
+     */
+    it('이 확장 화면으로 가는 행 메뉴 링크는 mergeQuery 가 켜져 있다', () => {
+        const items = jsonFiles(LAYOUTS_ROOT).flatMap((full) =>
+            rowActionItems(JSON.parse(fs.readFileSync(full, 'utf-8')), path.relative(LAYOUTS_ROOT, full).split(path.sep).join('/')),
+        );
+        const targets = items.filter(([, item]) => typeof item?.href === 'string' && item.href.startsWith('/admin/ecommerce/'));
+        expect(targets.length).toBeGreaterThanOrEqual(5);
+
+        const missing = targets.filter(([, item]) => item.mergeQuery !== true).map(([file, item]) => `${file}: ${item.id} ${item.href}`);
+        expect(missing).toEqual([]);
+    });
+});

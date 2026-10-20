@@ -212,10 +212,10 @@ notes: |
   SEO extensions 결선. 셸/배너/picker 는 prop 주도 RTL(Provider hook mock)로 라우팅·핸드셰이크
   격리 검증. 캔버스 pick 핸드셰이크는 ComponentTargetPicker RTL 이 이벤트 계약(request/picked/
   cancelled/requestId 짝)을 잠그고, EditorCanvasOverlay 수신측은 합성 클릭 의존이라 Chrome MCP
- 매트릭스(별도 세션)로 라이브 실측. 백엔드 __computedSource 'route-override' 3값 구분은
+  매트릭스(별도 세션)로 라이브 실측. 백엔드 __computedSource 'route-override' 3값 구분은
   LayoutServiceMergeComputedTest, extensions 키는 PageSettingsEditorEndpointsTest 가 SSoT.
 
- S10-1 잔여 #1 — 표현식 분해 트리를 SEO 값 전용 칸으로 확대(④#5). 값 칸
+  S10-1 잔여 #1 — 표현식 분해 트리를 SEO 값 전용 칸으로 확대(④#5). 값 칸
   (og.image/tw.image/og.image_alt)은 DataChipValueInput(키화 0, 데이터연결·설정참조는 칩 시각화,
   단일 조건식→ConditionalValueEditor, 다조각→SegmentedValueEditor, leaf 는 DataChipValueInput 재귀
   주입으로 키화 없이 분해). 텍스트 칸(검색 제목/설명·og/tw 제목·설명)은 I18nTextField 유지(평문→$t:custom

@@ -20,7 +20,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.item_count ?? 0)}}$t:sirsoft-ecommerce.admin.claim.detail.comparison.unit_count</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -34,17 +34,17 @@
         <div class="text-right">
           <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_list_price_amount ?? ''}}</span>
           <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
           </div>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
           <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_list_price_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_list_price_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_list_price_amount ?? ''}}</span>
           <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted}}" class="mt-0.5">
-            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
           </div>
         </div>
       </div>
@@ -55,17 +55,17 @@
         <div class="text-right">
           <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.subtotal_amount ?? ''}}</span>
           <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
           </div>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
           <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.subtotal_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.subtotal_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.subtotal_amount ?? ''}}</span>
           <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted}}" class="mt-0.5">
-            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
           </div>
         </div>
       </div>
@@ -77,7 +77,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_product_coupon_discount_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -92,7 +92,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_order_coupon_discount_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -107,7 +107,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_code_discount_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -122,7 +122,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.shipping_discount_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -137,7 +137,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.base_shipping_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -152,7 +152,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.extra_shipping_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -167,7 +167,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{(claim?.data?.claim?.calculation_comparison?.original?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_points_used_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -182,7 +182,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_tax_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -197,7 +197,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_vat_amount ?? ''}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
@@ -211,17 +211,17 @@
         <div class="text-right">
           <span class="text-sm text-gray-900 dark:text-gray-100 font-semibold">{{claim?.data?.claim?.calculation_comparison?.original?.formatted?.total_paid_amount ?? ''}}</span>
           <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_original?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
           </div>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">
           <span class="{{(claim?.data?.claim?.calculation_comparison?.original?.total_paid_amount ?? 0) !== (claim?.data?.claim?.calculation_comparison?.recalculated?.total_paid_amount ?? 0) ? 'text-sm text-red-600 dark:text-red-400 font-semibold' : 'text-sm text-gray-900 dark:text-gray-100 font-semibold'}}">{{claim?.data?.claim?.calculation_comparison?.recalculated?.formatted?.total_paid_amount ?? ''}}</span>
           <div data-if="{{!!claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted}}" class="mt-0.5">
-            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-400 dark:text-gray-500 block">{{mc[1]}}</span>
+            <span data-each="mc in {{Object.entries(claim?.data?.claim?.calculation_comparison?.mc_recalculated?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (claim?.data?.claim?.calculation_comparison?.original?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="text-xs text-gray-500 dark:text-gray-400 block">{{mc[1]}}</span>
           </div>
         </div>
       </div>
@@ -233,7 +233,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount_formatted ?? ((claim?.data?.claim?.calculation_comparison?.original?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}</span>
         </div>
         <span class="hidden">
-          <responsive on="portable" class="text-xs text-gray-400 dark:text-gray-500"/>
+          <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400"/>
           →
         </span>
         <div class="text-right">

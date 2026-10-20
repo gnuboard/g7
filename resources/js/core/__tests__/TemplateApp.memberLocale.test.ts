@@ -2,7 +2,7 @@
  * @file TemplateApp.memberLocale.test.ts
  * @description 로그인 회원의 언어(users.language)를 화면 언어의 기준으로 삼는다 (engine-v1.79.0)
  *
- * 버그 (7.1.0 실측 O-C1-2, O-C2a-3):
+ * 버그 (7.1.0 실측):
  *   이 브라우저에 남은 언어(g7_locale)가 회원 언어와 다르면(다른 기기에서 언어를 바꾼 경우 등) 부팅 때 화면은
  *   브라우저 언어로 그려지는데, 서버는 로그인 회원의 요청 언어로 users.language 를 써서 필수 언어 검증 문구와
  *   확장 목록 이름이 회원 언어로 섞였다. 헤더에서 같은 언어를 다시 골라도 changeLocale 이 같은 언어면 바로

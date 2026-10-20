@@ -30,14 +30,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "triangle-exclamation",
-                                    "className": "text-8xl mx-auto text-orange-400 dark:text-orange-500 mb-6"
+                                    "className": "text-8xl mx-auto text-orange-600 dark:text-orange-500 mb-6"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "text-8xl font-bold text-gray-200 dark:text-gray-700 mb-4"
+                                    "className": "text-8xl font-bold text-gray-500 dark:text-gray-500 mb-4"
                                 },
                                 "text": "503"
                             },
@@ -185,7 +185,7 @@
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-sm text-gray-500 dark:text-gray-500 mb-8"
+                                    "className": "text-sm text-gray-500 dark:text-gray-400 mb-8"
                                 },
                                 "text": "$t:error.503.contact_admin"
                             },

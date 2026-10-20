@@ -1,10 +1,6 @@
 <!-- 글 작성 폼의 입력 칸 전부(글쓴이·분류·제목·본문과 공지·비밀 같은 스위치)를 한 카드에 담는다. 본문 편집기는 확장점이라 위지윅 플러그인이 깔려 있으면 그것으로 갈리고, 없으면 기본 편집기가 선다 -->
 <partial description="Post Form - All Form Fields in One Card">
   <div data-ref="post_form_fields">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <div data-ref="main_form_card" class="admin-card">
       <div class="row-stack">
         <div data-ref="author_section" data-if="{{route?.id &amp;&amp; form_meta?.data?.author}}" class="">

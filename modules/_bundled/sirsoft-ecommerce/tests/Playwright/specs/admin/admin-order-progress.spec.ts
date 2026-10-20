@@ -145,7 +145,7 @@ test.describe('@sirsoft-ecommerce 관리자 주문 상세 진행단계', () => {
     await expect(page.locator('[data-step-state="current"]')).toHaveCount(0);
     const last = page.locator('[data-step-state="off_path"]');
     await expect(last).toHaveAttribute('data-step-value', 'shipping_hold');
-    await expect(last.locator('.rounded-full.border-2')).toHaveClass(/bg-red-500/);
+    await expect(last.locator('.rounded-full.border-2')).toHaveClass(/(^|\s)bg-red-600(\s|$)/);
     await expect(last.locator('i[class*="fa-pause"]')).toHaveCount(1);
     await expect(page.locator('[data-step-chevron="pc"]:visible')).toHaveCount(7);
 

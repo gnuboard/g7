@@ -35,4 +35,12 @@ return [
     'stats_total' => 'Total',
     'stats_by_module' => 'Statistics by Module',
     'stats_module_identifier' => 'Module',
+    // `seo:generate-sitemap` command output
+    'console' => [
+        'generate_sitemap' => [
+            'invalid_mode' => 'Invalid mode. Allowed: :allowed',
+            'generated' => 'Sitemap generated. (mode: :mode)',
+            'dispatched' => 'Sitemap generation dispatched to the queue. (mode: :mode)',
+        ],
+    ],
 ];

@@ -14,7 +14,7 @@
         </h3>
       </div>
       <!-- 배송지 수정 버튼 - 배송 전 상태 (회원/비회원 공통). 공유 partial 이라 비회원 상세(guest_order_show)에서도 재사용되며, 비회원은 모달에서 탭 없이 직접입력 폼만 노출된다. -->
-      <button data-if="{{_local.orderShippingReadonly !== true &amp;&amp; (order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete')}}" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <button data-if="{{_local.orderShippingReadonly !== true &amp;&amp; (order.data.order_status === 'pending_payment' || order.data.order_status === 'payment_complete')}}" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
         <on type="click">
           <!-- 배송지 변경 모달 열기 — 모달은 부모 _local 을 못 읽으므로(별도 컨텍스트), 공유 상태를 _global 로 전달. 열 때마다 전부 덮어써서 이전 잔존값 무해화. changeAddressMode 는 회원=saved(탭 선택 가능)/비회원=manual(탭 없이 직접입력) 분기. 저장된 배송지가 0건인 회원도 manual 로 연다 — saved 로 열면 고를 것이 없는 빈 목록에서 적용이 address_id 없이 나가 422 로 막혔다(#703). 직접입력 초기값은 현재 배송지(order.data.shipping_address). _modal_address.g7.html(_global.editingAddress) 와 동일 패턴. -->
           <sequence>
@@ -107,17 +107,17 @@
           <!-- 배송 상태 + 정책명 -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="text-sm font-medium {{shipping.shipping_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : shipping.shipping_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : shipping.shipping_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}">{{shipping.shipping_status_label ?? ''}}</span>
-              <span data-if="{{shipping.delivery_policy_snapshot?.policy_name}}" class="text-xs text-gray-400 dark:text-gray-500">({{shipping.delivery_policy_snapshot?.policy_name ?? ''}})</span>
+              <span class="text-sm font-medium {{shipping.shipping_status_variant === 'success' ? 'text-green-700 dark:text-green-400' : shipping.shipping_status_variant === 'warning' ? 'text-yellow-700 dark:text-yellow-400' : shipping.shipping_status_variant === 'danger' ? 'text-red-600 dark:text-red-300' : 'text-blue-600 dark:text-blue-400'}}">{{shipping.shipping_status_label ?? ''}}</span>
+              <span data-if="{{shipping.delivery_policy_snapshot?.policy_name}}" class="text-xs text-gray-500 dark:text-gray-400">({{shipping.delivery_policy_snapshot?.policy_name ?? ''}})</span>
             </div>
             <!-- 배송비 금액 — 0원이면 '무료' 라벨(녹색), 그 외 금액 포맷. Number() 캐스팅으로 decimal:2 문자열도 안전 비교 (_payment.json 와 동일 패턴). 표기 통화는 주문 스냅샷 기준통화를 먼저 키잉한다(_items.json 와 동일) — 주문은 결제된 기록이므로 보는 사람의 표시통화를 따라가면 기준통화 줄이 통째로 사라진다. -->
-            <span class="text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}</span>
+            <span class="text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}</span>
           </div>
           <!-- 배송비 상세 (기본/추가/할인) -->
-          <div data-if="{{(shipping.extra_shipping_amount ?? 0) > 0 || (shipping.shipping_discount_amount ?? 0) > 0}}" class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+          <div data-if="{{(shipping.extra_shipping_amount ?? 0) > 0 || (shipping.shipping_discount_amount ?? 0) > 0}}" class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
             <span>$t:mypage.order_detail.base_shipping {{shipping.base_shipping_amount_formatted ?? ''}}</span>
             <span data-if="{{(shipping.extra_shipping_amount ?? 0) > 0}}">$t:mypage.order_detail.extra_shipping +{{shipping.extra_shipping_amount_formatted ?? ''}}</span>
-            <span data-if="{{(shipping.shipping_discount_amount ?? 0) > 0}}" class="text-red-400 dark:text-red-500">$t:mypage.order_detail.shipping_discount -{{shipping.shipping_discount_amount_formatted ?? ''}}</span>
+            <span data-if="{{(shipping.shipping_discount_amount ?? 0) > 0}}" class="text-red-600 dark:text-red-300">$t:mypage.order_detail.shipping_discount -{{shipping.shipping_discount_amount_formatted ?? ''}}</span>
           </div>
           <!-- 택배사/운송장 (있을 때) -->
           <div data-if="{{shipping.carrier_name || shipping.tracking_number}}" class="flex items-center gap-2 text-sm">

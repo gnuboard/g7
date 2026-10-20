@@ -1,4 +1,4 @@
-// e2e:allow 표현식 1줄(설명 폴백 사슬) 수정의 단위 검증 — 같은 화면은 Playwright 브라우저로 ko/en 재실측해 결과를 이력(20261007_1905_710_KLM_M1)에 남김
+// e2e:allow 표현식 1줄(설명 폴백 사슬) 수정의 단위 검증 — 같은 화면은 Playwright 브라우저로 ko/en 재실측해 결과를 작업 이력에 남김
 /**
  * @file policy-snapshot-category-locale.test.ts
  * @description 정책 버전 스냅샷 창의 쿠키 카테고리 설명이 현재 로케일을 먼저 보는지

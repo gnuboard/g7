@@ -182,7 +182,7 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         $naverpay = collect($methods)->firstWhere('id', 'nhnkcp_naverpay');
         $kakaopay = collect($methods)->firstWhere('id', 'nhnkcp_kakaopay');
 
-        $this->assertSame(['text' => 'N', 'class' => 'bg-green-500 text-white'], $naverpay['brand_mark'] ?? null);
+        $this->assertSame(['text' => 'N', 'class' => 'bg-green-700 text-white'], $naverpay['brand_mark'] ?? null);
         $this->assertSame(['text' => 'K', 'class' => 'bg-yellow-400 text-gray-950'], $kakaopay['brand_mark'] ?? null);
     }
 

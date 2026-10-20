@@ -224,7 +224,7 @@ test('수정 감지 조회가 실패하면 "수정 없음" 대신 확인 실패�
   await page.goto('/admin/modules');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  // 아이콘은 꾸밈으로 숨겨져 이름에 글리프가 섞이지 않는다(7.1.0 J D-J4) — exact 로 '업데이트 확인' 과 구분한다.
+  // 아이콘은 꾸밈으로 숨겨져 이름에 글리프가 섞이지 않는다(7.1.0 실측) — exact 로 '업데이트 확인' 과 구분한다.
   const updateButton = page
     .getByRole('button', { name: '업데이트', exact: true })
     .first();

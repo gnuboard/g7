@@ -96,7 +96,20 @@
         "escrow_delivery_change_button": "배송정보 수정",
         "escrow_delivery_registering": "등록 중...",
         "escrow_delivery_success": "배송정보가 KCP에 등록되었습니다.",
-        "escrow_delivery_error": "배송등록에 실패했습니다."
+        "escrow_delivery_error": "배송등록에 실패했습니다.",
+        "escrow_couriers": {
+            "kyungdong": "경동택배",
+            "ilyang": "일양로지스",
+            "hapdong": "합동택배",
+            "dream": "드림택배",
+            "chunil": "천일택배",
+            "kunyoung": "건영택배",
+            "cj": "CJ대한통운",
+            "hanjin": "한진택배",
+            "logen": "로젠택배",
+            "lotte_parcel": "롯데택배",
+            "epost": "우체국택배"
+        }
     },
     "settings": {
         "title": "NHN KCP 설정",

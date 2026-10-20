@@ -175,6 +175,8 @@ describe('메뉴 관리 — 하위 메뉴 선택 시 역할 보강 (#76)', () =>
     testUtils?.cleanup();
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_selection_hydrates_roles_from_detail
   it('실제 파셜의 onSelect 가 단건 조회를 호출한다', async () => {
     testUtils = createLayoutTest(buildLayoutFromPartial());
     testUtils.mockApi('menus', {
@@ -196,6 +198,8 @@ describe('메뉴 관리 — 하위 메뉴 선택 시 역할 보강 (#76)', () =>
     });
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_selection_hydrates_roles_from_detail
   it('상위 메뉴 선택도 같은 경로로 단건을 조회한다 (경로가 하위 전용이면 URL 직접 진입에서 다시 갈린다)', async () => {
     testUtils = createLayoutTest(buildLayoutFromPartial());
     testUtils.mockApi('menus', {
@@ -216,13 +220,30 @@ describe('메뉴 관리 — 하위 메뉴 선택 시 역할 보강 (#76)', () =>
     });
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_selection_hydrates_roles_from_detail
   it('단건 조회 응답이 selectedMenu 로 반영되도록 onSuccess 가 배선되어 있다', () => {
     const partial = JSON.parse(fs.readFileSync(PARTIAL_PATH, 'utf-8'));
     const menuList = partial.children.find((child: any) => child.id === 'sortable_menu_list');
     const onSelect = menuList.actions.find((action: any) => action.event === 'onSelect');
-    const detailCall = onSelect.actions.find(
-      (action: any) => action.handler === 'apiCall' && String(action.target).includes('/api/admin/menus/'),
-    );
+    // 편집 중이면 이탈 확인 창으로 가르는 switch 가 앞에 서므로(7.1.1 출시 전) 보통 선택 갈래 안까지 찾아 내려간다.
+    const findCall = (node: any): any => {
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          const hit = findCall(child);
+          if (hit) return hit;
+        }
+        return undefined;
+      }
+      if (!node || typeof node !== 'object') return undefined;
+      if (node.handler === 'apiCall' && String(node.target ?? node.params?.target).includes('/api/admin/menus/')) return node;
+      for (const value of Object.values(node)) {
+        const hit = findCall(value);
+        if (hit) return hit;
+      }
+      return undefined;
+    };
+    const detailCall = findCall(onSelect);
 
     // 존재를 먼저 확정한 뒤 배선을 단언한다.
     expect(detailCall).toBeDefined();
@@ -236,6 +257,8 @@ describe('메뉴 관리 — 하위 메뉴 선택 시 역할 보강 (#76)', () =>
     expect(write.params.selectedMenu).toBe('{{response.data}}');
   });
 
+  // @scenario resource=menu,endpoint=list,observation=consumer_screen
+  // @effects menu_selection_hydrates_roles_from_detail
   it('목록 응답의 하위 메뉴 행에는 roles 키가 없다 (프루닝 전제 고정)', () => {
     const child = MENU_ROWS[0].children[0];
 

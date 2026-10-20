@@ -1,6 +1,6 @@
 /**
  * @file ActionMenu.a11y.test.tsx
- * @description ActionMenu 접근성 회귀 테스트 (7.1.0 영역 J D-J5, 관측 O-F11·⋯ 「ellipsis」)
+ * @description ActionMenu 접근성 회귀 테스트 (7.1.0, 관측 ⋯ 「ellipsis」)
  *
  * 결함:
  * - 아이콘만 있는 트리거(목록 행 메뉴·카드 더보기)가 글리프 이름 「ellipsis h」·「ellipsis v」 로 읽혔다.

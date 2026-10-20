@@ -120,7 +120,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       {/* 좁은 화면(태블릿 900px 등)에서 버튼이 많으면 한 줄에 우겨 넣지 않고 다음 줄로 내린다 —
           종전에는 버튼이 줄어들며 글자 단위로 꺾였다(「취
 소」·「저
-장」, 7.1.0 J D-J9). */}
+장」, 7.1.0 실측). */}
       <Div className="flex-between flex-wrap gap-3 mb-lg">
         <Div className="min-w-0">
           {/* 제목·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 들어간 제목도 화면을 넘지 않는다(#143). */}

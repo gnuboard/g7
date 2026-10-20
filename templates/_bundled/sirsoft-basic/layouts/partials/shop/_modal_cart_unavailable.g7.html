@@ -5,7 +5,7 @@
     <!-- 모달 내용 -->
     <div class="p-4">
       <div class="flex items-center gap-3 mb-4">
-        <icon name="triangle-exclamation" class="text-2xl text-amber-500"/>
+        <icon name="triangle-exclamation" class="text-2xl text-amber-600"/>
         <p class="text-gray-700 dark:text-gray-300">{{$parent._local.unavailableModal.hasStockIssue ? '$t:shop.cart.insufficient_stock_message' : '$t:shop.cart.unavailable_message'}}</p>
       </div>
       <!-- 문제 상품 목록 -->
@@ -15,7 +15,7 @@
             <div class="w-12 h-12 rounded overflow-hidden bg-gray-100 dark:bg-gray-600 flex-shrink-0">
               <img data-if="{{unavailableItem.thumbnail}}" src="{{unavailableItem.thumbnail}}" alt="{{unavailableItem.name}}" class="w-full h-full object-cover"/>
               <div data-if="{{!unavailableItem.thumbnail}}" class="w-full h-full flex items-center justify-center">
-                <icon name="image" size="md" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="image" size="md" class="text-gray-500 dark:text-gray-300"/>
               </div>
             </div>
             <div class="flex-1 min-w-0">

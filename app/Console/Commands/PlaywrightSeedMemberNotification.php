@@ -88,13 +88,13 @@ class PlaywrightSeedMemberNotification extends Command
     public function handle(): int
     {
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다.');
+            $this->error(__('common.console.playwright_guard.cli_only_plain'));
 
             return self::FAILURE;
         }
 
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
+            $this->error(__('common.console.playwright_guard.bypass_required_plain'));
 
             return self::FAILURE;
         }
@@ -106,7 +106,7 @@ class PlaywrightSeedMemberNotification extends Command
         if (is_string($userOption) && $userOption !== '') {
             $target = User::query()->where('uuid', $userOption)->orWhere('email', $userOption)->first();
             if ($target === null) {
-                $this->error("--user 에 해당하는 회원이 없습니다: {$userOption}");
+                $this->error(__('common.console.playwright_seed_member_notification.user_not_found', ['user' => $userOption]));
 
                 return self::FAILURE;
             }

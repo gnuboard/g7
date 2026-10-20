@@ -104,7 +104,7 @@
                             "props": {
                                 "name": "magnifying-glass",
                                 "size": "sm",
-                                "className": "absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                "className": "absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
                             }
                         }
                     ]
@@ -255,7 +255,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-400 dark:text-gray-500"
+                                "className": "text-gray-500 dark:text-gray-400"
                             },
                             "text": "~"
                         },
@@ -292,7 +292,7 @@
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "빠른 기간 — 날짜 계산은 화면이 하지 않고 모듈 핸들러가 한다. 그 핸들러가 돌려준 값을 바로 다음 액션이 `$prev` 로 받아 세 칸에 옮겨 담는 구조라, 둘의 순서를 바꾸면 빈 값이 들어간다.",
@@ -318,13 +318,15 @@
                                 }
                             ],
                             "props": {
-                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                "type": "button",
+                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                "aria-pressed": "{{_local.filter.dateQuick === 'week'}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_week"
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "최근 1개월 — 위 '최근 1주' 와 같은 두 단계이고 넘기는 이름만 다르다.",
@@ -350,13 +352,15 @@
                                 }
                             ],
                             "props": {
-                                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                "type": "button",
+                                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                "aria-pressed": "{{_local.filter.dateQuick === 'month'}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_month"
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "최근 3개월 — 같은 두 단계.",
@@ -382,13 +386,15 @@
                                 }
                             ],
                             "props": {
-                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                "type": "button",
+                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                "aria-pressed": "{{_local.filter.dateQuick === '3months'}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_3months"
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "전체 기간 — 이것만 핸들러를 거치지 않는다. 계산할 날짜가 없고 두 칸을 비우는 것이 곧 '기간 제한 없음' 이기 때문이다.",
@@ -403,7 +409,9 @@
                                 }
                             ],
                             "props": {
-                                "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                "type": "button",
+                                "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                "aria-pressed": "{{_local.filter.dateQuick === 'all'}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_all"
                         }

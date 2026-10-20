@@ -244,7 +244,7 @@ class AdminExtensionCustomAssetControllerTest extends TestCase
     /**
      * 폴더의 마지막 파일을 지우거나 다른 곳으로 옮기면 빈 폴더를 남기지 않는다 — `custom/` 자체는 남긴다.
      *
-     * 목록은 파일만 보여 주므로 빈 폴더는 화면에서 보이지 않은 채 디스크에 쌓였다(2026-10-06 실측 O-I1-13).
+     * 목록은 파일만 보여 주므로 빈 폴더는 화면에서 보이지 않은 채 디스크에 쌓였다(2026-10-06 실측).
      *
      * @scenario operation=delete, target=custom_asset
      *

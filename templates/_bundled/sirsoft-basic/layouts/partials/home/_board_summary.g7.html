@@ -16,9 +16,9 @@
         <div class="flex items-center justify-between w-full hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg py-2 transition-colors gap-2">
           <!-- 왼쪽: 배지 + 제목 + 댓글 -->
           <div class="flex items-center gap-2 flex-1 min-w-0">
-            <span data-if="{{post.is_notice}}" class="text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded shrink-0">$t:board.notice</span>
-            <span data-if="{{post.category &amp;&amp; !post.is_notice}}" class="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded shrink-0">{{post.category}}</span>
-            <icon data-if="{{post.is_secret}}" name="lock" class="text-sm text-gray-400 dark:text-gray-500 shrink-0"/>
+            <span data-if="{{post.is_notice}}" class="text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded shrink-0">$t:board.notice</span>
+            <span data-if="{{post.category &amp;&amp; !post.is_notice}}" class="text-xs font-medium text-purple-600 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded shrink-0 truncate max-w-32">{{post.category}}</span>
+            <icon data-if="{{post.is_secret}}" name="lock" class="text-sm text-gray-500 dark:text-gray-400 shrink-0"/>
             <a href="/board/{{item.slug}}/{{post.id}}" class="justify-start min-w-0 wrap-anywhere text-sm text-gray-900 dark:text-white text-left line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer">
               <on type="click">
                 <navigate/>
@@ -27,15 +27,15 @@
             </a>
             <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 게시판 묶음 안의 글이라 게시판은 item.slug 에서 온다 -->
             <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post.id}}" boardSlug="{{item.slug}}" context="home_board_summary"/>
-            <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded shrink-0">N</span>
-            <span data-if="{{post.comment_count > 0}}" class="text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0">[{{post.comment_count}}]</span>
-            <span data-if="{{(post.reaction_total ?? 0) > 0}}" class="text-rose-500 dark:text-rose-400 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post.reaction_total}}</span></span>
+            <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded shrink-0">N</span>
+            <span data-if="{{post.comment_count > 0}}" class="text-xs font-medium text-blue-600 dark:text-blue-400 shrink-0">[{{post.comment_count}}]</span>
+            <span data-if="{{(post.reaction_total ?? 0) > 0}}" class="text-rose-700 dark:text-rose-300 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post.reaction_total}}</span></span>
           </div>
           <!-- 오른쪽: 날짜 -->
           <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
         </div>
       </div>
-      <div data-if="{{!item.recent_posts || item.recent_posts.length === 0}}" class="py-10 my-1 text-center text-sm text-gray-400 dark:text-gray-500">
+      <div data-if="{{!item.recent_posts || item.recent_posts.length === 0}}" class="py-10 my-1 text-center text-sm text-gray-500 dark:text-gray-400">
         <span>$t:home.no_posts</span>
       </div>
     </div>

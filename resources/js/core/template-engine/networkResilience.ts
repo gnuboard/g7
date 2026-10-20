@@ -13,6 +13,7 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { armLeaveGuardBypass } from '../routing/LeaveGuard';
 
 const logger = createLogger('networkResilience');
 
@@ -120,10 +121,26 @@ export function installUnloadGuard(): void {
     });
 
     // Safari 보강 (pagehide 미발화 케이스 대비)
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener('beforeunload', (event) => {
         unloading = true;
+        // 다른 리스너(레이아웃 이탈 가드·코드 편집기 등)가 떠나기를 취소해 확인 창이 떴고 사용자가 머무르면
+        // 이 문서는 계속 쓰인다 — 표지를 되돌리지 않으면 이후 재시도·오류 표시가 영구히 꺼진다.
+        // 떠나기를 고르면 그 사이 pagehide 가 다시 켠다. 확인 창이 떠 있는 동안 타이머는 돌지 않는다 (engine-v1.82.0)
+        setTimeout(() => {
+            const legacyPrompt = typeof event.returnValue === 'string' && event.returnValue !== '';
+            if (event.defaultPrevented || legacyPrompt) {
+                unloading = false;
+            }
+        }, UNLOAD_CANCEL_RECHECK_MS);
     });
 }
+
+/**
+ * beforeunload 가 취소됐는지 다시 보는 지연(ms) — 떠나기를 고른 문서의 새 응답이 보통 이 안에 온다
+ *
+ * @since engine-v1.82.0
+ */
+const UNLOAD_CANCEL_RECHECK_MS = 1000;
 
 /**
  * 문서가 곧 떠난다고 표시합니다 — 코드가 직접 다른 문서로 옮길 때(`window.location.href = …`).
@@ -137,6 +154,9 @@ export function installUnloadGuard(): void {
  */
 export function markDocumentLeaving(): void {
     unloading = true;
+    // 코드가 일부러 떠나는 이동(세션 만료 → 로그인)은 레이아웃 이탈 가드를 묻지 않는다 — 토큰을 이미 지운 뒤라
+    // 머물러도 쓸 수 없는 화면이 남는다 (engine-v1.82.0)
+    armLeaveGuardBypass();
 }
 
 /**

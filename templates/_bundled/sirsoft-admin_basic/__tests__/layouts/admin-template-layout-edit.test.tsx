@@ -434,7 +434,7 @@ describe('좌측 파일 트리', () => {
    * 내용 검색은 타이핑이 멎은 뒤 한 번만 서버에 묻는다 — 디바운스는 이벤트의 **최상위 액션**에 걸려야 한다.
    *
    * 엔진은 이벤트에 직접 달린 액션의 `debounce` 만 읽는다. `<conditions>` 의 `<when>` 안 액션에 건
-   * `:debounce="600"` 은 무시돼, 실측 2026-10-06(7.1.0 전수 실측 I1)에서 「notification_center_mobile」 을
+   * `:debounce="600"` 은 무시돼, 실측 2026-10-06(7.1.0 전수 실측)에서 「notification_center_mobile」 을
    * 치자 글자마다 `layouts/search` 가 25건 나갔고, 공유 서버가 밀려 뒤쪽 19건이 30초 제한으로 끊긴 채
    * 앞선 「notific」 결과(509건)가 최종 결과처럼 남았다.
    *
@@ -934,7 +934,7 @@ describe('admin_template_layout_edit — 없는 파일 살리기의 마무리', 
    * 이름을 바꾼 뒤 옛 이름의 탭이 「없는 파일」 로 남지 않는다 — 깨끗한 탭이면 이름변경 성공이 옛 키를
    * `retiredKey` 로 넘겨 거둔다. 저장하지 않은 편집이 있는 탭은 거두지 않는다(편집분을 말없이 버리지 않게).
    *
-   * 실측 2026-10-06(7.1.0 전수 실측 I1): `qa736_i1/probe_d` → `probe_e` 이름변경 뒤 탭 줄에
+   * 실측 2026-10-06(7.1.0 전수 실측): `qa736_i1/probe_d` → `probe_e` 이름변경 뒤 탭 줄에
    * 「없는 파일 qa736_i1/probe_d」 탭이 새 이름 탭과 나란히 남았다.
    *
    * @scenario branch=layout, buffer_state=clean, leave=file_switch

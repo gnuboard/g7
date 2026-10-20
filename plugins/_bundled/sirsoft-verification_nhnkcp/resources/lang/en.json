@@ -87,7 +87,8 @@
             "title": "No identity verification yet.",
             "hint": "You can verify your identity when performing an action that requires it (password reset, profile change, and so on)."
         },
-        "provider_badge": "NHN KCP"
+        "provider_badge": "NHN KCP",
+        "load_failed": "Could not load your identity verification details. Please try again in a moment."
     },
     "errors": {
         "cancelled": "You cancelled the identity verification.",

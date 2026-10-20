@@ -22,7 +22,7 @@ class ShippingPolicySeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('배송정책 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.shipping_policy.start'));
 
         $this->deleteExistingPolicies();
 
@@ -42,11 +42,11 @@ class ShippingPolicySeeder extends Seeder
 
             $this->createClaimAddresses($policy);
 
-            $this->command->line("  - 배송정책 생성: {$policyData['name']['ko']} ({$policyData['name']['en']})");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.shipping_policy.created', ['name' => $policyData['name']['ko'], 'name_en' => $policyData['name']['en']]));
         }
 
         $count = ShippingPolicy::count();
-        $this->command->info("배송정책 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.shipping_policy.done', ['count' => $count]));
     }
 
     /**
@@ -83,7 +83,7 @@ class ShippingPolicySeeder extends Seeder
             ShippingPolicyClaimAddress::query()->delete();
             ShippingPolicyCountrySetting::query()->delete();
             ShippingPolicy::query()->delete();
-            $this->command->warn("기존 배송정책 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.shipping_policy.purged', ['count' => $deletedCount]));
         }
     }
 

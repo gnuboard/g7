@@ -12,7 +12,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <fallback>
@@ -89,6 +97,8 @@
               <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).
                    모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다 -->
               <sequence>
+                <!-- 지난 실패의 오류 표시·저장 중 표시가 남지 않게 먼저 null 로 비운다(기본 deep 병합은 이번 객체에 없는 키를 남긴다, 7.1.1) -->
+                <set-state target="global" :mileageManual="null"/>
                 <set-state target="global">
                   <field name="mileageManual">
                     <field name="selectedMember" :value="null"/>
@@ -114,10 +124,12 @@
       <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html"/>
       <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
         <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
-        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다) -->
             <sequence>
+              <!-- 지난 실패의 오류 표시·저장 중 표시가 남지 않게 먼저 null 로 비운다(기본 deep 병합은 이번 객체에 없는 키를 남긴다, 7.1.1) -->
+              <set-state target="global" :mileageExtend="null"/>
               <set-state target="global">
                 <field name="mileageExtend">
                   <field name="days" :value="30"/>
@@ -136,6 +148,7 @@
           <select data-ref="sort_select" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc</option>
+              <option value="created_at_asc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_asc</option>
               <option value="amount_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_desc</option>
               <option value="amount_asc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_asc</option>
             </options>

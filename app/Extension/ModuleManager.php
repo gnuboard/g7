@@ -35,12 +35,14 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionRollbackCacheRepair;
 use App\Extension\Helpers\ExtensionStatusGuard;
+use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageDeclarationConverter;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
@@ -658,10 +660,13 @@ class ModuleManager implements ModuleManagerInterface
         // 상태 가드: 진행 중 상태 체크
         $record = $this->moduleRepository->findByIdentifier($module->getIdentifier());
         if ($record) {
-            ExtensionStatusGuard::assertNotInProgress(
-                ExtensionStatus::from($record->status),
-                $module->getIdentifier()
-            );
+            // 멈춘 업데이트(updating 고착)는 활성화가 정리하고 진행한다 — 업데이트 프로세스가 죽은 뒤 빠져나올 길이 없었다(7.1.1 출시 전)
+            if (StuckUpdateRecovery::recover('module', $module->getIdentifier(), $record, fn (array $attributes) => $this->moduleRepository->updateByIdentifier($module->getIdentifier(), $attributes)) !== null) {
+                self::invalidateModuleStatusCache();
+                $record = $this->moduleRepository->findByIdentifier($module->getIdentifier());
+            }
+
+            StuckUpdateRecovery::assertNotInProgress($module->getIdentifier(), $record);
         }
 
         // 코어 버전 호환성 사전 검증
@@ -1262,7 +1267,8 @@ class ModuleManager implements ModuleManagerInterface
     {
         $uninstalledModules = [];
         // 캐시된 설치된 모듈 identifier 목록 활용
-        $installedModuleIdentifiers = self::getInstalledModuleIdentifiers();
+        // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
+        $installedModuleIdentifiers = array_values(array_unique([...self::getInstalledModuleIdentifiers(), ...self::getRecordedModuleIdentifiers()]));
         $locale = app()->getLocale();
 
         // 1. 활성 디렉토리의 미설치 모듈
@@ -1412,6 +1418,8 @@ class ModuleManager implements ModuleManagerInterface
                     'integrations' => $this->enrichIntegrations($module->getIntegrations()),
                     'requires_core' => $module->getRequiredCoreVersion(),
                     'status' => $record->status,
+                    // 멈춘 업데이트(updating 이 10분 넘게 남고 잠금이 빔) — 관리자 카드가 정리·활성화 단추를 보인다
+                    'stuck_update' => StuckUpdateRecovery::isStuck('module', $identifier, $record),
                     'update_available' => $updateAvailable,
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
@@ -1550,7 +1558,13 @@ class ModuleManager implements ModuleManagerInterface
             'identifier' => $identifier,
             'vendor' => $module->getVendor(),
             'name' => $this->getLocalizedValue($nameJson, $locale),
-            'version' => $module->getVersion(),
+            // 판은 DB 기록(설치가 끝난 판)을 앞세운다 — 판 전환이 끝나지 않은 확장(파일은 새 판, 정리가 기록 판을 시작 판으로 되돌림)의
+            // 활성화 응답이 파일 판을 내면 목록·카드(DB 판 + 「업데이트 있음」)와 어긋났다. 파일 판은 file_version 칸으로 따로 낸다.
+            'version' => $moduleRecord?->version ?: $module->getVersion(),
+            'file_version' => $module->getVersion(),
+            'update_available' => (bool) ($moduleRecord?->update_available ?? false),
+            'latest_version' => $moduleRecord?->latest_version,
+            'update_source' => $moduleRecord?->update_source,
             'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $module->getGithubUrl(),
             'metadata' => $metadata,
@@ -2003,7 +2017,7 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         // 디렉토리 생성 — sudo 코어 업데이트(번들 확장 업데이트 프롬프트) 경로에서 root 로 만들어지면
-        // `storage/app/modules` 는 restore_ownership 제외 경로라 되돌려지지 않는다 → 부모 소유권 상속 (#651 F13)
+        // `storage/app/modules` 는 restore_ownership 제외 경로라 되돌려지지 않는다 → 부모 소유권 상속 (#651)
         if (! File::isDirectory($settingsDir)) {
             File::makeDirectory($settingsDir, 0755, true);
             FilePermissionHelper::inheritOwnershipFromParent($settingsDir);
@@ -4458,11 +4472,12 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string  $toVersion  목표 버전 (이 버전 이하)
      * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
      * @param  \Closure|null  $onStep  각 step 실행 직전에 호출되는 콜백 (인자: 버전 문자열)
+     * @param  ExtensionUpdateJournal|null  $journal  업데이트 진행 기록 — 있으면 그 시작 판부터 고르고, 끝낸 스텝은 건너뛰며, 스텝마다 끝냈다고 적는다
      * @return void 반환값 없음
      *
      * @throws \Exception 스텝 실행 실패 시
      */
-    protected function runUpgradeSteps(ModuleInterface $module, string $fromVersion, string $toVersion, bool $force = false, ?\Closure $onStep = null): void
+    protected function runUpgradeSteps(ModuleInterface $module, string $fromVersion, string $toVersion, bool $force = false, ?\Closure $onStep = null, ?ExtensionUpdateJournal $journal = null): void
     {
         $allSteps = $module->upgrades();
 
@@ -4470,15 +4485,25 @@ class ModuleManager implements ModuleManagerInterface
             return;
         }
 
+        // 끝나지 않은 앞선 업데이트를 이어받았으면 그 시작 판부터 고른다 — 여러 판을 건너뛴 업데이트(1.1.0 → 1.1.4)가 스텝 도중
+        // 끊기면 DB 판은 이미 1.1.4 라 `--force` 재업데이트가 1.1.4 스텝만 돌고 1.1.1~1.1.3 은 다시 돌 길이 없었다.
+        if ($journal !== null) {
+            $fromVersion = $journal->fromVersion();
+        }
+
         // force + 동일 버전: 해당 버전의 스텝도 포함 (>= 비교)
         $sameVersion = version_compare($fromVersion, $toVersion, '==');
 
-        // $fromVersion 초과 ~ $toVersion 이하 필터링
+        // $fromVersion 초과 ~ $toVersion 이하 필터링 — 기록에 끝냈다고 적힌 스텝은 다시 돌지 않는다
         $filteredSteps = [];
         foreach ($allSteps as $stepVersion => $step) {
             $included = $force && $sameVersion
                 ? version_compare($stepVersion, $toVersion, '==')
                 : version_compare($stepVersion, $fromVersion, '>') && version_compare($stepVersion, $toVersion, '<=');
+
+            if ($included && $journal?->hasCompleted((string) $stepVersion)) {
+                $included = false;
+            }
 
             if ($included) {
                 $filteredSteps[$stepVersion] = $step;
@@ -4527,6 +4552,8 @@ class ModuleManager implements ModuleManagerInterface
             } elseif (is_callable($step)) {
                 $step($stepContext);
             }
+
+            $journal?->markStepCompleted((string) $stepVersion);
 
             $stepContext->logger->info("Completed {$module->getIdentifier()} step {$stepVersion}");
         }
@@ -4594,11 +4621,14 @@ class ModuleManager implements ModuleManagerInterface
             throw new \RuntimeException(__('modules.not_found', ['module' => $identifier]));
         }
 
-        // 상태 가드
-        ExtensionStatusGuard::assertNotInProgress(
-            ExtensionStatus::from($record->status),
-            $identifier
-        );
+        // 멈춘 업데이트(updating 고착) — --force 면 정리하고 진행한다(7.1.1 출시 전). 업데이트 잠금은 위에서 이미 잡았다.
+        if ($force && StuckUpdateRecovery::recover('module', $identifier, $record, fn (array $attributes) => $this->moduleRepository->updateByIdentifier($identifier, $attributes), lockHeld: true) !== null) {
+            self::invalidateModuleStatusCache();
+            $record = $this->moduleRepository->findByIdentifier($identifier);
+        }
+
+        // 상태 가드 (멈춘 업데이트로 보이면 --force 를 안내한다)
+        StuckUpdateRecovery::assertNotInProgress($identifier, $record);
 
         $module = $this->getModule($identifier);
         if (! $module) {
@@ -4690,11 +4720,15 @@ class ModuleManager implements ModuleManagerInterface
         $layoutWarnings = [];
         $recordedColumns = [];
         $filesRestored = false;
+        $journal = null;
 
         try {
             // 1. 백업 생성
             $onProgress?->__invoke('backup', __('extensions.progress.backup'));
             $backupPath = ExtensionBackupHelper::createBackup('modules', $identifier, $onProgress);
+
+            // 진행 기록 — 프로세스가 도중에 죽어도 시작 판·끝낸 스텝이 남아 정리·다음 업데이트가 이어받는다
+            $journal = ExtensionUpdateJournal::begin('module', $identifier, (string) $fromVersion, (string) $toVersion, $updateSource);
 
             // 2. 상태 → updating
             $onProgress?->__invoke('status', __('extensions.progress.status_change'));
@@ -4762,6 +4796,7 @@ class ModuleManager implements ModuleManagerInterface
                 $onProgress?->__invoke('files', __('extensions.progress.replace_files'));
                 if ($stagingPath) {
                     $targetPath = $this->modulesPath.DIRECTORY_SEPARATOR.$identifier;
+                    $journal->markFilesTouched();
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
                 }
             } finally {
@@ -4844,7 +4879,7 @@ class ModuleManager implements ModuleManagerInterface
             // 7. 업그레이드 스텝 실행
             $onProgress?->__invoke('upgrade', __('extensions.progress.upgrade_steps'));
             if ($module) {
-                $this->runUpgradeSteps($module, $fromVersion, $toVersion, $force, $onUpgradeStep);
+                $this->runUpgradeSteps($module, $fromVersion, $toVersion, $force, $onUpgradeStep, $journal);
             }
 
             // 8. 상태 복원 (refreshModuleLayouts()가 active 상태를 요구하므로 먼저 복원)
@@ -4888,6 +4923,9 @@ class ModuleManager implements ModuleManagerInterface
             // 10. 백업 삭제 + 캐시 삭제
             $onProgress?->__invoke('cleanup', __('extensions.progress.cleanup'));
             ExtensionBackupHelper::deleteBackup($backupPath);
+            // 진행 기록을 지운다 — 백업을 지운 뒤에는 파일을 되돌리지 않으므로 파일 판·DB 판이 새 판으로 맞고 돌 스텝도 없다. 그 전에
+            // 죽거나 실패하면 기록이 남아 정리·다시 시도가 끝낸 스텝을 건너뛴다(레이아웃 갱신에서 실패해도 스텝은 이미 끝났다).
+            $journal->finish();
             // 백업을 지운 뒤의 실패(완료 훅·캐시 재생성)는 파일을 되돌릴 수 없다 — 파일이 새 버전이므로 DB 버전 칸도 두어야
             // 둘이 맞는다. catch 가 지워진 백업으로 복원을 시도하지 않게 비운다.
             $backupPath = null;
@@ -4964,6 +5002,9 @@ class ModuleManager implements ModuleManagerInterface
                     ]);
                 }
             }
+
+            // 진행 기록 — 아무 일도 없던 실패(파일 복원·끝낸 스텝 없음)면 지우고, 끝낸 스텝이 있으면 남겨 다시 시도할 때 건너뛰게 한다
+            $journal?->settleAfterFailure($filesRestored);
 
             // 상태 복원 — 새 버전 기록이 이미 저장된 뒤 실패했고 파일을 백업으로 되돌렸으면 버전 칸도 업데이트 전 값으로
             // 되돌린다. 파일은 옛 버전인데 DB 만 새 버전이면 관리자 화면이 설치되지 않은 버전을 보여 주고, "업데이트 없음" 으로

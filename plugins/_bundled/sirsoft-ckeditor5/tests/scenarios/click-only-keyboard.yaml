@@ -1,0 +1,15 @@
+feature: ckeditor5 플러그인 설정 「미리보기」 머리 — 단추로 바꿔 키보드로 펼치기
+
+description: |
+  미리보기 구역 머리가 클릭 동작만 달린 Div 라 Tab 이 닿지 않고 Enter·Space 로 펼칠 수 없었으며 펼침 여부도 알리지 않았다
+  (7.1.1 — 「같은 모양」 표). 머리를 제목(h3) 안의 aria-expanded 단추로 그린다 — 다른 구역 머리처럼 제목 탐색에 남는다.
+  잠금 시험의 첫 단언은 이 플러그인 레이아웃 전체에서 모집단을 파생한다.
+
+axes:
+  surface: [plugin_settings]
+
+effects:
+  - plugin_click_only_regions_are_keyboard_buttons
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/click-only-keyboard.test.tsx

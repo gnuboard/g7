@@ -249,7 +249,7 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply_full"
                 }
@@ -272,7 +272,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                 "disabled": "{{(_local.selectedItems ?? []).length === 0 || claims?.data?.abilities?.can_update_status !== true}}"
             },
             "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply"

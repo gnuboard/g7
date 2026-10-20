@@ -24,51 +24,51 @@
             <responsive on="portable" class="relative w-14 h-14 text-xl"/>
             <!-- 선택된 칸은 현재 칸 스타일(옅은 바탕·테두리·그림자), 건수가 있는 칸은 그 상태 색으로 채우고, 0 건은 회색. -->
           <div>
-              <class-map base="flex items-center justify-center w-full h-full rounded-full border-2 transition-colors" key="{{((_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')) + ':' + (step.variant ?? 'secondary')}}" default="border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500">
-                <variant when="done:success">border-transparent bg-green-600 text-white dark:bg-green-500</variant>
+              <class-map base="flex items-center justify-center w-full h-full rounded-full border-2 transition-colors" key="{{((_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')) + ':' + (step.variant ?? 'secondary')}}" default="border-gray-300 bg-white text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500">
+                <variant when="done:success">border-transparent bg-green-700 text-white dark:bg-green-700</variant>
                 <variant when="current:success">border-green-600 bg-green-100 text-green-800 shadow-md dark:bg-green-900/30 dark:text-green-400</variant>
-                <variant when="off_path:success">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
-                <variant when="done:warning">border-transparent bg-yellow-600 text-white dark:bg-yellow-500</variant>
+                <variant when="off_path:success">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
+                <variant when="done:warning">border-transparent bg-yellow-700 text-white dark:bg-yellow-700</variant>
                 <variant when="current:warning">border-yellow-600 bg-yellow-100 text-yellow-800 shadow-md dark:bg-yellow-900/30 dark:text-yellow-400</variant>
-                <variant when="off_path:warning">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
-                <variant when="done:info">border-transparent bg-blue-600 text-white dark:bg-blue-500</variant>
+                <variant when="off_path:warning">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
+                <variant when="done:info">border-transparent bg-blue-600 text-white dark:bg-blue-600</variant>
                 <variant when="current:info">border-blue-600 bg-blue-100 text-blue-800 shadow-md dark:bg-blue-900/30 dark:text-blue-400</variant>
-                <variant when="off_path:info">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="off_path:info">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="done:primary">border-transparent bg-indigo-600 text-white dark:bg-indigo-500</variant>
-                <variant when="current:primary">border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-400</variant>
-                <variant when="off_path:primary">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="current:primary">border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-300</variant>
+                <variant when="off_path:primary">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="done:secondary">border-transparent bg-gray-600 text-white dark:bg-gray-500</variant>
                 <variant when="current:secondary">border-gray-600 bg-gray-100 text-gray-700 shadow-md dark:bg-gray-700 dark:text-gray-300</variant>
-                <variant when="off_path:secondary">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
-                <variant when="done:danger">border-transparent bg-red-600 text-white dark:bg-red-500</variant>
+                <variant when="off_path:secondary">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
+                <variant when="done:danger">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="current:danger">border-red-500 bg-red-100 text-red-800 shadow-md dark:bg-red-900/30 dark:text-red-400</variant>
-                <variant when="off_path:danger">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="off_path:danger">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="done:dark">border-transparent bg-slate-600 text-white dark:bg-slate-500</variant>
                 <variant when="current:dark">border-slate-600 bg-slate-200 text-slate-800 shadow-md dark:bg-slate-800 dark:text-slate-200</variant>
-                <variant when="off_path:dark">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="off_path:dark">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
             </class-map>
               <icon name="{{step.icon ?? 'circle'}}"/>
           </div>
             <!-- 건수 배지 — 0 건이면 그리지 않는다(원이 회색으로 이미 말한다). -->
-            <span data-if="{{(step.count ?? 0) > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white dark:bg-red-600 dark:text-white text-xs font-bold leading-none flex items-center justify-center ring-2 ring-white dark:ring-gray-800" data-summary-badge="{{step.key ?? ''}}">{{step.count ?? 0}}</span>
+            <span data-if="{{(step.count ?? 0) > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white dark:bg-red-600 dark:text-white text-xs font-bold leading-none flex items-center justify-center ring-2 ring-white dark:ring-gray-800" data-summary-badge="{{step.key ?? ''}}">{{step.count ?? 0}}</span>
         </div>
           <!-- 라벨은 칸 폭 안에서 띄어쓰기 기준으로 줄바꿈한다. -->
             <span>
-            <class-map base="w-full text-xs text-center break-words leading-tight" key="{{(_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')}}" default="text-gray-400 dark:text-gray-500">
+            <class-map base="w-full text-xs text-center break-words leading-tight" key="{{(_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')}}" default="text-gray-500 dark:text-gray-400">
               <variant when="done">text-gray-700 dark:text-gray-300</variant>
               <variant when="current">font-bold text-gray-900 dark:text-gray-100</variant>
-              <variant when="upcoming">text-gray-400 dark:text-gray-500</variant>
+              <variant when="upcoming">text-gray-500 dark:text-gray-400</variant>
               </class-map>
             {{step.label ?? ''}}
             </span>
           <!-- 칸 사이 꺾쇠 (PC) — 마지막 칸에는 없다. 칸이 10개 이상이면 PC 도 한 줄 6칸으로 줄바꿈하므로 그때는 줄 끝(6n번째)에도 세우지 않는다. 칸 오른쪽 경계에서 그리드 간격의 절반(-mr-1 = 4px)만큼 밀고 자기 폭의 절반을 되돌려(translate-x-1/2) 두 원 사이 정중앙에 세운다 — 칸 폭이 몇이든 양쪽 원과의 거리가 같다. 숨김은 래퍼 Div 가 맡는다: Icon 에 직접 `hidden` 을 주면 Font Awesome 의 `display` 규칙(레이어 밖)이 Tailwind 유틸리티(레이어 안)를 이겨 숨겨지지 않는다. -->
-          <div data-if="{{stepIdx < (orders.data?.status_summary ?? []).length - 1 &amp;&amp; ((orders.data?.status_summary ?? []).length <= 9 || stepIdx % 6 !== 5)}}" class="absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-300 dark:text-gray-600" data-step-chevron="pc">
+          <div data-if="{{stepIdx < (orders.data?.status_summary ?? []).length - 1 &amp;&amp; ((orders.data?.status_summary ?? []).length <= 9 || stepIdx % 6 !== 5)}}" class="absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-500 dark:text-gray-500" data-step-chevron="pc">
             <responsive on="portable" class="hidden" data-step-chevron="pc"/>
             <icon name="chevron-right"/>
           </div>
           <!-- 칸 사이 꺾쇠 (모바일) — 한 줄 3칸이라 줄 끝(3n번째) 칸에는 세우지 않는다. -->
           <div data-if="{{stepIdx < (orders.data?.status_summary ?? []).length - 1 &amp;&amp; stepIdx % 3 !== 2}}" class="hidden" data-step-chevron="mobile">
-            <responsive on="portable" class="absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600" data-step-chevron="mobile"/>
+            <responsive on="portable" class="absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-500 dark:text-gray-500" data-step-chevron="mobile"/>
             <icon name="chevron-right"/>
         </div>
         </a>
@@ -130,7 +130,7 @@
                   <variant when="payment_complete">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
                   <variant when="preparing">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
                   <variant when="shipping_ready">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
-                  <variant when="shipping">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                  <variant when="shipping">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300</variant>
                   <variant when="delivered">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
                   <variant when="confirmed">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
                   <variant when="cancelled">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
@@ -144,18 +144,18 @@
               <div data-if="{{(order.claim_summary ?? []).length > 0}}" class="flex flex-col items-end gap-1">
                 <!-- 반복은 배지 자신에 건다 — 래퍼에 걸면 래퍼가 유형 수만큼 복제돼 배지 사이 gap 이 적용되지 않는다 (관리자 목록 `_partial_order_datagrid` 와 같은 형태). -->
                 <span data-each="claim in {{order.claim_summary ?? []}}">
-                  <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{claim.status_variant}}" default="bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                  <class-map base="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap" key="{{claim.status_variant}}" default="bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     <variant when="success">bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400</variant>
                     <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
                     <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
                     <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
-                    <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                    <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300</variant>
                     <variant when="secondary">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
                     <variant when="dark">bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200</variant>
                   </class-map>
                   <span>{{claim.status_label ?? claim.type_label ?? ''}}</span>
                   <!-- 같은 유형이 2건 이상이면 건수를 함께 보인다 — 배지는 최신 1건의 상태라 건수가 없으면 나머지가 없는 것처럼 읽힌다. -->
-                  <span data-if="{{(claim.count ?? 0) > 1}}" class="opacity-70">{{'(' + claim.count + ')'}}</span>
+                  <span data-if="{{(claim.count ?? 0) > 1}}">{{'(' + claim.count + ')'}}</span>
                 </span>
               </div>
               <!-- 배송국가 칩 (D9 — 항상 표시, KR 포함) -->
@@ -174,7 +174,7 @@
                 <responsive on="portable" class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"/>
                 <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name}}" class="w-full h-full object-cover"/>
                 <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-                  <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+                  <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
                 </div>
               </div>
               <!-- 상품 정보 -->
@@ -185,7 +185,7 @@
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{item.product_option_name}}</p>
                 <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) -->
-                <p data-if="{{item.additional_options_summary}}" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                <p data-if="{{item.additional_options_summary}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   <span>{{item.additional_options_summary?.label}}</span>
                   <!-- 「외 N건」 은 번역 키로 — 한국어를 이어 붙이면 다른 언어 화면에 한국어가 섞인다. -->
                   <span data-if="{{(item.additional_options_summary?.extra_count ?? 0) > 0}}" class="ml-1">$t:mypage.orders.additional_options_more|count={{item.additional_options_summary?.extra_count ?? 0}}</span>
@@ -214,7 +214,7 @@
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.shipping_fee</span>
                 <span data-if="{{order.total_shipping_amount > 0}}" class="text-xs text-gray-600 dark:text-gray-300">+{{order.total_shipping_amount_formatted}}</span>
-                <span data-if="{{!order.total_shipping_amount || order.total_shipping_amount == 0}}" class="text-xs text-green-600 dark:text-green-400">$t:mypage.orders.free_shipping</span>
+                <span data-if="{{!order.total_shipping_amount || order.total_shipping_amount == 0}}" class="text-xs text-green-700 dark:text-green-400">$t:mypage.orders.free_shipping</span>
               </div>
               <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.orders.total_amount</p>
               <p class="text-lg font-bold text-gray-900 dark:text-white">
@@ -226,7 +226,7 @@
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
               </div>
               <!-- 마일리지 사용 (있을 때만) — base_currency 단일 정산 -->
-              <p data-if="{{(order.total_points_used_amount ?? 0) > 0}}" class="text-xs text-red-500 dark:text-red-400 mt-0.5">$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}</p>
+              <p data-if="{{(order.total_points_used_amount ?? 0) > 0}}" class="text-xs text-red-600 dark:text-red-400 mt-0.5">$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}</p>
               <!-- 적립 예정 마일리지 (있을 때만) -->
               <p data-if="{{(order.total_earned_points_amount ?? 0) > 0 &amp;&amp; order.status !== 'cancelled' &amp;&amp; !order.is_partially_cancelled}}" class="text-xs text-blue-600 dark:text-blue-400">$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}</p>
             </div>
@@ -245,10 +245,10 @@
         </div>
       </div>
       <!-- 주문 없음 -->
-      <div data-if="{{!orders.data.data || orders.data.data.length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <div data-if="{{orders !== undefined &amp;&amp; (!orders.data.data || orders.data.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
         <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
-        <icon name="package" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3">
-          <responsive on="portable" name="package" size="2x" class="mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
+        <icon name="package" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3">
+          <responsive on="portable" name="package" size="2x" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
         </icon>
         <p class="text-gray-500 dark:text-gray-400">
           <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>

@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 클레임 관리 실패 토스트는 한 번만 뜬다 (T2-D12 · #599 3차 실측 L-5)
+# 시나리오 매니페스트 — 클레임 관리 실패 토스트는 한 번만 뜬다 (#599 실측)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: admin_claim_failure_toast_once
@@ -34,7 +34,7 @@ effects:
 
 validation:
   audit_rule: frontend-change-requires-e2e
-  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 재고 0 교환 승인으로 재실측
+  browser_check: Playwright MCP   # #599 실측 — 재고 0 교환 승인으로 재실측
   note: |
     브라우저 축은 Playwright MCP 재실측이 덮는다(재고 0 교환을 승인해 토스트 개수를 센다).
     spec 을 새로 두지 않는 이유는 실패를 만들 상태(승인 대기 교환 + 새 옵션 재고 0)를 spec 이

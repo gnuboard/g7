@@ -20,7 +20,7 @@ description: |
     · payment 응답에 cash_receipt_provider 가 없어, 주문상세 현금영수증 카드가 영원히 렌더될 수 없었다.
     · payment 응답에 refund_bank_* 4키가 없어, 취소 모달이 주문 시 입력된 계좌를 프리필할 수 없었다.
     · _payment.g7.html 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
-      조용히 no-op 이었다. 본 이슈가 부수 복구한다(R1).
+      조용히 no-op 이었다. 본 이슈가 부수 복구한다.
 
   실서버(Playwright MCP) 실측에서만 드러난 결함 — 유닛 테스트는 전부 green 이었다:
     · 무통장 주문의 결제 상태는 waiting_deposit 이 아니라 ready 다. 카드 상태머신이 waiting_deposit 만
@@ -173,6 +173,7 @@ effects:
   - mypage_issue_uses_member_or_guest_endpoint    # user/orders/{id} vs guest/orders/{orderNumber}
   - mypage_no_cancel_or_reissue_action_for_user   # 관리자 전용 액션 부재
   - mypage_issue_modal_registered_in_modals_section  # 발급 모달은 modals 섹션 등록 (인라인 Modal 금지)
+  - mypage_issue_modal_clears_identifier_on_close   # 발급 창을 닫으면(취소·창 머리 닫기·Esc·바깥 클릭·발급 성공) 식별번호가 든 _global.ecommerceCashReceiptForm 을 비운다 — 정리는 조건 없는 본문 틀의 unmount (7.1.1)
   - card_kept_when_provider_unset_but_history_exists  # A3 UI 표면 — 프로바이더 미설정이어도 발급/시도 이력이 있으면 카드 유지 (유저·관리자 공통)
 
   # 관리자 주문상세 (W-3)
@@ -259,7 +260,7 @@ effects:
   - admin_issue_rejects_invalid_purpose_identifier_combination_422
 
   # 부수 복구
-  - kg_user_order_show_injection_restored         # order_payment_info_panel id 부여 (R1)
+  - kg_user_order_show_injection_restored         # order_payment_info_panel id 부여
 
 test_files:
   # 백엔드

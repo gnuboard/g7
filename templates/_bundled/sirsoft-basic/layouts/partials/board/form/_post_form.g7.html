@@ -35,7 +35,7 @@
                 <icon name="bell" size="sm" class="text-blue-600 dark:text-blue-400"/>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.form.is_notice</span>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">$t:board.form.notice_description</p>
+              <p class="text-xs text-gray-500 dark:text-gray-300">$t:board.form.notice_description</p>
             </div>
           </div>
         </label>
@@ -48,7 +48,7 @@
                 <icon name="lock" size="sm" class="text-amber-600 dark:text-amber-400"/>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.form.secret_post</span>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">$t:board.form.secret_description</p>
+              <p class="text-xs text-gray-500 dark:text-gray-300">$t:board.form.secret_description</p>
             </div>
           </div>
         </label>
@@ -59,10 +59,10 @@
             <input type="checkbox" aria-label="$t:board.form.secret_post" :checked="true" :disabled="true" class="mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 opacity-50 cursor-not-allowed"/>
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
-                <icon name="lock" size="sm" class="text-amber-600 dark:text-amber-400"/>
+                <icon name="lock" size="sm" class="text-amber-700 dark:text-amber-400"/>
                 <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.form.secret_post</span>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">$t:board.form.secret_always_description</p>
+              <p class="text-xs text-gray-700 dark:text-gray-300">$t:board.form.secret_always_description</p>
             </div>
           </div>
         </div>
@@ -73,7 +73,7 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:board.guest_author_name</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <input aria-label="$t:board.guest_author_name" type="text" name="author_name" placeholder="$t:board.guest_author_name_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
         <p data-if="{{_local.errors?.author_name}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.author_name?.[0] ?? _local.errors?.author_name}}</p>
@@ -81,7 +81,7 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:board.guest_password</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <input aria-label="$t:board.guest_password" type="password" name="password" placeholder="$t:board.guest_password_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
         <p data-if="{{_local.errors?.password}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.password?.[0] ?? _local.errors?.password}}</p>
@@ -105,7 +105,7 @@
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:board.form.title</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <input aria-label="$t:board.form.title" type="text" name="title" placeholder="$t:board.form.title_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.title ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
       <p data-if="{{_local.errors?.title}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.title?.[0] ?? _local.errors?.title}}</p>
@@ -165,9 +165,9 @@
     <!-- 버튼 영역 -->
     <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
       <!-- 취소 버튼 (등록: 목록, 수정: 상세) -->
-      <a href="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+      <a data-ref="post_form_cancel_button" href="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
         <on type="click">
-          <navigate :mergeQuery="true">
+          <navigate :bypassLeaveGuard="true" :mergeQuery="true">
             <query/>
           </navigate>
         </on>
@@ -183,7 +183,7 @@
               <success>
                 <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
                 <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>
-                <navigate path="/board/{{route?.slug}}/{{result?.data?.id}}" :mergeQuery="true">
+                <navigate :bypassLeaveGuard="true" path="/board/{{route?.slug}}/{{result?.data?.id}}" :mergeQuery="true">
                   <query/>
                 </navigate>
               </success>

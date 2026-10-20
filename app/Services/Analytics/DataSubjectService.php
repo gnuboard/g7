@@ -108,7 +108,8 @@ class DataSubjectService
         ]);
 
         return [
-            'extensions' => is_array($extensions) ? $extensions : [],
+            // 확장 식별자 → 내용 맵이라 비면 `{}` (7.1.1 출시 전)
+            'extensions' => is_array($extensions) && $extensions !== [] ? $extensions : new \stdClass,
             'exported_at' => AnalyticsClock::now()->toIso8601String(),
             'subject' => array_keys(array_filter($subject)),
             'notice' => $found['notice'],

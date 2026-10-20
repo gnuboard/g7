@@ -185,6 +185,67 @@ describe('사용자 템플릿 — 입력칸 접근 가능한 이름 (#757)', () 
   });
 
   /**
+   * 제목이 칸 바로 앞 형제가 아니라 감싼 줄의 앞(「주소」 제목 → 우편번호 줄 → 주소 칸)에 있거나 칸 옆에 단추가 붙어
+   * 한 줄로 묶인 칸은 위 판정이 보지 못한다. 주문서의 할인코드·우편번호·주소 검색 칸과 배송지 추가·변경 모달의
+   * 우편번호·주소 칸이 보이는 제목을 두고 placeholder(「할인코드를 입력하세요」「우편번호」「주소를 검색하세요」)로만
+   * 읽혔다(7.1.1). 같은 묶음의 해외 주소 칸도 함께 잠근다.
+   *
+   * @scenario surface=user_layout
+   * @effects controls_have_accessible_name
+   */
+  it.each([
+    ['layouts/partials/shop/_checkout_discount.json', { discount_code: 'shop.checkout.discount_code' }],
+    ['layouts/partials/shop/_checkout_shipping.json', {
+      zipcode: 'shop.checkout.zipcode', address: 'shop.checkout.address', address_line_1: 'shop.checkout.intl_address',
+      address_line_2: 'shop.checkout.detail_address', shipping_memo_custom: 'shop.checkout.shipping_memo',
+    }],
+    ['layouts/partials/shop/_modal_address_manage.json', {
+      zipcode: 'shop.checkout.zipcode', address: 'shop.checkout.address', address_line_1: 'shop.checkout.intl_address',
+      address_line_2: 'shop.checkout.detail_address', intl_city: 'shop.checkout.intl_city', intl_state: 'shop.checkout.intl_state',
+      intl_postal_code: 'shop.checkout.intl_postal_code',
+    }],
+    ['layouts/partials/mypage/addresses/_modal_address.json', {
+      zipcode: 'shop.checkout.zipcode', address: 'shop.checkout.address', address_line_2: 'shop.checkout.detail_address',
+      intl_city: 'shop.checkout.intl_city', intl_state: 'shop.checkout.intl_state', intl_postal_code: 'shop.checkout.intl_postal_code',
+    }],
+    ['layouts/partials/mypage/orders/_modal_change_address.json', { zipcode: 'shop.checkout.zipcode', address: 'shop.checkout.address' }],
+  ] as Array<[string, Record<string, string>]>)('%s 주소·할인코드 칸은 보이는 제목 키를 aria-label 로 단다', (file, expected) => {
+    const json = JSON.parse(fs.readFileSync(path.join(EXT_ROOT, file), 'utf8'));
+    const found: Record<string, string> = {};
+    (function visit(o: unknown): void {
+      if (Array.isArray(o)) { o.forEach(visit); return; }
+      if (!o || typeof o !== 'object') return;
+      const n = o as Node;
+      if (isNode(n) && n.name === 'Input' && typeof n.props?.name === 'string' && n.props.name in expected) {
+        found[n.props.name] = String(n.props['aria-label'] ?? '');
+      }
+      Object.values(n).forEach(visit);
+    })(json);
+    expect(found).toEqual(Object.fromEntries(Object.entries(expected).map(([k, v]) => [k, `$t:${v}`])));
+  });
+
+  /**
+   * 위에서 aria-label 로 쓰는 키가 세 언어에 모두 있어야 원문 키가 읽히지 않는다.
+   *
+   * @scenario surface=user_layout
+   * @effects controls_have_accessible_name
+   */
+  it.each(['zipcode', 'address', 'discount_code', 'detail_address', 'intl_address', 'intl_city', 'intl_state', 'intl_postal_code', 'shipping_memo'])(
+    '주문서 키 shop.checkout.%s 가 ko·en·ja 에 있다',
+    (key) => {
+      const files = [
+        path.join(EXT_ROOT, 'lang/partial/ko/shop.json'),
+        path.join(EXT_ROOT, 'lang/partial/en/shop.json'),
+        path.resolve(EXT_ROOT, '../../../lang-packs/_bundled/g7-template-sirsoft-basic-ja/frontend/partial/shop.json'),
+      ];
+      for (const f of files) {
+        const dict = JSON.parse(fs.readFileSync(f, 'utf8'));
+        expect(typeof dict.checkout?.[key], `${path.basename(path.dirname(f))} checkout.${key}`).toBe('string');
+      }
+    },
+  );
+
+  /**
    * 레이아웃이 반복(data-each)으로 그리는 행 안 칸은 이름에 행 값(`{{…}}`)이 있어야 한다 — 고정 문구면 행마다 같은 이름으로
    * 읽혀 어느 행 칸인지 모른다. 이름 출처는 자기 이름 속성 · 감싼 Label 글자 · `for` 로 이어진 Label 글자 중 하나.
    * 글자 없는 Label 은 이름이 아니다(주문 상세 품목 체크박스가 그랬다).

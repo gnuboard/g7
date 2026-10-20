@@ -168,7 +168,7 @@
                                                     "props": {
                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                         "size": "sm",
-                                                        "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                     }
                                                 },
                                                 {
@@ -202,7 +202,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
                                             },
                                             "text": "{{tpl.is_active ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_active') : $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_inactive')}}"
                                         }
@@ -211,9 +211,9 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{(((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0}}",
+                                    "if": "{{ecommerceNotificationDefinitions !== undefined && ((((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "px-3 py-2 text-sm text-gray-400 dark:text-gray-500"
+                                        "className": "px-3 py-2 text-sm text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty"
                                 }

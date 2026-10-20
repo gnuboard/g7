@@ -86,14 +86,14 @@ class PlaywrightSeedBoardPosts extends Command
     {
         // ① CLI 한정
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다.');
+            $this->error(__('sirsoft-board::messages.console.playwright_seed.cli_only'));
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
+            $this->error(__('sirsoft-board::messages.console.playwright_seed.bypass_required'));
 
             return self::FAILURE;
         }
@@ -107,7 +107,7 @@ class PlaywrightSeedBoardPosts extends Command
 
         // 시드는 태그가 필수다. 정리는 태그가 없으면 전량 — 태그가 있으면 형식부터 본다(부작용 전에 거절)
         if (($tag === null && ! $teardown) || ($tag !== null && ! preg_match('/^[a-z0-9-]{1,40}$/', $tag))) {
-            $this->error('--tag 는 영문 소문자·숫자·하이픈 1~40자여야 합니다(시드에는 필수).');
+            $this->error(__('sirsoft-board::messages.console.seed_board_posts.invalid_tag'));
 
             return self::FAILURE;
         }

@@ -41,7 +41,7 @@
                       <!-- 대상 주문 명단 — 목록 경로·제목을 주문 핸들러로 맞추고 쪽 상태를 1쪽으로 되돌린 뒤 첫 쪽을 다시 받아 창을 연다.
                            창은 스스로 조회하지 않으므로 이 버튼이 받아 주지 않으면 빈 명단이 뜬다. -->
                       <sequence>
-                        <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                        <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false, loadFailed: false })}}"/>
                         <set-state target="global" privacyTargets.title="$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.title"/>
                         <refetch-data-source dataSourceId="privacyTargets"/>
                         <open-modal target="privacy_targets_modal"/>

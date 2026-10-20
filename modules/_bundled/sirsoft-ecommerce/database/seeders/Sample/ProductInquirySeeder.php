@@ -121,13 +121,13 @@ class ProductInquirySeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('상품 1:1 문의 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_inquiry.start'));
 
         $boardSlug = $this->resolveBoardSlug();
 
         if (! $boardSlug) {
-            $this->command->warn('상품 문의 게시판이 없어 문의 샘플을 건너뜁니다.');
-            $this->command->warn('게시판 샘플을 먼저 만들거나(module:seed sirsoft-board --sample → product-inquiry 게시판), 관리자 > 이커머스 설정 > 기본 정보 > 1:1 문의게시판을 설정해 주세요.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_inquiry.skip_no_board'));
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_inquiry.board_hint'));
 
             return;
         }
@@ -136,8 +136,8 @@ class ProductInquirySeeder extends Seeder
         // 이 시더만 따로 돌렸는데 문의가 남아 있으면 실제 고객 문의일 수 있어 지우지도, 더 만들지도 않는다.
         $existing = ProductInquiry::withTrashed()->count();
         if ($existing > 0) {
-            $this->command->warn("기존 상품 문의 {$existing}건이 있어 문의 샘플을 만들지 않습니다 (실제 문의 보호 — 기존 문의와 게시판 답변은 그대로 둡니다).");
-            $this->command->warn('문의 샘플을 새로 만들려면 상품 샘플과 함께 다시 시드하세요: module:seed sirsoft-ecommerce --sample');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_inquiry.skip_existing', ['count' => $existing]));
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_inquiry.reseed_hint'));
 
             return;
         }
@@ -145,7 +145,7 @@ class ProductInquirySeeder extends Seeder
         $this->createInquiries($boardSlug);
 
         $count = ProductInquiry::count();
-        $this->command->info("상품 1:1 문의 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_inquiry.done', ['count' => $count]));
     }
 
     /**
@@ -167,7 +167,7 @@ class ProductInquirySeeder extends Seeder
                 return $configured;
             }
 
-            $this->command->warn("설정된 문의 게시판 '{$configured}'이(가) 없습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_inquiry.board_missing', ['slug' => $configured]));
 
             return null;
         }
@@ -177,7 +177,7 @@ class ProductInquirySeeder extends Seeder
         }
 
         app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', self::SAMPLE_BOARD_SLUG);
-        $this->command->line('  - 1:1 문의게시판 설정이 비어 있어 '.self::SAMPLE_BOARD_SLUG.' 게시판을 연결했습니다.');
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_inquiry.board_linked', ['slug' => self::SAMPLE_BOARD_SLUG]));
 
         return self::SAMPLE_BOARD_SLUG;
     }
@@ -204,7 +204,7 @@ class ProductInquirySeeder extends Seeder
         $products = Product::all();
 
         if ($products->isEmpty()) {
-            $this->command->warn('상품이 없습니다. ProductSeeder를 먼저 실행하는 것을 권장합니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_inquiry.no_products'));
 
             return;
         }
@@ -277,6 +277,6 @@ class ProductInquirySeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine();
-        $this->command->line("  - 상품 {$products->count()}개 대상 {$created}건 문의 생성");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_inquiry.created', ['products' => $products->count(), 'count' => $created]));
     }
 }

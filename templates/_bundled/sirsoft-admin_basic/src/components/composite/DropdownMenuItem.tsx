@@ -95,7 +95,7 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
   // variant에 따른 스타일
   const variantClasses =
     variant === 'danger'
-      ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+      ? 'text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700';
 
   // disabled 스타일

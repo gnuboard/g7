@@ -150,7 +150,7 @@ class InstallerRuntimeServiceProviderTest extends TestCase
     {
         // 회귀 가드: storage/installer/runtime.php 가 프로덕션 install 로 생성되어 있어도
         // testing 환경에서는 .env.testing 의 DB 자격증명이 SSoT 로 보존되어야 한다.
-        // (회귀 사고: runtime 의 g7_2 가 .env.testing 의 g7_2_testing 을 덮어써
+        // (회귀 사고: runtime 의 개발 DB 이름이 .env.testing 의 테스트 DB 이름을 덮어써
         //  RefreshDatabase 가 프로덕션 DB 를 대상으로 실행되던 결함)
         $this->writeRuntime([
             'db' => [

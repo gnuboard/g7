@@ -59,7 +59,7 @@
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-page --force` (빌드 불필요) |
-| `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan module:update sirsoft-page --force` |
+| `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-page --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-page --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update sirsoft-page --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
@@ -176,10 +176,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 49개 | `modules/_bundled/sirsoft-page/tests` |
-| Vitest | 13개 | `vitest.config.ts` |
+| PHPUnit | 50개 | `modules/_bundled/sirsoft-page/tests` |
+| Vitest | 18개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 38개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 44개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

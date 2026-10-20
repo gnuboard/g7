@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 레이아웃 미리보기 서빙의 컴포넌트 권한 필터 (core-backend #11).
+ * 레이아웃 미리보기 서빙의 컴포넌트 권한 필터 (7.1.0 abilities 게이트 점검).
  */
 class LayoutPreviewPermissionFilterTest extends TestCase
 {
@@ -33,7 +33,7 @@ class LayoutPreviewPermissionFilterTest extends TestCase
     }
 
     /**
-     * 미리보기 응답도 실제 서빙과 같이 컴포넌트 permissions 를 걸러 내고 속성을 지운다 (core-backend #11).
+     * 미리보기 응답도 실제 서빙과 같이 컴포넌트 permissions 를 걸러 내고 속성을 지운다.
      *
      * 미리보기가 걸러지지 않으면 편집자가 보는 화면이 실제 서빙과 다르고, 권한 식별자도 응답에 남는다.
      *

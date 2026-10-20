@@ -4,6 +4,7 @@
     "layout_name": "admin_menu_list",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}",
         "title": "$t:admin.menus.page_title",
         "description": "$t:admin.menus.page_description"
     },
@@ -135,6 +136,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "iconName": "refresh",
                                     "variant": "outline",
                                     "size": "md"
@@ -217,6 +219,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "disabled": "{{menus?.data?.abilities?.can_create !== true || _global.menuBulkMode === true}}",
                                     "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
@@ -270,6 +273,10 @@
         {
             "comment": "메뉴 역할 일괄 적용 확인 창 — 오른쪽 일괄 판의 「적용」 이 연다. 부모·자식이 자동으로 함께 처리되는 수를 미리 알린다.",
             "partial": "partials/admin_menu_list/_modal_bulk_roles_confirm.json"
+        },
+        {
+            "comment": "편집·등록 중 다른 메뉴를 고를 때의 이탈 확인 창 — 왼쪽 목록의 선택이 연다(다른 화면으로 떠날 때는 meta.leave_guard 가 묻는다).",
+            "partial": "partials/admin_menu_list/_modal_editing_confirm.json"
         }
     ]
 }

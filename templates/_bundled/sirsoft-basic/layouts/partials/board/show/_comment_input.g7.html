@@ -28,7 +28,7 @@
         </textarea>
         <!-- 등록 버튼 (우측 정렬) -->
         <div class="flex justify-end">
-          <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.commentSubmitting === true}}">
+          <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.commentSubmitting === true}}">
             <on type="click">
               <!-- 댓글 등록 — 보내는 중이면 통째로 건너뛰어 연타로 같은 댓글이 두 번 달리는 것을 막는다(버튼 비활성화만으로는 이미 눌린 클릭을 못 막는다). 성공하면 입력칸과 답글 대상까지 비우고 글을 다시 받는다 — 댓글 목록이 글 응답에 실려 오기 때문이다. -->
               <sequence if="{{_local.commentSubmitting !== true}}">

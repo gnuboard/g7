@@ -6,8 +6,9 @@
  * jsdom 은 레이아웃을 계산하지 않으므로 여기서는 긴 이름을 주입해 렌더한 뒤, 넘침을 막는 클래스가 그 텍스트를
  * 그리는 요소에 붙어 있는지만 확인한다.
  *
- * - Header(PC ≥1024px): 로고 단추는 줄어들 수 있어야(min-w-0, flex-shrink-0 아님) 하고 이름은 truncate,
- *   우측 액션 묶음은 shrink-0, 사용자 이름은 truncate max-w-32, 드롭다운 이름은 truncate.
+ * - Header(PC ≥1024px): 로고 단추는 먼저 줄어들고(min-w-24 shrink-1000) 이름은 truncate, 검색창은 32rem 기준 폭(basis-lg,
+ *   flex-1 아님)을 지키며, 우측 액션 묶음도 먼저 줄어든다(shrink-1000) — 줄어드는 몫은 회원 이름(line-clamp-1 break-all
+ *   max-w-32 min-w-12)만 진다. 비회원 단추 묶음은 whitespace-nowrap. 드롭다운 이름은 truncate.
  * - Footer: 사이트 이름·설명 break-words, 저작권 P(flex 줄 안) min-w-0 wrap-anywhere.
  * - HtmlContent: 평문·HTML 두 모드 루트에 wrap-anywhere(본문 긴 URL).
  * - UserInfo: 작성자 이름 단추 truncate max-w-32.
@@ -63,26 +64,40 @@ describe('Header(PC) 긴 사이트 이름·사용자 이름', () => {
    * @scenario case=desktop_header_long_site_name
    * @effects site_name_single_line_ellipsis, header_right_buttons_in_viewport
    */
-  it('로고 단추 min-w-0(줄지 않는 flex-shrink-0 아님), 이름 truncate, 우측 액션 shrink-0', () => {
+  it('로고 단추 min-w-24 shrink-1000(줄지 않는 flex-shrink-0 아님), 이름 truncate, 검색창 basis-lg, 우측 액션 shrink-1000', () => {
     render(<Header siteName={LONG_NAME} availableLocales={['ko', 'en']} currentLocale="ko" />);
     const name = screen.getByText(LONG_NAME);
     expect(tokens(name)).toContain('truncate');
     const logoButton = name.closest('a, button');
-    expect(tokens(logoButton)).toContain('min-w-0');
+    expect(tokens(logoButton)).toEqual(expect.arrayContaining(['min-w-24', 'shrink-1000']));
     expect(tokens(logoButton)).not.toContain('flex-shrink-0');
     // 52자 이름에서 로고 칸이 646px 를 차지해 검색창이 57px 로 눌렸다(1280 실측) — 로고 칸 상한과 검색창 하한
     expect(tokens(logoButton)).toContain('max-w-xs');
     const bar = logoButton!.parentElement!;
-    expect(tokens(bar.querySelector('form'))).toContain('min-w-48');
+    const form = bar.querySelector('form');
+    // 검색창이 남는 폭만 받으면(flex-1) 이름이 길수록 좁아졌다 — 1024px 329→192·1280px 512→345 (7.1.1 실측)
+    expect(tokens(form)).toEqual(expect.arrayContaining(['basis-lg', 'min-w-48', 'max-w-lg']));
+    expect(tokens(form)).not.toContain('flex-1');
     const right = bar.lastElementChild;
-    expect(tokens(right)).toContain('shrink-0');
+    expect(tokens(right)).toContain('shrink-1000');
+    expect(tokens(right)).not.toContain('shrink-0');
   });
 
   /**
    * @scenario case=desktop_header_long_site_name
    * @effects narrow_label_ellipsis_with_cap
    */
-  it('사용자 이름 라벨 truncate max-w-32, 드롭다운 이름 truncate', () => {
+  it('비회원 단추 묶음은 whitespace-nowrap — 우측 묶음이 줄어들 때 「로그인」·「회원가입」 이 글자 단위로 접히지 않는다', () => {
+    render(<Header siteName="사이트" availableLocales={['ko', 'en']} currentLocale="ko" />);
+    const register = screen.getByText('auth.register_link');
+    expect(tokens(register.parentElement)).toContain('whitespace-nowrap');
+  });
+
+  /**
+   * @scenario case=desktop_header_long_site_name
+   * @effects narrow_label_ellipsis_with_cap
+   */
+  it('사용자 이름 라벨 line-clamp-1 break-all max-w-32 min-w-12(최소 폭이 이름 전체가 아니다), 드롭다운 이름 truncate', () => {
     render(
       <Header
         siteName="사이트"
@@ -92,7 +107,10 @@ describe('Header(PC) 긴 사이트 이름·사용자 이름', () => {
       />,
     );
     const label = screen.getByText(LONG_NAME);
-    expect(tokens(label)).toEqual(expect.arrayContaining(['truncate', 'max-w-32']));
+    // truncate(nowrap) 이면 묶음의 최소 폭이 이름 전체(최대 128px)라 이름이 길수록 검색창이 좁아졌다(1024px 426→334 모사 실측)
+    expect(tokens(label)).toEqual(expect.arrayContaining(['sm:line-clamp-1', 'break-all', 'max-w-32', 'min-w-12']));
+    expect(tokens(label)).not.toContain('truncate');
+    expect(label.getAttribute('title')).toBe(LONG_NAME);
     fireEvent.click(label.closest('button')!);
     const names = screen.getAllByText(LONG_NAME);
     const dropdownName = names.find((n) => n !== label)!;
@@ -173,6 +191,22 @@ describe('UserInfo 긴 작성자 이름', () => {
   it('이름 단추 truncate max-w-32', () => {
     render(<UserInfo name={LONG_NAME} userId="u-1" />);
     expect(tokens(screen.getByText(LONG_NAME).closest('button'))).toEqual(expect.arrayContaining(['truncate', 'max-w-32']));
+  });
+
+  /**
+   * 320px 인기글에서 비회원 작성자 「관리자」·배지 「비회원」 이 「관리/자」「비회/원」 으로 글자 단위로 접혔다(7.1.1) —
+   * 비회원 이름에는 줄임 클래스가 없고 배지는 줄어들었다.
+   *
+   * @scenario case=user_info_long_name
+   * @effects narrow_label_ellipsis_with_cap
+   */
+  it('비회원 이름 min-w-0 truncate max-w-32, 「비회원」 배지 shrink-0 whitespace-nowrap, 감싼 줄 min-w-0', () => {
+    render(<UserInfo name={LONG_NAME} isGuest />);
+    const name = screen.getByText(LONG_NAME);
+    expect(tokens(name)).toEqual(expect.arrayContaining(['min-w-0', 'truncate', 'max-w-32']));
+    expect(tokens(name.parentElement)).toContain('min-w-0');
+    const badge = name.nextElementSibling;
+    expect(tokens(badge)).toEqual(expect.arrayContaining(['shrink-0', 'whitespace-nowrap']));
   });
 });
 

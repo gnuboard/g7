@@ -7,7 +7,7 @@
 ```text
 1. 업데이트 감지: GitHub·_bundled 중 높은 버전(같으면 GitHub, GitHub 실패 시 _bundled) — --source=bundled 는 GitHub 안 봄, github 는 _bundled 폴백 없음 (_pending 미참여)
 2. _bundled = Git 추적 선탑재 소스, _pending = 설치 시 임시 스테이징만
-3. 상태 가드: ExtensionStatusGuard.assertNotInProgress(ExtensionStatus, identifier)
+3. 상태 가드: StuckUpdateRecovery::assertNotInProgress() → ExtensionStatusGuard (10분 넘게 멈춘 updating 은 활성화·--force 업데이트가 정리)
 4. 업그레이드 콜백: upgrades/ 디렉토리에 Upgrade_X_Y_Z.php (UpgradeStepInterface 구현)
 5. 역할/권한/메뉴 동기화: user_overrides로 사용자 커스터마이징 보존 (개별 식별자 보호)
 6. 확장 수정/개발은 _bundled 에서만 (활성 디렉토리 직접 수정 금지 → {type}:update 로 반영)
@@ -182,10 +182,11 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 ### 모듈/플러그인 업데이트 (10단계)
 
 ```
-1. [가드] ExtensionStatusGuard::assertNotInProgress()
+1. [가드] StuckUpdateRecovery::assertNotInProgress() — --force 면 멈춘 updating 을 먼저 정리 (→ 4. 멈춘 업데이트 정리)
 2. [백업] ExtensionBackupHelper::createBackup()
+   + [진행 기록] ExtensionUpdateJournal::begin() — 시작 판·목표 판 기록 (끝나지 않은 앞선 기록이 있으면 이어받음)
 3. [상태] status → Updating
-4. [파일] 소스에서 활성 디렉토리로 복사
+4. [파일] 소스에서 활성 디렉토리로 복사 (복사 직전 진행 기록에 「파일을 건드림」 표시)
    - github: 다운로드 후 복사
    - bundled: ExtensionPendingHelper::copyToActive()
 5. [마이그레이션] runMigrations()
@@ -194,9 +195,27 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 7. [레이아웃] 활성 상태였으면 레이아웃 갱신
    - registerModuleLayouts() + registerLayoutExtensions() + refreshModuleLayouts()
 8. [오토로드] Composer autoload 갱신
-9. [업그레이드] runUpgradeSteps($module, $fromVersion, $toVersion)
-10. [마무리] 이전 상태 복원 + 백업 삭제 + 캐시 무효화
+9. [업그레이드] runUpgradeSteps($module, $fromVersion, $toVersion, …, $journal) — 스텝마다 끝나면 진행 기록에 적음
+10. [마무리] 이전 상태 복원 + 백업 삭제(진행 기록도 삭제) + 캐시 무효화
 ```
+
+### 진행 기록 (ExtensionUpdateJournal)
+
+> 파일: `app/Extension/Helpers/ExtensionUpdateJournal.php` · 저장: `ExtensionUpdateJournalRepositoryInterface`(파일 기반, `storage/app/extension_update_journal/{type}/{identifier}.json`)
+
+업데이트는 DB 판을 새 판으로 적은 **뒤** 업그레이드 스텝을 돈다. 프로세스가 스텝 도중 죽으면(메모리 초과·시간 초과·강제 종료) catch 가 돌지 않으므로, 여러 판을 건너뛴 업데이트(예: 1.1.0 → 1.1.4)의 중간 판 스텝을 다시 돌 길이 없었다. 진행 기록이 이를 잇는다.
+
+| 기록 칸 | 뜻 |
+|---|---|
+| `from_version` / `to_version` | 이 업데이트의 시작 판 / 목표 판. 끝나지 않은 앞선 기록을 이어받으면 시작 판은 둘 중 낮은 판 |
+| `files_touched` | 활성 디렉토리 파일 교체를 시작했는지 |
+| `completed_steps` | 끝낸 업그레이드 스텝 판 목록 |
+
+- **이어 돌기**: 기록이 남아 있으면 다음 업데이트는 기록의 시작 판부터 스텝을 고르고, **끝낸 스텝은 건너뛴다** — 못 끝낸 스텝만 판 순서대로 한 번씩 돈다.
+- **지우는 시점**: 백업을 지울 때(파일·DB 판·스텝이 되돌릴 수 없게 끝났을 때).
+- **예외로 실패했을 때**: 파일을 백업으로 되돌렸고 끝낸 스텝이 없으면 지운다. 끝낸 스텝이 있으면 남긴다(다음 시도가 그 스텝을 건너뜀). 파일을 되돌리지 못했으면 남긴다.
+- 기록을 읽거나 쓰지 못해도 업데이트는 막지 않는다 — 기록 없는 종전 동작으로 돌아가고 경고 로그를 남긴다.
+- 템플릿도 기록을 남긴다(스텝은 없으므로 파일 교체와 판 기록까지가 판 전환이다).
 
 ### 템플릿 업데이트 (차이점)
 
@@ -307,6 +326,24 @@ public static function assertNotInProgress(ExtensionStatus $status, string $iden
 | Uninstalled | O | - | - | - | - |
 
 - `Installing`, `Uninstalling`, `Updating` 상태에서는 모든 작업이 `\RuntimeException`으로 차단됩니다.
+- 예외: 도중에 멈춘 `Updating`(아래 「멈춘 업데이트 정리」)은 활성화와 `--force` 업데이트가 정리한 뒤 진행합니다.
+
+### 멈춘 업데이트 정리 (StuckUpdateRecovery)
+
+> 파일: `app/Extension/Helpers/StuckUpdateRecovery.php`
+
+업데이트 프로세스가 죽으면 행이 `Updating` 으로 남고 위 가드가 시간 조건 없이 막아 빠져나올 수 없었다. 진입점은 상태 가드 앞에서 `StuckUpdateRecovery` 를 거친다.
+
+| 항목 | 규칙 |
+|---|---|
+| 고착 판정 | `Updating` 이고 마지막 갱신이 업데이트 잠금 유지 시간(`ExtensionOperationLock::LOCK_SECONDS`, 10분)보다 오래됐으며, 업데이트 잠금을 잡을 수 있다(그 업데이트를 하는 프로세스가 없다) |
+| 정리하는 진입점 | 활성화(`{type}:activate`·관리자 활성화) — 정리 뒤 그대로 활성화한다. `--force` 업데이트 — 정리 뒤 업데이트를 이어 한다 |
+| 정리하지 않는 경우 | `--force` 없는 업데이트는 업데이트 확인(「업데이트 없음」)보다 먼저 멈춘 상태를 안내하고 실패로 끝낸다. 10분이 지나지 않았거나 잠금이 잡혀 있으면 종전처럼 「진행 중」으로 거절한다. 자동으로 풀지 않는다 |
+| 정리 결과 | 직전 상태를 따로 남기지 않으므로 `Inactive` 로 되돌린다. 업데이트 명령은 다시 켜는 명령(`php artisan {type}:activate {identifier}`)을 함께 안내한다 |
+| 끝나지 않은 판 전환 | 진행 기록이 남아 있고 파일을 건드렸거나 끝낸 스텝이 있으면, DB 판을 기록의 시작 판으로 되돌리고 「업데이트 있음」(`latest_version`·`update_available`)으로 표시한다. 파일은 옛 판으로 되돌리지 않는다. 다음 업데이트(`--force` 없이도)가 못 끝낸 스텝만 이어 돈다 — 활성화 명령과 실패한 업데이트는 업데이트를 다시 실행하라고 안내한다 |
+| 아무 일도 없던 경우 | 파일을 건드리기 전에 멈췄고 끝낸 스텝도 없으면 진행 기록을 지우고 상태만 되돌린다 |
+
+관리자 확장 목록 응답의 `stuck_update` 칸이 이 판정(10분 경과·진행 프로세스 없음)을 싣는다.
 
 ---
 
@@ -490,6 +527,8 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 
 업그레이드 스텝은 재실행될 수 있다 (롤백 후 재시도, `--force` 등). 모든 DB 조작은 이미 완료된 상태에서 재실행해도 안전해야 한다.
 
+진행 기록([3. 업데이트 실행 흐름](#진행-기록-extensionupdatejournal))은 **끝낸** 스텝만 건너뛴다. 스텝 도중에 프로세스가 죽거나 예외로 실패한 스텝은 끝냈다고 적히지 않으므로 다음 업데이트에서 처음부터 다시 돈다 — 그래서 멱등성 규정은 그대로 필요하다.
+
 | 조작 유형 | 방어 패턴 |
 |----------|----------|
 | 레코드 삽입 | `firstOrCreate` 또는 `updateOrCreate` |
@@ -503,7 +542,7 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 
 - 디렉토리: `{extensionPath}/upgrades/`
 - 파일 패턴: `Upgrade_X_Y_Z.php` (언더스코어 → 점으로 변환: `1_1_0` → `1.1.0`)
-- 실행 순서: `fromVersion < stepVersion <= toVersion` 범위의 스텝만 자연 정렬 순 실행
+- 실행 순서: `fromVersion < stepVersion <= toVersion` 범위의 스텝만 자연 정렬 순 실행 — 끝나지 않은 진행 기록이 있으면 `fromVersion` 은 기록의 시작 판이고, 기록에 끝냈다고 적힌 스텝은 빠진다
 
 ---
 

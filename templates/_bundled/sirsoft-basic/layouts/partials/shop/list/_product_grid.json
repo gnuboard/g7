@@ -40,7 +40,7 @@
             "comment": "빈 상태",
             "type": "basic",
             "name": "Div",
-            "if": "{{(products?.data?.data ?? []).length === 0}}",
+            "if": "{{products !== undefined && (products?.data?.data ?? []).length === 0}}",
             "props": {
                 "className": "flex flex-col items-center justify-center py-20 px-4 my-16"
             },
@@ -58,7 +58,7 @@
                             "props": {
                                 "name": "search",
                                 "size": "2x",
-                                "className": "text-gray-400 dark:text-gray-500"
+                                "className": "text-gray-500 dark:text-gray-400"
                             }
                         }
                     ]
@@ -75,7 +75,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:shop.no_search_results"
                 }

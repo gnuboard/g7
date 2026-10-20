@@ -29,6 +29,7 @@ use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as Analyt
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\ExtensionUpdateJournalRepositoryInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
@@ -91,6 +92,7 @@ use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
 use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
 use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
+use App\Repositories\ExtensionUpdateJournalRepository;
 use App\Repositories\IdentityPolicyRepository;
 use App\Repositories\IdentityVerificationLogRepository;
 use App\Repositories\JsonConfigRepository;
@@ -274,6 +276,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(LayoutExtensionRepositoryInterface::class, LayoutExtensionRepository::class);
         $this->app->bind(LayoutExtensionVersionRepositoryInterface::class, LayoutExtensionVersionRepository::class);
         $this->app->singleton(ConfigRepositoryInterface::class, JsonConfigRepository::class);
+        // 확장 업데이트 진행 기록 — 파일 기반, 끊긴 업데이트가 못 끝낸 업그레이드 스텝만 이어 돌게 한다
+        $this->app->bind(ExtensionUpdateJournalRepositoryInterface::class, ExtensionUpdateJournalRepository::class);
         $this->app->bind(LayoutPreviewRepositoryInterface::class, LayoutPreviewRepository::class);
         $this->app->bind(LayoutRepositoryInterface::class, LayoutRepository::class);
         $this->app->bind(LayoutVersionRepositoryInterface::class, LayoutVersionRepository::class);

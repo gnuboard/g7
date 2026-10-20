@@ -60,11 +60,15 @@
             "id": "koreaexim_recent_runs",
             "type": "composite",
             "name": "DataGrid",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "koreaeximRecentRuns"
+            },
             "props": {
                 "data": "{{koreaeximRecentRuns?.data?.data ?? []}}",
                 "pagination": false,
                 "selectable": false,
-                "emptyMessage": "$t:sirsoft-koreaexim.empty",
+                "emptyMessage": "{{koreaeximRecentRuns === undefined ? '' : $t('sirsoft-koreaexim.empty')}}",
                 "columns": [
                     {
                         "field": "search_date",

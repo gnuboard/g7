@@ -186,6 +186,35 @@ describe('A — 링크 기본 동작', () => {
   });
 
   // @scenario component=a
+  // @effects unsafe_href_uses_fallback
+  it('fallbackHref 를 주면 이 사이트 주소가 아닌 href(실행 주소·다른 사이트·//host)를 대체 주소로 바꾼다 — 같은 사이트 주소·빈 href 는 그대로', () => {
+    render(
+      <div>
+        <A href="javascript:alert(1)" fallbackHref="/mypage/notifications">실행</A>
+        <A href="https://evil.example/x" fallbackHref="/mypage/notifications">바깥</A>
+        <A href="//evil.example/x" fallbackHref="/mypage/notifications">프로토콜상대</A>
+        <A href="/board/free/14" fallbackHref="/mypage/notifications">경로</A>
+        <A href={`${window.location.origin}/board/free/15`} fallbackHref="/mypage/notifications">전체주소</A>
+        <A href={`${window.location.origin}//evil.example/x`} fallbackHref="/mypage/notifications">같은호스트이중빗금</A>
+        <A href={`${window.location.origin}/\\evil.example/x`} fallbackHref="/mypage/notifications">같은호스트백슬래시</A>
+        <A href="https://evil.example/y">대체없음</A>
+      </div>,
+    );
+    expect(screen.getByText('실행').closest('a')).toHaveAttribute('href', '/mypage/notifications');
+    expect(screen.getByText('바깥').closest('a')).toHaveAttribute('href', '/mypage/notifications');
+    expect(screen.getByText('프로토콜상대').closest('a')).toHaveAttribute('href', '/mypage/notifications');
+    expect(screen.getByText('경로').closest('a')).toHaveAttribute('href', '/board/free/14');
+    expect(screen.getByText('전체주소').closest('a')).toHaveAttribute('href', `${window.location.origin}/board/free/15`);
+    // 같은 출처라도 경로가 `//`(백슬래시 변형 포함)로 시작하면 엔진 navigate 가 거부한다 — href 도 대체 주소다(7.1.1)
+    expect(screen.getByText('같은호스트이중빗금').closest('a')).toHaveAttribute('href', '/mypage/notifications');
+    expect(screen.getByText('같은호스트백슬래시').closest('a')).toHaveAttribute('href', '/mypage/notifications');
+    // 대체 주소를 적지 않은 링크는 종전 그대로(바깥 링크 허용)
+    expect(screen.getByText('대체없음').closest('a')).toHaveAttribute('href', 'https://evil.example/y');
+    // DOM 속성으로 새지 않는다
+    expect(screen.getByText('바깥').closest('a')!.hasAttribute('fallbackhref')).toBe(false);
+  });
+
+  // @scenario component=a
   // @effects plain_click_spa_navigate
   it('판정 API 가 없는 옛 엔진에서는 종전처럼 보통 클릭으로 옮긴다', () => {
     installCore({ navigation: undefined });
@@ -375,6 +404,31 @@ describe('NotificationCenter — 주소가 있는 알림 본문이 링크', () =
     expect(onNotificationClick).not.toHaveBeenCalled();
     expect(click(link)).toBe(true);
     expect(onNotificationClick).toHaveBeenCalledTimes(1);
+  });
+
+  // @scenario component=notification_center
+  // @effects unsafe_href_uses_fallback
+  it('바깥 주소·실행 주소 알림은 링크로 그리지 않는다 — 줄 클릭이 알림 클릭 콜백을 불러 레이아웃의 fallbackPath 로 간다', () => {
+    const onNotificationClick = vi.fn();
+    render(
+      <NotificationCenter
+        titleText="알림"
+        notifications={[
+          { id: 1, title: '바깥 알림', message: '다른 사이트', time: '방금', url: 'https://evil.example/x' },
+          { id: 2, title: '실행 알림', message: '실행 주소', time: '방금', url: 'javascript:alert(1)' },
+          { id: 3, title: '상대 알림', message: '프로토콜 상대', time: '방금', url: '//evil.example/x' },
+          { id: 4, title: '이중빗금 알림', message: '같은 호스트 // 경로', time: '방금', url: `${window.location.origin}//evil.example/x` },
+        ]}
+        onNotificationClick={onNotificationClick}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('알림'));
+
+    // 종전에는 바깥 주소가 target=_blank 링크라 보통 클릭도 바깥 사이트를 새 창으로 열고 콜백을 건너뛰었다
+    expect(screen.queryAllByRole('link')).toEqual([]);
+    fireEvent.click(screen.getByText('바깥 알림'));
+    expect(onNotificationClick).toHaveBeenCalledTimes(1);
+    expect(onNotificationClick.mock.calls[0][0]).toMatchObject({ id: 1 });
   });
 });
 

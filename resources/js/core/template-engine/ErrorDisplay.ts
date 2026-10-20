@@ -8,7 +8,7 @@ const logger = createLogger('ErrorDisplay');
 /**
  * 오류 화면 기본 문구 — 번역 파일을 받지 못한 경우(그것이 오류 원인일 수도 있다)에도 화면 언어를 따르도록
  * 엔진에 내장한다. 번역 키가 풀리면(`G7Core.t`) 그 값을 먼저 쓴다(engine-v1.78.5).
- * 종전에는 제목 「페이지 로딩 실패」·버튼 「새로고침」 이 영어 화면에서도 한국어로 박혀 있었다(7.1.0 J O-D 관측).
+ * 종전에는 제목 「페이지 로딩 실패」·버튼 「새로고침」 이 영어 화면에서도 한국어로 박혀 있었다(7.1.0 실측).
  */
 const BUILTIN_TEXT: Record<string, Record<'ko' | 'en' | 'ja', string>> = {
     'core.errors.page_load_failed': { ko: '페이지 로딩 실패', en: 'Page failed to load', ja: 'ページの読み込みに失敗しました' },
@@ -25,7 +25,7 @@ const BUILTIN_TEXT: Record<string, Record<'ko' | 'en' | 'ja', string>> = {
         ja: '要求された画面が見つかりません。',
     },
     // 레이아웃 편집기 번들(layout-editor.min.js) 실패 화면 — 편집기 화면 자체가 뜨지 않은 상태라
-    // 번역 파일보다 내장 문구가 먼저 필요하다(engine-v1.78.6, 7.1.0 J O-J4).
+    // 번역 파일보다 내장 문구가 먼저 필요하다(engine-v1.78.6, 7.1.0 실측).
     'core.errors.layout_editor_load_failed': {
         ko: '레이아웃 편집기 로드 실패',
         en: 'Layout editor failed to load',

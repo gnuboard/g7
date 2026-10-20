@@ -34,6 +34,14 @@ use Symfony\Component\Console\Output\BufferedOutput;
 class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
 {
     /**
+     * 시험 전용 활성 팩 식별자.
+     *
+     * 실제 설치 팩(`g7-module-sirsoft-ecommerce-ja`)과 겹치지 않는 가짜 벤더(`g7test`)를 쓴다 — 시험이 활성 폴더를
+     * 만들고 지우므로 실제 이름이면 개발 환경의 설치본을 건드린다. 주입 대상은 target_identifier 로 고른다.
+     */
+    private const PACK_IDENTIFIER = 'g7test-module-sirsoft-ecommerce-ja';
+
+    /**
      * 활성 모듈 시더 디렉토리를 확인하고, 이전 실행이 남긴 언어팩·시드 행을 비우고 번역 레지스트리 캐시를 무효화합니다.
      *
      * @return void 반환값 없음
@@ -67,17 +75,30 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         // 본 테스트는 lang pack 활성 hook 이 LanguagePack::resolveDirectory() →
         // base_path('lang-packs/{identifier}/seed/*.json') 을 읽어 ja 키를 주입하는 경로를 검증한다.
         // 활성 디렉토리가 부재한 dev 환경(사용자가 language-pack:install 미실행) 에서도 테스트가 동작하도록,
-        // _bundled 원본을 활성 경로에 복사한다 (RefreshDatabase 가 파일시스템에 영향을 주지 않으므로 영구).
+        // _bundled 원본을 시험 전용 활성 경로(가짜 식별자)에 복사하고 tearDown 에서 지운다 — 실제 설치본
+        // (`lang-packs/g7-module-sirsoft-ecommerce-ja`)은 읽지도 쓰지도 않는다.
         $bundledDir = base_path('lang-packs/_bundled/g7-module-sirsoft-ecommerce-ja');
-        $activeDir = base_path('lang-packs/g7-module-sirsoft-ecommerce-ja');
-        if (File::isDirectory($bundledDir)
-            && ! File::isDirectory($activeDir)) {
+        $activeDir = base_path('lang-packs/'.self::PACK_IDENTIFIER);
+        File::deleteDirectory($activeDir);
+        if (File::isDirectory($bundledDir)) {
             File::copyDirectory($bundledDir, $activeDir);
         }
 
         // 레지스트리 싱글톤을 갈아 끼우지 않고 캐시만 비운다 — 부팅 때 등록된 번역 필터·주입기가 그 인스턴스를
         // 쥐고 있어, 교체하면 새 활성 팩이 필터에 보이지 않는다(리스너 refreshRegistry 와 같은 규칙, #597).
         app(LanguagePackRegistry::class)->invalidate();
+    }
+
+    /**
+     * 시험 전용 활성 팩 폴더를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function tearDown(): void
+    {
+        File::deleteDirectory(base_path('lang-packs/'.self::PACK_IDENTIFIER));
+
+        parent::tearDown();
     }
 
     /**
@@ -244,8 +265,8 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
     private function createEcommerceJaLanguagePack(LanguagePackStatus $status): LanguagePack
     {
         return LanguagePack::create([
-            'identifier' => 'g7-module-sirsoft-ecommerce-ja',
-            'vendor' => 'g7',
+            'identifier' => self::PACK_IDENTIFIER,
+            'vendor' => 'g7test',
             'name' => 'Ecommerce JA Language Pack',
             'version' => '1.0.0-beta.1',
             'scope' => LanguagePackScope::Module->value,
@@ -256,7 +277,7 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
             'text_direction' => 'ltr',
             'is_protected' => false,
             'manifest' => [
-                'identifier' => 'g7-module-sirsoft-ecommerce-ja',
+                'identifier' => self::PACK_IDENTIFIER,
                 'scope' => 'module',
                 'target_identifier' => 'sirsoft-ecommerce',
                 'locale' => 'ja',

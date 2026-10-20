@@ -47,10 +47,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다"
@@ -72,6 +91,26 @@
                 "page": "{{_global.issueHistoryPage || 1}}",
                 "per_page": "{{_global.issueHistoryPerPage || 10}}",
                 "user_id": "{{_global.issueHistoryFilterUser?.uuid}}"
+            },
+            "onSuccess": [
+                {
+                    "comment": "다시 받기에 성공하면 실패 표시를 내린다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "issueHistoryLoadFailed": false
+                    }
+                }
+            ],
+            "errorHandling": {
+                "default": {
+                    "comment": "다시 받기(refetch)가 실패하면 표시를 남긴다 — 창은 이 표시로 「발급 이력이 없습니다」 대신 오류 안내를 보이고 남은 행을 감춘다. 엔진이 실패 값을 null 로 두지 않던 판에서는 처음 여는 창이 「받는 중」에 머물고 다른 쿠폰을 열면 앞 쿠폰의 내역이 남았으므로, 엔진 판과 무관하게 이 표시로 가른다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "issueHistoryLoadFailed": true
+                    }
+                }
             },
             "comment": "발급이력 창 전용. 어느 쿠폰을 열었는지가 정해져야 부를 수 있어 자동 조회를 끄고, 그 값이 전역에서 바뀔 때마다(창 열기·쪽 넘김·회원 필터) 다시 받는다"
         }

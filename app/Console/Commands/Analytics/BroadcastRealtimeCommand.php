@@ -49,7 +49,7 @@ class BroadcastRealtimeCommand extends Command
             'data' => $snapshot,
         ]);
 
-        $this->info(sprintf('현재 접속자 %d명을 브로드캐스트했습니다.', $snapshot['count']));
+        $this->info(__('analytics.console.broadcast_realtime.done', ['count' => $snapshot['count']]));
 
         return self::SUCCESS;
     }

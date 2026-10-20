@@ -144,7 +144,7 @@
     <div data-ref="dashboard_content" class="admin-page-content-responsive-fluid">
       <div data-ref="page_header" class="flex-between mb-6">
         <h1 data-ref="page_title" class="text-primary text-xl sm:text-2xl font-semibold">$t:admin.dashboard.title</h1>
-        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.dashboard.refresh">
+        <button type="button" data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.dashboard.refresh">
           <on type="click">
             <!-- 새로고침 — 이 화면의 소스 7개를 모두 다시 부른다(웹소켓 소스는 받는 쪽이라 제외).
                  하나라도 빠뜨리면 그 칸만 옛 값으로 남아, 화면 안에서 시점이 갈린다. -->
@@ -181,14 +181,14 @@
           <permission>core.dashboard.alerts</permission>
         </permissions>
         <div data-ref="top_alert_item_{{$idx}}" data-each="alert, $idx in {{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning')}}" class="{{alert.type === 'warning' ? 'flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-700')}}">
-          <icon data-ref="top_alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
+          <icon data-ref="top_alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
           <div data-ref="top_alert_content_{{$idx}}" class="flex-1 min-w-0">
             <p data-ref="top_alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
             <p data-ref="top_alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
             <p data-ref="top_alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
             <p data-ref="top_alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
             <div data-ref="top_alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
+              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
                 <on type="click">
                   <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.
                        버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.
@@ -207,7 +207,7 @@
                 <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
                 <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
               </button>
-              <a data-ref="top_alert_navigate_button_{{$idx}}" href="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" class="button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+              <a data-ref="top_alert_navigate_button_{{$idx}}" href="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" class="button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded">
                 <on type="click">
                   <!-- 복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —
                        버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.
@@ -284,7 +284,7 @@
               $t:admin.dashboard.extension_status.more
             </a>
           </div>
-          <p data-ref="recent_notifications_empty" data-if="{{(dashboard_recent_notifications?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:admin.dashboard.recent_notifications.empty</p>
+          <p data-ref="recent_notifications_empty" data-if="{{dashboard_recent_notifications !== undefined &amp;&amp; (dashboard_recent_notifications?.data ?? []).length === 0}}" class="text-sm text-slate-600 dark:text-slate-400 text-center py-6">$t:admin.dashboard.recent_notifications.empty</p>
           <div data-ref="recent_notifications_list" data-if="{{(dashboard_recent_notifications?.data ?? []).length > 0}}" class="mb-4">
             <div data-ref="recent_notification_item_{{$idx}}" data-each="notification, $idx in dashboard_recent_notifications?.data" class="flex-start gap-3">
               <div data-ref="recent_notification_dot_{{$idx}}" class="{{notification?.status === 'failed' ? 'w-2 h-2 mt-2 rounded-full bg-rose-500 dark:bg-rose-400 flex-shrink-0' : (notification?.status === 'skipped' ? 'w-2 h-2 mt-2 rounded-full bg-slate-400 dark:bg-slate-300 flex-shrink-0' : 'w-2 h-2 mt-2 rounded-full bg-emerald-500 dark:bg-emerald-400 flex-shrink-0')}}"/>
@@ -476,14 +476,14 @@
           </div>
           <div data-ref="alerts_list" class="space-y-3">
             <div data-ref="alert_item_{{$idx}}" data-each="alert, $idx in {{(dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning')}}" class="{{alert.type === 'warning' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.type === 'info' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}">
-              <icon data-ref="alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
+              <icon data-ref="alert_icon_{{$idx}}" name="{{alert.icon ?? 'info-circle'}}" class="{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"/>
               <div data-ref="alert_content_{{$idx}}" class="flex-1 min-w-0">
                 <p data-ref="alert_title_{{$idx}}" class="text-heading">{{alert.title ?? ''}}</p>
                 <p data-ref="alert_message_{{$idx}}" data-if="{{alert.message}}" class="text-secondary text-xs mt-0.5">{{alert.message ?? ''}}</p>
                 <p data-ref="alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
                 <p data-ref="alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
                 <div data-ref="alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
+                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
                     <on type="click">
                       <!-- 복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —
                            복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.
@@ -504,7 +504,7 @@
                     <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
                     <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
                   </button>
-                  <a data-ref="alert_navigate_button_{{$idx}}" href="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" class="button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+                  <a data-ref="alert_navigate_button_{{$idx}}" href="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" class="button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded">
                     <on type="click">
                       <!-- 복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —
                            버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.

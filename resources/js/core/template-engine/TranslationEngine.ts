@@ -20,6 +20,12 @@ import { fetchStaticFirst } from '../support/fetchStaticFirst';
 // live binding 이 채워진 뒤에 사용된다.
 import { dataBindingEngine } from './DataBindingEngine';
 import { hasPipes } from './PipeRegistry';
+import { isLiteralExpression } from './BindingShape';
+import {
+  extractTranslationParamValues,
+  hasTranslationParamMarker,
+  restoreTranslationParamValues,
+} from './translationParamValues';
 
 const logger = createLogger('TranslationEngine');
 
@@ -416,11 +422,24 @@ export class TranslationEngine {
     context: TranslationContext,
     dataContext?: any
   ): string {
+    // 0단계: 바인딩 해석이 `$t:` 인자 자리에 넣은 값(보호 구간)을 자리 번호로 바꾼다 (engine-v1.80.1).
+    // 값에 든 `&`·`|`·`=`·끝 ` /`·`$t:`·줄바꿈이 인자 분리·문장 꼬리·토큰 경계 판정에 끼지 않게 하고,
+    // 인자를 나눈 뒤(parseParams) 값으로 되돌린다. 값이 `$t:키` 하나면 종전처럼 그 키를 번역해 넣는다.
+    let protectedValues: string[] | undefined;
+    let processed = text;
+    if (hasTranslationParamMarker(processed)) {
+      const extracted = extractTranslationParamValues(processed);
+      processed = extracted.text;
+      protectedValues = extracted.values.map((value) => {
+        const token = value.match(/^\$t:(?:defer:)?([a-zA-Z0-9._-]+)$/);
+        return token ? this.translate(token[1], context, undefined, dataContext) : value;
+      });
+    }
+
     // 1단계: 파라미터 값 내 중첩 $t: 토큰을 먼저 해석 (engine-v1.25.0)
     // 예: |status=$t:enums.coupon_issue_status.issuing → |status=발급중
     // TRANSLATION_PATTERN이 $t: 앞에서 매칭을 중단하므로, 사전 해석 필요
     // 루프: 해석 결과에 다시 =$t:가 포함될 수 있으므로 변화 없을 때까지 반복 (깊이 제한)
-    let processed = text;
     const MAX_NESTED_DEPTH = 5;
     let depth = 0;
     while (depth < MAX_NESTED_DEPTH && processed.includes('=$t:')) {
@@ -436,16 +455,19 @@ export class TranslationEngine {
     }
 
     // 2단계: 메인 $t: 해석
-    return processed.replace(
+    const resolved = processed.replace(
       TranslationEngine.TRANSLATION_PATTERN,
       (_match, key, paramsStr) => {
         // 파라미터에서 trailing 비파라미터 텍스트 분리
         const { cleanedParams, trailing } = this.separateTrailingText(paramsStr);
 
         // 번역 수행 후 trailing 텍스트 붙이기
-        return this.translate(key, context, cleanedParams, dataContext) + trailing;
+        return this.translateWithParamString(key, context, cleanedParams, dataContext, protectedValues) + trailing;
       }
     );
+
+    // 인자로 쓰이지 않은 보호 구간(토큰 밖·문장 꼬리)은 값 글자로 되돌리고 표식을 걷는다 — 표식은 화면에 남지 않는다
+    return protectedValues ? restoreTranslationParamValues(resolved, protectedValues) : resolved;
   }
 
   /**
@@ -471,12 +493,32 @@ export class TranslationEngine {
       return this.replaceParams(this.getTranslation(key, context, pluralCount(params)), params);
     }
 
+    return this.translateWithParamString(key, context, paramsStr, dataContext);
+  }
+
+  /**
+   * 파라미터 문자열(`|이름=값…`)로 번역합니다.
+   *
+   * @param key 번역 키
+   * @param context 번역 컨텍스트
+   * @param paramsStr 파라미터 문자열
+   * @param dataContext 데이터 컨텍스트 (`{{…}}` 해석용)
+   * @param protectedValues 보호 구간 값 목록 — 자리 번호(resolveTranslations 0단계)를 되돌릴 값
+   * @returns 번역 문구
+   */
+  private translateWithParamString(
+    key: string,
+    context: TranslationContext,
+    paramsStr?: string,
+    dataContext?: any,
+    protectedValues?: readonly string[]
+  ): string {
     // 파라미터 문자열의 trailing 비파라미터 텍스트 정리
     const cleanedParamsStr = paramsStr ? this.cleanParamsStr(paramsStr) : paramsStr;
 
     // 파라미터 치환
     if (cleanedParamsStr) {
-      const params = this.parseParams(cleanedParamsStr, dataContext);
+      const params = this.parseParams(cleanedParamsStr, dataContext, protectedValues);
       // 복수형 선택은 해석된 `count` 값으로 한다(engine-v1.78.7).
       const text = this.getTranslation(key, context, pluralCount(params));
       return this.replaceParams(text, params);
@@ -623,12 +665,16 @@ export class TranslationEngine {
    * `{{...}}` 내부의 `|`와 `&`는 구분자로 취급하지 않습니다.
    * 이를 통해 `||`, `&&` 등의 JavaScript 연산자를 표현식 내에서 사용할 수 있습니다.
    *
+   * 바인딩 해석이 넣은 보호 구간 값(자리 번호)은 식으로 다시 평가하지 않고 글자 그대로 쓴다(engine-v1.80.1).
+   *
    * @param paramsStr 파라미터 문자열 (예: '|count=5&name=홍길동')
    * @param dataContext 데이터 컨텍스트
+   * @param protectedValues 보호 구간 값 목록 (자리 번호 → 값)
    */
   private parseParams(
     paramsStr: string,
-    dataContext?: any
+    dataContext?: any,
+    protectedValues?: readonly string[]
   ): TranslationParams {
     const params: TranslationParams = {};
 
@@ -653,7 +699,10 @@ export class TranslationEngine {
       const restoredValue = value.replace(/__PLACEHOLDER_(\d+)__/g, (_, idx) => {
         return placeholders[parseInt(idx, 10)];
       });
-      params[key.trim()] = this.resolveParamValue(restoredValue.trim(), dataContext);
+      const trimmedValue = restoredValue.trim();
+      params[key.trim()] = protectedValues && hasTranslationParamMarker(trimmedValue)
+        ? restoreTranslationParamValues(trimmedValue, protectedValues)
+        : this.resolveParamValue(trimmedValue, dataContext);
     }
 
     return params;
@@ -686,7 +735,8 @@ export class TranslationEngine {
 
       // 복잡한 표현식인지 확인 (연산자, 괄호, 메서드 호출 등 포함)
       // 산술 연산자(+, -, *, /, %), 비교 연산자(<, >, =), 논리 연산자, 공백(피연산자 분리)도 포함
-      const isComplexExpression = /[|&()[\]!?:+\-*/%<>=\s]/.test(expression);
+      // 리터럴만 있는 식(`1`·`'abc'`·`true`)도 값으로 평가한다 — 경로로 찾으면 빈 글자가 된다(engine-v1.80.1)
+      const isComplexExpression = /[|&()[\]!?:+\-*/%<>=\s]/.test(expression) || isLiteralExpression(expression);
 
       if (isComplexExpression && dataContext) {
         // 평가는 엔진에 위임한다. 종전에는 `new Function(...Object.keys(dataContext))` 로

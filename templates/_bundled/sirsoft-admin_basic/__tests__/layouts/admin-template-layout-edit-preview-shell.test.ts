@@ -4,7 +4,7 @@
  *
  * 미리보기 창은 서버가 내준 토큰으로 `/preview/{token}` 을 열었다. 이 주소는 사용자 화면 셸이라 활성 사용자 템플릿
  * (sirsoft-basic)의 컴포넌트·다국어·라우트를 받아 그렸고, sirsoft-admin_basic 레이아웃 미리보기가 관리자 템플릿 자원이 아닌
- * 사용자 템플릿 자원으로 그려졌다(7.1.0 O-G3-6). 코어가 관리자 셸에도 `*\/admin/preview/:token` 을 주입하므로, 서버가
+ * 사용자 템플릿 자원으로 그려졌다(7.1.0). 코어가 관리자 셸에도 `*\/admin/preview/:token` 을 주입하므로, 서버가
  * 템플릿 종류에 맞춰 내주는 `preview_url` 을 그대로 연다. 응답에 주소가 없을 때만 토큰으로 사용자 셸 주소를 만든다.
  *
  * @scenario-manifest tests/scenarios/layout-edit-preview-shell.yaml

@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('=== 페이지 모듈 시더 실행 시작 ===');
+        $this->command->info('=== '.__('sirsoft-page::messages.seeders.database.start').' ===');
         $this->command->newLine();
 
         // 설치 필수 시더 (항상 실행)
@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
         // 샘플 시더 (--sample 옵션 시에만 실행)
         if ($this->shouldIncludeSample()) {
             $this->command->newLine();
-            $this->command->info('--- 페이지 샘플 시더 실행 ---');
+            $this->command->info('--- '.__('sirsoft-page::messages.seeders.database.sample_start').' ---');
 
             // 시연 페이지 (미발행·버전 이력·첨부)
             $this->call(PageSampleSeeder::class);
@@ -51,6 +51,6 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->newLine();
-        $this->command->info('=== 페이지 모듈 시더 실행 완료 ===');
+        $this->command->info('=== '.__('sirsoft-page::messages.seeders.database.done').' ===');
     }
 }

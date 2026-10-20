@@ -8,7 +8,7 @@
       <div class="row-stack">
         <div data-ref="field_meta_title_suffix">
           <label class="form-label">$t:admin.settings.seo.meta_title_suffix</label>
-          <input type="text" name="seo.meta_title_suffix" placeholder=" | 그누보드7" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.meta_title_suffix" placeholder="$t:admin.settings.seo.meta_title_suffix_placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
           <p class="form-hint">$t:admin.settings.seo.meta_title_suffix_hint</p>
         </div>
         <div data-ref="field_meta_description">
@@ -18,7 +18,7 @@
         </div>
         <div data-ref="field_meta_keywords">
           <label class="form-label">$t:admin.settings.seo.meta_keywords</label>
-          <input type="text" name="seo.meta_keywords" placeholder="CMS, 그누보드7, 오픈소스" disabled="{{_computed.isReadOnly}}" class=""/>
+          <input type="text" name="seo.meta_keywords" placeholder="$t:admin.settings.seo.meta_keywords_placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
           <p class="form-hint">$t:admin.settings.seo.meta_keywords_hint</p>
         </div>
       </div>
@@ -222,7 +222,7 @@
                 <variant when="queued">bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200</variant>
                 <variant when="running">bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200</variant>
                 <variant when="writing">bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200</variant>
-                <variant when="completed">bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200</variant>
+                <variant when="completed">bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200</variant>
                 <variant when="failed">bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200</variant>
               </class-map>
               {{(sitemap_status?.data?.progress?.status === 'queued' &amp;&amp; $t('admin.settings.seo.sitemap_status_queued')) || (sitemap_status?.data?.progress?.status === 'running' &amp;&amp; $t('admin.settings.seo.sitemap_status_running')) || (sitemap_status?.data?.progress?.status === 'writing' &amp;&amp; $t('admin.settings.seo.sitemap_status_writing')) || (sitemap_status?.data?.progress?.status === 'completed' &amp;&amp; $t('admin.settings.seo.sitemap_status_completed')) || (sitemap_status?.data?.progress?.status === 'failed' &amp;&amp; $t('admin.settings.seo.sitemap_status_failed')) || ''}}
@@ -238,7 +238,7 @@
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
             <input type="text" :disabled="true" value="{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
             <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다 -->
-            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
               <on type="click">
                 <api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST">
                   <success>

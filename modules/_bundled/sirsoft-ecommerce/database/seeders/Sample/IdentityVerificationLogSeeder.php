@@ -49,6 +49,6 @@ class IdentityVerificationLogSeeder extends AbstractIdentityVerificationLogSampl
      */
     protected function scopeLabel(): string
     {
-        return '[이커머스]';
+        return '['.__('sirsoft-ecommerce::messages.seeders.identity_verification_log.scope_label').']';
     }
 }

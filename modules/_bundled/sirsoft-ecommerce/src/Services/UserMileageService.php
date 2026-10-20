@@ -742,7 +742,7 @@ class UserMileageService
      * 왜 그렇게 되는가 — 회수액 기준이 lot 의 `amount`(원 적립액)인데, 그 lot 의 `remaining_amount`
      * 는 사용·만료로 이미 줄어 있을 수 있다. 모자란 만큼은 `recoverPoints()` 가 **다른 lot 에서
      * FIFO 로** 가져갔고, 전액을 가져가면 `shortfall` 이 0 이라 `metadata` 에 흔적조차 남지 않았다.
-     * (2026-09-22 #599 3차 실측 L-1 · T2-D13: 만료로 잔여 0 이 된 1,260원 적립을 회수하자
+     * (2026-09-22 #599 실측: 만료로 잔여 0 이 된 1,260원 적립을 회수하자
      *  관리자 지급 lot 이 34,000 → 32,740 으로 깎였다. 회원은 같은 1,260원을 소멸과 회수로 두 번 잃었다.)
      *
      * 부분 반품에서 과다 회수되던 것도 함께 사라진다 — 주문옵션이 분할돼도 적립 lot 은 분할 전
@@ -778,10 +778,18 @@ class UserMileageService
      * @param  int  $userId  대상 사용자 ID
      * @param  MileageAdminEarnDto  $dto  지급 DTO
      * @return MileageTransaction 생성된 지급 거래
+     *
+     * @throws MileageValidationException 대상 회원이 탈퇴 상태일 때
      */
     public function adminEarn(int $userId, MileageAdminEarnDto $dto): MileageTransaction
     {
         $this->assertMemberWithinManageScope($userId);
+
+        // 탈퇴 회원에게는 지급하지 않는다 — 주문 적립·환불 반환은 탈퇴 즉시 소멸(forfeitIfWithdrawn)을 거치지만
+        // 관리자 지급은 그 길을 지나지 않아 잔액이 남았다(7.1.1). 요청 검증이 먼저 막고, 서비스를 바로 부르는 경로도 여기서 막는다.
+        if ($this->isWithdrawnUser($userId)) {
+            throw new MileageValidationException(__('sirsoft-ecommerce::validation.mileage.user_withdrawn'));
+        }
 
         return DB::transaction(function () use ($userId, $dto) {
             $expiresAt = $this->resolveAdminEarnExpiry($dto);
@@ -848,6 +856,8 @@ class UserMileageService
      * @param  array<int, int>  $lotIds  연장 대상 lot ID 목록
      * @param  int  $days  연장 일수
      * @return int 연장된 lot 수
+     *
+     * @throws MileageValidationException 고른 lot 중 탈퇴 회원의 것이 있을 때(전량 거부)
      */
     public function extendLotExpiry(?int $userId, array $lotIds, int $days): int
     {
@@ -864,6 +874,14 @@ class UserMileageService
 
             // 정적 경로라 미들웨어가 건너뛴다 — 회원을 섞어 고를 수 있으므로 고른 lot 전량이 범위 안이어야 한다(전량 거부)
             $this->assertAllWithinScope($lots, 'sirsoft-ecommerce.mileage.manage');
+
+            // 탈퇴 회원의 적립건은 늘리지 않는다 — 쓸 수 없는 잔액을 연장하는 쓰기다(7.1.1, 전량 거부).
+            // 남은 잔액은 수동 차감으로 정리한다.
+            foreach ($lots->pluck('user_id')->unique() as $ownerId) {
+                if ($ownerId !== null && $this->isWithdrawnUser((int) $ownerId)) {
+                    throw new MileageValidationException(__('sirsoft-ecommerce::messages.mileage.withdrawn_lot_not_extendable'));
+                }
+            }
 
             foreach ($lots as $lot) {
                 $base = $lot->expires_at !== null ? $lot->expires_at->copy() : now();

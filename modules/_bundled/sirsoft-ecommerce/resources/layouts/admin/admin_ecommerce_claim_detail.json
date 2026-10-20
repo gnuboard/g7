@@ -31,10 +31,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "initLocal": {
@@ -207,7 +226,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -232,7 +251,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -281,7 +300,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -306,7 +325,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -347,7 +366,7 @@
                                                         "text": "{{claim?.data?.claim?.requester_name ?? '-'}}"
                                                     },
                                                     {
-                                                        "comment": "e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 4차 라운드 D2 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다.",
+                                                        "comment": "e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 재검토에서 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다.",
                                                         "id": "cd_008b_request_source",
                                                         "type": "composite",
                                                         "name": "Badge",

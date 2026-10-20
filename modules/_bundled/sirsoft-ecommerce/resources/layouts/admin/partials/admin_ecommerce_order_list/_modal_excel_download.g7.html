@@ -42,13 +42,13 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
         <on type="click">
           <!-- 내려받기. 응답이 JSON 이 아니라 파일(blob)이라 코어 apiCall 로는 받지 못한다(apiCall 은 응답을
             JSON 으로만 읽는다) — 요청과 저장을 이 모듈의 `sirsoft-ecommerce.downloadFile` 이 한 번에 한다. 서버는

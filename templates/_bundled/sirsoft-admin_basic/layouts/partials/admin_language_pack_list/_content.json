@@ -828,7 +828,7 @@
                     "id": "lp_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(language_packs?.data?.data?.length ?? 0) === 0}}",
+                    "if": "{{language_packs !== undefined && (language_packs?.data?.data?.length ?? 0) === 0}}",
                     "props": {
                         "className": "p-8 text-center text-gray-500 dark:text-gray-400"
                     },
@@ -1091,7 +1091,7 @@
                         "minCardWidth": 250,
                         "maxColumns": 5,
                         "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
-                        "loading": "{{language_packs?.loading ?? false}}",
+                        "loading": "{{language_packs === undefined}}",
                         "pagination": true,
                         "pageHref": "{{route.path}}?page={page}",
                         "pageHrefMergeQuery": true,

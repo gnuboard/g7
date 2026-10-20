@@ -163,7 +163,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "{{query.claim_payment === 'success' ? 'circle-check' : (query.claim_payment === 'failed' ? 'circle-exclamation' : 'circle-info')}}",
-                                            "className": "{{query.claim_payment === 'success' ? 'text-base text-green-600 dark:text-green-400 flex-shrink-0' : (query.claim_payment === 'failed' ? 'text-base text-red-600 dark:text-red-400 flex-shrink-0' : 'text-base text-gray-500 dark:text-gray-400 flex-shrink-0')}}"
+                                            "className": "{{query.claim_payment === 'success' ? 'text-base text-green-700 dark:text-green-400 flex-shrink-0' : (query.claim_payment === 'failed' ? 'text-base text-red-600 dark:text-red-400 flex-shrink-0' : 'text-base text-gray-500 dark:text-gray-400 flex-shrink-0')}}"
                                         }
                                     },
                                     {
@@ -197,7 +197,7 @@
                                                 "name": "P",
                                                 "if": "{{query.claim_payment === 'failed' && (query.error ?? '') !== ''}}",
                                                 "props": {
-                                                    "className": "text-xs text-red-600 dark:text-red-400 mt-0.5"
+                                                    "className": "text-xs text-red-700 dark:text-red-400 mt-0.5"
                                                 },
                                                 "text": "$t:claim.payment_result.error_code|code={{query.error ?? ''}}"
                                             },
@@ -206,7 +206,7 @@
                                                 "name": "P",
                                                 "if": "{{query.claim_payment === 'failed'}}",
                                                 "props": {
-                                                    "className": "text-xs text-red-600 dark:text-red-400 mt-0.5"
+                                                    "className": "text-xs text-red-700 dark:text-red-400 mt-0.5"
                                                 },
                                                 "text": "$t:claim.payment_result.retry_hint"
                                             }
@@ -279,7 +279,7 @@
                                                                         "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
                                                                         "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
                                                                         "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                                                                        "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                                        "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
                                                                         "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
                                                                         "dark": "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                                                                     },
@@ -316,6 +316,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
+                                                        "if": "{{!!claim.data?.claim?.requested_at_formatted}}",
                                                         "props": {
                                                             "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
                                                         },
@@ -398,7 +399,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
+                                                            "className": "px-3 py-1.5 text-sm font-medium border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
                                                         },
                                                         "text": "$t:claim.list.withdraw"
                                                     }

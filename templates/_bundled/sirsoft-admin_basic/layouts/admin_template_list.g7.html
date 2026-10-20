@@ -80,7 +80,7 @@
   <slot name="content">
     <div data-ref="template_list_content" class="admin-page-content-responsive-fluid">
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.templates.title" description="$t:admin.templates.description">
-        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+        <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <refetch-data-source dataSourceId="templates"/>
           </on>
@@ -110,7 +110,7 @@
           <icon data-if="{{_global.isCheckingTemplateUpdates}}" name="spinner" size="sm" class="animate-spin"/>
           <span>$t:admin.templates.actions.check_updates</span>
         </button>
-        <button data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+        <button type="button" data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
           <responsive on="portable" class="hidden"/>
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
@@ -118,7 +118,7 @@
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
-        <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <responsive on="portable" class="hidden"/>
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
@@ -126,14 +126,14 @@
       </page-header>
       <div data-ref="mobile_action_buttons" class="hidden">
         <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
-        <button data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
           </on>
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
-        <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
         </button>
@@ -223,7 +223,7 @@
             <sequence>
               <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
               <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.
-                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0 O-G3-4). 꺼져 있으면 빈 값이라 주소에 붙지 않는다. -->
+                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0). 꺼져 있으면 빈 값이라 주소에 붙지 않는다. -->
               <navigate path="/admin/templates/{{$args[0]}}">
                 <query include_hidden="{{query.include_hidden === '1' ? '1' : undefined}}"/>
               </navigate>

@@ -26,6 +26,7 @@ effects:
   - in_place_navigation_preserves_query   # path 없는 navigate·replaceUrl 이 걸어 둔 검색어·정렬을 남긴다
   - orderer_search_clears_member_filter   # 주문자명 검색이 회원 지정 필터(orderer_uuid)를 비운다
   - navigation_preserves_list_query       # 레이아웃 시험 머리말의 통합 표기(위 4개를 묶는 상위 효과)
+  - row_menu_href_carries_list_query      # 이 확장 화면으로 가는 행 메뉴 항목 href 도 mergeQuery — 새 탭·가운데 클릭이 목록 조건을 싣는다 (7.1.1 출시 전)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-admin-list-context-round-trip.spec.ts

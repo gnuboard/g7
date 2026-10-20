@@ -24,10 +24,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "일괄 운송장 입력에서 고를 택배사 — 사용 중인 것만 받는다"
@@ -306,7 +325,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "list",
-                                                    "className": "text-base icon-muted"
+                                                    "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                 }
                                             },
                                             {
@@ -427,7 +446,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
                                                 }
                                             }
                                         ]
@@ -457,7 +476,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-secondary"
+                                                    "className": "text-secondary dark:text-gray-300"
                                                 },
                                                 "text": "({{_local.selectedColumns}})"
                                             }
@@ -700,7 +719,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                 },
                                                 "children": [
                                                     {
@@ -721,7 +740,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                 },
                                                 "children": [
                                                     {
@@ -763,7 +782,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                 },
                                                 "children": [
                                                     {
@@ -868,7 +887,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                 },
                                                 "children": [
                                                     {
@@ -982,7 +1001,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1004,7 +1023,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1048,7 +1067,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1125,7 +1144,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1147,7 +1166,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1169,7 +1188,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1213,7 +1232,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1235,7 +1254,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1257,7 +1276,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1334,7 +1353,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1356,7 +1375,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1378,7 +1397,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1422,7 +1441,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1444,7 +1463,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1466,7 +1485,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                                                                    "className": "badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1488,7 +1507,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1510,7 +1529,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
+                                                                    "className": "badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2414,7 +2433,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-gray-300 dark:text-gray-600"
+                                            "className": "text-gray-600 dark:text-gray-400"
                                         },
                                         "text": "|"
                                     },
@@ -2730,7 +2749,7 @@
                                                                                 "props": {
                                                                                     "className": "text-sm font-bold text-primary mb-1"
                                                                                 },
-                                                                                "text": "청소 스토퍼"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.cleaning_stopper"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2763,15 +2782,15 @@
                                                                                 "props": {
                                                                                     "className": "text-sm font-bold text-primary"
                                                                                 },
-                                                                                "text": "55,000원"
+                                                                                "text": "₩55,000"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "text-xs text-green-600 dark:text-green-400"
+                                                                                    "className": "text-xs text-green-700 dark:text-green-400"
                                                                                 },
-                                                                                "text": "+55,000원"
+                                                                                "text": "+₩55,000"
                                                                             }
                                                                         ]
                                                                     }
@@ -2805,7 +2824,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "🤖 한지민 (USR009)"
+                                                                                "text": "🤖 $t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.han_jimin|id=USR009"
                                                                             }
                                                                         ]
                                                                     },
@@ -2830,7 +2849,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "토스페이 / 택배"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.payment_shipping|payment=$t:sirsoft-ecommerce.admin.sample.misc.toss_pay|shipping=$t:sirsoft-ecommerce.admin.sample.misc.parcel"
                                                                             }
                                                                         ]
                                                                     },
@@ -2855,7 +2874,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "🇰🇷 대한민국"
+                                                                                "text": "🇰🇷 $t:sirsoft-ecommerce.admin.sample.misc.korea"
                                                                             }
                                                                         ]
                                                                     }
@@ -3000,7 +3019,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -3067,15 +3086,15 @@
                                                                         "props": {
                                                                             "className": "text-sm font-bold text-primary"
                                                                         },
-                                                                        "text": "55,000원"
+                                                                        "text": "₩55,000"
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-xs text-green-600 dark:text-green-400"
+                                                                            "className": "text-xs text-green-700 dark:text-green-400"
                                                                         },
-                                                                        "text": "+55,000원"
+                                                                        "text": "+₩55,000"
                                                                     }
                                                                 ]
                                                             },
@@ -3110,7 +3129,7 @@
                                                                                         "props": {
                                                                                             "className": "text-sm font-bold text-primary"
                                                                                         },
-                                                                                        "text": "청소 스토퍼"
+                                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.products.cleaning_stopper"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
@@ -3139,7 +3158,7 @@
                                                                         "props": {
                                                                             "className": "text-sm font-bold text-primary"
                                                                         },
-                                                                        "text": "🤖 한지민"
+                                                                        "text": "🤖 $t:sirsoft-ecommerce.admin.sample.people.han_jimin"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -3157,7 +3176,7 @@
                                                                 "props": {
                                                                     "className": "empty-state-cell text-sm text-secondary"
                                                                 },
-                                                                "text": "토스페이"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.misc.toss_pay"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3165,7 +3184,7 @@
                                                                 "props": {
                                                                     "className": "empty-state-cell text-sm text-secondary"
                                                                 },
-                                                                "text": "🇰🇷 대한민국"
+                                                                "text": "🇰🇷 $t:sirsoft-ecommerce.admin.sample.misc.korea"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3173,7 +3192,7 @@
                                                                 "props": {
                                                                     "className": "empty-state-cell text-sm text-secondary"
                                                                 },
-                                                                "text": "택배"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.misc.parcel"
                                                             },
                                                             {
                                                                 "type": "basic",

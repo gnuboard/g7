@@ -1,17 +1,17 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
 /**
  * @file board-user-ability-gate.test.ts
- * @description 사용자 화면(게시판·알림·공개 페이지) abilities 게이트 (7.1.0 abilities 게이트 최종 점검 basic-board-user·G27·G28)
+ * @description 사용자 화면(게시판·알림·공개 페이지) abilities 게이트 (7.1.0 abilities 게이트 최종 점검)
  *
- * - G27: 알림 읽음·삭제가 목록 응답 abilities(can_update·can_delete)로 잠긴다(헤더 알림센터는 API 호출을, 마이페이지는 버튼을)
- * - G28: 공개 페이지 [편집]·버전 배지는 can_update, 없는 페이지 [페이지 만들기]는 404 응답의 can_create
- * - #5 글쓰기 버튼: 비로그인은 눌러서 로그인으로, 로그인했는데 권한 없으면 잠금
- * - #6 카드·갤러리 비밀글 잠금: 목록에 없는 키 대신 컬렉션 비밀글 열람 권한
- * - #9 홈·인기글: 선택 인증으로 로그인 회원 권한을 반영
- * - #10 비회원 비밀번호 확인 두 창: 선택 인증
- * - #11 글쓰기 폼 401: 로그인 유도
- * - #12 답글 비밀글: 서버가 원문을 가렸을 때만 안내
- * - #13 첨부 권한 없음 카드: 비회원은 로그인 유도
+ * - 알림 읽음·삭제가 목록 응답 abilities(can_update·can_delete)로 잠긴다(헤더 알림센터는 API 호출을, 마이페이지는 버튼을)
+ * - 공개 페이지 [편집]·버전 배지는 can_update, 없는 페이지 [페이지 만들기]는 404 응답의 can_create
+ * - 글쓰기 버튼: 비로그인은 눌러서 로그인으로, 로그인했는데 권한 없으면 잠금
+ * - 카드·갤러리 비밀글 잠금: 목록에 없는 키 대신 컬렉션 비밀글 열람 권한
+ * - 홈·인기글: 선택 인증으로 로그인 회원 권한을 반영
+ * - 비회원 비밀번호 확인 두 창: 선택 인증
+ * - 글쓰기 폼 401: 로그인 유도
+ * - 답글 비밀글: 서버가 원문을 가렸을 때만 안내
+ * - 첨부 권한 없음 카드: 비회원은 로그인 유도
  */
 
 import { describe, it, expect } from 'vitest';
@@ -56,7 +56,7 @@ function apiCalls(tree: unknown, pred: (target: string, method: string) => boole
   return collect(tree, (n) => n.handler === 'apiCall' && pred(String(n.target ?? ''), String(n.params?.method ?? '')));
 }
 
-describe('G27 알림 읽음·삭제', () => {
+describe('알림 읽음·삭제', () => {
   /**
    * 헤더(PC·모바일) 알림센터의 읽음·삭제 API 호출이 abilities 로 막힌다.
    *
@@ -97,7 +97,7 @@ describe('G27 알림 읽음·삭제', () => {
   });
 });
 
-describe('G28 공개 페이지 관리자 링크', () => {
+describe('공개 페이지 관리자 링크', () => {
   /**
    * [편집]·버전 배지는 can_update, [페이지 만들기]는 404 응답의 can_create 로 연다.
    *
@@ -120,7 +120,7 @@ describe('G28 공개 페이지 관리자 링크', () => {
   });
 });
 
-describe('게시판 사용자 화면 (#5·#6·#9~#13)', () => {
+describe('게시판 사용자 화면', () => {
   /**
    * 비로그인은 글쓰기 버튼이 열려 로그인 유도로, 로그인했는데 권한이 없으면 잠긴다.
    *
@@ -128,7 +128,7 @@ describe('게시판 사용자 화면 (#5·#6·#9~#13)', () => {
    *
    * @effects write_button_guides_guest_to_login
    */
-  it('#5 글쓰기 버튼', () => {
+  it('글쓰기 버튼', () => {
     const btn = collect(writeButton, (n) => n.name === 'Button')[0];
     const scope = (uuid: string | undefined, canWrite: boolean) => ({ _global: { currentUser: uuid ? { uuid } : null }, posts: { data: { abilities: { can_write: canWrite } } } });
     expect(evaluate(btn.props.disabled, scope(undefined, false))).toBe(false);
@@ -143,7 +143,7 @@ describe('게시판 사용자 화면 (#5·#6·#9~#13)', () => {
    *
    * @effects secret_overlay_follows_collection_ability
    */
-  it('#6 비밀글 잠금 오버레이', () => {
+  it('비밀글 잠금 오버레이', () => {
     for (const tree of [cardIndex, galleryIndex]) {
       expect(JSON.stringify(tree)).not.toContain('post?.abilities?.can_view');
       const overlay = collect(tree, (n) => typeof n.if === 'string' && n.if.includes('post?.is_secret') && n.if.includes('can_read_secret'))[0];
@@ -160,7 +160,7 @@ describe('게시판 사용자 화면 (#5·#6·#9~#13)', () => {
    *
    * @effects optional_auth_sends_member_token
    */
-  it('#9·#10 선택 인증', () => {
+  it('홈·인기글·비회원 비밀번호 확인 창 선택 인증', () => {
     const homeSources = ((home as Node).data_sources as Node[]).filter((d) => ['stats', 'recent_posts', 'popular_boards', 'home_boards'].includes(d.id));
     expect(homeSources.length).toBe(4);
     homeSources.forEach((d) => expect(d.auth_mode, d.id).toBe('optional'));
@@ -179,7 +179,7 @@ describe('게시판 사용자 화면 (#5·#6·#9~#13)', () => {
    *
    * @effects form_401_redirects_to_login
    */
-  it('#11 글쓰기 폼 401', () => {
+  it('글쓰기 폼 401', () => {
     const meta = ((boardForm as Node).data_sources as Node[]).find((d) => d.id === 'form_meta')!;
     expect(JSON.stringify(meta.errorHandling ?? meta)).toContain('redirectToLoginWithReturn');
   });
@@ -191,7 +191,7 @@ describe('게시판 사용자 화면 (#5·#6·#9~#13)', () => {
    *
    * @effects secret_reply_body_for_authorized
    */
-  it('#12 답글 비밀글', () => {
+  it('답글 비밀글', () => {
     const notice = collect(replySection, (n) => n.text === '$t:board.posts.detail.reply_secret_content')[0];
     expect(evaluate(notice.if, { reply: { is_secret: true, content: '본문', status: 'published' } })).toBe(false);
     expect(evaluate(notice.if, { reply: { is_secret: true, content: null, status: 'published' } })).toBe(true);
@@ -204,7 +204,7 @@ describe('게시판 사용자 화면 (#5·#6·#9~#13)', () => {
    *
    * @effects attachment_guest_login_redirect
    */
-  it('#13 첨부 권한 없음 카드', () => {
+  it('첨부 권한 없음 카드', () => {
     const redirect = collect(postAttachments, (n) => n.handler === 'redirectToLoginWithReturn')[0];
     expect(redirect, '로그인 유도가 없습니다').toBeTruthy();
     expect(evaluate(redirect.if, { _global: { currentUser: null } })).toBe(true);

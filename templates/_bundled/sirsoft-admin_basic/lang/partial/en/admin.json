@@ -753,14 +753,18 @@
       "installing": "Installing",
       "uninstalling": "Uninstalling",
       "updating": "Updating",
+      "stuck_update": "Update stuck",
       "active_label": "Active"
     },
+    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
+    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The module is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
+      "recover_update": "Clean up and update again",
       "check_updates": "Check Updates",
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
@@ -973,14 +977,18 @@
       "not_installed": "Not Installed",
       "installing": "Installing",
       "uninstalling": "Uninstalling",
-      "updating": "Updating"
+      "updating": "Updating",
+      "stuck_update": "Update stuck"
     },
+    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
+    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The plugin is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
+      "recover_update": "Clean up and update again",
       "view_detail": "View Details",
       "settings": "Settings",
       "refresh_layouts": "Refresh Layouts",
@@ -1233,7 +1241,12 @@
       "delete_title": "Delete Menu",
       "delete_confirm": "Are you sure you want to delete this menu?",
       "delete_core_warning": "Core menus cannot be deleted.",
-      "module_menu_notice": "Module default menu cannot be changed."
+      "module_menu_notice": "Module default menu cannot be changed.",
+      "editing_title": "You have unsaved changes",
+      "editing_message": "There are unsaved changes.",
+      "editing_confirm_message": "Move to another menu without saving?",
+      "editing_discard": "Discard changes",
+      "editing_continue": "Continue editing"
     },
     "messages": {
       "order_updated": "Menu order has been updated.",
@@ -1761,7 +1774,9 @@
       "sitemap_progress_phase": "Processing: {{phase}}",
       "sitemap_progress_urls": "URLs so far: {{count}}",
       "sitemap_realtime_connected": "Connected in real time.",
-      "sitemap_polling": "Checking progress periodically."
+      "sitemap_polling": "Checking progress periodically.",
+      "meta_title_suffix_placeholder": " | Gnuboard7",
+      "meta_keywords_placeholder": "CMS, Gnuboard7, open source"
     },
     "security": {
       "title": "Security Settings",
@@ -2659,14 +2674,18 @@
       "installing": "Installing",
       "uninstalling": "Uninstalling",
       "updating": "Updating",
+      "stuck_update": "Update stuck",
       "update_available": "Update Available"
     },
+    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
+    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The template is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
+      "recover_update": "Clean up and update again",
       "check_updates": "Check Updates",
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
@@ -4355,5 +4374,28 @@
       "subject_delete_modal": "Delete data subject records confirm",
       "row_trend_modal": "Item trend"
     }
+  },
+  "brand_name": "Gnuboard7",
+  "default_user_name": "Administrator",
+  "template_partial_test": {
+    "title": "Template Partial System Test",
+    "meta_description": "Checks the partial system of the sirsoft-admin_basic template",
+    "description": "Tests the layout partial feature of the sirsoft-admin_basic template",
+    "checklist_title": "Checklist",
+    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
+    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
+    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (composite component)",
+    "check_basic": "✅ Basic component rendering",
+    "check_dark": "✅ Dark mode support",
+    "success_title": "🎉 Partial system works",
+    "success_description": "If every section above is shown, the template partial system is working.",
+    "level1_title": "Level 1 Partial: Content Section",
+    "level1_description": "This file includes the Level 2 partial files below",
+    "after_title": "Content After the Partial",
+    "after_description": "You can add as much content as you like after a partial file.",
+    "header_title": "Level 2 Include: Header Section Loaded",
+    "header_description": "This file is templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html",
+    "card_title": "✨ Composite Component Include Test",
+    "card_content": "This card was included from partials/template_partial_test/_info_card.g7.html.\n\n📌 Include system features:\n• Supported by both modules and templates\n• Unlimited nesting depth (depth limit 10)\n• Automatic circular reference detection\n• Both basic and composite components can be used"
   }
 }

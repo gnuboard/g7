@@ -98,7 +98,7 @@
           </button>
         </div>
       </div>
-      <div data-ref="table_container" data-if="{{(extra_fee_templates?.data?.data ?? []).length > 0 || $parent._local.isAddingTemplate === true}}" class="border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div data-ref="table_container" data-if="{{(_global.extraFeeTemplatesLoadFailed !== true &amp;&amp; (extra_fee_templates?.data?.data ?? []).length > 0) || $parent._local.isAddingTemplate === true}}" class="border border-gray-200 dark:border-gray-700 rounded-lg">
         <!-- overflow-x-auto 명시 — 6열 표(615px)가 좁은 뷰포트 컨테이너를 넘는다. overflow-y 만 선언해도 CSS Overflow 명세상 다른 축이 visible 로 남을 수 없어 computed 가 auto 로 계산되지만 그 의존은 암묵적이다. 누군가 overflow-y-visible 로 바꾸면 즉시 표가 잘리므로 의도를 코드에 고정한다. 표는 whitespace-nowrap 이라 절단 없이 가로 스크롤된다(세로 스택 전환은 과잉 대응). -->
         <div data-ref="template_list" class="max-h-96 overflow-y-auto overflow-x-auto">
           <on type="scroll">
@@ -149,7 +149,7 @@
                       <set-state :debounce="300" target="$parent._local" templateForm.zipcode="{{$event.target.value}}" :templateFormErrors.zipcode="null"/>
                     </on>
                   </input>
-                  <span data-if="{{$parent._local.templateFormErrors?.zipcode}}" class="form-error">{{$parent._local.templateFormErrors?.zipcode?.[0] ?? ''}}</span>
+                  <span data-if="{{$parent._local.templateFormErrors?.zipcode}}" class="form-error text-red-700">{{$parent._local.templateFormErrors?.zipcode?.[0] ?? ''}}</span>
                 </td>
                 <td class="whitespace-normal">
                   <input type="text" value="{{$parent._local.templateForm.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region" class="{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
@@ -158,7 +158,7 @@
                       <set-state :debounce="300" target="$parent._local" templateForm.region="{{$event.target.value}}" :templateFormErrors.region="null"/>
                     </on>
                   </input>
-                  <span data-if="{{$parent._local.templateFormErrors?.region}}" class="form-error">{{$parent._local.templateFormErrors?.region?.[0] ?? ''}}</span>
+                  <span data-if="{{$parent._local.templateFormErrors?.region}}" class="form-error text-red-700">{{$parent._local.templateFormErrors?.region?.[0] ?? ''}}</span>
                 </td>
                 <td>
                   <input type="number" value="{{$parent._local.templateForm.fee ?? 3000}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee" class="{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}" :min="0" disabled="{{$parent._computed?.isReadOnly !== false}}">
@@ -167,12 +167,12 @@
                       <set-state :debounce="300" target="$parent._local" templateForm.fee="{{Number($event.target.value) || 0}}" :templateFormErrors.fee="null"/>
                     </on>
                   </input>
-                  <span data-if="{{$parent._local.templateFormErrors?.fee}}" class="form-error">{{$parent._local.templateFormErrors?.fee?.[0] ?? ''}}</span>
+                  <span data-if="{{$parent._local.templateFormErrors?.fee}}" class="form-error text-red-700">{{$parent._local.templateFormErrors?.fee?.[0] ?? ''}}</span>
                 </td>
                 <td/>
                 <td class="text-center">
                   <div class="flex-center justify-center gap-1">
-                    <button type="button" class="btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}" aria-label="$t:common.save">
+                    <button type="button" class="btn-icon text-green-700 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}" aria-label="$t:common.save">
                       <on type="click">
                         <!-- 새 템플릿 저장 — 오류를 먼저 비우고 보낸다. 성공하면 입력 줄을 닫고 폼을
                           초깃값으로 되세운 뒤, 스크롤 상태를 처음으로 돌려 목록을 다시 부른다
@@ -335,7 +335,10 @@
           <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
         </div>
       </div>
-      <div data-ref="empty_state" data-if="{{(extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500">
+      <!-- 받기 실패 안내 — 다시 받기 실패는 데이터소스 오류 처리가 남긴 표시로 가른다(엔진이 실패 값을 null 로 두지 않던 판에서는 처음이면 「받는 중」, 다시 열었으면 앞 목록이 남았다). 실패한 채 「등록된 템플릿이 없습니다」를 보이면 템플릿을 새로 만들게 된다 -->
+      <p data-ref="extra_fee_templates_load_failed" data-if="{{_global.extraFeeTemplatesLoadFailed === true &amp;&amp; $parent._local.isAddingTemplate !== true}}" role="alert" class="py-6 text-center text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+      <!-- 빈 목록 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+      <div data-ref="empty_state" data-if="{{extra_fee_templates !== undefined &amp;&amp; extra_fee_templates !== null &amp;&amp; _global.extraFeeTemplatesLoadFailed !== true &amp;&amp; (extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400">
         <icon name="inbox" class="text-4xl"/>
         <span class="text-sm">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.no_templates</span>
       </div>

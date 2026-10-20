@@ -371,13 +371,14 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     }
   }, [stopPropagation, actualIsGuest, actualUserId, showDropdown, showMenu, updateMenuPosition, clickable, actualProfilePath]);
 
-  // 비회원인 경우
+  // 비회원인 경우 — 이름은 회원 이름과 같이 한 줄 … (최대 8rem), 「비회원」 배지는 줄지 않는다. 좁은 줄(320px 인기글)에서
+  // 이름·배지가 「관리/자」「비회/원」 으로 글자 단위로 접혔다(7.1.1).
   if (actualIsGuest || !actualUserId) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
-        <Div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
-          <Span>{actualName}</Span>
-          <Span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+        <Div className="flex items-center gap-1.5 min-w-0 text-gray-500 dark:text-gray-400">
+          <Span className="min-w-0 truncate max-w-32" title={actualName}>{actualName}</Span>
+          <Span className="shrink-0 whitespace-nowrap text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
             {t('userinfo.guest_badge')}
           </Span>
         </Div>
@@ -390,7 +391,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   if (actualIsWithdrawn) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
-        <Span className="text-gray-400 dark:text-gray-500 line-through">
+        <Span className="text-gray-500 dark:text-gray-400 line-through">
           {actualName}
         </Span>
         <SubText text={subText} title={subTextTitle} />

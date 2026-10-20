@@ -64,7 +64,7 @@ describe('확장 목록 — 페이지네이션 바인딩 경로', () => {
  */
 describe('관리자 목록 — 페이지네이션 바인딩 경로(확장 목록 외)', () => {
   // 이력 창은 창 데이터소스를 initGlobal(`_global.scheduleHistory` = 응답 data)로 받는다 — 창 데이터소스는
-  // id 로 화면에 실리지 않아 `schedule_history?.data…` 로 읽으면 이력이 늘 비어 보였다(7.1.0 J D-J2).
+  // id 로 화면에 실리지 않아 `schedule_history?.data…` 로 읽으면 이력이 늘 비어 보였다(7.1.0 실측).
   const cases = [
     { name: '예약 작업 목록', layout: scheduleTab, source: 'schedules', pager: 'schedules?.data?.pagination?.current_page' },
     { name: '예약 작업 이력 창', layout: scheduleHistory, source: 'schedule_history', pager: '_global.scheduleHistory?.pagination?.current_page' },

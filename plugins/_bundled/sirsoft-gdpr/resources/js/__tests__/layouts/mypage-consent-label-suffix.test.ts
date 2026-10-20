@@ -1,4 +1,4 @@
-// e2e:allow 표현식(라벨 접미사 중복 방지) 수정의 단위 검증 — 같은 화면은 Playwright 브라우저로 ko/en 마이페이지 카드·동의 확인 창을 재실측해 이력(20261007_1905_710_KLM_M1)에 남김
+// e2e:allow 표현식(라벨 접미사 중복 방지) 수정의 단위 검증 — 같은 화면은 Playwright 브라우저로 ko/en 마이페이지 카드·동의 확인 창을 재실측해 작업 이력에 남김
 /**
  * @file mypage-consent-label-suffix.test.ts
  * @description 마이페이지 쿠키 동의 카드가 항목 이름에 「쿠키」 접미사를 한 번만 붙이는지
@@ -70,6 +70,9 @@ const rowExpr = expressions.find((t) => t.includes('consent?.consent_label')) as
 const modalExpr = expressions.find((t) => t.includes('_global.gdprGrantTargetLabel')) as string;
 
 describe('마이페이지 쿠키 동의 카드 — 항목 이름 접미사', () => {
+    /**
+     * @effects mypage_consent_label_has_single_cookie_suffix
+     */
     it('카드 행과 동의 확인 창 두 곳이 같은 규칙을 쓴다', () => {
         expect(rowExpr).toBeTruthy();
         expect(modalExpr).toBeTruthy();

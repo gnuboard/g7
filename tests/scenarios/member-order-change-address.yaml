@@ -127,7 +127,7 @@ scenarios:
       country_code 를 국내/해외 판정의 기준축으로 삼는다 (부수 발견 F3). 종전에는 zipcode/address 를
       address_line_1 유무로만 강제해, 해외 필드만 채우고 country_code 를 생략하면 검증을 통과한 뒤
       서비스가 국내 분기로 떨어져 NOT NULL 컬럼에 null 을 쓰다 SQL 무결성 위반이 났다.
-      전환 시 반대편 컬럼을 초기화해 구 주소 잔존(2차 결함)도 함께 막는다.
+      전환 시 반대편 컬럼을 초기화해 구 주소 잔존(결함)도 함께 막는다.
     effects:
       - shipping_address_country_code_is_the_axis_for_domestic_vs_intl_validation
       - shipping_address_intl_combination_without_country_code_returns_422_validation_errors

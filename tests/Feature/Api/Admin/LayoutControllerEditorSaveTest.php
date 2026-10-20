@@ -257,7 +257,7 @@ class LayoutControllerEditorSaveTest extends TestCase
         $this->assertEquals('concurrent_modification', $response->json('errors.error'));
         $this->assertEquals(5, $response->json('errors.current_version'));
         $this->assertEquals(3, $response->json('errors.your_version'));
-        // 화면에 뜨는 안내 문구에 내부 자원 표기(`template_layouts:{id}`)를 싣지 않는다 — 기계용 값은 errors.resource 에 그대로 둔다(2026-10-06 실측 O-I1-2).
+        // 화면에 뜨는 안내 문구에 내부 자원 표기(`template_layouts:{id}`)를 싣지 않는다 — 기계용 값은 errors.resource 에 그대로 둔다(2026-10-06 실측).
         $this->assertStringNotContainsString('template_layouts', (string) $response->json('message'));
         $this->assertSame("template_layouts:{$layout->id}", $response->json('errors.resource'));
 

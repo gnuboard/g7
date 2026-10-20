@@ -157,7 +157,7 @@ const ScopeDropdown: React.FC<{
         }`}
       >
         <Span id={valueId}>{currentOption?.label ?? ''}</Span>
-        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-gray-500 dark:text-gray-400" />
       </Div>
 
       {isOpen && (
@@ -200,7 +200,7 @@ const ScopeDropdown: React.FC<{
                   )}
                 </Div>
                 {description && (
-                  <Span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <Span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                     {description}
                   </Span>
                 )}
@@ -527,7 +527,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             )}
           </Div>
           {permission.description && (
-            <Span id={descriptionId} className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <Span id={descriptionId} className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
               {permission.description}
             </Span>
           )}
@@ -580,14 +580,14 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             aria-label={tOr('common.select_all_in', `Select all in ${category.name}`, { name: category.name })}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
-          <Icon name={IconName.Folder} className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+          <Icon name={IconName.Folder} className="w-4 h-4 text-gray-500 dark:text-gray-500" />
           <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {category.name}
           </Span>
           <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-1">
             {selectedCount}/{category.leaf_count}
           </Span>
-          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-400 dark:text-gray-500 ml-auto" />
+          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-500 dark:text-gray-500 ml-auto" />
         </Div>
 
         {/* Content */}
@@ -659,7 +659,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
           />
           <Icon
             name={extensionType === 'core' ? IconName.Cog : IconName.Cube}
-            className="w-5 h-5 text-gray-400 dark:text-gray-500"
+            className="w-5 h-5 text-gray-500 dark:text-gray-500"
           />
           <Span className="font-medium text-gray-900 dark:text-white">{moduleNode.name}</Span>
           {extensionType !== 'core' && (
@@ -673,7 +673,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
           <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-2">
             {selectedCount}/{moduleNode.leaf_count}
           </Span>
-          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-400 dark:text-gray-500 ml-auto" />
+          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-500 dark:text-gray-500 ml-auto" />
         </Div>
 
         {/* Content */}
@@ -693,7 +693,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   if (data.length === 0) {
     return (
       <Div
-        className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`}
+        className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`}
         id={id}
         {...editorAttrs}
       >

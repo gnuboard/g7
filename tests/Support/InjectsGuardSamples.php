@@ -34,7 +34,7 @@ use PHPUnit\Framework\AssertionFailedError;
  * 내려야** 앞 단들이 시험받는다. 이 트레이트가 그것을 한다 — 합성 표본을 모집단에 넣고
  * **프로덕션 테스트 메서드를 그대로 호출**해 red/green 을 확인한다.
  *
- * 이 형태였다면 29·31·32차 결함은 심긴 회차에 즉시 red 였다.
+ * 이 형태였다면 앞선 결함들은 심긴 시점에 즉시 red 였다.
  *
  * ## 쓰는 법
  *
@@ -61,6 +61,7 @@ trait InjectsGuardSamples
      * @param  string  $source  표본 PHP 소스
      * @param  callable():void  $production  프로덕션 테스트 메서드 호출
      * @param  string  $label  실패 메시지에 넣을 표본 설명
+     * @return void 반환값 없음
      */
     protected function assertGuardRejects(string $name, string $source, callable $production, string $label): void
     {
@@ -87,6 +88,7 @@ trait InjectsGuardSamples
      * @param  string  $source  표본 PHP 소스
      * @param  callable():void  $production  프로덕션 테스트 메서드 호출
      * @param  string  $label  실패 메시지에 넣을 표본 설명
+     * @return void 반환값 없음
      */
     protected function assertGuardAccepts(string $name, string $source, callable $production, string $label): void
     {

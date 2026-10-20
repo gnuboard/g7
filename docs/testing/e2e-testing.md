@@ -434,6 +434,27 @@ test('이커머스 상품 목록', async ({ page, settingsToken, seededEcommerce
 });
 ```
 
+### 5.3 실행 환경변수로 계정을 받는 spec — `G7_E2E_TOKEN` · `G7_E2E_ENGINE_BUNDLE`
+
+공유 개발 서버에서 도는 spec 이 계정·역할을 새로 만들지 않아야 하면, 로그인은 실행 환경변수로만 받는다. 기본 구현은
+`templates/_bundled/sirsoft-basic/tests/Playwright/fixtures/env-account.ts` 다(`hasEnvAccount` · `envAccountToken` ·
+`authenticateWith` · `guardWrites` · `ACCOUNT_SKIP_REASON`). 다른 확장의 spec 도 같은 규약을 따른다.
+
+| 환경변수 | 뜻 | 규약 |
+| --- | --- | --- |
+| `G7_E2E_TOKEN` | 이미 받은 Sanctum 토큰(일회용 — 실행이 끝나면 회수한다) | 가장 먼저 쓴다. 없으면 `G7_E2E_ADMIN_EMAIL` + `G7_E2E_ADMIN_PASSWORD_FILE` 로 로그인하고, 둘 다 없으면 `test.skip(!hasEnvAccount(), ACCOUNT_SKIP_REASON)` 으로 사유를 남기고 건너뛴다 |
+| `G7_E2E_ENGINE_BUNDLE` | 수정 전 엔진 번들 파일 경로(예: `git show HEAD:public/build/core/template-engine.min.js` 로 뽑은 파일) | 주면 그 브라우저에서만 `template-engine.min.js` 요청을 이 파일로 바꿔 끼운다(서버 파일은 그대로). 고치기 전 번들에서 red, 고친 번들에서 green 인지 대조할 때 쓴다 |
+
+- **토큰·비밀번호는 출력하지 않는다** — `console.log`·첨부(annotation)·오류 메시지에는 URL·칸 값·상태 코드만 남긴다. 예시 명령에는 `<일회용 관리자 토큰>` 같은 자리표시를 쓴다.
+- 계정을 받는 spec 은 저장(PUT 등)이 서버에 닿지 않게 `guardWrites(page)` 를 먼저 건다 — GET·HEAD 가 아닌 `/api/` 요청을 네트워크 단에서 가로채 XHR·fetch 를 함께 막는다. 화면별 모의 응답은 그 뒤에 등록한다(Playwright 는 나중에 건 route 를 먼저 탄다). 제품 화면의 영속 데이터 오염 금지는 §4.1 과 같다.
+- 대상 레코드(상품 등)가 없으면 사유와 함께 skip 한다 — 계정이 있어도 데이터가 없는 환경에서 실패로 끝내지 않는다.
+
+```powershell
+$env:G7_E2E_TOKEN='<일회용 관리자 토큰>'
+$env:G7_E2E_ENGINE_BUNDLE='<수정 전 엔진 번들 경로>'   # 수정 전 대조가 필요할 때만
+npx playwright test --config=templates/_bundled/sirsoft-basic/tests/Playwright/playwright.config.ts <spec 파일>
+```
+
 ## §6. 도메인 매트릭스 (4 카테고리)
 
 ### 6.1 인증 가드 매트릭스 (access_outcome × user_permission)

@@ -5,6 +5,9 @@
     },
     "assets": {
       "$partial": "partial/ko/assets.json"
+    },
+    "navigation": {
+      "leave_confirm": "저장하지 않은 변경사항이 있습니다. 이 화면을 떠나면 입력한 내용이 사라집니다. 이동할까요?"
     }
   },
   "layout_editor": {

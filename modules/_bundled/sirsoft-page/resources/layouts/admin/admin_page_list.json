@@ -302,6 +302,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "type": "button",
                                                             "className": "btn btn-primary w-full"
                                                         },
                                                         "children": [
@@ -416,6 +417,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-primary"
                                         },
                                         "children": [
@@ -772,6 +774,7 @@
                             "pageHref": "/admin/pages?page={page}",
                             "rowLabelField": "title",
                             "data": "{{pages?.data?.data}}",
+                            "emptyMessage": "{{pages === undefined ? '' : $t('common.no_data')}}",
                             "sortable": true,
                             "sortField": "{{query.sort_by}}",
                             "sortDirection": "{{query.sort_order || 'desc'}}",
@@ -792,12 +795,14 @@
                             "rowActions": [
                                 {
                                     "href": "/admin/pages/{{row.id}}",
+                                    "mergeQuery": true,
                                     "id": "view",
                                     "label": "$t:sirsoft-page.admin.page.actions.view",
                                     "iconName": "eye"
                                 },
                                 {
                                     "href": "/admin/pages/{{row.id}}/edit",
+                                    "mergeQuery": true,
                                     "id": "edit",
                                     "label": "$t:sirsoft-page.admin.page.actions.edit",
                                     "iconName": "pencil",
@@ -1282,6 +1287,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "btn btn-secondary",
                                 "disabled": "{{_global.isDeletingPage}}"
                             },
@@ -1369,6 +1375,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "btn btn-danger",
                                 "disabled": "{{_global.isDeletingPage}}"
                             },

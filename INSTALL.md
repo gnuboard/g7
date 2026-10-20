@@ -742,6 +742,7 @@ G7_ENV_PRIORITY=true
 |---------|--------|------|
 | 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` | 비동기 작업 처리 — 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐마다(화면이 명령을 보여 줍니다). 큐 드라이버가 `sync` 면 필요 없음 |
 | 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | 통계 재집계·익명화·개인정보 직권 실행. 「큐 워커」에 `database-long`(또는 `redis-long`) 연결과 `long` 큐를 등록했을 때만 |
+| 사이트맵 워커 | `php artisan queue:work {연결} --queue=sitemap --timeout=1800` | 사이트맵 생성 전용 큐 — 등록과 무관하게 큐 드라이버 연결에 잡이 쌓이므로 **워커를 1개만** 따로 띄웁니다(「큐 워커」 화면이 이 명령도 보여 줍니다). 띄우지 않으면 사이트맵이 만들어지지 않습니다. 큐 드라이버가 `sync` 면 필요 없음 |
 | WebSocket | `php artisan reverb:start` | 실시간 알림 |
 
 ### 스케줄러

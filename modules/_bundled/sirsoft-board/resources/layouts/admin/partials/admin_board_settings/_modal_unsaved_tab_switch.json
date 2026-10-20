@@ -129,7 +129,7 @@
                     "props": {
                         "type": "button",
                         "data-testid": "board-settings-unsaved-tab-leave",
-                        "className": "px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600"
+                        "className": "px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-800 dark:hover:bg-orange-800"
                     },
                     "text": "$t:sirsoft-board.admin.settings.unsaved_tab_modal.btn_leave"
                 }

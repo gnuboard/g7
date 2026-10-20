@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Div",
+            "name": "Button",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기",
@@ -26,7 +26,9 @@
                 }
             ],
             "props": {
-                "className": "card-header"
+                "type": "button",
+                "className": "flex w-full justify-start text-left card-header",
+                "aria-expanded": "{{_local.ui.noticeExpanded !== false}}"
             },
             "children": [
                 {
@@ -58,7 +60,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
             ]

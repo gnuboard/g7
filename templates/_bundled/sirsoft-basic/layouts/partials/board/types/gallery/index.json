@@ -8,7 +8,7 @@
     "name": "Div",
     "children": [
         {
-            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
+            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 실측).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -363,7 +363,7 @@
                                             "name": "Span",
                                             "if": "{{post?.is_notice}}",
                                             "props": {
-                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm font-bold bg-blue-600 text-white dark:bg-blue-500 flex-shrink-0"
+                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm font-bold bg-blue-600 text-white dark:bg-blue-600 flex-shrink-0"
                                             },
                                             "children": [
                                                 {
@@ -388,7 +388,7 @@
                                             "name": "Span",
                                             "if": "{{post?.category}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-black/40 text-white backdrop-blur-sm flex-shrink-0"
+                                                "className": "inline-block truncate max-w-32 px-2 py-0.5 rounded text-sm font-medium bg-black/60 text-white backdrop-blur-sm flex-shrink-0"
                                             },
                                             "text": "{{post?.category}}"
                                         }
@@ -400,18 +400,18 @@
                                     "name": "Span",
                                     "if": "{{post?.is_new}}",
                                     "props": {
-                                        "className": "px-1.5 py-0.5 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                        "className": "px-1.5 py-0.5 text-xs font-bold bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0"
                                     },
                                     "text": "N"
                                 }
                             ]
                         },
                         {
-                            "comment": "하단 오버레이 — 그라디언트 + 제목 + 메타",
+                            "comment": "하단 오버레이 — 그라디언트 + 제목 + 메타. 글자가 놓이는 아래 70% 는 검정 85% 이상이라 흰 사진 위에서도\n          흰 글자 15·회색 400(블라인드) 5.8·주황 600 아이콘 4.2 이상이다(종전 via-black/60 은 제목 윗부분 4.49·블라인드 제목 3.32).",
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "absolute inset-x-0 bottom-0 z-30 px-3 pt-10 pb-3 rounded-b-xl bg-gradient-to-t from-black/90 via-black/60 to-transparent"
+                                "className": "absolute inset-x-0 bottom-0 z-30 px-3 pt-10 pb-3 rounded-b-xl bg-gradient-to-t from-black/90 via-black/85 via-70% to-transparent"
                             },
                             "children": [
                                 {
@@ -430,7 +430,7 @@
                                             "props": {
                                                 "name": "eye-slash",
                                                 "size": "sm",
-                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -439,7 +439,7 @@
                                             "name": "Span",
                                             "if": "{{post?.is_reply}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/80 dark:bg-purple-500/80 text-white flex-shrink-0"
+                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-700/80 dark:bg-purple-600/80 text-white flex-shrink-0"
                                             },
                                             "text": "RE"
                                         },

@@ -744,14 +744,18 @@
       "installing": "설치 중",
       "uninstalling": "제거 중",
       "updating": "업데이트 중",
+      "stuck_update": "업데이트 멈춤",
       "active_label": "활성화"
     },
+    "stuck_update_hint": "업데이트가 도중에 멈췄습니다. 「정리 후 다시 업데이트」를 누르면 정리한 뒤 업데이트를 마저 끝내고, 스위치를 켜면 정리한 뒤 활성화합니다.",
+    "stuck_update_reactivate_hint": "멈춘 업데이트를 정리했습니다. 정리한 모듈은 비활성 상태이니 스위치로 다시 켜 주세요.",
     "actions": {
       "install": "설치",
       "uninstall": "제거",
       "activate": "활성화",
       "deactivate": "비활성화",
       "update": "업데이트",
+      "recover_update": "정리 후 다시 업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
       "refresh_layouts": "레이아웃 갱신",
@@ -957,14 +961,18 @@
       "not_installed": "미설치",
       "installing": "설치 중",
       "uninstalling": "제거 중",
-      "updating": "업데이트 중"
+      "updating": "업데이트 중",
+      "stuck_update": "업데이트 멈춤"
     },
+    "stuck_update_hint": "업데이트가 도중에 멈췄습니다. 「정리 후 다시 업데이트」를 누르면 정리한 뒤 업데이트를 마저 끝내고, 스위치를 켜면 정리한 뒤 활성화합니다.",
+    "stuck_update_reactivate_hint": "멈춘 업데이트를 정리했습니다. 정리한 플러그인은 비활성 상태이니 스위치로 다시 켜 주세요.",
     "actions": {
       "install": "설치",
       "uninstall": "제거",
       "activate": "활성화",
       "deactivate": "비활성화",
       "update": "업데이트",
+      "recover_update": "정리 후 다시 업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
       "settings": "설정",
@@ -1215,7 +1223,12 @@
       "delete_title": "메뉴 삭제",
       "delete_confirm": "이 메뉴를 삭제하시겠습니까?",
       "delete_core_warning": "코어 메뉴는 삭제할 수 없습니다.",
-      "module_menu_notice": "모듈 기본 메뉴의 모듈은 변경할 수 없습니다."
+      "module_menu_notice": "모듈 기본 메뉴의 모듈은 변경할 수 없습니다.",
+      "editing_title": "편집 중인 내용이 있습니다",
+      "editing_message": "저장하지 않은 변경사항이 있습니다.",
+      "editing_confirm_message": "변경사항을 저장하지 않고 다른 메뉴로 이동하시겠습니까?",
+      "editing_discard": "변경사항 버리기",
+      "editing_continue": "계속 편집하기"
     },
     "messages": {
       "order_updated": "메뉴 순서가 변경되었습니다.",
@@ -1737,7 +1750,9 @@
       "sitemap_progress_phase": "현재 처리 중: {{phase}}",
       "sitemap_progress_urls": "누적 URL: {{count}}개",
       "sitemap_realtime_connected": "실시간으로 연결되어 있습니다.",
-      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다."
+      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다.",
+      "meta_title_suffix_placeholder": " | 그누보드7",
+      "meta_keywords_placeholder": "CMS, 그누보드7, 오픈소스"
     },
     "security": {
       "title": "보안 설정",
@@ -2625,14 +2640,18 @@
       "installing": "설치 중",
       "uninstalling": "제거 중",
       "updating": "업데이트 중",
+      "stuck_update": "업데이트 멈춤",
       "update_available": "업데이트 필요"
     },
+    "stuck_update_hint": "업데이트가 도중에 멈췄습니다. 「정리 후 다시 업데이트」를 누르면 정리한 뒤 업데이트를 마저 끝내고, 스위치를 켜면 정리한 뒤 활성화합니다.",
+    "stuck_update_reactivate_hint": "멈춘 업데이트를 정리했습니다. 정리한 템플릿은 비활성 상태이니 스위치로 다시 켜 주세요.",
     "actions": {
       "install": "설치",
       "uninstall": "제거",
       "activate": "활성화",
       "deactivate": "비활성화",
       "update": "업데이트",
+      "recover_update": "정리 후 다시 업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
       "refresh_layouts": "레이아웃 갱신",
@@ -4300,5 +4319,28 @@
       "subject_delete_modal": "정보주체 기록 삭제 확인",
       "row_trend_modal": "항목 추이"
     }
+  },
+  "brand_name": "그누보드7",
+  "default_user_name": "관리자",
+  "template_partial_test": {
+    "title": "템플릿 Partial 시스템 테스트",
+    "meta_description": "sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인",
+    "description": "sirsoft-admin_basic 템플릿의 레이아웃 Partial 기능을 테스트합니다",
+    "checklist_title": "테스트 항목",
+    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
+    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
+    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (Composite 컴포넌트)",
+    "check_basic": "✅ Basic 컴포넌트 렌더링",
+    "check_dark": "✅ 다크 모드 지원",
+    "success_title": "🎉 Partial 시스템 정상 동작",
+    "success_description": "위의 모든 섹션이 정상적으로 표시되면 템플릿 Partial 시스템이 정상 작동하는 것입니다.",
+    "level1_title": "Level 1 Partial: 컨텐츠 섹션",
+    "level1_description": "이 파일은 아래에 Level 2 partial 파일들을 포함합니다",
+    "after_title": "Partial 이후 추가 컨텐츠",
+    "after_description": "Partial 파일 뒤에도 원하는 만큼 컨텐츠를 추가할 수 있습니다.",
+    "header_title": "Level 2 Include: 헤더 섹션 로드됨",
+    "header_description": "이 파일은 templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html 입니다",
+    "card_title": "✨ Composite 컴포넌트 Include 테스트",
+    "card_content": "이 Card는 partials/template_partial_test/_info_card.g7.html에서 include되었습니다.\n\n📌 Include 시스템 특징:\n• 모듈과 템플릿 모두 지원\n• 무제한 중첩 깊이 (depth 제한 10)\n• 순환 참조 자동 감지\n• Basic과 Composite 컴포넌트 모두 사용 가능"
   }
 }

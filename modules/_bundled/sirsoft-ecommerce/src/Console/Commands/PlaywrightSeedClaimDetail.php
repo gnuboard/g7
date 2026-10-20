@@ -129,14 +129,14 @@ class PlaywrightSeedClaimDetail extends Command
     {
         // ① CLI 한정
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다.');
+            $this->error(__('sirsoft-ecommerce::playwright.guard.cli_only'));
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
+            $this->error(__('sirsoft-ecommerce::playwright.guard.bypass_required'));
 
             return self::FAILURE;
         }
@@ -148,7 +148,7 @@ class PlaywrightSeedClaimDetail extends Command
         $tag = is_string($tag) && $tag !== '' ? $tag : null;
 
         if ($tag !== null && ! preg_match('/^[A-Za-z0-9]{1,16}$/', $tag)) {
-            $this->error('--tag 는 영숫자 1~16자여야 합니다.');
+            $this->error(__('sirsoft-ecommerce::playwright.seed_claim_detail.invalid_tag'));
 
             return self::FAILURE;
         }
@@ -157,7 +157,7 @@ class PlaywrightSeedClaimDetail extends Command
             $result = $this->purge($retention, $tag);
         } else {
             if ($tag === null) {
-                $this->error('시드에는 --tag 가 필요합니다 (병렬 워커끼리 서로의 신청서를 지우지 않도록).');
+                $this->error(__('sirsoft-ecommerce::playwright.seed_claim_detail.tag_required'));
 
                 return self::FAILURE;
             }

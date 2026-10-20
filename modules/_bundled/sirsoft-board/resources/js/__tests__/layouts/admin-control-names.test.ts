@@ -191,7 +191,10 @@ function judgeLayout(json, rel) {
                 let blocked = false;
                 for (let i = ei - 1; i >= 0; i--) {
                     const s = ch[i];
-                    if (isLabelSlot(s)) {
+                    // 다른 칸을 품은 라벨(「[체크박스] 조회수 표시」)은 그 칸의 이름이라 훅이 곁 라벨로 쓰지 않는다
+                    // (useAdjacentLabel isUsableLabel) — 곁 라벨로 치면 환경설정 「게시판 설정」 탭의 스위치·숫자칸·
+                    // 선택칸이 이름 있는 것으로 잘못 판정된다(7.1.1 출시 전 점검)
+                    if (isLabelSlot(s) && !deep(s, isCtrl)) {
                         if (!(s.props?.htmlFor || s.props?.for) && hasText(s)) {
                             found = i;
                             break;
@@ -216,7 +219,7 @@ function judgeLayout(json, rel) {
                 if (d === 0) {
                     for (let i = ei + 1; i < ch.length; i++) {
                         const s = ch[i];
-                        if (isLabelSlot(s) && hasText(s)) {
+                        if (isLabelSlot(s) && !deep(s, isCtrl) && hasText(s)) {
                             named = true;
                             sources.push(...textsOf(s));
                             break;

@@ -193,6 +193,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
                                 },
                                 "children": [
@@ -248,8 +249,9 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "data-testid": "admin-scrap-bulk-delete",
-                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{scraps?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                         },
                                         "children": [
@@ -300,7 +302,7 @@
                                 }
                             },
                             {
-                                "comment": "정렬 변경. 정렬 축이 스크랩일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다",
+                                "comment": "정렬 변경. 정렬 축이 스크랩일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다. 다른 열은 서버가 정렬하지 못해 :sortable=\"false\" 다(7.1.1 — 종전에는 어느 머리든 날짜 방향만 뒤집혔다)",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "sequence",
@@ -414,7 +416,7 @@
                             "showColumnSelector": false,
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
-                            "emptyMessage": "$t:sirsoft-board.admin.scraps.table_empty",
+                            "emptyMessage": "{{scraps === undefined ? '' : (scraps === null ? $t('sirsoft-board.common.list_load_failed') : $t('sirsoft-board.admin.scraps.table_empty'))}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "selectedCountText": "",
                             "rowActions": [
@@ -458,6 +460,7 @@
                                 },
                                 {
                                     "field": "member",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.scraps.columns.member",
                                     "cellChildren": [
                                         {
@@ -563,6 +566,7 @@
                                 },
                                 {
                                     "field": "board",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.scraps.columns.board_name",
                                     "cellChildren": [
                                         {
@@ -607,6 +611,7 @@
                                 },
                                 {
                                     "field": "post_title",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.scraps.columns.post_title",
                                     "cellClassName": "max-w-xs",
                                     "cellChildren": [
@@ -639,7 +644,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.is_deleted || !row.board}}",
                                                     "props": {
-                                                        "className": "font-medium truncate line-through text-gray-400 dark:text-gray-500"
+                                                        "className": "font-medium truncate line-through text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{row.post_title}}"
                                                 },
@@ -659,6 +664,7 @@
                                 },
                                 {
                                     "field": "author_name",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.scraps.columns.author_name",
                                     "cellChildren": [
                                         {
@@ -673,6 +679,7 @@
                                 },
                                 {
                                     "field": "post_status",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.scraps.columns.post_status",
                                     "cellChildren": [
                                         {
@@ -752,6 +759,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -834,6 +842,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.scrapDeleteLoading}}"
                             },
@@ -921,6 +930,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -999,6 +1009,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "data-testid": "admin-scrap-bulk-delete-confirm",
                                 "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.scrapBulkDeleteLoading}}"
@@ -1086,6 +1097,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [

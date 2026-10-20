@@ -3,7 +3,7 @@
   선택 상태와 입력값은 전역에 둔다. 두 판이 각각 조각 파일이라 한쪽이 고른 것을 다른 쪽이 읽어야 하고,
   화면 상태를 조각 사이로 넘길 길이 그것뿐이기 때문이다. -->
 <layout name="admin_menu_list" version="1.0.0" extends="_admin_base">
-  <meta title="$t:admin.menus.page_title" description="$t:admin.menus.page_description"/>
+  <meta leave_guard="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}" title="$t:admin.menus.page_title" description="$t:admin.menus.page_description"/>
   <!-- 메뉴 트리. 자식까지 계층 그대로 받아 온다 — 프론트에서 부모-자식을 다시 엮지 않는다. -->
   <data-source id="menus" label_key="$t:editor.data_source.menus" type="api" endpoint="/api/admin/menus" method="GET" :auto_fetch="true" auth_mode="required">
     <params :with_children="true" :hierarchical="true"/>
@@ -67,7 +67,7 @@
   <slot name="content">
     <div data-ref="menu_list_content" class="admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.menus.title" description="$t:admin.menus.description">
-        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+        <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <refetch-data-source dataSourceId="menus"/>
           </on>
@@ -81,7 +81,7 @@
           <icon name="{{_global.menuBulkMode === true ? 'check' : 'list'}}" size="md"/>
           <span>{{_global.menuBulkMode === true ? $t:admin.menus.bulk.exit : $t:admin.menus.bulk.enter}}</span>
         </button>
-        <button data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true || _global.menuBulkMode === true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="add_menu_button" disabled="{{menus?.data?.abilities?.can_create !== true || _global.menuBulkMode === true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 새 메뉴 — 오른쪽 판을 등록 모드로 돌리면서 **선택을 비우고 입력값을 전부 초기화한다**.
                  한 벌뿐인 폼을 수정과 함께 쓰므로, 안 비우면 직전에 보던 메뉴의 값이 새 메뉴에 실린다. -->
@@ -118,4 +118,6 @@
   <modal src="partials/admin_menu_list/_modal_delete.g7.html"/>
   <!-- 메뉴 역할 일괄 적용 확인 창 — 오른쪽 일괄 판의 「적용」 이 연다. 부모·자식이 자동으로 함께 처리되는 수를 미리 알린다. -->
   <modal src="partials/admin_menu_list/_modal_bulk_roles_confirm.g7.html"/>
+  <!-- 편집·등록 중 다른 메뉴를 고를 때의 이탈 확인 창 — 왼쪽 목록의 선택이 연다(다른 화면으로 떠날 때는 meta.leave_guard 가 묻는다). -->
+  <modal src="partials/admin_menu_list/_modal_editing_confirm.g7.html"/>
 </layout>

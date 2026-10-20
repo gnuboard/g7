@@ -98,6 +98,27 @@ interface CategoryRepositoryInterface
     public function findBySlug(string $slug, array $with = [], bool $withCounts = false): ?Category;
 
     /**
+     * 공개 화면용으로 slug 카테고리를 조회합니다 (활성 여부는 호출자가 판정).
+     *
+     * 활성 자식(정렬순)과 이미지를 함께 싣는다. 상품 수는 공개 상품 목록과 같은 기준(전시 상품)으로 자신·활성 자식 모두
+     * 세고, 자식 수(children_count)는 연결된 자식 전부를 센다(7.1.0 과 같다).
+     *
+     * @param  string  $slug  카테고리 slug
+     * @return Category|null 카테고리 모델 (없으면 null)
+     */
+    public function findPublicBySlug(string $slug): ?Category;
+
+    /**
+     * 카테고리 트리를 조회합니다 — 모델의 캐시된 트리({@see Category::getTree()})를 그대로 돌려준다.
+     *
+     * @param  int|null  $parentId  부모 ID (null 이면 루트부터)
+     * @param  bool  $onlyActive  활성 카테고리만 포함할지 여부
+     * @param  bool  $visibleProductsOnly  상품 수에 전시 상품만 셀지 여부 (공개 응답용)
+     * @return Collection 트리 구조 카테고리 컬렉션
+     */
+    public function getTree(?int $parentId = null, bool $onlyActive = false, bool $visibleProductsOnly = false): Collection;
+
+    /**
      * ID 목록으로 카테고리를 조회하고 ID 키 맵으로 반환합니다.
      *
      * 재정렬처럼 여러 항목을 한꺼번에 다루는 경로에서 항목마다 조회하지 않도록 합니다.

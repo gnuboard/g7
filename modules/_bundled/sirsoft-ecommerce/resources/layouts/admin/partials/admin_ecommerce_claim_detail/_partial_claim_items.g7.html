@@ -13,50 +13,50 @@
             <responsive on="portable" class="w-14 h-14 text-xl"/>
             <!-- 색은 상태 뱃지와 같은 variant 팔레트 — 지나간 칸은 그 상태 색으로 채우고, 현재 칸은 옅은 바탕에 테두리·그림자, 남은 칸은 회색, 이탈(보류·반려·철회)은 빨강. -->
             <div>
-              <class-map base="flex items-center justify-center w-full h-full rounded-full border-2" key="{{step.state + ':' + (step.variant ?? 'secondary')}}" default="border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500">
-                <variant when="done:success">border-transparent bg-green-600 text-white dark:bg-green-500</variant>
+              <class-map base="flex items-center justify-center w-full h-full rounded-full border-2" key="{{step.state + ':' + (step.variant ?? 'secondary')}}" default="border-gray-300 bg-white text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                <variant when="done:success">border-transparent bg-green-700 text-white dark:bg-green-700</variant>
                 <variant when="current:success">border-green-600 bg-green-100 text-green-800 shadow-md dark:bg-green-900/30 dark:text-green-400</variant>
-                <variant when="off_path:success">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
-                <variant when="done:warning">border-transparent bg-yellow-600 text-white dark:bg-yellow-500</variant>
+                <variant when="off_path:success">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
+                <variant when="done:warning">border-transparent bg-yellow-700 text-white dark:bg-yellow-700</variant>
                 <variant when="current:warning">border-yellow-600 bg-yellow-100 text-yellow-800 shadow-md dark:bg-yellow-900/30 dark:text-yellow-400</variant>
-                <variant when="off_path:warning">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
-                <variant when="done:info">border-transparent bg-blue-600 text-white dark:bg-blue-500</variant>
+                <variant when="off_path:warning">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
+                <variant when="done:info">border-transparent bg-blue-600 text-white dark:bg-blue-600</variant>
                 <variant when="current:info">border-blue-600 bg-blue-100 text-blue-800 shadow-md dark:bg-blue-900/30 dark:text-blue-400</variant>
-                <variant when="off_path:info">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="off_path:info">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="done:primary">border-transparent bg-indigo-600 text-white dark:bg-indigo-500</variant>
-                <variant when="current:primary">border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-400</variant>
-                <variant when="off_path:primary">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="current:primary">border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-300</variant>
+                <variant when="off_path:primary">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="done:secondary">border-transparent bg-gray-600 text-white dark:bg-gray-500</variant>
                 <variant when="current:secondary">border-gray-600 bg-gray-100 text-gray-700 shadow-md dark:bg-gray-700 dark:text-gray-300</variant>
-                <variant when="off_path:secondary">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
-                <variant when="done:danger">border-transparent bg-red-600 text-white dark:bg-red-500</variant>
+                <variant when="off_path:secondary">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
+                <variant when="done:danger">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="current:danger">border-red-500 bg-red-100 text-red-800 shadow-md dark:bg-red-900/30 dark:text-red-400</variant>
-                <variant when="off_path:danger">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="off_path:danger">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
                 <variant when="done:dark">border-transparent bg-slate-600 text-white dark:bg-slate-500</variant>
                 <variant when="current:dark">border-slate-600 bg-slate-200 text-slate-800 shadow-md dark:bg-slate-800 dark:text-slate-200</variant>
-                <variant when="off_path:dark">border-transparent bg-red-500 text-white dark:bg-red-600</variant>
+                <variant when="off_path:dark">border-transparent bg-red-600 text-white dark:bg-red-600</variant>
               </class-map>
               <icon name="{{step.icon ?? 'circle'}}"/>
             </div>
           </div>
           <!-- 라벨은 칸 폭 안에서 띄어쓰기 기준으로 줄바꿈한다 — nowrap 이면 언어에 따라 칸 폭이 달라진다. -->
           <span>
-            <class-map base="w-full text-xs text-center break-words leading-tight" key="{{step.state}}" default="text-gray-400 dark:text-gray-500">
+            <class-map base="w-full text-xs text-center break-words leading-tight" key="{{step.state}}" default="text-gray-500 dark:text-gray-400">
               <variant when="done">text-gray-700 dark:text-gray-300</variant>
               <variant when="current">font-bold text-gray-900 dark:text-gray-100</variant>
-              <variant when="upcoming">text-gray-400 dark:text-gray-500</variant>
+              <variant when="upcoming">text-gray-500 dark:text-gray-400</variant>
               <variant when="off_path">font-bold text-red-600 dark:text-red-400</variant>
             </class-map>
             {{step.label ?? ''}}
           </span>
           <!-- 칸 사이 꺾쇠 (PC) — 마지막 칸에는 없다. 칸이 10개 이상이면 PC 도 한 줄 6칸으로 줄바꿈하므로(원 64px 가 들어갈 폭이 안 나온다) 그때는 줄 끝(6n번째)에도 세우지 않는다. 칸 오른쪽 경계에서 그리드 간격의 절반(-mr-1 = 4px)만큼 밀고 자기 폭의 절반을 되돌려(translate-x-1/2) 두 원 사이 정중앙에 세운다 — 칸 폭이 몇이든 양쪽 원과의 거리가 같다. 세로는 원 높이(h-16)의 flex 중앙. 숨김은 래퍼 Div 가 맡는다: Icon 에 직접 `hidden` 을 주면 Font Awesome 의 `display` 규칙(레이어 밖)이 Tailwind 유틸리티(레이어 안)를 이겨 숨겨지지 않는다. -->
-          <div data-if="{{stepIdx < (claim?.data?.progress_steps ?? []).length - 1 &amp;&amp; ((claim?.data?.progress_steps ?? []).length <= 9 || stepIdx % 6 !== 5)}}" class="absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-300 dark:text-gray-600" data-step-chevron="pc">
+          <div data-if="{{stepIdx < (claim?.data?.progress_steps ?? []).length - 1 &amp;&amp; ((claim?.data?.progress_steps ?? []).length <= 9 || stepIdx % 6 !== 5)}}" class="absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-500 dark:text-gray-500" data-step-chevron="pc">
             <responsive on="portable" class="hidden" data-step-chevron="pc"/>
             <icon name="chevron-right"/>
           </div>
           <!-- 칸 사이 꺾쇠 (모바일) — 한 줄 4칸이라 줄 끝(4n번째) 칸에는 세우지 않는다. -->
           <div data-if="{{stepIdx < (claim?.data?.progress_steps ?? []).length - 1 &amp;&amp; stepIdx % 4 !== 3}}" class="hidden" data-step-chevron="mobile">
-            <responsive on="portable" class="absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600" data-step-chevron="mobile"/>
+            <responsive on="portable" class="absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-500 dark:text-gray-500" data-step-chevron="mobile"/>
             <icon name="chevron-right"/>
           </div>
         </div>
@@ -102,11 +102,11 @@
           </on>
         </input>
         <!-- 고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 선택지는 심사(결제 요청·승인·보류·반려)뿐이고 눌러도 거절될 값은 서버가 애초에 싣지 않는다 — 회수·발송 단계는 상품 칸, 완료는 아래 [완료 처리] 가 입구다. 반려는 사유가 비면 보내지 않는다. -->
-        <button data-ref="cts_003_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}">
+        <button data-ref="cts_003_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.executeClaimStatusTransition" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" status="{{_local.claimBulkStatus ?? ''}}" rejectReason="{{_local.claimRejectReason ?? ''}}">
               <fail>
-                <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다. -->
+                <!-- 실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 실측에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다. -->
                 <suppress/>
               </fail>
             </action>
@@ -131,7 +131,7 @@
             </on>
           </select>
           <!-- 교집합이 0건이면 셀렉트를 감추고 이유를 적는다 — 빈 셀렉트만 두면 운영자는 화면이 덜 그려진 줄 안다. -->
-          <span data-ref="ci_003_no_common_transition" data-if="{{(_local.selectedClaimItems ?? []).length > 0 &amp;&amp; (_local.itemTransitionOptions ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">$t:sirsoft-ecommerce.admin.claim.detail.items.no_common_transition</span>
+          <span data-ref="ci_003_no_common_transition" data-if="{{(_local.selectedClaimItems ?? []).length > 0 &amp;&amp; (_local.itemTransitionOptions ?? []).length === 0}}" class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">$t:sirsoft-ecommerce.admin.claim.detail.items.no_common_transition</span>
         </div>
         <!-- 반려 사유 (#599 후속 운영 결정). 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데, 사유 없이 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 반려를 고른 순간에만 연다(위 신청서 칸과 같은 규칙). -->
         <input data-ref="ci_005_reject_reason" data-if="{{(_local.itemBulkStatus ?? '') === 'rejected'}}" type="text" name="itemRejectReason" class="flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder" value="{{_local.itemRejectReason ?? ''}}">
@@ -175,8 +175,8 @@
           <icon data-if="{{_local.claimItemsUpdateKind === 'tracking'}}" name="spinner" class="spinner-sm mr-1"/>
           <span>$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only</span>
         </button>
-        <button data-ref="ci_004_item_bulk_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}">
-          <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
+        <button data-ref="ci_004_item_bulk_apply" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}">
+          <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"/>
           <on type="click">
             <!-- 수량 확인 모달을 연다 (§4-6) — 수량 입력을 이 바에 두면 행이 여럿일 때 수량이 하나뿐이라 '3 중 2, 5 중 1' 을 표현할 수 없다. 완료 전이는 그 모달을 건너뛰고 완료 처리 모달로 간다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다. -->
             <action handler="sirsoft-ecommerce.openClaimItemQuantityConfirm" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" requesterName="{{claim?.data?.claim?.requester_name ?? ''}}" itemIds="{{_local.selectedClaimItems ?? []}}" status="{{_local.itemBulkStatus ?? ''}}" rejectReason="{{_local.itemRejectReason ?? ''}}" carrierId="{{_local.itemCarrierId ?? ''}}" trackingNumber="{{_local.itemTrackingNumber ?? ''}}" carriers="{{claim?.data?.carriers ?? []}}" rows="{{claim?.data?.claim?.items ?? []}}" completeDefaults="{{claim?.data?.complete_defaults ?? {} }}">
@@ -200,7 +200,7 @@
             <div class="flex items-start gap-3">
               <img data-if="{{!!row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.product_name ?? ''}}" class="w-12 h-12 rounded object-cover border border-gray-200 dark:border-gray-700"/>
               <div data-if="{{!row.thumbnail_url}}" class="w-12 h-12 rounded flex-shrink-0 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                <icon name="image" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="image" class="text-gray-500 dark:text-gray-400"/>
               </div>
               <div class="min-w-0">
                 <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{row.product_name ?? '-'}}</div>
@@ -237,14 +237,14 @@
                 <span class="text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.collection_short</span>
                 <span data-if="{{!!row.collection_tracking_number}}" class="text-gray-900 dark:text-gray-100">{{(row.collection_carrier_name ?? '') + ' ' + row.collection_tracking_number}}</span>
                 <a data-if="{{!!row.collection_tracking_url}}" href="{{row.collection_tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">$t:defer:sirsoft-ecommerce.admin.claim.detail.shipping.track</a>
-                <span data-if="{{!row.collection_tracking_number}}" class="text-gray-400 dark:text-gray-500">-</span>
+                <span data-if="{{!row.collection_tracking_number}}" class="text-gray-500 dark:text-gray-400">-</span>
                 <span data-if="{{!!row.collected_at_formatted}}" class="text-green-700 dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.arrived_at|at={{row.collected_at_formatted}}</span>
               </div>
               <div data-if="{{row.redelivery_tracking_number !== undefined}}" class="flex-center gap-1 flex-wrap">
                 <span class="text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.redelivery_short</span>
                 <span data-if="{{!!row.redelivery_tracking_number}}" class="text-gray-900 dark:text-gray-100">{{(row.redelivery_carrier_name ?? '') + ' ' + row.redelivery_tracking_number}}</span>
                 <a data-if="{{!!row.redelivery_tracking_url}}" href="{{row.redelivery_tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">$t:defer:sirsoft-ecommerce.admin.claim.detail.shipping.track</a>
-                <span data-if="{{!row.redelivery_tracking_number}}" class="text-gray-400 dark:text-gray-500">-</span>
+                <span data-if="{{!row.redelivery_tracking_number}}" class="text-gray-500 dark:text-gray-400">-</span>
                 <span data-if="{{!!row.redelivered_at_formatted}}" class="text-green-700 dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.claim.detail.items.arrived_at|at={{row.redelivered_at_formatted}}</span>
               </div>
               <badge data-type="composite" data-if="{{claim?.data?.claim?.is_advance_exchange === true &amp;&amp; !!row.collection_state_label}}" variant="{{row.collection_state_variant ?? 'secondary'}}" size="sm">{{row.collection_state_label}}</badge>
@@ -306,7 +306,7 @@
             </on>
             $t:sirsoft-ecommerce.admin.claim.detail.completion.restore_stock
           </button>
-        <button data-ref="cmpl_002_button" data-if="{{claim?.data?.claim?.is_final !== true}}" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || ((claim?.data?.completable_item_count ?? 0) === 0 &amp;&amp; (claim?.data?.unreturned_eligible_count ?? 0) === 0)}}">
+        <button data-ref="cmpl_002_button" data-if="{{claim?.data?.claim?.is_final !== true}}" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{claim?.data?.abilities?.can_update_status !== true || ((claim?.data?.completable_item_count ?? 0) === 0 &amp;&amp; (claim?.data?.unreturned_eligible_count ?? 0) === 0)}}">
           <on type="click">
             <!-- 목록·상품 단위와 같은 모달 파일을 연다 (D26). 신청서 단위 진입점이므로 `item_ids` 를 싣지 않는다 — 생략하면 서버가 그 신청서의 완료 가능 상품 전체를 대상으로 본다. 초기 선택값은 상세 응답(`complete_defaults`)이 나른다: 설정 엔드포인트는 `settings.read` 게이트라 클레임 권한만 가진 운영자에게는 403 이 되고, 상점이 꺼 둔 기본값이 조용히 계약 기본값으로 되돌아간다. -->
             <action handler="sirsoft-ecommerce.openClaimDetailComplete" pathSegment="{{claim?.data?.claim_path_segment ?? ''}}" claimType="{{claim?.data?.claim?.claim_type ?? ''}}" claimId="{{claim?.data?.claim?.id ?? null}}" claimNumber="{{claim?.data?.claim?.claim_number ?? ''}}" requesterName="{{claim?.data?.claim?.requester_name ?? ''}}" rows="{{claim?.data?.claim?.items ?? []}}" completeDefaults="{{claim?.data?.complete_defaults ?? {} }}"/>

@@ -27,7 +27,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "text-6xl font-bold text-gray-200 dark:text-gray-700 mb-4"
+                                    "className": "text-6xl font-bold text-gray-500 dark:text-gray-500 mb-4"
                                 },
                                 "text": "500"
                             },
@@ -58,7 +58,7 @@
                                 ],
                                 "props": {
                                     "href": "/",
-                                    "className": "inline-flex items-center justify-center px-5 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 cursor-pointer"
+                                    "className": "inline-flex items-center justify-center px-5 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 cursor-pointer"
                                 },
                                 "text": "$t:error.back_to_home"
                             }

@@ -7,7 +7,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
 /**
  * 사용자 메모 목록 화면의 마크업 테스트.
  *
- * 7.1.0 전수 실측 M3(sirsoft-basic `/memos`, 1440px): 제목이 관리자 템플릿 전용 의미 클래스
+ * 7.1.0 전수 실측(sirsoft-basic `/memos`, 1440px): 제목이 관리자 템플릿 전용 의미 클래스
  * (`text-page-heading`, `section-heading`)를 써서 사용자 템플릿에서는 정의가 없어 쪽 제목 16px,
  * 메모 제목 굵기 400 으로 나왔다(#408 치환이 사용자 화면까지 바꿨다. 0.1.0 은 `text-2xl font-bold`,
  * `text-lg font-semibold`). 또 반복(`data-each`)이 `space-y-3` 묶음 쪽에 붙어 메모마다 묶음이 새로 생겨

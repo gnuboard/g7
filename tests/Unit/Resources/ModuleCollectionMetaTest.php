@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Tests\TestCase;
 
 /**
- * 모듈 목록 응답 메타의 활성 모듈 수 (7.1.0 전수 실측 #736 O-F2).
+ * 모듈 목록 응답 메타의 활성 모듈 수 (7.1.0 전수 실측, #736).
  *
  * 목록 행은 매니저가 만든 배열이고 활성 여부는 `status` 로 온다. 메타는 행에 없는 `is_active` 로 세어,
  * 활성 모듈이 3개인데도 `meta.active_modules` 가 늘 0 으로 나갔다. 플러그인 목록(`active_plugins`)처럼 상태로 센다.

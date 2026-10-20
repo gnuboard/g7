@@ -4,6 +4,7 @@
     "layout_name": "admin_ecommerce_product_form",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}",
         "description": "{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"
     },
@@ -32,6 +33,31 @@
                     "params": {
                         "target": "content"
                     }
+                },
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "errorCondition": {
@@ -85,6 +111,33 @@
                 "_merge": "replace",
                 "form": "{{data}}"
             },
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "복사 진입 전용 엔드포인트다 — 원본을 그대로 주는 것이 아니라 어느 구획을 가져올지(`copy_*`)를 서버가 받아 골라 담아 준다. 어떤 항목을 복사할지는 복사 창에서 정해 쿼리로 넘어온다(SEO 만 기본 제외 — 검색엔진에 같은 내용이 둘로 잡히기 때문)"
         },
         {
@@ -111,10 +164,29 @@
                     "handler": "suppress"
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "분류 선택 트리. 아래 선택지 소스들은 상품마다 달라지지 않아 5분간 캐시해 두고 재진입에서 다시 부르지 않는다"
@@ -147,10 +219,29 @@
                     "handler": "suppress"
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "브랜드 선택지 — 사용 중인 것만 받는다"
@@ -183,10 +274,29 @@
                     "handler": "suppress"
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "상품정보제공고시 템플릿 — 고시 구획에서 불러 쓴다. 쪽 나눔 없이 전량 받는 것은 고를 때 검색이 아니라 목록으로 훑기 때문이다"
@@ -219,10 +329,29 @@
                     "handler": "suppress"
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "공통정보 선택지 — 여러 상품이 함께 쓰는 안내문을 골라 붙인다"
@@ -255,10 +384,29 @@
                     "handler": "suppress"
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "배송정책 선택지. 신규 진입에서 기본 정책을 미리 골라 두어야 해 blocking 이다. 사용 중인 것만 받으므로, 이미 붙어 있던 정책이 나중에 꺼지면 목록에서 사라진다 — 아래 computed 가 그 한 건을 도로 끼워 넣어 화면에서 조용히 빠지는 것을 막는다"
@@ -287,10 +435,29 @@
                     "handler": "suppress"
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "상품 라벨(신상품·베스트 등) 선택지 — 이 폼 안에서 만들고 지울 수도 있어 라벨 창이 바뀌면 다시 받는다"
@@ -319,10 +486,29 @@
                     "handler": "suppress"
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "열람 가능 등급 선택지 — 특정 회원 등급에게만 보이는 상품을 만들 때 쓴다. 코어가 가진 목록이라 갱신이 드물어 10분 캐시다"
@@ -495,6 +681,7 @@
                 "type": "basic",
                 "name": "Div",
                 "dataKey": "form",
+                "trackChanges": true,
                 "debounce": 300,
                 "props": {
                     "className": "admin-page-content"
@@ -882,7 +1069,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "image",
-                                                                    "className": "text-2xl text-gray-400 dark:text-gray-500"
+                                                                    "className": "text-2xl text-gray-500 dark:text-gray-400"
                                                                 }
                                                             }
                                                         ]
@@ -1176,6 +1363,7 @@
                                                                 "handler": "navigate",
                                                                 "if": "{{!route.itemCode}}",
                                                                 "params": {
+                                                                    "bypassLeaveGuard": true,
                                                                     "path": "{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}",
                                                                     "mergeQuery": true,
                                                                     "query": {}

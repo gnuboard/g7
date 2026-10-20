@@ -1,0 +1,34 @@
+feature: GDPR 마이페이지 동의 관리 카드 — 주입 · 고지 메타 · 동의 행 · 철회/동의 창 · 정책 갱신 안내
+
+description: |
+  마이페이지 프로필에 주입되는 GDPR 동의 관리 카드(extensions/mypage_privacy_tab.json)의 화면 계약.
+  카드는 mypage/profile 의 profile_view_bio_card 에 붙고, 회원에게 동의 데이터가 있을 때만 보인다. 운영 주체·저장 위치
+  고지는 헤더 다음 줄에 값 유무에 따른 자연어 한 줄로 보인다. 동의 행은 라벨·설명·상태 배지·날짜 줄을 보이고,
+  철회·동의는 확인 창을 거쳐 서버에 보낸 뒤 목록을 다시 받고 코어 동의 런타임을 갱신한다. 정책이 바뀌면 카드 안
+  amber 안내가 「전체 항목 다시 동의」를 제공한다. 제거된 요청 내역·토글 스위치·항목별 갱신 분기는 되살아나지 않는다.
+
+# axis 의미:
+#   area — 카드 영역. card_setup 은 주입 위치·데이터소스·노출 조건, operator_meta 는 운영 주체·저장 위치 고지,
+#          modals 는 창 등록, consents_section 은 동의 현황 섹션, revoke_modal 은 철회 확인 창,
+#          consent_rows 는 행별 상태 표시, renewal_banner 는 정책 갱신 안내.
+axes:
+  area: [card_setup, operator_meta, modals, consents_section, revoke_modal, consent_rows, renewal_banner]
+
+effects:
+  - mypage_card_injected_into_profile                  # mypage/profile 의 profile_view_bio_card 에 append 로 주입되고 우선순위가 정해져 있다
+  - mypage_card_data_sources_declared                  # 필요한 데이터소스만 두고(공개 설정은 게스트 응답 가능) 제거된 데이터소스는 없다
+  - mypage_card_shown_only_with_consent_data           # 회원에게 동의 데이터가 있을 때만 카드를 보인다
+  - mypage_card_operator_meta_line                     # 운영 주체·저장 위치 고지를 헤더 다음 줄에 값 유무별 자연어 한 줄로 보인다
+  - mypage_card_confirm_modals_registered              # 철회·동의 확인 창이 등록되고 제거된 요청 창은 없다
+  - mypage_consents_section_rows_labelled              # 동의 현황 섹션이 있고 행은 라벨(키 대체)·설명을 보이며 제거된 요청 섹션은 없다
+  - mypage_revoke_opens_confirm_with_target            # 철회 버튼은 대상 키·라벨·설명·날짜를 _global 에 담고 철회 확인 창을 연다
+  - mypage_revoke_modal_confirms_and_posts             # 철회 창은 설명·마지막 동의일을 보이고 확인 시 철회 요청 뒤 목록 재수신·창 닫기·코어 갱신, 진행 중 표시를 한다
+  - mypage_consent_row_badge_on_label_line             # 상태 배지는 라벨 줄에, 날짜 줄은 날짜 다음 상태 라벨 순서다
+  - mypage_removed_toggle_ui_not_revived               # 켜짐/꺼짐 스위치·항목별 갱신 분기·거부 라벨이 되살아나지 않는다
+  - mypage_consent_changes_refresh_runtime             # 동의·철회 성공 시 목록을 다시 받고 코어 refreshConsent 를 부른다
+  - mypage_renewal_banner_renews_all                   # 정책 갱신이 필요할 때만 amber 안내가 보이고 「전체 항목 다시 동의」가 renew-all 을 부른다
+  - mypage_status_date_line_per_row                    # 날짜는 표 헤더 열이 아니라 각 행의 상태 줄로 보인다
+  - mypage_status_date_line_revoked_color_distinction  # 동의·철회 날짜 줄을 서로 다른 색(초록·빨강)으로 구분한다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/mypage_privacy_tab.test.tsx

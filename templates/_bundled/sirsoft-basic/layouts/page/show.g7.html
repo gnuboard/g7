@@ -27,7 +27,7 @@
         <div data-ref="page_content_card" data-if="{{page?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10">
           <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow p-5"/>
           <div data-ref="page_preview_banner" data-if="{{page?.data?.is_preview}}" class="flex items-center gap-2 mb-4 px-4 py-3 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-sm">
-            <icon name="eye" class="text-amber-600 dark:text-amber-400 text-sm"/>
+            <icon name="eye" class="text-amber-700 dark:text-amber-400 text-sm"/>
             <span>$t:user.page.preview_banner</span>
           </div>
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
@@ -40,7 +40,7 @@
               </h1>
               <span data-if="{{page?.data?.abilities?.can_update === true}}" class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">v{{page?.data?.current_version ?? 1}}</span>
             </div>
-            <a data-ref="page_admin_edit_button" data-if="{{page?.data?.abilities?.can_update === true}}" href="/admin/pages/{{page?.data?.id}}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+            <a data-ref="page_admin_edit_button" data-if="{{page?.data?.abilities?.can_update === true}}" href="/admin/pages/{{page?.data?.id}}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
               <icon name="pencil" class="text-xs"/>
               <span>$t:user.page.admin_edit</span>
             </a>
@@ -67,7 +67,7 @@
                     <img src="{{att_item.preview_url}}" alt="{{att_item.original_filename}}" class="w-full h-full object-cover"/>
                   </div>
                   <!-- 파일 아이콘 (일반 파일인 경우) -->
-                  <icon data-if="{{!att_item.is_image}}" name="file" class="text-gray-400 dark:text-gray-500 text-sm flex-shrink-0"/>
+                  <icon data-if="{{!att_item.is_image}}" name="file" class="text-gray-500 dark:text-gray-400 text-sm flex-shrink-0"/>
                   <span class="text-sm text-gray-900 dark:text-white truncate">{{att_item.original_filename}}</span>
                 </div>
                 <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 bg-transparent border-0 cursor-pointer">
@@ -82,8 +82,8 @@
             </div>
           </div>
         </div>
-        <div data-ref="page_not_found" data-if="{{!page?.data &amp;&amp; !page?.loading}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10 text-center">
-          <icon name="circle-exclamation" class="text-4xl text-gray-400 dark:text-gray-500 mb-4"/>
+        <div data-ref="page_not_found" data-if="{{!page?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-10 text-center">
+          <icon name="circle-exclamation" class="text-4xl text-gray-500 dark:text-gray-500 mb-4"/>
           <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">$t:user.page.not_found_title</h2>
           <p class="text-gray-500 dark:text-gray-400 mb-6">$t:user.page.not_found_description</p>
           <div class="flex items-center justify-center gap-3">
@@ -94,7 +94,7 @@
               <icon name="house" class="text-sm"/>
               <span>$t:user.page.back_to_home</span>
             </a>
-            <a data-ref="page_create_button" data-if="{{_local.pageCanCreate === true}}" href="/admin/pages/create?slug={{route?.slug ?? ''}}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline">
+            <a data-ref="page_create_button" data-if="{{_local.pageCanCreate === true}}" href="/admin/pages/create?slug={{route?.slug ?? ''}}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors no-underline">
               <icon name="plus" class="text-sm"/>
               <span>$t:user.page.create_page</span>
             </a>

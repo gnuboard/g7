@@ -129,7 +129,7 @@
   <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
     <on type="keydown" key="Escape">
       <!-- 모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.
-           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 N O-N6. -->
+           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 실측. -->
       <conditions>
         <when if="{{_global.mobileMenuOpen}}">
           <set-state target="global" :mobileMenuOpen="false"/>
@@ -165,7 +165,7 @@
         <!-- 다크모드 전환 -->
         <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
         <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
-        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
+        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
           <on event="onClose">
             <!-- 드로어 알림 드롭다운을 닫을 때 그 사이 노출된 알림들을 일괄 읽음 처리한다 — 항목을 누르지 않고 훑어본 것도 읽은 것으로 본다. 배지만 다시 받고 목록은 그대로 둔다. -->
             <sequence>
@@ -258,9 +258,9 @@
           </on>
           <icon name="shopping-cart" size="md"/>
           <!-- 수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝). -->
-          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
+          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-600 dark:bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
         </a>
-        <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다. -->
+        <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다. -->
         <a href="{{_global.currentUser ? '/mypage' : '/login'}}" aria-label="{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="inline-flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <navigate/>
@@ -284,7 +284,7 @@
       <!-- 드로어 헤더 - 닫기 버튼 -->
       <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <span class="font-semibold text-gray-900 dark:text-white">$t:user.menu</span>
-        <button data-ref="mobile_drawer_close_btn" type="button" aria-label="$t:nav.close_menu" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+        <button data-ref="mobile_drawer_close_btn" type="button" aria-label="$t:nav.close_menu" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <on type="click">
             <!-- 드로어 닫기 — 열림 여부는 전역이라 오버레이 클릭·메뉴 이동도 같은 값을 내린다. -->
             <set-state target="global" :mobileMenuOpen="false"/>
@@ -295,7 +295,7 @@
       <!-- 검색바 -->
       <div class="p-4">
         <div class="relative">
-          <icon name="search" size="sm" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"/>
+          <icon name="search" size="sm" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"/>
           <input type="text" name="q" placeholder="$t:user.search_placeholder" class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
             <on type="keydown" key="Enter">
               <!-- 드로어 검색 — 엔터에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다. -->
@@ -322,7 +322,7 @@
             <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
               <!-- 접힘 상태 요약 = 현재 언어명 -->
               <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
-              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
+              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-500 dark:text-gray-500 transition-transform duration-200"/>
             </span>
           </button>
           <!-- 펼침 영역 — 사용자 정보 아코디언과 동일한 max-h/opacity 트랜지션. overflow-hidden 이라 접힘 시 칩이 잘려 사라진다. -->
@@ -345,23 +345,23 @@
       <!-- 로그인된 사용자 정보 - 아코디언 토글. 위 설정 묶음의 구분선과 카드 사이에도 좌우·하단과 같은 여백(p-4)을 둔다. -->
       <div data-if="{{_global.currentUser?.uuid}}" class="p-4 border-b border-gray-200 dark:border-gray-700">
         <!-- 사용자 프로필 버튼 (아코디언 토글) -->
-        <button class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
+        <button type="button" class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
           <on type="click">
             <set-state target="global" mobileUserMenuOpen="{{!_global.mobileUserMenuOpen}}"/>
           </on>
           <avatar data-type="composite" avatar="{{_global.currentUser?.avatar}}" name="{{_global.currentUser?.name ?? '?'}}" size="md"/>
           <div class="flex-1 min-w-0 text-left">
             <div class="font-medium text-gray-900 dark:text-white truncate">{{_global.currentUser?.name}}</div>
-            <div class="text-sm text-gray-500 dark:text-gray-400 truncate">{{_global.currentUser?.email}}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-300 truncate">{{_global.currentUser?.email}}</div>
           </div>
           <!-- 아코디언 화살표 아이콘 -->
-          <icon name="chevron-down" size="md" class="{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
+          <icon name="chevron-down" size="md" class="{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-500 dark:text-gray-300 transition-transform duration-200"/>
         </button>
         <!-- 아코디언 펼침 영역 - 부드러운 애니메이션 -->
         <div class="overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileUserMenuOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}">
           <div class="overflow-hidden min-h-0 py-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
             <!-- 관리자 메뉴 (is_admin일 때만) - 하이퍼링크로 전체 페이지 새로고침 -->
-            <a data-if="{{_global.currentUser?.is_admin}}" href="/admin" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium">
+            <a data-if="{{_global.currentUser?.is_admin}}" href="/admin" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-blue-700 dark:text-blue-200 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium">
               <icon name="settings" size="sm"/>
               <span>$t:common.admin_menu</span>
             </a>
@@ -393,7 +393,7 @@
               <span>$t:mypage.tabs.wishlist</span>
             </a>
             <!-- 로그아웃 버튼 -->
-            <button class="justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
+            <button type="button" class="justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
               <on type="click">
                 <logout>
                   <success>
@@ -462,7 +462,7 @@
               <navigate path="/boards/popular"/>
             </sequence>
           </on>
-          <icon name="flame" size="md" class="text-orange-500"/>
+          <icon name="flame" size="md" class="text-orange-600 dark:text-orange-500"/>
           <span>$t:user.nav.popular</span>
         </a>
       </div>
@@ -479,7 +479,7 @@
               </sequence>
             </on>
             <span class="min-w-0 truncate">{{board.name}}</span>
-            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{board.post_count}}</span>
+            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-600 dark:text-gray-300 shrink-0">{{board.post_count}}</span>
           </a>
         </div>
       </div>
@@ -509,7 +509,7 @@
             <icon name="shopping-cart" size="md"/>
             <span>$t:user.nav.cart</span>
           </div>
-          <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-500 dark:bg-red-500 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
+          <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-600 dark:bg-red-600 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
         </a>
       </div>
       <!-- 메뉴 섹션 - 정보/정책 -->
@@ -585,7 +585,7 @@
       </div>
     </div>
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
-    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->

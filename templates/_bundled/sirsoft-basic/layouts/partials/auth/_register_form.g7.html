@@ -27,26 +27,26 @@
     </div>
     <!-- API 에러 메시지 표시 — 전체 응답 message + form field 외 errors (identity/verification_token 등 plugin 기여 에러) -->
     <div data-if="{{_local?.registerError}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-      <p class="text-sm font-medium text-red-600 dark:text-red-400">{{_local.registerError}}</p>
+      <p class="text-sm font-medium text-red-700 dark:text-red-400">{{_local.registerError}}</p>
       <!-- 비-form-field 에러 메시지 (identity / verification_token 등 plugin 기여 에러)를 추가 안내 -->
       <ul data-if="{{_local.errors &amp;&amp; Object.keys(_local.errors).filter(function(k) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(k) === -1; }).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).filter(function(entry) { return ['email','password','password_confirmation','name','nickname','mobile','phone','language','agree_terms','agree_privacy'].indexOf(entry[0]) === -1; }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })" class="mt-2 list-disc list-inside space-y-1">
-        <li class="text-sm text-red-600 dark:text-red-400">{{message}}</li>
+        <li class="text-sm text-red-700 dark:text-red-400">{{message}}</li>
       </ul>
     </div>
     <!-- 이메일 필드 -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:auth.email</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <input aria-label="$t:auth.email" type="email" name="email" placeholder="$t:auth.email_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}"/>
-      <span data-if="{{_local.errors?.email}}" class="text-red-500 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.email}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
     </div>
     <!-- 비밀번호 필드 -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:auth.password</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <!-- 규칙·자리표시 숫자는 보안 환경설정 값을 따른다(#736) — 8 을 박아 두면 운영자가 최소 길이를 올려도 화면이 옛 규칙을 안내한다. -->
       <password-input aria-label="$t:auth.password" name="password" placeholder="$t:auth.register.password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}" :showToggle="true" :showValidation="true" enableRules="{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}" error="{{_local.errors?.password?.[0] ?? ''}}"/>
@@ -62,7 +62,7 @@
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:auth.password_confirm</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <password-input aria-label="$t:auth.password_confirm" name="password_confirmation" placeholder="$t:auth.password_confirm_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}" :showToggle="true" :isConfirmField="true" confirmTarget="{{_local.registerForm?.password ?? ''}}" error="{{_local.errors?.password_confirmation?.[0] ?? ''}}"/>
     </div>
@@ -70,28 +70,28 @@
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:auth.name</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <input aria-label="$t:auth.name" type="text" name="name" placeholder="$t:auth.name_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :required="true" disabled="{{_local?.isRegistering}}"/>
-      <span data-if="{{_local.errors?.name}}" class="text-red-500 text-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.name}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
     </div>
     <!-- 닉네임 필드 (선택) -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.nickname</label>
       <input aria-label="$t:auth.nickname" type="text" name="nickname" placeholder="$t:auth.nickname_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
-      <span data-if="{{_local.errors?.nickname}}" class="text-red-500 text-xs mt-1">{{_local.errors?.nickname?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.nickname}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.nickname?.[0] ?? ''}}</span>
     </div>
     <!-- 휴대폰번호 필드 (선택) -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.mobile</label>
       <input aria-label="$t:auth.mobile" type="tel" name="mobile" placeholder="$t:auth.mobile_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
-      <span data-if="{{_local.errors?.mobile}}" class="text-red-500 text-xs mt-1">{{_local.errors?.mobile?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.mobile}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.mobile?.[0] ?? ''}}</span>
     </div>
     <!-- 전화번호 필드 (선택) -->
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:auth.phone</label>
       <input aria-label="$t:auth.phone" type="tel" name="phone" placeholder="$t:auth.phone_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled="{{_local?.isRegistering}}"/>
-      <span data-if="{{_local.errors?.phone}}" class="text-red-500 text-xs mt-1">{{_local.errors?.phone?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.phone}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.phone?.[0] ?? ''}}</span>
     </div>
     <!-- 언어 설정 필드 -->
     <div>
@@ -101,7 +101,7 @@
     <!-- 확장 주입 앵커 — 모듈이 layout_extensions 로 가입폼 추가 필드(결제 통화 등)를 주입한다. 미설치 시 빈 슬롯(렌더 영향 없음). -->
     <div data-ref="register_extension_fields"/>
     <!-- 약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면
-         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 N O-N6). -->
+         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 실측). -->
     <div class="space-y-2 pt-2">
       <div>
         <div class="flex items-center gap-2">
@@ -126,7 +126,7 @@
             <span> $t:auth.agree_required</span>
           </div>
         </div>
-        <span data-if="{{_local.errors?.agree_terms}}" class="text-red-500 text-xs mt-1 ml-6">{{_local.errors?.agree_terms?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.agree_terms}}" class="text-red-600 dark:text-red-400 text-xs mt-1 ml-6">{{_local.errors?.agree_terms?.[0] ?? ''}}</span>
       </div>
       <div data-ref="register_privacy_agreement">
         <div class="flex items-center gap-2">
@@ -150,7 +150,7 @@
             <span> $t:auth.agree_required</span>
           </div>
         </div>
-        <span data-if="{{_local.errors?.agree_privacy}}" class="text-red-500 text-xs mt-1 ml-6">{{_local.errors?.agree_privacy?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.agree_privacy}}" class="text-red-600 dark:text-red-400 text-xs mt-1 ml-6">{{_local.errors?.agree_privacy?.[0] ?? ''}}</span>
       </div>
     </div>
     <button type="submit" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local?.isRegistering}}">

@@ -364,7 +364,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{(_local.form?.shipping?.carriers ?? []).length === 0 && !_local.isAddingCarrier}}",
+            "if": "{{settings !== undefined && ((_local.form?.shipping?.carriers ?? []).length === 0 && !_local.isAddingCarrier)}}",
             "props": {
                 "className": "p-8 text-center text-gray-500 dark:text-gray-400"
             },
@@ -499,7 +499,7 @@
                                                 "if": "{{!_computed.isReadOnly}}",
                                                 "props": {
                                                     "data-drag-handle": true,
-                                                    "className": "cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                                    "className": "cursor-grab text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                                                 },
                                                 "children": [
                                                     {
@@ -728,7 +728,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                    "className": "p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                     "title": "$t:common.delete",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 },

@@ -16,7 +16,7 @@
         <div data-ref="field_identity_ttl" class="">
           <label class="form-label">
             <span>$t:admin.settings.identity.basic.challenge_ttl_minutes</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <input type="number" name="identity.challenge_ttl_minutes" placeholder="15" min="{{_local?.form?._meta?.limits?.identity_challenge_ttl_minutes_min ?? 1}}" max="{{_local?.form?._meta?.limits?.identity_challenge_ttl_minutes_max ?? 1440}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.challenge_ttl_minutes'] ? 'input-error md:w-48' : 'md:w-48'}}"/>
           <span data-if="{{_local.errors?.['identity.challenge_ttl_minutes']}}" class="form-error">{{_local.errors?.['identity.challenge_ttl_minutes']?.[0] ?? ''}}</span>
@@ -25,7 +25,7 @@
         <div data-ref="field_identity_max_attempts" class="">
           <label class="form-label">
             <span>$t:admin.settings.identity.basic.max_attempts</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <input type="number" name="identity.max_attempts" placeholder="5" min="{{_local?.form?._meta?.limits?.identity_max_attempts_min ?? 1}}" max="{{_local?.form?._meta?.limits?.identity_max_attempts_max ?? 20}}" disabled="{{_computed.isReadOnly}}" class="{{_local.errors?.['identity.max_attempts'] ? 'input-error md:w-48' : 'md:w-48'}}"/>
           <span data-if="{{_local.errors?.['identity.max_attempts']}}" class="form-error">{{_local.errors?.['identity.max_attempts']?.[0] ?? ''}}</span>

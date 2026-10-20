@@ -129,7 +129,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -213,7 +213,7 @@
                                                 "item_var": "mc"
                                             },
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                             },
                                             "text": "{{mc[1]}}"
                                         }
@@ -227,7 +227,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -267,7 +267,7 @@
                                                 "item_var": "mc"
                                             },
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                             },
                                             "text": "{{mc[1]}}"
                                         }
@@ -333,7 +333,7 @@
                                                 "item_var": "mc"
                                             },
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                             },
                                             "text": "{{mc[1]}}"
                                         }
@@ -347,7 +347,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -387,7 +387,7 @@
                                                 "item_var": "mc"
                                             },
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                             },
                                             "text": "{{mc[1]}}"
                                         }
@@ -445,7 +445,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -521,7 +521,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -597,7 +597,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -673,7 +673,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -749,7 +749,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -825,7 +825,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -901,7 +901,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -977,7 +977,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -1053,7 +1053,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -1137,7 +1137,7 @@
                                                 "item_var": "mc"
                                             },
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                             },
                                             "text": "{{mc[1]}}"
                                         }
@@ -1151,7 +1151,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },
@@ -1191,7 +1191,7 @@
                                                 "item_var": "mc"
                                             },
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                             },
                                             "text": "{{mc[1]}}"
                                         }
@@ -1249,7 +1249,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             },

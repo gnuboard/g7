@@ -222,7 +222,7 @@
                                                 "props": {
                                                     "name": "check",
                                                     "size": "lg",
-                                                    "className": "text-green-600 dark:text-green-400"
+                                                    "className": "text-green-700 dark:text-green-400"
                                                 }
                                             }
                                         ]
@@ -431,7 +431,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "font-medium text-red-600 dark:text-red-400"
+                                                            "className": "font-medium text-red-700 dark:text-red-400"
                                                         },
                                                         "text": "{{orderData?.data?.payment?.deposit_due_at_formatted}}"
                                                     }
@@ -599,7 +599,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "font-medium text-red-600 dark:text-red-400"
+                                                            "className": "font-medium text-red-700 dark:text-red-400"
                                                         },
                                                         "text": "{{orderData?.data?.payment?.vbank_due_at_formatted}}"
                                                     }
@@ -786,7 +786,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "image",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
+                                                                            "className": "text-xl text-gray-500 dark:text-gray-400"
                                                                         }
                                                                     }
                                                                 ]
@@ -865,7 +865,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
                                                                                 },
                                                                                 "text": "{{currency[1]?.formatted}} x {{item.quantity}}"
                                                                             }
@@ -877,7 +877,7 @@
                                                                         "name": "P",
                                                                         "if": "{{(item.subtotal_discount_amount ?? 0) > 0}}",
                                                                         "props": {
-                                                                            "className": "text-xs text-red-500 dark:text-red-400"
+                                                                            "className": "text-xs text-red-600 dark:text-red-400"
                                                                         },
                                                                         "text": "-{{item.subtotal_discount_amount_formatted}}"
                                                                     }
@@ -991,7 +991,7 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).\n                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측 S4, 제품 결정 ①).",
+                                                "comment": "배송지 저장 버튼 (로그인 사용자만).\n                 본문 키는 서버 계약(`StoreUserAddressRequest`)을 그대로 따른다 — `name` 필수,\n                 국내는 `address`/`address_detail`, 해외는 `address_line_1`+`intl_*`.\n                 `address1`/`address2` 는 서버에 없는 키라 어떤 주문에서 눌러도 422 였다(#599 세션A 실측).\n                 배송지명은 주문완료 화면에 입력칸이 없어 「배송지」 라벨을 그대로 쓴다 —\n                 같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.\n                 라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만\n                 치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).\n                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측, 제품 결정).",
                                                 "id": "save_shipping_address_button",
                                                 "type": "basic",
                                                 "name": "Button",
@@ -1130,7 +1130,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
+                                                            "className": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                                         },
                                                         "text": "{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}"
                                                     }
@@ -1281,7 +1281,7 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "inline-flex items-center justify-center w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"
+                                                    "className": "inline-flex items-center justify-center w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium"
                                                 }
                                             }
                                         },
@@ -1293,7 +1293,7 @@
                                         ],
                                         "props": {
                                             "href": "/mypage/orders/{{orderData?.data?.order_number}}",
-                                            "className": "inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"
+                                            "className": "inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium"
                                         },
                                         "text": "$t:shop.order_complete.view_order_detail"
                                     },
@@ -1304,7 +1304,7 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"
+                                                    "className": "w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium"
                                                 }
                                             }
                                         },
@@ -1319,7 +1319,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"
+                                            "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium"
                                         },
                                         "text": "$t:shop.order_complete.view_order_detail"
                                     },

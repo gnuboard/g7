@@ -1,29 +1,44 @@
 <!-- 주문서 안에서 배송지를 관리하는 창 — 마이페이지로 나가지 않고 여기서 고르고 더하고 지운다.
-     한 창이 `_local.addressModalMode` 로 «목록»과 «입력 폼» 두 얼굴을 갖고, 제목도 그 값으로 갈린다.
-     폼 모드의 «추가/수정» 판정은 저장 버튼과 같은 SSoT 인 `editingAddress?.id` 를 쓴다 — 목록 헤더의
-     «새 배송지» 버튼이 `editingAddress` 를 `{is_default:false}` 객체로 열기 때문에, 객체 truthy 로
-     갈리면 빈 폼인데 제목이 「배송지 수정」으로 뜬다(#599 세션A 실측). -->
+     창 상태(목록/폼 모드·편집 대상·오류·저장 중·창 안 선택)는 창 고유 전역 이름 공간 `_global.checkoutAddressModal` 에 둔다.
+     modals 섹션 창은 영구 마운트되고, 창 안 `_local` 은 «마지막 전체 렌더 때의 페이지 _local» 위에 «창 자신의 지역 상태»를
+     deep 병합한 값이라(창 쪽이 이긴다) 페이지가 바깥에서 쓴 값이 닿지 않는다 — 수정 폼을 닫기·Esc 로 나간 뒤 다시 열면 수정 폼
+     그대로였고, 「새 배송지」 가 앞 배송지 id 와 합쳐져 PUT 됐다(7.1.1 modal-usage.md 편집 창 표준). 여는 쪽(주문서 「배송지
+     관리」 단추)이 이 이름 공간을 null 로 비운 뒤 통째로 다시 쓴다.
+     한 창이 `mode` 로 «목록»과 «입력 폼» 두 얼굴을 갖고, 제목도 그 값으로 갈린다.
+     입력 폼은 칸마다 value 를 상태에서 읽고 change 로 전역 점 경로에 쓴다 — 폼 자동바인딩(data-key)은 «마지막 렌더 때의 전역 스냅샷»에 이번 칸만 얹어 통째로 쓰므로, 다음 칸 입력이 미뤄진 다시 그리기보다 먼저 오면 앞 칸 값을 지웠다(7.1.1 무거운 주문서에서 20ms 간격 입력 1/4).
+     폼 모드의 «추가/수정» 판정은 저장 버튼과 같은 SSoT 인 `checkoutAddressModal.editing?.id` 를 쓴다 — 목록 헤더의
+     «새 배송지» 버튼이 `checkoutAddressModal.editing` 을 `{is_default:false}` 객체로 열기 때문에, 객체 truthy 로
+     갈리면 빈 폼인데 제목이 「배송지 수정」으로 뜬다(#599 세션A 실측).
+     목록의 「선택」 은 주문서 상태를 직접 쓰지 않고 `sirsoft-basic:checkout-address-selected` 이벤트로 알리기만 한다 — 받는 쪽은
+     주문서 배송지 틀(_checkout_shipping)이다(7.1.1).
+     이 이름 공간은 배송지(이름·받는 분·연락처·주소)를 담으므로 창을 닫으면 비운다 — 닫기 단추·Esc·바깥 클릭은 엔진 closeModal 로만
+     이어져 레이아웃 동작을 타지 않으므로, 창이 열려 있는 동안 내내 붙어 있는 맨 아래 빈 표지의 unmount 에서 비운다(창 본문은 창이
+     닫히면 내려간다). 「취소」·「선택」 은 같은 정리를 직접도 한다. 저장 성공은 창을 닫지 않고 목록으로 돌아가며 쓰던 배송지(editing)만
+     비운다(7.1.1 security.md 「_global 민감 정보 금지」 의 창 이름 공간 예외). -->
 <partial _e2e_allow="e2e:allow S4-D9 — 저장 성공 안내를 상태 초기화보다 먼저 두고 기본 배송지 라벨에 for/id 를 이었다(Vitest 구조 검사 + 전용 Chrome 실측). SA-D1 — 창 제목을 고르는 **표현식의 판정 키 하나**만 바꿨다(`editingAddress` 객체 truthy → `editingAddress?.id`). 노출 조건·저장 동작·API 는 그대로이고, 이미 그 키로 갈리던 저장 버튼 라벨·target·method 와 기준을 맞춘 것이다. 회귀는 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-checkout-address-modal-title.test.ts (4케이스 · 되돌리면 2 failed 대조 확인). 기존 주문서 spec(checkout-address-manual-entry)은 **배송지가 없는 회원**을 전제로 직접 입력 경로를 재서 이 창의 «목록 → 새 배송지» 경로가 열리지 않는다. 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 빈 폼 제목 「배송지 수정」 → 수정 후 「배송지 추가」(저장 버튼 「새 주소 추가」와 일치) · 기존 배송지 [수정] 경로는 제목 「배송지 수정」 + 버튼 「저장」 + 값 6칸 유지." description="체크아웃 배송지 관리 모달 - 배송지 선택, 추가, 삭제" editor_label="$t:user.modal_label.shop.addressManageModal">
-  <modal data-type="composite" data-ref="addressManageModal" title="{{_local.addressModalMode === 'form' ? (_local.editingAddress?.id ? '$t:shop.checkout.address_edit' : '$t:shop.checkout.address_add') : '$t:shop.checkout.address_manage'}}" size="lg">
+  <modal data-type="composite" data-ref="addressManageModal" title="{{_global.checkoutAddressModal?.mode === 'form' ? (_global.checkoutAddressModal?.editing?.id ? '$t:shop.checkout.address_edit' : '$t:shop.checkout.address_add') : '$t:shop.checkout.address_manage'}}" size="lg">
     <!-- 배송지 목록 모드 -->
-    <div data-if="{{_local.addressModalMode !== 'form'}}">
+    <div data-if="{{_global.checkoutAddressModal?.mode !== 'form'}}">
       <!-- 목록 헤더 - 새 배송지 추가 버튼 -->
       <div class="flex justify-between items-center mb-4">
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:shop.checkout.saved_addresses</span>
         <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
-            <!-- 새로 등록 — 같은 창을 폼 모드로 바꾼다. `editingAddress` 를 id 없는 새 객체로 열어야 수정이 아닌 등록이 되고,
-                 지난 오류 표시도 함께 지운다. 새 주소 폼을 null 로 열면 기본 배송지 체크박스가 자동바인딩할 boolean 이 없어,
+            <!-- 새로 등록 — 같은 창을 폼 모드로 바꾼다. 편집 대상(`checkoutAddressModal.editing`)을 id 없는 새 객체로 열어야 수정이 아닌 등록이 되고,
+                 지난 오류 표시도 함께 지운다. 새 주소 폼을 null 로 열면 기본 배송지 체크박스가 읽을 boolean 이 없어,
                  손대지 않은 제출이 빈 문자열을 보낸다 — 형제 화면(mypage/addresses/_list.json)이 같은 위젯을 이미 boolean 으로 시드한다.
                  이어서 배송국가를 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 비워 두면 선택 칸은 선호 국가를
-                 보이는데 주소 칸은 국내형이고 저장값은 KR 이 된다(#703). -->
+                 보이는데 주소 칸은 국내형이고 저장값은 KR 이 된다(#703).
+                 편집 대상을 쓰기 전에 null 로 먼저 지운다 — 기본(deep) 병합은 이번 객체에 없는 키(id·이름·주소)를 남겨, 앞 배송지 id 로
+                 PUT 이 나갈 수 있다(7.1.1 마이페이지 배송지 창과 같은 결함군). -->
             <sequence>
-              <set-state target="local" addressModalMode="form" :addressErrors="null">
-                <field name="editingAddress">
+              <set-state target="global" :checkoutAddressModal.editing="null"/>
+              <set-state target="global" checkoutAddressModal.mode="form" :checkoutAddressModal.errors="null">
+                <field name="checkoutAddressModal.editing">
                   <field name="is_default" :value="false"/>
                 </field>
               </set-state>
-              <set-state target="local" editingAddress.country_code="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
+              <set-state target="global" checkoutAddressModal.editing.country_code="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true &amp;&amp; (_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active &amp;&amp; c.code === _global.preferredShippingCountry)) ? _global.preferredShippingCountry : 'KR'}}"/>
             </sequence>
           </on>
           <icon name="plus" size="sm"/>
@@ -34,69 +49,77 @@
       <div class="space-y-3 max-h-96 overflow-y-auto">
         <!-- 배송지 없음 -->
         <div data-if="{{!(userAddresses?.data?.addresses?.data ?? []).length}}" class="text-center py-8 text-gray-500 dark:text-gray-400">
-          <icon name="map-marker-alt" size="2xl" class="text-gray-300 dark:text-gray-600 mb-2"/>
+          <icon name="map-marker-alt" size="2xl" class="text-gray-500 dark:text-gray-500 mb-2"/>
           <p>$t:shop.checkout.no_saved_addresses</p>
         </div>
         <!-- 배송지 목록 아이템 -->
-        <div data-each="addr, addrIdx in {{userAddresses?.data?.addresses?.data ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer {{_local.selectedAddressId === addr.id ? 'ring-2 ring-gray-900 dark:ring-white border-transparent' : ''}}">
+        <div data-each="addr, addrIdx in {{userAddresses?.data?.addresses?.data ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer {{_global.checkoutAddressModal?.selectedAddressId === addr.id ? 'ring-2 ring-gray-900 dark:ring-white border-transparent' : ''}}">
           <on type="click">
             <!-- 창 안에서 고르기만 한다 — 주문서에 옮겨 담는 것은 아래 「선택」 버튼이다. id 와 객체를 함께
                  들고 있어야 하는 이유는 하나는 강조 표시에, 다른 하나는 옮겨 담기에 쓰이기 때문 -->
-            <set-state target="local" selectedAddressId="{{addr.id}}" selectedAddressObj="{{addr}}"/>
+            <sequence>
+              <set-state target="global" :checkoutAddressModal.selectedAddressObj="null"/>
+              <set-state target="global" checkoutAddressModal.selectedAddressId="{{addr.id}}" checkoutAddressModal.selectedAddressObj="{{addr}}"/>
+            </sequence>
           </on>
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
+          <!-- 카드의 정보 영역은 단추다 — Tab 으로 닿고 Enter·Space 로 고른다(종전 클릭만 받는 카드는 키보드로 고를 수 없어 「선택」 단추가 잠긴 채였다, 7.1.1 출시 전). 카드 안에 수정·삭제 단추가 있어 카드 전체를 단추로 만들면 단추가 겹치므로 이 영역만 단추로 둔다. 이 단추에는 자기 동작이 없다 — 누르면(마우스·Enter·Space 모두 click) 위 카드의 고르기 동작으로 올라간다. 고른 카드는 aria-pressed 로 알린다. 단추 안이라 블록 상자 대신 span 으로 줄을 나눈다. -->
+          <button type="button" aria-pressed="{{_global.checkoutAddressModal?.selectedAddressId === addr.id}}" class="flex justify-between items-start w-full text-left">
+            <span class="block flex-1">
               <!-- 배송지명 + 기본 배송지 뱃지 -->
-              <div class="flex items-center gap-2 mb-1">
+              <span class="flex items-center gap-2 mb-1">
                 <span class="font-medium text-gray-900 dark:text-white">{{$localized(addr.name)}}</span>
                 <span data-if="{{addr.is_default}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:shop.checkout.default_address</span>
-              </div>
+              </span>
               <!-- 받는 분 + 연락처 -->
-              <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              <span class="block text-sm text-gray-600 dark:text-gray-400 mb-1">
                 <span>{{addr.recipient_name}}</span>
                 <span class="mx-2">|</span>
                 <span>{{addr.recipient_phone}}</span>
-              </div>
+              </span>
               <!-- 주소 (국내: 우편번호 + 주소 + 상세주소) -->
-              <div data-if="{{(addr.country_code ?? 'KR') === 'KR'}}" class="text-sm text-gray-600 dark:text-gray-400">
-                <span class="text-gray-500 dark:text-gray-500 mr-1">({{addr.zipcode}})</span>
+              <span data-if="{{(addr.country_code ?? 'KR') === 'KR'}}" class="block text-sm text-gray-600 dark:text-gray-400">
+                <span class="text-gray-500 dark:text-gray-400 mr-1">({{addr.zipcode}})</span>
                 <span>{{addr.address}} {{addr.address_detail ?? ''}}</span>
-              </div>
+              </span>
               <!-- 주소 (해외: 서버가 조립한 full_address — 국내 전용 형식으로 찍으면 '()' 만 보인다. 마이페이지 배송지 목록과 동일 규칙.) -->
-              <div data-if="{{(addr.country_code ?? 'KR') !== 'KR'}}" class="text-sm text-gray-600 dark:text-gray-400 break-words">
+              <span data-if="{{(addr.country_code ?? 'KR') !== 'KR'}}" class="block text-sm text-gray-600 dark:text-gray-400 break-words">
                 <span>{{addr.full_address ?? ''}}</span>
-              </div>
-            </div>
+              </span>
+            </span>
             <!-- 선택 체크 아이콘 -->
-            <div data-if="{{_local.selectedAddressId === addr.id}}" class="flex-shrink-0 ml-2">
+            <span data-if="{{_global.checkoutAddressModal?.selectedAddressId === addr.id}}" class="flex-shrink-0 ml-2">
               <icon name="check-circle" variant="solid" class="text-gray-900 dark:text-white text-xl"/>
-            </div>
-          </div>
+            </span>
+          </button>
           <!-- 수정/삭제 버튼 -->
           <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
             <!-- 수정·삭제는 마이페이지 배송지 목록과 같은 서버 판정(abilities)으로 보인다 — 화면이 기본 배송지 여부를 다시 해석하지 않는다. -->
             <button data-ref="address_modal_edit_button_{{addrIdx}}" data-if="{{addr.abilities?.can_update === true}}" type="button" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
               <on type="click">
-                <!-- 카드 전체가 「고르기」라 수정 버튼은 그 클릭을 막아야 한다(`stopPropagation`) — 안 그러면 고치려다 골라진다 -->
-                <set-state :stopPropagation="true" target="local" addressModalMode="form" :addressErrors="null">
-                  <field name="editingAddress">
-                    <field name="id" value="{{addr.id}}"/>
-                    <field name="name" value="{{addr.name ?? ''}}"/>
-                    <field name="recipient_name" value="{{addr.recipient_name ?? ''}}"/>
-                    <field name="recipient_phone" value="{{addr.recipient_phone ?? ''}}"/>
-                    <field name="country_code" value="{{addr.country_code ?? 'KR'}}"/>
-                    <field name="zipcode" value="{{addr.zipcode ?? ''}}"/>
-                    <field name="address" value="{{addr.address ?? ''}}"/>
-                    <field name="address_detail" value="{{addr.address_detail ?? ''}}"/>
-                    <field name="city" value="{{addr.city ?? ''}}"/>
-                    <field name="address_line_1" value="{{addr.address_line_1 ?? ''}}"/>
-                    <field name="address_line_2" value="{{addr.address_line_2 ?? ''}}"/>
-                    <field name="intl_city" value="{{addr.city ?? ''}}"/>
-                    <field name="intl_state" value="{{addr.state ?? ''}}"/>
-                    <field name="intl_postal_code" value="{{addr.postal_code ?? ''}}"/>
-                    <field name="is_default" value="{{addr.is_default ?? false}}"/>
-                  </field>
-                </set-state>
+                <!-- 카드 전체가 「고르기」라 수정 버튼은 그 클릭을 막아야 한다(`stopPropagation`) — 안 그러면 고치려다 골라진다.
+                     앞 값을 먼저 null 로 지운다 — 주소 검색이 따로 쓰는 키(region 등)가 남으면 이 배송지의 저장에 실린다(7.1.1) -->
+                <sequence :stopPropagation="true">
+                  <set-state target="global" :checkoutAddressModal.editing="null"/>
+                  <set-state target="global" checkoutAddressModal.mode="form" :checkoutAddressModal.errors="null">
+                    <field name="checkoutAddressModal.editing">
+                      <field name="id" value="{{addr.id}}"/>
+                      <field name="name" value="{{addr.name ?? ''}}"/>
+                      <field name="recipient_name" value="{{addr.recipient_name ?? ''}}"/>
+                      <field name="recipient_phone" value="{{addr.recipient_phone ?? ''}}"/>
+                      <field name="country_code" value="{{addr.country_code ?? 'KR'}}"/>
+                      <field name="zipcode" value="{{addr.zipcode ?? ''}}"/>
+                      <field name="address" value="{{addr.address ?? ''}}"/>
+                      <field name="address_detail" value="{{addr.address_detail ?? ''}}"/>
+                      <field name="city" value="{{addr.city ?? ''}}"/>
+                      <field name="address_line_1" value="{{addr.address_line_1 ?? ''}}"/>
+                      <field name="address_line_2" value="{{addr.address_line_2 ?? ''}}"/>
+                      <field name="intl_city" value="{{addr.city ?? ''}}"/>
+                      <field name="intl_state" value="{{addr.state ?? ''}}"/>
+                      <field name="intl_postal_code" value="{{addr.postal_code ?? ''}}"/>
+                      <field name="is_default" value="{{addr.is_default ?? false}}"/>
+                    </field>
+                  </set-state>
+                </sequence>
               </on>
               $t:common.edit
             </button>
@@ -122,63 +145,61 @@
       <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
-            <close-modal/>
+            <!-- 닫고 창 이름 공간을 비운다(전역 정리는 닫은 뒤 — modal-usage 규칙). 닫기 단추·Esc·바깥 클릭은 아래 빈 표지가 같은 정리를 한다 -->
+            <sequence>
+              <close-modal/>
+              <set-state target="global" :checkoutAddressModal="null"/>
+            </sequence>
           </on>
           $t:common.cancel
         </button>
         <!-- 고른 배송지를 주문서에 적용한다. 고르지 않으면 잠겨 있어 빈 주소가 실려 나가지 않는다 -->
-        <button type="button" disabled="{{!_local.selectedAddressId}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" disabled="{{!_global.checkoutAddressModal?.selectedAddressId}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
-            <!-- 부모 _local.shipping에 선택된 배송지 매핑 (모달 → 부모 상태 수정) -->
-            <set-state target="$parent._local" selectedAddressId="{{_local.selectedAddressId}}" selectedAddressObj="{{_local.selectedAddressObj}}">
-              <field name="shipping">
-                <field name="recipient_name" value="{{_local.selectedAddressObj.recipient_name}}"/>
-                <field name="recipient_phone" value="{{_local.selectedAddressObj.recipient_phone}}"/>
-                <field name="country_code" value="{{_local.selectedAddressObj.country_code ?? 'KR'}}"/>
-                <field name="zipcode" value="{{_local.selectedAddressObj.zipcode ?? ''}}"/>
-                <field name="address" value="{{_local.selectedAddressObj.address ?? ''}}"/>
-                <field name="address_detail" value="{{_local.selectedAddressObj.address_detail ?? ''}}"/>
-                <field name="region" value="{{_local.selectedAddressObj.region ?? ''}}"/>
-                <field name="address_line_1" value="{{_local.selectedAddressObj.address_line_1 ?? ''}}"/>
-                <field name="address_line_2" value="{{_local.selectedAddressObj.address_line_2 ?? ''}}"/>
-                <field name="intl_city" value="{{_local.selectedAddressObj.city ?? ''}}"/>
-                <field name="intl_state" value="{{_local.selectedAddressObj.state ?? ''}}"/>
-                <field name="intl_postal_code" value="{{_local.selectedAddressObj.postal_code ?? ''}}"/>
-              </field>
-            </set-state>
-            <!-- 부모 checkout.zipcode, country_code 업데이트 (도서산간 배송비 계산용) -->
-            <set-state target="$parent._local" checkout.zipcode="{{_local.selectedAddressObj.zipcode}}" checkout.country_code="{{_local.selectedAddressObj.country_code ?? 'KR'}}"/>
-            <!-- 배송지 변경 시 checkout API 호출 (배송비 재계산) -->
-            <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{$parent._local.checkout}}">
-              <success>
-                <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
-              </success>
-              <fail>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
-            <close-modal/>
+            <!-- 창은 알리기만 한다 — 주문서 상태(배송지·우편번호·국가)는 페이지가 이 이벤트를 받아 칩으로 고를 때와 같은 순서로 고치고
+                 배송비를 다시 받는다(modal-usage.md 「창은 알리기만 하고 페이지가 자기 상태를 고친다」). 종전에는 창이
+                 `$parent._local` 에 `checkout.zipcode` 같은 점 이름으로 썼는데, 그 쓰기는 페이지 렌더러의 지역 상태에 점 이름 그대로의
+                 키로만 들어가고 페이지 정본(저장소 B)에는 닿지 않아, 「선택」 뒤 쿠폰·적립금을 바꾸면 옛 우편번호로 배송비가 다시
+                 계산됐다(7.1.1). 창을 먼저 닫아 이벤트 받기가 페이지 문맥(창 깊이 0)에서 돌게 한다 -->
+            <sequence>
+              <close-modal/>
+              <emit-event event="sirsoft-basic:checkout-address-selected">
+                <field name="data">
+                  <field name="address" value="{{_global.checkoutAddressModal?.selectedAddressObj}}"/>
+                </field>
+              </emit-event>
+              <!-- 고른 배송지는 이벤트 값으로 넘겼다 — 그 뒤에 창 이름 공간(고른 배송지 사본 포함)을 비운다 -->
+              <set-state target="global" :checkoutAddressModal="null"/>
+            </sequence>
           </on>
           $t:shop.checkout.select_address
         </button>
       </div>
     </div>
     <!-- 배송지 추가/수정 폼 모드 -->
-    <div data-if="{{_local.addressModalMode === 'form'}}">
-      <form data-key="editingAddress" class="space-y-4">
+    <div data-if="{{_global.checkoutAddressModal?.mode === 'form'}}">
+      <form class="space-y-4">
         <!-- 배송지명 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             <span>$t:mypage.addresses.form.label</span>
-            <span class="text-red-500 ml-0.5">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
           </label>
-          <input aria-label="$t:mypage.addresses.form.label" type="text" name="name" placeholder="$t:mypage.addresses.form.label_placeholder" :required="true" class="{{_local.addressErrors?.name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
-          <span data-if="{{_local.addressErrors?.name}}" class="text-red-500 text-xs mt-1">{{_local.addressErrors?.name?.[0] ?? ''}}</span>
+          <input aria-label="$t:mypage.addresses.form.label" type="text" name="name" value="{{_global.checkoutAddressModal?.editing?.name ?? ''}}" placeholder="$t:mypage.addresses.form.label_placeholder" :required="true" class="{{_global.checkoutAddressModal?.errors?.name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
+            <on type="change">
+              <set-state target="global" checkoutAddressModal.editing.name="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span data-if="{{_global.checkoutAddressModal?.errors?.name}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_global.checkoutAddressModal?.errors?.name?.[0] ?? ''}}</span>
         </div>
-        <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. name 바인딩으로 editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기.) -->
+        <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. change 로 checkoutAddressModal.editing.country_code 에 쓴다. 선택에 따라 국내/해외 주소 입력 분기.) -->
         <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
-          <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_local.editingAddress?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full"/>
+          <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_global.checkoutAddressModal?.editing?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full">
+            <on type="change">
+              <set-state target="global" checkoutAddressModal.editing.country_code="{{$event.target.value}}"/>
+            </on>
+          </select>
         </div>
         <!-- 받는 분 + 연락처 -->
         <div class="grid grid-cols-2 gap-4">
@@ -187,68 +208,100 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               <span>$t:mypage.addresses.form.recipient</span>
-              <span class="text-red-500 ml-0.5">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
             </label>
-            <input aria-label="$t:mypage.addresses.form.recipient" type="text" name="recipient_name" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="{{_local.addressErrors?.recipient_name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
-            <span data-if="{{_local.addressErrors?.recipient_name}}" class="text-red-500 text-xs mt-1">{{_local.addressErrors?.recipient_name?.[0] ?? ''}}</span>
+            <input aria-label="$t:mypage.addresses.form.recipient" type="text" name="recipient_name" value="{{_global.checkoutAddressModal?.editing?.recipient_name ?? ''}}" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="{{_global.checkoutAddressModal?.errors?.recipient_name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
+              <on type="change">
+                <set-state target="global" checkoutAddressModal.editing.recipient_name="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span data-if="{{_global.checkoutAddressModal?.errors?.recipient_name}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_global.checkoutAddressModal?.errors?.recipient_name?.[0] ?? ''}}</span>
           </div>
           <!-- 연락처 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               <span>$t:mypage.addresses.form.phone</span>
-              <span class="text-red-500 ml-0.5">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
             </label>
-            <input aria-label="$t:mypage.addresses.form.phone" type="tel" name="recipient_phone" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="{{_local.addressErrors?.recipient_phone ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
-            <span data-if="{{_local.addressErrors?.recipient_phone}}" class="text-red-500 text-xs mt-1">{{_local.addressErrors?.recipient_phone?.[0] ?? ''}}</span>
+            <input aria-label="$t:mypage.addresses.form.phone" type="tel" name="recipient_phone" value="{{_global.checkoutAddressModal?.editing?.recipient_phone ?? ''}}" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="{{_global.checkoutAddressModal?.errors?.recipient_phone ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
+              <on type="change">
+                <set-state target="global" checkoutAddressModal.editing.recipient_phone="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span data-if="{{_global.checkoutAddressModal?.errors?.recipient_phone}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_global.checkoutAddressModal?.errors?.recipient_phone?.[0] ?? ''}}</span>
           </div>
         </div>
         <!-- 주소 검색 (국내 KR — 다음우편번호. 해외배송 OFF 또는 KR 선택 시 표시) -->
-        <div data-if="{{(_local.editingAddress?.country_code ?? 'KR') === 'KR'}}">
+        <div data-if="{{(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') === 'KR'}}">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             <span>$t:mypage.addresses.form.address</span>
-            <span class="text-red-500 ml-0.5">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
           </label>
           <div class="space-y-2">
             <!-- 우편번호 + 검색 버튼 -->
             <div class="flex gap-2">
-              <input type="text" name="zipcode" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.addressErrors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" :readOnly="true"/>
+              <input aria-label="$t:shop.checkout.zipcode" type="text" name="zipcode" value="{{_global.checkoutAddressModal?.editing?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_global.checkoutAddressModal?.errors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" :readOnly="true"/>
               <extension-point name="address_search_slot" data-ref="checkout_modal_address_search_slot">
                 <prop name="readOnlyFields">
                   <item>zipcode</item>
                   <item>address</item>
                 </prop>
                 <callback name="onAddressSelect">
-                  <set-state target="local" editingAddress.zipcode="{{$event.zipcode}}" editingAddress.address="{{$event.address}}" editingAddress.region="{{$event.region}}" editingAddress.city="{{$event.city}}"/>
+                  <set-state target="global" checkoutAddressModal.editing.zipcode="{{$event.zipcode}}" checkoutAddressModal.editing.address="{{$event.address}}" checkoutAddressModal.editing.region="{{$event.region}}" checkoutAddressModal.editing.city="{{$event.city}}"/>
                 </callback>
               </extension-point>
             </div>
             <!-- 기본 주소 -->
-            <input type="text" name="address" placeholder="$t:shop.checkout.address_placeholder" class="{{_local.addressErrors?.address ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" :readOnly="true"/>
-            <span data-if="{{_local.addressErrors?.zipcode || _local.addressErrors?.address}}" class="text-red-500 text-xs mt-1">{{_local.addressErrors?.zipcode?.[0] ?? _local.addressErrors?.address?.[0] ?? ''}}</span>
+            <input aria-label="$t:shop.checkout.address" type="text" name="address" value="{{_global.checkoutAddressModal?.editing?.address ?? ''}}" placeholder="$t:shop.checkout.address_placeholder" class="{{_global.checkoutAddressModal?.errors?.address ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" :readOnly="true"/>
+            <span data-if="{{_global.checkoutAddressModal?.errors?.zipcode || _global.checkoutAddressModal?.errors?.address}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_global.checkoutAddressModal?.errors?.zipcode?.[0] ?? _global.checkoutAddressModal?.errors?.address?.[0] ?? ''}}</span>
           </div>
         </div>
         <!-- 해외 주소 입력 (D10 — KR 외 국가 선택 시. 체크아웃 해외폼과 동일 필드: address_line_1/2, intl_city/state/postal_code. UserAddress 컬럼 매핑은 백엔드 MapsAddressBookFields 트레이트가 처리.) -->
-        <div data-if="{{(_local.editingAddress?.country_code ?? 'KR') !== 'KR'}}" class="space-y-2">
-          <input type="text" name="address_line_1" placeholder="$t:shop.checkout.intl_address1_placeholder" class="{{_local.addressErrors?.address_line_1 ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
-          <input type="text" name="address_line_2" placeholder="$t:shop.checkout.intl_address2_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"/>
+        <div data-if="{{(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') !== 'KR'}}" class="space-y-2">
+          <input aria-label="$t:shop.checkout.intl_address" type="text" name="address_line_1" value="{{_global.checkoutAddressModal?.editing?.address_line_1 ?? ''}}" placeholder="$t:shop.checkout.intl_address1_placeholder" class="{{_global.checkoutAddressModal?.errors?.address_line_1 ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
+            <on type="change">
+              <set-state target="global" checkoutAddressModal.editing.address_line_1="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <input aria-label="$t:shop.checkout.detail_address" type="text" name="address_line_2" value="{{_global.checkoutAddressModal?.editing?.address_line_2 ?? ''}}" placeholder="$t:shop.checkout.intl_address2_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+            <on type="change">
+              <set-state target="global" checkoutAddressModal.editing.address_line_2="{{$event.target.value}}"/>
+            </on>
+          </input>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input type="text" name="intl_city" placeholder="$t:shop.checkout.intl_city_placeholder" class="{{_local.addressErrors?.intl_city ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
-            <input type="text" name="intl_state" placeholder="$t:shop.checkout.intl_state_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"/>
+            <input aria-label="$t:shop.checkout.intl_city" type="text" name="intl_city" value="{{_global.checkoutAddressModal?.editing?.intl_city ?? ''}}" placeholder="$t:shop.checkout.intl_city_placeholder" class="{{_global.checkoutAddressModal?.errors?.intl_city ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
+              <on type="change">
+                <set-state target="global" checkoutAddressModal.editing.intl_city="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <input aria-label="$t:shop.checkout.intl_state" type="text" name="intl_state" value="{{_global.checkoutAddressModal?.editing?.intl_state ?? ''}}" placeholder="$t:shop.checkout.intl_state_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+              <on type="change">
+                <set-state target="global" checkoutAddressModal.editing.intl_state="{{$event.target.value}}"/>
+              </on>
+            </input>
           </div>
-          <input type="text" name="intl_postal_code" placeholder="$t:shop.checkout.intl_postal_code_placeholder" class="{{_local.addressErrors?.intl_postal_code ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
-          <span data-if="{{_local.addressErrors?.address_line_1 || _local.addressErrors?.intl_city || _local.addressErrors?.intl_postal_code}}" class="text-red-500 text-xs mt-1 block">{{_local.addressErrors?.address_line_1?.[0] ?? _local.addressErrors?.intl_city?.[0] ?? _local.addressErrors?.intl_postal_code?.[0] ?? ''}}</span>
+          <input aria-label="$t:shop.checkout.intl_postal_code" type="text" name="intl_postal_code" value="{{_global.checkoutAddressModal?.editing?.intl_postal_code ?? ''}}" placeholder="$t:shop.checkout.intl_postal_code_placeholder" class="{{_global.checkoutAddressModal?.errors?.intl_postal_code ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
+            <on type="change">
+              <set-state target="global" checkoutAddressModal.editing.intl_postal_code="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span data-if="{{_global.checkoutAddressModal?.errors?.address_line_1 || _global.checkoutAddressModal?.errors?.intl_city || _global.checkoutAddressModal?.errors?.intl_postal_code}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_global.checkoutAddressModal?.errors?.address_line_1?.[0] ?? _global.checkoutAddressModal?.errors?.intl_city?.[0] ?? _global.checkoutAddressModal?.errors?.intl_postal_code?.[0] ?? ''}}</span>
         </div>
         <!-- 상세 주소 (국내 KR 전용 — 해외는 address_line_2 사용) -->
-        <div data-if="{{(_local.editingAddress?.country_code ?? 'KR') === 'KR'}}">
+        <div data-if="{{(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') === 'KR'}}">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
-          <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_local.addressErrors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
+          <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" value="{{_global.checkoutAddressModal?.editing?.address_detail ?? ''}}" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_global.checkoutAddressModal?.errors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
+            <on type="change">
+              <set-state target="global" checkoutAddressModal.editing.address_detail="{{$event.target.value}}"/>
+            </on>
+          </input>
         </div>
         <!-- 기본 배송지 체크박스 -->
         <div class="flex items-center gap-2 pt-2">
-          <checkbox id="checkout_address_is_default" name="is_default" checked="{{!!_local.editingAddress?.is_default}}" :autoBinding="false" class="w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
+          <checkbox id="checkout_address_is_default" name="is_default" checked="{{!!_global.checkoutAddressModal?.editing?.is_default}}" :autoBinding="false" class="w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded focus:ring-gray-900 dark:focus:ring-white">
             <on type="change">
               <!-- 기본 배송지 여부 — 저장값이 boolean 이 아닐 수 있어(미저장·null) 체크 상태를 명시 바인딩하고, 바뀐 값은 여기서 직접 적는다 -->
-              <set-state target="local" editingAddress.is_default="{{$event.target.checked}}"/>
+              <set-state target="global" checkoutAddressModal.editing.is_default="{{$event.target.checked}}"/>
             </on>
           </checkbox>
           <!-- 문구를 눌러도 체크되게 체크박스 id 로 잇는다(마이페이지 배송지 창과 같다) -->
@@ -259,37 +312,44 @@
           <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <on type="click">
               <!-- 폼을 접고 목록으로 — 쓰던 값과 오류 표시를 함께 버린다(창을 닫지는 않는다) -->
-              <set-state target="local" addressModalMode="list" :editingAddress="null" :addressErrors="null"/>
+              <set-state target="global" checkoutAddressModal.mode="list" :checkoutAddressModal.editing="null" :checkoutAddressModal.errors="null"/>
             </on>
             $t:common.back
           </button>
-          <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_local.isSaving ?? false}}">
+          <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_global.checkoutAddressModal?.isSaving ?? false}}">
             <on type="click">
-              <!-- 등록과 수정이 같은 버튼이다 — `editingAddress.id` 유무로 보낼 곳과 메서드가 갈린다.
+              <!-- 등록과 수정이 같은 버튼이다 — `checkoutAddressModal.editing.id` 유무로 보낼 곳과 메서드가 갈린다.
                    먼저 버튼을 잠가 두 번 눌러 배송지가 둘 생기는 것을 막는다 -->
               <sequence>
-                <set-state target="local" :isSaving="true" :addressErrors="null"/>
-                <api-call :auth_required="true" target="{{_local.editingAddress?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/' + _local.editingAddress.id : '/api/modules/sirsoft-ecommerce/user/addresses'}}" method="{{_local.editingAddress?.id ? 'PUT' : 'POST'}}" body="{{_local.editingAddress}}">
+                <set-state target="global" :checkoutAddressModal.isSaving="true" :checkoutAddressModal.errors="null"/>
+                <api-call :auth_required="true" target="{{_global.checkoutAddressModal?.editing?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/' + _global.checkoutAddressModal.editing.id : '/api/modules/sirsoft-ecommerce/user/addresses'}}" method="{{_global.checkoutAddressModal?.editing?.id ? 'PUT' : 'POST'}}" body="{{_global.checkoutAddressModal?.editing}}">
                   <success>
                     <refetch-data-source dataSourceId="userAddresses"/>
                     <!-- 안내 문구는 편집 중 배송지를 비우기 «전에» 고른다 — 비운 뒤에 고르면 수정도 「추가되었습니다」 가 된다 -->
-                    <toast type="success" message="{{_local.editingAddress?.id ? '$t:mypage.addresses.updated' : '$t:mypage.addresses.added'}}"/>
-                    <set-state target="local" :isSaving="false" addressModalMode="list" :editingAddress="null" :addressErrors="null"/>
+                    <toast type="success" message="{{_global.checkoutAddressModal?.editing?.id ? '$t:mypage.addresses.updated' : '$t:mypage.addresses.added'}}"/>
+                    <set-state target="global" :checkoutAddressModal.isSaving="false" checkoutAddressModal.mode="list" :checkoutAddressModal.editing="null" :checkoutAddressModal.errors="null"/>
                   </success>
                   <fail>
-                    <set-state target="local" :isSaving="false" addressErrors="{{error.errors ?? {}}}"/>
+                    <set-state target="global" :checkoutAddressModal.isSaving="false" checkoutAddressModal.errors="{{error.errors ?? {}}}"/>
                     <toast type="error" message="{{error.message}}"/>
                   </fail>
                 </api-call>
               </sequence>
             </on>
             <!-- 스피너 -->
-            <div data-if="{{_local.isSaving}}" class="w-4 h-4 border-2 border-white/30 dark:border-gray-900/30 border-t-white dark:border-t-gray-900 rounded-full animate-spin"/>
-            <span data-if="{{!_local.isSaving}}">{{_local.editingAddress?.id ? '$t:common.save' : '$t:mypage.addresses.add'}}</span>
-            <span data-if="{{_local.isSaving}}">$t:common.processing</span>
+            <div data-if="{{_global.checkoutAddressModal?.isSaving}}" class="w-4 h-4 border-2 border-white/30 dark:border-gray-900/30 border-t-white dark:border-t-gray-900 rounded-full animate-spin"/>
+            <span data-if="{{!_global.checkoutAddressModal?.isSaving}}">{{_global.checkoutAddressModal?.editing?.id ? '$t:common.save' : '$t:mypage.addresses.add'}}</span>
+            <span data-if="{{_global.checkoutAddressModal?.isSaving}}">$t:common.processing</span>
           </button>
         </div>
       </form>
+    </div>
+    <!-- 창 닫힘 표지 — 창이 열려 있는 동안 내내 붙어 있다가 닫히면(닫기 단추·취소·바깥 클릭·Esc·「선택」 모두) 함께 내려가며 창 이름 공간을 비운다.
+         목록·폼 두 얼굴은 mode 로 서로 갈아 끼워지므로 그 둘이 아니라 이 표지에 건다. 보이지도 읽히지도 않는다 -->
+    <div class="hidden" aria-hidden="true">
+      <on event="unmount">
+        <set-state target="global" :checkoutAddressModal="null"/>
+      </on>
     </div>
   </modal>
 </partial>

@@ -472,7 +472,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "aria-label": "$t:common.edit"
                                                     },
@@ -571,7 +571,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "btn-icon text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "aria-label": "$t:common.save"
                                                     },
@@ -880,7 +880,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "btn-icon text-green-700 dark:text-green-400 hover:text-green-700 dark:hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "aria-label": "$t:common.add"
                                                     },

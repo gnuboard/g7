@@ -86,7 +86,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 설치 창 3종의 동반 설치 체크박스는 항목별 권한(can_select)으로 잠기고, 권한 없음 안내가 있다 (R2)
+     * 설치 창 3종의 동반 설치 체크박스는 항목별 권한(can_select)으로 잠기고, 권한 없음 안내가 있다
      *
      * @scenario screen=extension_install_modal
      *
@@ -116,7 +116,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 스케줄 목록: 등록 버튼·일괄 변경·행 선택·행 토글이 abilities 로 잠긴다 (G22)
+     * 스케줄 목록: 등록 버튼·일괄 변경·행 선택·행 토글이 abilities 로 잠긴다
      *
      * @scenario screen=schedule_list
      *
@@ -154,7 +154,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 관리자 헤더 알림 센터(데스크톱·모바일)는 읽음·삭제 권한을 컴포넌트에 넘기고, 클릭 읽음 처리는 권한이 있을 때만 보낸다 (G21)
+     * 관리자 헤더 알림 센터(데스크톱·모바일)는 읽음·삭제 권한을 컴포넌트에 넘기고, 클릭 읽음 처리는 권한이 있을 때만 보낸다
      *
      * @scenario screen=admin_header_notification_center
      *
@@ -178,7 +178,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 대시보드 경고 [복구]·[닫기]는 경고별 abilities 로 잠기고 안내가 뜬다. 경고 소스는 403 을 조용히 넘긴다 (G23)
+     * 대시보드 경고 [복구]·[닫기]는 경고별 abilities 로 잠기고 안내가 뜬다. 경고 소스는 403 을 조용히 넘긴다
      *
      * @scenario screen=dashboard_alerts
      *
@@ -209,7 +209,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 환경설정 SEO 탭의 모든 입력은 읽기 전용이면 잠긴다 (G06 코어분 13칸)
+     * 환경설정 SEO 탭의 모든 입력은 읽기 전용이면 잠긴다 (코어분 13칸)
      *
      * @scenario screen=settings_seo_tab
      *
@@ -233,7 +233,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 환경설정 읽기 전용 판정은 설정 응답을 받기 전에도 잠긴 쪽이다 — 응답 전 빈 입력칸이 편집되지 않는다 (settings#6)
+     * 환경설정 읽기 전용 판정은 설정 응답을 받기 전에도 잠긴 쪽이다 — 응답 전 빈 입력칸이 편집되지 않는다
      *
      * @scenario screen=settings,state=before_response
      *
@@ -256,7 +256,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 개인정보 탭 「지금 실행」은 보안 탭과 같은 방식 — 대상이 있으면 보이고, 실행 권한이 없으면 비활성 (settings#5, 2026-10-04 결정)
+     * 개인정보 탭 「지금 실행」은 보안 탭과 같은 방식 — 대상이 있으면 보이고, 실행 권한이 없으면 비활성 (2026-10-04 결정)
      *
      * @scenario screen=settings_privacy_tab
      *
@@ -278,12 +278,12 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 확장 목록·레이아웃 편집기 게이트 (G20·#8·#10·#11·#2)
+     * 확장 목록·레이아웃 편집기 게이트
      *
-     * - 플러그인 「설정」은 설정 저장 권한(can_update)으로 잠긴다(G20).
-     * - 「언어팩 관리」는 언어팩 조회 권한(can_view_language_packs)이 없으면 잠긴다(#8).
-     * - 템플릿 편집 버튼·편집기 저장·트리 관리·본문은 abilities 가 없으면 잠기는 쪽이다(#10·#11).
-     * - 판본 복원은 수정 권한으로 잠긴다(#2).
+     * - 플러그인 「설정」은 설정 저장 권한(can_update)으로 잠긴다.
+     * - 「언어팩 관리」는 언어팩 조회 권한(can_view_language_packs)이 없으면 잠긴다.
+     * - 템플릿 편집 버튼·편집기 저장·트리 관리·본문은 abilities 가 없으면 잠기는 쪽이다.
+     * - 판본 복원은 수정 권한으로 잠긴다.
      *
      * @scenario screen=extension_lists|layout_editor
      *
@@ -317,7 +317,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 회원 폼·활동 로그 게이트 (core-admin-users #6·#7·#9·#10)
+     * 회원 폼·활동 로그 게이트
      *
      * @scenario screen=user_form|activity_log_list
      *
@@ -349,7 +349,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
     }
 
     /**
-     * 역할 폼: 최고관리자 역할은 사용 여부 토글이 잠기고 안내가 뜬다 (S8)
+     * 역할 폼: 최고관리자 역할은 사용 여부 토글이 잠기고 안내가 뜬다
      *
      * @scenario screen=role_form,role=admin
      *

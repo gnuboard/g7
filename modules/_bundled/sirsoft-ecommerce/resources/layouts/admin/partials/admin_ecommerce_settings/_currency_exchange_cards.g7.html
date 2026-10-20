@@ -35,7 +35,7 @@
           <multilingual-input data-type="composite" name="editingCurrency.name" ariaLabel="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_name')}}" value="{{_local.editingCurrency?.name ?? {} }}" layout="inline" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="flex-center gap-1">
-          <button type="button" class="btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.edit">
+          <button type="button" class="btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.edit">
             <on type="click">
               <!-- 편집 시작. 원본 코드를 `originalCode` 로 함께 담아 두는데, 저장할 때 "코드가 바뀌었는가" 를 그 값과 비교해 판정하기 때문이다. -->
               <set-state target="local" editingCurrencyIdx="{{currency._idx}}">
@@ -57,7 +57,7 @@
           </button>
         </div>
         <div data-if="{{_local.editingCurrencyIdx === currency._idx}}" class="flex-center gap-1">
-          <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.save">
+          <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.save">
             <on type="click">
               <!-- 편집 저장. 코드가 바뀌었고 그 코드가 이미 있으면 토스트로 막고, 아니면 배열에 반영한다 — 두 액션의 조건이 서로 배타적이라 하나만 일어난다. -->
               <sequence>
@@ -137,7 +137,7 @@
           <span class="font-medium ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.title</span>
         </div>
         <div class="flex-center gap-1">
-          <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.add">
+          <button type="button" class="btn-icon text-green-700 dark:text-green-400 hover:text-green-700 dark:hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.add">
             <on type="click">
               <!-- 새 통화 추가. 편집 저장과 같은 형태로, 코드가 비었거나 이미 있으면 토스트로 막고 아니면 배열 끝에 붙인다. -->
               <sequence>

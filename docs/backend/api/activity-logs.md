@@ -112,7 +112,7 @@ HTTP/1.1 200
                 "user": {
                     "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
                     "name": "최고관리자",
-                    "email": "heuristing@gmail.com"
+                    "email": "admin@example.com"
                 },
                 "ip_address": "127.0.0.1",
                 "created_at": "2026-08-04 19:00:10",
@@ -142,7 +142,7 @@ HTTP/1.1 200
                 "user": {
                     "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
                     "name": "최고관리자",
-                    "email": "heuristing@gmail.com"
+                    "email": "admin@example.com"
                 },
                 "ip_address": "127.0.0.1",
                 "created_at": "2026-08-04 17:40:37",

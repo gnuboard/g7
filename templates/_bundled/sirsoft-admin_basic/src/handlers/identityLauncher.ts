@@ -162,9 +162,14 @@ export async function sirsoftAdminBasicIdentityLauncher(
   // 코어 mail provider 응답에는 환경설정의 max_attempts 가 정확히 반영되므로 화면 카운트도 정합.
   const maxAttempts = typeof challenge.max_attempts === 'number' ? challenge.max_attempts : 0;
 
+  // 이 띄움의 열쇠 — 창이 닫힌 뒤 이름 공간을 비울 때 다른 띄움(이어진 428)이 쓴 상태를 건드리지 않게 견준다.
+  // 건 번호는 [다시 보내기]가 바꾸므로 열쇠로 쓰지 않는다
+  const launchKey = `${challenge.id}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+
   G7Core.state.set({
     identityChallenge: {
       policy_key: payload.policy_key,
+      launch_key: launchKey,
       purpose: payload.purpose,
       provider_id: payload.provider_id ?? null,
       render_hint: challenge.render_hint,
@@ -252,7 +257,39 @@ export async function sirsoftAdminBasicIdentityLauncher(
     stopClaim();
     window.clearInterval(tickHandle);
     unsubscribe?.();
+    clearChallengeNamespaceAfterClose(G7Core, launchKey);
   }
+}
+
+/** 인증 창 이름 공간 정리가 창이 닫히기를 기다리는 횟수(100ms 간격 — 최대 5초) */
+const CLEAR_WAIT_TRIES = 50;
+
+/**
+ * 인증 창이 닫힌 뒤 이 띄움의 창 이름 공간(`_global.identityChallenge` — 인증번호·건 번호)을 비웁니다.
+ *
+ * 결과(확인·취소·실패)가 나면 창은 닫히지만 이름 공간은 다음 띄움까지 전역에 남아, 친 인증번호가 개발자 도구로 보였다
+ * (docs/frontend/security.md 「창 고유 이름 공간은 창을 닫을 때 비우면 허용」). 결과를 넘기는 동작 바로 뒤에 창 닫기가
+ * 이어지므로, 창이 아직 열려 있으면 닫힐 때까지 기다렸다 비운다 — 열린 창을 비우면 빈 칸이 한 번 보인다. 그 사이 다른
+ * 띄움(이어진 요청의 새 428)이 이름 공간을 새로 썼으면 그 상태는 건드리지 않는다.
+ *
+ * @param G7Core 코어 전역 객체
+ * @param launchKey 이 띄움의 열쇠
+ * @return 반환값 없음
+ */
+function clearChallengeNamespaceAfterClose(G7Core: any, launchKey: string): void {
+  let tries = 0;
+  const attempt = (): void => {
+    const current = (G7Core.state?.getGlobal?.() ?? G7Core.state?.get?.())?.identityChallenge;
+    if (!current || current.launch_key !== launchKey) return;
+    if (G7Core.modal?.isOpen?.('identity-challenge-modal')) {
+      tries += 1;
+      if (tries <= CLEAR_WAIT_TRIES) window.setTimeout(attempt, 100);
+
+      return;
+    }
+    G7Core.state.set({ identityChallenge: null });
+  };
+  window.setTimeout(attempt, 0);
 }
 
 /**

@@ -915,7 +915,7 @@ class CommentRepository implements CommentRepositoryInterface
     /**
      * 특정 날짜에 작성된 전체 게시판의 댓글 수를 조회합니다 (대시보드 집계용).
      *
-     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다(게시글 집계와 같은 경계 — 7.1.0 O-CF3).
+     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다(게시글 집계와 같은 경계 — 7.1.0).
      *
      * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 댓글 수

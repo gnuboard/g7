@@ -1,5 +1,5 @@
 {
-    "comment": "끼워넣기 예제의 둘째 겹 — 이 조각이 화면에 보이면 「두 겹까지 펼쳐졌다」는 뜻이다.\n  **본문에 적힌 파일 위치는 낡았다** — 소스가 `partials/` 아래로 옮겨지고 확장자도 바뀐 뒤에도\n  글이 따라가지 않았다. 예제 문구라 화면에 그대로 보이므로, 손볼 때 함께 고칠 자리다.",
+    "comment": "끼워넣기 예제의 둘째 겹 — 이 조각이 화면에 보이면 「두 겹까지 펼쳐졌다」는 뜻이다.\n  본문 문구는 언어 사전(`admin.template_partial_test.*`)에 있고, 파일 위치는 지금 소스(`partials/template_partial_test/…g7.html`)를 가리킨다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 Include 테스트 - Level 2 헤더 섹션"
@@ -31,7 +31,7 @@
                     "props": {
                         "className": "text-lg font-bold text-green-900 dark:text-green-100"
                     },
-                    "text": "Level 2 Include: 헤더 섹션 로드됨"
+                    "text": "$t:admin.template_partial_test.header_title"
                 }
             ]
         },
@@ -41,7 +41,7 @@
             "props": {
                 "className": "text-success-soft"
             },
-            "text": "이 파일은 templates/sirsoft-admin_basic/layouts/includes/_header_section.json 입니다"
+            "text": "$t:admin.template_partial_test.header_description"
         }
     ]
 }

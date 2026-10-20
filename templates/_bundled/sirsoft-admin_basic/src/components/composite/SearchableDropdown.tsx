@@ -7,7 +7,7 @@ import type { EditorAttrs } from '../../types';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -90,7 +90,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const searchPlaceholder = searchPlaceholderProp ?? tOr('common.search_placeholder', 'Search...');
   const noResultsText = noResultsTextProp ?? tOr('common.no_results', 'No results found');
   const initialText = initialTextProp ?? tOr('common.type_to_search', 'Type to search');
@@ -308,7 +308,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
               onChange={handleSearchChange}
               placeholder={searchPlaceholder}
               aria-label={tOr('common.search', 'Search')}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
             />
           </Div>
 
@@ -373,14 +373,14 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
                         <Div
                           className={`font-medium ${
                             selected
-                              ? 'text-blue-600 dark:text-blue-400'
+                              ? 'text-blue-600 dark:text-blue-300'
                               : 'text-gray-900 dark:text-white'
                           }`}
                         >
                           {option.label}
                         </Div>
                         {option.description && (
-                          <Div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          <Div className="text-sm text-gray-500 dark:text-gray-300 mt-0.5">
                             {option.description}
                           </Div>
                         )}

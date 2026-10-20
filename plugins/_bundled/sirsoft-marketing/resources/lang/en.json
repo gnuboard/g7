@@ -95,8 +95,6 @@
       "key_duplicate": "This channel key already exists. Enter a different key.",
       "label_required": "Enter the name in the site's default language.",
       "key_placeholder": "e.g. sms_subscription",
-      "label_ko": "Name (Korean)",
-      "label_en": "Name (English)",
       "label_placeholder": "e.g. SMS Marketing",
       "page_slug": "Terms Page Slug",
       "page_slug_hint": "Leave empty to hide the view terms button.",

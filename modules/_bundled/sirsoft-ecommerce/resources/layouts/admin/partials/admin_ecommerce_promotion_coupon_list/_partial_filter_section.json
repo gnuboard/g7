@@ -459,7 +459,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -489,7 +489,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "~"
                                         },
@@ -527,7 +527,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "만든 날 빠른 기간 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 $prev 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. 오늘.",
@@ -553,13 +553,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.createdDateQuick === 'today'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.today"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1주일. 눌린 버튼 표시는 createdDateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다.",
@@ -585,13 +587,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.createdDateQuick === 'week'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.week"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "3개월.",
@@ -617,13 +621,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.createdDateQuick === '3months'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.3months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "6개월. 쿠폰은 만든 뒤 오래 살아 있는 일이 많아 주문 목록보다 긴 구간을 둔다.",
@@ -649,13 +655,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.createdDateQuick === '6months'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.6months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1년. 이 구간은 주문·상품 목록에는 없다.",
@@ -681,7 +689,9 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.createdDateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.createdDateQuick === '1year'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.1year"
                                         }
@@ -1418,7 +1428,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "calendar",
-                                        "className": "text-base text-gray-400 dark:text-gray-500"
+                                        "className": "text-base text-gray-500 dark:text-gray-500"
                                     }
                                 },
                                 {
@@ -1447,7 +1457,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "~"
                                 },
@@ -1528,7 +1538,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "calendar",
-                                        "className": "text-base text-gray-400 dark:text-gray-500"
+                                        "className": "text-base text-gray-500 dark:text-gray-500"
                                     }
                                 },
                                 {
@@ -1557,7 +1567,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "~"
                                 },
@@ -1713,7 +1723,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300",
+                                        "className": "text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300",
                                         "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                     },
                                     "children": [

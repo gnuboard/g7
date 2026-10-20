@@ -18,6 +18,7 @@ use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
 use App\Services\LanguagePack\LanguagePackTranslator;
+use App\Support\BootDeferredLog;
 use App\Support\InstallerContext;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\QueryException;
@@ -82,31 +83,47 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 부팅 시 활성 언어팩의 번역 경로를 Translator 에 등록합니다.
      *
      * DB 가 준비되지 않았거나(설치 전) language_packs 테이블이 없으면 조용히 건너뜁니다.
+     * 어느 갈래로 끝나든 부팅 중 미뤄 둔 번역 문구 로그(`BootDeferredLog`)를 등록 직후 남깁니다.
      *
      * @return void 반환값 없음
      */
     public function boot(): void
     {
         $this->app->booted(function () {
-            if (! $this->isRegistryReady()) {
-                return;
-            }
-
             try {
-                /** @var LanguagePackRegistry $registry */
-                $registry = $this->app->make(LanguagePackRegistry::class);
-
-                foreach ($registry->getActivePacks() as $pack) {
-                    $this->registerActivePack($pack);
-                }
-
-                $this->refreshSupportedLocales($registry);
-                $this->registerSeedFilters();
-                $this->registerEventListeners();
-            } catch (Throwable $e) {
-                report($e);
+                $this->registerActivePackTranslations();
+            } finally {
+                // 앞선 공급자의 boot() 가 미뤄 둔 기록을 사이트 언어 번역이 준비된 지금 남긴다(언어팩 없음·설치 전도 비운다)
+                BootDeferredLog::flush();
             }
         });
+    }
+
+    /**
+     * 활성 언어팩의 번역 경로를 등록하고 지원 로케일·시드 필터·이벤트 리스너를 갱신합니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerActivePackTranslations(): void
+    {
+        if (! $this->isRegistryReady()) {
+            return;
+        }
+
+        try {
+            /** @var LanguagePackRegistry $registry */
+            $registry = $this->app->make(LanguagePackRegistry::class);
+
+            foreach ($registry->getActivePacks() as $pack) {
+                $this->registerActivePack($pack);
+            }
+
+            $this->refreshSupportedLocales($registry);
+            $this->registerSeedFilters();
+            $this->registerEventListeners();
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
     /**

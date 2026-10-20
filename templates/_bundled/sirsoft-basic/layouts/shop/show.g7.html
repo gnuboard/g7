@@ -138,8 +138,9 @@
     <close-modal/>
     <!-- 장바구니 이동 로딩 상태 초기화 -->
     <set-state target="global" :isNavigatingToCart="false"/>
-    <!-- 옵션 선택 상태 초기화 -->
-    <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :wishlistLoading="false" :isOrdering="false" :downloadableCoupons="null" :downloadableCouponsLoading="false" :downloadingMore="false" :downloadingCouponId="null" :selectedCouponForDownload="null" :reviewsPage="1" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
+    <!-- 옵션 선택 상태 초기화 — 같은 레이아웃(상품 → 상품) SPA 이동은 _local 을 유지한다. 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1). 종전에는 앞 상품의 상품평 필터 「블랙」·구매 옵션 선택이 다음 상품에 남았다. -->
+    <set-state target="local" :currentSelection="null" :additionalOptions="null" :reviewOptionFilters="null"/>
+    <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :wishlistLoading="false" :isOrdering="false" :selectedCouponForDownload="null" :reviewsPage="1" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
   </init>
   <slot name="content">
     <container data-type="layout" class="py-4">

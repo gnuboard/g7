@@ -366,4 +366,14 @@ return [
             'different' => 'The :attribute must be different from :other.',
         ],
     ],
+    // Console command output
+    'console' => [
+        'playwright_seed' => [
+            'cli_only' => 'This command can only be run from the CLI.',
+            'bypass_required' => 'The G7_PLAYWRIGHT_BYPASS=1 environment variable is required.',
+        ],
+        'seed_gdpr_guest_login' => [
+            'done' => 'GDPR guest→login scenario seed complete: :email',
+        ],
+    ],
 ];

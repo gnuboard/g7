@@ -72,7 +72,8 @@ function headIsUntrusted(target: string): boolean {
   const m = /^\{\{\s*([^}]*)\}\}/.exec(target.trim());
   if (!m) return false;
 
-  return /^\(*\s*(query|response|error|result|\$results|\$args)\s*(\?\.|\.|\[)/.test(m[1])
+  // notification — 알림 목록 반복 변수. 서버가 알림 data 의 click_url·action_url 을 그대로 내려준다(알림을 만든 쪽이 정한 값, 7.1.1)
+  return /^\(*\s*(query|response|error|result|\$results|\$args|notification)\s*(\?\.|\.|\[)/.test(m[1])
     || /^\(*\s*(_local|_global)\??\.[\w.?]*?(redirect|return_?url|returnTo|next_?url)/i.test(m[1]);
 }
 
@@ -116,6 +117,7 @@ describe('바깥 주소 navigate 의 fallbackPath', () => {
       'shop/guest_order_show.json': [shopGuestOrders, shopGuestOrders],
       'shop/order_complete.json': ['/login', '/login'],
       '_user_base.json': ['/mypage/notifications', '/mypage/notifications'],
+      'partials/mypage/notifications/_list.json': ['/mypage/notifications'],
     };
 
     const actual: Record<string, string[]> = {};
@@ -125,5 +127,25 @@ describe('바깥 주소 navigate 의 fallbackPath', () => {
     }
 
     expect(actual).toEqual(expected);
+  });
+});
+
+describe('알림 카드 링크의 href 대체 주소 (7.1.1)', () => {
+  // 바깥 주소 알림이 href 에 그대로 남아 가운데 클릭·「새 탭에서 열기」로 다른 사이트가 열렸다 — 카드 링크는 보통 클릭의
+  // fallbackPath 와 같은 착지점을 fallbackHref 로 단다(이 사이트 주소면 컴포넌트가 href 를 그대로 둔다).
+  // @scenario redirect=protocol_relative
+  // @effects rejected_redirect_lands_on_fallback
+  it('마이페이지 알림 목록의 카드 링크는 fallbackHref="/mypage/notifications"', () => {
+    const json = JSON.parse(fs.readFileSync(path.join(LAYOUT_ROOT, 'partials/mypage/notifications/_list.json'), 'utf8'));
+    const links: Array<Record<string, any>> = [];
+    (function visit(o: unknown): void {
+      if (Array.isArray(o)) { o.forEach(visit); return; }
+      if (!o || typeof o !== 'object') return;
+      const n = o as Record<string, any>;
+      if (n.name === 'A' && typeof n.props?.href === 'string' && n.props.href.includes('notification.url')) links.push(n);
+      Object.values(n).forEach(visit);
+    })(json);
+    expect(links).toHaveLength(1);
+    expect(links[0].props.fallbackHref).toBe('/mypage/notifications');
   });
 });

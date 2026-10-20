@@ -4,6 +4,19 @@
   <!-- 수정 모드에서만 기존 메모를 받아 폼 초기값으로 넣는다(initLocal=form). 생성 모드는 data-if 가 요청 자체를 걸러 낸다. -->
   <data-source id="memoData" label_key="$t:gnuboard7-hello_module.editor.data_source.memoData" type="api" endpoint="/api/modules/gnuboard7-hello_module/admin/memos/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{route?.id}}" initLocal="form">
     <fallback :data="null"/>
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
   </data-source>
   <!-- 생성 모드의 등록 권한 — 목록 응답의 컬렉션 abilities(can_create)를 한 건만 받아 읽는다. 수정 모드는 memoData 의 can_update 를 본다 -->
   <data-source id="memoCreateAbility" label_key="$t:gnuboard7-hello_module.editor.data_source.memoCreateAbility" type="api" endpoint="/api/modules/gnuboard7-hello_module/admin/memos" method="GET" :auto_fetch="true" :auth_required="true" if="{{!route?.id}}">
@@ -47,7 +60,7 @@
             </on>
             <span>$t:gnuboard7-hello_module.admin.memos.form.actions.cancel</span>
           </a>
-          <button data-ref="memo_save_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <button data-ref="memo_save_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <!-- 저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다. -->
               <api-call :auth_required="true" target="{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">

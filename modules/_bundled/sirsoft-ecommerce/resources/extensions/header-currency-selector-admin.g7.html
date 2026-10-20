@@ -12,27 +12,43 @@
 <extension target-layout="_admin_base" priority="320">
   <inject target-id="header_currency_inject_anchor" position="append_child">
     <!-- 관리자 헤더 통화+배송국가 공용 셀렉터 (이커머스 주입, D4). slot='header_currency' 로 SlotContext 등록 → header_right 의 SlotContainer 가 떙겨 렌더. 헤더는 이 조각을 모름. 관리자 헤더 = 자기 화면 표시 전용(세션/localStorage). 영속 저장 없음(표시 전용). 표시 제어: 기본 hidden(display:none) → init_actions 가 채운 파생 상태(availableCurrencies/availableShippingCountries)가 표시 조건을 만족할 때만 hidden 해제. if(마운트 게이트) 대신 className 토글이라 첫 페인트부터 무조건 숨김 → 깜빡임(떴다 사라짐) 원천 차단. -->
-    <div data-ref="ext_admin_header_currency_selector" data-slot="header_currency" class="relative {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}">
+    <div data-ref="ext_admin_header_currency_selector" data-slot="header_currency" data-currency-selector="admin" class="relative {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}">
       <!-- portable 에서는 이 조각이 관리자 템플릿 모바일 드로어(admin_drawer_prefs, 세로 블록) 안에 렌더된다. 펼친 목록이 컨테이너 폭을 채우도록 w-full. hidden 게이트 표현식은 그대로 유지(props 얕은 머지가 아니라 className 통째 교체이므로 표현식을 복제해야 함). -->
       <responsive on="portable" class="relative w-full {{(_global.availableCurrencies ?? []).length > 0 || ((_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true) ? '' : 'hidden'}}"/>
       <!-- 트리거 버튼 — 데스크톱은 absolute 드롭다운의 토글, portable(드로어 안)에서는 접기/펼치기 아코디언의 트리거. 두 경우 모두 같은 플래그(_local.showCurrencyDropdown)를 토글하므로 기본은 접힘이다. portable 에서는 드로어 폭을 꽉 채우는 행 형태(좌: '통화' 라벨, 우: 현재 통화·배송국가 요약 + chevron)로 바뀐다. -->
-      <button class="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
+      <button type="button" class="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
         <!-- 드로어 안에서는 언어 아코디언 트리거와 동일한 형태 — children 을 통째 교체해 '통화' 라벨 + 현재값 요약 + chevron 으로 구성한다(엔진은 responsive.children 을 완전 교체한다). -->
         <responsive on="portable" class="w-full flex items-center justify-between py-1 cursor-pointer" aria-haspopup="listbox" aria-expanded="{{_local.showCurrencyDropdown ?? false}}" aria-label="$t:sirsoft-ecommerce.common.currency_label">
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:sirsoft-ecommerce.common.currency_label</span>
+          <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">$t:sirsoft-ecommerce.common.currency_label</span>
           <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
             <!-- 접힘 상태 요약 ① 현재 통화 코드 -->
             <span class="font-medium">{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}</span>
             <!-- 접힘 상태 요약 ② 현재 배송국가명 (해외배송 활성 + 국가 2개 이상일 때만). -->
-            <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-gray-500 dark:text-gray-400">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
-            <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
+            <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-gray-600 dark:text-gray-300">· {{(_global.availableShippingCountries ?? []).find(c => c.code === (_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name ?? (_global.preferredShippingCountry ?? 'KR')}}</span>
+            <icon name="chevron-down" class="{{_local.showCurrencyDropdown ? 'rotate-180' : ''}} text-xs text-gray-500 dark:text-gray-400 transition-transform duration-200"/>
           </span>
         </responsive>
         <on type="click">
           <set-state target="local" showCurrencyDropdown="{{!_local.showCurrencyDropdown}}"/>
         </on>
+        <on type="click">
+          <!-- 열고 닫기 뒤 다시 그려지면, 초점을 잃었으면 살아 있는 이 상자의 트리거로 옮긴다 — 슬롯 조각은 첫 그림에서 주입 앵커 자리에도 한 벌 그려졌다가 다음 다시 그리기에서 빠지므로, 그 사본으로 열면 초점이 문서 몸통으로 떨어진다(7.1.1 E2E). 초점이 이미 다른 곳에 있으면 건드리지 않는다 -->
+          <action handler="sirsoft-ecommerce.focusElement" selector='[aria-haspopup="listbox"]' closest="[data-currency-selector]" :defer="true"/>
+        </on>
+        <on type="keydown" key="Escape">
+          <!-- 목록이 열려 있을 때의 Esc 만 이 트리거의 것이다 — 바깥(서랍) Esc 닫기로 올라가지 않게 전파를 멈춘다. 닫혀 있으면 조건이 거짓이라 멈추지 않고, 서랍의 Esc 닫기가 그대로 받는다. 액션 키 stopPropagation 은 if 보다 먼저 적용돼 조건을 못 받으므로 핸들러로 멈춘다(진입점 액션이어야 한다) -->
+          <action handler="sirsoft-ecommerce.stopEventPropagation" if="{{_local.showCurrencyDropdown}}"/>
+        </on>
+        <on type="keydown" key="Escape">
+          <!-- 목록이 열린 채 트리거에서 Esc 를 누르면 닫는다 — 초점은 이미 트리거에 있다. 전파는 바로 위 진입점 액션이 열려 있을 때만 멈춘다. 닫혀 있으면 아무것도 하지 않는다(서랍의 Esc 닫기가 그대로 받는다) -->
+          <conditions>
+            <when if="{{_local.showCurrencyDropdown}}">
+              <set-state target="local" :showCurrencyDropdown="false"/>
+            </when>
+          </conditions>
+        </on>
         <!-- 트리거 배송국가 코드 (해외배송 활성 시) — 관리자 헤더는 flag 없이 코드 병기 -->
-        <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-xs text-gray-500 dark:text-gray-400">{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}</span>
+        <span data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="text-xs text-gray-600 dark:text-gray-300">{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}</span>
         <icon name="coins" class="text-base"/>
         <span class="font-medium">{{_global.preferredCurrency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}</span>
         <icon name="chevron-down" class="text-xs"/>
@@ -41,8 +57,15 @@
       <div data-if="{{_local.showCurrencyDropdown}}" class="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden" role="listbox">
         <!-- 드로어 안에서는 패널이 곧 본문이므로 카드 크롬(테두리/배경/좌우 패딩)을 벗긴다. 크롬을 남기면 드로어 패딩 안에 패딩이 중첩되어 칩 가용폭이 199px 로 줄고, 같은 드로어의 언어 칩(224px)과 줄바꿈 위치가 어긋난다. -->
         <responsive on="portable" class="static w-full mt-2 bg-transparent border-0 shadow-none py-0" role="listbox"/>
+        <on type="keydown" key="Escape">
+          <!-- 목록 안 항목에서 Esc — 초점을 트리거 단추로 먼저 옮기고(항목이 사라지면 초점이 문서 몸통으로 떨어진다) 목록을 닫는다. 같은 조각이 헤더·서랍에 둘 그려질 수 있어 이 상자(data-currency-selector — 슬롯이 root id 를 {id}__{컨테이너 id} 로 바꾸므로 id 로는 못 찾는다) 안의 트리거를 찾는다. 바깥(사용자 서랍) Esc 로 올라가지 않게 전파를 막는다 -->
+          <sequence :stopPropagation="true">
+            <action handler="sirsoft-ecommerce.focusElement" selector='[aria-haspopup="listbox"]' closest="[data-currency-selector]"/>
+            <set-state target="local" :showCurrencyDropdown="false"/>
+          </sequence>
+        </on>
         <!-- 섹션 라벨 '통화'. portable 에서는 아코디언 트리거 행이 이미 '통화' 라벨을 달고 있어 중복이므로 숨긴다(배송국가 라벨은 두 번째 섹션을 구분해야 하므로 유지). -->
-        <div class="px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+        <div class="px-4 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           <responsive on="portable" data-if="{{false}}"/>
           $t:sirsoft-ecommerce.common.currency_label
         </div>
@@ -50,7 +73,7 @@
         <div>
           <responsive on="portable" class="flex flex-wrap gap-2 pb-1"/>
           <div data-each="currency in {{_global.availableCurrencies ?? []}}">
-            <button class="justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
+            <button type="button" class="justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
               <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}"/>
               <on type="click">
                 <!-- 통화 선택 — 화면 상태와 브라우저 저장소 둘 다 바꾼다. `_global` 만 바꾸면 새로고침에
@@ -66,7 +89,7 @@
               <span class="flex-1">
                 <responsive on="portable" class=""/>
                 <span class="font-medium">{{currency.code}}</span>
-                <span class="text-gray-500 dark:text-gray-400 ml-1">({{currency.symbol}})</span>
+                <span class="text-gray-600 dark:text-gray-300 ml-1">({{currency.symbol}})</span>
               </span>
               <!-- portable(칩 나열)에서는 선택 상태가 배경/테두리 색으로 이미 표현되고 aria-selected 로도 전달되므로, 칩 폭을 아끼려 체크 아이콘을 숨긴다. -->
               <icon data-if="{{_global.preferredCurrency === currency.code}}" name="check" class="text-base">
@@ -79,7 +102,7 @@
         <div data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" class="my-1 border-t border-gray-200 dark:border-gray-700"/>
         <!-- ── 배송국가 섹션 (표시 전용) ── -->
         <div data-if="{{(_global.availableShippingCountries ?? []).length > 1 &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
-          <div class="px-4 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+          <div class="px-4 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             <responsive on="portable" class="py-1 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"/>
             $t:sirsoft-ecommerce.common.shipping_country_label
           </div>
@@ -87,7 +110,7 @@
           <div>
             <responsive on="portable" class="flex flex-wrap gap-2 pb-1"/>
             <div data-each="shipCountry in {{_global.availableShippingCountries ?? []}}">
-              <button class="justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}">
+              <button type="button" class="justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}">
                 <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"/>
                 <on type="click">
                   <!-- 배송국가 선택 — 위 통화와 같은 두 자리(화면 상태 + 브라우저 저장소)만 건드린다.

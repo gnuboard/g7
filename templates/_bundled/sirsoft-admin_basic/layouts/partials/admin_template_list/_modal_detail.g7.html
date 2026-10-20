@@ -121,7 +121,7 @@
                   <span class="text-heading">{{mod.name || mod.identifier}} ({{mod.identifier}})</span>
                   <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.templates.modals.dependency_required_version|version={{mod.required_version}}</span>
                   <span data-if="{{mod.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.templates.modals.dependency_installed_version|version={{mod.installed_version}}</span>
-                  <span data-if="{{mod.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.templates.modals.dependency_met</span>
+                  <span data-if="{{mod.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded">$t:admin.templates.modals.dependency_met</span>
                   <span data-if="{{!mod.is_met &amp;&amp; !mod.installed_version}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.templates.modals.dependency_not_installed</span>
                   <span data-if="{{!mod.is_met &amp;&amp; mod.installed_version &amp;&amp; !mod.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.templates.modals.dependency_inactive</span>
                   <span data-if="{{!mod.is_met &amp;&amp; mod.installed_version &amp;&amp; mod.is_active}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.templates.modals.dependency_unmet_version</span>
@@ -136,7 +136,7 @@
                   <span class="text-heading">{{plug.name || plug.identifier}} ({{plug.identifier}})</span>
                   <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.templates.modals.dependency_required_version|version={{plug.required_version}}</span>
                   <span data-if="{{plug.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.templates.modals.dependency_installed_version|version={{plug.installed_version}}</span>
-                  <span data-if="{{plug.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.templates.modals.dependency_met</span>
+                  <span data-if="{{plug.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded">$t:admin.templates.modals.dependency_met</span>
                   <span data-if="{{!plug.is_met &amp;&amp; !plug.installed_version}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.templates.modals.dependency_not_installed</span>
                   <span data-if="{{!plug.is_met &amp;&amp; plug.installed_version &amp;&amp; !plug.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.templates.modals.dependency_inactive</span>
                   <span data-if="{{!plug.is_met &amp;&amp; plug.installed_version &amp;&amp; plug.is_active}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.templates.modals.dependency_unmet_version</span>
@@ -174,10 +174,10 @@
                 <span class="text-heading">{{lp.locale_native_name}} ({{lp.locale}})</span>
                 <span data-if="{{lp.origin === 'built_in'}}" class="text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded">$t:admin.language_packs.origin.built_in</span>
                 <span data-if="{{lp.origin === 'bundled'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.language_packs.origin.bundled</span>
-                <span data-if="{{lp.origin === 'user_installed'}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.language_packs.origin.user_installed</span>
-                <span data-if="{{lp.status === 'active'}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.language_packs.status.active</span>
-                <span data-if="{{lp.status === 'inactive'}}" class="text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">$t:admin.language_packs.status.inactive</span>
-                <span data-if="{{lp.status === 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">$t:admin.language_packs.status.uninstalled</span>
+                <span data-if="{{lp.origin === 'user_installed'}}" class="text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded">$t:admin.language_packs.origin.user_installed</span>
+                <span data-if="{{lp.status === 'active'}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 rounded">$t:admin.language_packs.status.active</span>
+                <span data-if="{{lp.status === 'inactive'}}" class="text-body px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">$t:admin.language_packs.status.inactive</span>
+                <span data-if="{{lp.status === 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">$t:admin.language_packs.status.uninstalled</span>
                 <span data-if="{{lp.version}}" class="text-tertiary font-mono">v{{lp.version}}</span>
               </div>
             </div>

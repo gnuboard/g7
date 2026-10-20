@@ -433,4 +433,51 @@ class PostReadScopeSidePathTest extends BoardTestCase
         $this->assertNull($response->json('data.prev'));
         $this->assertNull($response->json('data.next'));
     }
+
+    // ==========================================
+    // B16 — 댓글 목록 API (7.1.1 출시 전 점검)
+    // ==========================================
+
+    /**
+     * 「댓글 조회 = 본인만」 회원이 자기 글의 댓글 목록 API 를 부르면 남의 댓글은 오지 않고 본인 댓글만 온다.
+     *
+     * 사용자 댓글 목록 컨트롤러가 서비스의 문맥 기본값(admin)을 그대로 써서 범위 식별자가
+     * `admin.comments.read` 로 잡히던 결함 — 그 권한은 이 회원에게 없으니 범위가 「없음 = 전체」로 풀렸다.
+     * 같은 회원의 글 상세 응답에 실린 댓글은 이미 본인 것만이었다(대조군).
+     *
+     * @scenario case=comment_list_api_filtered_by_scope
+     *
+     * @effects comment_list_api_filtered_by_scope
+     *
+     * @return void 반환값 없음
+     */
+    public function test_comment_list_api_excludes_out_of_scope_comments(): void
+    {
+        $othersCommentOnOwnPost = $this->createTestComment($this->ownPostId, [
+            'user_id' => $this->other->id,
+            'author_name' => 'other',
+            'content' => 'OTHER-COMMENT-BODY',
+        ]);
+        $ownComment = $this->createTestComment($this->ownPostId, [
+            'user_id' => $this->reader->id,
+            'author_name' => 'reader',
+            'content' => 'OWN-COMMENT-BODY',
+        ]);
+
+        $list = $this->actingAs($this->reader, 'sanctum')
+            ->getJson($this->url("/posts/{$this->ownPostId}/comments"));
+
+        $list->assertOk();
+        $ids = array_map('intval', array_column($list->json('data') ?? [], 'id'));
+        $this->assertContains($ownComment, $ids, '본인 댓글은 목록에 남아야 한다');
+        $this->assertNotContains($othersCommentOnOwnPost, $ids, '「본인만」 회원에게 남의 댓글이 목록 API 로 나가면 안 된다');
+        $this->assertStringNotContainsString('OTHER-COMMENT-BODY', $list->getContent());
+
+        // 대조군 — 글 상세에 실린 댓글도 같은 범위다
+        $detail = $this->actingAs($this->reader, 'sanctum')
+            ->getJson($this->url("/posts/{$this->ownPostId}"));
+        $detail->assertOk();
+        $detailIds = array_map('intval', array_column($detail->json('data.comments') ?? [], 'id'));
+        $this->assertSame($ids, $detailIds, '목록 API 와 글 상세의 댓글 범위가 같아야 한다');
+    }
 }

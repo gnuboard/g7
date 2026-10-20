@@ -182,7 +182,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-600 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-700 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-700 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}"
                                                     },
                                                     "text": "{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}"
                                                 },
@@ -356,7 +356,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!report_detail?.data?.board?.slug}}",
+                                    "if": "{{report_detail !== undefined && report_detail !== null && (!report_detail?.data?.board?.slug)}}",
                                     "props": {
                                         "className": "inline-flex items-center gap-1.5 text-label-subtle"
                                     },

@@ -25,7 +25,7 @@ function makeFetcher(specs: Record<string, EditorSpec | null>): typeof fetch {
 }
 
 /**
- * 7.1.0 실측(영역 I2): 같은 창 id(`delete_confirm_modal`·`privacy_run_modal`·`identity_policy_form_modal` …)를 여러 확장이 따로
+ * 7.1.0 실측: 같은 창 id(`delete_confirm_modal`·`privacy_run_modal`·`identity_policy_form_modal` …)를 여러 확장이 따로
  * 쓰는데, 상태 묶음에 출처가 없어 회원 목록의 삭제 창에 게시판·페이지·CKEditor 의 창 상태가 섞여 5개(같은 id 중복)로 보였고,
  * 먼저 병합된 확장의 표본이 다른 화면의 창에 적용됐다. 병합할 때 묶음마다 출처를 남긴다.
  */

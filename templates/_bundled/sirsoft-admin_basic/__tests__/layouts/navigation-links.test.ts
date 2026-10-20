@@ -11,9 +11,9 @@
  * 모집단은 관리자 템플릿 레이아웃 JSON(굽기 산출물) 전체에서 파생한다. 「이동」은 click 진입점(이름 있는 액션은 풀어서)이
  * `navigate` 이고 `replace` 가 아니며 확인 창(`confirm`)이 없고, 경로가 그 화면 자신의 라우트가 아닌 것이다 — 자기 화면을
  * 다시 부르는 새로고침·필터·검색·초기화(W6)와 저장·삭제 뒤 이동(sequence·apiCall 안쪽, D13)은 링크 대상이 아니다.
- * 쪽 번호·탭은 같은 라우트라도 쿼리가 바뀌면 대상이다(L0 판정 2026-10-15 — W6 새로고침은 이동 뒤 주소가 지금과 같을 때만).
+ * 쪽 번호·탭은 같은 라우트라도 쿼리가 바뀌면 대상이다(2026-10-15 판정 — W6 새로고침은 이동 뒤 주소가 지금과 같을 때만).
  *
- * 판정식은 이커머스 잠금 시험(EA)과 같은 규칙이다. 확장마다 독립 패키지라 공용 파일을 import 하지 않고 이 파일에 둔다.
+ * 판정식은 이커머스 잠금 시험과 같은 규칙이다. 확장마다 독립 패키지라 공용 파일을 import 하지 않고 이 파일에 둔다.
  *
  * @scenario-manifest tests/scenarios/navigation-links.yaml
  * @scenario component=layout_lock
@@ -179,7 +179,7 @@ function openWindowPaths(a: any): string[] {
 
 /**
  * 액션(순서·조건 갈래 포함)이 **같은 화면의 주소를 바꾸는** 이동(navigate·replace 둘 다)인지 봅니다 — 쿼리 키 이름에 기대지
- * 않는다(탭을 `tab` 키로만 알아보면 `channel`·`category` 같은 키로 바꾸는 탭을 놓친다 — BP1 실측, L0 2026-10-15).
+ * 않는다(탭을 `tab` 키로만 알아보면 `channel`·`category` 같은 키로 바꾸는 탭을 놓친다 — 2026-10-15 실측).
  * 주소가 그대로인 이동(쿼리 없이 현재 쿼리 병합 = 새로고침, W6)과 저장·요청 성공 뒤 이동(apiCall 안쪽, D13)은 뺀다.
  * 잡힌 칸은 링크(쪽·탭·목록 이동)거나 제외 목록에 사유(필터·검색·초기화·기간 프리셋)가 있어야 한다.
  *
@@ -377,7 +377,7 @@ function scan(): { moves: number; notLinks: Finding[]; itemsWithoutHref: Finding
                         if (!(n.name === 'A' && realHref(n.props?.href))) notLinks.push({ file: rel, what: `${label} → ${target}` });
                     }
                     // ①⁺⁰ click 진입점 안쪽(switch·sequence·conditions·parallel) 의 다른 화면 이동도 링크여야 한다 —
-                    //     최상위만 보던 사각(라운드 6, U1 사용자 잠금 발견). 자기 화면 이동은 ①'' 가 따로 본다
+                    //     최상위만 보던 사각(2026-10-16 사각 대조에서 사용자 화면 잠금 시험이 발견). 자기 화면 이동은 ①'' 가 따로 본다
                     if (isClick && !directMove) {
                         const inner = innerMovePaths(a).filter((p) => !isOwn(p));
                         if (inner.length > 0 && !excluded(rel, n, a)) {
@@ -488,7 +488,7 @@ function scan(): { moves: number; notLinks: Finding[]; itemsWithoutHref: Finding
 
 const result = scan();
 
-/** 라운드 6 픽스처 — 클릭 진입점 안쪽 이동 판정 */
+/** 사각 대조 픽스처(2026-10-16) — 클릭 진입점 안쪽 이동 판정 */
 const innerMoves = innerMovePaths;
 const lines = (xs: Finding[]): string[] => xs.map((x) => x.what);
 
@@ -535,7 +535,7 @@ describe('관리자 템플릿 화면 이동은 링크 (#757 WP-L)', () => {
     });
 });
 
-describe('잠금 판정 — 클릭 진입점 안쪽 이동 (라운드 6 픽스처)', () => {
+describe('잠금 판정 — 클릭 진입점 안쪽 이동 (사각 대조 픽스처)', () => {
     // @scenario component=layout_lock
     // @effects layout_moves_are_links
     it('switch·sequence·conditions·parallel 안쪽과 삼항 path 의 다른 화면 이동을 잡고, 요청 성공 뒤 이동·replace·confirm 은 뺀다', () => {

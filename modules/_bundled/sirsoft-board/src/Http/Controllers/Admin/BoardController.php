@@ -262,7 +262,7 @@ class BoardController extends AdminBaseController
 
                 // 원본 명단을 그대로 채우면 담당자를 지정할 수 없는 액터(새 게시판 ACL 밖의 위임 관리자)가
                 // 저장할 때 403 이다 — 그런 액터에게는 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고
-                // 스텝은 비운다(_meta.can_assign_board_members=false, K4F-2)
+                // 스텝은 비운다(_meta.can_assign_board_members=false)
                 $canAssignMembers = $this->boardService->canAssignBoardMembersOnNewBoard($copyData['permissions'] ?? []);
                 if (! $canAssignMembers) {
                     $self = $this->selfManagerPrefill();
@@ -291,7 +291,7 @@ class BoardController extends AdminBaseController
                 $data['add_to_menu'] = false;
 
                 // 로그인한 관리자를 게시판 관리자 기본값으로 지정한다. 새 게시판의 기본 ACL 로 게시판 권한을 받지
-                // 못하는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있어(K4F-2) 같은 값을 채우고,
+                // 못하는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있어 같은 값을 채우고,
                 // 다른 담당자는 지정할 수 없다는 사실만 _meta.can_assign_board_members=false 로 알린다
                 $canAssignMembers = $this->boardService->canAssignBoardMembersOnNewBoard(
                     $basicDefaults['default_board_permissions'] ?? []

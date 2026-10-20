@@ -1282,7 +1282,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
    * 행 선택 체크박스의 접근 가능한 이름을 만듭니다.
    *
    * 행 이름이 있으면 「{이름} 선택」, 없으면 「N번째 행 선택」. 이름이 없어 화면 읽기 프로그램에
-   * 「체크박스」 만 읽히던 것을 고친다(7.1.0 영역 J D-J5, O-CF5). 첫 열이 참/거짓인 표에서 모든 행이
+   * 「체크박스」 만 읽히던 것을 고친다(7.1.0). 첫 열이 참/거짓인 표에서 모든 행이
    * 「행 선택」 하나로 뭉치던 것도 번호로 나눈다(#757).
    */
   const getRowSelectLabel = (row: any, rowNumber: number): string => {
@@ -1408,7 +1408,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     const rowId = row[idField];
     const expanded = isRowExpanded(rowId);
     // 표 보기의 tr 과 같은 행 클래스(rowClassName)를 카드에도 붙인다 — 좁은 화면 카드 보기에서 공지·답글 카드의
-    // 배경 구분이 사라지던 것(7.1.0 실측 K3 O-K3-17). 행 클래스가 배경을 주면 기본 흰 배경을 빼 덮이지 않게 한다.
+    // 배경 구분이 사라지던 것(7.1.0 실측). 행 클래스가 배경을 주면 기본 흰 배경을 빼 덮이지 않게 한다.
     const rowCls = resolveRowClassName(rowClassName, row);
     const cardBg = /(^|\s)bg-/.test(rowCls) ? '' : 'bg-white dark:bg-gray-800';
 
@@ -1424,7 +1424,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
             >
               <Icon
                 name={expanded ? expandIconExpanded : expandIconCollapsed}
-                className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                className="w-4 h-4 text-gray-500 dark:text-gray-300"
               />
             </Button>
           )}
@@ -1701,25 +1701,44 @@ export const DataGrid: React.FC<DataGridProps> = ({
               )}
 
               {/* 데이터 컬럼 */}
-              {displayColumns.map((column) => (
-                <Th
-                  key={column.field}
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${
-                    headerSortEnabled && column.sortable !== false
-                      ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
-                      : ''
-                  }`}
-                  style={{ width: column.width, minWidth: column.width }}
-                  onClick={headerSortEnabled ? () => handleSort(column.field) : undefined}
-                >
-                  {column.header}
-                  {sortField === column.field && (
-                    <Span className="ml-1">
-                      {sortDirection === 'asc' ? '↑' : '↓'}
-                    </Span>
-                  )}
-                </Th>
-              ))}
+              {/* 정렬 머리(WAI-ARIA 정렬 표 패턴, 7.1.1) — 정렬 가능한 칸은 안에 단추를 두어 Tab 으로 닿고 Enter·Space 로 정렬하며,
+                  칸의 aria-sort 가 지금 정렬(오름·내림·없음)을 알린다. 정렬 콜백은 종전처럼 칸의 클릭에 있고 단추는 자기 동작 없이 클릭을
+                  칸으로 올려 보낸다 — 칸 여백을 눌러도 정렬되는 마우스 동작을 지키고, 단추를 눌러도 정렬이 한 번만 일어난다.
+                  단추는 inline 이라 글자 흐름·화살표 자리가 종전과 같다. */}
+              {displayColumns.map((column) => {
+                const sortableColumn = headerSortEnabled && column.sortable !== false;
+                const arrow = sortField === column.field && (
+                  <Span className="ml-1">
+                    {sortDirection === 'asc' ? '↑' : '↓'}
+                  </Span>
+                );
+
+                return (
+                  <Th
+                    key={column.field}
+                    className={`px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider ${
+                      sortableColumn
+                        ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
+                        : ''
+                    }`}
+                    style={{ width: column.width, minWidth: column.width }}
+                    aria-sort={sortableColumn ? (sortField === column.field ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
+                    onClick={headerSortEnabled ? () => handleSort(column.field) : undefined}
+                  >
+                    {sortableColumn ? (
+                      <Button type="button" className="inline text-left font-medium uppercase tracking-wider">
+                        {column.header}
+                        {arrow}
+                      </Button>
+                    ) : (
+                      <>
+                        {column.header}
+                        {arrow}
+                      </>
+                    )}
+                  </Th>
+                );
+              })}
 
               {/* 액션 컬럼 */}
               {rowActions && rowActions.length > 0 && (
@@ -1741,8 +1760,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     <Tr
                       className={`${
                         onRowClick ? 'cursor-pointer' : ''
-                      } ${resolveRowClassName(rowClassName, row)} hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                        selectedIds.includes(row[idField]) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      } ${resolveRowClassName(rowClassName, row)} hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
+                        selectedIds.includes(row[idField]) ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
                       } ${subRowClassName && rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}
                       onClick={() => onRowClick?.(row)}
                     >
@@ -1760,7 +1779,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             >
                               <Icon
                                 name={expanded ? expandIconExpanded : expandIconCollapsed}
-                                className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                                className="w-4 h-4 text-gray-500 dark:text-gray-300"
                               />
                             </Button>
                           ) : null}
@@ -1780,11 +1799,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         </Td>
                       )}
 
-                      {/* 데이터 셀 */}
+                      {/* 데이터 셀 — 칸은 줄을 바꾸지 않는다(whitespace-nowrap). 다만 칸 안에서 줄바꿈 클래스(wrap-anywhere·break-words·
+                          break-all)를 단 글은 그 뜻대로 줄을 바꾼다 — `data-grid-cell` 표식으로 main.css 가 white-space 를 되돌린다 */}
                       {displayColumns.map((column) => (
                         <Td
                           key={column.field}
-                          className="px-6 py-4 align-top whitespace-nowrap text-sm text-gray-900 dark:text-gray-200"
+                          className="data-grid-cell px-6 py-4 align-top whitespace-nowrap text-sm text-gray-900 dark:text-gray-200"
                           style={{ width: column.width, minWidth: column.width }}
                         >
                           {column.cellChildren && column.cellChildren.length > 0
@@ -1805,7 +1825,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             items={resolveRowActions(row)}
                             triggerLabel=""
                             triggerIconName={IconName.EllipsisHorizontal}
-                            // 아이콘만 있는 트리거라 작업 열 머리말 문구를 이름으로 준다(O-KF-1)
+                            // 아이콘만 있는 트리거라 작업 열 머리말 문구를 이름으로 준다
                             ariaLabel={resolvedActionsColumnHeader}
                             position="right"
                           />

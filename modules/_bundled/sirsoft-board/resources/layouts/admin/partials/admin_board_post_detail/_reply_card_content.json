@@ -115,7 +115,7 @@
                                             "if": "{{item.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -390,10 +390,10 @@
                                 {
                                     "id": "attachment_card_{{index}}_{{item.id}}",
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "답글 첨부 내려받기 — 관리자 다운로드 라우트로 받고 그 권한(can_download)이 없으면 실행하지 않는다. 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
+                                            "comment": "답글 첨부 내려받기 — 카드가 단추라 Tab·Enter·Space 로도 받는다(7.1.1). 관리자 다운로드 라우트로 받고 그 권한(can_download)이 없으면 실행하지 않는다. 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
                                             "type": "click",
                                             "handler": "sirsoft-board.downloadAttachment",
                                             "if": "{{post?.data?.abilities?.can_download === true}}",
@@ -411,7 +411,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "flex-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group"
+                                        "type": "button",
+                                        "className": "flex-center justify-start w-full text-left gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
                                     },
                                     "children": [
                                         {

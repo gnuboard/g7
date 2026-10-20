@@ -86,7 +86,7 @@ class ActivityLogRetentionTest extends TestCase
         $beyond = $this->logAged('user.update', 410);
 
         $this->artisan('activity-log:prune')
-            ->expectsOutputToContain('보존 400일')
+            ->expectsOutputToContain('보관 400일') // 완료 문구 용어는 「보관」으로 통일(7.1.1 출시 전)
             ->assertSuccessful();
 
         $this->assertTrue($this->kept($within), '설정(400일) 안의 로그가 지워졌다');
@@ -108,8 +108,9 @@ class ActivityLogRetentionTest extends TestCase
         $recent = $this->logAged('user.update', 100);
         $old = $this->logAged('user.update', 370);
 
+        // 하한을 적용했다고 알린다(7.1.1 출시 전)
         $this->artisan('activity-log:prune', ['--days' => 30])
-            ->expectsOutputToContain('보존 365일')
+            ->expectsOutputToContain('(보관 365일) 30일은 최소 보관 365일로 적용했습니다')
             ->assertSuccessful();
 
         $this->assertTrue($this->kept($recent), '--days=30 이 법정 최소 365일 안의 기록을 지웠다');
@@ -118,7 +119,7 @@ class ActivityLogRetentionTest extends TestCase
         // 단일 키 저장 경로는 범위를 보지 않는다 — 저장값 10 이어도 판독부가 365 로 올린다.
         config(['g7_settings.core.security.activity_log_retention_days' => 10]);
         $again = $this->logAged('user.update', 200);
-        $this->artisan('activity-log:prune')->expectsOutputToContain('보존 365일')->assertSuccessful();
+        $this->artisan('activity-log:prune')->expectsOutputToContain('보관 365일')->assertSuccessful();
         $this->assertTrue($this->kept($again));
     }
 

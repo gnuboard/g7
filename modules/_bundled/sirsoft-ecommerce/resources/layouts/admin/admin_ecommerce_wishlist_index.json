@@ -382,7 +382,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "~"
                                                     },
@@ -769,7 +769,7 @@
                             "idField": "id",
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
-                            "emptyMessage": "$t:sirsoft-ecommerce.admin.wishlists.table.empty",
+                            "emptyMessage": "{{wishlists === undefined ? '' : $t('sirsoft-ecommerce.admin.wishlists.table.empty')}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "selectedCountText": "",
                             "rowActions": [
@@ -841,7 +841,7 @@
                                                             "name": "Span",
                                                             "if": "{{!row.member}}",
                                                             "props": {
-                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                                "className": "text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.wishlists.badges.guest"
                                                         },

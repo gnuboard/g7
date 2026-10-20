@@ -13,8 +13,8 @@ use Modules\Sirsoft\Board\Traits\ResolvesScrapAuthorName;
  * 마이페이지 「내 반응」 행 리소스
  *
  * 게시글 반응과 댓글 반응을 한 목록에 섞어 보여준다. 대상이 삭제됐거나 게시판이
- * 사라졌어도 행은 남는다 — 회원이 남긴 기록이므로 해제(회수)는 언제나 가능해야 한다
- * (PO 결정 R11). 다만 그 경우 이동 링크는 주지 않는다.
+ * 사라졌어도 행은 남는다 — 회원이 남긴 기록이므로 해제(회수)는 언제나 가능해야 한다.
+ * 다만 그 경우 이동 링크는 주지 않는다.
  */
 class UserReactionResource extends BaseApiResource
 {

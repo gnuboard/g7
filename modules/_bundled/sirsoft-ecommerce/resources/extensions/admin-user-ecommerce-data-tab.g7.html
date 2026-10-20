@@ -52,7 +52,7 @@
             <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry</span>
             <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.inquiry_count ?? 0}}</span>
             <!-- 미답변만 따로 — 전체 건수는 «지금 답해야 할 것이 있는가» 를 말해 주지 않는다 -->
-            <span data-ref="field_inquiry_pending_count" data-if="{{(user?.data?.ecommerce_data?.inquiry_pending_count ?? 0) > 0}}" class="block text-xs font-medium text-amber-600 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry_pending|count={{user?.data?.ecommerce_data?.inquiry_pending_count ?? 0}}</span>
+            <span data-ref="field_inquiry_pending_count" data-if="{{(user?.data?.ecommerce_data?.inquiry_pending_count ?? 0) > 0}}" class="block text-xs font-medium text-amber-700 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry_pending|count={{user?.data?.ecommerce_data?.inquiry_pending_count ?? 0}}</span>
           </div>
         </div>
         <div data-ref="ecommerce_saved_addresses" class="mb-4">

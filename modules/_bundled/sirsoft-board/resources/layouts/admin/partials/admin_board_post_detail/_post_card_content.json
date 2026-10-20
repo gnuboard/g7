@@ -60,7 +60,7 @@
                                             "name": "Span",
                                             "if": "{{post?.data?.is_notice}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-600"
                                             },
                                             "text": "$t:sirsoft-board.admin.posts.detail.notice"
                                         },
@@ -111,7 +111,7 @@
                                             "name": "Span",
                                             "if": "{{post?.data?.is_new}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-500 text-white"
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-600 dark:bg-red-600 text-white"
                                             },
                                             "text": "N"
                                         },
@@ -166,7 +166,7 @@
                                     "props": {
                                         "href": "/admin/board/{{route.slug}}/create?parent_id={{post?.data?.id}}",
                                         "mergeQuery": true,
-                                        "className": "button text-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
+                                        "className": "button text-body inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
                                         "disabled": "{{post?.data?.abilities?.can_write !== true}}"
                                     },
                                     "children": [
@@ -206,7 +206,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                                        "type": "button",
+                                        "className": "text-body inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
                                     },
                                     "children": [
                                         {
@@ -230,6 +231,7 @@
                                     "name": "Button",
                                     "if": "{{post?.data?.board?.use_report && post?.data?.author?.uuid !== current_user?.data?.uuid && post?.data?.status !== 'blinded' && post?.data?.status !== 'deleted' && !post?.data?.deleted_at && post?.data?.is_already_reported}}",
                                     "props": {
+                                        "type": "button",
                                         "disabled": true,
                                         "className": "text-hint inline-flex items-center gap-1 px-3 py-1.5 font-medium bg-gray-100 dark:bg-gray-700 rounded cursor-not-allowed opacity-60"
                                     },
@@ -630,10 +632,10 @@
                                 {
                                     "id": "attachment_card_{{index}}",
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "첨부 내려받기 — 관리자 화면이라 관리자 다운로드 라우트(admin.attachments.download)로 받고, 그 권한이 없으면 실행하지 않는다(사용자 라우트를 쓰면 화면 권한과 다른 사용자 권한으로 판정됐다). 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
+                                            "comment": "첨부 내려받기 — 카드가 단추라 Tab 으로 닿고 Enter·Space 로도 받는다(7.1.1 — 종전 클릭만 받는 div). 관리자 화면이라 관리자 다운로드 라우트(admin.attachments.download)로 받고, 그 권한이 없으면 실행하지 않는다(사용자 라우트를 쓰면 화면 권한과 다른 사용자 권한으로 판정됐다). 링크로 열지 않고 이 모듈의 전용 핸들러에 맡긴다(로그인 토큰을 실어야 한다). 원래 파일명을 함께 넘겨야 저장될 때 서버가 붙인 이름이 아니라 올린 이름으로 떨어진다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다",
                                             "type": "click",
                                             "handler": "sirsoft-board.downloadAttachment",
                                             "if": "{{post?.data?.abilities?.can_download === true}}",
@@ -651,13 +653,14 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "group flex-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                        "type": "button",
+                                        "className": "group flex-center justify-start w-full text-left gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
                                     },
                                     "children": [
                                         {
-                                            "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용",
+                                            "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용. 단추 안이라 블록 요소 대신 span 이다",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Span",
                                             "if": "{{attachment?.is_image}}",
                                             "props": {
                                                 "className": "flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700"
@@ -677,7 +680,7 @@
                                         {
                                             "comment": "파일 아이콘 (일반 파일인 경우)",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Span",
                                             "if": "{{!attachment?.is_image}}",
                                             "props": {
                                                 "className": "flex-center flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 justify-center"
@@ -688,7 +691,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "file",
-                                                        "className": "text-lg text-gray-400 dark:text-gray-500"
+                                                        "className": "text-lg text-gray-500 dark:text-gray-400"
                                                     }
                                                 }
                                             ]
@@ -696,24 +699,24 @@
                                         {
                                             "comment": "파일 정보",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Span",
                                             "props": {
                                                 "className": "flex-1 min-w-0"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
-                                                    "name": "Div",
+                                                    "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
+                                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
                                                     },
                                                     "text": "{{attachment?.original_filename}}"
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Div",
+                                                    "name": "Span",
                                                     "props": {
-                                                        "className": "text-[10px] text-gray-500 dark:text-gray-400"
+                                                        "className": "block text-[10px] text-gray-600 dark:text-gray-400"
                                                     },
                                                     "text": "{{attachment?.size_formatted}}"
                                                 }
@@ -722,7 +725,7 @@
                                         {
                                             "comment": "다운로드 아이콘",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Span",
                                             "props": {
                                                 "className": "flex-shrink-0"
                                             },
@@ -732,7 +735,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "download",
-                                                        "className": "text-sm text-gray-400 dark:text-gray-500 group-hover:text-blue-500 board-attachment-icon transition-colors"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-500 group-hover:text-blue-500 board-attachment-icon transition-colors"
                                                     }
                                                 }
                                             ]
@@ -856,7 +859,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "{{post?.data?.parent?.created_at ?? ''}}"
                                 }
@@ -1106,7 +1109,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "exclamation-triangle",
-                                                "className": "text-base text-amber-500 dark:text-amber-400"
+                                                "className": "text-base text-amber-600 dark:text-amber-400"
                                             }
                                         },
                                         {
@@ -1139,6 +1142,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{post?.data?.abilities?.can_manage !== true}}"
                                     },
@@ -1269,7 +1273,7 @@
                             "props": {
                                 "href": "/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.prev?.id}}",
                                 "mergeQuery": true,
-                                "className": "flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                                "className": "flex-1 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                             },
                             "children": [
                                 {
@@ -1284,7 +1288,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "chevron-left",
-                                                "className": "text-base text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                "className": "text-base text-gray-500 dark:text-gray-400 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -1335,7 +1339,7 @@
                             "props": {
                                 "href": "/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}",
                                 "mergeQuery": true,
-                                "className": "flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                                "className": "flex-1 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                             },
                             "children": [
                                 {
@@ -1375,7 +1379,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "chevron-right",
-                                                "className": "text-base text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                "className": "text-base text-gray-500 dark:text-gray-400 flex-shrink-0"
                                             }
                                         }
                                     ]

@@ -124,7 +124,7 @@ test.describe('게시판 권한·담당자 저장의 권한 부여 상한', () =
 
   // @scenario case=e2e_board_manager_self_assign_blocked
   // @effects e2e_delegate_self_assign_rejected_and_unchanged
-  // 새 게시판에 생성자 본인 한 명만 관리자로 두는 것은 허용이다(K4F-2, 결정 2026-10-08) — 다른 회원을 함께 넣으면 403
+  // 새 게시판에 생성자 본인 한 명만 관리자로 두는 것은 허용이다(결정 2026-10-08) — 다른 회원을 함께 넣으면 403
   test('위임 계정이 기존 게시판 담당자에 자기를 넣거나, 다른 회원을 관리자로 게시판을 만들면 403 이다', async ({ request }) => {
     const delegate = issueScopedToken('sirsoft-board.boards.read', 'sirsoft-board.boards.update', 'sirsoft-board.boards.create');
     const delegateUuid = (await call(request, delegate, 'GET', '/api/admin/auth/user')).body?.data?.uuid;

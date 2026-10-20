@@ -6,7 +6,7 @@ description: |
 
   본 매니페스트는 단계별로 누적된다 (S1 토크나이저 → S2 노드 → S2.5 확장 컴포넌트 →
   S3 액션 → S4 문서 5계층 → S5 임베딩 → S6 검증기/커맨드 → S7~S9 → S10 설치 재아키텍처).
-  커버 범위를 **산문에 적지 않는다** — 그 문장은 낡는다(32차 실측: effects·test_files 는 S18 P1 과
+  커버 범위를 **산문에 적지 않는다** — 그 문장은 낡는다(실측: effects·test_files 는 S18 P1 과
   가드 회차분까지 등재돼 있는데 헤더만 "S1~S14" 에 멈춰 있었고, `GateMembershipGuardTest` 는
   `test_files` 만 읽으므로 그 불일치를 구조적으로 잡지 못했다). 무엇이 커버되는지는 아래
   `effects` 와 `test_files` 가 정본이고, 그 둘과 게이트 필터의 정합은 `GateMembershipGuardTest` 가
@@ -503,6 +503,8 @@ effects:
   - valid_source_compiles_to_json_with_no_warnings
   - strong_validation_violation_stops_compilation
   - lint_warning_is_surfaced_without_stopping_compilation
+  - listen_key_is_warned_as_entry_only   # 7.1.1 출시 전 실측 — <on listen key> 의 key 를 lint ⑭ 가 경고
+  - childless_field_leaf_value_kept   # 핸들러·데이터 소스 바로 아래 자식 없는 <field :value> 는 그 값
   - context_drives_source_kind_dependent_lint
   - every_lint_code_has_a_message_in_every_shipped_locale
   # --- S10 설치 재아키텍처 (D38·D39): .g7.html 을 설치 시점에 인메모리 컴파일→DB, 산출 JSON 미기록.
@@ -540,7 +542,7 @@ effects:
   - json_forced_source_makes_partial_json_win
   - json_forced_source_keeps_markup_only_partials
   - nested_partial_markup_resolves_recursively
-  # 코퍼스 전수 — 27차 실측이 `<include>` 만 세어 `<modal src>` 213건을 빠뜨렸다. 값을 산문에 적는
+  # 코퍼스 전수 — 실측이 `<include>` 만 세어 `<modal src>` 213건을 빠뜨렸다. 값을 산문에 적는
   # 대신 성질(해석 실패 0 · 소스 있으면 소스 승)을 단언해 재집계를 사람에게서 떼어낸다.
   - corpus_partial_references_resolve_to_authoring_sources
   # --- S21.2 ⓑ 조각 참조 표기 (U-REFEXT 안 B · 설계 결정 2026-08-02) ---
@@ -657,6 +659,7 @@ effects:
   - modals_object_map_normalized_to_list
   # --- S11 W2(㉓): 단일-자식 sequence 왕복 비대칭 + overlay 기여 판정
   - single_child_sequence_keeps_wrapper_through_round_trip
+  - listen_key_round_trips_on_on_element   # 구독의 key 를 <on listen key> 로 역변환
   - multi_child_sequence_stays_implicit
   - overlay_fragment_valid_with_modals_only
   - overlay_fragment_rejected_when_contributes_nothing
@@ -729,7 +732,7 @@ effects:
   - migration_exclusions_are_pinned_with_reasons
   # S16 — 결함 대장 F1~F22 의 기계 판정. 서술 대장을 코퍼스 전수 단언으로 대체한 것이며
   # 22계열이 19 메서드에 담긴다(F11+F21 · F13+F16 · F17+F20 은 같은 스캔으로 판정).
-  # 15차 validate-plan 실측에서 이 19건이 어느 매니페스트에도 없어 커버리지 기계의 시야
+  # validate-plan 실측에서 이 19건이 어느 매니페스트에도 없어 커버리지 기계의 시야
   # 밖이었다 — "누락 방지는 서술이 아니라 테스트가 맡는다" 는 S16 의 전제가 정작 커버리지
   # 축에서는 성립하지 않던 자리다.
   - bare_string_node_condition_is_eliminated
@@ -1002,7 +1005,7 @@ effects:
   - extension_markup_compile_returns_json_for_valid_fragment
   - extension_markup_compile_rejects_invalid_fragment_with_422
   # 물려받기만 하는(슬롯·컴포넌트 없는) extends 문서 저장에 빈 `content` 슬롯을 지어 넣지 않는다 —
-  # 부모에 그 슬롯이 없으면 422 로 막혔고, 있으면 부모 본문을 비웠다(7.1.0 전수 실측 I1, 2026-10-06).
+  # 부모에 그 슬롯이 없으면 422 로 막혔고, 있으면 부모 본문을 비웠다(7.1.0 전수 실측, 2026-10-06).
   - extends_only_layout_saves_without_synthesized_slot
   # 저장 왕복이 **본문을 바꾸지 않는다** — 아무것도 고치지 않고 저장만 해도 사라지던 것들.
   # 주석은 `validated()` 가 규칙 없는 키를 떨궈서, 빈 map 은 Eloquent 캐스트가 `{}`/`[]` 를

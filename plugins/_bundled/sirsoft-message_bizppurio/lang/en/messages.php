@@ -90,10 +90,10 @@ return [
 
     // Send skipped (channel driver send() precondition not met — recorded as "Failed" in core notification log)
     'send_skipped' => [
-        'alimtalk_template_not_approved' => 'Skipped sending: no approved alimtalk template or alimtalk delivery is off. (notification type: :type)',
-        'sms_template_missing' => 'Skipped sending: no SMS body is configured. (notification type: :type)',
-        'recipient_phone_missing' => 'Skipped sending: recipient phone number is missing. (notification type: :type)',
-        'message_body_empty' => 'Skipped sending: message body is empty. (notification type: :type)',
+        'alimtalk_template_not_approved' => 'Could not send: no approved alimtalk template or alimtalk delivery is off. (notification type: :type)',
+        'sms_template_missing' => 'Could not send: no SMS body is configured. (notification type: :type)',
+        'recipient_phone_missing' => 'Could not send: recipient phone number is missing. (notification type: :type)',
+        'message_body_empty' => 'Could not send: message body is empty. (notification type: :type)',
     ],
 
     // Notification template lifecycle (#597 — BizppurioTemplateController responses and state guards)
@@ -206,6 +206,13 @@ return [
             'channel_label' => 'Sending channel (SMS/AlimTalk)',
             'settings_url' => 'Messaging settings URL',
             'site_url' => 'Site URL',
+        ],
+    ],
+    // Console command output
+    'console' => [
+        'sync_template_status' => [
+            'no_requested' => 'No templates are awaiting inspection (requested), so the Kakao lookup is skipped.',
+            'done' => 'Templates awaiting inspection checked: :checked, status transitions: :transitioned.',
         ],
     ],
 ];

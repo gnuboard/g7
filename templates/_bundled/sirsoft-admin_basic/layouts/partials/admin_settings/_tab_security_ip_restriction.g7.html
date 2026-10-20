@@ -15,7 +15,7 @@
          따라 그린다. 이 상태로 켜면 모든 방문자가 프록시 주소 하나로 보여 제한이 통째로 무너진다. -->
     <div data-ref="ip_restriction_proxy_warning" data-if="{{trustedProxy?.data?.status === 'warning'}}" class="alert-warning">
       <div class="flex gap-3">
-        <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+        <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
         <p class="text-warning-soft">$t:admin.settings.security.ip_restriction.proxy_warning</p>
       </div>
     </div>
@@ -116,7 +116,7 @@
                   </toggle>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <button data-ref="ip_rule_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button data-ref="ip_rule_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     <on type="click">
                       <!-- 편집 창 열기(표 판) — 추가와 같은 창을 쓰되 row_index 에 행 번호를 넣고 그 행 값으로 채운다.
                            규칙 목록 사본을 함께 넘기는 이유는 추가 버튼과 같다. -->
@@ -165,7 +165,7 @@
                 </on>
               </toggle>
               <div class="flex-center gap-2">
-                <button data-ref="ip_rule_edit_m_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <button data-ref="ip_rule_edit_m_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <on type="click">
                     <!-- 편집 창 열기(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
                     <sequence>

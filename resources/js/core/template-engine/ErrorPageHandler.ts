@@ -135,9 +135,10 @@ export class ErrorPageHandler {
      *
      * @param errorCode 에러 코드 (404, 403, 500 등)
      * @param containerId 렌더링할 컨테이너 ID (기본값: 'app')
+     * @param shouldRender 그리기 직전 판정 — 거짓이면 그리지 않고 false (오류 레이아웃 적재 중 경로가 바뀐 경우, engine-v1.80.1)
      * @returns 렌더링 성공 여부
      */
-    async renderError(errorCode: number, containerId: string = 'app'): Promise<boolean> {
+    async renderError(errorCode: number, containerId: string = 'app', shouldRender?: () => boolean): Promise<boolean> {
         try {
             // 1. error_config 로드
             const config = await this.loadConfig();
@@ -235,6 +236,12 @@ export class ErrorPageHandler {
                 _global: { ...this.globalState },
                 _local: { ...localInit },
             };
+
+            // 적재·데이터 fetch 동안 다른 화면으로 옮겼으면 그 화면을 덮지 않는다
+            if (shouldRender && !shouldRender()) {
+                logger.log(`Error page ${errorCode} skipped — route changed while loading`);
+                return false;
+            }
 
             await this.renderFunction({
                 containerId,

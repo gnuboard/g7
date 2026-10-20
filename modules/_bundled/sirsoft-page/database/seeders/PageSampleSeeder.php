@@ -33,7 +33,7 @@ class PageSampleSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('페이지 시연 샘플 생성 중...');
+        $this->command->info(__('sirsoft-page::messages.seeders.page_sample.start'));
 
         $adminId = User::where('is_super', true)->value('id');
         $created = 0;
@@ -42,7 +42,7 @@ class PageSampleSeeder extends Seeder
         $created += $this->createHistoryPage($adminId);
         $created += $this->createAttachmentPage($adminId);
 
-        $this->command->info("페이지 시연 샘플 생성 완료: {$created}개");
+        $this->command->info(__('sirsoft-page::messages.seeders.page_sample.done', ['count' => $created]));
     }
 
     /**
@@ -164,7 +164,7 @@ class PageSampleSeeder extends Seeder
             $this->backdate($attachment, $createdAt->copy()->addMinutes(10));
             PageSampleRunRegistry::addAttachment((int) $attachment->id);
         } else {
-            $this->command->warn('  - GD 확장이 없어 첨부 이미지를 만들지 않았습니다.');
+            $this->command->warn('  - '.__('sirsoft-page::messages.seeders.page_sample.no_gd'));
         }
 
         return 1;
@@ -199,7 +199,7 @@ class PageSampleSeeder extends Seeder
 
         $this->backdate($page, $createdAt);
         PageSampleRunRegistry::addPage((int) $page->id);
-        $this->command->info("  - [{$slug}] 생성 완료");
+        $this->command->info('  - '.__('sirsoft-page::messages.seeders.page_sample.created', ['slug' => $slug]));
 
         return $page;
     }
@@ -273,7 +273,7 @@ class PageSampleSeeder extends Seeder
     private function exists(string $slug): bool
     {
         if (Page::where('slug', $slug)->exists()) {
-            $this->command->warn("  - [{$slug}] 이미 존재합니다. 스킵합니다.");
+            $this->command->warn('  - '.__('sirsoft-page::messages.seeders.page_sample.exists_skip', ['slug' => $slug]));
 
             return true;
         }

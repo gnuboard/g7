@@ -79,7 +79,8 @@ describe('ChipCheckbox', () => {
       );
 
       const label = container.querySelector('label');
-      expect(label).toHaveClass('bg-green-600');
+      // 흰 글자 대비 4.5:1 — green-600 은 3.22 라 700 단계를 쓴다
+      expect(label).toHaveClass('bg-green-700');
       expect(label).toHaveClass('text-white');
     });
 
@@ -94,7 +95,8 @@ describe('ChipCheckbox', () => {
 
       const label = container.querySelector('label');
       expect(label).toHaveClass('bg-orange-50');
-      expect(label).toHaveClass('text-orange-600');
+      // 연한 바탕 위 글자 대비 4.5:1 — orange-600 은 orange-50 위에서 3.38 이라 700 단계를 쓴다
+      expect(label).toHaveClass('text-orange-700');
     });
 
     const variants = ['green', 'orange', 'yellow', 'gray', 'blue'] as const;
@@ -150,8 +152,9 @@ describe('ChipCheckbox', () => {
       const label = container.querySelector('label');
       // variant 클래스가 적용되지 않아야 함
       expect(label).not.toHaveClass('bg-green-50');
-      // 인라인 스타일이 적용되어야 함
-      expect(label).toHaveStyle({ color: '#FF5733' });
+      // 인라인 스타일이 적용되어야 함 — 글자색은 데이터 색 그대로가 아니라 바탕과 4.5 이상이 되도록 계산된 색
+      expect(label?.style.color).toBeTruthy();
+      expect(label?.style.backgroundColor).toContain('rgba(255, 87, 51');
     });
 
     /**
@@ -169,10 +172,11 @@ describe('ChipCheckbox', () => {
       );
 
       const label = container.querySelector('label');
+      // 바탕은 데이터 색 그대로, 글자는 검정·흰색 중 대비가 큰 쪽(#FF5733 위 흰색 3.2 → 검정 6.5)
       expect(label).toHaveStyle({
-        backgroundColor: '#FF5733',
-        color: '#ffffff',
-        borderColor: '#FF5733',
+        backgroundColor: '#ff5733',
+        color: '#000000',
+        borderColor: '#ff5733',
       });
     });
 
@@ -194,7 +198,8 @@ describe('ChipCheckbox', () => {
       // #FF5733 = rgb(255, 87, 51)
       // 라이트 모드 unchecked: rgba(255, 87, 51, 0.06)
       expect(label?.style.backgroundColor).toContain('rgba(255, 87, 51');
-      expect(label).toHaveStyle({ color: '#FF5733' });
+      // 글자색은 데이터 색(#FF5733 — 연한 바탕 위 3.2)이 아니라 같은 계열을 짙게 섞은 4.5 이상 색
+      expect(label).not.toHaveStyle({ color: '#FF5733' });
     });
 
     /**
@@ -273,7 +278,7 @@ describe('ChipCheckbox', () => {
      * @scenario component=chip_checkbox
      * @effects chip_checkbox_applies_variant_or_custom_color_styles, chip_checkbox_contract_with_decorative_icon
      */
-    it('hover 시 스타일이 변경되어야 함 (checked)', () => {
+    it('hover 시 바탕이 조금 짙어지고 글자 대비는 유지되어야 함 (checked)', () => {
       const { container } = render(
         <ChipCheckbox
           value="test"
@@ -284,16 +289,16 @@ describe('ChipCheckbox', () => {
       );
 
       const label = container.querySelector('label')!;
-      // 초기 상태: opacity 1
-      expect(label).toHaveStyle({ opacity: '1' });
+      // 투명도로 흐리게 하면 글자까지 흐려져 대비가 떨어진다 — 바탕만 짙힌다
+      const initialBg = label.style.backgroundColor;
+      expect(label.style.opacity).toBe('');
 
-      // hover
       fireEvent.mouseEnter(label);
-      expect(label).toHaveStyle({ opacity: '0.85' });
+      expect(label.style.backgroundColor).not.toBe(initialBg);
+      expect(label.style.opacity).toBe('');
 
-      // unhover
       fireEvent.mouseLeave(label);
-      expect(label).toHaveStyle({ opacity: '1' });
+      expect(label.style.backgroundColor).toBe(initialBg);
     });
 
     /**

@@ -28,7 +28,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-amber-500 shrink-0 mt-0.5"
+                                "className": "text-xl text-amber-600 shrink-0 mt-0.5"
                             }
                         },
                         {

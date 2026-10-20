@@ -147,7 +147,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const titleText = titleTextProp ?? tOr('admin.notifications', 'Notifications');
   const emptyText = emptyTextProp ?? tOr('admin.no_notifications', 'No notifications');
   const markAllReadText = markAllReadTextProp ?? tOr('admin.notifications_mark_all_read', 'Mark all as read');
@@ -339,7 +339,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         <Icon name={IconName.Bell} className="text-sm text-slate-500 dark:text-slate-400" />
         {displayCount > 0 && (
           // 20px 원 안에 12px `99+` 는 넘친다(실측 23.28px) — 세 자리 표시일 때만 9px 로 줄인다
-          <Span className={`absolute top-0 right-0 flex items-center justify-center w-5 h-5 ${displayCount > 99 ? 'text-[9px]' : 'text-xs'} font-bold text-white bg-red-500 dark:bg-red-600 rounded-full`}>
+          <Span className={`absolute top-0 right-0 flex items-center justify-center w-5 h-5 ${displayCount > 99 ? 'text-[9px]' : 'text-xs'} font-bold text-white bg-red-600 dark:bg-red-600 rounded-full`}>
             {displayCount > 99 ? '99+' : displayCount}
           </Span>
         )}
@@ -423,7 +423,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         <Icon
                           name={notification.iconName}
                           className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                            isUnread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'
+                            isUnread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-500'
                           }`}
                         />
                       )}
@@ -439,12 +439,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         </Div>
                         <Div
                           className={`text-sm mt-1 line-clamp-2 ${
-                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-500'
+                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'
                           }`}
                         >
                           {notification.message}
                         </Div>
-                        <Div className="text-gray-400 dark:text-gray-500 text-xs mt-1 font-mono">
+                        <Div className="text-gray-500 dark:text-gray-400 text-xs mt-1 font-mono">
                           {notification.time}
                         </Div>
                       </Div>
@@ -459,7 +459,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       className={`group flex items-start gap-3 px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors cursor-pointer ${
                         isUnread
                           ? 'bg-blue-50/70 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 opacity-70'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                       }`}
                     >
                       {link ? (
@@ -492,7 +492,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                               e.stopPropagation();
                               onDelete(notification);
                             }}
-                            className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                             aria-label={tOr('common.delete_notification', 'Delete notification')}
                           >
                             <Icon name={IconName.Trash} className="w-4 h-4" />
@@ -506,15 +506,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 {hasMore && (
                   <Div ref={sentinelRef} className="px-4 py-3 text-center">
                     {loading ? (
-                      <Span className="text-sm text-gray-400 dark:text-gray-500">...</Span>
+                      <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
                     ) : (
-                      <Span className="text-sm text-gray-400 dark:text-gray-500" />
+                      <Span className="text-sm text-gray-500 dark:text-gray-400" />
                     )}
                   </Div>
                 )}
                 {loading && !hasMore && notifications.length > 0 && (
                   <Div className="px-4 py-2 text-center">
-                    <Span className="text-sm text-gray-400 dark:text-gray-500">...</Span>
+                    <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
                   </Div>
                 )}
               </>

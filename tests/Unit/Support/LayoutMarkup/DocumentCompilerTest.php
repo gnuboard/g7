@@ -181,7 +181,7 @@ class DocumentCompilerTest extends LayoutMarkupTestCase
      * 봉투(`<layout>`·`<extension>`·`<override>`) 바로 안의 글자는 담길 노드가 없어 조용히 사라진다 —
      * 문서 최상위 글자와 같이 거부한다.
      *
-     * 실측 2026-10-06(7.1.0 전수 실측 I1): 코드 편집기에서 `<layout …>\n  Z1Z2<div></div>\n</layout>` 을
+     * 실측 2026-10-06(7.1.0 전수 실측): 코드 편집기에서 `<layout …>\n  Z1Z2<div></div>\n</layout>` 을
      * 컴파일하면 오류·경고 없이 통과하고 저장본에서 「Z1Z2」 만 빠졌다. 지워진 파일의 초안을
      * 「새 이름으로 저장」 했을 때 편집분이 사라진 것도 같은 경로였다.
      *

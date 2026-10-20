@@ -1,0 +1,19 @@
+feature: 클레임 신청서·상세 껍데기가 데이터 전에 「{{number}}」 자리표시자를 보이지 않는다 (7.1.1)
+
+description: |
+  없는 클레임 번호·잘못된 유형 주소에서 404 화면이 뜨기 전 1~2초 동안 신청서·상세 껍데기가 데이터 없이 그려져
+  「주문번호 {{number}}」「신청내역 {{at}}」 처럼 번역 자리표시자가 그대로 보였다. 레이아웃 문자열 인자 번역
+  (`$t:키|이름={{값}}`)은 값이 비면 그 인자를 넘기지 않아 자리표시자가 남는다(엔진 동작, 이번 수정 전부터).
+  값을 그리는 줄은 값이 있을 때만 그린다(data-if).
+
+axes:
+  screen: [member_apply, guest_apply, member_detail, guest_detail]
+
+effects:
+  - placeholder_line_hidden_until_value   # 인자 값이 빈 동안 그 줄을 그리지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/claim-shell-placeholder-before-data.test.ts
+
+validation:
+  browser_check: 재실측 — /mypage/claims/NOPECLAIM1/edit·…/claims/apply/bogus 에서 404 전 화면에 「{{」 0

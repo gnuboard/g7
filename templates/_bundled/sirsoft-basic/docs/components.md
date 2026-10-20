@@ -113,7 +113,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
-| `A` | 앵커/링크 — 레이아웃 클릭 액션이 없으면 같은 출처 주소의 보통 클릭만 SPA 로 옮기고, 수정키·가운데 단추는 브라우저 기본(새 탭). `disabled` 면 href 를 빼고 `aria-disabled`, `mergeQuery` 면 현재 쿼리를 href 에 합친다. `target="_blank"` 면 rel 에 `noopener noreferrer` 를 합친다 | href, disabled, mergeQuery, target, rel | - |
+| `A` | 앵커/링크 — 레이아웃 클릭 액션이 없으면 같은 출처 주소의 보통 클릭만 SPA 로 옮기고, 수정키·가운데 단추는 브라우저 기본(새 탭). `disabled` 면 href 를 빼고 `aria-disabled`, `mergeQuery` 면 현재 쿼리를 href 에 합친다. `fallbackHref` 를 주면 이 사이트 주소가 아닌 href(실행 주소·다른 사이트·`//host`)를 그 대체 주소로 바꾼다(알림 이동 주소처럼 바깥에서 정해지는 href). `target="_blank"` 면 rel 에 `noopener noreferrer` 를 합친다 | href, disabled, mergeQuery, fallbackHref, target, rel | - |
 | `H1` | 제목 (h1) | - | - |
 | `H2` | 제목 (h2) | - | - |
 | `H3` | 제목 (h3) | - | - |

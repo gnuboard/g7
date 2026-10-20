@@ -312,7 +312,7 @@
             "name": "Div",
             "actions": [
                 {
-                    "comment": "모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.\n           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 N O-N6.",
+                    "comment": "모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.\n           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 실측.",
                     "type": "keydown",
                     "key": "Escape",
                     "handler": "conditions",
@@ -705,7 +705,7 @@
                                         "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                                         "unreadCount": "{{_global.notificationCount ?? 0}}",
                                         "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
-                                        "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                                        "loading": "{{_global.notificationsLoadingMore ?? (notifications === undefined)}}",
                                         "titleText": "$t:mypage.notifications.title",
                                         "emptyText": "$t:mypage.notifications.empty",
                                         "markAllReadText": "$t:mypage.notifications.mark_all_read",
@@ -748,14 +748,14 @@
                                             "name": "Span",
                                             "if": "{{_global.cartCount > 0}}",
                                             "props": {
-                                                "className": "absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                                                "className": "absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-600 dark:bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center"
                                             },
                                             "text": "{{_global.cartCount > 99 ? '99+' : _global.cartCount}}"
                                         }
                                     ]
                                 },
                                 {
-                                    "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다.",
+                                    "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다.",
                                     "id": "mobile_user_btn",
                                     "type": "basic",
                                     "name": "A",
@@ -867,7 +867,7 @@
                                     "props": {
                                         "type": "button",
                                         "aria-label": "$t:nav.close_menu",
-                                        "className": "p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                                     },
                                     "children": [
                                         {
@@ -903,7 +903,7 @@
                                             "props": {
                                                 "name": "search",
                                                 "size": "sm",
-                                                "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                                                "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
                                             }
                                         },
                                         {
@@ -1012,7 +1012,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "chevron-down",
-                                                                "className": "{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"
+                                                                "className": "{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-500 dark:text-gray-500 transition-transform duration-200"
                                                             }
                                                         }
                                                     ]
@@ -1115,6 +1115,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "className": "w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
                                     },
                                     "children": [
@@ -1146,7 +1147,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 truncate"
+                                                        "className": "text-sm text-gray-600 dark:text-gray-300 truncate"
                                                     },
                                                     "text": "{{_global.currentUser?.email}}"
                                                 }
@@ -1159,7 +1160,7 @@
                                             "props": {
                                                 "name": "chevron-down",
                                                 "size": "md",
-                                                "className": "{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-400 dark:text-gray-500 transition-transform duration-200"
+                                                "className": "{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-500 dark:text-gray-300 transition-transform duration-200"
                                             }
                                         }
                                     ]
@@ -1186,7 +1187,7 @@
                                                     "if": "{{_global.currentUser?.is_admin}}",
                                                     "props": {
                                                         "href": "/admin",
-                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-blue-700 dark:text-blue-200 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
                                                     },
                                                     "children": [
                                                         {
@@ -1361,7 +1362,8 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                                                        "type": "button",
+                                                        "className": "justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -1588,7 +1590,7 @@
                                             "props": {
                                                 "name": "flame",
                                                 "size": "md",
-                                                "className": "text-orange-500"
+                                                "className": "text-orange-600 dark:text-orange-500"
                                             }
                                         },
                                         {
@@ -1667,7 +1669,7 @@
                                                     "name": "Span",
                                                     "if": "{{board.post_count > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0"
+                                                        "className": "text-xs text-gray-600 dark:text-gray-300 shrink-0"
                                                     },
                                                     "text": "{{board.post_count}}"
                                                 }
@@ -1795,7 +1797,7 @@
                                             "name": "Span",
                                             "if": "{{_global.cartCount > 0}}",
                                             "props": {
-                                                "className": "px-2 py-0.5 bg-red-500 dark:bg-red-500 text-white text-xs font-bold rounded-full"
+                                                "className": "px-2 py-0.5 bg-red-600 dark:bg-red-600 text-white text-xs font-bold rounded-full"
                                             },
                                             "text": "{{_global.cartCount}}"
                                         }
@@ -2341,7 +2343,7 @@
                         "className": "hidden",
                         "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                         "notificationHasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
-                        "notificationLoading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                        "notificationLoading": "{{_global.notificationsLoadingMore ?? (notifications === undefined)}}",
                         "notificationUnreadOnly": "{{_global.notificationsUnreadOnly ?? true}}",
                         "notificationCanUpdate": "{{notifications?.data?.abilities?.can_update === true}}",
                         "notificationCanDelete": "{{notifications?.data?.abilities?.can_delete === true}}"

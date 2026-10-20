@@ -79,6 +79,17 @@
           <refetch-data-source dataSourceId="layout_files"/>
         </sequence>
       </on-code>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
   </data-source>
   <!-- limit 는 서버 기본 상한(100)과 같은 값에서 출발해 '더 보기' 마다 한 묶음씩 넓힌다. 서버가 상한 조회만 지원하므로(#518) 이 파라미터가 없으면 100건을 넘는 버전은 이 화면에서 도달할 수 없다. 상한 500 은 서버 LayoutVersionListRequest::MAX_LIMIT 과 같아야 하며, 넘기면 목록 전체가 422 가 된다. -->
@@ -114,6 +125,19 @@
       </field>
     </init-global>
     <fallback :data="null"/>
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
   </data-source>
   <!-- 확장 조각의 판본 이력 — 레이아웃 쪽과 같은 이유로 창을 열 때만 부른다. -->
   <data-source id="extension_versions" label_key="$t:editor.data_source.extension_versions" type="api" endpoint="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/versions" method="GET" :auto_fetch="false" :auth_required="true">
@@ -204,7 +228,7 @@
       <when if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.extension_type === 'overlay'}}">
         <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">
           <success>
-            <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0 O-G3-6). -->
+            <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0). -->
             <open-window path="{{response.data?.preview_url ?? '/preview/' + response.data.token}}"/>
           </success>
           <fail>
@@ -220,7 +244,7 @@
       <else>
         <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.selectedLayoutName || layout_files?.data?.[0]?.name}}/preview" method="POST">
           <success>
-            <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0 O-G3-6). -->
+            <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0). -->
             <open-window path="{{response.data?.preview_url ?? '/preview/' + response.data.token}}"/>
           </success>
           <fail>
@@ -279,7 +303,7 @@
         <!-- `data-leave-guard` — `<code-workspace>` 가 이 표식이 붙은 요소의 클릭을 가로채, 미저장이
              있으면 되묻고 없으면 그대로 보낸다(D5). 엔진의 `confirm` 은 진입점에서 무조건 발화해
              조건부로 물을 수 없으므로, dirty 여부를 아는 쪽이 판단한다. -->
-        <button data-ref="header_cancel_button" class="btn btn-secondary" data-leave-guard="true">
+        <button type="button" data-ref="header_cancel_button" class="btn btn-secondary" data-leave-guard="true">
           <on type="click">
             <navigate-back/>
           </on>
@@ -328,7 +352,7 @@
           <icon data-if="{{_global.isSaving}}" name="fa-solid fa-spinner" class="spinner-sm"/>
           <span>{{_global.isSaving ? '$t:admin.templates.layout_edit.saving' : '$t:admin.templates.layout_edit.save'}}</span>
         </button>
-        <button data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update === true}}" class="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="extension-save">
+        <button type="button" data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.abilities?.can_update === true}}" class="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50" disabled="{{_global.isSaving}}" data-testid="extension-save">
           <on type="click">
             <action-ref name="save_current_file"/>
           </on>
@@ -506,7 +530,7 @@
                   <span data-if="{{_global.selectedNodeKind !== 'extension'}}" class="text-primary font-medium">{{_global.selectedLayoutName || layout_files?.data?.[0]?.name || 'main'}}.g7.html</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="text-primary font-medium">{{current_extension?.data?.target_name ?? ''}}</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension'}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{current_extension?.data?.source_label ?? ''}}</span>
-                  <span data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName) &amp;&amp; current_layout?.data?.has_update}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.templates.layout_edit.layout_updated_badge</span>
+                  <span data-if="{{_global.selectedNodeKind !== 'extension' &amp;&amp; (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName) &amp;&amp; current_layout?.data?.has_update}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">$t:admin.templates.layout_edit.layout_updated_badge</span>
                   <span data-if="{{_global.selectedNodeKind === 'extension' &amp;&amp; current_extension?.data?.is_modified}}" class="px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">$t:admin.templates.layout_edit.extension_modified_badge</span>
                   <!-- 휴대폰 폭(md 미만)에서는 설명·수정일·이력 버튼·하단 안내를 접어 두어 코드 칸에 높이를 준다(7.1.0 P17,
                        실측 390x844 에서 코드 칸 128px). 이 버튼으로 펼친다. md 이상에서는 늘 펼쳐져 있어 버튼을 숨긴다. -->
@@ -588,7 +612,7 @@
                     <set-state target="global" editorContent="{{response.data.content}}" markupWarnings="{{response.data.warnings ?? []}}" :markupCompileError="null" :jsonViewStale="false"/>
                   </success>
                   <fail>
-                    <!-- 실패한 본문의 경고는 알 수 없다 — 직전 성공본의 경고를 남기면 바뀐 본문의 엉뚱한 줄을 가리킨다(O-I1-11).
+                    <!-- 실패한 본문의 경고는 알 수 없다 — 직전 성공본의 경고를 남기면 바뀐 본문의 엉뚱한 줄을 가리킨다.
                          구조화 오류가 없는 실패(보안 검사 422 등)는 줄을 모르므로 좌표 0·코드 없이 서버 문구만 싣는다. -->
                     <set-state target="global" markupCompileError="{{error.errors?.compile_error ?? {code: null, message: error.message ?? '', line: 0, column: 0}}}" :markupWarnings="[]" :jsonViewStale="true"/>
                   </fail>

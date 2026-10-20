@@ -14,7 +14,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{koreaeximRuns?.loading === true}}",
+            "if": "{{koreaeximRuns === undefined && !(query.date_from && query.date_to && query.date_to < query.date_from)}}",
             "props": {
                 "role": "status",
                 "className": "admin-card mb-4 flex items-center gap-2"

@@ -376,7 +376,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "~"
                                                     },
@@ -695,7 +695,7 @@
                                 "id": "subjects_empty",
                                 "type": "composite",
                                 "name": "EmptyState",
-                                "if": "{{!analytics_subjects?.loading && (analytics_subjects?.data?.visits ?? []).length === 0}}",
+                                "if": "{{analytics_subjects !== undefined && (analytics_subjects?.data?.visits ?? []).length === 0}}",
                                 "props": {
                                     "iconName": "user-shield",
                                     "title": "$t:admin.analytics.privacy_requests.no_results",
@@ -786,7 +786,7 @@
                                                     "width": "140px",
                                                     "cellChildren": [
                                                         {
-                                                            "comment": "열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은\n                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8).",
+                                                            "comment": "열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은\n                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측).",
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {

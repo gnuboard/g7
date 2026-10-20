@@ -284,7 +284,7 @@
                                     {
                                         "type": "composite",
                                         "name": "EmptyState",
-                                        "if": "{{!analytics_patterns?.loading && (analytics_patterns?.data?.weekday ?? []).length === 0}}",
+                                        "if": "{{analytics_patterns !== undefined && (analytics_patterns?.data?.weekday ?? []).length === 0}}",
                                         "props": {
                                             "iconName": "calendar-week",
                                             "title": "$t:admin.analytics.common.empty_title",
@@ -325,7 +325,7 @@
                                     {
                                         "type": "composite",
                                         "name": "EmptyState",
-                                        "if": "{{!analytics_patterns?.loading && (analytics_patterns?.data?.hour ?? []).length === 0}}",
+                                        "if": "{{analytics_patterns !== undefined && (analytics_patterns?.data?.hour ?? []).length === 0}}",
                                         "props": {
                                             "iconName": "clock",
                                             "title": "$t:admin.analytics.common.empty_title",

@@ -1,0 +1,20 @@
+feature: 관리자 환경설정 → 알림 → 알림 문안 편집 창 — 닫으면 회원 검색 결과(이름·이메일)를 비운다
+
+description: |
+  「특정 회원」 수신자 검색 결과(이름·이메일)와 고른 회원 이름을 창 이름 공간 _global.notification_template_form_modal 에 담는다.
+  저장 성공만 비웠고 「취소」·창 머리 닫기·Esc 로 닫으면 다음에 열 때까지 전역에 남았다(7.1.1).
+  열려 있는 동안 내내 붙어 있는 본문 틀의 unmount 와 「취소」 단추가 이름 공간을 null 로 비운다. 축 close 는 닫는 갈래다
+  (바깥 클릭은 closeOnOverlayClick=false 라 닫히지 않는다).
+  late_response 는 닫은 뒤 도착한 검색 응답이다 — 점 경로 쓰기가 닫힌 창의 이름 공간을 회원 이름·이메일과 함께 되살렸다.
+  값 식에서 이름 공간이 null 이면 null 을 그대로 쓴다(액션 if 는 요청 시점 상태라 쓸 수 없다).
+
+axes:
+  close: [header_escape, cancel, save_success, late_response]
+
+effects:
+  - notification_template_user_search_cleared_on_any_close
+  - notification_template_late_search_response_not_written_after_close   # 창을 닫은 뒤 도착한 역할·회원 검색 응답(성공·실패)이 null 이름 공간을 다시 만들지 않는다(late_response)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/notificationTemplateFormCloseClears.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/notificationTemplateFormLateSearchResponse.test.ts

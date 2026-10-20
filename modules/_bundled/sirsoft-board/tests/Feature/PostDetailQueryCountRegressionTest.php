@@ -41,7 +41,7 @@ class PostDetailQueryCountRegressionTest extends BoardTestCase
     {
         parent::setUp();
 
-        // 상세 응답은 댓글 열람 권한이 있을 때만 댓글을 싣는다(7.1.0 abilities 게이트 S2) — 측정 전제를 위해 부여한다
+        // 상세 응답은 댓글 열람 권한이 있을 때만 댓글을 싣는다(7.1.0 abilities 게이트) — 측정 전제를 위해 부여한다
         $this->setGuestPermissions(['posts.read', 'comments.read']);
 
         $this->post = Post::create([

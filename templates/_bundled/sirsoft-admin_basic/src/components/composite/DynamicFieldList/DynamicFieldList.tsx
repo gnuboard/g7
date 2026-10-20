@@ -311,7 +311,7 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
           >
             {column.label}
             {column.required && (
-              <Span className="text-red-500 dark:text-red-400 ml-0.5">*</Span>
+              <Span className="text-red-600 dark:text-red-400 ml-0.5">*</Span>
             )}
           </Div>
         ))}

@@ -43,7 +43,7 @@ export interface LoadingSpinnerProps {
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   id,
   size = 'md',
-  color = 'text-blue-600',
+  color = 'text-blue-600 dark:text-blue-400',
   fullscreen = false,
   text,
   className = '',
@@ -92,7 +92,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     return (
       <Div
         id={id}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-90 dark:bg-opacity-90"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-gray-900/90"
         aria-live="polite"
         aria-busy="true"
         {...editorAttrs}

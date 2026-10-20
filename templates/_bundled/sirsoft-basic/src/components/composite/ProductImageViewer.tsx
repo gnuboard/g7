@@ -91,7 +91,7 @@ export const ProductImageViewer: React.FC<ProductImageViewerProps> = ({
         className={`flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg aspect-square ${className}`}
         id={id} {...editorAttrs}
       >
-        <Div className="text-center text-gray-400 dark:text-gray-500">
+        <Div className="text-center text-gray-600 dark:text-gray-300">
           <Icon name="image" size="3x" className="mb-3 opacity-50" />
           <Div className="text-sm">{t('shop.no_image')}</Div>
         </Div>

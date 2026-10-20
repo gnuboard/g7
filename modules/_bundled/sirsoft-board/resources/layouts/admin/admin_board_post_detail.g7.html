@@ -79,13 +79,13 @@
         <p data-if="{{_global.modal_data?.type !== 'post'}}" class="text-label-subtle">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:sirsoft-board.common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
+        <button type="button" class="px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
           <on type="click">
             <!-- 삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다 -->
             <sequence>
@@ -124,7 +124,7 @@
         <div data-if="{{_global.modal_data?.type === 'comment'}}" class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p class="text-body">
             <span class="font-medium">$t:sirsoft-board.admin.posts.detail.report_modal.report_target</span>
-            <span>$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author}}</span>
+            <span>$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author || $t('sirsoft-board.admin.posts.unknown_author')}}</span>
           </p>
         </div>
         <div class="mb-4">
@@ -149,13 +149,13 @@
         </div>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
+        <button type="button" class="px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
           <on type="click">
             <!-- 제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다 -->
             <sequence>
@@ -192,7 +192,7 @@
         <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}</p>
         <label class="form-label">
           <span>$t:sirsoft-board.admin.posts.modals.blind_reason_label</span>
-          <span class="text-gray-400 dark:text-gray-500 ml-1">$t:sirsoft-board.common.optional</span>
+          <span class="text-gray-500 dark:text-gray-400 ml-1">$t:sirsoft-board.common.optional</span>
         </label>
         <textarea id="blind_reason" :rows="3" placeholder="$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
           <on type="change">
@@ -202,13 +202,13 @@
         </textarea>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
+        <button type="button" class="px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
           <on type="click">
             <!-- 블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다) -->
             <sequence>
@@ -241,13 +241,13 @@
         <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
+        <button type="button" class="px-4 py-2 bg-green-700 dark:bg-green-700 text-white rounded-lg hover:bg-green-800 dark:hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
           <on type="click">
             <!-- 해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다) -->
             <sequence>

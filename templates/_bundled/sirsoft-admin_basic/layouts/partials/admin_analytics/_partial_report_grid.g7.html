@@ -14,7 +14,7 @@
   <div data-ref="analytics_report_section" class="admin-card">
     <div data-ref="report_toolbar" class="flex-between flex-wrap gap-3 mb-4">
       <div class="relative flex-1 min-w-[200px]">
-        <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+        <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
         <input data-ref="report_search" name="analytics_report_q" type="text" placeholder="$t:admin.analytics.common.search_placeholder" class="input pl-10" value="{{query.q || ''}}">
           <on type="keydown" key="Enter">
             <!-- 라벨 부분 검색. Enter 로만 보낸다 — 타이핑마다 다녀오면 표가 깜박인다. -->
@@ -68,7 +68,7 @@
         값을 싣는 차원(검색어의 결과 없음·전환 금액·확장)에만 둔다. 화면은 `_computed.reportName` 을 채운다.
         0건이면 표(빈 문구·쪽 번호 「1」)를 숨기고 아래 빈 화면 안내 하나만 남긴다 — 둘 다 그리면 「선택 기간에 기록이
         없습니다」가 두 번 보였다(#682 S4 라운드 8). 불러오는 동안은 표 뼈대를 그대로 둔다. -->
-      <data-grid pageHref="{{_local.periodPath}}?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="analytics_report_grid" data-if="{{analytics_report?.loading || (analytics_report?.data?.data ?? []).length &gt; 0}}" visibleColumns="{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : [], ['trend']); })(_computed.reportName)}}" data="{{analytics_report?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_report?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+      <data-grid pageHref="{{_local.periodPath}}?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="analytics_report_grid" data-if="{{analytics_report === undefined || (analytics_report?.data?.data ?? []).length &gt; 0}}" visibleColumns="{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : [], ['trend']); })(_computed.reportName)}}" data="{{analytics_report?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_report?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="{{analytics_report === undefined ? '' : $t('admin.analytics.common.empty_title')}}">
         <on type="action" event="onPageChange">
           <!-- 쪽 이동 — 주소를 갈아 끼워 다시 받는다. 돌아온 목록이 곧 화면이다. -->
           <navigate path="{{_local.periodPath}}" :mergeQuery="true" :replace="true">
@@ -119,7 +119,7 @@
           <cell>
             <span data-if="{{row.extra?.no_result !== undefined}}" class="text-label" title="$t:admin.analytics.actions.no_result">{{$t('admin.analytics.actions.no_result')}}: {{(row.extra?.no_result ?? 0) | number}}</span>
             <span data-if="{{row.extra?.revenue_cents !== undefined}}" class="text-label" title="$t:admin.analytics.actions.revenue">{{$t('admin.analytics.actions.revenue')}}: {{(Number(row.extra?.revenue_cents ?? 0) / 100) | number}}</span>
-            <span data-if="{{row.extra?.no_result === undefined &amp;&amp; row.extra?.revenue_cents === undefined}}" class="text-gray-400 dark:text-gray-500">-</span>
+            <span data-if="{{row.extra?.no_result === undefined &amp;&amp; row.extra?.revenue_cents === undefined}}" class="text-gray-500 dark:text-gray-400">-</span>
           </cell>
         </column>
         <column field="trend" header="" width="56px" align="center">
@@ -147,11 +147,11 @@
         </column>
       </data-grid>
     </div>
-    <empty-state data-type="composite" data-ref="report_empty" data-if="{{!analytics_report?.loading &amp;&amp; (analytics_report?.data?.data ?? []).length === 0}}" iconName="folder-open" title="$t:admin.analytics.common.empty_title" description="{{_computed.reportEmptyHint ?? $t('admin.analytics.common.empty_description')}}" class="py-10"/>
+    <empty-state data-type="composite" data-ref="report_empty" data-if="{{analytics_report !== undefined &amp;&amp; (analytics_report?.data?.data ?? []).length === 0}}" iconName="folder-open" title="$t:admin.analytics.common.empty_title" description="{{_computed.reportEmptyHint ?? $t('admin.analytics.common.empty_description')}}" class="py-10"/>
     <!-- 빈 표에서 「수집 상태는 진단에서」를 읽고도 그 자리에서 갈 수 없으면 안내가 반쪽이다
          (계획서 §4.11 리포트 와이어프레임의 `[진단]`). 이 조각을 쓰는 화면은 전부 조회 권한이라
          목적지가 막다른 길이 되지 않는다 — 그래도 최고 관리자·권한 보유자만 그려 규약을 지킨다. -->
-    <div data-ref="report_empty_actions" data-if="{{!analytics_report?.loading &amp;&amp; (analytics_report?.data?.data ?? []).length === 0 &amp;&amp; ((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" class="flex justify-center pb-10">
+    <div data-ref="report_empty_actions" data-if="{{analytics_report !== undefined &amp;&amp; (analytics_report?.data?.data ?? []).length === 0 &amp;&amp; ((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" class="flex justify-center pb-10">
       <a data-ref="report_empty_diagnostics_link" href="/admin/analytics/diagnostics" class="button btn btn-secondary">
         <on type="click">
           <navigate/>

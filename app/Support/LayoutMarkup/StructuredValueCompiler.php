@@ -57,6 +57,29 @@ final class StructuredValueCompiler
     }
 
     /**
+     * 이름 붙은 `<field name>` 하나의 값을 컴파일합니다 — 자식이 있으면 구조값, 없으면 리프 값(`:value`·`value`).
+     *
+     * 핸들러·데이터 소스 바로 아래의 `<field>` 가 쓴다. 종전에는 그 자리에서 {@see compileChildren()} 만 불러
+     * 자식 없는 `<field name="form.newCurrency" :value="null"/>` 의 값을 버리고 `[]` 를 구웠다 — 중첩 `<field>`
+     * (compileMap)와 속성 표기는 리프 값을 읽었다(7.1.1 출시 전 실측). 값도 자식도 없는 맨 `<field name/>` 은
+     * 종전 산출(`[]`)을 그대로 둔다.
+     *
+     * @param  MarkupElement  $field  `<field>` 요소
+     * @param  string|null  $path  소스 파일 경로
+     * @return mixed 구조값 또는 리프 값
+     *
+     * @throws CompileError 자식 표기가 규칙을 벗어난 경우
+     */
+    public function compileFieldValue(MarkupElement $field, ?string $path): mixed
+    {
+        if ($field->children === [] && ($field->attribute(':value') !== null || $field->attribute('value') !== null)) {
+            return $this->leafValue($field, $path);
+        }
+
+        return $this->compileChildren($field, $path);
+    }
+
+    /**
      * `<field name>` 자식들을 맵으로 컴파일합니다 (값이 다시 구조면 재귀).
      *
      * @param  MarkupElement  $element  컨테이너 요소
@@ -213,6 +236,7 @@ final class StructuredValueCompiler
      * @param  string  $expected  기대 태그명
      * @param  MarkupElement  $parent  부모 요소
      * @param  string|null  $path  소스 파일 경로
+     * @return void
      *
      * @throws CompileError 태그가 다른 경우
      */

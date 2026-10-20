@@ -76,7 +76,7 @@ class ExecuteUpgradeStepsCommand extends Command
         $stepsOnly = (bool) $this->option('steps-only');
 
         if ($from === '' || $to === '') {
-            $this->error('--from 과 --to 는 필수 옵션입니다.');
+            $this->error(__('common.console.core_execute_upgrade_steps.from_to_required'));
 
             return self::INVALID;
         }
@@ -162,17 +162,21 @@ class ExecuteUpgradeStepsCommand extends Command
         // 운영자 단독 호출 시 옵션 미전달 → 기본값으로 두 단계 자동 수행 →
         // migration / permission / menu / seeder 누락 차단.
         if (! $this->option('skip-migrations') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info('마이그레이션 실행');
+            $this->info(__('common.console.core_execute_upgrade_steps.migrations'));
             $service->runMigrations();
         } else {
-            $this->info($stepsOnly ? '[steps-only] 마이그레이션 스킵' : '[spawn] 마이그레이션 스킵 — 부모가 이미 실행');
+            $this->info($stepsOnly
+                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.migrations')
+                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.migrations'));
         }
 
         if (! $this->option('skip-resync') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info('코어 config 재로드 및 권한/메뉴/시더 동기화');
+            $this->info(__('common.console.core_execute_upgrade_steps.resync'));
             $service->reloadCoreConfigAndResync();
         } else {
-            $this->info($stepsOnly ? '[steps-only] resync 스킵' : '[spawn] resync 스킵 — 부모가 이미 실행');
+            $this->info($stepsOnly
+                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.resync')
+                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.resync'));
         }
 
         $stepsExecuted = 0;
@@ -183,7 +187,7 @@ class ExecuteUpgradeStepsCommand extends Command
                 $from,
                 $to,
                 function (string $version) use (&$stepsExecuted): void {
-                    $this->info("upgrade step 실행: {$version}");
+                    $this->info(__('common.console.core_execute_upgrade_steps.step_running', ['version' => $version]));
                     $stepsExecuted++;
                 },
                 $force,
@@ -252,19 +256,21 @@ class ExecuteUpgradeStepsCommand extends Command
         // 단독 실행 시엔 옵션 미전달 → 기본값으로 3단계 자동 수행 → gnuboard/g7#34 의 운영자 수동 절차
         // (sed APP_VERSION + cache:clear + module/plugin/template:update --force --source=bundled) 통합.
         if (! $this->option('skip-version-env') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(".env APP_VERSION={$to} 갱신");
+            $this->info(__('common.console.core_execute_upgrade_steps.version_env', ['version' => $to]));
             $service->updateVersionInEnv($to);
         } else {
-            $this->info($stepsOnly ? '[steps-only] .env APP_VERSION 갱신 스킵' : '[spawn] .env APP_VERSION 갱신 스킵 — 부모가 처리');
+            $this->info($stepsOnly
+                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.version_env')
+                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.version_env'));
         }
 
         if (! $this->option('skip-cache-clear') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info('캐시 정리 (config/route/view/services/packages)');
+            $this->info(__('common.console.core_execute_upgrade_steps.cache_clear'));
             $service->clearAllCaches();
             // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시 정리 직후 재시작 신호.
             // spawn 자식·steps-only 는 이 블록을 스킵하고 부모가 보낸다.
             $service->signalQueueRestart();
-            $this->info('큐 워커 재시작 신호 전송 (queue:restart)');
+            $this->info(__('common.console.core_execute_upgrade_steps.queue_restart'));
             // clearAllCaches() 는 config:clear 만 하므로, 단독 실행 흐름에서는 config 캐시가
             // 비활성 상태로 남는다. 모든 upgrade step + 번들 확장 업데이트가 config 소스를
             // 변경했을 수 있으니, 캐시 정리 세트의 마지막에 config 캐시를 재생성한다.
@@ -278,13 +284,15 @@ class ExecuteUpgradeStepsCommand extends Command
             // spawn 자식·steps-only 모드에서는 부모가 처리하므로 스킵.
             $this->incrementExtensionCacheVersion();
         } else {
-            $this->info($stepsOnly ? '[steps-only] 캐시 정리 스킵' : '[spawn] 캐시 정리 스킵 — 부모가 처리');
+            $this->info($stepsOnly
+                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.cache_clear')
+                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.cache_clear'));
         }
 
         $bundledResult = ['failed' => 0];
 
         if (! $this->option('skip-bundled-updates') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info('번들 확장 일괄 업데이트 (모듈/플러그인/템플릿/언어팩)');
+            $this->info(__('common.console.core_execute_upgrade_steps.bundled_updates'));
             $bundledResult = $this->runBundledExtensionUpdatePrompt(
                 app(ModuleManager::class),
                 app(PluginManager::class),
@@ -292,7 +300,9 @@ class ExecuteUpgradeStepsCommand extends Command
                 $force,
             );
         } else {
-            $this->info($stepsOnly ? '[steps-only] 번들 확장 일괄 업데이트 스킵' : '[spawn] 번들 확장 일괄 업데이트 스킵 — 부모가 처리');
+            $this->info($stepsOnly
+                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.bundled_updates')
+                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.bundled_updates'));
         }
 
         $this->restoreUpgradeLogOwnership();
@@ -324,7 +334,7 @@ class ExecuteUpgradeStepsCommand extends Command
         try {
             $swept = $service->sweepEmptyStagingDirectories();
             if ($swept > 0) {
-                $this->info("[spawn] 빈 격리 디렉토리 청소: {$swept}개");
+                $this->info('[spawn] '.__('common.console.core_execute_upgrade_steps.staging_swept', ['count' => $swept]));
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('[spawn] 빈 격리 디렉토리 청소 실패', ['error' => $e->getMessage()]);

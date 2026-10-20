@@ -162,7 +162,7 @@ class MyReportsApiTest extends BoardTestCase
         // 잘못된 상태는 422
         $act('?status=unknown')->assertStatus(422);
 
-        // 잘못된 검색 대상은 기본(제목+내용)으로 처리한다 (7.1.0 실측 O-K3-3)
+        // 잘못된 검색 대상은 기본(제목+내용)으로 처리한다 (7.1.0 실측)
         $act('?search=스팸&search_field=author')->assertOk()->assertJsonCount(1, 'data.data')
             ->assertJsonPath('data.data.0.title', '스팸 광고글')
             ->assertJsonPath('data.query.search_field', 'title_content');

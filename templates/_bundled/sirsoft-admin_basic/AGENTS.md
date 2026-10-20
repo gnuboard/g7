@@ -79,7 +79,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 184개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 185개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 23개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->

@@ -45,7 +45,7 @@
             "name": "Div",
             "if": "{{product.data?.sales_status === 'on_sale' && product.data?.has_options && product.data?.option_groups?.length > 0 && (product.data?.options?.length ?? 0) > 1 && (!_local.selectedOptionItems || _local.selectedOptionItems.length === 0)}}",
             "props": {
-                "className": "border-b border-gray-200 dark:border-gray-700 pb-4 text-green-600 dark:text-green-400 text-sm font-medium mb-4"
+                "className": "border-b border-gray-200 dark:border-gray-700 pb-4 text-green-700 dark:text-green-400 text-sm font-medium mb-4"
             },
             "text": "$t:shop.product.select_options_guide"
         },
@@ -284,7 +284,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "aria-label": "$t:common.delete",
-                                                "className": "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                                                "className": "text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -334,7 +334,7 @@
                                                             "name": "Span",
                                                             "if": "{{addGroup.is_required}}",
                                                             "props": {
-                                                                "className": "text-red-500 dark:text-red-400 ml-0.5"
+                                                                "className": "text-red-600 dark:text-red-300 ml-0.5"
                                                             },
                                                             "text": "*"
                                                         }
@@ -408,7 +408,7 @@
                                                                 "aria-label": "$t:common.row_cell|row={{addGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}",
                                                                 "type": "text",
                                                                 "name": "add_option_text_{{itemIndex}}_{{addGroup.id}}",
-                                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500",
                                                                 "value": "{{item.additionalOptionCustomTexts?.[addGroup.id] ?? ''}}",
                                                                 "placeholder": "$t:shop.additional_option_custom_text_placeholder",
                                                                 "maxLength": 255
@@ -597,7 +597,7 @@
                             "name": "P",
                             "if": "{{product.data?.abilities?.can_order === false}}",
                             "props": {
-                                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+                                "className": "text-xs text-amber-700 dark:text-amber-400 mb-2"
                             },
                             "text": "$t:shop.order_permission_denied"
                         },
@@ -727,6 +727,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "data-testid": "buy-now",
                                 "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{(_local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options && (product.data?.options?.length ?? 0) > 1) && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))) || product.data?.abilities?.can_order !== true}}"
@@ -841,6 +842,15 @@
                                                         },
                                                         "onSuccess": [
                                                             {
+                                                                "comment": "깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1)",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "currentSelection": null,
+                                                                    "additionalOptions": null
+                                                                }
+                                                            },
+                                                            {
                                                                 "handler": "setState",
                                                                 "params": {
                                                                     "target": "local",
@@ -887,6 +897,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "data-testid": "add-to-cart",
                                 "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_local.isAddingToCart || _local.isOrdering || (Array.isArray(product.data?.options) && product.data.options.length === 0) || product.data?.is_shippable_to_selected_country === false || ((product.data?.has_options && (product.data?.options?.length ?? 0) > 1) && ((_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) < (product.data?.min_purchase_qty ?? 1) || (product.data?.max_purchase_qty > 0 && (_local.selectedOptionItems ?? []).reduce((s, i) => s + i.quantity, 0) > product.data.max_purchase_qty)))}}"

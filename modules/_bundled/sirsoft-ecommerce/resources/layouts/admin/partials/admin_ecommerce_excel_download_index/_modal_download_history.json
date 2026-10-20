@@ -282,7 +282,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 justify-center flex-shrink-0"
+                                                "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 justify-center flex-shrink-0"
                                             },
                                             "children": [
                                                 {

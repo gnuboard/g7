@@ -162,7 +162,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
               {updateAvailable && latestVersion && (
                 <>
                   <Span>→</Span>
-                  <Span className="text-yellow-600 dark:text-yellow-400 font-semibold">v{latestVersion}</Span>
+                  <Span className="text-yellow-700 dark:text-yellow-400 font-semibold">v{latestVersion}</Span>
                 </>
               )}
             </Div>
@@ -209,7 +209,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         {showLayoutEditButton && onLayoutEditClick && (
           <Button
             onClick={onLayoutEditClick}
-            className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 font-medium"
+            className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
           >
             <Icon name={IconName.Edit} className="w-4 h-4" />
             <Span>{t('common.edit_layout')}</Span>

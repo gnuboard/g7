@@ -55,7 +55,7 @@
             <span>$t:sirsoft-gdpr.banner.preferences</span>
           </button>
           <!-- 현재 동의 갱신 (회원) — needs_renewal=true 한정. 회원은 status 테이블에 동의가 영속되므로 renew-all 로 활성 동의의 policy_version 만 신정책으로 bump (사용자 의사 변경 없음, Art.7(3) 자유 변경권 + Recital 32 명확한 긍정 행위 부합). 위치: 선택 동의 다음, 모두 동의 앞. -->
-          <button data-ref="gdpr_keep_consent_button" data-if="{{gdprMyConsent?.data?.is_member === true &amp;&amp; gdprMyConsent?.data?.needs_renewal === true}}" type="button" disabled="{{!!_global.gdprBannerSubmittingAction}}" class="px-4 py-2 text-sm font-medium text-white bg-amber-600 dark:bg-amber-700 rounded hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
+          <button data-ref="gdpr_keep_consent_button" data-if="{{gdprMyConsent?.data?.is_member === true &amp;&amp; gdprMyConsent?.data?.needs_renewal === true}}" type="button" disabled="{{!!_global.gdprBannerSubmittingAction}}" class="px-4 py-2 text-sm font-medium text-white bg-amber-700 dark:bg-amber-700 rounded hover:bg-amber-800 dark:hover:bg-amber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
             <on type="click">
               <set-state target="global" gdprBannerSubmittingAction="renew_consent"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/renew-all" method="POST">

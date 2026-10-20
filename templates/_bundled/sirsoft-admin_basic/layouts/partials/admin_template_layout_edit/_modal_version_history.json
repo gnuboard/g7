@@ -196,6 +196,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "className": "flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{_global.isRestoring || current_layout?.data?.abilities?.can_update !== true}}"
                                     },
@@ -238,7 +239,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-green-600 dark:text-green-400"
+                                        "className": "text-green-700 dark:text-green-400"
                                     },
                                     "text": "+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.version_history.lines"
                                 },

@@ -23,7 +23,7 @@
       <!-- 해외 주문은 국내 칸(우편번호·주소·상세주소)이 빈 문자열이라 `||` 로 해외 칸에 넘어가고, 도시·주는 뒤에 붙인다 — 국내 칸만 이으면 주소 없이 빈 괄호만 남는다(S2-D8). -->
       <p class="text-sm text-gray-500 dark:text-gray-400">{{'(' + (_local.claimRedelivery?.zipcode ?? (order.data.shipping_address?.zipcode || order.data.shipping_address?.intl_postal_code || '')) + ') ' + [_local.claimRedelivery?.address1 ?? (order.data.shipping_address?.address || order.data.shipping_address?.address_line_1), _local.claimRedelivery?.address2 ?? (order.data.shipping_address?.address_detail || order.data.shipping_address?.address_line_2)].filter(Boolean).join(' ') + [_local.claimRedelivery ? _local.claimRedelivery.city : order.data.shipping_address?.intl_city, _local.claimRedelivery ? _local.claimRedelivery.state : order.data.shipping_address?.intl_state].filter(Boolean).map(part => ', ' + part).join('')}}</p>
       <!-- 재발송지를 바꿔 도서산간이 다시 판정된 경우 — 배송비가 왜 달라졌는지 밝힌다(D14). -->
-      <p data-if="{{_local.claimEstimate?.shipping_fee?.redelivery_changed === true}}" class="text-xs text-amber-600 dark:text-amber-400 mt-2">$t:claim.apply.redelivery_fee_recalculated</p>
+      <p data-if="{{_local.claimEstimate?.shipping_fee?.redelivery_changed === true}}" class="text-xs text-amber-700 dark:text-amber-400 mt-2">$t:claim.apply.redelivery_fee_recalculated</p>
       <!-- 적용해 둔 재발송지를 버리고 원 배송지로 돌아간다. 그러면 신청서에 재발송지가 실리지 않고, 도서산간 판정이 달라질 수 있어 미리보기를 다시 부른다. -->
       <button data-if="{{!!_local.claimRedelivery}}" type="button" class="mt-2 text-sm text-gray-500 dark:text-gray-400 hover:underline cursor-pointer">
         <on type="click">
@@ -123,6 +123,6 @@
       </div>
     </div>
     <!-- 재발송지 거절 사유 (§6-3 P13) — 서버는 `redelivery_address.*` 7키로 쪼개 돌려주므로 핸들러가 접두사로 묶은 값을 읽는다. 국가 불변 규칙(ExchangeRedeliveryCountryUnchanged)의 거절도 이 자리에 선다. 표시·편집 두 모드 밖에 두는 것은 편집을 닫은 뒤 제출해도 사유가 남아야 하기 때문이다. -->
-    <p data-if="{{!!_local.claimFieldErrors?.redelivery}}" class="text-xs text-red-500 dark:text-red-400 mt-2">{{_local.claimFieldErrors?.redelivery ?? ''}}</p>
+    <p data-if="{{!!_local.claimFieldErrors?.redelivery}}" class="text-xs text-red-600 dark:text-red-400 mt-2">{{_local.claimFieldErrors?.redelivery ?? ''}}</p>
   </div>
 </partial>

@@ -73,6 +73,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"
                     },
                     "text": "$t:shop.search"
@@ -121,6 +122,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                             },
                             "text": "$t:shop.reset_all"

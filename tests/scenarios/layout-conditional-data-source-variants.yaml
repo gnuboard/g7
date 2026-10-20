@@ -1,0 +1,33 @@
+feature: 같은 id 의 조건부 데이터 소스 판 — 설치 검증·편집기 저장 규칙·상속 병합 (7.1.1 출시 전)
+
+description: |
+  공개 문서 `docs/frontend/data-sources-advanced.md` 「조건부 데이터 소스 로딩」과 엔진 `DataSourceManager.filterByCondition` 은
+  같은 id 를 상호 배타 조건(`if`·`conditions`)으로 여러 판 선언하는 것을 허용한다(조건을 만족하는 첫 판만 쓴다). 그런데 코어
+  설치 검증(`ValidatesLayoutFiles::validateDataSourceIds` — 설치·레이아웃 행 갱신 공용 관문)·편집기 저장 검증(`ValidDataSourceMerge`)·
+  상속 병합(`LayoutService::mergeDataSources`)이 조건과 무관하게 「data_sources ID 중복」으로 거부해 그런 레이아웃을 설치할 수 없었다.
+
+  규칙(`App\Support\LayoutDataSourceIds`): 같은 id 묶음의 **모든 판에 if 또는 conditions 가 있으면** 허용하고, 조건 없는 판이 섞이거나
+  빈 `if` 면 종전대로 거부한다. 부모↔자식 사이 id 중복 금지(상속 문서)는 그대로다.
+
+  축 consumer 는 같은 id 판을 받는 코어 백엔드 소비자다. 판 모양(모두 조건부·조건 없는 판 섞임·조건 없는 중복·빈 if)은 소비자마다
+  한 테스트 안에서 함께 대조하므로 effects 로 잰다.
+
+axes:
+  consumer: [install_validation, editor_save_rule, inheritance_merge]
+
+effects:
+  - all_conditional_same_id_variants_accepted
+  - conditions_key_counts_as_condition
+  - unconditional_variant_mixed_in_rejected
+  - unconditional_duplicate_still_rejected
+  - empty_if_is_not_a_condition
+  - inheritance_merge_keeps_every_child_variant
+  - parent_child_duplicate_id_still_rejected
+
+test_files:
+  - tests/Feature/Layout/ConditionalDataSourceVariantsTest.php
+
+notes: |
+  확장 레이아웃 3원 병합(`LayoutThreeWayMerger` — 같은 id 판이 있으면 항목 단위로 묶지 않음)은 extension-layout-keep-merge 매니페스트
+  (`LayoutThreeWayMergerTest::test_data_sources_with_conditional_variants_keep_every_variant`)가, 편집기 데이터 소스 폼의 같은 판정은
+  layout-editor-data-sources 매니페스트(`DataSourcesPanel.conditionalVariants.test.tsx`)가 잠근다.

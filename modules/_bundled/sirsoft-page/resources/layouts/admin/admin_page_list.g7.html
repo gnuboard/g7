@@ -90,7 +90,7 @@
                   </on>
                 </input>
               </div>
-              <button data-ref="mobile_search_button" class="btn btn-primary w-full">
+              <button type="button" data-ref="mobile_search_button" class="btn btn-primary w-full">
                 <on type="click">
                   <!-- 모바일 검색 버튼 — 이쪽은 이미 상태에 쌓인 입력값을 쓴다 -->
                   <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
@@ -122,7 +122,7 @@
               </navigate>
             </on>
           </input>
-          <button data-ref="search_button" class="btn btn-primary">
+          <button type="button" data-ref="search_button" class="btn btn-primary">
             <on type="click">
               <!-- 검색 버튼 — 상태에 쌓인 입력값으로 1페이지부터 다시 조회한다 -->
               <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
@@ -197,7 +197,7 @@
           </button>
         </div>
       </div>
-      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/pages?page={page}" data-type="composite" data-ref="pages_data_grid" rowLabelField="title" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/pages?page={page}" data-type="composite" data-ref="pages_data_grid" rowLabelField="title" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" emptyMessage="{{pages === undefined ? '' : $t('common.no_data')}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="title" header="$t:sirsoft-page.admin.page.columns.title" :sortable="false" :required="true">
           <cell>
             <div class="stack-flush gap-0.5">
@@ -224,8 +224,8 @@
         <column field="created_at" header="$t:sirsoft-page.admin.page.columns.created_at" :sortable="true"/>
         <column field="published_at" header="$t:sirsoft-page.admin.page.columns.published_at" :sortable="true"/>
         <prop name="rowActions">
-          <item href="/admin/pages/{{row.id}}" id="view" label="$t:sirsoft-page.admin.page.actions.view" iconName="eye"/>
-          <item href="/admin/pages/{{row.id}}/edit" id="edit" label="$t:sirsoft-page.admin.page.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item href="/admin/pages/{{row.id}}" :mergeQuery="true" id="view" label="$t:sirsoft-page.admin.page.actions.view" iconName="eye"/>
+          <item href="/admin/pages/{{row.id}}/edit" :mergeQuery="true" id="edit" label="$t:sirsoft-page.admin.page.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
           <item id="delete" label="$t:sirsoft-page.admin.page.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onSelectionChange">
@@ -358,13 +358,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="btn btn-danger" disabled="{{_global.isDeletingPage}}">
+        <button type="button" class="btn btn-danger" disabled="{{_global.isDeletingPage}}">
           <on type="click">
             <!-- 페이지 삭제 확정 — 목록만 다시 받고(refetch) 페이지 이동은 하지 않아 현재 필터·페이지가 유지된다 -->
             <sequence>

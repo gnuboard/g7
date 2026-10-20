@@ -1,7 +1,7 @@
 feature: 게시판 업그레이드 단계 (평문 비밀번호 재해시, 목록 조회수 색인, 1.0.0-beta.2)
 
 description: |
-  평문으로 남은 게시글 비밀번호를 해시로 바꾸는 단계, 목록 조회수 색인을 만드는 단계, 1.0.0-beta.2 단계가 기존 데이터를 망가뜨리지 않고 여러 번 돌려도 같은 결과를 내는지 고정한다.
+  평문으로 남은 게시글 비밀번호를 해시로 바꾸는 단계, 목록 조회수 색인을 만드는 단계, 1.0.0-beta.2 단계, 신고 케이스의 마지막 신고 시각을 신고 기록 최대 시각으로 맞추는 1.2.1 단계가 기존 데이터를 망가뜨리지 않고 여러 번 돌려도 같은 결과를 내는지 고정한다.
 
   기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
   축 upgrade_step 은 업그레이드 단계, existing_data 는 단계가 만나는 기존 데이터 상태다.
@@ -9,7 +9,7 @@ description: |
   nothing_to_change 는 바꿀 대상이 아예 없는 상태(비밀번호 없는 행, 빈 게시판, 파티션 없는 표준 환경)다.
 
 axes:
-  upgrade_step: [rehash_plaintext_password, view_count_list_index, beta_2_count_sync]
+  upgrade_step: [rehash_plaintext_password, view_count_list_index, beta_2_count_sync, report_last_reported_at_backfill]
   existing_data: [needs_change, already_applied, nothing_to_change]
 
 exclusions:
@@ -30,8 +30,12 @@ effects:
   - view_count_list_index_created_on_existing_site
   - view_count_list_index_upgrade_is_idempotent
   - legacy_popular_posts_index_preserved
+  - upgrade_advances_stale_report_last_reported_at
+  - report_last_reported_at_backfill_is_idempotent
+  - report_last_reported_at_backfill_skips_cases_without_logs
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PlaintextPostPasswordRehashTest.php
   - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PostListViewCountIndexUpgradeTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Upgrades/Upgrade_1_0_0_beta_2_Test.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/ReportLastReportedAtBackfillUpgradeTest.php

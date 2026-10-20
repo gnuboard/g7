@@ -26,8 +26,8 @@
               <div class="flex-1 space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.marketing_consent</span>
-                  <span data-if="{{user?.data?.marketing_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
-                  <span data-if="{{!user?.data?.marketing_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                  <span data-if="{{user?.data?.marketing_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user?.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user?.data?.marketing_consent_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
                 </div>
                 <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.marketing_consent_desc</span>
               </div>
@@ -37,8 +37,8 @@
               <div class="flex-1 space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-sm font-medium text-gray-900 dark:text-white">{{channel.label}}</span>
-                  <span data-if="{{user?.data?.[channel.key + '_at']}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
-                  <span data-if="{{!user?.data?.[channel.key + '_at']}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                  <span data-if="{{user?.data?.[channel.key + '_at']}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user?.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user?.data?.[channel.key + '_at']}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
                 </div>
               </div>
             </label>
@@ -49,8 +49,8 @@
               <div class="flex-1 space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.third_party_consent</span>
-                  <span data-if="{{user?.data?.third_party_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
-                  <span data-if="{{!user?.data?.third_party_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                  <span data-if="{{user?.data?.third_party_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user?.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user?.data?.third_party_consent_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
                 </div>
                 <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
               </div>
@@ -61,13 +61,13 @@
                 <div class="flex-1 space-y-1">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
-                    <span data-if="{{user?.data?.info_disclosure_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user?.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
-                    <span data-if="{{!user?.data?.info_disclosure_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                    <span data-if="{{user?.data?.info_disclosure_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user?.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
+                    <span data-if="{{!user?.data?.info_disclosure_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
                   </div>
                   <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
                 </div>
               </label>
-              <span class="text-xs text-gray-400 dark:text-gray-500 block ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 block ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@
         <div class="mt-6 pt-4">
           <h3 class="text-gray-900 dark:text-white text-sm font-semibold mb-3">$t:admin.users.detail.consent_history</h3>
           <!-- 이력이 없는 경우 -->
-          <div data-if="{{!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0}}" class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">$t:sirsoft-marketing.no_consent_history</div>
+          <div data-if="{{user !== undefined &amp;&amp; user !== null &amp;&amp; (!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0)}}" class="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">$t:sirsoft-marketing.no_consent_history</div>
           <!-- 이력 테이블 -->
           <div data-if="{{user?.data?.consent_histories?.length > 0}}" class="max-h-60 overflow-y-auto overflow-x-auto">
             <table class="divider-list min-w-full">
@@ -92,7 +92,7 @@
                   <td class="text-gray-900 dark:text-white px-2 py-1.5 text-xs whitespace-nowrap">{{history?.created_at ?? '-'}}</td>
                   <td class="text-gray-900 dark:text-white px-2 py-1.5 text-xs">{{history?.channel_key === 'marketing_consent' ? '$t:sirsoft-marketing.marketing_consent' : history?.channel_key === 'third_party_consent' ? '$t:sirsoft-marketing.third_party_consent' : history?.channel_key === 'info_disclosure' ? '$t:sirsoft-marketing.info_disclosure' : ((user?.data?.channels ?? []).find(ch => ch.key === history?.channel_key)?.label ?? history?.channel_key ?? '-')}}</td>
                   <td class="px-2 py-1.5 text-xs">
-                    <span class="{{history?.action === 'granted' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}">{{history?.action === 'granted' ? '$t:sirsoft-marketing.action_granted' : '$t:sirsoft-marketing.action_revoked'}}</span>
+                    <span class="{{history?.action === 'granted' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}">{{history?.action === 'granted' ? '$t:sirsoft-marketing.action_granted' : '$t:sirsoft-marketing.action_revoked'}}</span>
                   </td>
                   <td class="px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400">{{history?.source === 'register' ? '$t:sirsoft-marketing.source_register' : history?.source === 'admin' ? '$t:sirsoft-marketing.source_admin' : '$t:sirsoft-marketing.source_profile'}}</td>
                 </tr>

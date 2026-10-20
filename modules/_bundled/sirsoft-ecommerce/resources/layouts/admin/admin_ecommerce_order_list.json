@@ -58,10 +58,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 서버로 넘긴다 클레임 신청일 구간은 시작이 끝보다 뒤면 두 값을 바꿔 보낸다 — 북마크·수기 편집으로 뒤집힌 구간이 URL 에 들어오면 서버가 422 를 내고 목록 전체가 오류 화면이 되는데, 그 URL 은 새로고침해도 그대로라 빠져나올 길이 없다. 날짜 기준(date_basis)도 같은 까닭으로 정해진 값(site)만 싣고 그 밖은 빼서 보는 사람의 하루로 연다 — 진입 시 필터 상태 복원과 같은 판정이다."

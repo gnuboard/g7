@@ -179,7 +179,6 @@
       "cart_option_change_modal": "カートオプション変更",
       "cart_unavailable_modal": "購入不可商品のお知らせ",
       "coupon_download_modal": "クーポンダウンロード",
-      "exclusiveCouponConfirm": "重複不可クーポン適用確認",
       "tempOrderNotFoundModal": "注文情報がないお知らせ"
     },
     "mypage_orders": {

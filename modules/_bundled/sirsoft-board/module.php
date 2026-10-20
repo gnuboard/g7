@@ -11,6 +11,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
+use Modules\Sirsoft\Board\Http\Middleware\EnsureBoardExists;
 use Modules\Sirsoft\Board\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
 use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
@@ -95,6 +96,39 @@ class Module extends AbstractModule
                 // 사용자 파일을 실제로 파기하는 영구 정리 파트만 커맨드 내부에서 게이트한다
                 // (attachment_settings.purge_enabled, false 폴백).
                 'enabled_config' => null,
+            ],
+        ];
+    }
+
+    /**
+     * 이 모듈이 등록할 HTTP 미들웨어 선언을 반환합니다(코어 self-gate 가 요청 시점에 targets 매칭으로 실행).
+     *
+     * - EnsureBoardExists: 게시판 하위 라우트(`{slug}`)에서 없는 게시판을 권한 판정보다 먼저 404 로 끝낸다.
+     *   게시판별 동적 권한(`sirsoft-board.{slug}.*`)은 게시판이 없으면 권한 행도 없어 401·403 이 나가 「권한이
+     *   없습니다」로 보였다. 대상은 보호형 규율대로 서브트리 glob 이다 — 글·댓글·첨부(사용자)와 관리자 글·댓글·첨부.
+     *   api 그룹 after_core 라 라우트의 `admin`·`permission` 보다 먼저 돈다 — 관리자 API 도 없는 게시판이면
+     *   관리자 판정 전에 404 다(게시판 slug 는 공개 주소라 존재 노출 문제가 없다, 2026-10-18 결정). 로그인 판정
+     *   (`auth:sanctum`)은 라라벨 미들웨어 우선순위로 그룹 미들웨어보다 앞으로 옮겨져 비회원은 401 이 먼저다.
+     *   `{slug}` 가 없는 같은 서브트리 라우트(`boards.posts.recent`)는 미들웨어가 그대로 통과시킨다.
+     *   `boards.show`·`admin.boards.show-by-slug` 는 컨트롤러가 이미 404 를 돌려줘 대상에서 뺀다.
+     *   정합성은 `MissingBoardNotFoundTest` 가 라우트 테이블 전수(게시판별 권한을 보는 라우트)로 강제한다.
+     *
+     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}> 미들웨어 선언
+     */
+    public function getMiddleware(): array
+    {
+        return [
+            [
+                'class' => EnsureBoardExists::class,
+                'groups' => ['api'],
+                'timing' => 'after_core',
+                'targets' => [
+                    'api.modules.sirsoft-board.boards.posts.*',
+                    'api.modules.sirsoft-board.boards.comments.*',
+                    'api.modules.sirsoft-board.boards.attachments.*',
+                    'api.modules.sirsoft-board.boards.attachment.*',
+                    'api.modules.sirsoft-board.admin.board.*',
+                ],
             ],
         ];
     }

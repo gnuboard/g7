@@ -188,7 +188,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
           {/* 펼치기/접기 토글 */}
           {hasChildren ? (
             <Div
-              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-400 dark:text-gray-500"
+              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-500 dark:text-gray-400"
               onClick={() => handleToggle(node.id)}
               data-testid={`toggle-${node.id}`}
             >
@@ -221,8 +221,8 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
             name={IconName.Folder}
             className={`flex-shrink-0 text-sm ${
               hasChildren
-                ? 'text-yellow-500 dark:text-yellow-400'
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-yellow-700 dark:text-yellow-400'
+                : 'text-gray-500 dark:text-gray-400'
             }`}
           />
 
@@ -236,7 +236,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
 
           {/* 상품 수 Badge */}
           {showProductCount && node.products_count !== undefined && (
-            <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 ml-1">
+            <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-1">
               {node.products_count}
             </Span>
           )}
@@ -257,7 +257,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
     // (모든 렌더 분기 패리티: 빈 데이터로 추가 시 이 분기로 진입)
     return (
       <Div
-        className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`}
+        className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`}
         id={id}
         {...editorAttrs}
       >

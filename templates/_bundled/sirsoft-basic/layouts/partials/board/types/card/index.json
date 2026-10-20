@@ -8,7 +8,7 @@
     "name": "Div",
     "children": [
         {
-            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
+            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 실측).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -304,14 +304,14 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "image",
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-600 dark:text-gray-300"
                                             },
                                             "text": "$t:userinfo.no_image"
                                         }
@@ -369,7 +369,7 @@
                                                     "name": "Span",
                                                     "if": "{{post?.is_notice}}",
                                                     "props": {
-                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-medium bg-blue-600 text-white dark:bg-blue-500"
+                                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-medium bg-blue-600 text-white dark:bg-blue-600"
                                                     },
                                                     "children": [
                                                         {
@@ -393,7 +393,7 @@
                                                     "name": "Span",
                                                     "if": "{{post?.category}}",
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 rounded-md text-sm font-medium bg-black/40 text-white backdrop-blur-sm"
+                                                        "className": "inline-block truncate max-w-32 px-2 py-0.5 rounded-md text-sm font-medium bg-black/60 text-white backdrop-blur-sm"
                                                     },
                                                     "text": "{{post?.category}}"
                                                 }
@@ -405,7 +405,7 @@
                                             "name": "Span",
                                             "if": "{{post?.is_new}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white flex-shrink-0"
+                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-600 dark:bg-red-600 text-white flex-shrink-0"
                                             },
                                             "text": "N"
                                         }
@@ -436,7 +436,7 @@
                                             "props": {
                                                 "name": "eye-slash",
                                                 "size": "sm",
-                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -457,14 +457,14 @@
                                             "props": {
                                                 "name": "lock",
                                                 "size": "sm",
-                                                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                "className": "text-gray-500 dark:text-gray-500 flex-shrink-0"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "H3",
                                             "props": {
-                                                "className": "text-lg font-bold truncate min-w-0 transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'}}"
+                                                "className": "text-lg font-bold truncate min-w-0 transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'}}"
                                             },
                                             "text": "{{post?.title ?? ''}}"
                                         },
@@ -489,7 +489,7 @@
                                             "props": {
                                                 "name": "paperclip",
                                                 "size": "sm",
-                                                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                "className": "text-gray-500 dark:text-gray-500 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -512,7 +512,7 @@
                                     "props": {
                                         "content": "{{post?.content_preview ?? ''}}",
                                         "isHtml": false,
-                                        "className": "text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}}"
+                                        "className": "text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}"
                                     }
                                 }
                             ]
@@ -563,14 +563,14 @@
                                                         "author": "{{post?.author}}",
                                                         "showDropdown": true,
                                                         "stopPropagation": true,
-                                                        "className": "relative z-20 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
+                                                        "className": "relative z-20 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-300 dark:text-gray-600"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "·"
                                                 },
@@ -578,7 +578,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}",
+                                                        "className": "text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}",
                                                         "title": "{{post?.created_at ?? ''}}"
                                                     },
                                                     "text": "{{post?.created_at_formatted ?? ''}}"
@@ -598,7 +598,7 @@
                                                     "name": "Span",
                                                     "if": "{{posts?.data?.board?.settings?.show_view_count !== false}}",
                                                     "props": {
-                                                        "className": "inline-flex items-center gap-1 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "inline-flex items-center gap-1 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}"
                                                     },
                                                     "children": [
                                                         {
@@ -622,7 +622,7 @@
                                                     "name": "Span",
                                                     "if": "{{post?.comment_count > 0}}",
                                                     "props": {
-                                                        "className": "inline-flex items-center gap-1 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-blue-600 dark:text-blue-400'}}"
+                                                        "className": "inline-flex items-center gap-1 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-blue-600 dark:text-blue-400'}}"
                                                     },
                                                     "children": [
                                                         {

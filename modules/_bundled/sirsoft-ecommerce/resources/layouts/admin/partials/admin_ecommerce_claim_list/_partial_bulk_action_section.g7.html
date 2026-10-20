@@ -60,8 +60,8 @@
       </on>
     </input>
     <div class="flex-1"/>
-    <button data-ref="cb_005_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.selectedItems ?? []).length === 0 || claims?.data?.abilities?.can_update_status !== true}}">
-      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">$t:sirsoft-ecommerce.admin.claim.bulk.apply_full</responsive>
+    <button data-ref="cb_005_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.selectedItems ?? []).length === 0 || claims?.data?.abilities?.can_update_status !== true}}">
+      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">$t:sirsoft-ecommerce.admin.claim.bulk.apply_full</responsive>
       <on type="click">
         <!-- 완료 전이는 곧바로 실행하지 않고 완료 처리 모달을 연다 (D26) — 분기는 핸들러가 한다. 모달의 초기 선택값(`completeDefaults`)은 목록 응답이 나른다 — 설정 엔드포인트는 `settings.read` 게이트인데 이 화면은 `claims.read` 라, 설정 응답에서 읽으면 클레임 권한만 가진 운영자(기본 역할 manager)에게 403 이 되어 상점이 꺼 둔 기본값이 조용히 무시된다. -->
         <action handler="sirsoft-ecommerce.buildClaimBulkConfirmData" claimType="{{query.type ?? 'exchange'}}" status="{{_local.bulkClaimStatus ?? ''}}" rejectReason="{{_local.bulkRejectReason ?? ''}}" ids="{{_local.selectedItems ?? []}}" rows="{{claims?.data?.data ?? []}}" completeDefaults="{{claims?.data?.complete_defaults ?? {} }}" carriers="{{claims?.data?.carriers ?? []}}"/>

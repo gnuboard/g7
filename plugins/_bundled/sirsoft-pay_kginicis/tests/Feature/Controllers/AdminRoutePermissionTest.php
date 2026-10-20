@@ -30,19 +30,19 @@ class AdminRoutePermissionTest extends PluginTestCase
             'api.plugins.sirsoft-pay_kginicis.admin.transaction.query' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.transaction-status' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-reconciliation.show' => 'permission:admin,sirsoft-ecommerce.orders.read',
-            // 환불 재시도는 PG 환불을 다시 보내므로 「환불 실행」 권한(제품 결정 R1, 7.1.0)
+            // 환불 재시도는 PG 환불을 다시 보내므로 「환불 실행」 권한(7.1.0 제품 결정)
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-reconciliation.refund-retry' => 'permission:admin,sirsoft-ecommerce.claims.execute-refund',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.show' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.simulate-notify' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.expire' => 'permission:admin,sirsoft-ecommerce.orders.update',
-            // 재확인은 결제 기록에 재확인 시각·결과를 쓰므로 주문 수정 권한(7.1.0 abilities 게이트 N1)
+            // 재확인은 결제 기록에 재확인 시각·결과를 쓰므로 주문 수정 권한(7.1.0 abilities 게이트)
             'api.plugins.sirsoft-pay_kginicis.admin.orders.cbt-cvs.recheck' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.escrow-delivery.form' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.escrow-delivery.register' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.orders.escrow-deny-confirm' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_kginicis.admin.cbt.test-product.create' => 'permission:admin,sirsoft-ecommerce.products.create',
             'api.plugins.sirsoft-pay_kginicis.admin.vbank.notify.url' => 'permission:admin,sirsoft-ecommerce.settings.read',
-            // 연결 진단은 플러그인 설정 화면의 버튼이라 화면 권한(core.plugins.update)으로도 쓴다(OR, 7.1.0 abilities 게이트 N5)
+            // 연결 진단은 플러그인 설정 화면의 버튼이라 화면 권한(core.plugins.update)으로도 쓴다(OR, 7.1.0 abilities 게이트)
             'api.plugins.sirsoft-pay_kginicis.admin.cbt.connectivity.check' => 'permission:admin,sirsoft-ecommerce.settings.read|core.plugins.update,false',
         ];
 

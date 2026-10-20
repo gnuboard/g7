@@ -1,0 +1,23 @@
+# 시나리오 매니페스트 — 관리자 모바일 사이드바를 Esc 로 닫는다 (7.1.1 키보드 범위)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_base_mobile_sidebar_escape
+
+description: >-
+  모바일 폭에서 사이드바를 열면 바깥 덮개(mobile_overlay)는 클릭으로만 닫혔고 Esc 로는 닫히지 않았다(사용자 템플릿은
+  `_user_base` 뿌리의 Escape 받기로 닫힘). 사이드바를 연 직후 초점은 머리 띠의 [메뉴] 단추에 있어 사이드바 자신은 키를 받지
+  못하므로, 레이아웃 뿌리(admin_layout_root)에서 Escape 를 받아 열려 있을 때만 `_global.sidebarOpen` 을 false 로 쓴다
+  (닫혀 있을 때 Esc 마다 전역을 흔들지 않는다). Esc 밖의 키는 닫지 않는다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-mobile-sidebar-escape.test.tsx
+
+axes:
+  surface: [admin_base]   # 관리자 기반 레이아웃(_admin_base.json) 뿌리 노드
+
+effects:
+  - mobile_sidebar_closes_on_escape   # 열린 채 Esc → sidebarOpen=false, 닫혀 있으면 쓰지 않고 다른 키로는 닫지 않으며, 뿌리의 Escape 받기는 열림 조건 갈래 하나
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: 7.1.1 출시 전 캠페인 재실측(모바일 폭 관리자 화면 사이드바 Esc 닫기)

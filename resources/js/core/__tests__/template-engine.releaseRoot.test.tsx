@@ -1,5 +1,5 @@
 /**
- * template-engine — 오류 화면이 루트 컨테이너를 차지할 때 React 루트 반납 (engine-v1.79.0, 7.1.0 실측 O-K2-2)
+ * template-engine — 오류 화면이 루트 컨테이너를 차지할 때 React 루트 반납 (engine-v1.79.0, 7.1.0 실측)
  *
  * 제한 관리자가 권한 없는 화면으로 SPA 이동하면 레이아웃 403 → TemplateApp.showRouteError → ErrorDisplay 가
  * #app 을 innerHTML 로 덮는다. React 루트를 그대로 두면 그 뒤 토스트 갱신이 지워진 노드 기준으로

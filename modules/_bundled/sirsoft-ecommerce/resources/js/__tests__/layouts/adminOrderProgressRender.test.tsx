@@ -125,7 +125,9 @@ describe('관리자 주문 상세 — 진행단계 스텝퍼', () => {
     expect(document.querySelectorAll('[data-step-state="current"]')).toHaveLength(0);
     const hold = document.querySelector('[data-step-value="shipping_hold"]')!;
     expect(hold.getAttribute('data-step-state')).toBe('off_path');
-    expect(hold.querySelector('.rounded-full')!.className).toContain('bg-red-500');
+    // 흰 글자 대비 4.5 이상 — red-500(3.82) 대신 red-600(4.76)
+    expect(hold.querySelector('.rounded-full')!.className).toContain('bg-red-600');
+    expect(hold.querySelector('.rounded-full')!.className).not.toContain('bg-red-500');
   });
 
   /**

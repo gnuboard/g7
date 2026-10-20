@@ -10,10 +10,7 @@
  * 모달 트리거 버튼이 노출된다. 시드 부재 환경에서는 트리거 버튼 미노출 시 test.skip 으로 graceful 처리.
  * full 결제→주문 생성 흐름은 백엔드 fixture 필요 — 후속.
  *
- * @scenario actor=member, change_mode=manual, e2e_browser=chromium
- * @effects change_address_handler_uses_user_endpoint_without_token_header_for_member,
- *   change_address_handler_saved_mode_sends_address_id_manual_sends_full_object,
- *   change_address_handler_resets_issubmitting_and_closes_modal_and_refetches_order_on_success
+ * 시나리오 표지는 테스트마다 단다(파일 머리 표지는 집계되지 않는다 — testing-guide).
  */
 import { test, expect } from '@playwright/test';
 import { issueToken, authenticatePage } from '../../fixtures/auth';
@@ -41,6 +38,12 @@ async function gotoFirstChangeableOrderDetail(page: import('@playwright/test').P
   return canChange;
 }
 
+/**
+ * 저장된 배송지(기본 saved 모드)로 「적용」 을 누르면 확인창이 정확히 한 번 뜬다.
+ *
+ * @scenario actor=member, change_mode=saved, address_region=domestic, e2e_browser=chromium
+ * @effects change_address_apply_invokes_single_custom_handler_with_one_confirm
+ */
 test('@smoke 회원 배송지 변경 — 적용 시 확인창이 한 번만 뜬다 (증상1 회귀 차단)', async ({ page }) => {
   const ready = await gotoFirstChangeableOrderDetail(page);
   test.skip(!ready, '변경 가능한 회원 주문이 시드되지 않음 — full 흐름은 백엔드 fixture 후속');
@@ -68,6 +71,12 @@ test('@smoke 회원 배송지 변경 — 적용 시 확인창이 한 번만 뜬�
   expect(confirmCount).toBe(1);
 });
 
+/**
+ * 직접입력 탭에서 받는분·연락처를 입력하면 하위 키 이름으로 자동바인딩된다.
+ *
+ * @scenario actor=member, change_mode=manual, address_region=domestic, e2e_browser=chromium
+ * @effects change_address_autobind_inputs_use_subkey_name_without_prefix
+ */
 test('@smoke 회원 배송지 변경 — 직접입력 탭에서 받는분/연락처 입력이 자동바인딩된다 (증상2 회귀 차단)', async ({ page }) => {
   const ready = await gotoFirstChangeableOrderDetail(page);
   test.skip(!ready, '변경 가능한 회원 주문이 시드되지 않음 — full 흐름은 백엔드 fixture 후속');

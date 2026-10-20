@@ -74,7 +74,7 @@ class DeactivatePluginCommand extends Command
 
                 // 의존하는 템플릿 목록
                 if (! empty($result['dependent_templates'])) {
-                    $this->info('의존하는 템플릿 목록:');
+                    $this->info(__('plugins.commands.deactivate.dependent_templates'));
                     foreach ($result['dependent_templates'] as $template) {
                         $this->line("   - {$template['identifier']} ({$template['name']})");
                     }
@@ -82,7 +82,7 @@ class DeactivatePluginCommand extends Command
 
                 // 의존하는 모듈 목록
                 if (! empty($result['dependent_modules'])) {
-                    $this->info('의존하는 모듈 목록:');
+                    $this->info(__('plugins.commands.deactivate.dependent_modules'));
                     foreach ($result['dependent_modules'] as $module) {
                         $this->line("   - {$module['identifier']} ({$module['name']})");
                     }
@@ -90,14 +90,14 @@ class DeactivatePluginCommand extends Command
 
                 // 의존하는 플러그인 목록
                 if (! empty($result['dependent_plugins'])) {
-                    $this->info('의존하는 플러그인 목록:');
+                    $this->info(__('plugins.commands.deactivate.dependent_plugins'));
                     foreach ($result['dependent_plugins'] as $plugin) {
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']})");
                     }
                 }
 
                 $this->line('');
-                $this->info('강제로 비활성화하려면 --force 옵션을 사용하세요.');
+                $this->info(__('plugins.commands.deactivate.force_hint'));
 
                 return Command::FAILURE;
             }

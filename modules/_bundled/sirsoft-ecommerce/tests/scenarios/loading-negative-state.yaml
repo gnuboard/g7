@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 이커머스 안내(대시보드·주문·상품·환경설정): 받는 중 「없음」류 안내
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: loading_negative_state
+
+description: >-
+  화면이 먼저 그려진 뒤 받는 데이터소스는 받기 전 값이 비어 있다. 「없음」류 안내의 조건이 빈 값을 0건으로
+  메우면 받는 중에도 참이 되어, 데이터가 있는데도 「없습니다」가 먼저 보였다가 바뀐다. 안내는 데이터소스를
+  받은 뒤에만 보인다. 대상: 대시보드 최근 후기·대시보드 답변 대기 문의·마이페이지 기본 배송지 카드·클레임 요청 창 승인 권한·주문 상세 클레임 이력·브랜드 목록·카테고리 목록·고시정보 템플릿 목록·마일리지 연결 거래(행 펼침)·공통정보 목록·상품 폼 공통정보·상품 폼 라벨·보유기간 대상 창·본인인증 목적 칩·본인인증 정책 표·마일리지 소멸 알림 템플릿·알림 정의 목록·추가 배송비 템플릿 창·환경설정 은행 관리 창·환경설정 무통장 계좌(카드)·환경설정 무통장 계좌(표)·환경설정 교환 사유·환경설정 환불 사유·환경설정 반품 사유·환경설정 택배사·환경설정 배송 국가·환경설정 배송 유형·환경설정 마일리지 통화(카드)·환경설정 마일리지 통화(표). 이 확장의 레이아웃에서 받는 중에 참이 되는 「없음」류 안내가 새로
+  들어오면 전수 검사가 잡는다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/loadingNegativeState.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   load_state — 데이터소스 상태. loading 은 엔진이 화면을 먼저 그릴 때 넣는 undefined, loaded_empty 는 받은
+#                결과가 「없음」, loaded_rows 는 「있음」, error 는 받기 실패(엔진이 넣는 null — 처음 받기, 그리고 다른 요청으로 다시 받기). 화면은 같은 규칙을 쓰므로 축으로 곱하지 않고 각 시험이
+#                화면 전부를 돈다(it.each).
+axes:
+  load_state: [loading, loaded_empty, loaded_rows, error]
+
+effects:
+  - loading_hides_negative_state   # 받는 중에는 「없음」류 안내가 없다
+  - loaded_empty_shows_negative_state   # 받은 뒤 없으면 안내가 보인다
+  - loaded_rows_hide_negative_state   # 받은 뒤 있으면 안내가 없다
+  - error_hides_negative_state   # 받기에 실패하면(null — 처음 받기·다른 요청으로 다시 받기) 「없음」 안내가 없다
+  - error_shows_load_failed_notice   # 받기에 실패하면 실패 안내가 보인다
+  - every_negative_state_gated   # 이 확장에서 받는 중에 참이 되는 「없음」류 안내·빈 문구가 없다(전수)

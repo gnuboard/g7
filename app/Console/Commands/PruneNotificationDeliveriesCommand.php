@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\NotificationDeliveryGuard;
 use Illuminate\Console\Command;
 
@@ -12,6 +13,8 @@ use Illuminate\Console\Command;
  */
 class PruneNotificationDeliveriesCommand extends Command
 {
+    use ParsesDaysOption;
+
     /**
      * The name and signature of the console command.
      */
@@ -30,11 +33,18 @@ class PruneNotificationDeliveriesCommand extends Command
      */
     public function handle(NotificationDeliveryGuard $guard): int
     {
-        $option = $this->option('days');
-        $days = $option === null || $option === '' ? (int) config('notification.delivery.retention_days', 7) : max(1, (int) $option);
+        $days = $this->parseDaysOption();
+
+        if ($days === false) {
+            return self::FAILURE;
+        }
+
+        $days ??= (int) config('notification.delivery.retention_days', 7);
+
         $deleted = $guard->prune($days);
 
-        $this->info("알림 수신자별 발송 기록 {$deleted}건이 삭제되었습니다. (보관 {$days}일)");
+        [$shownDays, $floorNote] = $this->retentionForDisplay($days);
+        $this->info(__('common.console.prune_done.notification_deliveries', ['count' => $deleted, 'days' => $shownDays]).$floorNote);
 
         return self::SUCCESS;
     }

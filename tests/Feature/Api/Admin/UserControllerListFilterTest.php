@@ -788,7 +788,7 @@ class UserControllerListFilterTest extends TestCase
      * 날짜 칸(가입일·최근 로그인·휴면 전환일·상태 변경일)은 목록이 날짜를 그리는 것과 같은 하루 — 보는 사람의
      * 시간대 — 로 해석한다. 저장값은 UTC 라, UTC 하루로 자르면 한국 시간 새벽에 가입한 회원이 목록에는
      * 「2026-03-10」 으로 보이는데 2026-03-10 으로 거르면 빠지고, 빠른 기간 「오늘」 이 오늘 아침 가입자를 놓친다
-     * (#736 영역 C 실측).
+     * (#736 실측).
      *
      * @scenario filter_axis=created_at, outcome=narrows
      *

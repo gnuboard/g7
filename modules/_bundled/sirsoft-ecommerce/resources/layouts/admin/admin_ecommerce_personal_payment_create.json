@@ -289,7 +289,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "user",
-                                                                            "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                            "className": "text-xl text-gray-500 dark:text-gray-300"
                                                                         }
                                                                     }
                                                                 ]
@@ -311,7 +311,7 @@
                                                                                 "props": {
                                                                                     "className": "font-medium text-heading"
                                                                                 },
-                                                                                "text": "정수진"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.jung_sujin"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -659,7 +659,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+                                                            "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300"
                                                         },
                                                         "text": "₩"
                                                     },
@@ -795,7 +795,7 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Div",
+                                        "name": "Button",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -804,12 +804,13 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 mt-2 cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 transition-colors"
+                                            "type": "button",
+                                            "className": "block w-full text-left border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 mt-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Span",
                                                 "props": {
                                                     "className": "flex-center gap-3"
                                                 },
@@ -819,26 +820,29 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "search",
-                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
+                                                            "className": "text-xl text-gray-500 dark:text-gray-400"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Div",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "block"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Div",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "className": "font-medium text-heading"
+                                                                    "className": "block font-medium text-heading"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order"
                                                             },
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Div",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-sm text-secondary"
+                                                                    "className": "block text-sm text-secondary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order_hint"
                                                             }
@@ -913,7 +917,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "file-text",
-                                                                            "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                            "className": "text-xl text-gray-500 dark:text-gray-300"
                                                                         }
                                                                     }
                                                                 ]
@@ -953,7 +957,7 @@
                                                                         "props": {
                                                                             "className": "text-secondary text-sm"
                                                                         },
-                                                                        "text": "· 정수진"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.dot_name|name=$t:sirsoft-ecommerce.admin.sample.people.jung_sujin"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -961,7 +965,7 @@
                                                                         "props": {
                                                                             "className": "text-secondary text-sm"
                                                                         },
-                                                                        "text": "스탠다드 멤버십 6개월"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m"
                                                                     },
                                                                     {
                                                                         "type": "basic",

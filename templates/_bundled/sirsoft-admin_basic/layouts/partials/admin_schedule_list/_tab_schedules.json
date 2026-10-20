@@ -44,7 +44,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "clock",
-                                        "className": "text-xl text-gray-400 dark:text-gray-500"
+                                        "className": "text-xl text-gray-500 dark:text-gray-500"
                                     }
                                 }
                             ]
@@ -86,7 +86,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "check-circle",
-                                        "className": "text-xl text-green-500"
+                                        "className": "text-xl text-green-600"
                                     }
                                 }
                             ]
@@ -283,6 +283,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -580,6 +581,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                                             },
                                             "text": "$t:admin.schedules.filters.preset.today"
@@ -606,6 +608,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                                             },
                                             "text": "$t:admin.schedules.filters.preset.week"
@@ -632,6 +635,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                                             },
                                             "text": "$t:admin.schedules.filters.preset.month"
@@ -658,6 +662,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                                             },
                                             "text": "$t:admin.schedules.filters.preset.3months"
@@ -684,6 +689,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                                             },
                                             "text": "$t:admin.schedules.filters.preset.6months"
@@ -710,6 +716,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "className": "px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
                                             },
                                             "text": "$t:admin.schedules.filters.preset.year"
@@ -1041,6 +1048,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
                             },
                             "children": [
@@ -1122,6 +1130,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors"
                             },
                             "children": [
@@ -1280,7 +1289,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}"
                             },
                             "text": "$t:admin.schedules.bulk.apply"
@@ -1558,6 +1568,7 @@
                 "selectionScope": "page",
                 "showColumnSelector": true,
                 "responsiveBreakpoint": 768,
+                "emptyMessage": "{{schedules === undefined ? '' : $t('common.no_data')}}",
                 "actionsColumnHeader": "$t:common.actions",
                 "rowActions": [
                     {
@@ -1613,7 +1624,7 @@
                                         "type": "basic",
                                         "name": "Code",
                                         "props": {
-                                            "className": "block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate"
+                                            "className": "block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300 font-mono mt-1 max-w-xs truncate"
                                         },
                                         "text": "{{row.command}}"
                                     }
@@ -1704,7 +1715,7 @@
                                 "name": "Span",
                                 "if": "{{!row.is_active}}",
                                 "props": {
-                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                    "className": "text-sm text-gray-500 dark:text-gray-400"
                                 },
                                 "text": "-"
                             }
@@ -1744,7 +1755,7 @@
                                 "name": "Span",
                                 "if": "{{!row.last_run_at}}",
                                 "props": {
-                                    "className": "text-sm text-gray-400 dark:text-gray-500"
+                                    "className": "text-sm text-gray-500 dark:text-gray-400"
                                 },
                                 "text": "-"
                             }
@@ -1787,7 +1798,7 @@
                                 "name": "Span",
                                 "if": "{{row.last_result === 'never' || !row.last_result}}",
                                 "props": {
-                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                                 },
                                 "text": "$t:admin.schedules.result.never"
                             }

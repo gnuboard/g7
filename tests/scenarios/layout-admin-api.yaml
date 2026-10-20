@@ -5,7 +5,7 @@ description: |
   엔드포인트별 계약을 한 매니페스트로 묶는다. 편집기 기능별 매니페스트(layout-editor-*, layout-extension-*)가 같은 테스트 파일의
   일부 테스트를 소유하고, 여기서는 엔드포인트 축으로 나머지 기존 테스트까지 빠짐없이 소유한다.
   미리보기 생성은 템플릿 종류에 맞는 화면 셸 주소(`preview_url` — 관리자 템플릿 `/admin/preview/{token}`, 사용자 템플릿
-  `/preview/{token}`)를 돌려준다(7.1.0 O-G3-6). 인증·권한이 없으면 모든 엔드포인트가 거절한다.
+  `/preview/{token}`)를 돌려준다(7.1.0). 인증·권한이 없으면 모든 엔드포인트가 거절한다.
 
 axes:
   endpoint: [layout_index, layout_show, layout_update, layout_versions, layout_restore, layout_preview, extension_index, extension_show, extension_update, extension_versions, extension_preview]

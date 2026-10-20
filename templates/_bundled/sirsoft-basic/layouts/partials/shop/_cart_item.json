@@ -84,7 +84,7 @@
                                     "props": {
                                         "name": "image",
                                         "size": "lg",
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
@@ -171,7 +171,7 @@
                             "props": {
                                 "name": "truck",
                                 "size": "xs",
-                                "className": "text-gray-400 dark:text-gray-500"
+                                "className": "text-gray-500 dark:text-gray-500"
                             }
                         },
                         {
@@ -186,7 +186,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
                             "text": "/"
                         },
@@ -206,7 +206,7 @@
                             "name": "Span",
                             "if": "{{(cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}",
                             "props": {
-                                "className": "text-xs text-green-600 dark:text-green-400"
+                                "className": "text-xs text-green-700 dark:text-green-400"
                             },
                             "text": "$t:shop.checkout.free_shipping"
                         }
@@ -233,7 +233,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500 line-through"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
                                     },
                                     "text": "{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}"
                                 },
@@ -242,7 +242,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs font-bold text-red-500"
+                                        "className": "text-xs font-bold text-red-600 dark:text-red-400"
                                     },
                                     "text": "{{item.product_option?.discount_rate}}%"
                                 }
@@ -265,7 +265,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500 line-through"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 line-through"
                                     },
                                     "text": "{{currency[1]?.formatted}}"
                                 }
@@ -396,7 +396,16 @@
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "comment": "초기 상태 설정 (모달은 아직 열지 않음)",
+                                            "comment": "초기 상태 설정 (모달은 아직 열지 않음). 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) — 앞 품목에서 고른 옵션 키가 다음 품목 옵션 변경 창에 섞이지 않게 한다.\n                 추가옵션 선택·직접입력 글자도 같다 — 비어 있지 않은 객체를 써도 이번 품목에 없는 앞 품목의 그룹 키가 남아, 추가옵션 있는 품목의 창을 연 뒤\n                 다른 품목에서 「적용」 하면 본문에 앞 품목의 추가옵션이 실려 422(additional_option_invalid)였다(7.1.1).",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "selectedOptions": null,
+                                                "additionalSelections": null,
+                                                "additionalCustomTexts": null
+                                            }
+                                        },
+                                        {
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
@@ -466,8 +475,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "data-testid": "cart-change-option",
-                                "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer",
+                                "className": "p-1 text-gray-500 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer",
                                 "title": "$t:shop.cart.change_option",
                                 "aria-label": "$t:shop.cart.change_option"
                             },
@@ -513,7 +523,7 @@
                             "props": {
                                 "type": "button",
                                 "aria-label": "$t:shop.cart.delete_item",
-                                "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
+                                "className": "p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
                             },
                             "children": [
                                 {

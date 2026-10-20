@@ -12,7 +12,7 @@
       <div class="flex items-center gap-2 mb-4">
         <div class="w-1.5 h-4 bg-blue-500 rounded-full flex-shrink-0"/>
         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.admin.order_info_title</h3>
-        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_nhnkcp.admin.order_info_description</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">$t:sirsoft-pay_nhnkcp.admin.order_info_description</span>
         <span data-if="{{kcp_status.data?.refund_status === 'completed' &amp;&amp; (kcp_status.data?.payment_status === 'cancelled' || kcp_status.data?.payment_status === 'partial_cancelled')}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_cancel_completed</span>
         <span data-if="{{kcp_status.data?.payment_status === 'partial_cancelled' &amp;&amp; kcp_status.data?.refund_status !== 'completed'}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_partial_cancelled</span>
         <span data-if="{{kcp_status.data?.payment_status === 'cancelled' &amp;&amp; kcp_status.data?.refund_status !== 'completed'}}" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-pay_nhnkcp.admin.pay_status_cancelled</span>
@@ -50,7 +50,7 @@
       <div class="flex items-center gap-2 mb-4">
         <div class="w-1.5 h-4 bg-purple-500 rounded-full flex-shrink-0"/>
         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_title</h3>
-        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_description</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_description</span>
       </div>
       <div data-if="{{kcp_escrow_delivery.data?.registered_delivery}}" class="mb-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700/50">
         <div class="flex items-center gap-2 mb-2">
@@ -84,22 +84,22 @@
               <set-state target="local" _ked_deli_corp="{{$event.target.value}}"/>
             </on>
             <option value="">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder</option>
-            <option value="04">CJ대한통운</option>
-            <option value="05">한진택배</option>
-            <option value="06">로젠택배</option>
-            <option value="08">롯데택배</option>
-            <option value="09">우체국택배</option>
-            <option value="11">경동택배</option>
-            <option value="13">일양로지스</option>
-            <option value="14">합동택배</option>
-            <option value="20">드림택배</option>
-            <option value="23">천일택배</option>
-            <option value="26">건영택배</option>
+            <option value="04">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.cj</option>
+            <option value="05">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hanjin</option>
+            <option value="06">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.logen</option>
+            <option value="08">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.lotte_parcel</option>
+            <option value="09">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.epost</option>
+            <option value="11">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kyungdong</option>
+            <option value="13">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.ilyang</option>
+            <option value="14">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hapdong</option>
+            <option value="20">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.dream</option>
+            <option value="23">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.chunil</option>
+            <option value="26">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kunyoung</option>
             <option value="40">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc</option>
           </select>
         </div>
         <div class="flex justify-end">
-          <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === '')}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === '')}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <!-- 에스크로 배송 등록 — 위에서 입력한 송장번호·택배사 코드를 보내고, 끝나면 등록 상태를 다시 받는다 -->
               <sequence>
@@ -123,7 +123,7 @@
             <span data-if="{{!_local._ked_registering &amp;&amp; kcp_escrow_delivery.data?.registered_delivery}}">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_change_button</span>
           </button>
         </div>
-        <div data-if="{{_local._ked_error}}" class="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._ked_error}}</div>
+        <div data-if="{{_local._ked_error}}" class="text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._ked_error}}</div>
       </div>
     </div>
   </inject>

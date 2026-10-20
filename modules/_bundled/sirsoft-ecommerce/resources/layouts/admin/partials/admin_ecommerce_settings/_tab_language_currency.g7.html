@@ -34,19 +34,26 @@
         </div>
         <button data-ref="add_currency_button" type="button" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _local.isAddingCurrency === true}}">
           <on type="click">
-            <!-- 통화 추가 시작. 여기서는 빈 입력줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다. -->
-            <set-state target="local" :isAddingCurrency="true">
-              <field name="form.newCurrency">
-                <field name="code" value=""/>
-                <field name="name" :value="{}"/>
-                <field name="symbol" value=""/>
-                <field name="exchange_rate" :value="1"/>
-                <field name="rounding_unit" value="0.01"/>
-                <field name="rounding_method" value="round"/>
-                <field name="decimal_places" :value="2"/>
-                <field name="is_default" :value="false"/>
-              </field>
-            </set-state>
+            <!-- 통화 추가 시작. 여기서는 빈 입력줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다.
+              앞서 연 추가 줄을 먼저 null 로 덮고, 통화 이름은 빈 객체 `{}` 가 아니라 **사이트 언어마다 빈 문자열**로 세운다.
+              기본 병합(deep)은 `{}` 로 앞 값을 지우지 못하고, 이름 칸의 자동바인딩이 실물 setLocal(render:false)로 남긴
+              덮어쓰기 기록(__g7SetLocalOverrideKeys·__g7ForcedLocalFields)이 다음 setState 마다 앞 이름을 다시 얹어 null 덮기도
+              무효가 된다(7.1.1 출시 전 실측). 언어 키마다 값을 주면 그 덮어쓰기를 이긴다. -->
+            <sequence>
+              <set-state target="local" :form.newCurrency="null"/>
+              <set-state target="local" :isAddingCurrency="true">
+                <field name="form.newCurrency">
+                  <field name="code" value=""/>
+                  <field name="name" value="{{Object.fromEntries((_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => [l, '']))}}"/>
+                  <field name="symbol" value=""/>
+                  <field name="exchange_rate" :value="1"/>
+                  <field name="rounding_unit" value="0.01"/>
+                  <field name="rounding_method" value="round"/>
+                  <field name="decimal_places" :value="2"/>
+                  <field name="is_default" :value="false"/>
+                </field>
+              </set-state>
+            </sequence>
           </on>
           <icon name="plus" class="text-base mr-1"/>
           <span>$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.add_currency</span>

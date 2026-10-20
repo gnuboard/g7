@@ -22,7 +22,7 @@
             "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
             "variants": {
                 "normal": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700",
-                "orphaned": "bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700"
+                "orphaned": "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
             }
         },
         "props": {
@@ -38,7 +38,7 @@
                 "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                 "props": {
                     "data-drag-handle": true,
-                    "className": "cursor-grab text-gray-400 dark:text-gray-500"
+                    "className": "cursor-grab text-gray-500 dark:text-gray-400"
                 },
                 "children": [
                     {

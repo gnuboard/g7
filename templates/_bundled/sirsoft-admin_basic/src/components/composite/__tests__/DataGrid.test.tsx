@@ -133,6 +133,10 @@ describe('DataGrid', () => {
     { name: '이영희', email: 'lee@example.com', role: '사용자' },
   ];
 
+  /**
+   * @scenario area=render
+   * @effects datagrid_renders_headers_and_rows
+   */
   it('컴포넌트가 렌더링됨', () => {
     render(<DataGrid columns={mockColumns} data={mockData} />);
 
@@ -141,6 +145,10 @@ describe('DataGrid', () => {
     expect(screen.getByText('역할')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario area=render
+   * @effects datagrid_renders_headers_and_rows
+   */
   it('데이터가 표시됨', () => {
     render(<DataGrid columns={mockColumns} data={mockData} />);
 
@@ -149,6 +157,10 @@ describe('DataGrid', () => {
     expect(screen.getByText('관리자')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario area=render
+   * @effects datagrid_body_cells_top_aligned
+   */
   it('데이터 셀이 align-top 으로 상단 정렬된다 (셀 콘텐츠 높이가 달라도 입력칸 라인 정렬 유지)', () => {
     // 회귀 가드: 한 셀(예: 판매가)에 다통화 환산값 같은 보조 표시가 세로로 쌓여
     // 셀 높이가 커져도, 기본 vertical-align: middle 이면 다른 셀 입력칸이 중앙으로
@@ -163,6 +175,10 @@ describe('DataGrid', () => {
     });
   });
 
+  /**
+   * @scenario area=sort
+   * @effects datagrid_header_click_dispatches_sort, datagrid_sort_arrow_reflects_state
+   */
   it('컬럼 헤더 클릭 시 정렬됨', async () => {
     const user = userEvent.setup();
     const onSortChange = vi.fn();
@@ -189,6 +205,10 @@ describe('DataGrid', () => {
     expect(onSortChange).toHaveBeenCalledWith('name', 'desc');
   });
 
+  /**
+   * @scenario area=sort
+   * @effects datagrid_header_click_dispatches_sort, datagrid_sort_arrow_reflects_state
+   */
   it('정렬 방향이 토글됨', async () => {
     const user = userEvent.setup();
     const onSortChange = vi.fn();
@@ -230,6 +250,10 @@ describe('DataGrid', () => {
     expect(nameHeader.parentElement).toContainHTML('↓');
   });
 
+  /**
+   * @scenario area=sort
+   * @effects datagrid_unsortable_column_ignored
+   */
   it('sortable이 false인 컬럼은 정렬되지 않음', async () => {
     const user = userEvent.setup();
     render(<DataGrid columns={mockColumns} data={mockData} sortable={true} />);
@@ -245,6 +269,10 @@ describe('DataGrid', () => {
   // 회귀 가드: 서버가 정렬을 책임지는(controlled, onSortChange 연결) 그리드는
   // 서버가 내려준 순서를 그대로 출력해야 한다. 클라이언트가 다시 정렬하면 null 값을
   // 항상 앞으로 밀어 서버 ORDER BY 순서를 훼손한다(페이지 발행순 정렬 버그).
+  /**
+   * @scenario area=sort
+   * @effects datagrid_controlled_sort_keeps_server_order
+   */
   it('controlled 정렬(onSortChange 연결) 시 서버가 내려준 순서를 그대로 출력한다 (null 포함)', () => {
     const columns: DataGridColumn[] = [
       { field: 'title', header: '제목', sortable: true },
@@ -281,6 +309,10 @@ describe('DataGrid', () => {
 
   // uncontrolled(onSortChange 미연결) 그리드는 컴포넌트가 단독 정렬 주체이므로
   // 전달받은 로컬 데이터를 클라이언트에서 정렬하는 동작을 유지한다.
+  /**
+   * @scenario area=sort
+   * @effects datagrid_uncontrolled_sort_handled_locally
+   */
   it('uncontrolled 정렬(onSortChange 미연결) 시 클라이언트 정렬이 동작한다', () => {
     const columns: DataGridColumn[] = [
       { field: 'name', header: '이름', sortable: true },
@@ -309,6 +341,10 @@ describe('DataGrid', () => {
     expect(cellTexts).toEqual(['가나다', '나비', '다람쥐']);
   });
 
+  /**
+   * @scenario area=row_click
+   * @effects datagrid_row_click_passes_row
+   */
   it('row 클릭 시 onRowClick 핸들러가 호출됨', async () => {
     const user = userEvent.setup();
     const onRowClick = vi.fn();
@@ -327,6 +363,10 @@ describe('DataGrid', () => {
     expect(onRowClick).toHaveBeenCalledWith(mockData[0]);
   });
 
+  /**
+   * @scenario area=pagination
+   * @effects datagrid_client_pagination_navigates
+   */
   it('페이지네이션이 활성화되면 페이지 버튼이 표시됨', () => {
     const manyData = Array.from({ length: 25 }, (_, i) => ({
       name: `User ${i}`,
@@ -348,6 +388,10 @@ describe('DataGrid', () => {
     expect(screen.getByLabelText('페이지 1')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario area=pagination
+   * @effects datagrid_client_pagination_navigates
+   */
   it('페이지 버튼 클릭 시 다른 페이지로 이동함', async () => {
     const user = userEvent.setup();
     const manyData = Array.from({ length: 25 }, (_, i) => ({
@@ -372,12 +416,20 @@ describe('DataGrid', () => {
     expect(screen.getByText('User 10')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario area=render
+   * @effects datagrid_renders_headers_and_rows
+   */
   it('빈 데이터일 때 아무것도 표시되지 않음', () => {
     render(<DataGrid columns={mockColumns} data={[]} />);
 
     expect(screen.queryByText('홍길동')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario area=render
+   * @effects datagrid_renders_headers_and_rows
+   */
   it('className prop이 적용됨', () => {
     const { container } = render(
       <DataGrid
@@ -405,6 +457,10 @@ describe('DataGrid', () => {
         };
       });
 
+      /**
+       * @scenario area=server_pagination_sort_guard
+       * @effects datagrid_server_page_without_sort_handler_not_sortable
+       */
       it('onSortChange 가 없으면 헤더 클릭이 현재 페이지를 정렬하지 않는다', async () => {
         const user = userEvent.setup();
 
@@ -428,6 +484,10 @@ describe('DataGrid', () => {
         expect(after).toEqual(before);
       });
 
+      /**
+       * @scenario area=server_pagination_sort_guard
+       * @effects datagrid_server_page_without_sort_handler_not_sortable
+       */
       it('onSortChange 가 없으면 헤더에 정렬 화살표가 붙지 않는다', async () => {
         const user = userEvent.setup();
 
@@ -449,6 +509,10 @@ describe('DataGrid', () => {
       });
     });
 
+    /**
+     * @scenario area=server_pagination_sort_guard
+     * @effects datagrid_server_page_without_sort_handler_not_sortable
+     */
     it('onSortChange 가 없으면 헤더에 클릭 가능 커서를 표시하지 않는다', () => {
       render(
         <DataGrid
@@ -461,9 +525,13 @@ describe('DataGrid', () => {
         />
       );
 
-      expect(screen.getByText('이름').className).not.toContain('cursor-pointer');
+      expect(screen.getByText('이름').closest('th')!.className).not.toContain('cursor-pointer');
     });
 
+    /**
+     * @scenario area=server_pagination_sort_guard
+     * @effects datagrid_sort_affordance_kept_where_sortable
+     */
     it('onSortChange 가 배선돼 있으면 서버 정렬을 요청한다 (정상 경로는 유지)', async () => {
       const user = userEvent.setup();
       const onSortChange = vi.fn();
@@ -480,7 +548,7 @@ describe('DataGrid', () => {
         />
       );
 
-      expect(screen.getByText('이름').className).toContain('cursor-pointer');
+      expect(screen.getByText('이름').closest('th')!.className).toContain('cursor-pointer');
 
       await user.click(screen.getByText('이름'));
 
@@ -489,16 +557,25 @@ describe('DataGrid', () => {
 
     // 가드가 과하게 걸려 클라이언트 목록의 정렬까지 죽이면 안 된다.
     // 서버 페이지네이션이 아니면 data 가 전체 집합이므로 컴포넌트 단독 정렬이 옳다.
+    // 정렬 머리 글자는 7.1.1 부터 칸 안 단추에 있다 — 어포던스 클래스는 칸(th)에서 읽는다
+    /**
+     * @scenario area=server_pagination_sort_guard
+     * @effects datagrid_sort_affordance_kept_where_sortable
+     */
     it('서버 페이지네이션이 아니면 헤더 정렬 어포던스를 유지한다 (클라이언트 목록)', () => {
       render(<DataGrid columns={mockColumns} data={mockData} sortable={true} />);
 
-      expect(screen.getByText('이름').className).toContain('cursor-pointer');
+      expect(screen.getByText('이름').closest('th')!.className).toContain('cursor-pointer');
       // sortable: false 인 컬럼은 원래대로 정렬 대상이 아니다
-      expect(screen.getByText('역할').className).not.toContain('cursor-pointer');
+      expect(screen.getByText('역할').closest('th')!.className).not.toContain('cursor-pointer');
     });
   });
 
   describe('외부 정렬 제어 (sortField, sortDirection, onSortChange)', () => {
+    /**
+     * @scenario area=sort
+     * @effects datagrid_sort_arrow_reflects_state
+     */
     it('외부에서 sortField와 sortDirection을 제어할 수 있음', () => {
       render(
         <DataGrid
@@ -515,6 +592,10 @@ describe('DataGrid', () => {
       expect(nameHeader.parentElement).toContainHTML('↑');
     });
 
+    /**
+     * @scenario area=sort
+     * @effects datagrid_sort_arrow_reflects_state
+     */
     it('외부 sortDirection이 desc일 때 내림차순 화살표가 표시됨', () => {
       render(
         <DataGrid
@@ -530,6 +611,10 @@ describe('DataGrid', () => {
       expect(emailHeader.parentElement).toContainHTML('↓');
     });
 
+    /**
+     * @scenario area=sort
+     * @effects datagrid_header_click_dispatches_sort
+     */
     it('컬럼 헤더 클릭 시 onSortChange 콜백이 호출됨', async () => {
       const user = userEvent.setup();
       const onSortChange = vi.fn();
@@ -549,6 +634,10 @@ describe('DataGrid', () => {
       expect(onSortChange).toHaveBeenCalledWith('name', 'asc');
     });
 
+    /**
+     * @scenario area=sort
+     * @effects datagrid_header_click_dispatches_sort
+     */
     it('동일한 컬럼 재클릭 시 정렬 방향이 토글됨 (외부 제어)', async () => {
       const user = userEvent.setup();
       const onSortChange = vi.fn();
@@ -571,6 +660,10 @@ describe('DataGrid', () => {
       expect(onSortChange).toHaveBeenCalledWith('name', 'desc');
     });
 
+    /**
+     * @scenario area=sort
+     * @effects datagrid_header_click_dispatches_sort
+     */
     it('다른 컬럼 클릭 시 새 컬럼으로 asc 정렬됨', async () => {
       const user = userEvent.setup();
       const onSortChange = vi.fn();
@@ -593,6 +686,10 @@ describe('DataGrid', () => {
       expect(onSortChange).toHaveBeenCalledWith('email', 'asc');
     });
 
+    /**
+     * @scenario area=sort
+     * @effects datagrid_uncontrolled_sort_handled_locally
+     */
     it('onSortChange가 없을 때도 클릭이 오류 없이 동작함', async () => {
       const user = userEvent.setup();
 
@@ -629,6 +726,10 @@ describe('DataGrid', () => {
         };
       });
 
+      /**
+       * @scenario area=sort
+       * @effects datagrid_runtime_sort_dispatches_once
+       */
       it('다른 컬럼 헤더 클릭 시 새 컬럼 + asc 로 단 한 번만 디스패치된다', async () => {
         const user = userEvent.setup();
         const onSortChange = vi.fn();
@@ -651,6 +752,10 @@ describe('DataGrid', () => {
         expect(onSortChange).toHaveBeenCalledWith('email', 'asc');
       });
 
+      /**
+       * @scenario area=sort
+       * @effects datagrid_runtime_sort_dispatches_once
+       */
       it('동일 컬럼 재클릭 시 같은 컬럼 + 반대 방향으로 단 한 번만 디스패치된다', async () => {
         const user = userEvent.setup();
         const onSortChange = vi.fn();
@@ -672,6 +777,10 @@ describe('DataGrid', () => {
         expect(onSortChange).toHaveBeenCalledWith('name', 'desc');
       });
 
+      /**
+       * @scenario area=sort
+       * @effects datagrid_runtime_sort_dispatches_once
+       */
       it('정렬되지 않은 상태에서 헤더 클릭 시 해당 컬럼 asc 로 디스패치된다', async () => {
         const user = userEvent.setup();
         const onSortChange = vi.fn();
@@ -692,6 +801,10 @@ describe('DataGrid', () => {
       });
     });
 
+    /**
+     * @scenario area=sort
+     * @effects datagrid_unsortable_column_ignored
+     */
     it('sortable이 false인 컬럼은 onSortChange가 호출되지 않음', async () => {
       const user = userEvent.setup();
       const onSortChange = vi.fn();
@@ -712,6 +825,10 @@ describe('DataGrid', () => {
       expect(onSortChange).not.toHaveBeenCalled();
     });
 
+    /**
+     * @scenario area=sort
+     * @effects datagrid_uncontrolled_sort_handled_locally
+     */
     it('외부 정렬 상태에 따라 데이터가 정렬됨', () => {
       const { rerender } = render(
         <DataGrid
@@ -745,6 +862,10 @@ describe('DataGrid', () => {
   });
 
   describe('서브 행 (Sub Row) 기능 - v1.6.0+', () => {
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_rendered_per_condition
+     */
     it('subRowRender가 제공되면 각 데이터 행 아래에 서브 행이 렌더링됨', () => {
       render(
         <DataGrid
@@ -762,6 +883,10 @@ describe('DataGrid', () => {
       expect(subRowContents[2]).toHaveTextContent('배송비: 이영희');
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_rendered_per_condition
+     */
     it('subRowClassName이 서브 행에 적용됨', () => {
       render(
         <DataGrid
@@ -790,6 +915,10 @@ describe('DataGrid', () => {
       });
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_rendered_per_condition
+     */
     it('subRowCondition이 false를 반환하면 서브 행이 렌더링되지 않음', () => {
       const dataWithFlag = [
         { name: '홍길동', email: 'hong@example.com', role: '관리자', showSubRow: true },
@@ -813,6 +942,10 @@ describe('DataGrid', () => {
       expect(subRowContents[1]).toHaveTextContent('이영희');
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_rendered_per_condition
+     */
     it('subRowCondition 없이 subRowRender만 제공되면 모든 행에 서브 행이 렌더링됨', () => {
       render(
         <DataGrid
@@ -826,6 +959,10 @@ describe('DataGrid', () => {
       expect(subRowContents).toHaveLength(3);
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_rendered_per_condition
+     */
     it('subRowRender와 subRowChildren이 모두 없으면 서브 행이 렌더링되지 않음', () => {
       const { container } = render(
         <DataGrid
@@ -842,6 +979,10 @@ describe('DataGrid', () => {
       expect(rows).toHaveLength(4);
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_spans_all_columns
+     */
     it('서브 행의 colSpan이 전체 컬럼을 커버함', () => {
       render(
         <DataGrid
@@ -859,6 +1000,10 @@ describe('DataGrid', () => {
       });
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_spans_all_columns
+     */
     it('selectable과 함께 사용시 서브 행 colSpan이 체크박스 컬럼을 포함함', () => {
       render(
         <DataGrid
@@ -877,6 +1022,10 @@ describe('DataGrid', () => {
       });
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_spans_all_columns
+     */
     it('rowActions와 함께 사용시 서브 행 colSpan이 액션 컬럼을 포함함', () => {
       const mockRowActions = [
         { id: 'edit', label: '수정', icon: 'edit' },
@@ -900,6 +1049,10 @@ describe('DataGrid', () => {
       });
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_condition_delegated_to_engine
+     */
     it('subRowCondition이 해석되지 않는 경로면 오류 없이 숨김 처리됨', () => {
       // 콘솔 경고를 억제
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -920,6 +1073,10 @@ describe('DataGrid', () => {
       consoleWarn.mockRestore();
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_condition_delegated_to_engine
+     */
     it('subRowCondition이 _local 을 참조해도 예외 없이 엔진이 판정한다', () => {
       // 종전에는 이 컴포넌트가 `new Function('row', ...)` 로 자체 평가해서, row 스코프에
       // 없는 `_local` 을 만나면 ReferenceError 가 났다. 위임 이후에는 엔진이 `_local` 을
@@ -948,6 +1105,10 @@ describe('DataGrid', () => {
       mockEngineState._local = {};
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_condition_delegated_to_engine
+     */
     it('subRowCondition 의 _local 값이 거짓이면 서브 행이 숨겨진다', () => {
       mockEngineState._local = { expanded: false };
 
@@ -965,6 +1126,10 @@ describe('DataGrid', () => {
       mockEngineState._local = {};
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_condition_delegated_to_engine
+     */
     it('G7Core.evaluateCondition 미노출 시에는 서브 행을 표시한다 (폴백 계약)', () => {
       const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const saved = (window as any).G7Core.evaluateCondition;
@@ -986,6 +1151,10 @@ describe('DataGrid', () => {
       consoleWarn.mockRestore();
     });
 
+    /**
+     * @scenario area=sub_row
+     * @effects datagrid_sub_row_rendered_per_condition
+     */
     it('subRowCondition이 빈 문자열이면 모든 행에 서브 행이 렌더링됨', () => {
       render(
         <DataGrid
@@ -1007,6 +1176,10 @@ describe('DataGrid', () => {
   // =============================================================================
 
   describe('SPA 네비게이션 시 컬럼 변경 감지 - visibleColumns 리셋', () => {
+    /**
+     * @scenario area=column_reset
+     * @effects datagrid_visible_columns_reset_on_columns_change
+     */
     it('columns prop이 변경되면 visibleColumns가 새 columns 기준으로 리셋됨', () => {
       const orderColumns: DataGridColumn[] = [
         { field: 'no', header: '번호' },
@@ -1045,6 +1218,10 @@ describe('DataGrid', () => {
       expect(screen.queryByText('주문번호')).not.toBeInTheDocument();
     });
 
+    /**
+     * @scenario area=column_reset
+     * @effects datagrid_visible_columns_reset_on_columns_change
+     */
     it('외부 visibleColumns가 있으면 columns 변경 시 리셋하지 않음', () => {
       const columnsA: DataGridColumn[] = [
         { field: 'a1', header: 'A1' },
@@ -1093,6 +1270,10 @@ describe('DataGrid', () => {
       });
     });
 
+    /**
+     * @scenario area=mobile_sub_row
+     * @effects datagrid_mobile_card_sub_row_rendered
+     */
     it('모바일 카드 뷰에서도 서브 행이 렌더링됨', () => {
       render(
         <DataGrid
@@ -1109,6 +1290,10 @@ describe('DataGrid', () => {
       expect(subRowContents[0]).toHaveTextContent('모바일 서브: 홍길동');
     });
 
+    /**
+     * @scenario area=mobile_sub_row
+     * @effects datagrid_mobile_card_sub_row_rendered
+     */
     it('모바일 뷰에서 subRowCondition이 적용됨', () => {
       const dataWithFlag = [
         { name: '홍길동', email: 'hong@example.com', role: '관리자', showSubRow: true },
@@ -1130,6 +1315,10 @@ describe('DataGrid', () => {
       expect(subRowContents).toHaveLength(2);
     });
 
+    /**
+     * @scenario area=mobile_sub_row
+     * @effects datagrid_mobile_card_sub_row_rendered
+     */
     it('모바일 뷰에서 subRowClassName이 적용됨', () => {
       render(
         <DataGrid
@@ -1158,6 +1347,10 @@ describe('DataGrid', () => {
       { name: '타인', email: 'other@test.com', role: '사용자', abilities: { can_update: false, can_delete: false } },
     ];
 
+    /**
+     * @scenario area=row_action_disabled
+     * @effects datagrid_row_action_disabled_by_field
+     */
     it('disabledField가 falsy인 행의 액션은 disabled 클래스가 적용된다', async () => {
       const user = userEvent.setup();
 
@@ -1172,28 +1365,27 @@ describe('DataGrid', () => {
         />
       );
 
-      // 첫 번째 행의 액션 메뉴 열기
-      const actionButtons = screen.getAllByRole('button');
-      // 액션 메뉴 트리거 버튼 찾기 (테이블 행별 하나씩)
-      const triggerButtons = actionButtons.filter(btn =>
-        btn.closest('.relative.inline-block')
-      );
+      // 첫 번째 행(본인)의 액션 메뉴를 연다 — 메뉴가 열리지 않으면 실패한다
+      const triggers = screen.getAllByRole('button', { expanded: false }).filter((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+      expect(triggers.length).toBeGreaterThanOrEqual(2);
+      await user.click(triggers[0]);
 
-      if (triggerButtons.length > 0) {
-        await user.click(triggerButtons[0]);
-
-        await waitFor(() => {
-          const menuItems = document.querySelectorAll('.fixed.z-\\[9999\\] > div');
-          if (menuItems.length >= 2) {
-            // 첫 번째 행: can_update=true → 수정 활성, can_delete=false → 삭제 비활성
-            expect(menuItems[0]).not.toHaveClass('opacity-50');
-            expect(menuItems[1]).toHaveClass('opacity-50');
-          }
-        });
-      }
+      // can_update=true → 수정 활성, can_delete=false → 삭제 비활성
+      const edit = await screen.findByRole('menuitem', { name: '수정' });
+      const remove = screen.getByRole('menuitem', { name: '삭제' });
+      expect(edit).toBeEnabled();
+      expect(edit).not.toHaveAttribute('aria-disabled');
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('disabledField 미지정 액션은 항상 활성화된다', () => {
+    /**
+     * @scenario area=row_action_disabled
+     * @effects datagrid_row_action_disabled_by_field
+     */
+    it('disabledField 미지정 액션은 항상 활성화된다', async () => {
+      const user = userEvent.setup();
+
       render(
         <DataGrid
           columns={mockColumns}
@@ -1205,9 +1397,17 @@ describe('DataGrid', () => {
         />
       );
 
-      // 렌더링 자체가 에러 없이 완료되면 성공
-      expect(screen.getByText('본인')).toBeInTheDocument();
-      expect(screen.getByText('타인')).toBeInTheDocument();
+      // 두 번째 행(타인, can_update=false)의 메뉴 — 지정한 액션만 잠기고 미지정 액션은 활성
+      const triggers = screen.getAllByRole('button', { expanded: false }).filter((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+      expect(triggers.length).toBeGreaterThanOrEqual(2);
+      await user.click(triggers[1]);
+
+      const view = await screen.findByRole('menuitem', { name: '보기' });
+      const edit = screen.getByRole('menuitem', { name: '수정' });
+      expect(view).toBeEnabled();
+      expect(view).not.toHaveAttribute('aria-disabled');
+      expect(edit).toBeDisabled();
+      expect(edit).toHaveAttribute('aria-disabled', 'true');
     });
   });
 
@@ -1232,6 +1432,9 @@ describe('DataGrid', () => {
       { name: '상품B', qty: 3 },
     ];
 
+    /**
+     * @effects datagrid_footer_cell_text_binding_resolved
+     */
     it('footerCells[].text 의 바인딩 표현식이 원본 문자열로 노출되지 않는다', () => {
       render(
         <DataGrid
@@ -1250,6 +1453,9 @@ describe('DataGrid', () => {
       expect(tfoot!.textContent).not.toContain('{{');
     });
 
+    /**
+     * @effects datagrid_footer_cell_text_binding_resolved
+     */
     it('파이프가 붙은 footerCells[].text 도 원본 문자열로 노출되지 않는다', () => {
       render(
         <DataGrid
@@ -1267,6 +1473,9 @@ describe('DataGrid', () => {
       expect(tfoot!.textContent).not.toContain('| number');
     });
 
+    /**
+     * @effects datagrid_footer_cell_text_binding_resolved
+     */
     it('바인딩이 없는 순수 문자열 text 는 그대로 출력된다', () => {
       render(
         <DataGrid
@@ -1296,6 +1505,10 @@ describe('DataGrid', () => {
    * 같은 `Pre` 가 모달(DynamicRenderer 경로)에서는 정상 렌더된다 — 경로 비대칭이다.
    */
   describe('반복 렌더 컴포넌트 레지스트리', () => {
+    /**
+     * @scenario area=cell_registry
+     * @effects datagrid_repeat_render_uses_full_component_map
+     */
     it('cellChildren 렌더 시 템플릿 레지스트리 전체(G7Core.getComponentMap)를 넘긴다', () => {
       const seen: Record<string, unknown>[] = [];
       (window as any).G7Core = {
@@ -1328,6 +1541,9 @@ describe('DataGrid', () => {
      * G7 파라미터 표준은 `{{count}}` 다. 컴포넌트가 자체 치환을 두고 단일 중괄호만
      * 처리하면 표준 표기가 `{1}개 선택됨` 처럼 바깥 중괄호를 남긴 채 렌더된다 —
      * 예외도 경고도 없이 화면에만 드러난다 (실제 제보 경로).
+     *
+     * @scenario area=selection_count_text
+     * @effects datagrid_selected_count_text_fills_both_param_styles
      */
     it('표준 표기의 번역 문구가 그대로 렌더되지 않고 치환된다', async () => {
       (window as any).G7Core = {
@@ -1363,6 +1579,9 @@ describe('DataGrid', () => {
 
     /**
      * prop 으로 직접 넘긴 문구는 번역 엔진을 거치지 않는다 — 두 표기 모두 채워야 한다.
+     *
+     * @scenario area=selection_count_text
+     * @effects datagrid_selected_count_text_fills_both_param_styles
      */
     it.each([
       ['{{count}}개 선택', '2개 선택'],

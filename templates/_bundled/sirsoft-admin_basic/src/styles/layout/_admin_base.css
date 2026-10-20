@@ -106,8 +106,8 @@
   }
 
   .admin_sidebar_empty {
-    @apply px-4 py-8 text-center text-sm text-gray-400;
-    @apply dark:text-gray-500;
+    @apply px-4 py-8 text-center text-sm text-gray-500;
+    @apply dark:text-gray-400;
   }
 
   .admin_sidebar_empty_icon {

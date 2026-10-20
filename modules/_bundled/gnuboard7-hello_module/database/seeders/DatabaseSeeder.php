@@ -28,17 +28,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('=== Hello 모듈 시더 실행 시작 ===');
+        $this->command->info('=== '.__('gnuboard7-hello_module::messages.seeders.database.start').' ===');
 
         $this->call([
             MemoSeeder::class,
         ]);
 
         if ($this->shouldIncludeSample()) {
-            $this->command->info('--- Hello 모듈 샘플 시더 실행 ---');
+            $this->command->info('--- '.__('gnuboard7-hello_module::messages.seeders.database.sample_start').' ---');
             $this->call(MemoSampleSeeder::class);
         }
 
-        $this->command->info('=== Hello 모듈 시더 실행 완료 ===');
+        $this->command->info('=== '.__('gnuboard7-hello_module::messages.seeders.database.done').' ===');
     }
 }

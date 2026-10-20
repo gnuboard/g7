@@ -9,19 +9,19 @@ import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
 
-/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 J D-J11) */
+/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 전수 실측) */
 const selectSearchPlaceholder = (): string => {
   const translated = (window as any).G7Core?.t?.('common.search_placeholder');
   return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
 };
 
-/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 J D-J11 후속) */
+/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 전수 실측 후속) */
 const selectSearchLabel = (): string => {
   const translated = (window as any).G7Core?.t?.('common.search');
   return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
 };
 
-/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 validate R4 동류) */
+/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 전수 실측 같은 결함군) */
 const selectNoResults = (): string => {
   const translated = (window as any).G7Core?.t?.('common.no_results');
   return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
@@ -290,7 +290,7 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   // 곁 라벨을 이름으로 잇는다 — 목록형 버튼은 「작업 유형 Artisan」 처럼 라벨 뒤에 현재 값이 이어 읽힌다.
-  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 J D-J7). 기본 select 는 라벨만 잇는다.
+  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 전수 실측). 기본 select 는 라벨만 잇는다.
   // 훅은 아래 기본 select 분기보다 먼저 부른다 — 분기 뒤에 두면 options 유무에 따라 훅 호출 수가 달라진다.
   useAdjacentLabel(
     (normalizedOptions ? buttonRef : nativeSelectRef) as React.RefObject<HTMLElement | null>,
@@ -370,8 +370,8 @@ export const Select: React.FC<SelectProps> = ({
         aria-labelledby={buttonLabelledBy}
       >
         {/* 고른 값이 없으면 placeholder 를 흐린 글자로 보인다 — 종전에는 placeholder 가 바깥 div 속성으로 새고
-            버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 J D-J11). */}
-        <Span id={valueId} className={selectedLabel ? 'truncate' : 'truncate text-gray-400 dark:text-gray-500'}>{selectedLabel || placeholder || '\u00A0'}</Span>
+            버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 전수 실측). */}
+        <Span id={valueId} className={selectedLabel ? 'truncate' : 'truncate text-gray-600 dark:text-gray-300'}>{selectedLabel || placeholder || '\u00A0'}</Span>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -404,7 +404,7 @@ export const Select: React.FC<SelectProps> = ({
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 placeholder={searchPlaceholder ?? selectSearchPlaceholder()}
-                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-600 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 role="searchbox"
                 aria-label={searchPlaceholder ?? selectSearchLabel()}
               />
@@ -425,7 +425,7 @@ export const Select: React.FC<SelectProps> = ({
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   disabled={option.disabled}
                   className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    isSelected ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
+                    isSelected ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'
                   } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   role="option"
                   aria-selected={isSelected}
@@ -433,7 +433,7 @@ export const Select: React.FC<SelectProps> = ({
                   {option.description ? (
                     <Div className="flex flex-col gap-0.5 min-w-0">
                       <Span>{option.label}</Span>
-                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-400 whitespace-normal">{option.description}</Span>
+                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-300 whitespace-normal">{option.description}</Span>
                     </Div>
                   ) : (
                     <Span>{option.label}</Span>

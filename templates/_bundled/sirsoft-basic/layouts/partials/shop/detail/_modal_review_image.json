@@ -93,7 +93,7 @@
                                                             "props": {
                                                                 "name": "star",
                                                                 "size": "sm",
-                                                                "className": "{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                                                "className": "{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
                                                             }
                                                         }
                                                     ]
@@ -104,7 +104,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{_global.reviewForModal?.createdAt ?? ''}}"
                                         }
@@ -134,7 +134,7 @@
                                             "name": "Span",
                                             "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
                                             "props": {
-                                                "className": "inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+                                                "className": "inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
                                             },
                                             "text": "{{$localized(opt.key)}}: {{$localized(opt.value)}}"
                                         }

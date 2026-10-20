@@ -13,7 +13,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <fallback>
@@ -123,7 +131,7 @@
                   </set-state>
                 </on>
               </input>
-              <icon name="magnifying-glass" size="sm" class="absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+              <icon name="magnifying-glass" size="sm" class="absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"/>
             </div>
             <column-selector data-type="composite" data-ref="column_selector" id="admin_review_list_columns" visibleColumns="{{_local.visibleColumns ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.product_review.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
               <prop name="columns">
@@ -385,53 +393,53 @@
               </on>
             </input>
             <!-- 기간 빠른 선택 — 핸들러가 오늘 기준으로 시작·종료일을 계산해 돌려주면 그 값($prev)을 폼에 담는다. 직접 고른 날짜와 섞이지 않도록 어느 쪽을 썼는지도 함께 기록한다 -->
-            <div class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'today'}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
                 <set-state target="local" filter.dateQuick="today" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
               </on>
               $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.today
-            </div>
+            </button>
             <!-- 최근 3일 -->
-            <div class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '3days'}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.setDateRange" preset="3days"/>
                 <set-state target="local" filter.dateQuick="3days" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
               </on>
               $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3days
-            </div>
+            </button>
             <!-- 최근 1주일 -->
-            <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'week'}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
                 <set-state target="local" filter.dateQuick="week" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
               </on>
               $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.week
-            </div>
+            </button>
             <!-- 최근 1개월 -->
-            <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'month'}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
                 <set-state target="local" filter.dateQuick="month" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
               </on>
               $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.month
-            </div>
+            </button>
             <!-- 최근 3개월 -->
-            <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '3months'}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
                 <set-state target="local" filter.dateQuick="3months" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
               </on>
               $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.3months
-            </div>
+            </button>
             <!-- 기간 제한 없음 — 날짜 입력을 비운다 -->
-            <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'all'}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.setDateRange" preset="all"/>
                 <set-state target="local" filter.dateQuick="all" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
               </on>
               $t:sirsoft-ecommerce.admin.product_review.filter.date_quick.all
-            </div>
+            </button>
           </div>
         </div>
         <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
@@ -492,7 +500,7 @@
           </select>
         </div>
         <!-- 일괄 적용. 고른 작업과 대상 id 를 전역에 옮겨 담은 뒤 확인 모달을 연다 — 모달은 별도 컨텍스트라 이 화면의 폼 상태를 그대로 읽지 못한다 -->
-        <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{reviews.data?.abilities?.can_update !== true || !_local.batchAction || (_local.selectedReviews ?? []).length === 0}}">
+        <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{reviews.data?.abilities?.can_update !== true || !_local.batchAction || (_local.selectedReviews ?? []).length === 0}}">
           <on type="click">
             <set-state target="global" reviewBatchAction="{{_local.batchAction}}" reviewBatchIds="{{_local.selectedReviews ?? []}}"/>
             <open-modal target="modal_status_change"/>
@@ -534,7 +542,7 @@
         </div>
       </div>
       <div data-ref="table_container" class="overflow-hidden mb-4">
-        <data-grid data-type="composite" rowLabelField="product.name" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" selectable="{{reviews.data?.abilities?.can_update === true}}" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty">
+        <data-grid data-type="composite" rowLabelField="product.name" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" selectable="{{reviews.data?.abilities?.can_update === true}}" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="{{reviews === undefined ? '' : $t('sirsoft-ecommerce.admin.product_review.table.empty')}}">
           <blur-until-loaded sources="reviews"/>
           <prop name="expandContext">
             <field name="rowId" value="{{row.id}}"/>
@@ -548,7 +556,7 @@
               <div class="flex-center gap-2">
                 <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-10 h-10 rounded object-cover shrink-0 border border-gray-200 dark:border-gray-700"/>
                 <div data-if="{{!row.product?.thumbnail_url}}" class="w-10 h-10 shrink-0 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  <icon name="image" class="text-lg text-gray-400 dark:text-gray-500"/>
+                  <icon name="image" class="text-lg text-gray-500 dark:text-gray-400"/>
                 </div>
                 <div>
                   <div class="text-primary font-medium">{{row.product?.name ?? ''}}</div>
@@ -565,7 +573,7 @@
           <column field="rating" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.rating" width="100px" :sortable="false">
             <cell>
               <div class="flex items-center gap-1">
-                <span class="text-yellow-400 dark:text-yellow-300">{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}</span>
+                <span class="text-yellow-700 dark:text-yellow-300">{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}</span>
                 <span class="text-primary text-sm ml-1">{{row.rating ?? ''}}</span>
               </div>
             </cell>
@@ -624,7 +632,7 @@
                     <div class="flex items-start gap-3 mb-4">
                       <img data-if="{{row.product?.thumbnail_url}}" src="{{row.product?.thumbnail_url ?? ''}}" alt="{{row.product?.name ?? ''}}" class="w-16 h-16 shrink-0 rounded-md object-cover border border-gray-200 dark:border-gray-700"/>
                       <div data-if="{{!row.product?.thumbnail_url}}" class="w-16 h-16 shrink-0 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                        <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+                        <icon name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
                       </div>
                       <div class="row-stack min-w-0">
                         <a href="{{`/admin/ecommerce/products/${row.product?.product_code ?? row.product?.id}/edit`}}" class="text-blue-600 hover:underline dark:text-blue-400 font-medium text-sm leading-snug">{{row.product?.name ?? ''}}</a>
@@ -647,7 +655,7 @@
                       </div>
                       <div class="flex justify-between">
                         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.quantity</span>
-                        <span class="text-primary">{{row.orderOption?.quantity ?? ''}} 개</span>
+                        <span class="text-primary">$t:defer:sirsoft-ecommerce.admin.product_review.table.quantity_value|count={{row.orderOption?.quantity ?? ''}}</span>
                       </div>
                       <div class="flex justify-between">
                         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_review.detail.purchase_info.purchase_date</span>
@@ -662,7 +670,7 @@
                     <div class="flex-between px-4 panel-header">
                       <span class="text-label-subtle text-sm font-medium">$t:sirsoft-ecommerce.admin.product_review.detail.customer_review.title</span>
                       <div class="flex-center gap-2">
-                        <span class="text-yellow-400 dark:text-yellow-300">{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}</span>
+                        <span class="text-yellow-700 dark:text-yellow-300">{{['','★','★★','★★★','★★★★','★★★★★'][row.rating] ?? ''}}</span>
                         <badge data-type="composite" color="{{row.status_badge_color}}" text="{{row.status_label}}"/>
                       </div>
                     </div>
@@ -677,7 +685,7 @@
                       <!-- 리뷰 이미지 (최대 4개, 초과 시 +N 오버레이) -->
                       <div data-if="{{rowImageCount > 0}}" class="flex gap-2 mt-1">
                         <!-- 이미지 1 -->
-                        <img data-if="{{(rowImages ?? []).length > 0}}" src="{{rowImages[0].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                        <button data-if="{{(rowImages ?? []).length > 0}}" type="button" class="shrink-0 rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="0">
                               <field name="reviewForModal">
@@ -691,9 +699,10 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                        </img>
+                          <img src="{{rowImages[0].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"/>
+                        </button>
                         <!-- 이미지 2 -->
-                        <img data-if="{{(rowImages ?? []).length > 1}}" src="{{rowImages[1].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                        <button data-if="{{(rowImages ?? []).length > 1}}" type="button" class="shrink-0 rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="1">
                               <field name="reviewForModal">
@@ -707,9 +716,10 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                        </img>
+                          <img src="{{rowImages[1].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"/>
+                        </button>
                         <!-- 이미지 3 -->
-                        <img data-if="{{(rowImages ?? []).length > 2}}" src="{{rowImages[2].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                        <button data-if="{{(rowImages ?? []).length > 2}}" type="button" class="shrink-0 rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="2">
                               <field name="reviewForModal">
@@ -723,9 +733,10 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                        </img>
+                          <img src="{{rowImages[2].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"/>
+                        </button>
                         <!-- 이미지 4 (4장 정확히일 때 일반 이미지) -->
-                        <img data-if="{{(rowImages ?? []).length == 4}}" src="{{rowImages[3].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80">
+                        <button data-if="{{(rowImages ?? []).length == 4}}" type="button" class="shrink-0 rounded-md" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="3">
                               <field name="reviewForModal">
@@ -739,9 +750,10 @@
                             </set-state>
                             <open-modal target="modal_image_preview"/>
                           </on>
-                        </img>
+                          <img src="{{rowImages[3].download_url}}" alt="" class="w-20 h-20 shrink-0 object-cover rounded-md border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80"/>
+                        </button>
                         <!-- +N 오버레이 (5장 이상일 때 4번째 자리) -->
-                        <div data-if="{{(rowImages ?? []).length >= 5}}" class="relative w-20 h-20 shrink-0 cursor-pointer rounded-md overflow-hidden">
+                        <button type="button" data-if="{{(rowImages ?? []).length >= 5}}" class="relative w-20 h-20 shrink-0 cursor-pointer rounded-md overflow-hidden" aria-label="$t:sirsoft-ecommerce.admin.product_review.detail.image_preview.title">
                           <on type="click">
                             <set-state target="global" :reviewImageIndex="3">
                               <field name="reviewForModal">
@@ -756,10 +768,10 @@
                             <open-modal target="modal_image_preview"/>
                           </on>
                           <img src="{{rowImages[3].download_url}}" alt="" class="w-full h-full object-cover"/>
-                          <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <span class="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <span class="text-white font-semibold text-sm">+{{(rowImages ?? []).length - 3}}</span>
-                          </div>
-                        </div>
+                          </span>
+                        </button>
                       </div>
                     </div>
                     <!-- 카드 푸터: 작성일 / 수정일 -->
@@ -786,7 +798,7 @@
                     </div>
                     <!-- 카드 푸터: 메타(관리자명·답변일) + 수정/삭제 버튼 (보기 모드) -->
                     <div data-if="{{_local.editingReviewId !== row.id}}" class="flex-between gap-2 px-4 py-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
-                      <span class="text-secondary text-xs">{{`${row.reply_admin?.name ?? ''} (${row.reply_admin?.email ?? ''}) · ${row.replied_at ?? ''}${row.reply_updated_at ? ' · 수정: ' + row.reply_updated_at : ''}`}}</span>
+                      <span class="text-secondary text-xs">{{`${row.reply_admin?.name ?? ''} (${row.reply_admin?.email ?? ''}) · ${row.replied_at ?? ''}${row.reply_updated_at ? ' · ' + $t('sirsoft-ecommerce.admin.product_review.detail.customer_review.updated_at_label') + row.reply_updated_at : ''}`}}</span>
                       <div class="flex gap-2 shrink-0">
                         <!-- 답글 고치기 — 어느 행이 편집 중인지 id 로 표시하고 지금 답글을 입력칸에 옮겨 담는다(행마다 폼을 따로 두지 않고 한 벌을 돌려 쓴다) -->
                         <button data-ref="review_reply_edit_button" type="button" class="btn btn-sm btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
@@ -795,7 +807,7 @@
                           </on>
                           $t:sirsoft-ecommerce.admin.product_review.detail.seller_reply.edit
                         </button>
-                        <button data-ref="review_reply_delete_button" type="button" class="btn btn-sm text-red-500 bg-red-50 border border-red-300 hover:bg-red-100 dark:bg-red-900/30 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
+                        <button data-ref="review_reply_delete_button" type="button" class="btn btn-sm text-red-700 bg-red-50 border border-red-300 hover:bg-red-100 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{row.abilities?.can_update !== true}}">
                           <on type="click">
                             <!-- 답글 삭제 — 지울 대상을 전역에 옮겨 담고 확인 창을 연다(창은 별도 컨텍스트라 행 데이터를 못 본다) -->
                             <sequence>

@@ -116,7 +116,7 @@ enum LayoutMarkupLintCode: string
      *
      * 엔진은 이벤트에 바로 묶인 진입점 액션의 debounce 만 적용한다(ActionDispatcher::bindActionsToProps).
      * 안쪽 액션은 바깥 흐름이 기다려 결과·순서를 이어받으므로 늦출 수 없어 매 이벤트 즉시 실행된다 —
-     * 코드 편집기 내용 검색이 글자마다 요청을 보낸 원인(2026-10-06 실측 D-I1-8). 감싸는 진입점
+     * 코드 편집기 내용 검색이 글자마다 요청을 보낸 원인(2026-10-06 실측). 감싸는 진입점
      * (`<conditions :debounce>`·`<sequence :debounce>`)에 달아야 한다.
      */
     case NestedActionDebounceIgnored = 'nested_action_debounce_ignored';

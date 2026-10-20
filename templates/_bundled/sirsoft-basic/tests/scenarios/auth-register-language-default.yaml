@@ -1,0 +1,28 @@
+feature: 회원가입 폼 언어 선택칸 기본값은 렌더 시점 $locale 을 따른다
+
+description: |
+  회원가입 화면의 「언어」 선택칸이 비어 보이거나(폼 onMount 시드와 dataKey 자동바인딩 충돌) 영문 진입에서도 한국어가
+  고정되던(init_actions 시드의 `$locale ?? 'ko'` — init 문맥에는 $locale 이 없어 늘 'ko') 회귀를 막는다.
+  보호 장치는 셋이다 — ① register.json init_actions 는 registerForm 을 language 없이 시드한다 ② _register_form 의 Form 루트에
+  lifecycle.onMount 가 없다 ③ 언어 Select 의 value 가 `_local.registerForm.language` 우선, 렌더 시점 `$locale` 대체다.
+  7.1.1 에서 init_actions 의 registerForm 시드 앞에 같은 키를 null 로 비우는 단계가 들어왔다(빈 객체 비우기는
+  empty-object-state-reset.yaml 이 판정) — 시드 판정은 그 null 단계가 아니라 뒤의 객체 값을 본다.
+
+# axis 의미:
+#   layout_part — 보호 장치가 놓인 자리: 레이아웃 init_actions(register.json) / 폼 partial(_register_form.json)
+axes:
+  layout_part: [register_init_actions, register_form_partial]
+
+effects:
+  - register_form_seed_without_language          # init 시드(null 비우기 단계 뒤 객체 값)에 language 가 없다
+  - register_form_no_onmount_seed                # Form 루트에 lifecycle.onMount 가 없다(dataKey 자동바인딩 충돌 회피)
+  - language_select_value_prefers_local_then_locale  # Select value 가 _local.registerForm.language → $locale 순이다
+  - language_select_options_from_locales         # 선택지가 $locales 를 value·label 로 매핑한다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/auth-register-language-default.test.tsx
+
+validation:
+  note: |
+    레이아웃 JSON 정합 판정(DOM 비의존). 7.1.1 에서는 시드 판정이 앞의 null 비우기 단계를 건너뛰도록
+    보정한 것뿐이라 단언하는 명제는 그대로다.

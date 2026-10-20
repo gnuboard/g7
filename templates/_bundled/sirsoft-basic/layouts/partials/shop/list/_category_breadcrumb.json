@@ -44,7 +44,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
@@ -85,7 +85,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
@@ -127,7 +127,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
@@ -169,7 +169,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
@@ -204,7 +204,7 @@
                             ],
                             "props": {
                                 "href": "{{_global.shopBase}}/products",
-                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }
@@ -245,7 +245,7 @@
                             ],
                             "props": {
                                 "href": "{{_global.shopBase}}/products?category={{query.d1}}&d1={{query.d1}}",
-                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }
@@ -287,7 +287,7 @@
                             ],
                             "props": {
                                 "href": "{{_global.shopBase}}/products?category={{query.d2}}&d1={{query.d1}}&d2={{query.d2}}",
-                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }
@@ -330,7 +330,7 @@
                             ],
                             "props": {
                                 "href": "{{_global.shopBase}}/products?category={{query.d3}}&d1={{query.d1}}&d2={{query.d2}}&d3={{query.d3}}",
-                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }

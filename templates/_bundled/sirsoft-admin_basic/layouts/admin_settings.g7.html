@@ -10,7 +10,7 @@
 
   언어팩 탭은 조각·창을 **언어팩 관리 화면 것을 그대로 빌려 쓴다** — 아래 창 목록 앞쪽 일곱이 그것이다. -->
 <layout name="admin_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:admin.settings.page_title" description="$t:admin.settings.page_description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:admin.settings.page_title" description="$t:admin.settings.page_description"/>
   <!-- 언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다). -->
   <data-source id="language_packs" label_key="$t:editor.data_source.language_packs" type="api" endpoint="/api/admin/language-packs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
     <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}" scope="{{_local.filterScope || query.scope}}" target_identifier="{{_local.filterTarget || query.target_identifier}}" locale="{{query.locale}}" status="{{query.status}}" search="{{query.search}}" exclude_protected="{{query.exclude_protected ?? '1'}}"/>
@@ -70,6 +70,19 @@
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
   </data-source>
   <!-- 서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다). -->
   <data-source id="systemInfo" label_key="$t:editor.data_source.systemInfo" type="api" endpoint="/api/admin/settings/system-info" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}" :auto_fetch="true" :auth_required="true">
@@ -390,7 +403,7 @@
       </page-header>
       <div data-ref="readonly_banner" data-if="{{!!_global.settingsAbilities &amp;&amp; _global.settingsAbilities.can_update !== true}}" class="alert-warning">
         <div class="flex-center gap-3">
-          <icon name="lock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <icon name="lock" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft">$t:admin.settings.readonly_notice</p>
         </div>
       </div>
@@ -476,13 +489,17 @@
         <include src="partials/admin_settings/_tab_info.g7.html"/>
       </div>
       <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" class="btn btn-secondary">
+        <button type="button" data-ref="cancel_button" class="btn btn-secondary">
           <on type="click">
-            <refetch-data-source dataSourceId="settings"/>
+            <sequence>
+              <!-- 취소 — 받은 값으로 되돌리고 「고친 것이 있다」 표시도 끈다(남겨 두면 저장 단추·탭 전환 확인·이탈 확인이 되돌린 뒤에도 켜져 있다) -->
+              <refetch-data-source dataSourceId="settings"/>
+              <set-state target="local" :hasChanges="false"/>
+            </sequence>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' &amp;&amp; (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') &amp;&amp; !_local.driverTestResults?.s3?.success &amp;&amp; ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' &amp;&amp; !_local.driverTestResults?.memcached?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled &amp;&amp; !_local.driverTestResults?.websocket?.success &amp;&amp; (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}" class="btn btn-primary flex-center gap-1.5">
+        <button type="button" data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' &amp;&amp; (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') &amp;&amp; !_local.driverTestResults?.s3?.success &amp;&amp; ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' &amp;&amp; !_local.driverTestResults?.memcached?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled &amp;&amp; !_local.driverTestResults?.websocket?.success &amp;&amp; (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).
                  알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가

@@ -208,12 +208,25 @@
                     ]
                 },
                 {
+                    "comment": "받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「활동 로그가 없습니다」를 보이면 기록이 없는 줄 안다",
+                    "id": "log_load_failed",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{claim_logs === null}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "py-12 text-center text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
+                },
+                {
+                    "comment": "빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다",
                     "id": "log_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(claim_logs.data?.data ?? []).length === 0}}",
+                    "if": "{{claim_logs !== undefined && claim_logs !== null && (claim_logs.data?.data ?? []).length === 0}}",
                     "props": {
-                        "className": "py-12 text-center text-gray-400 dark:text-gray-500"
+                        "className": "py-12 text-center text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.empty"
                 },
@@ -436,7 +449,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "w-28 text-center text-green-600 dark:text-green-400"
+                                                                        "className": "w-28 text-center text-green-700 dark:text-green-400"
                                                                     },
                                                                     "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                                 }
@@ -529,7 +542,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "w-28 text-center text-green-600 dark:text-green-400"
+                                                                                "className": "w-28 text-center text-green-700 dark:text-green-400"
                                                                             },
                                                                             "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                                         }
@@ -749,7 +762,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "w-20 text-center text-green-600 dark:text-green-400"
+                                                        "className": "w-20 text-center text-green-700 dark:text-green-400"
                                                     },
                                                     "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                 }
@@ -842,7 +855,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "w-20 text-center text-green-600 dark:text-green-400"
+                                                                "className": "w-20 text-center text-green-700 dark:text-green-400"
                                                             },
                                                             "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                         }

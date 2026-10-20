@@ -1,14 +1,14 @@
 /**
- * 7.1.0 전수 실측 영역 E 후속 — 관측(O-E2·O-E5·O-E6·O-E8·O-E10)을 화면 계약으로 잠근다.
+ * 7.1.0 전수 실측 통계 화면 후속 — 관측 결함을 화면 계약으로 잠근다.
  *
  * 합성 입력이 아니라 구운 `.json`(런타임 계약)과 실제 언어 파일(ko·en·ja 팩)을 읽는다. 모집단은
  * 저장소에서 파생한다 — 「고친 한 곳」만 세면 같은 결함이 다른 화면에 남아도 초록이다.
  *
- * ① 재집계 「건너뜀」 행이 그 이유를 그린다 (O-E5)
- * ② 주소를 그리는 칸이 그 행의 주소가 설정 전 원래 주소인지 알린다 (O-E8)
- * ③ 봇 「최근 요청」이 고른 기간을 따른다는 사실을 화면이 말한다 (O-E10)
- * ④ 기간 바의 날짜 칸은 입력이 끝난 뒤에 이동한다 (O-E2)
- * ⑤ 통계 화면의 스위치는 사람이 읽는 이름을 가진다 (O-E6)
+ * ① 재집계 「건너뜀」 행이 그 이유를 그린다
+ * ② 주소를 그리는 칸이 그 행의 주소가 설정 전 원래 주소인지 알린다
+ * ③ 봇 「최근 요청」이 고른 기간을 따른다는 사실을 화면이 말한다
+ * ④ 기간 바의 날짜 칸은 입력이 끝난 뒤에 이동한다
+ * ⑤ 통계 화면의 스위치는 사람이 읽는 이름을 가진다
  */
 import { describe, expect, it } from 'vitest';
 import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
@@ -130,7 +130,7 @@ describe('④ 기간 바의 날짜 칸은 입력이 끝난 뒤에 이동한다',
   // @effects keyboard_date_entry_leaves_one_history_entry
   it('시작·끝 날짜 칸의 change 이동이 debounce 로 묶인다', () => {
     // 키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28).
-    // 바로 이동하면 중간 날짜가 이력과 요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측 O-E2).
+    // 바로 이동하면 중간 날짜가 이력과 요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측).
     const bar = loadLayout('partials/admin_analytics/_partial_period_bar.json');
     for (const id of ['period_from', 'period_to']) {
       const input = nodeById(bar, id);
@@ -147,7 +147,7 @@ describe('⑤ 통계 화면의 스위치는 사람이 읽는 이름을 가진다
   // @scenario screen=settings, state=normal, viewport=1440, locale=ko
   // @effects analytics_switches_have_readable_names
   it('통계 레이아웃·조각의 Toggle 전량이 ariaLabel 또는 label 을 갖고 번역이 있다', () => {
-    // Toggle 은 label 이 없으면 name(필드 키 `settings.enabled`)을 접근 가능한 이름으로 읽힌다(7.1.0 실측 O-E6).
+    // Toggle 은 label 이 없으면 name(필드 키 `settings.enabled`)을 접근 가능한 이름으로 읽힌다(7.1.0 실측).
     const offenders: string[] = [];
     let toggles = 0;
     for (const file of analyticsLayoutFiles()) {

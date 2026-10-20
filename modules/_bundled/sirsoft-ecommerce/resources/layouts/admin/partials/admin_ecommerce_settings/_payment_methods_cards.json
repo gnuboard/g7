@@ -22,7 +22,7 @@
             "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
             "variants": {
                 "normal": "",
-                "orphaned": "bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700"
+                "orphaned": "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
             }
         },
         "props": {
@@ -52,7 +52,7 @@
                                 "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                                 "props": {
                                     "data-drag-handle": true,
-                                    "className": "cursor-grab text-gray-400 dark:text-gray-500"
+                                    "className": "cursor-grab text-gray-500 dark:text-gray-400"
                                 },
                                 "children": [
                                     {
@@ -371,7 +371,7 @@
                                         "name": "Span",
                                         "if": "{{!(_local.form?.mileage?.enabled)}}",
                                         "props": {
-                                            "className": "form-hint text-amber-600 dark:text-amber-400"
+                                            "className": "form-hint text-amber-700 dark:text-amber-400"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing_disabled_hint"
                                     }

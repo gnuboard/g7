@@ -295,7 +295,7 @@
                                             "name": "Span",
                                             "if": "{{(_local.selectedProducts ?? []).length > 0 && claimRequestContext?.data?.unavailable !== true && (_computed.claimRequestGateExchange !== true || _computed.claimRequestGateReturn !== true || _computed.claimRequestGateRefund !== true)}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.gate_hint"
                                         },
@@ -306,7 +306,7 @@
                                             "name": "Span",
                                             "if": "{{claimRequestContext?.data?.unavailable === true && _local.claimRequestContextError !== 'failed'}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.no_permission"
                                         },
@@ -317,7 +317,7 @@
                                             "name": "Span",
                                             "if": "{{claimRequestContext?.data?.unavailable === true && _local.claimRequestContextError === 'failed'}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "text-xs text-gray-600 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.claim_request.context_load_failed"
                                         }
@@ -423,7 +423,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "image",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
+                                                                            "className": "text-xl text-gray-500 dark:text-gray-400"
                                                                         }
                                                                     }
                                                                 ]
@@ -508,7 +508,7 @@
                                                         "name": "Span",
                                                         "if": "{{row.list_price_formatted && Number(row.list_price) !== Number(row.unit_price)}}",
                                                         "props": {
-                                                            "className": "text-sm text-gray-400 dark:text-gray-500 line-through block"
+                                                            "className": "text-sm text-gray-500 dark:text-gray-400 line-through block"
                                                         },
                                                         "text": "{{row.list_price_formatted}}"
                                                     },
@@ -565,7 +565,7 @@
                                                         "props": {
                                                             "className": "text-sm text-gray-900 dark:text-gray-100"
                                                         },
-                                                        "text": "{{row.quantity}} 개"
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.order.detail.order_info.quantity_value|count={{row.quantity}}"
                                                     },
                                                     {
                                                         "comment": "재고 적용 여부 배지",
@@ -610,7 +610,7 @@
                                                         "name": "Span",
                                                         "if": "{{row.subtotal_discount_amount > 0}}",
                                                         "props": {
-                                                            "className": "text-sm text-red-600 dark:text-red-400 font-medium block"
+                                                            "className": "text-sm text-red-700 dark:text-red-400 font-medium block"
                                                         },
                                                         "text": "-{{row.subtotal_discount_amount_formatted}}"
                                                     },
@@ -636,7 +636,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "ticket",
-                                                                            "className": "text-xs text-red-400 dark:text-red-500"
+                                                                            "className": "text-xs text-red-500 dark:text-red-500"
                                                                         }
                                                                     },
                                                                     {
@@ -673,7 +673,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "tag",
-                                                                            "className": "text-xs text-orange-400 dark:text-orange-500"
+                                                                            "className": "text-xs text-orange-600 dark:text-orange-500"
                                                                         }
                                                                     },
                                                                     {
@@ -710,7 +710,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "gift",
-                                                                            "className": "text-xs text-purple-400 dark:text-purple-500"
+                                                                            "className": "text-xs text-purple-500 dark:text-purple-500"
                                                                         }
                                                                     },
                                                                     {
@@ -782,7 +782,7 @@
                                                         "name": "Span",
                                                         "if": "{{row.subtotal_points_used_amount > 0}}",
                                                         "props": {
-                                                            "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                            "className": "text-xs text-red-700 dark:text-red-400 block"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{row.subtotal_points_used_amount_formatted}}"
                                                     },
@@ -791,7 +791,7 @@
                                                         "name": "Span",
                                                         "if": "{{row.subtotal_deposit_used_amount > 0}}",
                                                         "props": {
-                                                            "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                            "className": "text-xs text-red-700 dark:text-red-400 block"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{row.subtotal_deposit_used_amount_formatted}}"
                                                     }
@@ -1084,7 +1084,7 @@
                                     },
                                     {
                                         "field": "quantity",
-                                        "text": "{{order.data?.total_quantity ?? 0}}개",
+                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.quantity_value|count={{order.data?.total_quantity ?? 0}}",
                                         "className": "text-center text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
                                     },
                                     {
@@ -1408,7 +1408,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
                                                             },
                                                             "children": [
                                                                 {
@@ -1416,7 +1416,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "fa-regular fa-user",
-                                                                        "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                                     }
                                                                 },
                                                                 {
@@ -1454,7 +1454,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "fa-regular fa-user",
-                                                                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                "className": "text-gray-500 dark:text-gray-500 flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -1469,7 +1469,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "($t:sirsoft-ecommerce.admin.order.detail.order_info.non_member)"
                                                         },
@@ -1487,7 +1487,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "ml-2 inline-flex items-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             },
                                                             "children": [
@@ -1797,7 +1797,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 dark:text-red-400"
+                                                                "className": "text-red-600 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -1849,7 +1849,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 dark:text-red-400"
+                                                                "className": "text-red-600 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -1919,7 +1919,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 dark:text-red-400"
+                                                                "className": "text-red-600 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -1981,7 +1981,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 dark:text-red-400"
+                                                                "className": "text-red-600 dark:text-red-400"
                                                             },
                                                             "text": "*"
                                                         }
@@ -2098,7 +2098,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 dark:text-red-400"
+                                                        "className": "text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "*"
                                                 }
@@ -2155,7 +2155,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 dark:text-red-400"
+                                                        "className": "text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "*"
                                                 }
@@ -2528,7 +2528,7 @@
                                                     "name": "Span",
                                                     "if": "{{cancel.cancelled_at_formatted}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-300 shrink-0"
                                                     },
                                                     "text": "{{cancel.cancelled_at_formatted ?? ''}}"
                                                 }

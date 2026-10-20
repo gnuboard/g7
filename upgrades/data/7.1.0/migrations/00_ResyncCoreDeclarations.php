@@ -4,10 +4,11 @@ namespace App\Upgrades\Data\V7_1_0\Migrations;
 
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\UpgradeContext;
+use App\Services\CoreUpdateService;
 use Illuminate\Support\Facades\File;
 
 /**
- * 코어 역할·권한·메뉴·알림 정의 선언을 새 코드에서 한 번 더 동기화합니다 (7.1.0 출시 점검 CU-3).
+ * 코어 역할·권한·메뉴·알림 정의 선언을 새 코드에서 한 번 더 동기화합니다 (7.1.0 출시 점검).
  *
  * 코어 업데이트는 마이그레이션 뒤(Step 9) 부모 프로세스가 코어 선언을 재동기화하고, 업그레이드 스텝을 도는 자식
  * `core:execute-upgrade-steps` 는 `G7_UPDATE_IN_PROGRESS=1` 이면 그 재동기화를 건너뛴다(부모가 이미 했다는 전제).
@@ -56,9 +57,9 @@ class ResyncCoreDeclarations implements DataMigration
             return;
         }
 
-        // audit:allow upgrade-step-vone-safety reason: 부모(7.0.x) 메모리의 옛 코드로 실패한 코어 선언 재동기화를 자식(새 코드)에서 다시 하는 것이 이 스텝의 목적 — method_exists 가드 (CU-3)
+        // audit:allow upgrade-step-vone-safety reason: 부모(7.0.x) 메모리의 옛 코드로 실패한 코어 선언 재동기화를 자식(새 코드)에서 다시 하는 것이 이 스텝의 목적 — method_exists 가드
         // audit:allow upgrade-step-data-snapshot reason: 위와 같음 — 서비스 재동기화가 이 스텝의 목적이다
-        $service = app(\App\Services\CoreUpdateService::class);
+        $service = app(CoreUpdateService::class);
 
         if (! method_exists($service, 'reloadCoreConfigAndResync')) {
             $context->logger->warning('[7.1.0] 코어 선언 재동기화 건너뜀 — 이 프로세스의 코어 서비스에 재동기화 메서드가 없음. 업데이트 뒤 실행: '.self::RECOVERY_COMMAND);

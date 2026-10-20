@@ -61,9 +61,16 @@
     </div>
   </div>
   <modal>
-    <!-- 발급 모달 — 상태 ③에서 열린다. 모달은 별도 컨텍스트라 부모 _local 을 참조할 수 없으므로 데이터소스(order)와 _global 만 쓴다. -->
+    <!-- 발급 모달 — 상태 ③에서 열린다. 모달은 별도 컨텍스트라 부모 _local 을 참조할 수 없으므로 데이터소스(order)와 _global 만 쓴다.
+         입력한 식별번호(휴대폰·카드·사업자등록번호)가 든 _global.ecommerceCashReceiptForm 은 창을 닫으면 비운다 — 발급 성공은 직접 비우고,
+         취소·창 머리 닫기·Esc·바깥 클릭은 열려 있는 동안 내내 붙어 있는 본문 틀의 unmount 에서 비운다(7.1.1 프런트 보안 문서
+         「_global 민감 정보 금지」 의 창 이름 공간 예외). -->
     <modal data-type="composite" data-ref="ext_cash_receipt_issue_modal" title="$t:sirsoft-ecommerce.order.cash_receipt.issue_title" width="480px">
       <div class="space-y-4">
+        <on event="unmount">
+          <!-- 창이 닫혀 본문이 내려갈 때(어느 갈래로 닫든) 입력한 식별번호를 지운다 -->
+          <set-state target="global" :ecommerceCashReceiptForm="null"/>
+        </on>
         <!-- 용도 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.order.cash_receipt.purpose</label>
@@ -108,7 +115,7 @@
               <set-state target="global" ecommerceCashReceiptForm.identifier="{{$event.target.value}}"/>
             </on>
           </input>
-          <span data-if="{{!!_global.ecommerceCashReceiptForm?.error}}" class="block text-red-500 text-xs mt-1">{{_global.ecommerceCashReceiptForm?.error ?? ''}}</span>
+          <span data-if="{{!!_global.ecommerceCashReceiptForm?.error}}" class="block text-red-600 dark:text-red-300 text-xs mt-1">{{_global.ecommerceCashReceiptForm?.error ?? ''}}</span>
         </div>
         <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.order.cash_receipt.immutable_help</p>
         <!-- 액션 — 데스크톱 가로 우측정렬, portable 세로 full-width -->

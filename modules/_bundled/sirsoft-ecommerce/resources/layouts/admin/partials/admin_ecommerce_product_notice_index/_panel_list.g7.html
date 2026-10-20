@@ -1,7 +1,7 @@
 <!-- 공지 템플릿 화면 왼쪽 목록. 공통정보 목록과 같은 무한 스크롤 구조이고, 검색어는 URL 에 남는다.
-  **다른 점 하나** — 항목을 고를 때 편집 중인지 묻지 않는다. 공통정보 목록은 편집 중이면 이탈
-  확인 창을 열지만, 여기서는 곧바로 선택이 바뀐다(같은 이름의 이탈 확인 창이 이 화면에도 있으나
-  목록에서 열리지 않는다).
+  항목을 고를 때 **편집·등록 중이면 곧바로 넘어가지 않는다** — 고른 항목을 `_global.pendingTemplate*` 에
+  잡아 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다(공통정보 목록과 같은 규칙. 7.1.0 까지는
+  묻지 않고 바로 넘어가 고치던 내용이 사라졌다 — 7.1.1 출시 전 실측).
   선택은 `replace-url` 로 주소에 남겨 새로고침·공유에는 살아 있되 뒤로가기 이력은 늘리지 않는다.
   행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다. -->
 <partial description="Product Notice Template List Panel - Left Sidebar with Search">
@@ -53,13 +53,21 @@
       <div data-ref="template_list_items_{{templateIdx}}" data-each="template, templateIdx in {{templates?.data?.data ?? []}}">
         <div data-ref="template_item_{{template.id}}" class="{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}">
           <on type="click">
-            <!-- 항목 선택 — 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다. 편집 중인지는 묻지 않는다(공통정보 목록과 갈리는 자리). -->
+            <!-- 항목 선택 — 편집·등록 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다(공통정보 목록과 같은 규칙). 이동을 완결하는 것은 그 창이다. 편집 중이 아니면 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다. -->
             <sequence>
-              <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
-              <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75). -->
-              <replace-url :mergeQuery="true">
-                <query id="{{template.id}}" mode="view"/>
-              </replace-url>
+              <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}">
+                <case when="true">
+                  <set-state target="global" pendingTemplateId="{{template.id}}" pendingTemplate="{{template}}"/>
+                  <open-modal target="editing_confirm_modal"/>
+                </case>
+                <case when="false">
+                  <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
+                  <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75). -->
+                  <replace-url :mergeQuery="true">
+                    <query id="{{template.id}}" mode="view"/>
+                  </replace-url>
+                </case>
+              </switch>
             </sequence>
           </on>
           <div class="flex-between">
@@ -69,16 +77,24 @@
             <a href="/admin/ecommerce/product-notices?id={{template.id}}&amp;mode=view" :mergeQuery="true" class="text-primary text-sm font-medium hover:underline">
               <on type="click">
                 <sequence :stopPropagation="true">
-                  <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
-                  <replace-url :mergeQuery="true">
-                    <query id="{{template.id}}" mode="view"/>
-                  </replace-url>
+                  <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}">
+                    <case when="true">
+                      <set-state target="global" pendingTemplateId="{{template.id}}" pendingTemplate="{{template}}"/>
+                      <open-modal target="editing_confirm_modal"/>
+                    </case>
+                    <case when="false">
+                      <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
+                      <replace-url :mergeQuery="true">
+                        <query id="{{template.id}}" mode="view"/>
+                      </replace-url>
+                    </case>
+                  </switch>
                 </sequence>
               </on>
               {{$localized(template.name)}}
             </a>
             <div class="flex-center gap-2">
-              <span class="text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
+              <span class="text-secondary dark:text-gray-300 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
               <toggle data-type="composite" ariaLabel="$t:common.item_enabled|name={{$localized(template.name)}}" size="sm" checked="{{template.is_active}}" disabled="{{!template.abilities?.can_update}}">
                 <on type="change">
                   <!-- 행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다. -->
@@ -99,8 +115,8 @@
       </div>
       <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
     </div>
-    <div data-ref="empty_template_state" data-if="{{(templates?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
-      <icon name="file-alt" class="text-gray-400 dark:text-gray-500" size="md"/>
+    <div data-ref="empty_template_state" data-if="{{templates !== undefined &amp;&amp; ((templates?.data?.data?.length ?? 0) === 0)}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
+      <icon name="file-alt" class="text-gray-500 dark:text-gray-500" size="md"/>
       <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_notice_template.list.empty</p>
     </div>
   </div>

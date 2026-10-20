@@ -220,7 +220,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
                                                 }
                                             }
                                         ]
@@ -257,7 +257,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "text-gray-500 dark:text-gray-300"
                                                         },
                                                         "text": "(9)"
                                                     }
@@ -787,7 +787,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "calendar",
-                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
                                                                         }
                                                                     },
                                                                     {
@@ -834,7 +834,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "calendar",
-                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
                                                                         }
                                                                     },
                                                                     {
@@ -1230,7 +1230,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=신규회원 10% 할인코",
+                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.new_member_10",
                                                                             "className": "checkbox"
                                                                         }
                                                                     },
@@ -1240,7 +1240,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "신규회원 10% 할인코"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.new_member_10"
                                                                     }
                                                                 ]
                                                             },
@@ -1302,7 +1302,7 @@
                                                                 "props": {
                                                                     "className": "text-sm font-medium text-primary"
                                                                 },
-                                                                "text": "10% (최대 10,000원)"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.percent_max|percent=10|max=10,000"
                                                             }
                                                         ]
                                                     },
@@ -1391,7 +1391,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "발급 8건 / 사용 8건"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.issued_used|issued=8|used=8"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1475,7 +1475,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=첫구매 5천원 할인",
+                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000",
                                                                             "className": "checkbox"
                                                                         }
                                                                     },
@@ -1485,7 +1485,7 @@
                                                                         "props": {
                                                                             "className": "text-primary font-medium"
                                                                         },
-                                                                        "text": "첫구매 5천원 할인"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000"
                                                                     }
                                                                 ]
                                                             },
@@ -1547,7 +1547,7 @@
                                                                 "props": {
                                                                     "className": "text-sm font-medium text-primary"
                                                                 },
-                                                                "text": "5,000원"
+                                                                "text": "₩5,000"
                                                             }
                                                         ]
                                                     },
@@ -1636,7 +1636,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary"
                                                                                 },
-                                                                                "text": "발급 152건 / 사용 89건"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.issued_used|issued=152|used=89"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -1873,7 +1873,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=신규회원 10% 할인코",
+                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.new_member_10",
                                                                             "className": "checkbox"
                                                                         }
                                                                     }
@@ -1934,7 +1934,7 @@
                                                                         "props": {
                                                                             "className": "font-medium text-gray-900 dark:text-gray-100"
                                                                         },
-                                                                        "text": "신규회원 10% 할인코"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.new_member_10"
                                                                     }
                                                                 ]
                                                             },
@@ -1982,7 +1982,7 @@
                                                                                 "props": {
                                                                                     "className": "text-xs text-secondary"
                                                                                 },
-                                                                                "text": "(최대 10,000원)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.max_amount|amount=10,000"
                                                                             }
                                                                         ]
                                                                     }
@@ -2075,7 +2075,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
-                                                                            "aria-label": "$t:common.select_item|name=첫구매 5천원 할인",
+                                                                            "aria-label": "$t:common.select_item|name=$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000",
                                                                             "className": "checkbox"
                                                                         }
                                                                     }
@@ -2136,7 +2136,7 @@
                                                                         "props": {
                                                                             "className": "font-medium text-gray-900 dark:text-gray-100"
                                                                         },
-                                                                        "text": "첫구매 5천원 할인"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.codes.first_purchase_5000"
                                                                     }
                                                                 ]
                                                             },
@@ -2176,7 +2176,7 @@
                                                                                 "props": {
                                                                                     "className": "text-sm text-primary"
                                                                                 },
-                                                                                "text": "5,000원"
+                                                                                "text": "₩5,000"
                                                                             }
                                                                         ]
                                                                     }

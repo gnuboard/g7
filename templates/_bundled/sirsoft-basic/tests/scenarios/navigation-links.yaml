@@ -19,6 +19,7 @@ effects:
   - nested_button_does_not_navigate
   - layout_moves_are_links
   - new_window_link_has_noopener
+  - unsafe_href_uses_fallback
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NavigationLinks.test.tsx

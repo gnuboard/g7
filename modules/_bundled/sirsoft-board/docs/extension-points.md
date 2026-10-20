@@ -473,7 +473,9 @@ props 계약:
 ## 미들웨어
 
 <!-- @generated:middleware START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 미들웨어가 없습니다._
+| 미들웨어 | 부착 대상(targets) | 우선순위 |
+|---|---|---|
+| `EnsureBoardExists` | `api.modules.sirsoft-board.boards.posts.*`, `api.modules.sirsoft-board.boards.comments.*`, `api.modules.sirsoft-board.boards.attachments.*`, `api.modules.sirsoft-board.boards.attachment.*`, `api.modules.sirsoft-board.admin.board.*` | - |
 <!-- @generated:middleware END -->
 
 <!-- @intent START -->

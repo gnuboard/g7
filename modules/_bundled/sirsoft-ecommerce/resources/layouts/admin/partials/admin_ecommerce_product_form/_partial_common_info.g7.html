@@ -3,15 +3,15 @@
   따라가게 하려는 것이다. 고른 안내문의 본문은 아래 접이식 카드에서 읽기 전용으로 보여 준다. -->
 <partial description="Product Form - Common Info Section (시안 반영)">
   <div data-ref="common_info" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.commonInfoExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.commonInfoExpanded="{{!_local.ui.commonInfoExpanded}}"/>
       </on>
       <icon name="file-alt" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.common_info</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.commonInfoExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.commonInfoExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="common_info_body" data-if="{{_local.ui.commonInfoExpanded !== false}}" class="row-stack">
       <div data-ref="common_info_template_header" class="flex-between">
         <responsive on="portable" class="row-stack"/>
@@ -27,14 +27,14 @@
             <!-- 켤 때 — 기본으로 지정된 안내문을 찾아 함께 걸어 준다(아래 목록이 잠기므로 여기서 골라 두지 않으면 아무것도 안 붙는다) -->
             <sequence if="{{$event.target.checked}}">
               <set-state target="local" :form.use_default_common_info="true" form.common_info_id="{{(common_infos?.data?.data ?? []).find(c => c.is_default)?.id ?? null}}"/>
-              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              <set-state target="local" :hasChanges="true"/>
             </sequence>
           </on>
           <on type="change">
             <!-- 끌 때 — 걸려 있던 안내문은 그대로 두고 목록만 연다(끄자마자 선택이 풀리면 다시 고르는 수고가 는다). 켬/끔을 두 블록으로 나눈 것은 한쪽만 조건이 다르기 때문이다 -->
             <sequence if="{{!$event.target.checked}}">
               <set-state target="local" :form.use_default_common_info="false"/>
-              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              <set-state target="local" :hasChanges="true"/>
             </sequence>
           </on>
         </toggle>
@@ -47,7 +47,7 @@
             <sequence>
               <set-state target="local" :form.common_info_id="null"/>
               <set-state target="local" :ui.commonInfoDetailExpanded="false"/>
-              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              <set-state target="local" :hasChanges="true"/>
             </sequence>
           </on>
           $t:sirsoft-ecommerce.admin.product.common_info.none
@@ -57,10 +57,10 @@
             <!-- 기본 안내문 고르기 — 「따라가기」와 달리 지금 값만 붙이므로, 나중에 기본값이 바뀌어도 이 상품은 따라가지 않는다 -->
             <sequence>
               <set-state target="local" form.common_info_id="{{(common_infos?.data?.data ?? []).find(c => c.is_default)?.id}}"/>
-              <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+              <set-state target="local" :hasChanges="true"/>
             </sequence>
           </on>
-          <span class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}} px-1.5 py-0.5 rounded text-xs">$t:sirsoft-ecommerce.admin.product.common_info.badge_default</span>
+          <span class="{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}} px-1.5 py-0.5 rounded text-xs">$t:sirsoft-ecommerce.admin.product.common_info.badge_default</span>
           <span>{{$localized((common_infos?.data?.data ?? []).find(c => c.is_default)?.name)}}</span>
         </button>
         <div data-ref="common_info_other_buttons_wrapper_{{idx}}" data-each="commonInfo, idx in {{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}" class="contents">
@@ -69,7 +69,7 @@
               <!-- 기본값이 아닌 안내문 고르기 -->
               <sequence>
                 <set-state target="local" form.common_info_id="{{commonInfo.id}}"/>
-                <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                <set-state target="local" :hasChanges="true"/>
               </sequence>
             </on>
             {{$localized(commonInfo.name)}}
@@ -78,14 +78,14 @@
       </div>
       <span data-if="{{_local.errors?.common_info_id}}" class="form-error-xs mt-1">{{_local.errors?.common_info_id?.[0]}}</span>
       <div data-ref="common_info_detail_accordion" data-if="{{_local.form.common_info_id}}" class="toggle-group">
-        <div data-ref="common_info_detail_header" class="flex-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <button type="button" data-ref="common_info_detail_header" class="w-full text-left flex-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-expanded="{{!!(_local.ui.commonInfoDetailExpanded)}}">
           <on type="click">
             <!-- 고른 안내문의 본문을 접고 편다 -->
             <set-state target="local" ui.commonInfoDetailExpanded="{{!_local.ui.commonInfoDetailExpanded}}"/>
           </on>
           <span class="text-primary font-medium">{{$localized((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.name)}}</span>
-          <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"/>
-        </div>
+          <icon name="chevron-down" class="text-xl text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"/>
+        </button>
         <div data-ref="common_info_detail_body" data-if="{{_local.ui.commonInfoDetailExpanded}}" class="border-t border-gray-200 dark:border-gray-700">
           <multilingual-tab-panel data-type="composite" data-ref="common_info_locale_tabs" variant="underline" class="px-4 pt-4" locales="{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k &amp;&amp; (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}">
             <on event="onLocaleChange">
@@ -104,7 +104,7 @@
         <icon name="circle-exclamation" class="text-base"/>
         <span>$t:sirsoft-ecommerce.admin.product.selector_forbidden.common_infos</span>
       </div>
-      <div data-ref="common_info_empty_state" data-if="{{common_infos?.data?.unavailable !== true &amp;&amp; !(common_infos?.data?.data ?? []).length}}" class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <div data-ref="common_info_empty_state" data-if="{{common_infos !== undefined &amp;&amp; (common_infos?.data?.unavailable !== true &amp;&amp; !(common_infos?.data?.data ?? []).length)}}" class="text-center py-8 text-gray-500 dark:text-gray-400">
         <p class="text-sm">$t:sirsoft-ecommerce.admin.product.common_info.empty</p>
       </div>
     </div>

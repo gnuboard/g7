@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\File;
  *  - 대상 파일: {@see LayoutCorpus::layoutRoots()} 아래 `.g7.html` **재귀 전량**(조각 자신 포함 —
  *    조각이 조각을 참조하는 자리가 실재한다).
  *  - 대상 참조: `<include src>` **와** `<modal src>` 둘 다. 둘 다 산출 JSON 에서 `partial` 키가 되어
- *    같은 해석기({@see ValidatesLayoutFiles::resolvePartial()})를 탄다. 27차 실측이 `<include>` 만
+ *    같은 해석기({@see ValidatesLayoutFiles::resolvePartial()})를 탄다. 실측이 `<include>` 만
  *    세어 **213건(`<modal src>`)을 빠뜨린 채 272 로 기록**했다 — 전수는 485다.
  *
  * 숫자를 단언하지 않는 이유: 이관·신규 화면으로 참조 수는 정상 작업에서도 늘고 준다. 대신
@@ -33,6 +33,8 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects corpus_partial_references_resolve_to_authoring_sources
+     *
+     * @return void 반환값 없음
      */
     public function test_every_corpus_partial_reference_resolves_to_its_authoring_source(): void
     {
@@ -41,7 +43,11 @@ class PartialReferenceCorpusTest extends LayoutMarkupTestCase
             use ValidatesLayoutFiles;
 
             /**
-             * @return array{path: string, markup: bool, exists: bool}
+             * 트레이트의 조각 소스 해석기를 시험에서 부를 수 있게 노출합니다.
+             *
+             * @param  string  $reference  조각 참조 값
+             * @param  string  $basePath  참조를 해석할 기준 경로
+             * @return array{path: string, markup: bool, exists: bool} 해석된 경로·마크업 여부·실재 여부
              */
             public function source(string $reference, string $basePath): array
             {

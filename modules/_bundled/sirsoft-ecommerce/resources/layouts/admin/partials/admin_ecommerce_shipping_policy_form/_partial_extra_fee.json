@@ -154,6 +154,13 @@
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "extraFeeTemplatesLoadFailed": false
+                                                            }
+                                                        },
+                                                        {
                                                             "handler": "refetchDataSource",
                                                             "params": {
                                                                 "dataSourceId": "extra_fee_templates"
@@ -662,7 +669,7 @@
                             "name": "Div",
                             "if": "{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}",
                             "props": {
-                                "className": "text-center py-4 text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
+                                "className": "text-center py-4 text-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
                             },
                             "children": [
                                 {

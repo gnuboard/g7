@@ -109,10 +109,10 @@
     </on>
     <!-- API 에러 메시지 표시 -->
     <div data-if="{{_global.loginError}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-      <p class="text-sm text-red-600 dark:text-red-400">{{_global.loginError}}</p>
+      <p class="text-sm text-red-700 dark:text-red-400">{{_global.loginError}}</p>
       <!-- 계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 사용자는 계속 눌러 보게 된다 -->
-      <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
-      <p data-if="{{_global.loginErrors?.permanent === true}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.locked_permanent</p>
+      <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
+      <p data-if="{{_global.loginErrors?.permanent === true}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.locked_permanent</p>
     </div>
     <!-- 이메일 입력 필드 (1단계) -->
     <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
@@ -144,7 +144,7 @@
       </div>
       <!-- 인증번호 오류 -->
       <div data-if="{{_global.twoFactor?.error}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" role="alert">
-        <p class="text-sm text-red-600 dark:text-red-400">{{_global.twoFactor?.error ?? ''}}</p>
+        <p class="text-sm text-red-700 dark:text-red-400">{{_global.twoFactor?.error ?? ''}}</p>
       </div>
       <div>
         <label data-if="{{_global.twoFactor?.provider_id !== 'totp'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.two_factor.code_label</label>
@@ -222,8 +222,8 @@
       </div>
       <!-- 변경 단계 상단 오류(잠금·그 밖의 실패) — 규칙 위반은 칸 아래에 싣는다 -->
       <div data-if="{{_global.passwordChange?.error}}" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" role="alert">
-        <p class="text-sm text-red-600 dark:text-red-400">{{_global.passwordChange?.error ?? ''}}</p>
-        <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
+        <p class="text-sm text-red-700 dark:text-red-400">{{_global.passwordChange?.error ?? ''}}</p>
+        <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password_change.new_password</label>

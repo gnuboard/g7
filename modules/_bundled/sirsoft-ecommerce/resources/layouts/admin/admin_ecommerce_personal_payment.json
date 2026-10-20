@@ -57,7 +57,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "credit-card",
-                                                    "className": "text-xl icon-muted"
+                                                    "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
                                                 }
                                             },
                                             {
@@ -283,7 +283,7 @@
                                             {
                                                 "comment": "진행 상태를 가리지 않고 모두",
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -295,14 +295,16 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.statusFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.statusFilter === ''}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.all"
                                             },
                                             {
                                                 "comment": "결제대기 — 링크는 보냈고 아직 안 낸 건. 기한이 지나면 만료로 넘어간다",
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -314,14 +316,16 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.statusFilter === 'pending' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.statusFilter === 'pending'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.pending"
                                             },
                                             {
                                                 "comment": "결제완료",
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -333,14 +337,16 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.statusFilter === 'completed' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.statusFilter === 'completed'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.completed"
                                             },
                                             {
                                                 "comment": "만료 — 기한이 지나 링크가 죽은 건. 다시 보내려면 새로 만들어야 한다",
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -352,7 +358,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.statusFilter === 'expired' ? 'btn-badge btn-badge-gray cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.statusFilter === 'expired'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.expired"
                                             }
@@ -385,7 +393,7 @@
                                         "children": [
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "결제수단을 가리지 않고 모두",
@@ -398,7 +406,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === ''}}"
                                                 },
                                                 "children": [
                                                     {
@@ -418,7 +428,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "신용카드",
@@ -431,7 +441,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'card'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -451,7 +463,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "계좌이체 — 입금 확인이 따로 붙으므로 대기 상태가 길어질 수 있다",
@@ -464,7 +476,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'bank_transfer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -484,7 +498,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "카카오페이",
@@ -497,7 +511,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'kakao_pay' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'kakao_pay' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'kakao_pay'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -517,7 +533,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "네이버페이",
@@ -530,7 +546,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'naver_pay' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'naver_pay' ? 'btn-badge btn-badge-green cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'naver_pay'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -618,7 +636,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted"
+                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                         }
                                                     },
                                                     {
@@ -665,7 +683,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted"
+                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                         }
                                                     },
                                                     {
@@ -932,6 +950,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -973,7 +992,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "송하늘 (비회원)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.song_haneul"
                                                                             }
                                                                         ]
                                                                     },
@@ -1000,7 +1019,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "베이직 상품권"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.basic_gift_card"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1102,6 +1121,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -1143,7 +1163,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "강현우 (user006)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.kang_hyunwoo|id=user006"
                                                                             }
                                                                         ]
                                                                     },
@@ -1170,7 +1190,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "프리미엄 콘텐츠 팩"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.premium_content_pack"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1272,6 +1292,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -1313,7 +1334,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "정수진 (user005)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.jung_sujin|id=user005"
                                                                             }
                                                                         ]
                                                                     },
@@ -1340,7 +1361,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "스탠다드 멤버십 6개월"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1442,6 +1463,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -1483,7 +1505,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "최지훈 (비회원)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.choi_jihoon"
                                                                             }
                                                                         ]
                                                                     },
@@ -1510,7 +1532,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "일회성 서비스 이용권"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.one_time_service_pass"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1637,6 +1659,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -1678,7 +1701,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "박민수 (비회원)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                                             }
                                                                         ]
                                                                     },
@@ -1705,7 +1728,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "스탠다드 상품권"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.standard_gift_card"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1832,6 +1855,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -1873,7 +1897,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "김철수 (user001)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu|id=user001"
                                                                             }
                                                                         ]
                                                                     },
@@ -1900,7 +1924,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "프리미엄 멤버십 1년"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.premium_membership_1y"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2027,6 +2051,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -2068,7 +2093,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "이영희 (user002)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.lee_younghee|id=user002"
                                                                             }
                                                                         ]
                                                                     },
@@ -2095,7 +2120,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "단건 콘텐츠 구매"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.single_content_purchase"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2222,6 +2247,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -2263,7 +2289,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "윤서연 (user008)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.yoon_seoyeon|id=user008"
                                                                             }
                                                                         ]
                                                                     },
@@ -2290,7 +2316,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "베이직 멤버십 3개월"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.basic_membership_3m"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2392,6 +2418,7 @@
                                                                         "type": "basic",
                                                                         "name": "Button",
                                                                         "props": {
+                                                                            "type": "button",
                                                                             "aria-label": "$t:common.more_actions",
                                                                             "className": "btn-icon"
                                                                         },
@@ -2433,7 +2460,7 @@
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
-                                                                                "text": "임바다 (비회원)"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.lim_bada"
                                                                             }
                                                                         ]
                                                                     },
@@ -2460,7 +2487,7 @@
                                                                 "props": {
                                                                     "className": "text-sm text-primary mb-2"
                                                                 },
-                                                                "text": "일회성 이벤트 티켓"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.one_time_event_ticket"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2651,7 +2678,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -2698,8 +2725,8 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "송하늘",
-                                                                            "subLabel": "비회원",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.song_haneul",
+                                                                            "subLabel": "$t:sirsoft-ecommerce.admin.sample.misc.guest",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
                                                                             "items": [
@@ -2722,7 +2749,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "베이직 상품권"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.basic_gift_card"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2730,7 +2757,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "20,000원"
+                                                                "text": "₩20,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2840,7 +2867,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -2887,7 +2914,7 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "강현우",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.kang_hyunwoo",
                                                                             "subLabel": "user006",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
@@ -2911,7 +2938,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "프리미엄 콘텐츠 팩"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.premium_content_pack"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2919,7 +2946,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "35,000원"
+                                                                "text": "₩35,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3029,7 +3056,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -3076,7 +3103,7 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "정수진",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.jung_sujin",
                                                                             "subLabel": "user005",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
@@ -3100,7 +3127,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "스탠다드 멤버십 6개월"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3108,7 +3135,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "60,000원"
+                                                                "text": "₩60,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3234,7 +3261,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -3281,8 +3308,8 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "최지훈",
-                                                                            "subLabel": "비회원",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.choi_jihoon",
+                                                                            "subLabel": "$t:sirsoft-ecommerce.admin.sample.misc.guest",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
                                                                             "items": [
@@ -3305,7 +3332,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "일회성 서비스 이용권"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.one_time_service_pass"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3313,7 +3340,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "25,000원"
+                                                                "text": "₩25,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3443,7 +3470,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -3490,8 +3517,8 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "박민수",
-                                                                            "subLabel": "비회원",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu",
+                                                                            "subLabel": "$t:sirsoft-ecommerce.admin.sample.misc.guest",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
                                                                             "items": [
@@ -3514,7 +3541,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "스탠다드 상품권"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.standard_gift_card"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3522,7 +3549,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "50,000원"
+                                                                "text": "₩50,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3668,7 +3695,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -3715,7 +3742,7 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "김철수",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu",
                                                                             "subLabel": "user001",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
@@ -3739,7 +3766,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "프리미엄 멤버십 1년"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.premium_membership_1y"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3747,7 +3774,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "120,000원"
+                                                                "text": "₩120,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3893,7 +3920,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -3940,7 +3967,7 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "이영희",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee",
                                                                             "subLabel": "user002",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
@@ -3964,7 +3991,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "단건 콘텐츠 구매"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.single_content_purchase"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3972,7 +3999,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "15,000원"
+                                                                "text": "₩15,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -4102,7 +4129,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -4149,7 +4176,7 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "윤서연",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.yoon_seoyeon",
                                                                             "subLabel": "user008",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
@@ -4173,7 +4200,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "베이직 멤버십 3개월"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.basic_membership_3m"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -4181,7 +4208,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "30,000원"
+                                                                "text": "₩30,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -4307,7 +4334,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -4354,8 +4381,8 @@
                                                                         "type": "composite",
                                                                         "name": "Dropdown",
                                                                         "props": {
-                                                                            "label": "임바다",
-                                                                            "subLabel": "비회원",
+                                                                            "label": "$t:sirsoft-ecommerce.admin.sample.people.lim_bada",
+                                                                            "subLabel": "$t:sirsoft-ecommerce.admin.sample.misc.guest",
                                                                             "position": "bottom-left",
                                                                             "variant": "text",
                                                                             "items": [
@@ -4378,7 +4405,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "일회성 이벤트 티켓"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.one_time_event_ticket"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -4386,7 +4413,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-right text-sm text-primary font-medium"
                                                                 },
-                                                                "text": "18,000원"
+                                                                "text": "₩18,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -4517,6 +4544,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "type": "button",
                                                     "aria-label": "$t:common.first_page",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
@@ -4536,6 +4564,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "type": "button",
                                                     "aria-label": "$t:common.prev_page",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
@@ -4555,6 +4584,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "type": "button",
                                                     "className": "btn btn-primary w-10 h-10"
                                                 },
                                                 "text": "1"
@@ -4563,6 +4593,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "type": "button",
                                                     "aria-label": "$t:common.next_page",
                                                     "className": "btn btn-icon"
                                                 },
@@ -4581,6 +4612,7 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
+                                                    "type": "button",
                                                     "aria-label": "$t:common.last_page",
                                                     "className": "btn btn-icon"
                                                 },

@@ -108,7 +108,7 @@
                                             "name": "Span",
                                             "if": "{{rule._idx === 0}}",
                                             "props": {
-                                                "className": "block text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                                "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.default_label"
                                         },
@@ -117,7 +117,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.currency_code']}}",
                                             "props": {
-                                                "className": "block text-red-500 dark:text-red-400 text-xs mt-1"
+                                                "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
                                             },
                                             "text": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.currency_code']?.[0] ?? ''}}"
                                         }
@@ -149,7 +149,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.point_value']}}",
                                             "props": {
-                                                "className": "block text-red-500 dark:text-red-400 text-xs mt-1"
+                                                "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
                                             },
                                             "text": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.point_value']?.[0] ?? ''}}"
                                         }
@@ -456,7 +456,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "block text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                                "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_hint"
                                         }
@@ -601,7 +601,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-600 dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.min_use_suffix"
                                                 }
@@ -640,7 +640,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-600 dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.use_unit_suffix"
                                                 }
@@ -729,7 +729,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "text-xs text-gray-600 dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent_suffix"
                                                         }
@@ -915,7 +915,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-green-600 hover:text-green-700 dark:text-green-400 disabled:opacity-30 disabled:cursor-not-allowed",
+                                                        "className": "text-green-700 hover:text-green-700 dark:hover:text-green-600 dark:text-green-400 disabled:opacity-30 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "aria-label": "$t:common.add"
                                                     },
@@ -975,9 +975,9 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{(_local.form?.mileage?.currency_rules ?? []).length === 0 && _local.isAddingMileageCurrency !== true}}",
+            "if": "{{settings !== undefined && ((_local.form?.mileage?.currency_rules ?? []).length === 0 && _local.isAddingMileageCurrency !== true)}}",
             "props": {
-                "className": "py-6 text-center text-sm text-gray-400 dark:text-gray-500"
+                "className": "py-6 text-center text-sm text-gray-500 dark:text-gray-400"
             },
             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.empty"
         }

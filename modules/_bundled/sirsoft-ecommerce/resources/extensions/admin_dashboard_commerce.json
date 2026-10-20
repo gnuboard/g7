@@ -302,7 +302,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                                                                "className": "text-sm text-slate-600 dark:text-slate-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.dashboard.community.quantity"
                                                         }
@@ -329,7 +329,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                                                                "className": "text-sm text-slate-600 dark:text-slate-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.dashboard.community.sales_amount"
                                                         }
@@ -357,7 +357,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                                                        "className": "text-sm text-slate-600 dark:text-slate-400 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.community.total_quantity"
                                                 },
@@ -383,7 +383,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "{{(commerce_sales_graph?.data?.quantity_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((commerce_sales_graph?.data?.quantity_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                                                                "className": "{{(commerce_sales_graph?.data?.quantity_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((commerce_sales_graph?.data?.quantity_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}"
                                                             },
                                                             "text": "{{(commerce_sales_graph?.data?.quantity_change ?? null) === null ? '—' : ((commerce_sales_graph?.data?.quantity_change >= 0 ? '+' : '') + commerce_sales_graph?.data?.quantity_change + '%')}}"
                                                         }
@@ -401,7 +401,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                                                        "className": "text-sm text-slate-600 dark:text-slate-400 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.community.total_sales"
                                                 },
@@ -427,7 +427,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "{{(commerce_sales_graph?.data?.sales_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((commerce_sales_graph?.data?.sales_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                                                                "className": "{{(commerce_sales_graph?.data?.sales_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((commerce_sales_graph?.data?.sales_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}"
                                                             },
                                                             "text": "{{(commerce_sales_graph?.data?.sales_change ?? null) === null ? '—' : ((commerce_sales_graph?.data?.sales_change >= 0 ? '+' : '') + commerce_sales_graph?.data?.sales_change + '%')}}"
                                                         }
@@ -455,7 +455,7 @@
                                     "name": "P",
                                     "if": "{{!!commerce_sales_graph?.data?.updated_at_display}}",
                                     "props": {
-                                        "className": "text-xs text-slate-400 dark:text-slate-500 mt-2 text-right"
+                                        "className": "text-xs text-slate-600 dark:text-slate-400 mt-2 text-right"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.community.updated_at|time={{commerce_sales_graph?.data?.updated_at_display ?? ''}}"
                                 }
@@ -496,7 +496,7 @@
                                             "name": "A",
                                             "props": {
                                                 "href": "/admin/ecommerce/reviews",
-                                                "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                                                "className": "text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.dashboard.community.go_to_reviews"
                                         }
@@ -506,9 +506,9 @@
                                     "id": "latest_reviews_empty",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(commerce_recent_reviews?.data ?? []).length === 0}}",
+                                    "if": "{{commerce_recent_reviews !== undefined && ((commerce_recent_reviews?.data ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                                        "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.community.no_reviews"
                                 },
@@ -563,7 +563,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "shrink-0 flex items-center gap-1 text-rose-500 text-xs font-medium"
+                                                                "className": "shrink-0 flex items-center gap-1 text-rose-700 dark:text-rose-300 text-xs font-medium"
                                                             },
                                                             "children": [
                                                                 {
@@ -590,7 +590,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "text-xs text-slate-600 dark:text-slate-400"
                                                     },
                                                     "text": "{{(review?.author_name ?? '') + ' · ' + (review?.created_at ?? '')}}"
                                                 }
@@ -653,7 +653,7 @@
                                             "if": "{{!!commerce_pending_inquiries?.data?.board_slug}}",
                                             "props": {
                                                 "href": "/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}",
-                                                "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                                                "className": "text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.dashboard.community.go_to_inquiries"
                                         }
@@ -663,9 +663,9 @@
                                     "id": "pending_inquiries_empty",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(commerce_pending_inquiries?.data?.items ?? []).length === 0}}",
+                                    "if": "{{commerce_pending_inquiries !== undefined && ((commerce_pending_inquiries?.data?.items ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                                        "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.community.no_inquiries"
                                 },
@@ -712,9 +712,9 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "text-xs text-slate-600 dark:text-slate-400"
                                                     },
-                                                    "text": "{{(inquiry?.author_name ?? '익명') + ' · ' + (inquiry?.created_at ?? '')}}"
+                                                    "text": "{{(inquiry?.author_name ?? $t('sirsoft-ecommerce.admin.dashboard.community.anonymous')) + ' · ' + (inquiry?.created_at ?? '')}}"
                                                 }
                                             ]
                                         }

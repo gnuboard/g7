@@ -504,7 +504,7 @@ class AdminInquiryListControllerTest extends ModuleTestCase
     }
 
     /**
-     * 목록은 답변·삭제 버튼을 잠글 능력 키를 컬렉션과 행 양쪽에 싣는다 (7.1.0 G13).
+     * 목록은 답변·삭제 버튼을 잠글 능력 키를 컬렉션과 행 양쪽에 싣는다 (7.1.0 abilities 게이트).
      *
      * 답변 등록은 `inquiries.update`, 삭제는 `inquiries.delete` 라우트 권한과 같은 식별자다.
      *

@@ -122,7 +122,8 @@
       "search_by_member": "Search by Member",
       "search_by_name": "Search by Orderer Name",
       "search_by_phone": "Search by Phone",
-      "reset_guest_password": "Reset Lookup Password"
+      "reset_guest_password": "Reset Lookup Password",
+      "quantity_value": "{{count}}"
     },
     "tabs": {
       "order_info": "Order Info",

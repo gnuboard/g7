@@ -8,11 +8,13 @@
   회원·관리자 이름은 그냥 글자가 아니라 작은 메뉴다 — 새 창으로 그 사람 상세를 열거나, 그 회원으로
   이 목록을 다시 거르는 두 갈래가 붙어 있다. 식별자가 없으면(시스템이 만든 거래) 메뉴 대신
   '시스템' 글자만 나온다.
+  머리 화살표는 주소의 정렬(`query.sort` = `{열}_{방향}`, 없으면 서버 기본 created_at_desc)을 풀어 받는다 —
+  받지 않으면 이동 뒤 새로 그릴 때 화살표가 사라지고, 위쪽 정렬 선택칸으로 고른 정렬이 머리에 나타나지 않는다.
   행 편집 버튼은 서버가 준 권한(`abilities.can_edit`)으로 잠기고, 누르면 편집 창이 쓸 값을
   `_global.mileageEdit` 에 조립해 넘긴다 — 표시용 문구(부호 붙은 금액 등)를 여기서 만든다. -->
 <partial description="마일리지 내역 DataGrid (셀 인터랙션 + 행 확장 연결 거래)">
   <div data-ref="mileage_transactions_grid_wrap" class="overflow-hidden mb-4">
-    <data-grid data-type="composite" data-ref="mileage_transactions_datagrid" pageHref="/admin/ecommerce/mileage-transactions?page={page}" :pageHrefMergeQuery="true" rowLabelField="number" data="{{transactions?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.mileage_transactions.message.empty" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" :alwaysShowPagination="true">
+    <data-grid data-type="composite" data-ref="mileage_transactions_datagrid" pageHref="/admin/ecommerce/mileage-transactions?page={page}" :pageHrefMergeQuery="true" rowLabelField="number" data="{{transactions?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="{{transactions === undefined ? '' : $t('sirsoft-ecommerce.admin.mileage_transactions.message.empty')}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" sortField="{{(query.sort || 'created_at_desc').split('_').slice(0, -1).join('_')}}" sortDirection="{{(query.sort || 'created_at_desc').split('_').pop()}}" :alwaysShowPagination="true">
       <blur-until-loaded sources="transactions"/>
       <prop name="expandContext">
         <field name="linkedTransactions" value="{{_local.linkedTransactions}}"/>
@@ -44,8 +46,8 @@
                 </case>
               </switch>
             </on>
-            <div class="flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
-              <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <div class="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+              <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
             </div>
           </action-menu>
@@ -56,12 +58,12 @@
       </column>
       <column field="type" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.type" width="96px" :sortable="false">
         <cell>
-          <span class="{{'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + (row.admin_badge_group === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : (row.admin_badge_group === 'blue' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : (row.admin_badge_group === 'teal' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : (row.admin_badge_group === 'amber' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'))))}}">{{row.type_label}}</span>
+          <span class="{{'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + (row.admin_badge_group === 'green' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : (row.admin_badge_group === 'blue' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : (row.admin_badge_group === 'teal' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : (row.admin_badge_group === 'amber' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'))))}}">{{row.type_label}}</span>
         </cell>
       </column>
       <column field="amount" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.amount" width="110px" :sortable="true">
         <cell>
-          <span class="{{row.amount >= 0 ? 'font-medium text-green-600 dark:text-green-400' : 'font-medium text-red-600 dark:text-red-400'}}">{{(row.amount >= 0 ? '+' : '') + row.amount_formatted}}</span>
+          <span class="{{row.amount >= 0 ? 'font-medium text-green-700 dark:text-green-400' : 'font-medium text-red-600 dark:text-red-400'}}">{{(row.amount >= 0 ? '+' : '') + row.amount_formatted}}</span>
         </cell>
       </column>
       <column field="remaining" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.remaining" width="96px" :sortable="false">
@@ -80,7 +82,7 @@
           </div>
           <span data-if="{{row.expiry_state === 'active' &amp;&amp; !!row.expires_at}}" class="text-sm text-gray-700 dark:text-gray-300">{{row.expires_at_formatted}}</span>
           <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; row.is_earning &amp;&amp; row.remaining_amount > 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.unlimited</span>
-          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; !(row.is_earning &amp;&amp; row.remaining_amount > 0)}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
+          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; !(row.is_earning &amp;&amp; row.remaining_amount > 0)}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
         </cell>
       </column>
       <column field="order" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.order" width="120px" :sortable="false">
@@ -88,7 +90,7 @@
           <a href="/admin/ecommerce/orders/{{row.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{row.order_number}}" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
             {{row.order_number}}
           </a>
-          <span data-if="{{!row.order_number}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
+          <span data-if="{{!row.order_number}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
         </cell>
       </column>
       <column field="granted_by" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.granted_by" width="110px" :sortable="false">
@@ -97,8 +99,8 @@
             <prop name="items">
               <item id="view_admin" href="/admin/users/{{row.granted_by_uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin" iconName="user-shield"/>
             </prop>
-            <div class="flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
-              <icon name="fa-solid fa-user-shield" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <div class="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+              <icon name="fa-solid fa-user-shield" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{row.granted_by_name}}</span>
             </div>
           </action-menu>
@@ -115,18 +117,20 @@
             <div data-each="linked, linkedIndex in linkedTransactions?.[row.id] ?? []" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 py-1">
               <span class="text-gray-500 dark:text-gray-400">{{linked.created_at_formatted}}</span>
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{linked.type_label}}</span>
-              <span class="{{linked.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}">{{(linked.amount >= 0 ? '+' : '') + (linked.amount_formatted ?? linked.amount)}}</span>
+              <span class="{{linked.amount >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}">{{(linked.amount >= 0 ? '+' : '') + (linked.amount_formatted ?? linked.amount)}}</span>
               <a href="/admin/ecommerce/orders/{{linked.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{linked.order_number}}" class="inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
                 {{linked.order_number}}
               </a>
               <span data-if="{{linked.granted_by_name}}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                <icon name="fa-solid fa-user-shield" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="fa-solid fa-user-shield" class="text-gray-500 dark:text-gray-500"/>
                 <span>{{linked.granted_by_name}}</span>
               </span>
-              <span data-if="{{!linked.granted_by_name &amp;&amp; !linked.order_number}}" class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
+              <span data-if="{{!linked.granted_by_name &amp;&amp; !linked.order_number}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
             </div>
           </div>
-          <div data-if="{{(linkedTransactions?.[row.id] ?? []).length === 0}}" class="text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.empty</div>
+          <!-- 펼친 행의 딸린 거래는 응답이 와야 안다 — 받기 전(값 없음)에는 「연결된 거래가 없습니다」를 띄우지 않고, 받기에 실패하면(값 null) 실패를 알린다 -->
+          <div data-if="{{linkedTransactions?.[row.id] !== undefined &amp;&amp; linkedTransactions?.[row.id] !== null &amp;&amp; (linkedTransactions?.[row.id] ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.empty</div>
+          <p data-ref="linked_transactions_load_failed" data-if="{{linkedTransactions?.[row.id] === null}}" role="alert" class="text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
         </div>
       </expand>
       <on type="change" event="onSelectionChange">
@@ -143,6 +147,9 @@
             <success>
               <set-state target="local" linkedTransactions="{{({ ..._local.linkedTransactions, [$args[0][$args[0].length - 1]]: (response?.data?.data ?? []) })}}"/>
             </success>
+            <fail>
+              <set-state target="local" linkedTransactions="{{({ ..._local.linkedTransactions, [$args[0][$args[0].length - 1]]: null })}}"/>
+            </fail>
           </api-call>
         </sequence>
       </on>
@@ -153,9 +160,9 @@
         </navigate>
       </on>
       <on type="change" event="onSortChange">
-        <!-- 정렬 변경 — 쪽 번호를 1 로 되돌린다. 정렬이 바뀌면 3쪽에 있던 행이 다른 데로 가므로 그 자리에 머무는 것이 뜻을 잃는다. -->
+        <!-- 정렬 변경 — 쪽 번호를 1 로 되돌린다. 정렬이 바뀌면 3쪽에 있던 행이 다른 데로 가므로 그 자리에 머무는 것이 뜻을 잃는다. 표는 (열, 방향) 두 값을 주고 서버는 {열}_{방향} 한 값(created_at_desc·created_at_asc·amount_desc·amount_asc 중 하나)만 받는다 — 방향을 버리면 422 로 목록이 바뀌지 않는다(7.1.1 실측) -->
         <navigate path="/admin/ecommerce/mileage-transactions" :mergeQuery="true" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body">
-          <query sort="{{$args[0]}}" :page="1"/>
+          <query sort="{{$args[0] + '_' + $args[1]}}" :page="1"/>
         </navigate>
       </on>
       <on type="action" event="onRowAction">

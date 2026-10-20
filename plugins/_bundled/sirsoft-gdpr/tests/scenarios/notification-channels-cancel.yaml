@@ -1,0 +1,18 @@
+feature: 알림 채널 「취소」가 고친 채널 값을 비운다 (7.1.1 출시 전 점검)
+
+description: |
+  플러그인 설정 화면 알림 카드의 채널 스위치는 고친 값을 `_local.gdprChannels[정의 id]` 에 임시로 둔다. 「취소」는 이 임시 값을
+  비워 스위치를 저장값(def.channels)으로 되돌려야 하는데, setState 기본(deep) 병합은 빈 객체 `{}` 로 기존 키를 지우지 못해
+  `gdprChannels: {}` 만 쓰던 단추가 아무것도 비우지 못했다. 같은 동작 묶음에서 먼저 null 로 덮고 `{}` 로 다시 쓴다.
+  잠금 시험은 실제 레이아웃 JSON 의 단추 동작을 실제 ActionDispatcher 로 실행해 병합 결과를 본다.
+
+axes:
+  surface:
+    - notification_channels_card   # plugin_settings.json 의 gdpr_cancel_channels_{{defIdx}} 단추
+
+effects:
+  - channel_cancel_clears_pending_values     # 취소 뒤 임시 채널 값이 {} — 고친 정의 키가 남지 않는다
+  - channel_cancel_keeps_other_local_state   # 같은 _local 의 다른 값은 그대로다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/notificationChannelsCancel.test.tsx

@@ -20,7 +20,7 @@ class SequenceSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('시퀀스 초기 데이터 동기화를 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.sequence.sync_start'));
 
         // SequenceType::cases() 전체를 순회하여 enum 변경 시 자동 동기화 (drift 방지).
         // enum 에 새 멤버를 추가하면 시더가 자동으로 따라간다.
@@ -37,17 +37,17 @@ class SequenceSeeder extends Seeder
 
             if ($wasCreated) {
                 $created++;
-                $prefixInfo = isset($defaultConfig['prefix']) && $defaultConfig['prefix'] !== null
-                    ? ", 접두사: {$defaultConfig['prefix']}"
-                    : ' (채번테이블 미사용)';
-                $this->command->line("  - {$typeLabel} 시퀀스 생성 완료 (알고리즘: {$defaultConfig['algorithm']->value}{$prefixInfo})");
+                $createdMessage = isset($defaultConfig['prefix']) && $defaultConfig['prefix'] !== null
+                    ? __('sirsoft-ecommerce::messages.seeders.sequence.created_with_prefix', ['type' => $typeLabel, 'algorithm' => $defaultConfig['algorithm']->value, 'prefix' => $defaultConfig['prefix']])
+                    : __('sirsoft-ecommerce::messages.seeders.sequence.created_without_table', ['type' => $typeLabel, 'algorithm' => $defaultConfig['algorithm']->value]);
+                $this->command->line('  - '.$createdMessage);
             } else {
                 $preserved++;
-                $this->command->line("  - {$typeLabel} 시퀀스 보존 (기존 current_value 유지)");
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.sequence.preserved_one', ['type' => $typeLabel]));
             }
         }
 
-        $this->command->info("시퀀스 동기화 완료: {$created}건 생성, {$preserved}건 보존");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.sequence.sync_done', ['created' => $created, 'preserved' => $preserved]));
     }
 
     /**
@@ -85,14 +85,14 @@ class SequenceSeeder extends Seeder
     private function getTypeLabel(SequenceType $type): string
     {
         return match ($type) {
-            SequenceType::PRODUCT => '상품',
-            SequenceType::ORDER => '주문',
-            SequenceType::SHIPPING => '배송',
-            SequenceType::CANCEL => '취소',
-            SequenceType::REFUND => '환불',
-            SequenceType::EXCHANGE => '교환',
-            SequenceType::ORDER_RETURN => '반품',
-            SequenceType::CLAIM_PAYMENT => '클레임 추가결제',
+            SequenceType::PRODUCT => __('sirsoft-ecommerce::messages.seeders.sequence.types.product'),
+            SequenceType::ORDER => __('sirsoft-ecommerce::messages.seeders.sequence.types.order'),
+            SequenceType::SHIPPING => __('sirsoft-ecommerce::messages.seeders.sequence.types.shipping'),
+            SequenceType::CANCEL => __('sirsoft-ecommerce::messages.seeders.sequence.types.cancel'),
+            SequenceType::REFUND => __('sirsoft-ecommerce::messages.seeders.sequence.types.refund'),
+            SequenceType::EXCHANGE => __('sirsoft-ecommerce::messages.seeders.sequence.types.exchange'),
+            SequenceType::ORDER_RETURN => __('sirsoft-ecommerce::messages.seeders.sequence.types.order_return'),
+            SequenceType::CLAIM_PAYMENT => __('sirsoft-ecommerce::messages.seeders.sequence.types.claim_payment'),
         };
     }
 }

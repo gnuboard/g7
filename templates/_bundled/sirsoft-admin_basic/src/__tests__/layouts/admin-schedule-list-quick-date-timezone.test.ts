@@ -1,6 +1,6 @@
 /**
  * @file admin-schedule-list-quick-date-timezone.test.ts
- * @description 스케줄 목록 빠른 기간 버튼 — 「오늘」은 계정 시간대의 날짜 (7.1.0 validate q2 R1)
+ * @description 스케줄 목록 빠른 기간 버튼 — 「오늘」은 계정 시간대의 날짜 (7.1.0 전수 실측)
  *
  * 서버는 등록일 필터(created_from·created_to)를 보는 사람(계정)의 시간대 하루로 자른다. 버튼이
  * `toLocaleDateString('sv-SE')`(브라우저 시간대)로 날짜를 만들면, 계정과 브라우저의 날짜가 다른 시간(한국 계정을

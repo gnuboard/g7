@@ -107,7 +107,7 @@
                     "props": {
                         "name": "message-square",
                         "size": "xl",
-                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                     }
                 },
                 {
@@ -159,6 +159,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "ml-16 mb-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
                             },
                             "children": [
@@ -196,7 +197,7 @@
                     "props": {
                         "name": "eye-slash",
                         "size": "xl",
-                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-5"
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-5"
                     }
                 },
                 {
@@ -224,7 +225,7 @@
                     "props": {
                         "name": "lock",
                         "size": "xl",
-                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                     }
                 },
                 {

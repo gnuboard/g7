@@ -216,7 +216,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-solid fa-search",
-                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
                                                 }
                                             },
                                             {
@@ -402,7 +402,7 @@
                                             "idField": "visitor_key",
                                             "selectable": false,
                                             "sortable": false,
-                                            "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                            "emptyMessage": "{{analytics_visitors === undefined ? '' : $t('admin.analytics.common.empty_title')}}",
                                             "actionsColumnHeader": "$t:common.actions",
                                             "rowActions": [
                                                 {
@@ -523,7 +523,7 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "fa-regular fa-user",
-                                                                                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0",
+                                                                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0",
                                                                                 "aria-hidden": "true"
                                                                             }
                                                                         },

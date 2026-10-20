@@ -710,7 +710,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "database",
-                                                                "className": "text-base icon-muted"
+                                                                "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                             }
                                                         },
                                                         {

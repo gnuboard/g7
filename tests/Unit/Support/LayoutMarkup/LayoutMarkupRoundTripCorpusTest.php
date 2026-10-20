@@ -220,6 +220,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_form.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_brand_index/_panel_view.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_delete_confirm.g7.html',
+        'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_editing_confirm.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_modal_image_preview.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_category_list.g7.html',
         'modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_category_index/_panel_detail.g7.html',
@@ -758,7 +759,6 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_option_change.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_cart_unavailable.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_coupon_download.g7.html',
-        'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_exclusive_coupon_confirm.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/_modal_temp_order_not_found.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_admin_edit_link.g7.html',
         'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_header.g7.html',
@@ -935,7 +935,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
      * 1급 문법이 없어 원시 JSON 으로 남는 자리 (U-RAWJSON — D41 → D42 전면 재집계 → **D42 종료로 비었다**).
      *
      * D41 은 태그 본문(`<params>`/`<fallback>`/`<prop>`/`<props>`)을 "설계된 정본" 으로 보아 계량에서
-     * 뺐으나, 설계 검토 지적(3회차)으로 **그 제외를 폐기**했다. 태그 예외 없이 다시 세자 대장은 35 로 늘었고
+     * 뺐으나, 설계 검토 지적으로 **그 제외를 폐기**했다. 태그 예외 없이 다시 세자 대장은 35 로 늘었고
      * (늘어난 것은 새 결함이 아니라 원래 있었으나 안 세던 것), D42 문법 신설이 그것을 전부 해소했다:
      *
      *  - 빈 컬렉션 — `[]`·`{}` 는 구조가 없는 값 리터럴이라 계량 대상이 아니다(D42 선행 판정).

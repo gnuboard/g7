@@ -47,4 +47,29 @@ return [
     'consent' => [
         'fetch_success' => 'Checked the visitor consent status.',
     ],
+    // `privacy:*` command output
+    'console' => [
+        'process_retention' => [
+            'handler_required' => 'Specify a handler identifier for --handler. To run all handlers, omit the option.',
+            'registered_handlers' => 'Registered handlers: :handlers',
+            'none' => 'none',
+            'unknown_handler' => 'Unregistered retention handler: :handler',
+            'no_handlers' => 'No retention handlers are registered.',
+            'handler_disabled' => ':id (:label): skipped because it is turned off.',
+            'handler_locked' => ':id (:label): skipped because an administrator-initiated run is in progress.',
+            'handler_failed' => ':id (:label): failed — :error',
+            'handler_done' => ':id (:label): :count (:mode)',
+            'total' => 'Total: :count',
+        ],
+        'process_dormant' => [
+            'disabled' => 'Skipped because the dormant account feature is turned off. (privacy.dormant_enabled = false)',
+            'locked' => 'Skipped this cycle because an administrator-initiated run is processing the dormancy stages.',
+            'pre_notice' => 'Dormancy advance notices: :count',
+            'converted' => 'Converted to dormant: :count',
+            'withdraw_notice' => 'Upcoming withdrawal notices: :count',
+            'withdrawn' => 'Withdrawn: :count',
+            'withdraw_disabled' => 'Skipped because automatic withdrawal after dormancy is turned off. (privacy.dormant_withdraw_enabled = false)',
+            'stage_failed' => 'Stage failed — :stage: :error',
+        ],
+    ],
 ];

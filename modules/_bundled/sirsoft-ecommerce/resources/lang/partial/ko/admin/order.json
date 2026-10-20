@@ -122,7 +122,8 @@
       "search_by_member": "회원으로 검색",
       "search_by_name": "주문자명으로 검색",
       "search_by_phone": "연락처로 검색",
-      "reset_guest_password": "조회 비밀번호 재설정"
+      "reset_guest_password": "조회 비밀번호 재설정",
+      "quantity_value": "{{count}}개"
     },
     "tabs": {
       "order_info": "주문정보",

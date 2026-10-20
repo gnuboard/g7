@@ -18,7 +18,7 @@ effects:
   - store_board_request_rules_enforced
   - update_board_request_rules_enforced
   - store_board_attribute_names_match_update
-  # 게시판 이름 다국어 필수 문구가 필드 키(name) 대신 화면 이름을 싣는다(2026-10-07 실측 K4, O-KF3-1 후속)
+  # 게시판 이름 다국어 필수 문구가 필드 키(name) 대신 화면 이름을 싣는다(2026-10-07 실측 후속)
   - board_name_attribute_named_in_locale_message
   - board_settings_request_rules_enforced
 

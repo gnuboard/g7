@@ -1,5 +1,5 @@
 /**
- * 마이페이지 게시판 활동 검색칸 Enter 검색 (7.1.0 실측 O-K3-10).
+ * 마이페이지 게시판 활동 검색칸 Enter 검색 (7.1.0 실측).
  *
  * 결함: 「내가 쓴 글」「내가 쓴 댓글」「내 반응」「내 신고」 검색칸에서 Enter 를 쳐도 아무 요청이 나가지 않고
  *   옆 「검색」 버튼만 동작했다(스크랩 목록은 이미 Enter 로 검색한다).
@@ -48,7 +48,7 @@ async function dismissCookieBanner(page: Page): Promise<void> {
   await accept.waitFor({ state: 'hidden', timeout: 5000 });
 }
 
-test.describe('O-K3-10 마이페이지 게시판 활동 검색칸 Enter', () => {
+test.describe('마이페이지 게시판 활동 검색칸 Enter', () => {
   // 같은 회원의 전역 검색 상태를 쓰는 네 탭이라 순서대로 돈다. 탭 진입 lazy 조회가 끝날 때까지 기다리므로 시간을 넉넉히 둔다.
   test.describe.configure({ mode: 'serial', timeout: 90000 });
 

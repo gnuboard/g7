@@ -36,7 +36,7 @@ use PHPUnit\Framework\Attributes\Group;
  * 결함: 화면에서 고른 날짜(Y-m-d)를 UTC 하루로 잘랐다(공용 `applyDateRangeFilter()` 또는
  * `Carbon::parse($date)->startOfDay()`). 목록은 날짜를 보는 사람의 시간대로 그리므로, 한국 시간
  * 새벽에 생긴 행이 목록에는 그날로 보이는데 그날로 거르면 빠지고 다음날 행이 섞였다.
- * 코어·게시판은 7.1.0 영역 C 후속에서 `applyViewerDateRangeFilter()` 로 고쳤고 이커머스는 호출
+ * 코어·게시판은 7.1.0 후속 실측에서 `applyViewerDateRangeFilter()` 로 고쳤고 이커머스는 호출
  * 교체가 남아 있었다. 쿠폰 유효기간·발급기간은 입력·표시가 사이트 표준시라 그 하루로 자른다.
  *
  * 공통 데이터: 2026-03-09 15:30 UTC = 2026-03-10 00:30 KST(그날 안),

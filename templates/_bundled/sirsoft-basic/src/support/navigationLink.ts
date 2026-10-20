@@ -44,10 +44,28 @@ export function mergeQueryIntoHref(href: string): string {
 }
 
 /**
+ * 같은 출처 주소의 경로가 `//` 로 시작하는지 봅니다(`https://이 사이트//다른호스트` — 백슬래시 변형은 URL 파서가 `/` 로 바꾼다).
+ *
+ * 엔진 navigate 의 같은 출처 판정(`navPolicy.toSameOriginNavPath`)은 이 경로를 프로토콜 상대 주소로 보고 거부한다.
+ * 여기서 내부 링크로 통과시키면 보통 클릭은 대체 경로로 가는데 href·새 탭은 그 주소로 남아 판정이 갈린다(7.1.1).
+ *
+ * @param url 같은 출처로 판정된 주소
+ * @return 경로가 `//` 로 시작하면 true (해석할 수 없으면 true — 내부 링크로 두지 않는다)
+ */
+function hasProtocolRelativePath(url: string): boolean {
+  try {
+    return new URL(url, window.location.href).pathname.startsWith('//');
+  } catch {
+    return true;
+  }
+}
+
+/**
  * 링크로 그려도 되는 주소인지 판정해 href 값을 돌려줍니다.
  *
  * - 빈 값·`#`·실행 스킴(`javascript:` 등)은 링크가 아니다 → null
- * - `/` 하나로 시작하는 경로(`//`·`/\` 제외)와 같은 출처 주소는 내부 링크
+ * - `/` 하나로 시작하는 경로(`//`·`/\` 제외)와 같은 출처 주소는 내부 링크 — 단 같은 출처라도 경로가 `//` 로
+ *   시작하면(엔진 navigate 가 거부하는 주소) 내부 링크가 아니다
  * - `http(s)://` 바깥 주소는 바깥 링크(새 탭으로 연다)
  *
  * @param url 메뉴·항목 데이터의 주소
@@ -57,7 +75,9 @@ export function resolveLinkHref(url: unknown): { href: string; external: boolean
   if (typeof url !== 'string') return null;
   const trimmed = url.trim();
   if (trimmed === '' || trimmed === '#') return null;
-  if (/^\/(?![/\\])/.test(trimmed) || isSameOriginRequest(trimmed)) return { href: trimmed, external: false };
+  if (/^\/(?![/\\])/.test(trimmed) || (isSameOriginRequest(trimmed) && !hasProtocolRelativePath(trimmed))) {
+    return { href: trimmed, external: false };
+  }
   if (/^https?:\/\//i.test(trimmed)) return { href: trimmed, external: true };
 
   return null;

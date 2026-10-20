@@ -50,7 +50,9 @@ describe('게시판 새글 배지 다크 모드 색', () => {
             const classes = badgeClasses(file);
             expect(classes.length, file).toBeGreaterThan(0);
             for (const cls of classes) {
-                expect(cls, file).toContain('bg-red-500');
+                // 흰 글자 대비 4.5 — 라이트도 red-600(4.76), red-500 은 3.82
+                expect(cls, file).toContain('bg-red-600');
+                expect(cls, file).not.toMatch(/(^|\s)bg-red-500(\s|$)/);
                 expect(cls, file).toContain('dark:bg-red-600');
                 expect(cls, file).not.toContain('dark:bg-red-500');
             }

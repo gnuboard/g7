@@ -95,7 +95,7 @@
            템플릿은 버튼이 둘이다 — 원문 편집(보조)과 시각 편집(주). 미설치면 그 자리에
            설치 버튼 하나만 온다. 열 수는 컴포넌트가 컨테이너 실측 폭으로 정한다.
            코어 요구 버전 미충족(`core_compatible=false`)이면 설치와 켜기를 잠근다 — 서버가 422 로 거절한다. -->
-      <extension-card-grid pageHref="/admin/templates/admin?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="template_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{templates?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{templates?.data?.pagination?.current_page ?? 1}}" totalPages="{{templates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{templates?.data?.pagination?.has_more_pages ?? false}}" items="{{(templates?.data?.data ?? []).map(p => ({
+      <extension-card-grid pageHref="/admin/templates/admin?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="template_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{templates === undefined}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{templates?.data?.pagination?.current_page ?? 1}}" totalPages="{{templates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{templates?.data?.pagination?.has_more_pages ?? false}}" items="{{(templates?.data?.data ?? []).map(p => ({
         id: p.identifier,
         row: p,
         name: p.name ?? p.identifier,
@@ -112,11 +112,17 @@
           ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),
           ...(p.status === 'inactive' ? [{ label: '$t:admin.templates.status.inactive', tone: 'neutral' }] : []),
           ...(p.status === 'uninstalled' ? [{ label: '$t:admin.templates.status.not_installed', tone: 'info' }] : []),
-          ...(p.update_available &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),
+          ...(p.status === 'installing' ? [{ label: '$t:admin.templates.status.installing', tone: 'warning' }] : []),
+          ...(p.status === 'uninstalling' ? [{ label: '$t:admin.templates.status.uninstalling', tone: 'warning' }] : []),
+          ...(p.status === 'updating' &amp;&amp; p.stuck_update !== true ? [{ label: '$t:admin.templates.status.updating', tone: 'accent' }] : []),
+          ...(p.stuck_update === true ? [{ label: '$t:admin.templates.status.stuck_update', tone: 'warning', icon: 'exclamation-triangle', title: '$t:admin.templates.stuck_update_hint' }] : []),
+          ...(p.update_available &amp;&amp; p.status !== 'uninstalled' &amp;&amp; p.status !== 'updating' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),
           ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])
         ],
-        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
-        secondaryAction: p.update_available &amp;&amp; p.status !== 'uninstalled'
+        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || (['installing', 'uninstalling', 'updating'].includes(p.status) &amp;&amp; p.stuck_update !== true) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
+        secondaryAction: p.stuck_update === true
+          ? { label: '$t:admin.templates.actions.recover_update', icon: 'refresh', title: '$t:admin.templates.stuck_update_hint', disabled: p.abilities?.can_install !== true }
+          : p.update_available &amp;&amp; p.status !== 'uninstalled'
           ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }
           : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', href: '/admin/templates/' + p.identifier + '/edit', disabled: p.abilities?.can_edit_layouts !== true } : null),
         primaryAction: p.status === 'uninstalled'
@@ -159,9 +165,11 @@
         </on>
         <on type="action" event="onSecondaryAction">
           <!-- 보조 버튼은 둘 중 하나로만 생긴다 — 올릴 판이 있으면 업데이트, 아니면 원문 편집.
+               업데이트가 도중에 멈췄으면(`stuck_update`) 「정리 후 다시 업데이트」가 같은 업데이트 창을 강제 업데이트로 연다 — 서버는
+               `force` 일 때만 멈춘 업데이트를 정리한다. 스위치(활성화 창)도 열어 둔다 — 활성화는 정리한 뒤 켠다.
                원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).
                업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다. -->
-          <switch on="{{$args[0].update_available &amp;&amp; $args[0].status !== 'uninstalled' ? 'update' : 'edit_code'}}">
+          <switch on="{{$args[0].stuck_update === true || ($args[0].update_available &amp;&amp; $args[0].status !== 'uninstalled') ? 'update' : 'edit_code'}}">
             <case when="edit_code">
               <navigate path="/admin/templates/{{$args[0].identifier}}/edit" :mergeQuery="true">
                 <query/>
@@ -169,7 +177,7 @@
             </case>
             <case when="update">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutStrategy="overwrite" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutStrategy="overwrite" templateLayoutSource="auto" :templateLayoutSourceOpen="false" templateForceUpdate="{{$args[0].stuck_update === true}}" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{$args[0].identifier}}/check-modified-layouts" method="GET">
                   <success>
                     <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>

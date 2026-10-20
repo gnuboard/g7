@@ -110,7 +110,7 @@
                                             "name": "Span",
                                             "if": "{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) && !(def.templates ?? []).some(t => t.channel === ch.id)}}",
                                             "props": {
-                                                "className": "text-hint block text-amber-600 dark:text-amber-400"
+                                                "className": "text-hint block text-amber-700 dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-koreaexim.channel_template_missing"
                                         }
@@ -253,13 +253,25 @@
                             "if": "{{JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}",
                             "actions": [
                                 {
-                                    "comment": "취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다)",
+                                    "comment": "취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다).\n               기본 병합(deep)은 빈 객체 {} 로 기존 키를 지우지 않으므로 먼저 null 로 덮고 다시 {} 로 쓴다(7.1.1 출시 전)",
                                     "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "koreaeximChannels": {}
-                                    }
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "koreaeximChannels": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "koreaeximChannels": {}
+                                            }
+                                        }
+                                    ]
                                 }
                             ],
                             "props": {

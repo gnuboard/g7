@@ -132,7 +132,7 @@
                   <set-state target="local" search.from="{{$event.target.value}}"/>
                 </on>
               </input>
-              <span class="text-gray-400 dark:text-gray-500">~</span>
+              <span class="text-gray-500 dark:text-gray-400">~</span>
               <input name="analytics_subject_to" type="date" aria-label="$t:common.range_end|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.to || ''}}">
                 <on type="change">
                   <!-- 기간 끝을 폼에 담는다. 시작과 마찬가지로 비워 두면 끝 키 없이 보낸다. -->
@@ -228,7 +228,7 @@
             <p class="text-info-soft">{{analytics_subjects?.data?.notice}}</p>
           </div>
         </div>
-        <empty-state data-type="composite" data-ref="subjects_empty" data-if="{{!analytics_subjects?.loading &amp;&amp; (analytics_subjects?.data?.visits ?? []).length === 0}}" iconName="user-shield" title="$t:admin.analytics.privacy_requests.no_results" class="py-8"/>
+        <empty-state data-type="composite" data-ref="subjects_empty" data-if="{{analytics_subjects !== undefined &amp;&amp; (analytics_subjects?.data?.visits ?? []).length === 0}}" iconName="user-shield" title="$t:admin.analytics.privacy_requests.no_results" class="py-8"/>
         <div class="overflow-x-auto" data-if="{{(analytics_subjects?.data?.visits ?? []).length > 0}}">
           <data-grid data-type="composite" data-ref="subjects_grid" data="{{analytics_subjects?.data?.visits ?? []}}" :pagination="true" :pageSize="25" idField="visit_id" :selectable="false" :sortable="false">
             <column field="first_action_at" header="$t:admin.analytics.privacy_requests.columns.visit_at" width="170px">
@@ -257,7 +257,7 @@
             <column field="ip" header="{{(analytics_subjects?.data?.ip_mask_octets ?? 0) > 0 ? $t('admin.analytics.privacy_requests.columns.ip_masked') : $t('admin.analytics.privacy_requests.columns.ip')}}" width="140px">
               <cell>
                 <!-- 열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은
-                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8). -->
+                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측). -->
                 <div class="flex-center flex-wrap gap-1">
                   <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
                   <badge data-type="composite" data-if="{{row.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>

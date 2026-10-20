@@ -13,20 +13,30 @@
     </div>
     <sortable-menu-list data-type="composite" data-ref="sortable_menu_list" itemHref="/admin/menus?menu={{row.slug}}&amp;mode=view" :itemHrefMergeQuery="true" items="{{menus?.data?.data ?? []}}" selectedId="{{_global.selectedMenuId}}" enableDrag="{{menus?.data?.abilities?.can_update ?? false}}" selectionMode="{{_global.menuBulkMode === true}}" selectedIds="{{_global.menuBulkSelectedIds ?? []}}" roleOptions="{{roles?.data?.data ?? []}}" toggleDisabled="{{menus?.data?.abilities?.can_update !== true}}" class="py-2" itemClassName="py-2.5 px-3 mx-4 my-2 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
       <on type="action" event="onSelect">
-        <!-- 고른 항목을 오른쪽 패널이 읽을 자리에 담고, 주소도 그 항목으로 맞춘다. 주소만 갈아 끼우고 **다시 받지는 않는다** — 목록은 이미 손에 있고 이동이 이력에 쌓이면 뒤로 가기가 항목 고른 횟수만큼 늘어난다. -->
-        <sequence>
-          <set-state target="global" selectedMenuId="{{$args[0].id}}" selectedMenu="{{$args[0]}}" panelMode="view"/>
-          <!-- 목록 응답에는 하위 메뉴의 역할이 실려 있지 않다(#76 목록 하위 컬렉션 프루닝). 선택 즉시 단건을 조회해 역할 배지와 편집 폼 초기값이 실제 역할 제한을 반영하도록 보강한다 — 이 조회가 없으면 하위 메뉴 저장 시 역할이 전부 해제된다. -->
-          <api-call :auth_required="true" target="/api/admin/menus/{{$args[0].id}}" method="GET">
-            <success>
-              <set-state target="global" selectedMenu="{{response.data}}"/>
-            </success>
-          </api-call>
-          <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
-          <replace-url :mergeQuery="true">
-            <query menu="{{$args[0].slug}}" mode="view"/>
-          </replace-url>
-        </sequence>
+        <!-- 고른 항목을 오른쪽 패널이 읽을 자리에 담고, 주소도 그 항목으로 맞춘다. 주소만 갈아 끼우고 **다시 받지는 않는다** — 목록은 이미 손에 있고 이동이 이력에 쌓이면 뒤로 가기가 항목 고른 횟수만큼 늘어난다.
+          편집·등록 중이면 곧바로 넘어가지 않고 고른 메뉴를 대기 자리(_global.pendingMenu*)에 두고 이탈 확인 창을 연다 —
+          이동을 완결하는 것은 그 창이다(이커머스 브랜드·분류 목록과 같은 규칙, 7.1.1 출시 전). -->
+        <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}">
+          <case when="true">
+            <set-state target="global" pendingMenuId="{{$args[0].id}}" pendingMenu="{{$args[0]}}"/>
+            <open-modal target="menu_editing_confirm_modal"/>
+          </case>
+          <case when="false">
+            <sequence>
+              <set-state target="global" selectedMenuId="{{$args[0].id}}" selectedMenu="{{$args[0]}}" panelMode="view"/>
+              <!-- 목록 응답에는 하위 메뉴의 역할이 실려 있지 않다(#76 목록 하위 컬렉션 프루닝). 선택 즉시 단건을 조회해 역할 배지와 편집 폼 초기값이 실제 역할 제한을 반영하도록 보강한다 — 이 조회가 없으면 하위 메뉴 저장 시 역할이 전부 해제된다. -->
+              <api-call :auth_required="true" target="/api/admin/menus/{{$args[0].id}}" method="GET">
+                <success>
+                  <set-state target="global" selectedMenu="{{response.data}}"/>
+                </success>
+              </api-call>
+              <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+              <replace-url :mergeQuery="true">
+                <query menu="{{$args[0].slug}}" mode="view"/>
+              </replace-url>
+            </sequence>
+          </case>
+        </switch>
       </on>
       <on type="action" event="onOrderChange">
         <!-- 끌어 놓은 결과를 그대로 실어 보낸다. 성공 갈래는 목록을 다시 받지 않는다 — 화면은 이미

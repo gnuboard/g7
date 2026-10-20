@@ -79,6 +79,13 @@
     "image_preview": {
       "title": "Image Preview",
       "close": "Close"
+    },
+    "editing": {
+      "title": "Editing in Progress",
+      "message": "Changes will not be saved.",
+      "confirm_message": "Are you sure you want to cancel and select another category?",
+      "continue": "Continue Editing",
+      "discard": "Discard and Move"
     }
   },
   "messages": {

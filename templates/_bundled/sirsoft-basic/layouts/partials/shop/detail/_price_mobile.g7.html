@@ -8,7 +8,7 @@
     </div>
     <!-- 할인율 + 판매가 (할인 있을 때) -->
     <div data-if="{{product.data?.discount_rate > 0}}" class="flex items-center gap-2">
-      <span class="text-lg font-bold text-red-500">{{product.data?.discount_rate}}%</span>
+      <span class="text-lg font-bold text-red-600 dark:text-red-400">{{product.data?.discount_rate}}%</span>
       <span class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</span>
     </div>
     <!-- 판매가 (할인 없을 때) -->

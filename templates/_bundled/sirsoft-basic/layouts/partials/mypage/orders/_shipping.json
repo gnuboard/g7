@@ -103,7 +103,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     },
                     "children": [
                         {
@@ -414,7 +414,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm font-medium {{shipping.shipping_status_variant === 'success' ? 'text-green-600 dark:text-green-400' : shipping.shipping_status_variant === 'warning' ? 'text-yellow-600 dark:text-yellow-400' : shipping.shipping_status_variant === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}}"
+                                                        "className": "text-sm font-medium {{shipping.shipping_status_variant === 'success' ? 'text-green-700 dark:text-green-400' : shipping.shipping_status_variant === 'warning' ? 'text-yellow-700 dark:text-yellow-400' : shipping.shipping_status_variant === 'danger' ? 'text-red-600 dark:text-red-300' : 'text-blue-600 dark:text-blue-400'}}"
                                                     },
                                                     "text": "{{shipping.shipping_status_label ?? ''}}"
                                                 },
@@ -423,7 +423,7 @@
                                                     "name": "Span",
                                                     "if": "{{shipping.delivery_policy_snapshot?.policy_name}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "({{shipping.delivery_policy_snapshot?.policy_name ?? ''}})"
                                                 }
@@ -434,7 +434,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
+                                                "className": "text-sm font-medium {{Number(shipping.total_shipping_amount ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                             },
                                             "text": "{{Number(shipping.total_shipping_amount ?? 0) === 0 ? '$t:mypage.order_detail.free_shipping' : (shipping.mc_total_shipping_amount?.[order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? shipping.total_shipping_amount_formatted ?? '')}}"
                                         }
@@ -446,7 +446,7 @@
                                     "name": "Div",
                                     "if": "{{(shipping.extra_shipping_amount ?? 0) > 0 || (shipping.shipping_discount_amount ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "children": [
                                         {
@@ -465,7 +465,7 @@
                                             "name": "Span",
                                             "if": "{{(shipping.shipping_discount_amount ?? 0) > 0}}",
                                             "props": {
-                                                "className": "text-red-400 dark:text-red-500"
+                                                "className": "text-red-600 dark:text-red-300"
                                             },
                                             "text": "$t:mypage.order_detail.shipping_discount -{{shipping.shipping_discount_amount_formatted ?? ''}}"
                                         }

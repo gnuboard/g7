@@ -1,0 +1,20 @@
+feature: 화면 셸 문서 언어(<html lang>)가 요청 언어를 쓴다 (7.1.1 출시 전 실측)
+
+description: |
+  관리자·사용자 화면 셸(admin.blade.php·app.blade.php)은 `<html lang>` 과 앱에 넘기는 초기 로케일을 같은
+  요청 언어(세션 회원 언어 > Accept-Language > 사이트 기본 언어)로 찍는다. 화면 셸 요청에는 API 토큰이 없어
+  토큰 회원의 언어는 서버가 모르므로, 브라우저 저장 언어·로그인 회원 언어 맞춤은 앱(TemplateApp)이 한다
+  — 그쪽은 engine-document-lang-sync 매니페스트가 잠근다. 검색로봇 화면(seo.blade.php)은 대상이 아니다.
+
+axes:
+  shell: [admin, user]
+  requester: [guest, session_member]
+
+exclusions:
+  - { shell: user, requester: session_member, reason: "두 셸 모두 같은 SetLocale 미들웨어(web 그룹)를 거치므로 세션 회원 우선순위는 관리자 셸 하나로 잠근다" }
+
+effects:
+  - shell_lang_follows_request_language
+
+test_files:
+  - tests/Feature/View/ShellDocumentLangTest.php

@@ -110,7 +110,7 @@ class ReportService
     /**
      * 케이스 기준 신고 목록을 조회합니다.
      * 1케이스 = 1행이므로 boards_reports를 직접 페이지네이션합니다.
-     * last_reported_at DESC 정렬로 재신고 시 위로 올라옵니다.
+     * last_reported_at(마지막 신고 시각) DESC 정렬로 새 신고가 들어온 케이스가 위로 올라옵니다.
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
@@ -187,7 +187,7 @@ class ReportService
      *
      * 1케이스 구조: (board_id, target_type, target_id) 기준으로 케이스를 조회하거나 신규 생성합니다.
      * - 신규 케이스: boards_reports INSERT (pending) + boards_report_logs INSERT
-     * - 기존 활성 케이스(pending/review): boards_report_logs INSERT + last_reported_at 갱신
+     * - 기존 활성 케이스(pending/review): boards_report_logs INSERT + last_reported_at 을 이 신고 시각으로 갱신(늦은 시각만)
      * - 기존 닫힌 케이스(rejected/suspended): pending 재활성 + last_activated_at 갱신 + boards_report_logs INSERT
      *
      * @param  array  $data  신고 생성 데이터
@@ -266,12 +266,18 @@ class ReportService
                     'process_histories' => $existingHistories,
                 ]);
             } else {
-                // 활성 케이스(pending/review) → 유지, reported 이력 추가
-                // last_reported_at은 재접수(re_reported) 시에만 갱신 (목록 정렬 기준)
+                // 활성 케이스(pending/review) → 상태 유지, reported 이력 추가
                 $existingHistories[] = $this->createHistoryEntry('reported', null, null, $now, $currentCycleCount);
                 $report->update([
                     'process_histories' => $existingHistories,
                 ]);
+
+                // 마지막 신고 시각 = 이 신고 기록 시각. 동시에 들어온 신고가 이미 더 늦은 시각을
+                // 기록했으면 되돌리지 않는다(조건부 UPDATE). 취소 경로의 재계산(남은 기록 최대 시각)과 같은 뜻.
+                $this->reportRepository->advanceLastReportedAt(
+                    $report->id,
+                    $reportLog->created_at ?? $now
+                );
             }
         }
 
@@ -937,6 +943,8 @@ class ReportService
 
             // 작성자 ID 및 스냅샷: 작성자명
             if ($reportableData->user_id) {
+                // 회원이 쓴 대상임을 남긴다 — 계정이 없어도(하드 삭제) 비회원으로 보이지 않게 한다
+                $snapshot['author_is_member'] = true;
                 $user = $this->userRepository->findById($reportableData->user_id);
                 if ($user) {
                     $data['author_id'] = $user->id;
@@ -1066,6 +1074,8 @@ class ReportService
         $isCurrentlyDeleted = false;
         $postData = null;
         $triggerType = null;
+        // 회원이 쓴 대상인지 — 케이스 author_id 는 회원 계정이 지워지면 비워지므로(FK) 스냅샷 표시와 대상의 회원 번호로도 본다
+        $authorIsMember = $report->author_id !== null || ! empty($snapshot['author_is_member']);
 
         if ($report->board_id) {
             $target = $report->target_type->value === 'post'
@@ -1078,6 +1088,7 @@ class ReportService
                 $currentStatus = $target->status?->value ?? 'published';
                 $isCurrentlyDeleted = $target->deleted_at !== null;
                 $triggerType = $target->trigger_type?->value ?? null;
+                $authorIsMember = $authorIsMember || ($target->user_id ?? null) !== null;
 
                 // 댓글인 경우 상위 게시글 정보 조회
                 if ($report->target_type->value === 'comment' && $target->post_id) {
@@ -1092,6 +1103,7 @@ class ReportService
             'content_mode' => $snapshot['content_mode'] ?? 'text',
             'author_name' => $snapshot['author_name'] ?? '',
             'author_id' => $report->author_id,
+            'author_is_member' => $authorIsMember,
             'author_uuid' => $authorUuid,
             'author_email' => $authorEmail, // audit:allow resource-member-email-ungated 관리자 신고 상세 내부 전달 — ReportDetailResource 가 게이트
             'created_at' => $createdAt,
@@ -1150,6 +1162,8 @@ class ReportService
             'content_mode' => $target->content_mode ?? 'text',
             'author_name' => $authorName,
             'author_id' => $authorId,
+            // 대상에 회원 번호가 남아 있으면 회원 글이다 — 계정이 지워졌어도(authorId null) 비회원이 아니다
+            'author_is_member' => $target->user_id !== null,
             'author_uuid' => $authorUuid,
             'author_email' => $authorEmail, // audit:allow resource-member-email-ungated 관리자 신고 상세 내부 전달 — ReportDetailResource 가 게이트
             'created_at' => $target->created_at ?? null,

@@ -82,7 +82,7 @@
                             "id": "no_accounts_message",
                             "type": "basic",
                             "name": "Tr",
-                            "if": "{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}",
+                            "if": "{{settings !== undefined && (!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0)}}",
                             "children": [
                                 {
                                     "type": "basic",
@@ -139,7 +139,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "{{account.is_default ? 'circle-dot' : 'circle'}}",
-                                                        "className": "{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"
+                                                        "className": "{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
                                                     }
                                                 }
                                             ]

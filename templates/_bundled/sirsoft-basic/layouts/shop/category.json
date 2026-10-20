@@ -322,6 +322,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"
                                 },
                                 "text": "$t:shop.search"

@@ -5,7 +5,7 @@ namespace Tests\Unit\Lang;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 프론트 한국어 언어 파일의 괄호 조사 검사 (7.1.0 실측 O-R2-5)
+ * 프론트 한국어 언어 파일의 괄호 조사 검사 (7.1.0 실측)
  *
  * 코어 `lang/partial/ko`, 번들 템플릿 `lang/partial/ko`, 번들 모듈·플러그인 `resources/lang` 의 한국어 문구 29곳이
  * 받침을 알 수 없는 값 뒤에 「{{name}} 은(는)」「{entity}이(가)」「(으)로」 같은 괄호 조사를 남겨 화면에 그대로 보였다.

@@ -60,6 +60,9 @@
     "promotion_discount_code": {
       "$partial": "partial/admin/promotion_discount_code.json"
     },
+    "sample": {
+      "$partial": "partial/admin/sample.json"
+    },
     "common_info": {
       "$partial": "partial/admin/common_info.json"
     },

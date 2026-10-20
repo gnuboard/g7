@@ -10,7 +10,7 @@
             <img src="{{$parent._local.form.images?.[0]?.download_url}}" alt="{{$localized($parent._local.form.name)}}" class="w-full h-full object-cover"/>
           </div>
           <div data-if="{{!$parent._local.form.images?.length}}" class="flex-center w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
-            <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+            <icon name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-primary font-medium truncate">{{$localized($parent._local.form.name) || '$t:sirsoft-ecommerce.admin.product.modal.copy.no_name'}}</p>
@@ -133,7 +133,7 @@
           </on>
           <span>$t:sirsoft-ecommerce.common.cancel</span>
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
           <on type="click">
             <!-- 복사 시작 — 진행 표시를 전역에 두는 것은 이 창과 그 뒤 폼이 같은 값을 봐야 하기 때문이다. 실제 이동은 핸들러가 고른 항목을 쿼리로 엮어 처리한다 -->
             <sequence>

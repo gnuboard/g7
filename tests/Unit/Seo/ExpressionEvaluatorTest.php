@@ -993,6 +993,42 @@ class ExpressionEvaluatorTest extends TestCase
         $this->assertSame('', $result);
     }
 
+    /**
+     * 바인딩이 없거나 바인딩이 비지 않았으면 `/`·`-` 같은 글자를 지우지 않습니다 — 사람 화면과 같은 값 (7.1.1).
+     *
+     * 고립 연산자 정리는 「빈 바인딩 치환 뒤 남은 부호」만 대상이다. 정적 `/`(홈 링크 href)·`-`(빈 칸 표시)와
+     * `/` 로 풀린 바인딩까지 지워 봇 화면에서만 홈 링크 href 와 표시 글자가 사라졌다.
+     *
+     * @scenario entry_point=evaluate, expression_form=plain_text
+     *
+     * @effects literal_operator_text_kept
+     *
+     * @return void 없음
+     */
+    public function test_literal_slash_and_dash_are_not_cleaned_up(): void
+    {
+        $this->assertSame('/', $this->evaluator->evaluate('/', []));
+        $this->assertSame('-', $this->evaluator->evaluate('-', []));
+        $this->assertSame('//', $this->evaluator->evaluate('//', []));
+        $this->assertSame('/', $this->evaluator->evaluate('{{home}}', ['home' => '/']));
+        $this->assertSame('-', $this->evaluator->evaluate('{{dash}}', ['dash' => '-']));
+    }
+
+    /**
+     * URL 자리는 빈 바인딩 뒤 남은 `/` 도 지우지 않습니다(`dropOrphanOperators=false`) — 사람 화면 href 와 같은 값.
+     *
+     * @scenario entry_point=evaluate, expression_form=embedded_binding
+     *
+     * @effects literal_operator_text_kept
+     *
+     * @return void 없음
+     */
+    public function test_url_mode_keeps_slash_left_by_empty_binding(): void
+    {
+        $this->assertSame('', $this->evaluator->evaluate('/{{missing}}', []));
+        $this->assertSame('/', $this->evaluator->evaluate('/{{missing}}', [], false));
+    }
+
     // ==========================================
     // 통합 시나리오: 실제 레이아웃 표현식
     // ==========================================

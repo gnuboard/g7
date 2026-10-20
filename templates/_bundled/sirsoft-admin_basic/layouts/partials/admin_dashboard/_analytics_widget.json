@@ -313,7 +313,7 @@
                             ],
                             "props": {
                                 "href": "/admin/analytics/realtime",
-                                "className": "button text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                "className": "button text-sm text-blue-600 dark:text-blue-300 hover:underline"
                             },
                             "text": "$t:admin.analytics.overview.realtime_link"
                         }

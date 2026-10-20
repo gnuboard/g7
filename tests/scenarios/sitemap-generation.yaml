@@ -53,6 +53,12 @@ effects:
   - polling_starts_only_when_reverb_off_and_running
   - polling_stops_on_completed
   - job_failure_marks_progress_failed
+  # ── 콘솔 커맨드 seo:generate-sitemap (큐 분기·모드 옵션) ──
+  - sitemap_command_dispatches_async_unless_queue_is_sync
+  - sitemap_command_runs_sync_when_queue_is_sync_or_forced
+  - sitemap_command_passes_mode_option_to_job
+  - sitemap_command_rebuild_option_forces_full_mode
+  - sitemap_command_rejects_invalid_mode_without_dispatch
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

@@ -9,9 +9,17 @@ const logger = createLogger('TransitionManager');
 
 type TransitionCallback = (isPending: boolean) => void;
 
+type RefreshingCallback = (sourceIds: ReadonlySet<string>) => void;
+
 class TransitionManager {
   private isPending: boolean = false;
   private subscribers: Set<TransitionCallback> = new Set();
+  /**
+   * 값을 그대로 둔 채 다시 받는 중인 데이터 소스 id — 같은 화면의 쿼리 갱신(쪽 넘김·검색)처럼 앞 값을 지우지 않고 받는 소스.
+   * `blur_until_loaded` 의 `data_sources` 판정이 값(`undefined`)만 봐서는 「받는 중」을 모르므로 엔진이 알린다 (engine-v1.82.0)
+   */
+  private refreshingSources: ReadonlySet<string> = new Set();
+  private refreshingSubscribers: Set<RefreshingCallback> = new Set();
 
   /**
    * Transition pending 상태를 설정합니다.
@@ -54,10 +62,51 @@ class TransitionManager {
   }
 
   /**
+   * 값을 그대로 둔 채 다시 받는 중인 데이터 소스 목록을 바꿉니다 (엔진 내부 — TemplateApp 쿼리 갱신·같은 화면 전환).
+   *
+   * @param sourceIds 다시 받는 중인 데이터 소스 id
+   * @since engine-v1.82.0
+   */
+  setRefreshingSources(sourceIds: Iterable<string>): void {
+    const next = new Set(sourceIds);
+    const prev = this.refreshingSources;
+    if (next.size === prev.size && Array.from(next).every((id) => prev.has(id))) return;
+    this.refreshingSources = next;
+    this.refreshingSubscribers.forEach((callback) => {
+      callback(next);
+    });
+  }
+
+  /**
+   * 값을 그대로 둔 채 다시 받는 중인 데이터 소스 목록을 반환합니다.
+   *
+   * @since engine-v1.82.0
+   */
+  getRefreshingSources(): ReadonlySet<string> {
+    return this.refreshingSources;
+  }
+
+  /**
+   * 다시 받는 중 목록 변경을 구독합니다.
+   *
+   * @param callback 목록이 바뀔 때 부를 함수
+   * @returns 구독 해제 함수
+   * @since engine-v1.82.0
+   */
+  subscribeRefreshing(callback: RefreshingCallback): () => void {
+    this.refreshingSubscribers.add(callback);
+
+    return () => {
+      this.refreshingSubscribers.delete(callback);
+    };
+  }
+
+  /**
    * 모든 구독을 해제합니다.
    */
   clearSubscribers(): void {
     this.subscribers.clear();
+    this.refreshingSubscribers.clear();
   }
 }
 

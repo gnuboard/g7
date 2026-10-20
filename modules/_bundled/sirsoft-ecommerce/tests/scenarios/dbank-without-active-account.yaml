@@ -6,6 +6,10 @@ description: |
   공개 결제 설정은 사용 중(활성 + 계좌번호 입력) 계좌가 없으면 무통장입금을 걸러 내고, 관리자 저장은
   사용 중인 계좌 없이 무통장입금을 켜는 것을 검증 오류로 막는다.
 
+  7.1.1 출시 전: 그 막기는 이번 요청이 그 상태를 새로 만들 때만이다(무통장을 새로 켜거나 계좌 목록을 바꿀 때).
+  설치 기본값 그대로 다른 값만 바꾸는 주문설정 저장은 통과하고, 은행만 골라 둔 빈 「사용 안 함」 행은 검사·저장에서 뺀다.
+  그 상태의 주문서 노출은 공개 결제 설정이 무통장입금을 걸러 내는 것으로 막는다.
+
 axes:
   surface: [public_payment_settings, admin_settings_save]
   active_account: [none, present]
@@ -15,6 +19,11 @@ effects:
   - dbank_offered_with_active_account
   - dbank_activation_requires_active_account
   - dbank_activation_allowed_with_active_account
+  - settings_default_state_order_settings_saves          # 설치 기본값 그대로 다른 값만 바꾼 주문설정 저장 → 200
+  - settings_blank_inactive_bank_account_row_is_dropped  # 사용 안 함 + 계좌번호·예금주 빈 행은 저장에서 빠진다
+  - settings_active_blank_bank_account_row_still_required  # 「사용」 으로 둔 빈 계좌 행은 자리표시 행이 아니다 — 종전대로 계좌번호 필수 422
+  - settings_dbank_newly_enabled_without_account_rejected_422  # 무통장을 새로 켜거나 계좌를 바꿔 사용 중 계좌가 0 이 되면 422
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/DbankWithoutActiveAccountTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsDefaultBankAccountTest.php

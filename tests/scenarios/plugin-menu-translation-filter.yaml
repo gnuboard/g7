@@ -1,7 +1,7 @@
 feature: plugin_menu_translation_filter
 
 description: |
-  플러그인 관리자 메뉴 이름에 플러그인 언어팩 번역을 넣는다 (7.1.0 출시 점검 U5-1).
+  플러그인 관리자 메뉴 이름에 플러그인 언어팩 번역을 넣는다 (7.1.0 출시 점검).
   언어팩 결선이 `module.{id}.admin_menus.translations` 에만 있어 플러그인 메뉴 동기화가 발화하는
   `plugin.{id}.admin_menus.translations` 필터에 아무도 붙지 않았고, 주입기는 모듈 범위 팩만 골랐다.
   플러그인 재활성화는 플러그인 자신의 activate() 가 필터 없이 메뉴를 동기화해 일본어 이름이 ko/en 으로 돌아갔다.

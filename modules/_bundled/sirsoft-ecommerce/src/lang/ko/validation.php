@@ -663,6 +663,7 @@ return [
         'user_ids_required' => '발급할 회원을 선택해주세요.',
         'user_ids_min' => '최소 1명 이상의 회원을 선택해주세요.',
         'user_ids_invalid' => '존재하지 않는 회원이 포함되어 있습니다.',
+        'user_withdrawn' => '탈퇴한 회원에게는 쿠폰을 발급할 수 없습니다.',
     ],
 
     // 주문 검증 메시지 (orders.* 형식 - FormRequest와 통일)
@@ -2256,6 +2257,7 @@ return [
         'user_required' => '대상 회원을 선택해주세요.',
         'amount_min' => '금액은 1점 이상이어야 합니다.',
         'action_invalid' => '지급 또는 차감만 가능합니다.',
+        'user_withdrawn' => '탈퇴한 회원에게는 마일리지를 지급할 수 없습니다.',
         'expires_at_invalid' => '유효기간은 올바른 날짜여야 합니다.',
         'duplicate_currency' => '통화 코드가 중복되었습니다.',
         'first_must_be_default' => '첫 번째 통화는 기본 통화(:currency)여야 합니다.',

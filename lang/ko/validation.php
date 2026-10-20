@@ -598,6 +598,13 @@ return [
 
     // 템플릿 검증 메시지
 
+    // 회원 검색(회원 고르기 창) 칸 표시 이름
+    'user_search' => [
+        'attributes' => [
+            'uuid' => '회원',
+        ],
+    ],
+
     // 메뉴 검증 메시지
     'menu' => [
         // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
@@ -1311,6 +1318,15 @@ return [
     // 검증 속성명 (validation.attributes)
     'attributes' => [
         'layout_source' => '레이아웃 설치 소스',
+        'layout_meta_icon' => '메뉴 아이콘',
+        'layout_meta_editor_label' => '편집기 표시 이름',
+        'layout_meta_authoring_note' => '작성 도구 표기',
+        'layout_meta_leave_guard' => '이탈 확인 조건',
+        'layout_meta_leave_message' => '이탈 확인 문구',
+        'layout_seo_title' => 'SEO 제목',
+        'layout_seo_description' => 'SEO 설명',
+        'layout_seo_twitter' => '트위터 카드',
+        'exclude_withdrawn' => '탈퇴 회원 제외',
         'since' => '기준 시각',
         'skip_waiting' => '대기기간 생략',
         'targets' => '조회 대상',

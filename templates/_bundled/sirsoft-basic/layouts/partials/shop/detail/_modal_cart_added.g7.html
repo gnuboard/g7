@@ -6,17 +6,19 @@
     <div class="pb-6 text-center">
       <div class="flex justify-center mb-4">
         <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-          <icon name="check" class="text-green-600 dark:text-green-400" size="lg"/>
+          <icon name="check" class="text-green-700 dark:text-green-400" size="lg"/>
         </div>
       </div>
       <p class="text-gray-700 dark:text-gray-300">$t:shop.product.cart_added_modal_message</p>
     </div>
     <!-- 모달 푸터 - 쇼핑 계속 / 장바구니 이동 -->
     <div class="flex gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
-      <button class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
+      <button type="button" class="flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
         <on type="click">
           <!-- 계속 둘러보기 — 이미 담긴 뒤이므로 구매 카드에 쌓아 둔 선택을 비워야 한다. 안 그러면 같은 것을 한 번 더 담게 된다 -->
           <sequence>
+            <!-- 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) -->
+            <set-state target="$parent._local" :currentSelection="null" :additionalOptions="null"/>
             <set-state target="$parent._local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}"/>
             <close-modal/>
           </sequence>

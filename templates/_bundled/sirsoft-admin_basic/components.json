@@ -1816,6 +1816,17 @@
             "required": false,
             "description": "의미 기반 변형 (success | warning | danger | error | info | primary | secondary | text | default) — 백엔드 Enum 의 variant() 출력을 그대로 받는다. color 가 있으면 color 가 이긴다"
           },
+          "customColor": {
+            "type": "string",
+            "required": false,
+            "description": "운영자 데이터 색(hex). 주면 color·variant 대신 이 색으로 그리며, 글자색은 바탕과 4.5 이상이 되도록 계산한다(데이터 색을 글자에 그대로 쓰지 않는다)"
+          },
+          "customColorStyle": {
+            "type": "string",
+            "required": false,
+            "default": "soft",
+            "description": "customColor 칩 모양 (soft: 옅은 바탕 | solid: 데이터 색 바탕, 글자는 검정·흰색 중 대비가 큰 쪽)"
+          },
           "text": {
             "type": "string",
             "required": false,
@@ -4012,7 +4023,7 @@
           "ariaLabel": {
             "type": "string",
             "required": false,
-            "description": "입력칸 접근성 이름. 켜진 언어가 둘 이상이면 각 언어 칸이 「{이름} ({언어명})」으로 읽힌다. aria-label 로 줘도 같다. 없으면 바깥 상자 곁의 라벨을 잇는다"
+            "description": "입력칸 접근성 이름. 켜진 언어가 둘 이상이면 각 언어 칸이 「{이름} ({언어명})」으로 읽힌다. aria-label 로 줘도 같다. 없으면 바깥 상자 곁의 라벨 글자(끝의 필수 표시 * 제외)를 이름으로 삼아 같은 형식으로 읽힌다"
           },
           "value": {
             "type": "object",

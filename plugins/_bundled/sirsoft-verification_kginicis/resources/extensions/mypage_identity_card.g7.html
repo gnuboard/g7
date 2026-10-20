@@ -31,16 +31,22 @@
         </div>
       </div>
     </div>
-    <div data-ref="profile_view_inicis_identity_pending_card" data-if="{{!inicisRecord?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div data-ref="profile_view_inicis_identity_pending_card" data-if="{{inicisRecord !== undefined &amp;&amp; inicisRecord !== null &amp;&amp; (!inicisRecord?.data)}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
       <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">$t:sirsoft-verification_kginicis.card.title</h3>
       <div class="flex items-start gap-3">
-        <icon name="circle-info" class="text-xl text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5"/>
+        <icon name="circle-info" class="text-xl text-gray-500 dark:text-gray-500 flex-shrink-0 mt-0.5"/>
         <div class="space-y-1">
           <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-verification_kginicis.card.pending.title</p>
           <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-verification_kginicis.card.pending.hint</p>
         </div>
       </div>
+    </div>
+    <!-- 본인확인 정보를 받지 못했으면(값 null) 「본인확인 내역이 없습니다」 대신 불러오기 실패를 알린다 -->
+    <div data-ref="profile_view_inicis_identity_load_failed" data-if="{{inicisRecord === null}}" role="alert" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">$t:sirsoft-verification_kginicis.card.title</h3>
+      <p class="text-sm text-red-600 dark:text-red-400">$t:sirsoft-verification_kginicis.card.load_failed</p>
     </div>
   </inject>
   <!-- 내 인증 이력. 없으면 카드 자체가 뜨지 않으므로 실패해도 프로필 화면은 그대로다 -->

@@ -26,7 +26,7 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         if (User::query()->where('is_super', true)->exists()) {
-            $this->command?->info('최고관리자 계정이 이미 있어 관리자 계정 생성을 건너뜁니다 (기존 회원은 그대로 둡니다).');
+            $this->command?->info(__('common.console.seeders.admin_user.skip_super_exists'));
 
             return;
         }
@@ -36,14 +36,13 @@ class AdminUserSeeder extends Seeder
 
         if (! $email || ! $password) {
             $this->command?->warn(
-                '관리자 계정 환경변수(INSTALLER_ADMIN_EMAIL, INSTALLER_ADMIN_PASSWORD)가 없어 관리자 계정 생성을 건너뜁니다. '
-                .'새로 설치하는 경우 설치 마법사를 쓰거나 두 환경변수를 설정한 뒤 다시 실행하세요.'
+                __('common.console.seeders.admin_user.skip_missing_env')
             );
 
             return;
         }
 
-        $this->command?->info('기본 관리자 사용자 생성을 시작합니다.');
+        $this->command?->info(__('common.console.seeders.admin_user.start'));
 
         // 최고관리자가 없는 DB(설치 경로)에서만 여기까지 온다 — 남은 행은 이전 설치 시도의 잔여다.
         $this->deleteExistingUsers();
@@ -57,7 +56,7 @@ class AdminUserSeeder extends Seeder
             'language' => getenv('INSTALLER_ADMIN_LANGUAGE') ?: 'ko',
         ]);
 
-        $this->command?->info('기본 관리자 사용자가 성공적으로 생성되었습니다.');
+        $this->command?->info(__('common.console.seeders.admin_user.done'));
     }
 
     /**
@@ -70,7 +69,7 @@ class AdminUserSeeder extends Seeder
         $deletedCount = User::query()->delete();
 
         if ($deletedCount > 0) {
-            $this->command?->info("기존 관리자 사용자 {$deletedCount}개가 삭제되었습니다.");
+            $this->command?->info(__('common.console.seeders.admin_user.deleted', ['count' => $deletedCount]));
         }
     }
 

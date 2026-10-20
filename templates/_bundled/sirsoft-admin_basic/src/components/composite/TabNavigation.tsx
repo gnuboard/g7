@@ -271,7 +271,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             <Span>{tab.label}</Span>
 
             {tab.badge !== undefined && (
-              <Div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
+              <Div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
                 <Span>{tab.badge}</Span>
               </Div>
             )}
@@ -325,7 +325,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           <Span>{tab.label}</Span>
 
           {tab.badge !== undefined && (
-            <Div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
+            <Div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
               <Span>{tab.badge}</Span>
             </Div>
           )}

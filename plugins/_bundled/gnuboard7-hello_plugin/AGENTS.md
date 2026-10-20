@@ -66,6 +66,10 @@ Filter 리스너 하나.
 로그 기록 여부는 설정(`log_enabled`)이 정합니다. **설정으로 끌 수 있게 만드는 것**이 부가
 동작의 규약입니다 — 리스너가 무조건 동작하면 그 확장을 설치한 사이트는 끌 방법이 없습니다.
 
+설정 화면(`plugin_settings.g7.html`)의 `settings` 데이터소스는 받기 실패를 `error-handling` 으로 나눕니다 — 처음
+받기 실패는 실제 상태 코드의 본문 오류 화면을 띄워 빈 폼·기본값이 저장되지 않게 하고, 다시 받기 실패(`error.refetch`)는
+받아 둔 값을 그대로 둔 채 오류 토스트만 띄웁니다.
+
 **Filter 구독** — 값 가공: `gnuboard7-hello_module.memo.title.filter` 가 발행되면
 `FilterMemoTitleListener::prependHelloPrefix()` 가 그 값을 받아 접두사를 붙여 **반환**합니다.
 Action 과 달리 Filter 는 **반환값이 흐름에 다시 들어갑니다.**

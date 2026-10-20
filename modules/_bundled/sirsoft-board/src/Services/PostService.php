@@ -1092,7 +1092,8 @@ class PostService
         $post = $this->getPostWithCounts($slug, $id, board: $board, context: $context);
 
         // 댓글 로드 (게시판 comment_order 설정 적용, Board 객체 전달로 중복 조회 방지)
-        $comments = $this->commentService->getCommentsByPostId($slug, $id, boardId: $board->id, board: $board);
+        // 상세와 같은 문맥의 댓글 읽기 범위를 건다 — 문맥을 넘기지 않으면 늘 admin 범위로 조회된다
+        $comments = $this->commentService->getCommentsByPostId($slug, $id, context: $context, boardId: $board->id, board: $board);
 
         // 댓글의 post에 board 관계 수동 설정 (CommentResource의 권한 체크에 필요)
         foreach ($comments as $comment) {
@@ -1270,7 +1271,7 @@ class PostService
             $filters['created_at_to'] = $requestParams['created_at_to'] ?? null;
             // 작성자 검색이 회원 이메일까지 찾는 것은 이메일을 보여 주는 관리자 목록에서만
             $filters['search_author_email'] = true;
-            // 관리자 목록 검색은 답글(제목·내용·작성자)도 찾는다 — 걸린 답글이 달린 원글을 결과로 센다(7.1.0 실측 O-K3-13)
+            // 관리자 목록 검색은 답글(제목·내용·작성자)도 찾는다 — 걸린 답글이 달린 원글을 결과로 센다(7.1.0 실측)
             $filters['search_replies'] = true;
         }
         // 사용자 컨텍스트에는 추가 필터가 없다. 예전에는 여기서 `exclude_blinded` 를 세웠지만

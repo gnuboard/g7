@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Console\Commands\Traits\RestoresHostLanguagePacks;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class ActivateTemplateCommand extends Command
 {
+    use ReportsStuckUpdateRecovery;
     use RestoresHostLanguagePacks;
 
     /**
@@ -65,6 +67,7 @@ class ActivateTemplateCommand extends Command
             // 템플릿 활성화
             $force = $this->option('force');
             $result = $this->templateManager->activateTemplate($identifier, $force);
+            $this->reportStuckUpdateRecovery();
 
             // 경고 응답인 경우 (의존성 미충족)
             if (isset($result['warning']) && $result['warning'] === true) {
@@ -72,23 +75,27 @@ class ActivateTemplateCommand extends Command
                 $this->line('');
 
                 if (! empty($result['missing_modules'])) {
-                    $this->info('필요한 모듈:');
+                    $this->info(__('templates.commands.activate.required_modules'));
                     foreach ($result['missing_modules'] as $module) {
-                        $statusLabel = $module['status'] === 'not_installed' ? '미설치' : '비활성';
+                        $statusLabel = $module['status'] === 'not_installed'
+                            ? __('templates.commands.activate.missing_status.not_installed')
+                            : __('templates.commands.activate.missing_status.inactive');
                         $this->line("   - {$module['identifier']} ({$module['name']}) [{$statusLabel}]");
                     }
                 }
 
                 if (! empty($result['missing_plugins'])) {
-                    $this->info('필요한 플러그인:');
+                    $this->info(__('templates.commands.activate.required_plugins'));
                     foreach ($result['missing_plugins'] as $plugin) {
-                        $statusLabel = $plugin['status'] === 'not_installed' ? '미설치' : '비활성';
+                        $statusLabel = $plugin['status'] === 'not_installed'
+                            ? __('templates.commands.activate.missing_status.not_installed')
+                            : __('templates.commands.activate.missing_status.inactive');
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']}) [{$statusLabel}]");
                     }
                 }
 
                 $this->line('');
-                $this->info('강제로 활성화하려면 --force 옵션을 사용하세요.');
+                $this->info(__('templates.commands.activate.force_hint'));
 
                 return Command::FAILURE;
             }
@@ -113,6 +120,7 @@ class ActivateTemplateCommand extends Command
 
             return Command::FAILURE;
         } catch (\Exception $e) {
+            $this->reportStuckUpdateRecovery();
             $this->error('❌ '.$e->getMessage());
             Log::error('템플릿 활성화 실패', [
                 'template' => $identifier,

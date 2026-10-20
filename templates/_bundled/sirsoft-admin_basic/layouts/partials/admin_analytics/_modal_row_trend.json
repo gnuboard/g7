@@ -87,7 +87,7 @@
                             "id": "row_trend_empty",
                             "type": "composite",
                             "name": "EmptyState",
-                            "if": "{{!analytics_row_trend?.loading && analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report && (analytics_row_trend?.data?.points ?? []).length === 0}}",
+                            "if": "{{analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report && (analytics_row_trend?.data?.points ?? []).length === 0}}",
                             "props": {
                                 "iconName": "chart-line",
                                 "title": "$t:admin.analytics.row_trend.empty",
@@ -100,7 +100,7 @@
                     "id": "row_trend_error",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!analytics_row_trend?.loading && !(analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report)}}",
+                    "if": "{{!(analytics_row_trend?.data?.label === _global.analyticsRowTrend?.label && analytics_row_trend?.data?.report === _global.analyticsRowTrend?.report)}}",
                     "props": {
                         "className": "alert-danger"
                     },

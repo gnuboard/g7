@@ -14,7 +14,7 @@
     ],
     "props": {
         "href": "{{_global.shopBase}}/products",
-        "className": "block w-full text-left bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-5 text-white hover:shadow-lg transition-shadow cursor-pointer"
+        "className": "block w-full text-left bg-gradient-to-br from-emerald-700 to-teal-700 rounded-xl p-5 text-white hover:shadow-lg transition-shadow cursor-pointer"
     },
     "children": [
         {

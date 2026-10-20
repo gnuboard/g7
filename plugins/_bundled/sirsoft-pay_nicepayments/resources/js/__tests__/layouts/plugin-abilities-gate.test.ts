@@ -1,7 +1,7 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
 /**
  * @file plugin-abilities-gate.test.ts
- * @description sirsoft-pay_nicepayments 화면 abilities 게이트 (7.1.0 abilities 게이트 plugins·G04)
+ * @description sirsoft-pay_nicepayments 화면 abilities 게이트 (7.1.0 abilities 게이트)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -36,7 +36,7 @@ function writeButtons(tree: unknown, exclude: (target: string) => boolean = () =
   return collect(tree, (n) => n.name === 'Button' && collect(n, (a) => a.handler === 'apiCall' && WRITE.includes(String(a.params?.method ?? '')) && !exclude(String(a.target ?? ''))).length > 0);
 }
 
-describe('관리자 주문 상세 결제 주입 (G04)', () => {
+describe('관리자 주문 상세 결제 주입', () => {
   /**
    * 호스트 주문 응답 abilities.can_update 가 true 가 아니면 쓰기 버튼·입력이 잠긴다(거래 조회는 그대로).
    *

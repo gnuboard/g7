@@ -14,8 +14,8 @@
   <slot name="content">
     <!-- === 환영 카드 === -->
     <div data-ref="welcome_card" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-950 px-6 py-6 mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">$t:user.home.welcome_title</h1>
-      <span class="text-base text-gray-700">$t:user.home.welcome_description</span>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:user.home.welcome_title</h1>
+      <span class="text-base text-gray-700 dark:text-gray-300">$t:user.home.welcome_description</span>
     </div>
     <!-- === Memo 목록 섹션 === -->
     <div data-ref="memo_section" class="mb-6">
@@ -27,14 +27,14 @@
       <!-- Memo 목록 iteration -->
       <div data-if="{{(memos?.data?.data ?? []).length > 0}}" class="space-y-3">
         <div data-each="memo in {{memos?.data?.data ?? []}}" class="rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 hover:border-blue-400 dark:hover:border-blue-500">
-          <h3 class="text-base font-semibold text-gray-900 mb-1 break-words">{{memo.title ?? ''}}</h3>
-          <span class="text-sm text-gray-600 break-words">{{memo.content ?? ''}}</span>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1 break-words">{{memo.title ?? ''}}</h3>
+          <span class="text-sm text-gray-600 dark:text-gray-300 break-words">{{memo.content ?? ''}}</span>
         </div>
       </div>
     </div>
     <!-- === 홈 복귀 버튼 (액션 시연) === -->
     <div data-ref="home_action" class="flex justify-center">
-      <a href="/" class="inline-flex items-center justify-center px-4 py-2 rounded bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer" data-testid="home-button">
+      <a href="/" class="inline-flex items-center justify-center px-4 py-2 rounded bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 cursor-pointer" data-testid="home-button">
         <on type="click">
           <navigate/>
         </on>

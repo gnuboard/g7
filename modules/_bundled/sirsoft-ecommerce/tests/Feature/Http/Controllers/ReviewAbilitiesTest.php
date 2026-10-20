@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 리뷰 응답의 능력 키 테스트 (7.1.0 abilities 게이트 G12 · basic-shop#8 · ecom-backend#13)
+ * 리뷰 응답의 능력 키 테스트 (7.1.0 abilities 게이트)
  *
  * - 관리자 리뷰 목록은 일괄 처리·행 선택을 잠글 목록 수준 키를 싣는다(행이 0 건이어도 정해야 한다).
  * - 공개 리뷰 목록은 리뷰마다 작성자 본인 여부(`is_owner`)를 싣는다 — 화면이 본인 리뷰에만 수정·삭제를 붙이는 근거.

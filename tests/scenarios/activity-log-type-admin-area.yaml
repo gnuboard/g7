@@ -1,4 +1,4 @@
-feature: 활동 로그 유형 — 관리자 영역 판정 (7.1.0 관측 O-B2)
+feature: 활동 로그 유형 — 관리자 영역 판정 (7.1.0 관측)
 
 description: |
   `ResolvesActivityLogType::resolveLogType()` 이 요청 경로로 활동 로그 유형(관리자·사용자·시스템)을 정한다.

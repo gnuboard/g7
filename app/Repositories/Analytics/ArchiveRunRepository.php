@@ -32,7 +32,7 @@ class ArchiveRunRepository implements ArchiveRunRepositoryInterface
     {
         // 생성 시각은 앱이 UTC 로 찍는다. DB 기본값(`CURRENT_TIMESTAMP`)에 맡기면 DB 세션 시간대가
         // 서울인 서버에서 같은 행의 다른 시각(UTC)과 9시간 어긋난 벽시계가 남는다 — 다른 원장 표(방문·액션·
-        // 봇·실패)는 이미 이렇게 찍는다(7.1.0 실측 O-E11).
+        // 봇·실패)는 이미 이렇게 찍는다(7.1.0 실측).
         $attributes['created_at'] ??= AnalyticsClock::now();
 
         return AnalyticsArchiveRun::query()->create($attributes);
@@ -121,7 +121,7 @@ class ArchiveRunRepository implements ArchiveRunRepositoryInterface
         // error 는 text 라 목록에서 통째로 읽으면 오버플로 페이지 비용이 붙는다.
         // 목록은 실패 사실만 보여 주고 전문은 상세 조회가 읽는다. 다만 건너뜀 행의 사유는
         // 코드가 정한 짧은 문장이라 함께 읽는다 — 화면이 「건너뜀」 곁에 그 이유를 그대로
-        // 알려야 한다(7.1.0 실측 O-E5).
+        // 알려야 한다(7.1.0 실측).
         return AnalyticsArchiveRun::query()
             ->when(! empty($filters['run_type']), fn (Builder $q) => $q->where('run_type', $filters['run_type']))
             ->when(! empty($filters['status']), fn (Builder $q) => $q->where('status', $filters['status']))

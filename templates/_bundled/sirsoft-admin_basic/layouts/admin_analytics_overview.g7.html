@@ -175,7 +175,7 @@
         <div data-ref="trend_chart_frame" class="h-[220px] sm:h-[260px]">
           <line-chart data-type="composite" data-ref="trend_chart" data-if="{{(analytics_overview?.data?.series?.points ?? []).length > 0}}" labels="{{(analytics_overview?.data?.series?.points ?? []).map(p => String(p.ts ?? '').replace('T', ' ').slice(5, 16))}}" datasets="{{[{label: $t('admin.analytics.common.visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}, {label: $t('admin.analytics.common.visits'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visits ?? 0), color: '#0EA5E9'}, {label: $t('admin.analytics.common.pageviews'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.pageviews ?? 0), color: '#F59E0B'}, {label: $t('admin.analytics.overview.new_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.new_visitors ?? 0), color: '#10B981'}, {label: $t('admin.analytics.overview.returning_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.returning_visitors ?? 0), color: '#F43F5E'}]}}" height="100%" :showLegend="true" :showYGrid="true" :showYAxis="true"/>
         </div>
-        <empty-state data-type="composite" data-ref="trend_empty" data-if="{{!analytics_overview?.loading &amp;&amp; (analytics_overview?.data?.series?.points ?? []).length === 0}}" iconName="chart-line" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
+        <empty-state data-type="composite" data-ref="trend_empty" data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.series?.points ?? []).length === 0}}" iconName="chart-line" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
         <!-- 방문자 키가 일자마다 바뀌므로(config_id) 여러 날에 걸친 진짜 순방문자는 원리적으로 셀 수
              없다. 기간을 넓히면 같은 사람이 날마다 다시 세어진다 — 그 정의를 화면에 밝힌다(계획서 D11). -->
         <p data-ref="visitors_daily_sum_note" class="text-label-subtle mt-3">$t:admin.analytics.overview.visitors_daily_sum_note</p>
@@ -229,7 +229,7 @@
             <icon name="{{_local.openTop?.pages ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
           </button>
           <div data-ref="top_pages_body" id="top_pages_body" class="{{_local.openTop?.pages ? 'block' : 'hidden md:block'}}">
-          <p data-if="{{(analytics_overview?.data?.top?.pages ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
+          <p data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.top?.pages ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
           <div data-each="row, $idx in {{analytics_overview?.data?.top?.pages ?? []}}" class="flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
             <span class="text-body truncate" title="{{row.label ?? ''}}">{{row.label_display ?? row.label ?? '-'}}</span>
             <span class="text-heading whitespace-nowrap">{{(row.visits ?? 0) | number}}</span>
@@ -258,7 +258,7 @@
             <icon name="{{_local.openTop?.referrers ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
           </button>
           <div data-ref="top_referrers_body" id="top_referrers_body" class="{{_local.openTop?.referrers ? 'block' : 'hidden md:block'}}">
-          <p data-if="{{(analytics_overview?.data?.top?.referrers ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
+          <p data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.top?.referrers ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
           <div data-each="row, $idx in {{analytics_overview?.data?.top?.referrers ?? []}}" class="flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
             <span class="text-body truncate" title="{{row.label ?? ''}}">{{row.label_display ?? row.label ?? '-'}}</span>
             <span class="text-heading whitespace-nowrap">{{(row.visits ?? 0) | number}}</span>
@@ -286,7 +286,7 @@
             <icon name="{{_local.openTop?.countries ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
           </button>
           <div data-ref="top_countries_body" id="top_countries_body" class="{{_local.openTop?.countries ? 'block' : 'hidden md:block'}}">
-          <p data-if="{{(analytics_overview?.data?.top?.countries ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
+          <p data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.top?.countries ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
           <div data-each="row, $idx in {{analytics_overview?.data?.top?.countries ?? []}}" class="flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
             <span class="text-body truncate" title="{{row.label ?? ''}}">{{row.label_display ?? row.label ?? '-'}}</span>
             <span class="text-heading whitespace-nowrap">{{(row.visits ?? 0) | number}}</span>

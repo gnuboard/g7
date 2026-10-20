@@ -155,7 +155,8 @@
         <div data-ref="bot_names_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.bots.names_title</h2>
           <div class="overflow-x-auto">
-            <data-grid pageHref="/admin/analytics/bots?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="bot_names_grid" data-if="{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <data-grid pageHref="/admin/analytics/bots?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="bot_names_grid" data-if="{{analytics_bots === undefined || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="{{analytics_bots === undefined ? '' : $t('admin.analytics.common.empty_title')}}">
+              <blur-until-loaded sources="analytics_bots"/>
               <on type="action" event="onPageChange">
                 <!-- 봇 이름 표의 쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼우고 전환 표시는 표 몸통에만 띄운다. 총 쪽 수를 모르는
                      목록이라 다음 쪽이 있는지는 응답의 `has_more` 가 가른다. -->
@@ -201,18 +202,19 @@
               </column>
             </data-grid>
           </div>
-          <empty-state data-type="composite" data-if="{{!analytics_bots?.loading &amp;&amp; (analytics_bots?.data?.data ?? []).length === 0}}" iconName="robot" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
+          <empty-state data-type="composite" data-if="{{analytics_bots !== undefined &amp;&amp; (analytics_bots?.data?.data ?? []).length === 0}}" iconName="robot" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
         </div>
         <div data-ref="recent_hits_card" class="admin-card">
           <h2 class="section-heading">$t:admin.analytics.bots.recent_title</h2>
           <!-- 최근 요청은 고른 기간 안에서 고른다(서버 `ReportService::recentBotHits`) — 화면의 다른 숫자와 같은 기간이라는
-               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측 O-E10). -->
+               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측). -->
           <p class="text-hint mb-3">$t:admin.analytics.bots.recent_hint</p>
           <div class="overflow-x-auto">
             <!-- 최근 요청은 서버가 늘 50건을 한 응답에 실어 준다(`ReportService::RECENT_BOT_HITS`). 전부 펼치면
               카드 하나가 2,800px 가까이 되어 옆의 「봇별 집계」와 높이가 맞지 않는다 — 받은 배열을 화면에서
               10건씩 나눈다. 서버 쪽 나눔이 아니라 요청 수는 그대로다(#682 라운드 4, 검수 지적 ③). -->
-            <data-grid data-type="composite" data-ref="recent_hits_grid" data="{{analytics_bots?.data?.recent_hits ?? []}}" :pagination="true" :pageSize="10" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <data-grid data-type="composite" data-ref="recent_hits_grid" data="{{analytics_bots?.data?.recent_hits ?? []}}" :pagination="true" :pageSize="10" idField="id" :selectable="false" :sortable="false" emptyMessage="{{analytics_bots === undefined ? '' : $t('admin.analytics.common.empty_title')}}">
+              <blur-until-loaded sources="analytics_bots"/>
               <column field="bot_name" header="$t:admin.analytics.bots.columns.bot" width="160px">
                 <cell>
                   <span class="text-heading">{{row.bot_name ?? '-'}}</span>
