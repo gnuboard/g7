@@ -28,7 +28,8 @@
 
 - 토큰 발급, 세션 생성을 직접 하지 않는다.
 - 제공자 비밀값을 설정 키(사이트 설정 파일)에 두지 않는다 — 제공자 테이블에 암호화해 둔다.
-- 1.0.0 의 지금 범위는 OAuth 왕복, 로그인·가입·연결·본인 재확인 분기, 사용자 화면(로그인·가입 버튼, 가입 모달, 마이페이지 카드)이다. 관리자 제공자 화면과 웹훅은 아직 열지 않았다.
+- 제공자 비밀값을 화면이나 응답에 평문으로 돌려주지 않는다 — 관리자 응답은 마스크(`SensitiveSettingMask::MASK`)만 싣고, 마스크를 그대로 돌려받으면 유지, `null`(빈 문자열 포함)은 삭제로 읽는다.
+- 제공자 웹훅은 회원 탈퇴를 직접 결정하지 않는다 — 연결을 끊는 것이 기본이고, 탈퇴는 운영자가 정책(`webhook_unlink_policy=withdraw_user`)으로 고른 때만 코어 `UserService::withdrawUser` 로 한다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -49,6 +50,7 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-social_login --force` (빌드 불필요) |
+| `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-social_login --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-social_login --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-social_login --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-social_login --force` |
@@ -75,6 +77,12 @@
 **가입 모달** (`SignupController`, `LinkExistingController`) → `SignupFlowService::complete` 가 코어 `AuthService::register(…, ['issue_token' => false])` 로 비밀번호 없는 회원을 만들고 `AccountLinkService::attach` → 인계 주소. 같은 이메일의 기존 계정은 `LinkExistingService`(비밀번호 또는 메일 인증번호, 5회 한도)로 연결한다. 플러그인은 토큰을 직접 만들지 않는다.
 
 **제공자 목록** (`ProviderRegistry::all`) → `ProviderRepository::all` 행을 `driver` 로 드라이버 인스턴스화 → 필터 `provider.filter_registered`(모의 제공자 리스너 포함) → 요청당 한 번 캐시.
+
+**관리자 제공자 설정** (`Admin\ProviderController`, `UpdateProviderRequest` · `CreateProviderRequest`) → `ProviderAdminService` 가 비밀값 규칙(없음·마스크는 유지, `null` 은 삭제, 그 밖은 교체)으로 행을 고치고 `provider.after_update` 훅에 바뀐 칸 이름만 넘긴다. 자격증명 없이 켜면 422 `credentials_required`. 연결 테스트(`ProviderTestService::run`)는 없는 인가 코드로 토큰 주소를 불러 거절 사유를 정상·클라이언트 오류·콜백 주소 불일치·도달 불가로 나눈다(OIDC 는 서명 키 목록 도달을 먼저 본다). 앱 키가 바뀌어 비밀값을 풀 수 없으면 드라이버는 그 칸을 비운 채 만들어져(목록과 화면은 그대로 열리고 카드에 「다시 입력」 안내), 비밀값이 필요한 순간 `clientSecret()` 이 `credentials_unreadable` 로 멈춘다 — 비밀값 없이 토큰을 요청하지 않는다. 연결 테스트도 같은 코드로 알린다.
+
+**제공자 웹훅** (`WebhookController` → 제공자별 FormRequest → 드라이버 `verifyWebhook`) → `WebhookReceiver::receive` 가 `event_key` 로 중복을 걸러 `social_login_webhook_events` 에 남기고(검증 실패는 `ignored`) `ProcessWebhookEventJob` 을 커밋 뒤에 보낸다 → `WebhookProcessor::process` 가 연결을 `UnlinkReason::Webhook` 으로 끊고(권한 회수는 하지 않는다 — 제공자가 이미 끊었다), 정책이 `withdraw_user` 면 탈퇴, 마지막 로그인 수단을 잃은 회원에게 알림 훅. 제공자에는 정해진 응답(카카오 200, 네이버 204, 페이스북 400 또는 확인 코드)을 준다.
+
+**관리자 회원 표면** — 목록 가입경로 필터는 코어 확장 필터 통로(`ext_filters[]=sirsoft-social_login.provider={키}`, `UserListSocialProviderFilter`), 「소셜 연결」 열은 `core.user.filter_list_rows`(`UserListSocialProvidersColumn`, 1쿼리). 둘 다 회원 연결 열람 권한일 때만 적용된다. 상세 탭 강제 해제(`UserAccountsController@destroy` → `AccountLinkService::adminUnlink`)는 마지막 수단 가드를 보지 않고 `account.unlinked_by_admin` 훅으로 회원에게 알린다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -82,14 +90,14 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 9개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 8개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 17개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 19개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 11개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
-| 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
-| 알림 정의 | 0개 | [알림 정의](docs/extension-points.md#알림-정의) |
+| 스케줄 | 1개 | [스케줄](docs/extension-points.md#스케줄) |
+| 알림 정의 | 5개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
@@ -119,6 +127,9 @@
 | id_token 헤더의 alg 를 보고 검증 방식 고르기 | `Rs256Verifier` (RS256 고정) | alg=none, HS256 다운그레이드 위조 |
 | state 를 읽고 나서 지우지 않거나 잠금 없이 지우기 | `StateStore::pull()` | 같은 콜백 재사용(인가 코드 재사용) |
 | 마스킹 이메일(`*` 포함)로 회원 찾기 | `NormalizedProfile::email()` 이 null 로 거른다 | 다른 회원과 잘못 연결 |
+| 관리자 응답·훅 인자에 비밀값 싣기 | `ProviderAdminService::present()`(마스크), 훅에는 요약과 바뀐 칸 이름만 | 화면·로그·리스너로 자격증명 유출 |
+| 웹훅 검증 실패에 4xx·5xx 로 답하기(카카오·네이버) | `ignored` 로 기록하고 정해진 성공 응답 | 제공자가 재시도를 쌓거나 웹훅을 끈다 |
+| 웹훅 요청 안에서 연결 해제·탈퇴 처리 | `ProcessWebhookEventJob`(커밋 뒤, 재시도 5회) | 제공자 응답 시간 초과와 중복 처리 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -126,10 +137,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 20개 | `plugins/_bundled/sirsoft-social_login/tests` |
-| Vitest | 4개 | `vitest.config.ts` |
-| Playwright | 4개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
+| PHPUnit | 37개 | `plugins/_bundled/sirsoft-social_login/tests` |
+| Vitest | 6개 | `vitest.config.ts` |
+| Playwright | 6개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

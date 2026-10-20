@@ -1,0 +1,1257 @@
+{
+    "comment": "정책 탭 — 사이트 전체 정책(가입·연결·보존·알림 기준). 코어 플러그인 설정 API 로 저장한다. 위험한 선택(검증 이메일 자동 연결·2단계 인증 끄기)에는\n     고르는 순간 빨간 경고를 보인다.",
+    "meta": {
+        "is_partial": true,
+        "description": "정책 탭"
+    },
+    "layout_name": "partials/plugin_settings/_policy_tab",
+    "id": "policy_tab",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{query.tab === 'policy'}}",
+    "dataKey": "form",
+    "trackChanges": true,
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "id": "plugin_read_only_banner",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+            "props": {
+                "role": "status",
+                "className": "alert-warning"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "lock",
+                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm text-amber-800 dark:text-amber-200"
+                    },
+                    "text": "$t:sirsoft-social_login.plugin_read_only"
+                }
+            ]
+        },
+        {
+            "id": "policy_section",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "id": "policy_section_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "px-6 pt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:sirsoft-social_login.settings.sections.policy"
+                        }
+                    ]
+                },
+                {
+                    "id": "policy_fields",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-6 space-y-6"
+                    },
+                    "children": [
+                        {
+                            "id": "field_email_conflict_policy",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.email_conflict_policy.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.email_conflict_policy.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "email_conflict_policy",
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "verify_link"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.settings.fields.email_conflict_policy.options.verify_link"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "auto_link_verified"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.settings.fields.email_conflict_policy.options.auto_link_verified"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "never_link"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.settings.fields.email_conflict_policy.options.never_link"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "auto_link_warning",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.form?.email_conflict_policy === 'auto_link_verified'}}",
+                                            "props": {
+                                                "role": "alert",
+                                                "className": "form-error"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.warnings.auto_link_verified"
+                                        },
+                                        {
+                                            "id": "error_email_conflict_policy",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.email_conflict_policy}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.email_conflict_policy?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_extra_info_mode",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.extra_info_mode.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.extra_info_mode.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "extra_info_mode",
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "when_missing"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.settings.fields.extra_info_mode.options.when_missing"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "always"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.settings.fields.extra_info_mode.options.always"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "error_extra_info_mode",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.extra_info_mode}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.extra_info_mode?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_webhook_unlink_policy",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "webhook_unlink_policy",
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "unlink_only"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.options.unlink_only"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "withdraw_user"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.options.withdraw_user"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "error_webhook_unlink_policy",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.webhook_unlink_policy}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.webhook_unlink_policy?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_two_factor_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "checkbox",
+                                        "name": "two_factor_enabled",
+                                        "className": "mt-1 h-4 w-4 rounded text-blue-600",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.two_factor_enabled.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.two_factor_enabled.hint"
+                                        },
+                                        {
+                                            "id": "two_factor_off_warning",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.form?.two_factor_enabled === false}}",
+                                            "props": {
+                                                "role": "alert",
+                                                "className": "form-error"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.warnings.two_factor_off"
+                                        },
+                                        {
+                                            "id": "error_two_factor_enabled",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.two_factor_enabled}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.two_factor_enabled?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_allow_admin_social_login",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "checkbox",
+                                        "name": "allow_admin_social_login",
+                                        "className": "mt-1 h-4 w-4 rounded text-blue-600",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.allow_admin_social_login.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.allow_admin_social_login.hint"
+                                        },
+                                        {
+                                            "id": "error_allow_admin_social_login",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.allow_admin_social_login}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.allow_admin_social_login?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_allow_unlink_last_method",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "checkbox",
+                                        "name": "allow_unlink_last_method",
+                                        "className": "mt-1 h-4 w-4 rounded text-blue-600",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.allow_unlink_last_method.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.allow_unlink_last_method.hint"
+                                        },
+                                        {
+                                            "id": "error_allow_unlink_last_method",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.allow_unlink_last_method}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.allow_unlink_last_method?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_revoke_on_unlink",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "checkbox",
+                                        "name": "revoke_on_unlink",
+                                        "className": "mt-1 h-4 w-4 rounded text-blue-600",
+                                        "disabled": "{{_computed.isPluginReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.revoke_on_unlink.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.revoke_on_unlink.hint"
+                                        },
+                                        {
+                                            "id": "error_revoke_on_unlink",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.revoke_on_unlink}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.revoke_on_unlink?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "limits_section",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "id": "limits_section_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "px-6 pt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                            },
+                            "text": "$t:sirsoft-social_login.settings.sections.limits"
+                        }
+                    ]
+                },
+                {
+                    "id": "limits_fields",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-6 space-y-6"
+                    },
+                    "children": [
+                        {
+                            "id": "field_state_ttl_minutes",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.state_ttl_minutes.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.state_ttl_minutes.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "state_ttl_minutes",
+                                                "min": 3,
+                                                "max": 30,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_state_ttl_minutes",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.state_ttl_minutes}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.state_ttl_minutes?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_pending_signup_ttl_minutes",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.pending_signup_ttl_minutes.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.pending_signup_ttl_minutes.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "pending_signup_ttl_minutes",
+                                                "min": 5,
+                                                "max": 120,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_pending_signup_ttl_minutes",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.pending_signup_ttl_minutes}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.pending_signup_ttl_minutes?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_custom_provider_limit",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.custom_provider_limit.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.custom_provider_limit.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "custom_provider_limit",
+                                                "min": 0,
+                                                "max": 10,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_custom_provider_limit",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.custom_provider_limit}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.custom_provider_limit?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_profile_raw_retention_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.profile_raw_retention_days.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.profile_raw_retention_days.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "profile_raw_retention_days",
+                                                "min": 0,
+                                                "max": 90,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_profile_raw_retention_days",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.profile_raw_retention_days}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.profile_raw_retention_days?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_attempt_log_retention_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.attempt_log_retention_days.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.attempt_log_retention_days.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "attempt_log_retention_days",
+                                                "min": 7,
+                                                "max": 365,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_attempt_log_retention_days",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.attempt_log_retention_days}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.attempt_log_retention_days?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_webhook_event_retention_days",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.webhook_event_retention_days.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.webhook_event_retention_days.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "webhook_event_retention_days",
+                                                "min": 7,
+                                                "max": 365,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_webhook_event_retention_days",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.webhook_event_retention_days}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.webhook_event_retention_days?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_signup_surge_threshold_per_hour",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.signup_surge_threshold_per_hour.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.signup_surge_threshold_per_hour.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "signup_surge_threshold_per_hour",
+                                                "min": 0,
+                                                "max": 10000,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_signup_surge_threshold_per_hour",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.signup_surge_threshold_per_hour}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.signup_surge_threshold_per_hour?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_provider_failure_streak_threshold",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.provider_failure_streak_threshold.label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-social_login.settings.fields.provider_failure_streak_threshold.hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "provider_failure_streak_threshold",
+                                                "min": 0,
+                                                "max": 1000,
+                                                "className": "focus:border-transparent",
+                                                "disabled": "{{_computed.isPluginReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "error_provider_failure_streak_threshold",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.errors?.provider_failure_streak_threshold}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.provider_failure_streak_threshold?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "footer_buttons",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "sticky-footer-buttons"
+            },
+            "children": [
+                {
+                    "id": "cancel_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/plugins"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "id": "save_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "정책 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다. 실패하면 칸 아래 검증 문구와 토스트를 띄운다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isSaving": true,
+                                        "errors": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "PUT",
+                                        "body": "{{_local.form}}"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isSaving": false,
+                                                "hasChanges": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.plugins.settings.save_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "settings"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isSaving": false,
+                                                "errors": "{{error.errors}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                        "className": "btn btn-primary flex-center gap-1.5"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_local.isSaving}}",
+                            "text": "$t:common.save"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.isSaving}}",
+                            "text": "$t:common.saving"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

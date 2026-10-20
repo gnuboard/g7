@@ -2,11 +2,13 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Drivers;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\SocialLogin\Contracts\ProviderDriverInterface;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
@@ -135,15 +137,53 @@ abstract class AbstractOAuth2Driver implements ProviderDriverInterface
         $clone = clone $this;
 
         if ($config instanceof SocialLoginProvider) {
+            $unreadable = [];
+            $clientSecret = self::readSecret($config, 'client_secret', $unreadable);
+            $adminKey = self::readSecret($config, 'admin_key', $unreadable);
             $config = array_merge($config->attributesToArray(), [
-                'client_secret' => $config->client_secret,
-                'admin_key' => $config->admin_key,
+                'client_secret' => $clientSecret,
+                'admin_key' => $adminKey,
+                'unreadable_secrets' => $unreadable,
             ]);
         }
 
         $clone->config = $config;
 
         return $clone;
+    }
+
+    /**
+     * 암호화된 비밀값을 풉니다 — 앱 키가 바뀌어 풀 수 없으면 null 로 두고 그 칸 이름을 `$unreadable` 에 더합니다.
+     *
+     * 예외를 그대로 올리면 레지스트리가 드라이버 목록을 만들다 멈춰 로그인 버튼·설정·진단 화면이 모두 500 이 된다.
+     * 풀지 못한 비밀값이 필요한 순간(토큰 요청·웹훅 서명 검증)에는 {@see self::clientSecret()} 이 `credentials_unreadable` 로
+     * 멈춘다 — 비밀값 없이 요청해 엉뚱한 「클라이언트 오류」로 보이지 않게.
+     *
+     * @param  SocialLoginProvider  $row  제공자 행
+     * @param  string  $field  비밀값 컬럼
+     * @param  array<int, string>  $unreadable  풀지 못한 칸 이름 (참조로 더한다)
+     * @return string|null 비밀값
+     */
+    private static function readSecret(SocialLoginProvider $row, string $field, array &$unreadable): ?string
+    {
+        try {
+            return $row->getAttribute($field);
+        } catch (DecryptException) {
+            Log::warning('[sirsoft-social_login] 제공자 비밀값을 풀 수 없습니다 — 앱 키가 바뀌었으면 비밀값을 다시 입력하세요.', ['provider' => $row->key, 'field' => $field]);
+            $unreadable[] = $field;
+
+            return null;
+        }
+    }
+
+    /**
+     * 저장돼 있으나 풀지 못한 비밀값 칸 이름을 반환합니다 (앱 키 교체 뒤 다시 입력하기 전).
+     *
+     * @return array<int, string> 칸 이름 (client_secret · admin_key)
+     */
+    public function unreadableSecrets(): array
+    {
+        return array_values($this->config['unreadable_secrets'] ?? []);
     }
 
     /**
@@ -168,9 +208,15 @@ abstract class AbstractOAuth2Driver implements ProviderDriverInterface
      * 클라이언트 비밀값을 반환합니다.
      *
      * @return string 비밀값
+     *
+     * @throws ProviderException 저장된 비밀값을 풀 수 없음(`credentials_unreadable`)
      */
     public function clientSecret(): string
     {
+        if (in_array('client_secret', $this->unreadableSecrets(), true)) {
+            throw new ProviderException('credentials_unreadable');
+        }
+
         return (string) ($this->config['client_secret'] ?? '');
     }
 

@@ -105,9 +105,19 @@ class ProviderSettings
     public function brand(string $key): string
     {
         $driver = $this->registry->get($key);
-        $name = $driver instanceof AbstractOAuth2Driver ? $driver->driverName() : null;
 
-        return in_array($name, self::BRANDS, true) ? $name : 'custom';
+        return self::brandForDriver($driver instanceof AbstractOAuth2Driver ? $driver->driverName() : null);
+    }
+
+    /**
+     * 드라이버 이름으로 버튼 계열을 정합니다 — 내장 4종 밖(일반 OIDC·확장 등록)은 custom.
+     *
+     * @param  string|null  $driver  드라이버 이름
+     * @return string 계열 (kakao·naver·google·facebook·custom)
+     */
+    public static function brandForDriver(?string $driver): string
+    {
+        return in_array($driver, self::BRANDS, true) ? $driver : 'custom';
     }
 
     /**

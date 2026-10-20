@@ -403,6 +403,8 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json",
       "plugins/_bundled/sirsoft-koreaexim/resources/layouts/admin/plugin_settings.json",
       "plugins/_bundled/sirsoft-message_bizppurio/resources/layouts/admin/plugin_settings.json",
+      "plugins/_bundled/sirsoft-social_login/resources/layouts/admin/plugin_settings.json",
+      "plugins/_bundled/sirsoft-social_login/resources/layouts/admin/social_login_diagnostics.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_actions.json",
       "templates/_bundled/sirsoft-admin_basic/layouts/admin_analytics_bots.json",

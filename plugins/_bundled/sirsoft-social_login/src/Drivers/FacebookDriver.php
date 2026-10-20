@@ -3,11 +3,15 @@
 namespace Plugins\Sirsoft\SocialLogin\Drivers;
 
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\Request;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
 use Plugins\Sirsoft\SocialLogin\DTO\TokenSet;
+use Plugins\Sirsoft\SocialLogin\Enums\WebhookEventType;
 use Plugins\Sirsoft\SocialLogin\Exceptions\ProviderException;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
+use Plugins\Sirsoft\SocialLogin\Models\SocialLoginWebhookEvent;
+use Plugins\Sirsoft\SocialLogin\Support\Jwt\Base64Url;
 
 /**
  * 페이스북 로그인 드라이버.
@@ -169,6 +173,53 @@ class FacebookDriver extends AbstractOAuth2Driver
         ])), 'revoke_failed');
 
         return $response->successful();
+    }
+
+    /**
+     * 페이스북 「앱 권한 해제」·「데이터 삭제 요청」 콜백을 검증해 이벤트로 바꿉니다.
+     *
+     * `signed_request` = base64url(서명).base64url(본문). 서명은 본문 원문(base64url 문자열 그대로)을 앱 비밀값으로
+     * HMAC-SHA256 한 값이고 시간 일정 비교로 맞춘다. 본문 `algorithm` 은 HMAC-SHA256 만 받는다. 어느 콜백인지는 라우트가
+     * 요청 속성 `webhook_kind`(`deauthorize`·`data_deletion`)로 알려 준다.
+     *
+     * @param  Request  $request  콜백 요청
+     * @return SocialLoginWebhookEvent 저장 전 이벤트
+     *
+     * @throws ProviderException 서명(`webhook_signature_invalid`)·본문(`webhook_payload_invalid`)
+     */
+    public function verifyWebhook(Request $request): ?SocialLoginWebhookEvent
+    {
+        $secret = $this->clientSecret();
+        $parts = explode('.', (string) $request->input('signed_request', ''), 2);
+        if ($secret === '' || count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+            throw new ProviderException('webhook_signature_invalid');
+        }
+
+        $signature = Base64Url::decode($parts[0]);
+        if ($signature === '' || ! hash_equals(hash_hmac('sha256', $parts[1], $secret, true), $signature)) {
+            throw new ProviderException('webhook_signature_invalid');
+        }
+
+        $payload = json_decode(Base64Url::decode($parts[1]), true);
+        if (! is_array($payload) || strtoupper((string) ($payload['algorithm'] ?? '')) !== 'HMAC-SHA256') {
+            throw new ProviderException('webhook_payload_invalid');
+        }
+
+        $userId = NormalizedProfile::str($payload['user_id'] ?? null);
+        if ($userId === null) {
+            throw new ProviderException('webhook_payload_invalid');
+        }
+
+        $deletion = $request->attributes->get('webhook_kind') === 'data_deletion';
+        $issuedAt = (string) (int) ($payload['issued_at'] ?? 0);
+
+        return new SocialLoginWebhookEvent([
+            'provider_key' => $this->key(),
+            'event_key' => 'facebook:'.($deletion ? 'deletion' : 'deauth').':'.$userId.':'.$issuedAt,
+            'event_type' => ($deletion ? WebhookEventType::DataDeletion : WebhookEventType::Deauthorize)->value,
+            'provider_user_id' => $userId,
+            'payload' => ['issued_at' => $issuedAt],
+        ]);
     }
 
     /**

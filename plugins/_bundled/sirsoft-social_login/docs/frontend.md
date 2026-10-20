@@ -5,30 +5,38 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 1개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 7개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `admin` | 1개 |
+| `admin` | 7개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
+| `_policy_tab` | `admin` | partial | - |
+| `_provider_add` | `admin` | partial | - |
+| `_provider_editor` | `admin` | partial | - |
+| `_provider_impact` | `admin` | partial | - |
 | `plugin_settings` | `admin` | 화면 | `_admin_base` |
+| `social_login_diagnostics` | `admin` | 화면 | `_admin_base` |
+| `social_login_stats` | `admin` | 화면 | `_admin_base` |
 <!-- @generated:layouts END -->
 
 <!-- @intent START -->
-플러그인 설정 화면(`plugin_settings`) 하나입니다. 코어 「플러그인 관리 → 설정」 경로가 띄우며, 사이트 전체 정책 15칸을 저장합니다. 제공자별 자격증명 편집 화면은 다음 단계 산출물입니다. 사용자 화면(로그인·가입 버튼, 가입 모달, 마이페이지 카드, 재확인)은 자기 레이아웃이 아니라 템플릿 화면에 주입하는 레이아웃 확장입니다(`extension-points.md` 「레이아웃 확장」).
+관리자 화면 셋입니다. 설정 화면(`plugin_settings`)은 코어 「플러그인 관리 → 설정」 경로가 띄우고 탭 둘(`?tab=providers` 기본, `?tab=policy`)로 나뉩니다 — 제공자 탭은 카드마다 Redirect URI 와 웹훅 주소 복사, 편집 칸(비밀값은 마스크 그대로 두면 유지), 연결 테스트, 브라우저 테스트, 영향 보기, 위아래 순서, 일반 OIDC 추가와 삭제를 두고, 정책 탭은 사이트 전체 정책 15칸을 저장합니다. 켜진 제공자를 끄거나 자격증명을 바꾸면 저장 전에 카드 안 영향 패널로 확인을 받습니다(모달은 연 화면의 값을 열 때 값으로만 읽어 편집 중 값을 따라가지 못한다). 이 확인의 [계속 저장]은 지금 열린 편집 칸을 저장하므로, 다른 카드 편집을 열거나 편집 칸을 닫으면 패널도 닫힙니다. 진단(`social_login_diagnostics`)과 통계(`social_login_stats`)는 플러그인 라우트(`routes.json`, `settings.view`)로 열리고 관리자 메뉴 「소셜 로그인」 아래에 있습니다. 필터와 기간은 주소 쿼리에 담겨 새로고침 뒤에도 남습니다. 관리자 회원 화면에는 레이아웃 확장 셋(상세 탭, 목록 가입경로 필터, 목록 「소셜 연결」 열)을 붙입니다. 사용자 화면(로그인·가입 버튼, 가입 모달, 마이페이지 카드, 재확인)은 자기 레이아웃이 아니라 템플릿 화면에 주입하는 레이아웃 확장입니다(`extension-points.md` 「레이아웃 확장」).
 <!-- @intent END -->
 
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 2개 (정의: `resources/js/handlers/index.ts`).
+핸들러 4개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
 | `startLink` | `sirsoft-social_login.startLink` |
 | `startReauth` | `sirsoft-social_login.startReauth` |
+| `copyToClipboard` | `sirsoft-social_login.copyToClipboard` |
+| `openTestLogin` | `sirsoft-social_login.openTestLogin` |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
@@ -48,7 +56,7 @@
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
-`resources/js/index.ts` 가 핸들러를 등록하고 버튼 컴포넌트를 내보냅니다. 설정 화면은 코어 액션만 씁니다.
+`resources/js/index.ts` 가 핸들러를 등록하고 버튼 컴포넌트를 내보냅니다. 관리자 설정 화면은 핸들러 둘을 더 씁니다 — `copyToClipboard`(Redirect URI 와 웹훅 주소 복사, 클립보드 API 가 없으면 선택 복사로 대신)와 `openTestLogin`(빈 창을 먼저 열어 팝업 차단을 피하고 `test-login` 응답의 인가 주소가 https 이거나 같은 출처일 때만 그 창을 보낸다, 실패하면 창을 닫는다).
 <!-- @intent END -->
 
 ## 에셋

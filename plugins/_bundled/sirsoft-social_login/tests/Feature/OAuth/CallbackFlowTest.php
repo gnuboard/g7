@@ -279,9 +279,9 @@ class CallbackFlowTest extends PluginTestCase
     }
 
     /**
-     * 제공자 오류가 아닌 예외(자격증명 복호화 실패 등)도 오류 화면 대신 실패 결과·시도 기록으로 끝나는지 확인한다.
+     * 제공자 오류가 아닌 예외도 오류 화면 대신 실패 결과·시도 기록으로 끝나는지 확인한다. 예외 문구(내부 사정)는 시도 기록에 남지 않는다.
      *
-     * 앱 키를 바꾼 뒤처럼 저장된 비밀값을 풀 수 없는 상황을 만든다.
+     * 토큰 요청 중 HTTP 클라이언트가 연결 오류가 아닌 예외를 던지는 상황을 만든다.
      *
      * @scenario intent=test, response=unexpected_exception
      *
@@ -290,6 +290,30 @@ class CallbackFlowTest extends PluginTestCase
      * @return void 반환값 없음
      */
     public function test_unexpected_exception_is_wrapped_and_recorded(): void
+    {
+        Http::fake(['kauth.kakao.com/oauth/token' => fn () => throw new \RuntimeException('internal-detail-xyz')]);
+        $state = $this->startTest();
+
+        $response = $this->get('/plugins/sirsoft-social_login/oauth/kakao/callback?code=c&state='.$state);
+
+        $response->assertRedirect();
+        $location = (string) $response->headers->get('Location');
+        $this->get(parse_url($location, PHP_URL_PATH))->assertOk()->assertSee('unexpected_error');
+        $this->assertSame('unexpected_error', SocialLoginAttempt::query()->latest('id')->value('error_code'));
+        $this->assertStringNotContainsString('internal-detail-xyz', (string) SocialLoginAttempt::query()->latest('id')->value('error_message'));
+    }
+
+    /**
+     * 앱 키를 바꾼 뒤처럼 저장된 비밀값을 풀 수 없으면 비밀값 없이 토큰을 요청하지 않고 `credentials_unreadable` 로 끝난다.
+     * 암호문은 시도 기록에 남지 않는다.
+     *
+     * @scenario intent=test, response=unreadable_secret
+     *
+     * @effects unreadable_secret_stops_before_token_request
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unreadable_secret_stops_before_token_request(): void
     {
         $this->fakeKakao();
         $state = $this->startTest();
@@ -301,9 +325,10 @@ class CallbackFlowTest extends PluginTestCase
 
         $response->assertRedirect();
         $location = (string) $response->headers->get('Location');
-        $this->get(parse_url($location, PHP_URL_PATH))->assertOk()->assertSee('unexpected_error');
-        $this->assertSame('unexpected_error', SocialLoginAttempt::query()->latest('id')->value('error_code'));
+        $this->get(parse_url($location, PHP_URL_PATH))->assertOk()->assertSee('credentials_unreadable');
+        $this->assertSame('credentials_unreadable', SocialLoginAttempt::query()->latest('id')->value('error_code'));
         $this->assertStringNotContainsString('not-a-valid-ciphertext', (string) SocialLoginAttempt::query()->latest('id')->value('error_message'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'oauth/token'));
     }
 
     /**

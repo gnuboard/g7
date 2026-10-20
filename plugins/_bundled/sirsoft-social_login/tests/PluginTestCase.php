@@ -285,20 +285,23 @@ abstract class PluginTestCase extends TestCase
      * 관리 권한(종류 admin)을 가진 회원을 만듭니다 — 공용 admin 역할은 건드리지 않는다.
      *
      * @param  array<string, mixed>  $attributes  회원 속성
+     * @param  array<int, string>  $permissions  부여할 권한 식별자 (기본: 설정 열람)
      * @return User 관리자
      */
-    protected function makeAdminUser(array $attributes = []): User
+    protected function makeAdminUser(array $attributes = [], array $permissions = ['sirsoft-social_login.settings.view']): User
     {
         $role = Role::query()->create([
             'identifier' => 'sl-admin-'.Str::lower(Str::random(8)),
             'name' => ['ko' => '시험 관리자', 'en' => 'Test Admin'],
             'description' => ['ko' => '시험', 'en' => 'Test'],
         ]);
-        $permission = Permission::firstOrCreate(
-            ['identifier' => 'sirsoft-social_login.settings.view'],
-            ['name' => ['ko' => '설정 열람', 'en' => 'View Settings'], 'type' => PermissionType::Admin]
-        );
-        $role->permissions()->syncWithoutDetaching([$permission->id]);
+        foreach ($permissions as $identifier) {
+            $permission = Permission::firstOrCreate(
+                ['identifier' => $identifier],
+                ['name' => ['ko' => $identifier, 'en' => $identifier], 'type' => PermissionType::Admin]
+            );
+            $role->permissions()->syncWithoutDetaching([$permission->id]);
+        }
 
         $user = User::factory()->create($attributes);
         $user->roles()->attach($role->id);

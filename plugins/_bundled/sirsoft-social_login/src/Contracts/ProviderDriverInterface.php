@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
 use Plugins\Sirsoft\SocialLogin\DTO\TokenSet;
+use Plugins\Sirsoft\SocialLogin\Exceptions\ProviderException;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
 use Plugins\Sirsoft\SocialLogin\Models\SocialLoginProvider;
 use Plugins\Sirsoft\SocialLogin\Models\SocialLoginWebhookEvent;
@@ -103,6 +104,8 @@ interface ProviderDriverInterface
      * 토큰 요청에 쓸 클라이언트 비밀값을 반환합니다.
      *
      * @return string 비밀값
+     *
+     * @throws ProviderException 저장된 비밀값을 풀 수 없음(`credentials_unreadable`)
      */
     public function clientSecret(): string;
 

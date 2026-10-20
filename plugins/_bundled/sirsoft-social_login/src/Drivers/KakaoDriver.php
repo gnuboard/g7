@@ -3,11 +3,15 @@
 namespace Plugins\Sirsoft\SocialLogin\Drivers;
 
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\Request;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
 use Plugins\Sirsoft\SocialLogin\DTO\TokenSet;
+use Plugins\Sirsoft\SocialLogin\Enums\WebhookEventType;
 use Plugins\Sirsoft\SocialLogin\Exceptions\ProviderException;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
+use Plugins\Sirsoft\SocialLogin\Models\SocialLoginWebhookEvent;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 /**
  * 카카오 로그인 드라이버.
@@ -19,6 +23,12 @@ use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
  */
 class KakaoDriver extends AbstractOAuth2Driver
 {
+    /** 카카오 웹훅 발신 대역 기본값 (카카오 개발자 문서 「웹훅 발신 서버 IP」) */
+    public const WEBHOOK_IP_ALLOWLIST = [
+        '121.53.90.32/27', '121.53.91.32/27', '203.133.184.32/27', '203.133.185.32/27',
+        '211.242.11.0/27', '211.242.12.0/27', '211.242.13.0/27', '211.242.14.0/27',
+    ];
+
     /**
      * 드라이버 이름을 반환합니다.
      *
@@ -145,5 +155,61 @@ class KakaoDriver extends AbstractOAuth2Driver
         );
 
         return $response->successful();
+    }
+
+    /**
+     * 카카오 「연결 끊기」 알림을 검증해 이벤트로 바꿉니다.
+     *
+     * 카카오는 어드민 키를 `Authorization: KakaoAK {어드민 키}` 로 실어 보낸다 — 시간 일정 비교로 맞춘다. 발신 IP 확인
+     * (`extra.webhook_ip_allowlist_enabled`, 기본 켜짐)은 카카오 발신 대역(`extra.webhook_ip_allowlist`, 없으면
+     * {@see self::WEBHOOK_IP_ALLOWLIST})만 받는다. 리버스 프록시 뒤 사이트는 신뢰 프록시를 설정해야 실제 발신 IP 가 보인다.
+     * 앱 ID(`extra.app_id`)를 설정해 두면 그것도 맞춘다.
+     *
+     * 같은 알림이 다시 와도 한 번만 처리하도록 사건 키를 「회원·사유·수신 분」으로 만든다(카카오 알림에는 사건 번호가 없다).
+     *
+     * @param  Request  $request  알림 요청
+     * @return SocialLoginWebhookEvent 저장 전 이벤트
+     *
+     * @throws ProviderException 어드민 키(`webhook_auth_invalid`)·IP(`webhook_ip_not_allowed`)·앱 ID(`webhook_app_mismatch`)·본문(`webhook_payload_invalid`)
+     */
+    public function verifyWebhook(Request $request): ?SocialLoginWebhookEvent
+    {
+        $adminKey = (string) ($this->config['admin_key'] ?? '');
+        if ($adminKey === '' || ! hash_equals('KakaoAK '.$adminKey, (string) $request->header('Authorization', ''))) {
+            throw new ProviderException('webhook_auth_invalid');
+        }
+
+        $extra = is_array($this->config['extra'] ?? null) ? $this->config['extra'] : [];
+        if (($extra['webhook_ip_allowlist_enabled'] ?? true) !== false) {
+            $allowlist = is_array($extra['webhook_ip_allowlist'] ?? null) ? $extra['webhook_ip_allowlist'] : self::WEBHOOK_IP_ALLOWLIST;
+            if (! IpUtils::checkIp((string) $request->ip(), $allowlist)) {
+                throw new ProviderException('webhook_ip_not_allowed');
+            }
+        }
+
+        $appId = NormalizedProfile::str($request->input('app_id'));
+        if (isset($extra['app_id']) && (string) $extra['app_id'] !== '' && ! hash_equals((string) $extra['app_id'], (string) $appId)) {
+            throw new ProviderException('webhook_app_mismatch');
+        }
+
+        $userId = NormalizedProfile::str($request->input('user_id'));
+        $referrer = strtoupper((string) NormalizedProfile::str($request->input('referrer_type')));
+        if ($userId === null) {
+            throw new ProviderException('webhook_payload_invalid');
+        }
+
+        $type = match ($referrer) {
+            'ACCOUNT_DELETE', 'FORCED_ACCOUNT_DELETE' => WebhookEventType::AccountDelete,
+            'INCOMPLETE_SIGN_UP' => WebhookEventType::IncompleteSignup,
+            default => WebhookEventType::Unlink,
+        };
+
+        return new SocialLoginWebhookEvent([
+            'provider_key' => $this->key(),
+            'event_key' => 'kakao:'.$userId.':'.($referrer !== '' ? $referrer : 'UNKNOWN').':'.now()->format('YmdHi'),
+            'event_type' => $type->value,
+            'provider_user_id' => $userId,
+            'payload' => ['app_id' => $appId, 'referrer_type' => $referrer !== '' ? $referrer : null],
+        ]);
     }
 }

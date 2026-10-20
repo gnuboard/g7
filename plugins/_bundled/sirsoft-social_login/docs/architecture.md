@@ -13,11 +13,13 @@
 <!-- @intent START -->
 | 계층 | 클래스 |
 |---|---|
-| 웹·API 진입 | `OAuthController`(start, callback, testResult), `ProviderListController`, `SignupController`, `LinkExistingController`, `MyAccountsController`, `Admin\ProviderTestController`, `Mock\MockController` |
+| 웹·API 진입 | `OAuthController`(start, callback, testResult), `ProviderListController`, `SignupController`, `LinkExistingController`, `MyAccountsController`, `WebhookController`(카카오, 네이버, 페이스북 2종, 데이터 삭제 상태), `Admin\ProviderController`, `Admin\ProviderTestController`, `Admin\DiagnosticsController`, `Admin\StatsController`, `Admin\UserAccountsController`, `Mock\MockController` |
+| 관리자 | `ProviderAdminService`(비밀값 마스킹 규칙, 일반 OIDC 추가 삭제, 순서, discovery, 영향), `ProviderTestService`(토큰 주소 거절 분류), `DiagnosticsService`, `StatsService`, `FailureStreakMonitor` |
+| 웹훅·운영 | `WebhookReceiver`(검증, 중복, 기록) → `Jobs\ProcessWebhookEventJob` → `WebhookProcessor`(해제, 정책별 탈퇴), `WebhookStatusService`, `PruneService` ← `Console\Commands\PruneCommand` |
 | 요청 검증 | `OAuthStartRequest`, `OAuthCallbackRequest`, `PendingSignupRequest`(← `CompleteSignupRequest`, `SignupEmailRequest`, `VerifyCodeRequest`, `LinkExistingRequest`), `ReauthStartRequest`, `ReauthClaimRequest` |
 | 흐름 | `OAuthFlowService`(시작, 콜백, 결과 보관), `CallbackDispatcher`(의도별 분기), `StateStore`, `ProviderRegistry`, `IdTokenVerifier` |
 | 로그인·가입·연결 | `SocialLoginService`(관리자 차단, 코어 로그인 인계), `SignupFlowService`·`PendingSignupStore`(가입 모달), `LinkExistingService`(같은 이메일 기존 계정), `AccountLinkService`(연결·해제), `SocialReauthService`·`Identity\SocialReauthIdentityProvider`(대체 이메일 회원 본인 재확인), `SignupSurgeMonitor`, `AttemptRecorder`, `AccountCredentialWriter`, `ProviderSettings` |
-| 리스너 | 회원 삭제·탈퇴 시 연결 정리, 회원 응답에 연결 제공자 목록 주입, 활동 기록, 재확인 수단 등록, 모의 제공자 등록, 설정 검증 |
+| 리스너 | 회원 삭제·탈퇴 시 연결 정리, 회원 응답에 연결 제공자 목록 주입, 관리자 회원 목록 가입경로 조건과 「소셜 연결」 열, 알림 치환 값, 활동 기록, 재확인 수단 등록, 모의 제공자 등록, 설정 검증 |
 | 제공자 | `Contracts\ProviderDriverInterface` ← `AbstractOAuth2Driver` ← Kakao, Naver, Google(← Oidc), Facebook |
 | 저장 | Repository 4종(제공자, 연결, 시도, 웹훅) → 모델 4종 |
 | 보조 | `Support\Jwt\*`(JWK→PEM, RS256, 클레임), `Support\HtmlPage`, `Support\RsaKeyFactory` |
@@ -41,6 +43,7 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-social_login --force` (빌드 불필요) |
+| `resources/routes.json` | 라우트 → 레이아웃 매핑 | `php artisan plugin:update sirsoft-social_login --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-social_login --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-social_login --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-social_login --force` |

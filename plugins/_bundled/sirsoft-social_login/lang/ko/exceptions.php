@@ -25,5 +25,15 @@ return [
         'reauth_not_available' => '소셜 계정으로 다시 확인할 수 없는 계정입니다.',
         'provider_error' => '소셜 계정 제공자에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.',
         'reauth_claim_invalid' => '확인 결과가 없거나 이미 사용했습니다. 다시 확인해 주세요.',
+        'key_taken' => '쓸 수 없는 키입니다. 내장 제공자 이름·mock_ 로 시작하는 키·이미 있는 키는 쓸 수 없습니다.',
+        'custom_limit_reached' => '일반 OIDC 제공자를 더 추가할 수 없습니다. 설정의 커스텀 제공자 최대 수를 확인해 주세요.',
+        'builtin_not_deletable' => '내장 제공자는 삭제할 수 없습니다. 끄면 로그인 화면에서 빠집니다.',
+        'provider_has_links' => '이 제공자에 연결된 회원이 있어 삭제할 수 없습니다. 먼저 끄고 연결을 정리해 주세요.',
+        'credentials_required' => '클라이언트 ID 와 비밀값(일반 OIDC 는 주소까지)을 넣어야 켤 수 있습니다.',
+    ],
+    // 관리자 화면 전용 문구 — 회원 흐름의 같은 코드는 공통 문구(flow.provider_error)로 답한다.
+    'admin' => [
+        'discovery_failed' => 'discovery 문서를 받지 못했습니다. 주소와 제공자 상태를 확인해 주세요.',
+        'discovery_incomplete' => 'discovery 문서에 필수 항목(issuer·인가·토큰·서명 키 주소)이 없습니다.',
     ],
 ];

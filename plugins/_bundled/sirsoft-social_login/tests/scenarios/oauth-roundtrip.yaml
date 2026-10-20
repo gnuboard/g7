@@ -7,7 +7,7 @@ description: |
 axes:
   intent: [login, test]
   provider: [enabled, disabled, unknown]
-  response: [success, access_denied, exchange_failed, unexpected_exception, missing_id]
+  response: [success, access_denied, exchange_failed, unexpected_exception, unreadable_secret, missing_id]
   state: [valid, forged, replayed, cross_provider]
   api: [test_login]
   role: [operator, member]
@@ -23,6 +23,7 @@ effects:
   - provider_error_shown_on_result_page
   - exchange_failure_recorded
   - unexpected_exception_becomes_provider_error
+  - unreadable_secret_stops_before_token_request
   - missing_provider_id_fails
   - login_without_link_goes_to_signup
   - test_login_requires_settings_update

@@ -40,17 +40,19 @@
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
-설정 화면 자체는 코어 `core.plugins.update` 권한으로 열립니다. 이 플러그인의 권한 4종은 제공자 연결 테스트(`settings.update`)와 다음 단계의 진단, 회원 연결 화면에 씁니다.
+설정 화면 자체는 코어 `core.plugins.update` 권한으로 열리고 정책 탭 저장도 코어 설정 API 라 같은 권한을 따릅니다. 이 플러그인의 권한 4종은 제공자 카드와 진단 통계 조회(`settings.view`), 제공자 변경과 연결 테스트(`settings.update`), 관리자 회원 상세 탭과 목록 가입경로 필터와 「소셜 연결」 열(`accounts.view`), 강제 해제(`accounts.unlink`)에 씁니다. `settings.update` 가 없으면 제공자 카드는 읽기 전용 안내와 함께 편집 단추가 꺼집니다.
 <!-- @intent END -->
 
 ## 메뉴
 
 <!-- @generated:menus START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 메뉴가 없습니다._
+| 구분 | slug | 이름 | URL | 하위 |
+|---|---|---|---|---|
+| 관리자 | `sirsoft-social_login` | 소셜 로그인 | `/admin/plugins/sirsoft-social_login/diagnostics` | 2개 |
 <!-- @generated:menus END -->
 
 <!-- @intent START -->
-1.0.0 은 관리자 메뉴를 등록하지 않습니다. 진단, 통계 화면이 생길 때 부모 「소셜 로그인」 메뉴와 함께 등록합니다(빈 화면을 가리키는 메뉴를 만들지 않으려는 것).
+관리자 메뉴는 부모 「소셜 로그인」(진단 화면으로 간다)과 자식 「진단」 「통계」 셋입니다. 설정 화면은 코어 「플러그인 관리 → 설정」 자동 경로라 메뉴를 두지 않습니다. 코어가 설치와 업데이트 때 메뉴를 맞추고, 활성화 때는 선언에서 빠진 옛 메뉴를 거둡니다. 메뉴 동기화가 메뉴별 권한 키를 받지 않으므로 권한은 화면 라우트(`routes.json` 의 `settings.view`)와 API 미들웨어가 집행합니다.
 <!-- @intent END -->
 
 ## 라우트
@@ -65,7 +67,7 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:routes END -->
 
 <!-- @intent START -->
-웹 라우트는 브라우저가 오가는 주소라 JSON 이 아니라 302 와 단독 HTML 로 답합니다. 콜백과 모의 엔드포인트는 CSRF 면제이고, 콜백의 위조 방어는 1회성 state 가 맡습니다.
+웹 라우트는 브라우저가 오가는 주소라 JSON 이 아니라 302 와 단독 HTML 로 답합니다. 콜백과 모의 엔드포인트는 CSRF 면제이고, 콜백의 위조 방어는 1회성 state 가 맡습니다. 제공자 웹훅 4개도 CSRF 면제이며 위조 방어는 제공자별 서명과 키 대조(드라이버 `verifyWebhook`)가 맡습니다. 응답은 제공자 규약을 따르므로 JSON 봉투를 쓰지 않습니다.
 <!-- @intent END -->
 
 ## 의존 관계

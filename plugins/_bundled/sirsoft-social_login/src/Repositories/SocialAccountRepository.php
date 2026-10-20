@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\SocialLogin\Repositories;
 
 use App\Models\User;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
 use Plugins\Sirsoft\SocialLogin\Repositories\Contracts\SocialAccountRepositoryInterface;
@@ -73,7 +74,7 @@ class SocialAccountRepository implements SocialAccountRepositoryInterface
      * @param  string|null  $accessToken  접근 토큰
      * @param  string|null  $refreshToken  갱신 토큰 (null 이면 유지)
      * @param  \DateTimeInterface|null  $expiresAt  만료 시각
-     * @return void
+     * @return void 반환값 없음
      */
     public function updateTokens(SocialAccount $account, ?string $accessToken, ?string $refreshToken, ?\DateTimeInterface $expiresAt): void
     {
@@ -160,7 +161,7 @@ class SocialAccountRepository implements SocialAccountRepositoryInterface
      *
      * @param  SocialAccount  $account  연결
      * @param  array<string, mixed>  $values  컬럼 값
-     * @return void
+     * @return void 반환값 없음
      */
     public function update(SocialAccount $account, array $values): void
     {
@@ -171,10 +172,109 @@ class SocialAccountRepository implements SocialAccountRepositoryInterface
      * 연결 1건을 지웁니다.
      *
      * @param  SocialAccount  $account  연결
-     * @return void
+     * @return void 반환값 없음
      */
     public function delete(SocialAccount $account): void
     {
         $account->delete();
+    }
+
+    /**
+     * 제공자에 연결된 회원 수를 반환합니다.
+     *
+     * @param  string  $providerKey  제공자 키
+     * @return int 연결 수
+     */
+    public function countForProvider(string $providerKey): int
+    {
+        return SocialAccount::query()->where('provider_key', $providerKey)->count();
+    }
+
+    /**
+     * 제공자별 연결 수를 한 번의 쿼리로 반환합니다.
+     *
+     * @return array<string, int> 제공자 키 => 연결 수
+     */
+    public function countsByProvider(): array
+    {
+        return SocialAccount::query()
+            ->selectRaw('provider_key, COUNT(*) as aggregate')
+            ->groupBy('provider_key')
+            ->pluck('aggregate', 'provider_key')
+            ->map(fn ($n) => (int) $n)
+            ->all();
+    }
+
+    /**
+     * 제공자별 「이 제공자로만 로그인하는 회원」(비밀번호 없음 + 연결 1개) 수를 반환합니다.
+     *
+     * @return array<string, int> 제공자 키 => 회원 수
+     */
+    public function socialOnlyCountsByProvider(): array
+    {
+        $accounts = (new SocialAccount)->getTable();
+        $users = (new User)->getTable();
+
+        return SocialAccount::query()
+            ->selectRaw('provider_key, COUNT(*) as aggregate')
+            ->whereIn('user_id', function ($query) use ($users) {
+                $query->select('id')->from($users)->whereNull('password');
+            })
+            ->whereIn('user_id', function ($query) use ($accounts) {
+                $query->select('user_id')->from($accounts)->groupBy('user_id')->havingRaw('COUNT(*) = 1');
+            })
+            ->groupBy('provider_key')
+            ->pluck('aggregate', 'provider_key')
+            ->map(fn ($n) => (int) $n)
+            ->all();
+    }
+
+    /**
+     * 연결이 하나 이상 있는 회원 수와 그중 비밀번호가 없는 회원 수를 반환합니다 (진단 화면).
+     *
+     * @return array{linked_users: int, passwordless_users: int} 회원 수
+     */
+    public function linkedUserCounts(): array
+    {
+        $users = (new User)->getTable();
+        $linked = SocialAccount::query()->distinct()->count('user_id');
+        $passwordless = SocialAccount::query()
+            ->whereIn('user_id', function ($query) use ($users) {
+                $query->select('id')->from($users)->whereNull('password');
+            })
+            ->distinct()
+            ->count('user_id');
+
+        return ['linked_users' => (int) $linked, 'passwordless_users' => (int) $passwordless];
+    }
+
+    /**
+     * 원본 프로필 보존 기한이 지난 행의 원본을 비웁니다.
+     *
+     * @param  bool  $dryRun  true 면 세기만
+     * @return int 대상 행 수
+     */
+    public function clearExpiredProfileRaw(bool $dryRun = false): int
+    {
+        $query = SocialAccount::query()->whereNotNull('profile_raw_expires_at')->where('profile_raw_expires_at', '<', now());
+
+        if ($dryRun) {
+            return $query->count();
+        }
+
+        return $query->update(['profile_raw' => null, 'profile_raw_expires_at' => null]);
+    }
+
+    /**
+     * 그 제공자에 연결된 회원 ID 서브쿼리를 만듭니다 (관리자 회원 목록 「가입경로」 확장 필터용).
+     *
+     * `(provider_key, provider_user_id)` 유니크 인덱스의 앞 열을 탄다. 회원당 제공자 연결은 하나라 중복이 없다.
+     *
+     * @param  string  $providerKey  제공자 키
+     * @return QueryBuilder user_id 한 열을 고르는 서브쿼리
+     */
+    public function userIdsLinkedToProviderQuery(string $providerKey): QueryBuilder
+    {
+        return SocialAccount::query()->select('user_id')->where('provider_key', $providerKey)->toBase();
     }
 }

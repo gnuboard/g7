@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\SocialLogin\Providers;
 use App\Extension\BasePluginServiceProvider;
 use App\Models\User;
 use Plugins\Sirsoft\SocialLogin\Console\Commands\MockCommand;
+use Plugins\Sirsoft\SocialLogin\Console\Commands\PruneCommand;
 use Plugins\Sirsoft\SocialLogin\Drivers\OidcDriver;
 use Plugins\Sirsoft\SocialLogin\Mock\MockController;
 use Plugins\Sirsoft\SocialLogin\Mock\MockGate;
@@ -18,6 +19,7 @@ use Plugins\Sirsoft\SocialLogin\Repositories\Contracts\WebhookEventRepositoryInt
 use Plugins\Sirsoft\SocialLogin\Repositories\ProviderRepository;
 use Plugins\Sirsoft\SocialLogin\Repositories\SocialAccountRepository;
 use Plugins\Sirsoft\SocialLogin\Repositories\WebhookEventRepository;
+use Plugins\Sirsoft\SocialLogin\Services\FailureStreakMonitor;
 use Plugins\Sirsoft\SocialLogin\Services\IdTokenVerifier;
 use Plugins\Sirsoft\SocialLogin\Services\OAuthFlowService;
 use Plugins\Sirsoft\SocialLogin\Services\PendingSignupStore;
@@ -67,6 +69,7 @@ class SocialLoginServiceProvider extends BasePluginServiceProvider
         PendingSignupStore::class,
         SignupSurgeMonitor::class,
         SocialReauthService::class,
+        FailureStreakMonitor::class,
     ];
 
     /**
@@ -74,7 +77,7 @@ class SocialLoginServiceProvider extends BasePluginServiceProvider
      *
      * 레지스트리는 요청 단위 싱글턴이다 — 드라이버 목록과 확장 필터를 한 요청에서 한 번만 만든다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function register(): void
     {
@@ -83,14 +86,14 @@ class SocialLoginServiceProvider extends BasePluginServiceProvider
         $this->app->scoped(ProviderRegistry::class);
 
         if ($this->app->runningInConsole()) {
-            $this->commands([MockCommand::class]);
+            $this->commands([MockCommand::class, PruneCommand::class]);
         }
     }
 
     /**
      * 부팅 — 회원 모델에 `socialAccounts` 관계를 붙입니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function boot(): void
     {

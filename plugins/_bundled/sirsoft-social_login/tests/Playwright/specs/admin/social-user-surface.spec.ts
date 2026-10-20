@@ -1,0 +1,128 @@
+/**
+ * 관리자 회원 표면 종단 검증 — 회원 목록 가입경로(소셜) 필터가 `ext_filters[]` 로 나가 연결된 회원만 남기고 새로고침 뒤 복원되며,
+ * 회원 상세 「소셜 로그인」 탭에서 비밀번호 없는 회원의 마지막 연결도 강제로 해제된다. 연결 열람 권한이 없는 관리자에게는 필터 행이 없고
+ * 상세 탭은 권한 안내만 보인다.
+ *
+ * 꺼진 제공자(페이스북)에 연결된 회원을 쓴다 — 필터 선택지가 켜진 제공자가 아니라 연결이 있는 제공자에서 나와야 고를 수 있다.
+ */
+import { test, expect, type Page } from '@playwright/test';
+import { authenticatePage, issueToken, issueScopedToken } from '../../../../../../../tests/Playwright/fixtures/auth';
+import { members, runId } from '../../fixtures/mock-provider';
+
+test.describe.configure({ mode: 'serial' });
+
+const id = runId();
+const email = `e2e40.admin.${id}@example.test`;
+let admin: string;
+let uuid: string;
+
+test.beforeAll(() => {
+  members('purge');
+  members('member', email);
+  members('link', email, 'facebook', `e2e-admin-fb-${id}`);
+  uuid = members('uuid', email);
+  admin = issueToken();
+});
+
+test.afterAll(() => {
+  members('purge');
+});
+
+/**
+ * 토큰으로 로그인한 상태로 회원 목록을 열고 첫 목록 응답을 기다립니다.
+ *
+ * @param page 페이지
+ * @param token 토큰
+ * @param path 경로
+ */
+async function gotoUsers(page: Page, token: string, path = '/admin/users'): Promise<void> {
+  await authenticatePage(page, token);
+  await page.addInitScript(() => localStorage.setItem('g7_locale', 'ko'));
+  const firstList = page.waitForResponse((r) => r.url().includes('/api/admin/users?') && r.request().method() === 'GET', { timeout: 60_000 });
+  await page.goto(path);
+  await firstList;
+  await page.waitForSelector('#filter_card', { timeout: 30_000 });
+}
+
+/**
+ * 회원 상세를 열고 「소셜 로그인」 탭을 누릅니다.
+ *
+ * @param page 페이지
+ * @param token 토큰
+ */
+async function openSocialTab(page: Page, token: string): Promise<void> {
+  await authenticatePage(page, token);
+  await page.addInitScript(() => localStorage.setItem('g7_locale', 'ko'));
+  const accounts = page.waitForResponse((r) => r.url().includes(`/admin/users/${uuid}/accounts`) && r.request().method() === 'GET', { timeout: 60_000 });
+  await page.goto(`/admin/users/${uuid}`);
+  await accounts;
+  await page.getByRole('tab', { name: '소셜 로그인' }).click();
+}
+
+/**
+ * 가입경로에서 페이스북을 골라 검색하면 요청에 확장 조건이 실리고 측정 회원이 남는다. 새로고침 뒤 선택이 되살아난다.
+ *
+ * @scenario surface=admin_user_list, filter=disabled_linked, actor=accounts_viewer
+ * @effects user_list_filter_by_provider_sent, user_list_filter_restored_after_reload
+ */
+test('signup source filter narrows the list and survives reload', async ({ page }) => {
+  await gotoUsers(page, admin);
+  await page.click('#detail_search_toggle');
+  const select = page.locator('#social_login_provider_filter');
+  await expect(select).toBeVisible();
+  await expect(select.locator('option[value="facebook"]')).toHaveCount(1);
+  await select.selectOption('facebook');
+
+  const [response] = await Promise.all([
+    page.waitForResponse((r) => r.url().includes('/api/admin/users?') && r.request().method() === 'GET'),
+    page.click('#search_button'),
+  ]);
+  expect(response.status()).toBe(200);
+  expect(decodeURIComponent(response.url())).toContain('ext_filters[]=sirsoft-social_login.provider=facebook');
+  await expect(page.locator('#users_data_grid__body tbody tr', { hasText: email })).toHaveCount(1, { timeout: 20_000 });
+
+  await page.reload();
+  await page.waitForSelector('#filter_card');
+  await expect(page.locator('#social_login_provider_filter')).toHaveValue('facebook', { timeout: 15_000 });
+});
+
+/**
+ * 상세 탭이 연결 행과 비밀번호 없는 회원 안내를 보이고, 강제 해제를 확인하면 마지막 연결도 끊겨 빈 안내로 바뀐다.
+ *
+ * @scenario surface=admin_user_detail, member=passwordless_single_link, actor=accounts_unlinker
+ * @effects admin_detail_tab_lists_links, admin_force_unlink_last_link
+ */
+test('detail tab lists the link and force unlink removes the last one', async ({ page }) => {
+  await openSocialTab(page, admin);
+  await expect(page.locator('#admin_user_social_table tbody tr')).toHaveCount(1);
+  await expect(page.locator('#admin_user_social_passwordless')).toBeVisible();
+
+  page.once('dialog', (dialog) => dialog.accept());
+  const [removed] = await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/admin/users/${uuid}/accounts/facebook`) && r.request().method() === 'DELETE'),
+    page.locator('#admin_user_social_unlink_facebook').click(),
+  ]);
+  expect(removed.status()).toBe(200);
+  await expect(page.locator('#admin_user_social_empty')).toBeVisible();
+  expect(members('links', email)).toBe('0');
+});
+
+/**
+ * 회원 열람 권한만 있고 연결 열람 권한이 없는 관리자 — 목록에 가입경로 행이 없고, 상세 탭은 권한 안내만 보인다.
+ *
+ * @scenario surface=admin_user_list|admin_user_detail, actor=users_reader_only
+ * @effects user_surface_hidden_without_accounts_view
+ */
+test('admins without account view permission see no filter and a notice', async ({ page }) => {
+  members('link', email, 'facebook', `e2e-admin-fb2-${id}`);
+  const reader = issueScopedToken('core.users.read');
+
+  await gotoUsers(page, reader);
+  await page.click('#detail_search_toggle');
+  await expect(page.locator('#detail_filters_section')).toBeVisible();
+  await expect(page.locator('#social_login_provider_filter')).toHaveCount(0);
+
+  await openSocialTab(page, reader);
+  await expect(page.locator('#admin_user_social_forbidden')).toBeVisible();
+  await expect(page.locator('[id^="admin_user_social_unlink_"]')).toHaveCount(0);
+});

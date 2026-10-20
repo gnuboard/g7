@@ -2,14 +2,19 @@
 
 namespace Plugins\Sirsoft\SocialLogin;
 
+use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractPlugin;
+use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use Plugins\Sirsoft\SocialLogin\Database\Seeders\ProviderSeeder;
 use Plugins\Sirsoft\SocialLogin\Listeners\ActivityLogListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserDelete;
 use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserWithdraw;
 use Plugins\Sirsoft\SocialLogin\Listeners\InjectSocialProvidersIntoUserResource;
+use Plugins\Sirsoft\SocialLogin\Listeners\NotificationDataListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\RegisterMockProvidersListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\RegisterSocialReauthProviderListener;
+use Plugins\Sirsoft\SocialLogin\Listeners\UserListSocialProviderFilter;
+use Plugins\Sirsoft\SocialLogin\Listeners\UserListSocialProvidersColumn;
 use Plugins\Sirsoft\SocialLogin\Listeners\ValidateSettingsListener;
 
 /**
@@ -153,7 +158,10 @@ class Plugin extends AbstractPlugin
      *  - RegisterSocialReauthProviderListener: 대체 이메일 회원의 본인 재확인 수단(소셜 재로그인)을 코어 본인인증에 등록
      *  - CleanAccountsOnUserDelete / CleanAccountsOnUserWithdraw: 회원 삭제·탈퇴 때 연결 정리(연쇄 삭제에 기대지 않는다)
      *  - InjectSocialProvidersIntoUserResource: 회원 응답에 연결된 제공자 목록(`social_providers`)
-     *  - ActivityLogListener: 연결·해제·가입 활동 로그
+     *  - UserListSocialProviderFilter: 관리자 회원 목록 「가입경로」 확장 필터(`ext_filters[]=sirsoft-social_login.provider=…`)
+     *  - UserListSocialProvidersColumn: 관리자 회원 목록 「소셜 연결」 열 데이터(한 번의 조회)
+     *  - NotificationDataListener: 알림 5종의 치환 값·수신 문맥, 기본 정의 복원
+     *  - ActivityLogListener: 연결·해제·가입·제공자 변경·정책 저장 활동 로그
      *
      * @return array<class-string> 리스너 클래스 목록
      */
@@ -166,7 +174,255 @@ class Plugin extends AbstractPlugin
             CleanAccountsOnUserDelete::class,
             CleanAccountsOnUserWithdraw::class,
             InjectSocialProvidersIntoUserResource::class,
+            UserListSocialProviderFilter::class,
+            UserListSocialProvidersColumn::class,
+            NotificationDataListener::class,
             ActivityLogListener::class,
+        ];
+    }
+
+    /**
+     * 관리자 메뉴 — 진단·통계 화면 (설정 화면은 코어 「플러그인 관리 → 설정」 자동 경로라 메뉴를 두지 않는다).
+     *
+     * 코어가 설치·업데이트 때 동기화한다. 활성화 때는 선언에서 빠진 옛 메뉴를 거둔다({@see self::activate()}).
+     *
+     * @return array<int, array<string, mixed>> 메뉴 정의
+     */
+    public function getAdminMenus(): array
+    {
+        return [
+            [
+                'name' => ['ko' => '소셜 로그인', 'en' => 'Social Login'],
+                'slug' => 'sirsoft-social_login',
+                'url' => '/admin/plugins/sirsoft-social_login/diagnostics',
+                'icon' => 'fas fa-right-to-bracket',
+                'order' => 60,
+                'children' => [
+                    [
+                        'name' => ['ko' => '진단', 'en' => 'Diagnostics'],
+                        'slug' => 'sirsoft-social_login-diagnostics',
+                        'url' => '/admin/plugins/sirsoft-social_login/diagnostics',
+                        'icon' => 'fas fa-stethoscope',
+                        'order' => 1,
+                    ],
+                    [
+                        'name' => ['ko' => '통계', 'en' => 'Stats'],
+                        'slug' => 'sirsoft-social_login-stats',
+                        'url' => '/admin/plugins/sirsoft-social_login/stats',
+                        'icon' => 'fas fa-chart-column',
+                        'order' => 2,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 플러그인 활성화 — 관리자 메뉴를 등록하고 선언에서 빠진 옛 메뉴를 거둡니다.
+     *
+     * @return bool 활성화 성공 여부
+     */
+    public function activate(): bool
+    {
+        $helper = app(ExtensionMenuSyncHelper::class);
+        $currentSlugs = [];
+
+        foreach ($this->getAdminMenus() as $menuData) {
+            $helper->syncMenuRecursive($menuData, ExtensionOwnerType::Plugin, $this->getIdentifier());
+            $currentSlugs[] = $menuData['slug'];
+            foreach ($menuData['children'] ?? [] as $child) {
+                $currentSlugs[] = $child['slug'];
+            }
+        }
+
+        $helper->cleanupStaleMenus(ExtensionOwnerType::Plugin, $this->getIdentifier(), currentSlugs: $currentSlugs);
+
+        return true;
+    }
+
+    /**
+     * 플러그인 비활성화 — 관리자 메뉴 행은 보존합니다(비활성 플러그인 메뉴는 사이드바에서 자동으로 빠진다).
+     *
+     * @return bool 비활성화 성공 여부
+     */
+    public function deactivate(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 예약 작업 — 보존 기간 정리(매일).
+     *
+     * @return array<int, array<string, string>> 예약 작업
+     */
+    public function getSchedules(): array
+    {
+        return [[
+            'command' => 'sirsoft-social_login:prune',
+            'schedule' => 'daily',
+            'description' => '소셜 로그인 보존 기간 정리 (원본 프로필 · 시도 기록 · 웹훅 수신 이력 · 모의 제공자 표지)',
+        ]];
+    }
+
+    /**
+     * 알림 정의 5종.
+     *
+     * 회원 대상 2(로그인 수단 해제 안내 · 관리자 강제 해제)는 대상 회원에게, 운영 3(제공자 연속 실패 · 가입 급증 · 웹훅 처리
+     * 실패)은 관리자 역할에게 간다. 치환 값은 {@see NotificationDataListener} 가 만든다. 메일을 받을 수 없는 대체 이메일 회원에게는
+     * 코어 메일 채널이 보내지 않는다.
+     *
+     * @return array<int, array<string, mixed>> 알림 정의
+     */
+    public function getNotificationDefinitions(): array
+    {
+        $admins = [['type' => 'role', 'value' => 'admin']];
+        $member = [['type' => 'trigger_user']];
+
+        return [
+            [
+                'type' => 'social_login_last_login_method_removed',
+                'hook_prefix' => 'sirsoft-social_login',
+                'audience' => 'customer',
+                'name' => ['ko' => '소셜 연결 해제 — 로그인 수단 없음', 'en' => 'Social Link Removed — No Sign-In Method Left'],
+                'description' => ['ko' => '제공자 쪽에서 연결이 끊겨 로그인할 수단이 없어진 회원에게 비밀번호 설정 방법을 안내합니다.', 'en' => 'Tells a member whose provider link was removed and who has no other sign-in method how to set a password.'],
+                'channels' => ['mail'],
+                'hooks' => ['sirsoft-social_login.account.unlinked_last_method'],
+                'variables' => [
+                    ['key' => 'name', 'description' => '회원 이름'],
+                    ['key' => 'provider_label', 'description' => '제공자 이름'],
+                    ['key' => 'site_url', 'description' => '사이트 주소'],
+                    ['key' => 'reset_url', 'description' => '비밀번호 찾기 화면 주소'],
+                ],
+                'templates' => [[
+                    'channel' => 'mail',
+                    'recipients' => $member,
+                    'subject' => ['ko' => '[{app_name}] {provider_label} 연결이 해제되었습니다', 'en' => '[{app_name}] Your {provider_label} link was removed'],
+                    'body' => [
+                        'ko' => '<p>{name}님, {provider_label} 쪽에서 이 사이트와의 연결이 해제되어 지금은 로그인할 수단이 없습니다.</p><p>아래에서 이메일로 비밀번호를 설정하면 다시 로그인할 수 있습니다.</p><p><a href="{reset_url}">비밀번호 설정하기</a></p><p>{site_url}</p>',
+                        'en' => '<p>{name}, your link with this site was removed on {provider_label}, so you have no way to sign in right now.</p><p>Set a password by email below to sign in again.</p><p><a href="{reset_url}">Set a password</a></p><p>{site_url}</p>',
+                    ],
+                ]],
+            ],
+            [
+                'type' => 'social_login_link_removed_by_admin',
+                'hook_prefix' => 'sirsoft-social_login',
+                'audience' => 'customer',
+                'name' => ['ko' => '소셜 연결 관리자 해제', 'en' => 'Social Link Removed by Administrator'],
+                'description' => ['ko' => '관리자가 회원의 소셜 계정 연결을 해제하면 회원에게 알립니다.', 'en' => 'Tells a member when an administrator removes a social account link.'],
+                'channels' => ['database', 'mail'],
+                'hooks' => ['sirsoft-social_login.account.unlinked_by_admin'],
+                'variables' => [
+                    ['key' => 'name', 'description' => '회원 이름'],
+                    ['key' => 'provider_label', 'description' => '제공자 이름'],
+                    ['key' => 'site_url', 'description' => '사이트 주소'],
+                ],
+                'templates' => [
+                    [
+                        'channel' => 'database',
+                        'recipients' => $member,
+                        'subject' => ['ko' => '{provider_label} 연결이 해제되었습니다', 'en' => 'Your {provider_label} link was removed'],
+                        'body' => ['ko' => '관리자가 {provider_label} 계정 연결을 해제했습니다.', 'en' => 'An administrator removed your {provider_label} account link.'],
+                    ],
+                    [
+                        'channel' => 'mail',
+                        'recipients' => $member,
+                        'is_active' => false,
+                        'subject' => ['ko' => '[{app_name}] {provider_label} 연결이 해제되었습니다', 'en' => '[{app_name}] Your {provider_label} link was removed'],
+                        'body' => [
+                            'ko' => '<p>{name}님, 관리자가 {provider_label} 계정 연결을 해제했습니다. 궁금한 점은 사이트에 문의해 주세요.</p><p>{site_url}</p>',
+                            'en' => '<p>{name}, an administrator removed your {provider_label} account link. Please contact the site if you have questions.</p><p>{site_url}</p>',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'social_login_provider_failing',
+                'hook_prefix' => 'sirsoft-social_login',
+                'audience' => 'staff',
+                'name' => ['ko' => '소셜 로그인 제공자 연속 실패', 'en' => 'Social Login Provider Failing'],
+                'description' => ['ko' => '한 제공자의 로그인 왕복이 기준 횟수만큼 잇달아 실패하면 관리자에게 하루 한 번 알립니다.', 'en' => 'Notifies administrators once a day when a provider round trip fails the configured number of times in a row.'],
+                'channels' => ['mail', 'database'],
+                'hooks' => ['sirsoft-social_login.provider.failing'],
+                'variables' => [
+                    ['key' => 'provider_label', 'description' => '제공자 이름'],
+                    ['key' => 'failure_count', 'description' => '연속 실패 횟수'],
+                    ['key' => 'last_error_code', 'description' => '마지막 오류 코드'],
+                    ['key' => 'diagnostics_url', 'description' => '진단 화면 주소'],
+                ],
+                'templates' => [
+                    [
+                        'channel' => 'mail',
+                        'recipients' => $admins,
+                        'subject' => ['ko' => '[{app_name}] {provider_label} 소셜 로그인이 잇달아 실패합니다', 'en' => '[{app_name}] {provider_label} sign-in keeps failing'],
+                        'body' => [
+                            'ko' => '<p>{name}님, {provider_label} 로그인이 {failure_count}번 잇달아 실패했습니다(마지막 오류 {last_error_code}).</p><p><a href="{diagnostics_url}">진단 화면 열기</a></p>',
+                            'en' => '<p>{name}, {provider_label} sign-in failed {failure_count} times in a row (last error {last_error_code}).</p><p><a href="{diagnostics_url}">Open diagnostics</a></p>',
+                        ],
+                    ],
+                    [
+                        'channel' => 'database',
+                        'recipients' => $admins,
+                        'subject' => ['ko' => '{provider_label} 로그인 연속 실패', 'en' => '{provider_label} sign-in failing'],
+                        'body' => ['ko' => '{failure_count}번 잇달아 실패 — 마지막 오류 {last_error_code}', 'en' => '{failure_count} failures in a row — last error {last_error_code}'],
+                        'click_url' => '{diagnostics_url}',
+                    ],
+                ],
+            ],
+            [
+                'type' => 'social_login_signup_surge',
+                'hook_prefix' => 'sirsoft-social_login',
+                'audience' => 'staff',
+                'name' => ['ko' => '소셜 가입 급증', 'en' => 'Social Signup Surge'],
+                'description' => ['ko' => '한 제공자의 시간당 소셜 가입이 기준에 닿으면 관리자에게 하루 한 번 알립니다.', 'en' => 'Notifies administrators once a day when hourly social signups for a provider reach the threshold.'],
+                'channels' => ['mail', 'database'],
+                'hooks' => ['sirsoft-social_login.signup.surge'],
+                'variables' => [
+                    ['key' => 'provider_label', 'description' => '제공자 이름'],
+                    ['key' => 'count', 'description' => '이번 시간 가입 수'],
+                    ['key' => 'threshold', 'description' => '알림 기준'],
+                    ['key' => 'stats_url', 'description' => '통계 화면 주소'],
+                ],
+                'templates' => [
+                    [
+                        'channel' => 'mail',
+                        'recipients' => $admins,
+                        'subject' => ['ko' => '[{app_name}] {provider_label} 소셜 가입이 급증했습니다', 'en' => '[{app_name}] {provider_label} social signups surged'],
+                        'body' => [
+                            'ko' => '<p>{name}님, 지난 한 시간 동안 {provider_label} 가입이 {count}건으로 기준({threshold}건)에 닿았습니다. 비정상 가입이 아닌지 확인해 주세요.</p><p><a href="{stats_url}">통계 화면 열기</a></p>',
+                            'en' => '<p>{name}, {provider_label} signups reached {count} in the last hour (threshold {threshold}). Please check for abusive signups.</p><p><a href="{stats_url}">Open stats</a></p>',
+                        ],
+                    ],
+                    [
+                        'channel' => 'database',
+                        'recipients' => $admins,
+                        'subject' => ['ko' => '{provider_label} 가입 급증', 'en' => '{provider_label} signup surge'],
+                        'body' => ['ko' => '시간당 {count}건 (기준 {threshold}건)', 'en' => '{count} per hour (threshold {threshold})'],
+                        'click_url' => '{stats_url}',
+                    ],
+                ],
+            ],
+            [
+                'type' => 'social_login_webhook_failed',
+                'hook_prefix' => 'sirsoft-social_login',
+                'audience' => 'staff',
+                'name' => ['ko' => '소셜 로그인 웹훅 처리 실패', 'en' => 'Social Login Webhook Failed'],
+                'description' => ['ko' => '제공자 연결 해제 알림을 다시 시도해도 처리하지 못하면 관리자에게 알립니다.', 'en' => 'Notifies administrators when a provider unlink notice could not be processed after retries.'],
+                'channels' => ['database'],
+                'hooks' => ['sirsoft-social_login.webhook.failed'],
+                'variables' => [
+                    ['key' => 'provider_label', 'description' => '제공자 이름'],
+                    ['key' => 'event_type', 'description' => '알림 종류'],
+                    ['key' => 'error', 'description' => '오류 요약(비밀 없음)'],
+                    ['key' => 'diagnostics_url', 'description' => '진단 화면 주소'],
+                ],
+                'templates' => [[
+                    'channel' => 'database',
+                    'recipients' => $admins,
+                    'subject' => ['ko' => '{provider_label} 웹훅 처리 실패', 'en' => '{provider_label} webhook failed'],
+                    'body' => ['ko' => '{event_type} 알림을 처리하지 못했습니다: {error}', 'en' => 'Could not process the {event_type} notice: {error}'],
+                    'click_url' => '{diagnostics_url}',
+                ]],
+            ],
         ];
     }
 
@@ -301,6 +557,107 @@ class Plugin extends AbstractPlugin
                     'providerKey' => 'string - 제공자 키',
                     'count' => 'int - 이번 시간 가입 수',
                     'threshold' => 'int - 기준',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.provider.failing',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '한 제공자의 로그인 왕복이 설정 기준만큼 잇달아 실패하면 하루 한 번 발행됩니다(회원의 동의 취소·관리자 연결 테스트는 세지 않음). 인자: (string $providerKey, int $count, string $lastErrorCode)',
+                    'en' => 'Fired once a day when a provider round trip fails the configured number of times in a row (member cancellations and admin tests are not counted). Arguments: (string $providerKey, int $count, string $lastErrorCode)',
+                    'ja' => '一つのプロバイダーのログイン往復が設定の基準回数だけ連続して失敗すると1日に1回発行されます(会員の同意取り消し・管理者の接続テストは数えません)。引数: (string $providerKey, int $count, string $lastErrorCode)',
+                ],
+                'parameters' => [
+                    'providerKey' => 'string - 제공자 키',
+                    'count' => 'int - 연속 실패 횟수',
+                    'lastErrorCode' => 'string - 마지막 오류 코드',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.provider.after_create',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '관리자가 일반 OIDC 제공자를 추가한 직후 발행됩니다. 인자: (array $summary — key·driver·type·enabled·label, 비밀값 없음)',
+                    'en' => 'Fired right after an administrator adds a generic OIDC provider. Arguments: (array $summary — key, driver, type, enabled, label; no secrets)',
+                    'ja' => '管理者が汎用 OIDC プロバイダーを追加した直後に発行されます。引数: (array $summary — key・driver・type・enabled・label、秘密値なし)',
+                ],
+                'parameters' => [
+                    'summary' => 'array - 제공자 요약(비밀값 없음)',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.provider.after_update',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '관리자가 제공자 설정을 바꾼 직후 발행됩니다(바뀐 칸이 있을 때만). 인자: (array $summary, array $changed — 바뀐 칸 이름, 값은 싣지 않음)',
+                    'en' => 'Fired right after an administrator changes provider settings (only when a field changed). Arguments: (array $summary, array $changed — changed field names, no values)',
+                    'ja' => '管理者がプロバイダー設定を変更した直後に発行されます(変更された項目がある場合のみ)。引数: (array $summary, array $changed — 変更された項目名、値は含めない)',
+                ],
+                'parameters' => [
+                    'summary' => 'array - 제공자 요약(비밀값 없음)',
+                    'changed' => 'array<int, string> - 바뀐 칸 이름',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.provider.after_delete',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '관리자가 일반 OIDC 제공자를 삭제한 직후 발행됩니다. 인자: (array $summary)',
+                    'en' => 'Fired right after an administrator deletes a generic OIDC provider. Arguments: (array $summary)',
+                    'ja' => '管理者が汎用 OIDC プロバイダーを削除した直後に発行されます。引数: (array $summary)',
+                ],
+                'parameters' => [
+                    'summary' => 'array - 지운 제공자 요약(비밀값 없음)',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.account.unlinked_by_admin',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '관리자가 회원의 소셜 계정 연결을 강제로 해제한 직후 발행됩니다(회원 알림). 인자: (User $user, string $providerKey)',
+                    'en' => 'Fired right after an administrator force-removes a member social account link (member notice). Arguments: (User $user, string $providerKey)',
+                    'ja' => '管理者が会員のソーシャルアカウント連携を強制解除した直後に発行されます(会員への通知)。引数: (User $user, string $providerKey)',
+                ],
+                'parameters' => [
+                    'user' => 'User - 대상 회원',
+                    'providerKey' => 'string - 제공자 키',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.account.unlinked_last_method',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '제공자 웹훅으로 연결이 지워져 회원에게 비밀번호도 다른 연결도 남지 않았을 때 발행됩니다(메일을 받을 수 있는 회원만, 가입 미완료 알림 제외). 인자: (User $user, string $providerKey)',
+                    'en' => 'Fired when a provider webhook removed a link and the member has neither a password nor another link (only for members who can receive mail; not for incomplete signups). Arguments: (User $user, string $providerKey)',
+                    'ja' => 'プロバイダーの Webhook で連携が削除され、会員にパスワードも他の連携も残らないときに発行されます(メールを受け取れる会員のみ、登録未完了の通知は除く)。引数: (User $user, string $providerKey)',
+                ],
+                'parameters' => [
+                    'user' => 'User - 대상 회원',
+                    'providerKey' => 'string - 제공자 키',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.webhook.after_receive',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '제공자 웹훅을 검증해 처음 저장한 직후(처리 잡 예약 전) 발행됩니다. 인자: (SocialLoginWebhookEvent $event — 서명·암호문을 뺀 요약 본문)',
+                    'en' => 'Fired right after a provider webhook is verified and stored for the first time (before the processing job is queued). Arguments: (SocialLoginWebhookEvent $event — summary payload without signatures or ciphertext)',
+                    'ja' => 'プロバイダーの Webhook を検証して初めて保存した直後(処理ジョブの予約前)に発行されます。引数: (SocialLoginWebhookEvent $event — 署名・暗号文を除いた要約本文)',
+                ],
+                'parameters' => [
+                    'event' => 'SocialLoginWebhookEvent - 수신 이벤트',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.webhook.failed',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '웹훅 처리가 다시 시도해도 실패했거나 정책상 거절됐을 때(관리자 탈퇴 거부) 발행됩니다. 인자: (array $summary — event_id·provider_key·event_type·error)',
+                    'en' => 'Fired when webhook processing still failed after retries or was refused by policy (administrator withdrawal refused). Arguments: (array $summary — event_id, provider_key, event_type, error)',
+                    'ja' => 'Webhook の処理が再試行しても失敗した、またはポリシーで拒否された(管理者の退会拒否)ときに発行されます。引数: (array $summary — event_id・provider_key・event_type・error)',
+                ],
+                'parameters' => [
+                    'summary' => 'array - 실패 요약(비밀 없음)',
                 ],
             ],
         ];

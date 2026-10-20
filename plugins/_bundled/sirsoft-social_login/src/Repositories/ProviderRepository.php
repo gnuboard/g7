@@ -81,7 +81,7 @@ class ProviderRepository implements ProviderRepositoryInterface
      *
      * @param  string  $key  제공자 키
      * @param  string|null  $errorCode  오류 코드 — null 이면 성공 기록
-     * @return void
+     * @return void 반환값 없음
      */
     public function recordOutcome(string $key, ?string $errorCode): void
     {
@@ -90,5 +90,60 @@ class ProviderRepository implements ProviderRepositoryInterface
             : ['last_error_at' => now(), 'last_error_code' => substr($errorCode, 0, 50)];
 
         SocialLoginProvider::query()->where('key', $key)->update($values);
+    }
+
+    /**
+     * 제공자 행을 만듭니다 (보호 컬럼 포함 — 호출자가 값을 정한다).
+     *
+     * @param  array<string, mixed>  $attributes  컬럼 값
+     * @return SocialLoginProvider 만든 행 (저장 뒤 다시 읽은 값)
+     */
+    public function create(array $attributes): SocialLoginProvider
+    {
+        $row = new SocialLoginProvider;
+        $row->forceFill($attributes)->save();
+
+        return $row->refresh();
+    }
+
+    /**
+     * 행에 값을 넣어 저장하고 다시 읽습니다 (바뀐 값이 없으면 저장하지 않는다).
+     *
+     * @param  SocialLoginProvider  $row  행 (다시 읽은 값으로 갱신된다)
+     * @param  array<string, mixed>  $values  컬럼 값 (보호 컬럼 포함 — 호출자가 정한다)
+     * @return array<int, string> 실제로 바뀐 컬럼 이름
+     */
+    public function update(SocialLoginProvider $row, array $values): array
+    {
+        $row->forceFill($values);
+        $changed = array_keys($row->getDirty());
+
+        if ($changed !== []) {
+            $row->save();
+            $row->refresh();
+        }
+
+        return $changed;
+    }
+
+    /**
+     * 행을 지웁니다.
+     *
+     * @param  SocialLoginProvider  $row  행
+     * @return void 반환값 없음
+     */
+    public function delete(SocialLoginProvider $row): void
+    {
+        $row->delete();
+    }
+
+    /**
+     * 가장 큰 표시 순서를 반환합니다.
+     *
+     * @return int 표시 순서 (행이 없으면 0)
+     */
+    public function maxSortOrder(): int
+    {
+        return (int) SocialLoginProvider::query()->max('sort_order');
     }
 }

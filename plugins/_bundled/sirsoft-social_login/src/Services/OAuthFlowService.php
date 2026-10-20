@@ -41,6 +41,7 @@ class OAuthFlowService
      * @param  ProviderRepositoryInterface  $providers  제공자 저장소
      * @param  AttemptRepositoryInterface  $attempts  시도 기록 저장소
      * @param  CacheInterface  $cache  플러그인 캐시
+     * @param  FailureStreakMonitor  $streaks  제공자 연속 실패 감시
      */
     public function __construct(
         private readonly ProviderRegistry $registry,
@@ -48,6 +49,7 @@ class OAuthFlowService
         private readonly ProviderRepositoryInterface $providers,
         private readonly AttemptRepositoryInterface $attempts,
         private readonly CacheInterface $cache,
+        private readonly FailureStreakMonitor $streaks,
     ) {}
 
     /**
@@ -132,12 +134,14 @@ class OAuthFlowService
             }
         } catch (ProviderException $e) {
             $this->providers->recordOutcome($providerKey, $e->errorCode);
+            $this->streaks->record($providerKey, $state->intent, $e->errorCode);
             $this->record($providerKey, $state->intent, AttemptOutcome::Failed, $state->userId, $e->errorCode, $e->getMessage(), $request);
 
             return $this->failureUrl($state, $e->errorCode);
         }
 
         $this->providers->recordOutcome($providerKey, null);
+        $this->streaks->record($providerKey, $state->intent, null);
         $this->regenerateSession($request);
 
         if ($state->intent === AttemptIntent::Test->value) {
@@ -430,7 +434,7 @@ class OAuthFlowService
      * 세션이 있으면 ID 를 새로 만듭니다.
      *
      * @param  Request  $request  요청
-     * @return void
+     * @return void 반환값 없음
      */
     private function regenerateSession(Request $request): void
     {
@@ -449,7 +453,7 @@ class OAuthFlowService
      * @param  string|null  $errorCode  오류 코드
      * @param  string|null  $message  오류 요약
      * @param  Request  $request  요청
-     * @return void
+     * @return void 반환값 없음
      */
     private function record(string $providerKey, string $intent, AttemptOutcome $outcome, ?int $userId, ?string $errorCode, ?string $message, Request $request): void
     {

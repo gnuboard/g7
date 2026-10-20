@@ -1,0 +1,69 @@
+{
+    "comment": "관리자 회원 목록에 「소셜 연결」 열을 얹는다 — 표(users_data_grid) 열 끝과 툴바 열 선택기(column_selector) 선택지 끝에 한 개씩 덧붙이고, 열 선택기의\n  기본 열에는 넣지 않아 처음에는 숨어 있다. 셀 값 `row.social_providers` 는 코어 목록 일괄 필터에서 `UserListSocialProvidersColumn` 이 페이지당 한 번의\n  조회로 채운다(회원 연결 열람 권한이 없으면 키가 없고 셀은 `-`). 관리자 템플릿을 고치지 않으므로 플러그인을 끄면 열도 사라진다.\n  주입 props 의 `<append>` 안은 항목 리스트라 열 정의를 `<item>`·`<field>` 트리로 적는다(열 태그 `<column>` 은 쓸 수 없다).",
+    "target_layout": "admin_user_list",
+    "priority": 210,
+    "injections": [
+        {
+            "target_id": "users_data_grid",
+            "position": "inject_props",
+            "props": {
+                "columns": {
+                    "_append": [
+                        {
+                            "field": "social_providers",
+                            "header": "$t:sirsoft-social_login.admin.users.column_header",
+                            "sortable": false,
+                            "cellChildren": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(row.social_providers ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "flex items-center gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "sirsoft-social_login.ProviderMark",
+                                            "iteration": {
+                                                "source": "row.social_providers ?? []",
+                                                "item_var": "sp"
+                                            },
+                                            "props": {
+                                                "brand": "{{sp.brand}}",
+                                                "label": "{{sp.label}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(row.social_providers ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "-"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "target_id": "column_selector",
+            "position": "inject_props",
+            "props": {
+                "columns": {
+                    "_append": [
+                        {
+                            "field": "social_providers",
+                            "header": "$t:sirsoft-social_login.admin.users.column_header"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

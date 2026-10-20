@@ -3,7 +3,8 @@
  *
  * 1. 컴포넌트 `sirsoft-social_login.ProviderButtons`(제공자 버튼)·`ProviderMark`(연결 목록 줄의 제공자 심볼)를 코어
  *    레지스트리에 등록한다 — 로그인·가입·마이페이지 확장이 쓴다.
- * 2. named action `sirsoft-social_login.startLink`·`startReauth` 를 엔진 디스패처에 등록한다 — 로그인 회원의 왕복 시작.
+ * 2. named action `sirsoft-social_login.startLink`·`startReauth`(로그인 회원의 왕복 시작)와 관리자 설정 화면 도구
+ *    `copyToClipboard`(주소 복사)·`openTestLogin`(브라우저 로그인 테스트 창)을 엔진 디스패처에 등록한다.
  *
  * 로그인 토큰을 읽지 않고, 코어 내부 앱 객체를 쓰지 않으며, `fetch` 를 덮어쓰지 않는다. API 는 코어 API
  * 클라이언트로만 부른다.

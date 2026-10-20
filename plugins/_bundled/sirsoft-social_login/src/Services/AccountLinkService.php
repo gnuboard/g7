@@ -38,6 +38,9 @@ class AccountLinkService
     /** 해제 직후 훅 (인자: SocialAccount, User, string $reason) */
     public const ACTION_AFTER_UNLINK = 'sirsoft-social_login.account.after_unlink';
 
+    /** 관리자 강제 해제 직후 훅 — 회원 알림용 (인자: User $user, string $providerKey) */
+    public const ACTION_UNLINKED_BY_ADMIN = 'sirsoft-social_login.account.unlinked_by_admin';
+
     /** 마이페이지 경로 */
     public const PROFILE_PATH = '/mypage/profile';
 
@@ -218,6 +221,85 @@ class AccountLinkService
     }
 
     /**
+     * UUID 로 회원을 찾습니다 (관리자 회원 상세).
+     *
+     * @param  string  $uuid  회원 UUID
+     * @return User|null 회원
+     */
+    public function findUserByUuid(string $uuid): ?User
+    {
+        return $this->users->findByUuid($uuid);
+    }
+
+    /**
+     * 관리자 회원 상세 「소셜 로그인」 탭용 연결 목록을 돌려줍니다.
+     *
+     * 제공자 사용자 ID 는 앞 6자만 보인다(제공자 콘솔에서 회원을 찾는 단서로 충분하고, 전체 값은 다른 사이트와 대조하는
+     * 식별자가 될 수 있다).
+     *
+     * @param  User  $user  대상 회원
+     * @return array<string, mixed> 연결·비밀번호 유무
+     */
+    public function adminSummaryFor(User $user): array
+    {
+        $rows = $this->accounts->findForUser((int) $user->getKey())->map(fn (SocialAccount $account) => [
+            'provider_key' => $account->provider_key,
+            'label' => $this->settings->label($account->provider_key),
+            'brand' => $this->settings->brand($account->provider_key),
+            'provider_user_id_prefix' => mb_substr((string) $account->provider_user_id, 0, 6),
+            'email' => $account->email, // audit:allow resource-member-email-ungated 회원 연결 열람 권한(accounts.view) 라우트만 부른다
+            'email_verified' => $account->email_verified,
+            'linked_at' => $account->linked_at?->toIso8601String(),
+            'last_login_at' => $account->last_login_at?->toIso8601String(),
+        ])->values()->all();
+
+        return [
+            'accounts' => $rows,
+            'has_password' => $user->hasPassword(),
+        ];
+    }
+
+    /**
+     * 관리자 회원 목록 가입경로 필터의 선택지 — 연결이 하나라도 있는 제공자(꺼진 제공자 포함)와 연결 수.
+     *
+     * 켜진 제공자 목록으로 고르게 하면 운영자가 제공자를 끈 뒤 그 제공자로 가입한 회원을 찾을 수 없다.
+     *
+     * @return array<int, array{key: string, label: string, count: int}> 선택지
+     */
+    public function linkedProviderOptions(): array
+    {
+        $options = [];
+        foreach ($this->accounts->countsByProvider() as $key => $count) {
+            $options[] = ['key' => (string) $key, 'label' => $this->settings->label((string) $key), 'count' => (int) $count];
+        }
+
+        return $options;
+    }
+
+    /**
+     * 관리자가 회원의 연결을 강제로 끊습니다.
+     *
+     * 마지막 로그인 수단 가드는 보지 않는다(관리자 판단). 제공자 권한 회수는 사이트 설정을 따르고, 회원에게 알림 훅을 쏜다.
+     *
+     * @param  User  $user  대상 회원
+     * @param  string  $providerKey  제공자 키
+     * @return void 반환값 없음
+     *
+     * @throws SocialFlowException 연결 없음(`not_linked`, 404)
+     */
+    public function adminUnlink(User $user, string $providerKey): void
+    {
+        $account = $this->accounts->findForUserAndProvider((int) $user->getKey(), $providerKey);
+        if ($account === null) {
+            throw new SocialFlowException('not_linked', 404);
+        }
+
+        $this->remove($account, $user, UnlinkReason::Admin, (bool) plugin_setting('sirsoft-social_login', 'revoke_on_unlink', true));
+
+        HookManager::doAction(self::ACTION_UNLINKED_BY_ADMIN, $user, $providerKey);
+    }
+
+    /**
      * 회원이 자기 연결을 끊습니다.
      *
      * 제공자 쪽 권한 회수는 설정(`revoke_on_unlink`, 기본 켜짐)일 때 시도하고, 실패해도 이 사이트의 연결은 끊는다
@@ -225,7 +307,7 @@ class AccountLinkService
      *
      * @param  User  $user  로그인 회원
      * @param  string  $providerKey  제공자 키
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws SocialFlowException 연결 없음(`not_linked`, 404), 마지막 수단(`last_method`, 409)
      */
@@ -251,7 +333,7 @@ class AccountLinkService
      * @param  User  $user  회원
      * @param  UnlinkReason  $reason  해제 사유
      * @param  bool  $revoke  제공자 권한 회수 시도 여부
-     * @return void
+     * @return void 반환값 없음
      */
     public function remove(SocialAccount $account, User $user, UnlinkReason $reason, bool $revoke): void
     {
@@ -309,7 +391,7 @@ class AccountLinkService
      *
      * @param  SocialAccount  $account  연결
      * @param  User  $user  회원
-     * @return void
+     * @return void 반환값 없음
      */
     private function tryRevoke(SocialAccount $account, User $user): void
     {

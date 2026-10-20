@@ -1,0 +1,335 @@
+{
+    "comment": "소셜 로그인 통계 — 기간(7·30·90일) 안의 제공자별 가입·로그인·연결·실패와 지금의 연결 수·「이 제공자로만 로그인하는 회원」. 관리자 연결 테스트는 세지 않는다.\n     기간은 주소(days)에 있어 새로고침해도 유지된다.",
+    "version": "1.0.0",
+    "layout_name": "social_login_stats",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-social_login.admin.stats.title",
+        "description": "$t:sirsoft-social_login.admin.stats.description"
+    },
+    "data_sources": [
+        {
+            "id": "stats",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.stats",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-social_login/admin/stats",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "params": {
+                "days": "{{query.days || 30}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "통계 — 기간이 바뀌면 주소가 바뀌어 다시 받는다"
+        }
+    ],
+    "permissions": [
+        "sirsoft-social_login.settings.view"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "social_login_stats_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex flex-wrap items-start justify-between gap-3 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.stats.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.stats.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "period_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-1",
+                                    "role": "group",
+                                    "aria-label": "$t:sirsoft-social_login.admin.stats.period"
+                                },
+                                "children": [
+                                    {
+                                        "id": "period_7",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/plugins/sirsoft-social_login/stats",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "days": 7
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{String(query.days || 30) === '7' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-social_login.admin.stats.days_7"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "period_30",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/plugins/sirsoft-social_login/stats",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "days": 30
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{String(query.days || 30) === '30' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-social_login.admin.stats.days_30"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "period_90",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/plugins/sirsoft-social_login/stats",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "days": 90
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{String(query.days || 30) === '90' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-social_login.admin.stats.days_90"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "diagnostics_link",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "props": {
+                                            "href": "/admin/plugins/sirsoft-social_login/diagnostics",
+                                            "className": "btn btn-secondary text-sm ml-2"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.title"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "stats_since",
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                        },
+                        "text": "$t:sirsoft-social_login.admin.stats.since|since={{stats?.data?.since ?? '-'}}"
+                    },
+                    {
+                        "id": "stats_datagrid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "props": {
+                            "data": "{{stats?.data?.rows ?? []}}",
+                            "pagination": false,
+                            "idField": "provider_key",
+                            "selectable": false,
+                            "emptyMessage": "$t:sirsoft-social_login.admin.stats.empty",
+                            "columns": [
+                                {
+                                    "field": "label",
+                                    "header": "$t:sirsoft-social_login.admin.stats.col.provider",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body whitespace-nowrap"
+                                            },
+                                            "text": "{{row.label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "signups",
+                                    "header": "$t:sirsoft-social_login.admin.stats.col.signups",
+                                    "sortable": false,
+                                    "width": "100px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{row.signups}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "logins",
+                                    "header": "$t:sirsoft-social_login.admin.stats.col.logins",
+                                    "sortable": false,
+                                    "width": "100px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{row.logins}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "links",
+                                    "header": "$t:sirsoft-social_login.admin.stats.col.links",
+                                    "sortable": false,
+                                    "width": "100px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{row.links}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "failures",
+                                    "header": "$t:sirsoft-social_login.admin.stats.col.failures",
+                                    "sortable": false,
+                                    "width": "100px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.failures > 0 ? 'text-red-700 dark:text-red-300' : 'text-body'}}"
+                                            },
+                                            "text": "{{row.failures}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "linked_accounts",
+                                    "header": "$t:sirsoft-social_login.admin.stats.col.linked_accounts",
+                                    "sortable": false,
+                                    "width": "120px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{row.linked_accounts}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "social_only_users",
+                                    "header": "$t:sirsoft-social_login.admin.stats.col.social_only_users",
+                                    "sortable": false,
+                                    "width": "140px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "{{row.social_only_users}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "stats_totals",
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300 mt-3"
+                        },
+                        "text": "$t:sirsoft-social_login.admin.stats.totals|signups={{stats?.data?.totals?.signups ?? 0}}|logins={{stats?.data?.totals?.logins ?? 0}}|failures={{stats?.data?.totals?.failures ?? 0}}"
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -66,9 +66,31 @@ class MockGate
     }
 
     /**
+     * 만료됐는데 캐시에 남은 활성 표지·모의 서명 키를 지웁니다 (정리 배치).
+     *
+     * 캐시 저장소가 만료를 스스로 지우지 않는 경우(파일·DB 저장소의 늦은 정리)에도 표지가 남지 않게 한다.
+     *
+     * @param  bool  $dryRun  true 면 지우지 않고 대상 여부만 본다
+     * @return bool 정리 대상이 있었으면 true
+     */
+    public function pruneExpired(bool $dryRun = false): bool
+    {
+        $raw = $this->cache->get(self::KEY);
+        if ($raw === null || $this->enabled()) {
+            return false;
+        }
+
+        if (! $dryRun) {
+            $this->disable();
+        }
+
+        return true;
+    }
+
+    /**
      * 모의 제공자를 끕니다 — 모의 서명 키도 함께 지웁니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function disable(): void
     {

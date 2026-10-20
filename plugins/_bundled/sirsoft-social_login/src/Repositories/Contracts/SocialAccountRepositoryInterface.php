@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Repositories\Contracts;
 
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
 
@@ -52,7 +53,7 @@ interface SocialAccountRepositoryInterface
      * @param  string|null  $accessToken  접근 토큰
      * @param  string|null  $refreshToken  갱신 토큰 (null 이면 유지)
      * @param  \DateTimeInterface|null  $expiresAt  만료 시각
-     * @return void
+     * @return void 반환값 없음
      */
     public function updateTokens(SocialAccount $account, ?string $accessToken, ?string $refreshToken, ?\DateTimeInterface $expiresAt): void;
 
@@ -94,7 +95,7 @@ interface SocialAccountRepositoryInterface
      *
      * @param  SocialAccount  $account  연결
      * @param  array<string, mixed>  $values  컬럼 값
-     * @return void
+     * @return void 반환값 없음
      */
     public function update(SocialAccount $account, array $values): void;
 
@@ -102,7 +103,52 @@ interface SocialAccountRepositoryInterface
      * 연결 1건을 지웁니다.
      *
      * @param  SocialAccount  $account  연결
-     * @return void
+     * @return void 반환값 없음
      */
     public function delete(SocialAccount $account): void;
+
+    /**
+     * 제공자에 연결된 회원 수를 반환합니다.
+     *
+     * @param  string  $providerKey  제공자 키
+     * @return int 연결 수
+     */
+    public function countForProvider(string $providerKey): int;
+
+    /**
+     * 제공자별 연결 수를 한 번의 쿼리로 반환합니다 (통계).
+     *
+     * @return array<string, int> 제공자 키 => 연결 수
+     */
+    public function countsByProvider(): array;
+
+    /**
+     * 제공자별 「이 제공자로만 로그인하는 회원」 수를 반환합니다 (통계).
+     *
+     * @return array<string, int> 제공자 키 => 회원 수
+     */
+    public function socialOnlyCountsByProvider(): array;
+
+    /**
+     * 연결 회원 수와 그중 비밀번호가 없는 회원 수를 반환합니다 (진단).
+     *
+     * @return array{linked_users: int, passwordless_users: int} 회원 수
+     */
+    public function linkedUserCounts(): array;
+
+    /**
+     * 원본 프로필 보존 기한이 지난 행의 원본을 비웁니다 (정리 배치).
+     *
+     * @param  bool  $dryRun  true 면 세기만
+     * @return int 대상 행 수
+     */
+    public function clearExpiredProfileRaw(bool $dryRun = false): int;
+
+    /**
+     * 그 제공자에 연결된 회원 ID 서브쿼리를 만듭니다 (관리자 회원 목록 「가입경로」 확장 필터용).
+     *
+     * @param  string  $providerKey  제공자 키
+     * @return QueryBuilder user_id 한 열을 고르는 서브쿼리
+     */
+    public function userIdsLinkedToProviderQuery(string $providerKey): QueryBuilder;
 }

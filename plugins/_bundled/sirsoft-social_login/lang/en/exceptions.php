@@ -25,5 +25,15 @@ return [
         'reauth_not_available' => 'This account cannot be confirmed with a social account.',
         'provider_error' => 'We could not reach the social account provider. Please try again later.',
         'reauth_claim_invalid' => 'The confirmation result is missing or already used. Please confirm again.',
+        'key_taken' => 'This key cannot be used. Built-in provider names, keys starting with mock_ and existing keys are reserved.',
+        'custom_limit_reached' => 'No more generic OIDC providers can be added. Check the custom provider limit in the settings.',
+        'builtin_not_deletable' => 'Built-in providers cannot be deleted. Turn it off to hide it from the sign-in screen.',
+        'provider_has_links' => 'Members are linked to this provider, so it cannot be deleted. Turn it off and clear the links first.',
+        'credentials_required' => 'Enter the client ID and secret (and endpoints for generic OIDC) before turning it on.',
+    ],
+    // 관리자 화면 전용 문구 — 회원 흐름의 같은 코드는 공통 문구(flow.provider_error)로 답한다.
+    'admin' => [
+        'discovery_failed' => 'Could not fetch the discovery document. Check the URL and the provider status.',
+        'discovery_incomplete' => 'The discovery document lacks required entries (issuer, authorization, token and signing key URLs).',
     ],
 ];

@@ -30,14 +30,96 @@ class ActivityLogListener implements HookListenerInterface
             'sirsoft-social_login.account.after_link' => ['method' => 'onLinked', 'priority' => 50, 'sync' => true],
             'sirsoft-social_login.account.after_unlink' => ['method' => 'onUnlinked', 'priority' => 50, 'sync' => true],
             'sirsoft-social_login.auth.after_social_signup' => ['method' => 'onSignup', 'priority' => 50, 'sync' => true],
+            'sirsoft-social_login.provider.after_create' => ['method' => 'onProviderCreated', 'priority' => 50, 'sync' => true],
+            'sirsoft-social_login.provider.after_update' => ['method' => 'onProviderUpdated', 'priority' => 50, 'sync' => true],
+            'sirsoft-social_login.provider.after_delete' => ['method' => 'onProviderDeleted', 'priority' => 50, 'sync' => true],
+            'core.plugin_settings.after_save' => ['method' => 'onSettingsSaved', 'priority' => 50, 'sync' => true],
         ];
+    }
+
+    /** 사이트 정책 중 위험도가 있어 값까지 남기는 설정 */
+    private const AUDITED_SETTINGS = [
+        'email_conflict_policy', 'two_factor_enabled', 'allow_admin_social_login', 'allow_unlink_last_method',
+        'webhook_unlink_policy', 'revoke_on_unlink',
+    ];
+
+    /**
+     * 제공자 추가를 기록합니다 (관리자 행위).
+     *
+     * @param  array<string, mixed>  $summary  key·driver·type·enabled·label (비밀값 없음)
+     * @return void 반환값 없음
+     */
+    public function onProviderCreated(array $summary): void
+    {
+        $this->writeAdmin('provider_created', $summary, []);
+    }
+
+    /**
+     * 제공자 수정을 기록합니다 — 바뀐 칸 이름만 남기고 값(특히 비밀값)은 남기지 않는다.
+     *
+     * @param  array<string, mixed>  $summary  요약
+     * @param  array<int, string>  $changed  바뀐 칸 이름
+     * @return void 반환값 없음
+     */
+    public function onProviderUpdated(array $summary, array $changed = []): void
+    {
+        $this->writeAdmin('provider_updated', $summary, ['changed' => array_values($changed)]);
+    }
+
+    /**
+     * 제공자 삭제를 기록합니다.
+     *
+     * @param  array<string, mixed>  $summary  요약
+     * @return void 반환값 없음
+     */
+    public function onProviderDeleted(array $summary): void
+    {
+        $this->writeAdmin('provider_deleted', $summary, []);
+    }
+
+    /**
+     * 이 플러그인 설정 저장을 기록합니다 — 위험 정책은 저장된 값까지 남긴다(코어 기록은 키 목록만).
+     *
+     * @param  string  $identifier  저장한 플러그인
+     * @param  array<string, mixed>  $settings  저장된 설정 전체
+     * @param  bool  $result  저장 성공 여부
+     * @return void 반환값 없음
+     */
+    public function onSettingsSaved(string $identifier, array $settings = [], bool $result = true): void
+    {
+        if ($identifier !== 'sirsoft-social_login' || ! $result) {
+            return;
+        }
+
+        $this->logActivity('settings_updated', [
+            'description_key' => 'sirsoft-social_login::activity_log.description.settings_updated',
+            'description_params' => [],
+            'properties' => ['policies' => array_intersect_key($settings, array_flip(self::AUDITED_SETTINGS))],
+        ]);
+    }
+
+    /**
+     * 관리자 제공자 행위 1건을 씁니다.
+     *
+     * @param  string  $type  유형
+     * @param  array<string, mixed>  $summary  제공자 요약
+     * @param  array<string, mixed>  $properties  추가 속성
+     * @return void 반환값 없음
+     */
+    private function writeAdmin(string $type, array $summary, array $properties): void
+    {
+        $this->logActivity($type, [
+            'description_key' => 'sirsoft-social_login::activity_log.description.'.$type,
+            'description_params' => ['provider' => (string) ($summary['label'] ?? $summary['key'] ?? '')],
+            'properties' => ['provider_key' => (string) ($summary['key'] ?? ''), 'provider_type' => (string) ($summary['type'] ?? '')] + $properties,
+        ]);
     }
 
     /**
      * 인터페이스 기본 핸들러 (개별 메서드에서 처리).
      *
      * @param  mixed  ...$args  훅 인자
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -47,7 +129,7 @@ class ActivityLogListener implements HookListenerInterface
      * @param  SocialAccount  $account  연결
      * @param  User  $user  회원
      * @param  array<string, mixed>  $context  `method` (link·existing·auto·signup)
-     * @return void
+     * @return void 반환값 없음
      */
     public function onLinked(SocialAccount $account, User $user, array $context = []): void
     {
@@ -68,7 +150,7 @@ class ActivityLogListener implements HookListenerInterface
      * @param  SocialAccount  $account  연결
      * @param  User  $user  회원
      * @param  string  $reason  사유 (user·admin·webhook·withdraw·delete)
-     * @return void
+     * @return void 반환값 없음
      */
     public function onUnlinked(SocialAccount $account, User $user, string $reason = 'user'): void
     {
@@ -86,7 +168,7 @@ class ActivityLogListener implements HookListenerInterface
      *
      * @param  User  $user  회원
      * @param  SocialAccount  $account  연결
-     * @return void
+     * @return void 반환값 없음
      */
     public function onSignup(User $user, SocialAccount $account): void
     {
@@ -100,7 +182,7 @@ class ActivityLogListener implements HookListenerInterface
      * @param  User  $user  대상 회원
      * @param  string  $providerKey  제공자 키
      * @param  array<string, mixed>  $properties  추가 속성
-     * @return void
+     * @return void 반환값 없음
      */
     private function write(string $type, User $user, string $providerKey, array $properties): void
     {

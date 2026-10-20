@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage[cross_product] reason: 화면 폭 축은 렌더 시험 한 건이 두 폭을 모두 돌고, 입력 축은 저장 동작이라 폭과 무관하다 — 축 곱은 명목상이다. 회귀 가드는 effects.
 feature: social_login_settings_screen
-description: 플러그인 설정 화면(사이트 전체 정책 15칸)이 데스크톱과 휴대폰 폭에서 그려지고, 범위 밖 값은 422 와 칸 아래 오류로, 올바른 값은 저장 뒤 새로고침에도 남는지 브라우저로 잰다.
+description: 플러그인 설정 화면 「정책」 탭(`?tab=policy`, 사이트 전체 정책 15칸)이 데스크톱과 휴대폰 폭에서 그려지고, 범위 밖 값은 422 와 칸 아래 오류로, 올바른 값은 저장 뒤 새로고침에도 남는지 브라우저로 잰다.
 axes:
   surface: [settings]
   viewport: [desktop, mobile]

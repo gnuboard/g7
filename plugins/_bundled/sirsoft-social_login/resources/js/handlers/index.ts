@@ -1,3 +1,4 @@
+import { copyToClipboardHandler, openTestLoginHandler } from './adminTools';
 import { startLinkHandler, startReauthHandler } from './providerRedirect';
 
 /**
@@ -8,4 +9,6 @@ import { startLinkHandler, startReauthHandler } from './providerRedirect';
 export const handlerMap: Record<string, (...args: never[]) => unknown> = {
   startLink: startLinkHandler,
   startReauth: startReauthHandler,
+  copyToClipboard: copyToClipboardHandler,
+  openTestLogin: openTestLoginHandler,
 } as const;

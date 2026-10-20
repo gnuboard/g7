@@ -2,11 +2,14 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Drivers;
 
+use Illuminate\Http\Request;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
 use Plugins\Sirsoft\SocialLogin\DTO\TokenSet;
+use Plugins\Sirsoft\SocialLogin\Enums\WebhookEventType;
 use Plugins\Sirsoft\SocialLogin\Exceptions\ProviderException;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
+use Plugins\Sirsoft\SocialLogin\Models\SocialLoginWebhookEvent;
 
 /**
  * 네이버 로그인 드라이버.
@@ -119,5 +122,87 @@ class NaverDriver extends AbstractOAuth2Driver
         );
 
         return $response->successful();
+    }
+
+    /**
+     * 네이버 「연동 해제」 알림을 검증해 이벤트로 바꿉니다.
+     *
+     * 알림 값 `clientId`·`encryptUniqueId`·`timestamp`·`signature`. 서명은 `clientId=…&encryptUniqueId=…&timestamp=…` 를
+     * 클라이언트 비밀값으로 HMAC-SHA256 한 값(base64)이고 시간 일정 비교로 맞춘다. `encryptUniqueId` 는 회원의 네이버 고유
+     * ID 를 AES-128-CBC 로 암호화한 값이다 — 키는 클라이언트 비밀값의 MD5(16바이트), 앞 16바이트가 IV 다
+     * ({@see self::decryptUniqueId()}). 실제 앱 실측(M11)에서 이 형식이 맞는지 다시 확인한다.
+     * 네이버는 다시 보내지 않으므로 이 검증과 저장은 요청 안에서 끝낸다(처리만 큐로).
+     *
+     * @param  Request  $request  알림 요청
+     * @return SocialLoginWebhookEvent 저장 전 이벤트
+     *
+     * @throws ProviderException 클라이언트(`webhook_app_mismatch`)·서명(`webhook_signature_invalid`)·복호화(`webhook_payload_invalid`)
+     */
+    public function verifyWebhook(Request $request): ?SocialLoginWebhookEvent
+    {
+        $clientId = (string) ($this->config['client_id'] ?? '');
+        $secret = $this->clientSecret();
+        $inputClient = (string) $request->input('clientId', '');
+        $encrypted = (string) $request->input('encryptUniqueId', '');
+        $timestamp = (string) $request->input('timestamp', '');
+        $signature = (string) $request->input('signature', '');
+
+        if ($clientId === '' || $secret === '' || ! hash_equals($clientId, $inputClient)) {
+            throw new ProviderException('webhook_app_mismatch');
+        }
+
+        $expected = self::webhookSignature($inputClient, $encrypted, $timestamp, $secret);
+        $given = strtr($signature, '-_', '+/');
+        if ($signature === '' || ! hash_equals(rtrim($expected, '='), rtrim($given, '='))) {
+            throw new ProviderException('webhook_signature_invalid');
+        }
+
+        $uniqueId = self::decryptUniqueId($encrypted, $secret);
+        if ($uniqueId === null) {
+            throw new ProviderException('webhook_payload_invalid');
+        }
+
+        return new SocialLoginWebhookEvent([
+            'provider_key' => $this->key(),
+            'event_key' => 'naver:'.hash('sha256', $uniqueId).':'.$timestamp,
+            'event_type' => WebhookEventType::Unlink->value,
+            'provider_user_id' => $uniqueId,
+            'payload' => ['timestamp' => $timestamp],
+        ]);
+    }
+
+    /**
+     * 알림 서명을 만듭니다.
+     *
+     * @param  string  $clientId  클라이언트 ID
+     * @param  string  $encryptUniqueId  암호화된 고유 ID
+     * @param  string  $timestamp  알림 시각 값
+     * @param  string  $secret  클라이언트 비밀값
+     * @return string base64 서명
+     */
+    public static function webhookSignature(string $clientId, string $encryptUniqueId, string $timestamp, string $secret): string
+    {
+        $message = 'clientId='.$clientId.'&encryptUniqueId='.$encryptUniqueId.'&timestamp='.$timestamp;
+
+        return base64_encode(hash_hmac('sha256', $message, $secret, true));
+    }
+
+    /**
+     * 암호화된 고유 ID 를 풉니다 — base64(IV 16바이트 + 암호문), AES-128-CBC, 키 = MD5(클라이언트 비밀값).
+     *
+     * @param  string  $value  암호화된 고유 ID
+     * @param  string  $secret  클라이언트 비밀값
+     * @return string|null 고유 ID (풀 수 없으면 null)
+     */
+    public static function decryptUniqueId(string $value, string $secret): ?string
+    {
+        $raw = base64_decode(strtr($value, '-_', '+/'), true);
+        if ($raw === false || strlen($raw) < 32) {
+            return null;
+        }
+
+        $plain = openssl_decrypt(substr($raw, 16), 'aes-128-cbc', md5($secret, true), OPENSSL_RAW_DATA, substr($raw, 0, 16));
+
+        return is_string($plain) ? NormalizedProfile::str($plain) : null;
     }
 }

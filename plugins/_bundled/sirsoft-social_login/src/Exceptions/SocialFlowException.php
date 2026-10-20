@@ -9,7 +9,9 @@ use RuntimeException;
  * 가입·연결·본인 재확인 흐름의 거절.
  *
  * 오류 코드(`errorCode`)는 화면 문구 키(`sirsoft-social_login.errors.{code}`)·시도 기록에 쓰고, 응답 문구는
- * `messageKey()`(`lang/{ko,en}/exceptions.php` 의 `flow.{code}`)로 번역한다. `status` 는 API 가 돌려줄 HTTP 상태다.
+ * `messageKey()`(`lang/{ko,en}/exceptions.php` 의 `flow.{code}`)로 번역한다. 같은 코드라도 관리자 화면처럼 문구가 달라야
+ * 하는 자리는 세 번째 인자로 키(예: `exceptions.admin.discovery_failed`)를 넘기고, 그 키가 있으면 `flow.*` 보다 먼저 쓴다 —
+ * 회원 흐름의 `flow.*` 문구 계약은 그대로 둔다. `status` 는 API 가 돌려줄 HTTP 상태다.
  * 회원 존재 여부처럼 알려 주면 안 되는 정보는 코드에 담지 않는다.
  *
  * @since 1.0.0
@@ -19,9 +21,13 @@ class SocialFlowException extends RuntimeException
     /**
      * @param  string  $errorCode  오류 코드
      * @param  int  $status  HTTP 상태
+     * @param  string|null  $messageKeyOverride  응답 문구 키(플러그인 번역 도메인 안) — 같은 코드라도 화면마다 문구가 다를 때만
      */
-    public function __construct(public readonly string $errorCode, public readonly int $status = 422)
-    {
+    public function __construct(
+        public readonly string $errorCode,
+        public readonly int $status = 422,
+        private readonly ?string $messageKeyOverride = null,
+    ) {
         parent::__construct(__('sirsoft-social_login::'.$this->messageKey()));
     }
 
@@ -35,6 +41,10 @@ class SocialFlowException extends RuntimeException
      */
     public function messageKey(): string
     {
+        if ($this->messageKeyOverride !== null && Lang::has('sirsoft-social_login::'.$this->messageKeyOverride)) {
+            return $this->messageKeyOverride;
+        }
+
         $key = 'exceptions.flow.'.$this->errorCode;
 
         return Lang::has('sirsoft-social_login::'.$key) ? $key : 'exceptions.flow.provider_error';
