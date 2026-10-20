@@ -2,8 +2,8 @@
 feature: social_login_oauth_roundtrip
 description: |
   OAuth 왕복의 시작과 콜백을 HTTP 로 잰다. 관리자 연결 테스트는 로그인하지 않고 한 번만 보이는 결과 화면으로 끝나고,
-  실패(위조 state, 재사용, 제공자 거부, 교환 실패, 제공자 오류가 아닌 예외, ID 없음)는 시도 기록과 제공자 진단 값에 남는다. 로그인 의도의 분기는
-  다음 단계 산출물이라 지금은 로그인 화면으로 돌려보낸다. 제공자 레지스트리의 시딩, 확장 등록, 내장 덮어쓰기 무시, 한도도 함께 본다.
+  실패(위조 state, 재사용, 제공자 거부, 교환 실패, 제공자 오류가 아닌 예외, ID 없음)는 시도 기록과 제공자 진단 값에 남는다. 연결 없는 로그인 의도는
+  가입 흐름(가입 화면)으로 넘어간다(로그인·가입 분기의 상세는 login-policy·signup-flow 매니페스트). 제공자 레지스트리의 시딩, 확장 등록, 내장 덮어쓰기 무시, 한도도 함께 본다.
 axes:
   intent: [login, test]
   provider: [enabled, disabled, unknown]
@@ -24,7 +24,7 @@ effects:
   - exchange_failure_recorded
   - unexpected_exception_becomes_provider_error
   - missing_provider_id_fails
-  - login_branch_not_available_yet
+  - login_without_link_goes_to_signup
   - test_login_requires_settings_update
   - builtin_four_seeded_disabled
   - drivers_instantiated_by_driver_column

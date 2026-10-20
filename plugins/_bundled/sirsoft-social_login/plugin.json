@@ -18,6 +18,17 @@
     },
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-social_login",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-social_login/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/buttons.css",
+            "output": "dist/css/plugin.css"
+        },
+        "handlers": true
+    },
     "loading": {
         "strategy": "global",
         "priority": 100

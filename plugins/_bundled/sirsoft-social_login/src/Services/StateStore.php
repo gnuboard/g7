@@ -30,13 +30,14 @@ class StateStore
      * 새 시작 정보를 만들고 저장합니다.
      *
      * @param  string  $providerKey  제공자 키
-     * @param  string  $intent  의도 — login·link·test
+     * @param  string  $intent  의도 — login·link·test·reauth
      * @param  string|null  $redirect  복귀 주소 (같은 출처 상대 경로만, 아니면 `/`)
      * @param  string  $callbackUrl  콜백 주소
      * @param  int|null  $userId  시작한 회원 ID
      * @param  bool  $usePkce  PKCE 사용 여부
      * @param  bool  $useNonce  OIDC nonce 사용 여부
      * @param  int|null  $ttlMinutes  TTL(분)
+     * @param  string|null  $challengeId  본인 재확인 의도의 코어 본인인증 요청 ID
      * @return AuthorizationRequest 저장한 시작 정보
      */
     public function create(
@@ -48,6 +49,7 @@ class StateStore
         bool $usePkce = true,
         bool $useNonce = false,
         ?int $ttlMinutes = null,
+        ?string $challengeId = null,
     ): AuthorizationRequest {
         $request = new AuthorizationRequest(
             providerKey: $providerKey,
@@ -59,6 +61,7 @@ class StateStore
             nonce: $useNonce ? Str::random(32) : null,
             codeVerifier: $usePkce ? Str::random(64) : null,
             createdAt: time(),
+            challengeId: $challengeId,
         );
 
         $ttl = max(1, $ttlMinutes ?? self::DEFAULT_TTL_MINUTES) * 60;

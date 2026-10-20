@@ -9,6 +9,7 @@ use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Services\MemberNotificationService;
 use App\Services\PasswordExpiryService;
+use App\Support\UndeliverableEmail;
 use App\Support\UserGradeGuard;
 use App\Traits\HasCountryAttributes;
 use Carbon\Carbon;
@@ -44,6 +45,9 @@ class UserResource extends BaseApiResource
             'is_admin' => $this->resource->isAdmin(),
             // 비밀번호 설정 여부만 싣는다(해시 값 노출 없음) — 외부 인증 전용 회원의 「비밀번호 처음 설정」·「비밀번호 미설정」 분기가 읽는다.
             'has_password' => $this->resource->hasPassword(),
+            // 이메일로 메일을 받을 수 있는지만 싣는다(주소 노출 없음) — 대체 이메일(`…@social.invalid`) 회원은 인증번호 메일을 받을 수 없어
+            // 본인 재확인 화면이 메일 대신 확장 수단(예: 소셜 재로그인)을 보인다.
+            'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
             'homepage' => $this->getValue('homepage'),
             'mobile' => $this->getValue('mobile'),
             'phone' => $this->getValue('phone'),
@@ -456,6 +460,7 @@ class UserResource extends BaseApiResource
             'is_super' => $this->resource->isSuperAdmin(),
             'is_admin' => $this->resource->isAdmin(),
             'has_password' => $this->resource->hasPassword(),
+            'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
             'withdrawn_at' => $this->getValue('withdrawn_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('withdrawn_at'))
                 : null,

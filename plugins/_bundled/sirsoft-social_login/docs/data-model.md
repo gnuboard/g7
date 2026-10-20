@@ -29,7 +29,7 @@
 <!-- @generated:tables END -->
 
 <!-- @intent START -->
-`social_accounts.provider_user_id` 는 utf8mb4_bin 입니다. 네이버처럼 대소문자로 다른 계정을 구분하는 제공자가 있어, 기본 collation 이면 서로 다른 두 계정이 한 회원으로 묶입니다. 시도 기록은 통계 보존을 위해 회원 FK 를 두지 않고, 연결 테이블의 회원 FK 에도 CASCADE 를 걸지 않습니다(회원 삭제 때 리스너가 명시 삭제 — 다음 단계).
+`social_accounts.provider_user_id` 는 utf8mb4_bin 입니다. 네이버처럼 대소문자로 다른 계정을 구분하는 제공자가 있어, 기본 collation 이면 서로 다른 두 계정이 한 회원으로 묶입니다. 시도 기록은 통계 보존을 위해 회원 FK 를 두지 않고, 연결 테이블의 회원 FK 에도 CASCADE 를 걸지 않습니다 — 회원 삭제(`core.user.before_delete`)와 탈퇴(`core.user.after_withdraw`) 때 리스너 `CleanAccountsOnUserDelete`·`CleanAccountsOnUserWithdraw` 가 연결을 명시 삭제하고 제공자 권한 회수를 시도합니다.
 <!-- @intent END -->
 
 ## 마이그레이션
@@ -54,7 +54,7 @@
 <!-- @generated:enums START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | Enum | backing | case 수 | case |
 |---|---|---|---|
-| `AttemptIntent` | `string` | 3 | `login`, `link`, `test` |
+| `AttemptIntent` | `string` | 4 | `login`, `link`, `test`, `reauth` |
 | `AttemptOutcome` | `string` | 7 | `login`, `signup`, `link`, `pending`, `handoff`, `denied`, `failed` |
 | `EmailConflictPolicy` | `string` | 3 | `verify_link`, `auto_link_verified`, `never_link` |
 | `EmailMissingPolicy` | `string` | 3 | `ask`, `deny`, `placeholder` |

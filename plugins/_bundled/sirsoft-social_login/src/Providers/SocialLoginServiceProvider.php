@@ -20,7 +20,10 @@ use Plugins\Sirsoft\SocialLogin\Repositories\SocialAccountRepository;
 use Plugins\Sirsoft\SocialLogin\Repositories\WebhookEventRepository;
 use Plugins\Sirsoft\SocialLogin\Services\IdTokenVerifier;
 use Plugins\Sirsoft\SocialLogin\Services\OAuthFlowService;
+use Plugins\Sirsoft\SocialLogin\Services\PendingSignupStore;
 use Plugins\Sirsoft\SocialLogin\Services\ProviderRegistry;
+use Plugins\Sirsoft\SocialLogin\Services\SignupSurgeMonitor;
+use Plugins\Sirsoft\SocialLogin\Services\SocialReauthService;
 use Plugins\Sirsoft\SocialLogin\Services\StateStore;
 
 /**
@@ -61,6 +64,9 @@ class SocialLoginServiceProvider extends BasePluginServiceProvider
         MockGate::class,
         MockKeyPair::class,
         MockController::class,
+        PendingSignupStore::class,
+        SignupSurgeMonitor::class,
+        SocialReauthService::class,
     ];
 
     /**

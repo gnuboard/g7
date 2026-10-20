@@ -13,7 +13,7 @@ final class AuthorizationRequest
 {
     /**
      * @param  string  $providerKey  제공자 키
-     * @param  string  $intent  의도 — login·link·test
+     * @param  string  $intent  의도 — login·link·test·reauth
      * @param  string  $redirect  완료 뒤 돌아갈 같은 출처 상대 경로
      * @param  string  $state  CSRF 방지 state
      * @param  string  $callbackUrl  제공자에 등록한 콜백 주소
@@ -21,6 +21,7 @@ final class AuthorizationRequest
      * @param  string|null  $nonce  OIDC nonce
      * @param  string|null  $codeVerifier  PKCE code_verifier
      * @param  int  $createdAt  생성 시각(유닉스 초)
+     * @param  string|null  $challengeId  본인 재확인(reauth) 의도의 코어 본인인증 요청 ID
      */
     public function __construct(
         public readonly string $providerKey,
@@ -32,6 +33,7 @@ final class AuthorizationRequest
         public readonly ?string $nonce = null,
         public readonly ?string $codeVerifier = null,
         public readonly int $createdAt = 0,
+        public readonly ?string $challengeId = null,
     ) {}
 
     /**
@@ -51,6 +53,7 @@ final class AuthorizationRequest
             'nonce' => $this->nonce,
             'code_verifier' => $this->codeVerifier,
             'created_at' => $this->createdAt,
+            'challenge_id' => $this->challengeId,
         ];
     }
 
@@ -72,6 +75,7 @@ final class AuthorizationRequest
             nonce: $data['nonce'] ?? null,
             codeVerifier: $data['code_verifier'] ?? null,
             createdAt: (int) ($data['created_at'] ?? 0),
+            challengeId: isset($data['challenge_id']) && is_string($data['challenge_id']) ? $data['challenge_id'] : null,
         );
     }
 }

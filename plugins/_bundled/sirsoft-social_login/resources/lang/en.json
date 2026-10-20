@@ -2,7 +2,25 @@
     "plugin_read_only": "You do not have permission to change these settings. You can only view them.",
     "editor": {
         "data_source": {
-            "settings": "Social login settings"
+            "settings": "Social login settings",
+            "providers": "Social sign-in providers",
+            "accounts": "My linked social accounts"
+        },
+        "palette": {
+            "group": "Social Login",
+            "provider_buttons": {
+                "label": "Social sign-in buttons"
+            }
+        },
+        "state": {
+            "signup_email_input": "Sign-up modal — email input",
+            "signup_code_sent": "Sign-up modal — code sent",
+            "signup_email_locked": "Sign-up modal — provider-verified email",
+            "signup_expired": "Sign-up modal — expired",
+            "existing_with_password": "Existing account — has password",
+            "existing_without_password": "Existing account — no password",
+            "unlink_confirm": "Unlink confirmation",
+            "unlink_last_method": "Unlink — last sign-in method"
         }
     },
     "settings": {
@@ -87,5 +105,101 @@
                 "hint": "Notify administrators when one provider fails this many times in a row. 0 disables the notice."
             }
         }
+    },
+    "divider": {
+        "or": "or",
+        "or_email_signup": "or sign up with email"
+    },
+    "buttons": {
+        "login_with": {
+            "kakao": "Login with Kakao",
+            "naver": "Log in with NAVER",
+            "google": "Sign in with Google",
+            "facebook": "Continue with Facebook",
+            "custom": "Sign in with {{provider}}"
+        },
+        "register_with": {
+            "kakao": "Sign up with Kakao",
+            "naver": "Sign up with NAVER",
+            "google": "Sign up with Google",
+            "facebook": "Sign up with Facebook",
+            "custom": "Sign up with {{provider}}"
+        },
+        "link_with": "Link {{provider}}",
+        "reauth_with": "Confirm with {{provider}}"
+    },
+    "errors": {
+        "provider_error": "Social sign-in failed. Please try again later or sign in another way.",
+        "access_denied": "You did not agree on the provider screen, so you were not signed in.",
+        "state_invalid": "The sign-in has expired or was already handled. Please try again.",
+        "code_missing": "The provider did not send a sign-in result. Please try again.",
+        "unexpected_error": "Something went wrong during social sign-in. Please try again later.",
+        "profile_missing_id": "The provider did not send account information. Please try again.",
+        "profile_fetch_failed": "Could not get account information from the provider. Please try again later.",
+        "provider_disabled": "Sign-in with this provider is not available now.",
+        "provider_unknown": "Sign-in with this provider is not available now.",
+        "admin_blocked": "Administrator accounts cannot use social sign-in. Please sign in with your password.",
+        "signup_disabled": "New sign-ups are not allowed with this provider. If you already have an account, sign in and link it from My Page.",
+        "email_required": "An email is required to sign up. Allow email sharing on the provider screen and try again.",
+        "account_missing": "The linked member cannot be found. Please sign up again.",
+        "already_linked_other_user": "This social account is linked to another member.",
+        "provider_already_linked": "Another account of this provider is already linked. Unlink it first.",
+        "user_missing": "Your sign-in has changed. Please sign in again and link the account.",
+        "reauth_mismatch": "You signed in with an account other than the linked one. Please confirm with the linked account.",
+        "reauth_failed": "The identity check could not be completed. Please try again.",
+        "last_method": "Set a password or link another account before unlinking this one.",
+        "expired": "The pending sign-up has expired. Please start the social sign-in again."
+    },
+    "notices": {
+        "pending_verification": "Your sign-up is complete. You can sign in after identity verification."
+    },
+    "signup": {
+        "title": "Sign up with {{provider}}",
+        "intro": "Review the details below and agree to finish signing up. You do not need to set a password.",
+        "expired": "The pending sign-up has expired or is already complete. Please start the social sign-in again.",
+        "retry_login": "Sign in again",
+        "name": "Name",
+        "nickname": "Nickname",
+        "email": "Email",
+        "placeholder_notice": "You are signing up without an email. A placeholder email is issued, so you cannot receive email notices or email codes. You can change the email on My Page later.",
+        "request_code": "Get code",
+        "resend_code": "Resend code",
+        "code_placeholder": "6-digit code",
+        "code_sent": "We sent a code. Please check your inbox.",
+        "verify_code": "Verify",
+        "email_verified": "Your email is verified.",
+        "submit": "Sign up and start",
+        "code_remaining": "Time remaining {{minutes}}:{{seconds}}",
+        "code_expired": "The code has expired. Press resend to get a new one."
+    },
+    "existing": {
+        "title": "Email already registered",
+        "message": "An account is registered with {{email}}. Confirm that you own it to link the social account and sign in.",
+        "hint": "Accounts are never merged just because the email matches.",
+        "by_password": "Confirm with the existing account password",
+        "by_email": "Get a code at the existing account email",
+        "confirm": "Confirm",
+        "new_account": "Sign up as a new account"
+    },
+    "mypage": {
+        "title": "Linked social accounts",
+        "no_password": "This account has no password. Set one to also sign in with your email.",
+        "set_password": "Set password",
+        "empty": "No social account is linked.",
+        "linked_label": "Linked",
+        "unlink": "Unlink",
+        "unlink_title": "Unlink social account",
+        "unlink_confirm": "Unlink the {{provider}} account? You will no longer be able to sign in with it.",
+        "unlinked_toast": "The account is unlinked.",
+        "last_method": "You have no password and only one link, so it cannot be removed. Set a password or link another account first.",
+        "available": "Link another account",
+        "linked_toast": "The social account is linked."
+    },
+    "reauth": {
+        "notice": "This account cannot receive email codes. Sign in again with your linked social account to confirm your identity.",
+        "unavailable": "No social account is linked, so your identity cannot be confirmed. Please contact the administrator.",
+        "verified_toast": "Your identity is confirmed.",
+        "password_notice": "Before setting your first password, sign in again with your linked social account to confirm your identity.",
+        "password_ready": "Your identity is confirmed. Save the new password within a few minutes."
     }
 }

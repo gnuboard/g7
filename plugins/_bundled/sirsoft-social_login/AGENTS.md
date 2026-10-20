@@ -28,7 +28,7 @@
 
 - 토큰 발급, 세션 생성을 직접 하지 않는다.
 - 제공자 비밀값을 설정 키(사이트 설정 파일)에 두지 않는다 — 제공자 테이블에 암호화해 둔다.
-- 1.0.0 에서는 로그인, 가입, 연결 분기와 관리자 제공자 화면, 웹훅을 아직 열지 않았다(OAuth 왕복과 관리자 연결 테스트까지).
+- 1.0.0 의 지금 범위는 OAuth 왕복, 로그인·가입·연결·본인 재확인 분기, 사용자 화면(로그인·가입 버튼, 가입 모달, 마이페이지 카드)이다. 관리자 제공자 화면과 웹훅은 아직 열지 않았다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -49,9 +49,14 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-social_login --force` (빌드 불필요) |
+| `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-social_login --force` |
+| `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-social_login --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-social_login --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-social_login --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-social_login --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
@@ -63,7 +68,11 @@
 **관리자 연결 테스트** (`ProviderTestController@testLogin` → `OAuthFlowService::start(test)` → `StateStore::create` → 드라이버 `authorizeUrl`)
 → 관리자 브라우저가 제공자 동의 → `OAuthController@callback`(`OAuthCallbackRequest`) → `OAuthFlowService::callback` → `StateStore::pull`(1회성) → 드라이버 `exchangeCode` → `fetchProfile` → 필터 `profile.filter_normalized` → 결과를 캐시에 일회용 코드로 저장 → `OAuthController@testResult` 가 한 번 보여 주고 지운다. 시도는 `AttemptRepository`, 제공자 진단 값은 `ProviderRepository::recordOutcome` 이 남긴다.
 
-**로그인 시작** (`OAuthController@start`, `OAuthStartRequest`) → 제공자 행이 켜져 있는지 확인 → 인가 화면으로 302. 1.0.0 의 콜백은 로그인 의도를 `flow_not_available` 로 로그인 화면에 돌려보낸다.
+**로그인 시작** (`OAuthController@start`, `OAuthStartRequest`) → 제공자 행이 켜져 있는지 확인 → 인가 화면으로 302.
+
+**콜백 분기** (`OAuthFlowService::callback` → `CallbackDispatcher::dispatch`, state 의 의도별) — 로그인: 연결된 회원이면 `SocialLoginService::loginLinked`(관리자 차단 확인 → 코어 `LoginHandoffService::issue`)로 `/login?login_handoff=` 인계, 없으면 `SignupFlowService::begin` 이 가입 대기 토큰을 만들어 `/register?social_pending=` 가입 모달로. 연결: `AccountLinkService::completeLink` → 마이페이지. 재확인: `SocialReauthService::complete` → 코어 본인인증 확인 후 1회용 수령 코드로 돌아갈 주소.
+
+**가입 모달** (`SignupController`, `LinkExistingController`) → `SignupFlowService::complete` 가 코어 `AuthService::register(…, ['issue_token' => false])` 로 비밀번호 없는 회원을 만들고 `AccountLinkService::attach` → 인계 주소. 같은 이메일의 기존 계정은 `LinkExistingService`(비밀번호 또는 메일 인증번호, 5회 한도)로 연결한다. 플러그인은 토큰을 직접 만들지 않는다.
 
 **제공자 목록** (`ProviderRegistry::all`) → `ProviderRepository::all` 행을 `driver` 로 드라이버 인스턴스화 → 필터 `provider.filter_registered`(모의 제공자 리스너 포함) → 요청당 한 번 캐시.
 <!-- @intent END -->
@@ -73,10 +82,10 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 2개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 2개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 2개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
-| 레이아웃 확장 | 0개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
+| 발행 훅 | 9개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 레이아웃 확장 | 8개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 0개 | [스케줄](docs/extension-points.md#스케줄) |
@@ -117,16 +126,19 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 11개 | `plugins/_bundled/sirsoft-social_login/tests` |
-| Vitest | 0개 | — |
-| Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
+| PHPUnit | 20개 | `plugins/_bundled/sirsoft-social_login/tests` |
+| Vitest | 4개 | `vitest.config.ts` |
+| Playwright | 4개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
 # PHPUnit (변경 범위만) (Bash)
 php vendor/bin/phpunit plugins/_bundled/sirsoft-social_login/tests --filter='<대상클래스>'
+
+# Vitest (확장 디렉토리에서) (PowerShell)
+cd plugins/_bundled/sirsoft-social_login && powershell -Command "npm run test:run -- <대상>"
 
 # Playwright E2E (확장 디렉토리에서) (Bash)
 cd plugins/_bundled/sirsoft-social_login && npm run test:e2e -- specs/<대상>.spec.ts

@@ -1,0 +1,12 @@
+<!-- 정보 수정 본인 확인 — 메일을 받을 수 없는 비밀번호 없는 회원(대체 이메일로 가입)에게 「{제공자}로 다시 확인」을 보인다.
+     템플릿의 기본 안내(관리자 문의)를 이 조각으로 바꾼다. 다시 로그인하고 돌아오면 정보 수정 화면의 진입 단계(mypage_profile_edit_reauth)가
+     확인을 마무리한다. 연결된 계정이 없으면 관리자 문의 안내를 그대로 보인다. -->
+<extension extension-point="mypage_reauth_methods" mode="replace" priority="100">
+  <div data-ref="social_reauth_methods" class="space-y-3">
+    <p class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300" role="status">$t:sirsoft-social_login.reauth.notice</p>
+    <sirsoft-social_login.provider-buttons data-type="composite" data-ref="social_reauth_buttons" providers="{{socialReauthAccounts?.data?.accounts ?? []}}" intent="reauth"/>
+    <p data-if="{{!!socialReauthAccounts?.data &amp;&amp; (socialReauthAccounts?.data?.accounts ?? []).length === 0}}" class="text-sm text-yellow-800 dark:text-yellow-300">$t:sirsoft-social_login.reauth.unavailable</p>
+  </div>
+  <!-- 내 연결 목록 — 다시 로그인할 제공자 -->
+  <data-source id="socialReauthAccounts" label_key="$t:sirsoft-social_login.editor.data_source.accounts" type="api" endpoint="/api/plugins/sirsoft-social_login/me/accounts" method="GET" :auto_fetch="true" :auth_required="true"/>
+</extension>

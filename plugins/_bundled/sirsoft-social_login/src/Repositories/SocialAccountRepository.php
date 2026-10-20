@@ -142,4 +142,39 @@ class SocialAccountRepository implements SocialAccountRepositoryInterface
 
         return $map;
     }
+
+    /**
+     * 회원의 특정 제공자 연결을 찾습니다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $providerKey  제공자 키
+     * @return SocialAccount|null 연결, 없으면 null
+     */
+    public function findForUserAndProvider(int $userId, string $providerKey): ?SocialAccount
+    {
+        return SocialAccount::query()->where('user_id', $userId)->where('provider_key', $providerKey)->first();
+    }
+
+    /**
+     * 연결 행의 값을 바꿉니다.
+     *
+     * @param  SocialAccount  $account  연결
+     * @param  array<string, mixed>  $values  컬럼 값
+     * @return void
+     */
+    public function update(SocialAccount $account, array $values): void
+    {
+        $account->forceFill($values)->save();
+    }
+
+    /**
+     * 연결 1건을 지웁니다.
+     *
+     * @param  SocialAccount  $account  연결
+     * @return void
+     */
+    public function delete(SocialAccount $account): void
+    {
+        $account->delete();
+    }
 }

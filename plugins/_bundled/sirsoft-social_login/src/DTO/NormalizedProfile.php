@@ -8,6 +8,7 @@ use Plugins\Sirsoft\SocialLogin\Enums\EmailTrust;
  * 제공자별로 다른 프로필 응답을 한 모양으로 맞춘 결과.
  *
  * `emailVerified` 는 세 값이다 — true(제공자가 검증했다고 알림), false(검증 안 됨), null(제공자가 알려 주지 않음).
+ *
  * 마스킹된 이메일(`ka***@kakao.com`)이나 동의하지 않은 이메일은 `email` 을 null 로 둔다.
  *
  * @since 1.0.0
@@ -55,6 +56,43 @@ final class NormalizedProfile
             EmailTrust::Trust => true,
             EmailTrust::Verify => false,
         };
+    }
+
+    /**
+     * 가입 대기 보관용 배열로 바꿉니다.
+     *
+     * @return array<string, mixed> 직렬화 값
+     */
+    public function toArray(): array
+    {
+        return [
+            'provider_user_id' => $this->providerUserId,
+            'email' => $this->email,
+            'email_verified' => $this->emailVerified,
+            'name' => $this->name,
+            'nickname' => $this->nickname,
+            'avatar_url' => $this->avatarUrl,
+            'raw' => $this->raw,
+        ];
+    }
+
+    /**
+     * 보관한 배열로 다시 만듭니다.
+     *
+     * @param  array<string, mixed>  $data  직렬화 값
+     * @return self 프로필
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            providerUserId: (string) ($data['provider_user_id'] ?? ''),
+            email: self::str($data['email'] ?? null),
+            emailVerified: is_bool($data['email_verified'] ?? null) ? $data['email_verified'] : null,
+            name: self::str($data['name'] ?? null),
+            nickname: self::str($data['nickname'] ?? null),
+            avatarUrl: self::str($data['avatar_url'] ?? null),
+            raw: is_array($data['raw'] ?? null) ? $data['raw'] : [],
+        );
     }
 
     /**

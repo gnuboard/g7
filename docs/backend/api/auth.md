@@ -212,6 +212,7 @@ _단건 응답: `data` 객체의 필드._
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | roles | array | `[{"id":1,"identifier":"admin","name":"관리자"}]` | 사용자에게 부여된 역할 목록 (원소 id/identifier/name — roles 관계 파생, name 은 현지화 라벨) |
 | permissions | array | `[{"id":2,"identifier":"sirsoft-ecommerce.user-products.re…` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
@@ -1560,6 +1561,7 @@ _단건 응답: `data` 객체의 필드._
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | modules_count | array | `[]` | 접근 가능 모듈 수 (modules_count 속성이 로드된 경우에만 포함 — whenLoaded 성격의 조건부 필드) |
 | plugins_count | array | `[]` | 접근 가능 플러그인 수 (plugins_count 속성이 로드된 경우에만 포함) |

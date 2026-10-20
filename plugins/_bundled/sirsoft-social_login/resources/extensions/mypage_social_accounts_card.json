@@ -1,0 +1,445 @@
+{
+    "comment": "마이페이지 프로필에 「연결된 소셜 계정」 카드를 덧붙이는 조각 — 연결한 계정을 보고 끊거나, 켜진 다른 제공자를 연결한다.\n     비밀번호가 없고 연결이 하나뿐이면 서버가 해제를 막고(409 last_method), 카드는 비밀번호를 먼저 정하라고 안내한다.\n     priority 80 — 같은 자리(append)에 붙는 다른 카드(90~120)보다 아래에 놓인다(낮을수록 뒤). 해제 확인 창이 읽고 쓰는 값은 _global 이다(모달은 페이지 _local 의 낡은 값을 본다).",
+    "target_layout": "mypage/profile",
+    "priority": 80,
+    "data_sources": [
+        {
+            "id": "socialAccounts",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.accounts",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-social_login/me/accounts",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "comment": "내 연결 목록 — 로그인 회원 본인"
+        }
+    ],
+    "init_actions": [
+        {
+            "comment": "연결 왕복에서 돌아온 결과 안내",
+            "handler": "toast",
+            "if": "{{query.social === 'linked'}}",
+            "params": {
+                "type": "success",
+                "message": "$t:sirsoft-social_login.mypage.linked_toast"
+            }
+        },
+        {
+            "handler": "toast",
+            "if": "{{!!query.social_error}}",
+            "params": {
+                "type": "error",
+                "message": "{{$t('sirsoft-social_login.errors.' + query.social_error) === 'sirsoft-social_login.errors.' + query.social_error ? $t('sirsoft-social_login.errors.provider_error') : $t('sirsoft-social_login.errors.' + query.social_error)}}"
+            }
+        }
+    ],
+    "modals": [
+        {
+            "comment": "해제 확인 — 확인하면 연결을 끊고 목록을 다시 받는다. 마지막 수단이면 카드에 안내를 띄운다.",
+            "id": "social_unlink_confirm",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-social_login.mypage.unlink_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-social_login.mypage.unlink_confirm|provider={{_global.socialLoginUnlinkTarget?.label ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                    },
+                                    "text": "$t:common.cancel"
+                                },
+                                {
+                                    "id": "social_unlink_confirm_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginUnlinking": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-social_login/me/accounts/{{_global.socialLoginUnlinkTarget?.provider_key}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "DELETE"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginUnlinking": false,
+                                                                "socialLoginUnlinkTarget": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "socialAccounts"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "$t:sirsoft-social_login.mypage.unlinked_toast"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginUnlinking": false,
+                                                                "socialLoginUnlinkError": "{{error.message}}",
+                                                                "socialLoginUnlinkLastMethod": "{{error.errors?.code === 'last_method'}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm cursor-pointer disabled:opacity-50",
+                                        "disabled": "{{_global.socialLoginUnlinking}}"
+                                    },
+                                    "text": "$t:sirsoft-social_login.mypage.unlink"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "injections": [
+        {
+            "target_id": "profile_view_bio_card",
+            "position": "append",
+            "components": [
+                {
+                    "id": "social_accounts_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!socialAccounts?.data}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H2",
+                                    "props": {
+                                        "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-social_login.mypage.title"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "비밀번호 없는 계정 안내 — 비밀번호를 정하면 이메일로도 로그인할 수 있다",
+                            "id": "social_accounts_no_password",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{socialAccounts?.data?.has_password === false}}",
+                            "props": {
+                                "className": "mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex flex-col gap-2 sm:flex-row sm:items-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "flex-1 text-sm text-blue-700 dark:text-blue-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.mypage.no_password"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/mypage/change-password"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "shrink-0 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-social_login.mypage.set_password"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "연결된 계정",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(socialAccounts?.data?.accounts ?? []).length === 0}}",
+                            "props": {
+                                "className": "py-4 text-sm text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-social_login.mypage.empty"
+                        },
+                        {
+                            "id": "social_accounts_list",
+                            "type": "basic",
+                            "name": "Ul",
+                            "if": "{{(socialAccounts?.data?.accounts ?? []).length > 0}}",
+                            "props": {
+                                "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "socialAccounts?.data?.accounts ?? []",
+                                        "item_var": "account"
+                                    },
+                                    "dataKey": "{{account.provider_key}}",
+                                    "props": {
+                                        "className": "py-3 flex items-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "제공자 심볼 — 로그인 버튼과 같은 공식 심볼을 버튼 색 원 안에 그린다",
+                                            "type": "basic",
+                                            "name": "sirsoft-social_login.ProviderMark",
+                                            "props": {
+                                                "brand": "{{account.brand}}",
+                                                "label": "{{account.label}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{account.label}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 truncate"
+                                                    },
+                                                    "text": "{{account.email ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-social_login.mypage.linked_label"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": " {{account.linked_at | date}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "social_account_unlink_{{account.provider_key}}",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "해제 — 확인 창에 대상을 넘기고 연다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginUnlinkTarget": "{{account}}",
+                                                                "socialLoginUnlinkError": null,
+                                                                "socialLoginUnlinkLastMethod": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "social_unlink_confirm"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "shrink-0 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                            },
+                                            "text": "$t:sirsoft-social_login.mypage.unlink"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "마지막 수단 해제 거절 안내",
+                            "id": "social_accounts_last_method",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.socialLoginUnlinkLastMethod === true}}",
+                            "props": {
+                                "className": "mt-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 flex flex-col gap-2 sm:flex-row sm:items-center",
+                                "role": "alert"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "flex-1 text-sm text-yellow-800 dark:text-yellow-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.mypage.last_method"
+                                },
+                                {
+                                    "id": "social_accounts_set_password",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/mypage/change-password"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "shrink-0 px-3 py-1.5 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-social_login.mypage.set_password"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.socialLoginUnlinkError && _global.socialLoginUnlinkLastMethod !== true}}",
+                            "props": {
+                                "className": "mt-3 text-sm text-red-600 dark:text-red-400",
+                                "role": "alert"
+                            },
+                            "text": "{{_global.socialLoginUnlinkError ?? ''}}"
+                        },
+                        {
+                            "comment": "연결할 수 있는 제공자",
+                            "id": "social_accounts_available",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(socialAccounts?.data?.available ?? []).length > 0}}",
+                            "props": {
+                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "mb-3 text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-social_login.mypage.available"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "sirsoft-social_login.ProviderButtons",
+                                    "props": {
+                                        "providers": "{{socialAccounts?.data?.available ?? []}}",
+                                        "intent": "link",
+                                        "size": "sm"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

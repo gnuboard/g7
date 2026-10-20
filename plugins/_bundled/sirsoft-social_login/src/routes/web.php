@@ -19,7 +19,7 @@ use Plugins\Sirsoft\SocialLogin\Mock\MockController;
 // 로그인 왕복 시작 — 브라우저가 이 주소로 오면 제공자 인가 화면으로 보낸다.
 Route::get('/oauth/{provider}/start', [OAuthController::class, 'start'])
     ->where('provider', '[a-z][a-z0-9_]{1,49}')
-    ->middleware('throttle:30,1')
+    ->middleware('throttle:30,1,sirsoft-social_login.oauth-start')
     ->name('oauth.start');
 
 // 관리자 연결 테스트 결과 — 일회용(한 번 보면 지워짐), no-store.
@@ -32,11 +32,11 @@ Route::get('/test-result/{code}', [OAuthController::class, 'testResult'])
 Route::withoutMiddleware([ValidateCsrfToken::class])->group(function () {
     Route::match(['get', 'post'], '/oauth/{provider}/callback', [OAuthController::class, 'callback'])
         ->where('provider', '[a-z][a-z0-9_]{1,49}')
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:60,1,sirsoft-social_login.oauth-callback')
         ->name('oauth.callback');
 
     // 모의 제공자 — 게이트(`sirsoft-social_login:mock --enable`)가 꺼져 있으면 컨트롤러가 404.
-    Route::prefix('mock')->name('mock.')->middleware('throttle:120,1')->group(function () {
+    Route::prefix('mock')->name('mock.')->middleware('throttle:120,1,sirsoft-social_login.mock')->group(function () {
         Route::match(['get', 'post'], '/authorize', [MockController::class, 'authorize'])->name('authorize');
         Route::match(['get', 'post'], '/token', [MockController::class, 'token'])->name('token');
         Route::get('/userinfo', [MockController::class, 'userinfo'])->name('userinfo');

@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Plugins\Sirsoft\SocialLogin\Contracts\ProviderDriverInterface;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
+use Plugins\Sirsoft\SocialLogin\DTO\TokenSet;
 use Plugins\Sirsoft\SocialLogin\Enums\AttemptIntent;
 use Plugins\Sirsoft\SocialLogin\Enums\AttemptOutcome;
 use Plugins\Sirsoft\SocialLogin\Exceptions\ProviderException;
@@ -19,8 +20,8 @@ use Plugins\Sirsoft\SocialLogin\Repositories\Contracts\ProviderRepositoryInterfa
 /**
  * OAuth 왕복 — 시작(인가 주소 만들기)과 콜백(코드 교환 → 프로필 → 의도별 분기).
  *
- * 1.0.0 S1 범위는 `test` 의도(관리자 연결 테스트)를 끝까지 처리한다. 로그인·연결 의도의 분기(로그인 인계, 가입, 연결)는
- * 다음 단계에서 붙고, 지금은 시도를 `denied` 로 남기고 로그인 화면으로 돌려보낸다.
+ * `test` 의도(관리자 연결 테스트)는 여기서 결과 화면까지 끝내고, 로그인·연결·본인 재확인 의도는 `CallbackDispatcher` 로
+ * 넘긴다(로그인 인계, 가입, 연결, 재확인).
  *
  * 콜백 응답 직전에는 세션 ID 를 새로 만든다(세션 고정 방어).
  *
@@ -58,11 +59,12 @@ class OAuthFlowService
      * @param  AttemptIntent  $intent  의도
      * @param  string|null  $redirect  복귀 주소
      * @param  int|null  $userId  시작한 회원 ID
+     * @param  string|null  $challengeId  본인 재확인 의도의 코어 본인인증 요청 ID
      * @return string 인가 주소
      *
      * @throws ProviderException 제공자가 없거나 꺼져 있을 때
      */
-    public function start(string $providerKey, AttemptIntent $intent, ?string $redirect, ?int $userId = null): string
+    public function start(string $providerKey, AttemptIntent $intent, ?string $redirect, ?int $userId = null, ?string $challengeId = null): string
     {
         $driver = $this->registry->get($providerKey);
         if ($driver === null) {
@@ -83,6 +85,7 @@ class OAuthFlowService
             usePkce: (bool) ($supports['pkce'] ?? false),
             useNonce: (bool) ($supports['oidc'] ?? false),
             ttlMinutes: (int) plugin_setting('sirsoft-social_login', 'state_ttl_minutes', StateStore::DEFAULT_TTL_MINUTES),
+            challengeId: $challengeId,
         );
 
         return $driver->authorizeUrl($request);
@@ -99,15 +102,25 @@ class OAuthFlowService
     {
         $state = $this->states->pull((string) $request->input('state', ''));
 
-        if ($state === null || $state->providerKey !== $providerKey) {
+        if ($state === null) {
             $this->record($providerKey, AttemptIntent::Login->value, AttemptOutcome::Failed, null, 'state_invalid', '', $request);
 
             return self::loginErrorUrl('state_invalid');
         }
 
+        if ($state->providerKey !== $providerKey) {
+            // 다른 제공자의 콜백 주소로 돌아온 state — 이미 꺼냈으므로(1회성) 다시 쓸 수 없다. 로그인한 회원이 시작한 연결·재확인은
+            // 시작한 화면으로(재확인 요청도 거둔다), 그 밖에는 위조 state 와 같은 로그인 화면 응답.
+            $this->record($state->providerKey, $state->intent, AttemptOutcome::Failed, $state->userId, 'state_invalid', '', $request);
+
+            return in_array($state->intent, [AttemptIntent::Link->value, AttemptIntent::Reauth->value], true)
+                ? $this->failureUrl($state, 'state_invalid')
+                : self::loginErrorUrl('state_invalid');
+        }
+
         try {
             try {
-                $profile = $this->exchange($providerKey, $state, $request);
+                [$profile, $tokens] = $this->exchange($providerKey, $state, $request);
             } catch (ProviderException $e) {
                 throw $e;
             } catch (\Throwable $e) {
@@ -133,10 +146,16 @@ class OAuthFlowService
             return $this->storeTestResult($providerKey, true, $profile, null);
         }
 
-        // 로그인·연결 분기는 다음 단계에서 붙는다 — 지금은 거절로 남기고 로그인 화면으로 돌려보낸다.
-        $this->record($providerKey, $state->intent, AttemptOutcome::Denied, $state->userId, 'flow_not_available', null, $request);
+        // 로그인·연결·재확인 분기 — 디스패처가 쓰는 서비스들이 이 서비스(왕복 시작)를 다시 주입받으므로 여기서 꺼낸다.
+        try {
+            return app(CallbackDispatcher::class)->dispatch($state, $profile, $tokens);
+        } catch (\Throwable $e) {
+            // 분기 안의 예상 밖 오류도 오류 화면 대신 의도에 맞는 화면으로 — 원인은 로그에만.
+            report($e);
+            $this->record($providerKey, $state->intent, AttemptOutcome::Failed, $state->userId, 'unexpected_error', class_basename($e), $request);
 
-        return self::loginErrorUrl('flow_not_available', $state->redirect);
+            return $this->failureUrl($state, 'unexpected_error');
+        }
     }
 
     /**
@@ -175,11 +194,15 @@ class OAuthFlowService
      *
      * @param  string  $code  오류 코드
      * @param  string|null  $redirect  로그인 뒤 복귀 주소
+     * @param  string|null  $providerKey  안내 문구에 쓸 제공자 키 (예: 이메일 동의 다시 받기)
      * @return string 주소
      */
-    public static function loginErrorUrl(string $code, ?string $redirect = null): string
+    public static function loginErrorUrl(string $code, ?string $redirect = null, ?string $providerKey = null): string
     {
         $query = ['social_error' => $code];
+        if ($providerKey !== null) {
+            $query['provider'] = $providerKey;
+        }
         $safe = StateStore::safeRedirect($redirect);
         if ($safe !== '/') {
             $query['redirect'] = $safe;
@@ -196,11 +219,11 @@ class OAuthFlowService
      * @param  string  $providerKey  제공자 키
      * @param  AuthorizationRequest  $state  시작 정보
      * @param  Request  $request  콜백 요청
-     * @return NormalizedProfile 정규화 프로필
+     * @return array{0: NormalizedProfile, 1: TokenSet} 정규화 프로필과 토큰
      *
      * @throws ProviderException 제공자 오류·교환 실패·ID 없음
      */
-    private function exchange(string $providerKey, AuthorizationRequest $state, Request $request): NormalizedProfile
+    private function exchange(string $providerKey, AuthorizationRequest $state, Request $request): array
     {
         $error = $request->input('error');
         if (is_string($error) && $error !== '') {
@@ -229,7 +252,7 @@ class OAuthFlowService
             throw new ProviderException('profile_missing_id');
         }
 
-        return $profile;
+        return [$profile, $tokens];
     }
 
     /**
@@ -245,7 +268,19 @@ class OAuthFlowService
             return $this->storeTestResult($state->providerKey, false, null, $errorCode);
         }
 
-        return self::loginErrorUrl($errorCode, $state->redirect);
+        if ($state->intent === AttemptIntent::Login->value) {
+            return self::loginErrorUrl($errorCode, $state->redirect);
+        }
+
+        // 연결·재확인은 로그인한 회원이 마이페이지에서 시작한 왕복 — 로그인 화면은 로그인한 사람을 홈으로 되돌려 실패 사유가
+        // 보이지 않으므로 출발한 화면으로 보낸다. 디스패처가 쓰는 서비스들이 이 서비스를 주입받으므로 여기서 꺼낸다.
+        try {
+            return app(CallbackDispatcher::class)->failure($state, $errorCode);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return self::loginErrorUrl($errorCode, $state->redirect);
+        }
     }
 
     /**

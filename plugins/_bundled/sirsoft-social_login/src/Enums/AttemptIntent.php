@@ -14,6 +14,7 @@ enum AttemptIntent: string
     case Login = 'login';
     case Link = 'link';
     case Test = 'test';
+    case Reauth = 'reauth';
 
     /**
      * 모든 케이스의 문자열 값 목록을 반환합니다.

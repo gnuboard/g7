@@ -20,9 +20,6 @@ class MockKeyPair
     /** 캐시 키 */
     public const CACHE_KEY = 'mock_rsa_private';
 
-    /** 키 ID */
-    public const KID = 'mock-1';
-
     /**
      * @param  CacheInterface  $cache  플러그인 캐시
      */
@@ -50,6 +47,21 @@ class MockKeyPair
     }
 
     /**
+     * 키 ID 를 반환합니다 — 공개키에서 만든다.
+     *
+     * 모의 제공자를 껐다 켜면 키가 새로 만들어진다. 키 ID 가 고정이면 검증 쪽이 캐시해 둔 옛 공개키로 새 서명을 검사해
+     * 실패한다(키 ID 가 처음 보는 값일 때만 공개키 목록을 다시 받는다). 키마다 다른 ID 를 주어 다시 받게 한다.
+     *
+     * @return string 키 ID
+     */
+    public function kid(): string
+    {
+        $details = openssl_pkey_get_details(openssl_pkey_get_private($this->privateKey()));
+
+        return 'mock-'.substr(hash('sha256', (string) $details['rsa']['n']), 0, 16);
+    }
+
+    /**
      * 공개키 JWK 를 반환합니다.
      *
      * @return array<string, string> JWK
@@ -60,7 +72,7 @@ class MockKeyPair
 
         return [
             'kty' => 'RSA',
-            'kid' => self::KID,
+            'kid' => $this->kid(),
             'use' => 'sig',
             'alg' => 'RS256',
             'n' => Base64Url::encode($details['rsa']['n']),
@@ -76,7 +88,7 @@ class MockKeyPair
      */
     public function sign(array $claims): string
     {
-        $header = Base64Url::encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT', 'kid' => self::KID]));
+        $header = Base64Url::encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT', 'kid' => $this->kid()]));
         $payload = Base64Url::encode(json_encode($claims));
         openssl_sign($header.'.'.$payload, $signature, $this->privateKey(), OPENSSL_ALGO_SHA256);
 

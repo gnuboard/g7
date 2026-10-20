@@ -17,35 +17,72 @@
 <!-- @generated:layouts END -->
 
 <!-- @intent START -->
-플러그인 설정 화면(`plugin_settings`) 하나입니다. 코어 「플러그인 관리 → 설정」 경로가 띄우며, 사이트 전체 정책 15칸을 저장합니다. 제공자별 자격증명 편집 화면은 다음 단계 산출물입니다.
+플러그인 설정 화면(`plugin_settings`) 하나입니다. 코어 「플러그인 관리 → 설정」 경로가 띄우며, 사이트 전체 정책 15칸을 저장합니다. 제공자별 자격증명 편집 화면은 다음 단계 산출물입니다. 사용자 화면(로그인·가입 버튼, 가입 모달, 마이페이지 카드, 재확인)은 자기 레이아웃이 아니라 템플릿 화면에 주입하는 레이아웃 확장입니다(`extension-points.md` 「레이아웃 확장」).
 <!-- @intent END -->
 
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 액션 핸들러가 없습니다._
+핸들러 2개 (정의: `resources/js/handlers/index.ts`).
+
+| 핸들러 | 레이아웃에서 부르는 이름 |
+|---|---|
+| `startLink` | `sirsoft-social_login.startLink` |
+| `startReauth` | `sirsoft-social_login.startReauth` |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-액션 핸들러가 없습니다.
+로그인 회원의 왕복 시작 두 가지입니다. `startLink` 는 마이페이지 [연결], `startReauth` 는 대체 이메일 회원의 「{제공자}로 다시 확인」에서 부릅니다. 둘 다 코어 API 클라이언트(`G7Core.api`)로 시작 API 를 불러 인가 주소를 받고, 같은 출처이거나 https 인 주소로만 이동합니다. 로그인 토큰을 직접 읽지 않고 fetch 를 덮어쓰지 않습니다. 실패하면 서버 문구를 토스트로 보입니다.
 <!-- @intent END -->
 
 ## 전역 진입점
 
 <!-- @generated:frontend-entry START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_프론트 엔트리포인트가 없습니다._
+| 항목 | 값 |
+|---|---|
+| 엔트리 파일 | `resources/js/index.ts` |
+| 전역 객체 | `window.__SirsoftSocialLogin` |
+| 재등록 진입점 | `initPlugin()` |
+
+로케일 전환 시 코어가 이 진입점을 호출해 핸들러를 다시 등록합니다. 진입점은 핸들러 재등록만 수행하고 1회성 부팅 작업을 포함하지 않습니다.
 <!-- @generated:frontend-entry END -->
 
 <!-- @intent START -->
-전역 진입점(프론트 번들)이 없습니다. 설정 화면은 코어 액션만 씁니다.
+`resources/js/index.ts` 가 핸들러를 등록하고 버튼 컴포넌트를 내보냅니다. 설정 화면은 코어 액션만 씁니다.
 <!-- @intent END -->
 
 ## 에셋
 
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_프론트 에셋이 없습니다._
+| 경로 | 구분 |
+|---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
+| `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
+
+로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-에셋 번들이 없습니다(`plugin.json` 에 assets 를 두지 않음). 테스트 결과 화면과 모의 동의 화면은 서버가 그리는 단독 HTML 입니다.
+`plugin.json` 의 assets 는 JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/buttons.css` → `dist/css/plugin.css`)입니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-social_login --production` 으로 다시 굽습니다. 테스트 결과 화면과 모의 동의 화면은 서버가 그리는 단독 HTML 입니다.
+<!-- @intent END -->
+
+## 컴포넌트
+
+<!-- @intent START -->
+`ProviderButtons`(등록 이름 `sirsoft-social_login.ProviderButtons`, 원본 `resources/js/components/composite/ProviderButtons.tsx`) — 제공자 버튼 목록입니다.
+
+| prop | 값 | 설명 |
+| --- | --- | --- |
+| `providers` | 공개 제공자 목록(`GET …/providers`) 또는 마이페이지 응답의 `available`·`accounts` | 비면 아무것도 그리지 않는다 |
+| `intent` | `login` · `register` · `link` · `reauth` | 로그인·가입은 시작 주소 `<a href>`(새 탭 가능), 연결·재확인은 핸들러 `startLink`·`startReauth` |
+| `redirect` | 같은 출처 경로 | 로그인·가입 뒤 돌아갈 곳. `/` 로 시작하지 않거나 `//` 이면 싣지 않는다 |
+| `size` · `disabled` · `className` | `md`·`sm` / bool / 문자열 | 비활성이면 `href` 를 빼고 `aria-disabled` |
+| `id` · `editorAttrs` | 문자열 / 객체 | 바깥 요소의 DOM id, 레이아웃 편집기가 편집 모드에서만 넣는 표식(바깥 요소에 그대로 펼친다) |
+
+- 모양은 제공자의 `brand`(`kakao`·`naver`·`google`·`facebook`·`custom`)로 고릅니다. 모의 제공자도 원 제공자 brand 를 씁니다. 각 사 버튼 지침의 색(카카오 `#FEE500`, 네이버 `#03A94D`, 구글 흰 배경·`#747775` 테두리, 페이스북 `#1877F2`)과 공식 심볼 SVG 를 인라인으로 그리고, 커스텀(일반 OIDC)은 `button_style` 색과 이름 첫 글자 원을 씁니다.
+- 다크는 사이트 다크(`html.dark`)만 따릅니다(구글 `#131314`·`#8E918F`·`#E3E3E3`). 운영체제 다크 설정은 보지 않습니다 — 사이트를 라이트로 둔 방문자에게 버튼 하나만 어둡게 나오지 않게.
+- CSS 는 자체 접두 `.sl-*` 만 쓰고 템플릿 의미 색 클래스에 기대지 않습니다. 버튼마다 `aria-label`(「카카오 로그인」 등)과 `data-social-provider` 가 붙습니다.
+
+`ProviderMark`(등록 이름 `sirsoft-social_login.ProviderMark`, 원본 `resources/js/components/basic/ProviderMark.tsx`) — 마이페이지 「연결된 소셜 계정」 줄 앞의 제공자 표시입니다. 버튼과 같은 공식 심볼을 버튼 색 원(카카오 `#FEE500`, 네이버 `#03A94D`, 구글 흰 배경·`#747775` 테두리 / 다크 `#131314`·`#8E918F`, 페이스북 `#1877F2`) 안에 그리고, 커스텀은 이름 첫 글자 원을 씁니다. props 는 `brand`(내장 4종 밖은 custom) · `label` · `className` · `id`. 이름은 옆 텍스트가 맡으므로 `aria-hidden` 이고 `data-social-provider-mark` 에 계열이 붙습니다. 편집기 팔레트에는 올리지 않습니다.
 <!-- @intent END -->

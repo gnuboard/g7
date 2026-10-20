@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — 소셜 로그인 플러그인. 제공자 버튼 컴포넌트를 팔레트에 올리고, 사용자 화면 확장 조각의 데이터소스(socialProviders·socialAccounts·socialReauthAccounts)에 프리뷰 샘플을 준다. 응답 모양은 ProviderListController::index()·MyAccountsController::index() 에서 역추론. 이 파일은 릴리즈에 실리므로 실제 제공자 키·회원 정보를 싣지 않는다.",
+  "pluginId": "sirsoft-social_login",
+  "version": "1.0.0",
+  "description": "소셜 로그인 플러그인 레이아웃 편집기 스펙 (제공자 버튼 팔레트 + 사용자 화면 샘플 데이터).",
+  "componentPalette": {
+    "comment": "확장 컴포넌트는 레지스트리 등록 이름(`{플러그인식별자}.{이름}`)을 그대로 키로 쓴다. 라벨은 이 플러그인의 언어팩 네임스페이스를 쓴다.",
+    "groups": [
+      {
+        "label": "$t:sirsoft-social_login.editor.palette.group",
+        "kind": "content",
+        "components": ["sirsoft-social_login.ProviderButtons"]
+      }
+    ],
+    "entries": {
+      "sirsoft-social_login.ProviderButtons": {
+        "label": "$t:sirsoft-social_login.editor.palette.provider_buttons.label",
+        "requiresDefaultNode": true,
+        "defaultNode": {
+          "type": "composite",
+          "name": "sirsoft-social_login.ProviderButtons",
+          "props": {
+            "providers": "{{socialProviders?.data ?? []}}",
+            "intent": "login",
+            "redirect": "{{query.redirect ?? '/'}}"
+          }
+        }
+      }
+    }
+  },
+  "componentCapabilities": {
+    "sirsoft-social_login.ProviderButtons": {
+      "label": "$t:sirsoft-social_login.editor.palette.provider_buttons.label",
+      "coreProps": ["id"],
+      "styleControls": ["marginAll", "width"]
+    }
+  },
+  "sampleData": {
+    "byDataSourceId": {
+      "socialProviders": {
+        "data": [
+          { "key": "kakao", "label": "Kakao", "brand": "kakao", "style": null, "start_url": "/plugins/sirsoft-social_login/oauth/kakao/start" },
+          { "key": "naver", "label": "Naver", "brand": "naver", "style": null, "start_url": "/plugins/sirsoft-social_login/oauth/naver/start" },
+          { "key": "google", "label": "Google", "brand": "google", "style": null, "start_url": "/plugins/sirsoft-social_login/oauth/google/start" },
+          { "key": "facebook", "label": "Facebook", "brand": "facebook", "style": null, "start_url": "/plugins/sirsoft-social_login/oauth/facebook/start" }
+        ]
+      },
+      "socialAccounts": {
+        "data": {
+          "accounts": [
+            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": "us**@example.test", "linked_at": "2026-10-20T09:30:00+09:00", "last_login_at": "2026-10-20T09:30:00+09:00" }
+          ],
+          "available": [
+            { "provider_key": "naver", "label": "Naver", "brand": "naver", "style": null },
+            { "provider_key": "google", "label": "Google", "brand": "google", "style": null }
+          ],
+          "has_password": false,
+          "can_unlink": { "kakao": { "allowed": false, "reason": "last_method" } },
+          "reauth_via_social": false
+        }
+      },
+      "socialReauthAccounts": {
+        "data": {
+          "accounts": [
+            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": null, "linked_at": "2026-10-20T09:30:00+09:00", "last_login_at": null }
+          ],
+          "available": [],
+          "has_password": false,
+          "can_unlink": { "kakao": { "allowed": false, "reason": "last_method" } },
+          "reauth_via_social": true
+        }
+      }
+    }
+  },
+  "states": {
+    "comment": "가입 모달과 연결 해제 확인 창은 창을 연 화면이 담아 둔 값(_global.socialLoginSignup·socialLoginUnlinkTarget)을 읽는다. 편집기는 그 클릭을 하지 않으므로 표본이 대신 담는다 — 없으면 제목·안내에 자리표시 원문이 그려진다.",
+    "groups": [
+      {
+        "comment": "소셜 가입 모달 — 가입 화면 init 의 GET signup/pending 응답이 _global.socialLoginSignup 에 담긴다.",
+        "scope": { "kind": "modal", "match": "social_signup_complete" },
+        "items": [
+          {
+            "id": "signup_email_input",
+            "label": "$t:sirsoft-social_login.editor.state.signup_email_input",
+            "default": true,
+            "initialState": {
+              "global": {
+                "socialLoginSignup": {
+                  "provider": { "key": "kakao", "label": "Kakao", "brand": "kakao" },
+                  "step": "complete",
+                  "name": "Sample User",
+                  "nickname": "sample",
+                  "email": { "mode": "input", "value": null, "verified": false, "requires_code": true, "challenge_id": null },
+                  "missing": ["email"],
+                  "show_profile_fields": false,
+                  "existing_account": null,
+                  "expires_at": "2026-10-20T10:00:00+09:00"
+                },
+                "socialLoginForm": { "name": "Sample User", "nickname": "sample", "email": "", "agree_terms": false, "agree_privacy": false },
+                "socialLoginSignupExpired": false,
+                "socialLoginEmailVerified": false,
+                "socialLoginEmailChallengeId": null,
+                "socialLoginEmailExpiresAt": null,
+                "socialLoginEmailRemaining": 0
+              }
+            }
+          },
+          {
+            "id": "signup_code_sent",
+            "label": "$t:sirsoft-social_login.editor.state.signup_code_sent",
+            "initialState": {
+              "global": {
+                "socialLoginSignup": {
+                  "provider": { "key": "kakao", "label": "Kakao", "brand": "kakao" },
+                  "step": "complete",
+                  "name": "Sample User",
+                  "nickname": "sample",
+                  "email": { "mode": "input", "value": null, "verified": false, "requires_code": true, "challenge_id": "00000000-0000-0000-0000-000000000000" },
+                  "missing": ["email"],
+                  "show_profile_fields": false,
+                  "existing_account": null,
+                  "expires_at": "2026-10-20T10:00:00+09:00"
+                },
+                "socialLoginForm": { "name": "Sample User", "nickname": "sample", "email": "us**@example.test", "code": "", "agree_terms": false, "agree_privacy": false },
+                "socialLoginSignupExpired": false,
+                "socialLoginEmailVerified": false,
+                "socialLoginEmailChallengeId": "00000000-0000-0000-0000-000000000000",
+                "socialLoginEmailExpiresAt": "2026-10-20T09:35:00+09:00",
+                "socialLoginEmailRemaining": 245
+              }
+            }
+          },
+          {
+            "id": "signup_email_locked",
+            "label": "$t:sirsoft-social_login.editor.state.signup_email_locked",
+            "initialState": {
+              "global": {
+                "socialLoginSignup": {
+                  "provider": { "key": "google", "label": "Google", "brand": "google" },
+                  "step": "complete",
+                  "name": "Sample User",
+                  "nickname": null,
+                  "email": { "mode": "locked", "value": "us**@example.test", "verified": true, "requires_code": false, "challenge_id": null },
+                  "missing": [],
+                  "show_profile_fields": false,
+                  "existing_account": null,
+                  "expires_at": "2026-10-20T10:00:00+09:00"
+                },
+                "socialLoginForm": { "name": "Sample User", "nickname": "", "email": "us**@example.test", "agree_terms": false, "agree_privacy": false },
+                "socialLoginSignupExpired": false,
+                "socialLoginEmailVerified": true
+              }
+            }
+          },
+          {
+            "id": "signup_expired",
+            "label": "$t:sirsoft-social_login.editor.state.signup_expired",
+            "initialState": {
+              "global": {
+                "socialLoginSignup": { "provider": { "key": "kakao", "label": "Kakao", "brand": "kakao" } },
+                "socialLoginSignupExpired": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "이미 가입된 이메일 모달 — 같은 응답의 existing_account(마스킹 이메일, 비밀번호 여부)를 읽는다.",
+        "scope": { "kind": "modal", "match": "social_existing_account" },
+        "items": [
+          {
+            "id": "existing_with_password",
+            "label": "$t:sirsoft-social_login.editor.state.existing_with_password",
+            "default": true,
+            "initialState": {
+              "global": {
+                "socialLoginSignup": {
+                  "provider": { "key": "naver", "label": "Naver", "brand": "naver" },
+                  "step": "existing",
+                  "existing_account": { "email_masked": "us**@example.test", "has_password": true }
+                }
+              }
+            }
+          },
+          {
+            "id": "existing_without_password",
+            "label": "$t:sirsoft-social_login.editor.state.existing_without_password",
+            "initialState": {
+              "global": {
+                "socialLoginSignup": {
+                  "provider": { "key": "naver", "label": "Naver", "brand": "naver" },
+                  "step": "existing",
+                  "existing_account": { "email_masked": "us**@example.test", "has_password": false }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "연결 해제 확인 창 — 카드 행 [해제] 클릭이 그 행을 _global.socialLoginUnlinkTarget 에 담는다.",
+        "scope": { "kind": "modal", "match": "social_unlink_confirm" },
+        "items": [
+          {
+            "id": "unlink_confirm",
+            "label": "$t:sirsoft-social_login.editor.state.unlink_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "socialLoginUnlinkTarget": { "provider_key": "kakao", "label": "Kakao", "brand": "kakao" },
+                "socialLoginUnlinkLastMethod": false
+              }
+            }
+          },
+          {
+            "id": "unlink_last_method",
+            "label": "$t:sirsoft-social_login.editor.state.unlink_last_method",
+            "initialState": {
+              "global": {
+                "socialLoginUnlinkTarget": { "provider_key": "kakao", "label": "Kakao", "brand": "kakao" },
+                "socialLoginUnlinkLastMethod": true
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -3,7 +3,13 @@
 namespace Plugins\Sirsoft\SocialLogin;
 
 use App\Extension\AbstractPlugin;
+use Plugins\Sirsoft\SocialLogin\Database\Seeders\ProviderSeeder;
+use Plugins\Sirsoft\SocialLogin\Listeners\ActivityLogListener;
+use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserDelete;
+use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserWithdraw;
+use Plugins\Sirsoft\SocialLogin\Listeners\InjectSocialProvidersIntoUserResource;
 use Plugins\Sirsoft\SocialLogin\Listeners\RegisterMockProvidersListener;
+use Plugins\Sirsoft\SocialLogin\Listeners\RegisterSocialReauthProviderListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\ValidateSettingsListener;
 
 /**
@@ -144,6 +150,10 @@ class Plugin extends AbstractPlugin
      *
      *  - RegisterMockProvidersListener: 모의 게이트가 켜졌을 때 모의 제공자 5종 등록
      *  - ValidateSettingsListener: 설정 저장 검증 규칙
+     *  - RegisterSocialReauthProviderListener: 대체 이메일 회원의 본인 재확인 수단(소셜 재로그인)을 코어 본인인증에 등록
+     *  - CleanAccountsOnUserDelete / CleanAccountsOnUserWithdraw: 회원 삭제·탈퇴 때 연결 정리(연쇄 삭제에 기대지 않는다)
+     *  - InjectSocialProvidersIntoUserResource: 회원 응답에 연결된 제공자 목록(`social_providers`)
+     *  - ActivityLogListener: 연결·해제·가입 활동 로그
      *
      * @return array<class-string> 리스너 클래스 목록
      */
@@ -152,6 +162,11 @@ class Plugin extends AbstractPlugin
         return [
             RegisterMockProvidersListener::class,
             ValidateSettingsListener::class,
+            RegisterSocialReauthProviderListener::class,
+            CleanAccountsOnUserDelete::class,
+            CleanAccountsOnUserWithdraw::class,
+            InjectSocialProvidersIntoUserResource::class,
+            ActivityLogListener::class,
         ];
     }
 
@@ -191,6 +206,101 @@ class Plugin extends AbstractPlugin
                 'parameters' => [
                     'profile' => 'NormalizedProfile - 정규화한 프로필(토큰 없음)',
                     'providerKey' => 'string - 제공자 키',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.signup.filter_registration_data',
+                'type' => 'filter',
+                'description' => [
+                    'ko' => '소셜 가입으로 코어 가입에 넘기기 직전의 가입 데이터를 걸러 냅니다. 필수 키(name, email, 동의)는 지워도 되살립니다. 인자: (array $data, NormalizedProfile $profile)',
+                    'en' => 'Filters the registration data right before the social signup calls core registration. Required keys (name, email, consents) are restored if removed. Arguments: (array $data, NormalizedProfile $profile)',
+                    'ja' => 'ソーシャル登録でコアの会員登録に渡す直前の登録データをフィルターします。必須キー(name、email、同意)は削除しても復元されます。引数: (array $data, NormalizedProfile $profile)',
+                ],
+                'parameters' => [
+                    'data' => 'array - 가입 데이터(name, nickname, email, agree_terms, agree_privacy, language, social_provider)',
+                    'profile' => 'NormalizedProfile - 정규화한 프로필(토큰 없음)',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.account.after_link',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '회원에게 소셜 계정 연결을 새로 만든 직후 발행됩니다. 인자: (SocialAccount $account, User $user, array $context — method: link·existing·auto·signup)',
+                    'en' => 'Fired right after a social account is newly linked to a member. Arguments: (SocialAccount $account, User $user, array $context — method: link, existing, auto or signup)',
+                    'ja' => '会員にソーシャルアカウントの連携を新しく作成した直後に発行されます。引数: (SocialAccount $account, User $user, array $context — method: link・existing・auto・signup)',
+                ],
+                'parameters' => [
+                    'account' => 'SocialAccount - 연결(토큰·원본 프로필은 직렬화에서 숨김)',
+                    'user' => 'User - 회원',
+                    'context' => 'array - method(연결 경로)',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.account.before_unlink',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '소셜 계정 연결을 지우기 직전에 발행됩니다. 인자: (SocialAccount $account, User $user, string $reason — user·admin·webhook·withdraw·delete)',
+                    'en' => 'Fired right before a social account link is removed. Arguments: (SocialAccount $account, User $user, string $reason — user, admin, webhook, withdraw or delete)',
+                    'ja' => 'ソーシャルアカウントの連携を削除する直前に発行されます。引数: (SocialAccount $account, User $user, string $reason — user・admin・webhook・withdraw・delete)',
+                ],
+                'parameters' => [
+                    'account' => 'SocialAccount - 연결',
+                    'user' => 'User - 회원',
+                    'reason' => 'string - 해제 사유',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.account.after_unlink',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '소셜 계정 연결을 지운 직후 발행됩니다. 인자: (SocialAccount $account, User $user, string $reason)',
+                    'en' => 'Fired right after a social account link is removed. Arguments: (SocialAccount $account, User $user, string $reason)',
+                    'ja' => 'ソーシャルアカウントの連携を削除した直後に発行されます。引数: (SocialAccount $account, User $user, string $reason)',
+                ],
+                'parameters' => [
+                    'account' => 'SocialAccount - 지운 연결(메모리의 값)',
+                    'user' => 'User - 회원',
+                    'reason' => 'string - 해제 사유',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.auth.after_social_login',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '연결된 회원에게 로그인 인계 코드를 발급한 직후 발행됩니다. 2단계 인증·비밀번호 변경 같은 코어 관문은 그 뒤 로그인 화면에서 진행됩니다. 인자: (User $user, SocialAccount $account)',
+                    'en' => 'Fired right after a login handoff code is issued for a linked member. Core gates such as two-factor and password change follow on the login screen. Arguments: (User $user, SocialAccount $account)',
+                    'ja' => '連携済み会員にログイン引き継ぎコードを発行した直後に発行されます。2段階認証・パスワード変更などのコアの関門はその後ログイン画面で進みます。引数: (User $user, SocialAccount $account)',
+                ],
+                'parameters' => [
+                    'user' => 'User - 회원',
+                    'account' => 'SocialAccount - 연결',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.auth.after_social_signup',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '소셜 계정으로 회원 가입을 마친 직후(연결 생성 뒤) 발행됩니다. 인자: (User $user, SocialAccount $account)',
+                    'en' => 'Fired right after a member signs up with a social account (after the link is created). Arguments: (User $user, SocialAccount $account)',
+                    'ja' => 'ソーシャルアカウントで会員登録を終えた直後(連携作成後)に発行されます。引数: (User $user, SocialAccount $account)',
+                ],
+                'parameters' => [
+                    'user' => 'User - 새 회원(비밀번호 없음)',
+                    'account' => 'SocialAccount - 연결',
+                ],
+            ],
+            [
+                'name' => 'sirsoft-social_login.signup.surge',
+                'type' => 'action',
+                'description' => [
+                    'ko' => '한 제공자의 시간당 소셜 가입 수가 설정 기준에 닿으면 하루 한 번 발행됩니다. 인자: (string $providerKey, int $count, int $threshold)',
+                    'en' => 'Fired once a day when a provider\'s hourly social signups reach the configured threshold. Arguments: (string $providerKey, int $count, int $threshold)',
+                    'ja' => '一つのプロバイダーの1時間あたりのソーシャル登録数が設定の基準に達すると1日に1回発行されます。引数: (string $providerKey, int $count, int $threshold)',
+                ],
+                'parameters' => [
+                    'providerKey' => 'string - 제공자 키',
+                    'count' => 'int - 이번 시간 가입 수',
+                    'threshold' => 'int - 기준',
                 ],
             ],
         ];
@@ -276,7 +386,7 @@ class Plugin extends AbstractPlugin
     public function getSeeders(): array
     {
         return [
-            \Plugins\Sirsoft\SocialLogin\Database\Seeders\ProviderSeeder::class,
+            ProviderSeeder::class,
         ];
     }
 }

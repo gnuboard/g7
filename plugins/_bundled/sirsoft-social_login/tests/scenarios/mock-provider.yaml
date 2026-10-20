@@ -5,12 +5,13 @@ description: |
   주소만 바꿔 등록되고, 동의 화면 → 토큰 → 사용자 정보(→ discovery, JWKS) 왕복이 결과 화면까지 이른다.
 axes:
   cli: [mock]
-  gate: [off, on]
+  gate: [off, on, off_then_on]
   provider: [mock_kakao, mock_naver, mock_google, mock_facebook, mock_oidc]
   variant: [catalog]
   redirect: [foreign]
   cache_store: [redis]
 effects:
+  - reenabled_gate_rotates_kid
   - mock_cli_on_off_status
   - mock_gate_accepts_numeric_string_from_cache
   - mock_routes_404_when_off

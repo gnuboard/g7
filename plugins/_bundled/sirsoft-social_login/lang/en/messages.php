@@ -49,4 +49,27 @@ return [
         'status_on' => 'Mock providers are on until :until.',
         'status_off' => 'Mock providers are off.',
     ],
+    'providers' => [
+        'listed' => 'Social sign-in providers.',
+    ],
+    'signup' => [
+        'pending' => 'Pending signup details.',
+        'code_sent' => 'We sent a verification code.',
+        'email_verified' => 'Your email is verified.',
+        'completed' => 'Your signup is complete.',
+    ],
+    'link_existing' => [
+        'linked' => 'The social account is linked to your existing account.',
+    ],
+    'accounts' => [
+        'listed' => 'Linked social accounts.',
+        'link_started' => 'Moving to the provider screen.',
+        'unlinked' => 'The social account is unlinked.',
+    ],
+    'reauth' => [
+        'provider_label' => 'Confirm with social account',
+        'channel_label' => 'Social sign-in',
+        'started' => 'Moving to the provider screen.',
+        'verified' => 'Your identity is confirmed.',
+    ],
 ];

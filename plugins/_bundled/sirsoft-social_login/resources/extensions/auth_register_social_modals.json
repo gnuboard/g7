@@ -1,0 +1,1249 @@
+{
+    "comment": "소셜 가입 모달 2개 — 제공자 확인을 마친 계정이 가입 화면(/register?social_pending=…&social_step=…)으로 오면 진입 때 가입 대기를 받아 연다.\n     ① 가입 완료(social_signup_complete): 부족한 항목(이름·이메일)만 묻고, 약관·방침 동의를 받아 가입한 뒤 로그인 인계 주소로 간다. 비밀번호는 묻지 않는다.\n     ② 이미 가입된 이메일(social_existing_account): 같은 이메일의 기존 계정 비밀번호나 그 계정 이메일 인증번호로 확인한 뒤 연결한다.\n     가입 대기가 만료됐으면 가입 완료 모달이 만료 안내와 [다시 로그인]만 보인다. 상태는 _global 에 둔다 — 모달은 페이지 _local 의 낡은 값을 보므로(다시 열 때 빈 값) 모달이 읽고 쓰는 값은 전역이어야 한다. 가입 폼 registerForm 과 이름이 겹치지 않게 social 접두어를 쓴다.",
+    "target_layout": "auth/register",
+    "priority": 100,
+    "init_actions": [
+        {
+            "comment": "가입 대기 받기 — 소셜 가입으로 온 경우에만. 단계에 따라 모달을 연다.",
+            "handler": "setState",
+            "if": "{{!!query.social_pending}}",
+            "params": {
+                "target": "global",
+                "socialLoginSignup": null,
+                "socialLoginSignupExpired": false,
+                "socialLoginSignupError": null,
+                "socialLoginErrors": null,
+                "socialLoginEmailChallengeId": null,
+                "socialLoginEmailVerified": false,
+                "socialLoginEmailExpiresAt": null,
+                "socialLoginEmailRemaining": 0,
+                "socialLoginExistingChallengeId": null,
+                "socialLoginBusy": false
+            }
+        },
+        {
+            "handler": "apiCall",
+            "target": "/api/plugins/sirsoft-social_login/signup/pending?pending_token={{query.social_pending}}",
+            "if": "{{!!query.social_pending}}",
+            "auth_mode": "optional",
+            "params": {
+                "method": "GET"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "socialLoginSignup": "{{response.data}}",
+                        "socialLoginForm.name": "{{response.data?.name ?? ''}}",
+                        "socialLoginForm.nickname": "{{response.data?.nickname ?? ''}}",
+                        "socialLoginForm.email": "{{response.data?.email?.value ?? ''}}",
+                        "socialLoginForm.agree_terms": false,
+                        "socialLoginForm.agree_privacy": false
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "social_existing_account",
+                    "if": "{{response.data?.step === 'existing'}}"
+                },
+                {
+                    "handler": "openModal",
+                    "target": "social_signup_complete",
+                    "if": "{{response.data?.step !== 'existing'}}"
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "socialLoginSignupExpired": true
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "social_signup_complete"
+                }
+            ]
+        },
+        {
+            "comment": "인증번호 남은 시간 — 1초마다 유효 시각까지 남은 초를 다시 센다(소셜 가입으로 온 경우에만)",
+            "handler": "startInterval",
+            "if": "{{!!query.social_pending}}",
+            "params": {
+                "id": "social_signup_code_tick",
+                "intervalMs": 1000,
+                "actions": [
+                    {
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "socialLoginEmailRemaining": "{{_global.socialLoginEmailExpiresAt ? Math.max(0, Math.floor((new Date(_global.socialLoginEmailExpiresAt).getTime() - Date.now()) / 1000)) : 0}}"
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "modals": [
+        {
+            "comment": "① 가입 완료",
+            "id": "social_signup_complete",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-social_login.signup.title|provider={{_global.socialLoginSignup?.provider?.label ?? ''}}",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-5"
+                    },
+                    "children": [
+                        {
+                            "comment": "만료 — 가입 대기 시간이 지났거나 이미 가입을 마쳤다",
+                            "id": "social_signup_expired",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.socialLoginSignupExpired === true}}",
+                            "props": {
+                                "className": "space-y-4 text-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.expired"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.retry_login"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "social_signup_form",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.socialLoginSignupExpired !== true && !!_global.socialLoginSignup}}",
+                            "props": {
+                                "className": "space-y-5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.intro"
+                                },
+                                {
+                                    "comment": "이름·닉네임 — 제공자가 이름을 주지 않았거나 운영자가 늘 묻게 했을 때",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginSignup?.show_profile_fields === true}}",
+                                    "props": {
+                                        "className": "space-y-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.name"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.name": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "name": "social_name",
+                                                        "value": "{{_global.socialLoginForm?.name ?? ''}}",
+                                                        "maxLength": "255",
+                                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.nickname"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.nickname": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "name": "social_nickname",
+                                                        "value": "{{_global.socialLoginForm?.nickname ?? ''}}",
+                                                        "maxLength": "50",
+                                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "이메일 — 제공자가 검증한 이메일이면 보여 주기만, 없거나 미검증이면 입력 + 인증번호, 대체 이메일이면 안내",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginSignup?.email?.mode === 'locked'}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium"
+                                            },
+                                            "text": "$t:sirsoft-social_login.signup.email"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": " {{_global.socialLoginSignup?.email?.value ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "social_signup_placeholder_notice",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.socialLoginSignup?.email?.mode === 'placeholder'}}",
+                                    "props": {
+                                        "className": "p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.placeholder_notice"
+                                },
+                                {
+                                    "id": "social_signup_email_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.socialLoginSignup?.email?.mode === 'input'}}",
+                                    "props": {
+                                        "className": "space-y-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-social_login.signup.email"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.email": "{{$event.target.value}}",
+                                                                "socialLoginEmailVerified": false
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "email",
+                                                        "name": "social_email",
+                                                        "value": "{{_global.socialLoginForm?.email ?? ''}}",
+                                                        "maxLength": "255",
+                                                        "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "social_signup_request_code",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "인증번호 받기 — 진행 표시를 켜고 입력 이메일로 코어 본인인증 메일을 보낸다(이미 가입된 이메일이면 서버가 거절)",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": true,
+                                                                        "socialLoginSignupError": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-social_login/signup/email/request",
+                                                                    "auth_mode": "optional",
+                                                                    "params": {
+                                                                        "method": "POST",
+                                                                        "body": {
+                                                                            "pending_token": "{{query.social_pending}}",
+                                                                            "email": "{{_global.socialLoginForm?.email}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "socialLoginBusy": false,
+                                                                                "socialLoginEmailChallengeId": "{{response.data?.challenge_id}}",
+                                                                                "socialLoginEmailExpiresAt": "{{response.data?.expires_at}}",
+                                                                                "socialLoginEmailRemaining": "{{response.data?.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : 0}}",
+                                                                                "socialLoginForm.code": ""
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "info",
+                                                                                "message": "$t:sirsoft-social_login.signup.code_sent"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "socialLoginBusy": false,
+                                                                            "socialLoginSignupError": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified || !_global.socialLoginForm?.email}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!_global.socialLoginEmailChallengeId}}",
+                                                            "text": "$t:sirsoft-social_login.signup.request_code"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!_global.socialLoginEmailChallengeId}}",
+                                                            "text": "$t:sirsoft-social_login.signup.resend_code"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_global.socialLoginEmailChallengeId && !_global.socialLoginEmailVerified}}",
+                                            "props": {
+                                                "className": "flex gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "event": "onChange",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.code": "{{$event.target.value}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "text",
+                                                        "name": "social_email_code",
+                                                        "value": "{{_global.socialLoginForm?.code ?? ''}}",
+                                                        "inputMode": "numeric",
+                                                        "autoComplete": "one-time-code",
+                                                        "maxLength": "10",
+                                                        "placeholder": "$t:sirsoft-social_login.signup.code_placeholder",
+                                                        "className": "flex-1 min-w-0 px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "social_signup_verify_code",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "인증번호 확인 — 맞으면 이 이메일로만 가입할 수 있다",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": true,
+                                                                        "socialLoginSignupError": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-social_login/signup/email/verify",
+                                                                    "auth_mode": "optional",
+                                                                    "params": {
+                                                                        "method": "POST",
+                                                                        "body": {
+                                                                            "pending_token": "{{query.social_pending}}",
+                                                                            "challenge_id": "{{_global.socialLoginEmailChallengeId}}",
+                                                                            "code": "{{_global.socialLoginForm?.code}}"
+                                                                        }
+                                                                    },
+                                                                    "onSuccess": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "socialLoginBusy": false,
+                                                                            "socialLoginEmailVerified": true
+                                                                        }
+                                                                    },
+                                                                    "onError": {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "socialLoginBusy": false,
+                                                                            "socialLoginSignupError": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "shrink-0 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.code}}"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.verify_code"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "social_signup_code_timer",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_global.socialLoginEmailChallengeId && !_global.socialLoginEmailVerified}}",
+                                            "props": {
+                                                "className": "text-xs"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(_global.socialLoginEmailRemaining ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "text-gray-600 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.code_remaining|minutes={{Math.floor((_global.socialLoginEmailRemaining ?? 0) / 60)}}|seconds={{String((_global.socialLoginEmailRemaining ?? 0) % 60).padStart(2, '0')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{(_global.socialLoginEmailRemaining ?? 0) <= 0 && !!_global.socialLoginEmailExpiresAt}}",
+                                                    "props": {
+                                                        "className": "text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.signup.code_expired"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "social_signup_email_verified",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_global.socialLoginEmailVerified === true}}",
+                                            "props": {
+                                                "className": "text-sm text-green-700 dark:text-green-400"
+                                            },
+                                            "text": "$t:sirsoft-social_login.signup.email_verified"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "약관·방침 동의 — 전문은 가입 화면의 약관·방침 창을 그대로 연다",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.agree_terms": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "social_agree_terms",
+                                                        "checked": "{{!!_global.socialLoginForm?.agree_terms}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:auth.agree_terms_label",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "termsContent"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "termsModal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                    },
+                                                    "text": "$t:auth.terms"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:auth.agree_required"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginForm.agree_privacy": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "social_agree_privacy",
+                                                        "checked": "{{!!_global.socialLoginForm?.agree_privacy}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:auth.agree_privacy_label",
+                                                        "disabled": "{{_global.socialLoginBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "privacyContent"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "privacyModal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                    },
+                                                    "text": "$t:auth.privacy"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:auth.agree_required"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "social_signup_error",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_global.socialLoginSignupError}}",
+                                    "props": {
+                                        "className": "text-sm text-red-600 dark:text-red-400",
+                                        "role": "alert"
+                                    },
+                                    "text": "{{_global.socialLoginSignupError ?? ''}}"
+                                },
+                                {
+                                    "id": "social_signup_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "가입하고 시작 — 성공하면 로그인 인계 주소(본인인증 대기 회원은 안내 주소)로 간다. 본인인증 가입 정책이 켜졌으면 코어가 428 로 본인인증 창을 띄우고 다시 보낸다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginBusy": true,
+                                                        "socialLoginSignupError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-social_login/signup/complete",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "pending_token": "{{query.social_pending}}",
+                                                            "name": "{{_global.socialLoginForm?.name ?? ''}}",
+                                                            "nickname": "{{_global.socialLoginForm?.nickname ?? ''}}",
+                                                            "email": "{{_global.socialLoginSignup?.email?.mode === 'input' ? _global.socialLoginForm?.email : _global.socialLoginSignup?.email?.value}}",
+                                                            "agree_terms": "{{!!_global.socialLoginForm?.agree_terms}}",
+                                                            "agree_privacy": "{{!!_global.socialLoginForm?.agree_privacy}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "{{response.data?.handoff_url ?? response.data?.redirect_url ?? '/login'}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "socialLoginBusy": false,
+                                                            "socialLoginSignupError": "{{error.message}}",
+                                                            "socialLoginSignupExpired": "{{error.errors?.code === 'expired'}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.agree_terms || !_global.socialLoginForm?.agree_privacy || (_global.socialLoginSignup?.email?.mode === 'input' && !_global.socialLoginEmailVerified)}}"
+                                    },
+                                    "text": "$t:sirsoft-social_login.signup.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "② 이미 가입된 이메일",
+            "id": "social_existing_account",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-social_login.existing.title",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-5"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-social_login.existing.message|email={{_global.socialLoginSignup?.existing_account?.email_masked ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-social_login.existing.hint"
+                        },
+                        {
+                            "comment": "기존 계정 비밀번호로 확인 — 비밀번호 없는 계정이면 숨긴다",
+                            "id": "social_existing_password",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.socialLoginSignup?.existing_account?.has_password !== false}}",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.existing.by_password"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "PasswordInput",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginForm.password": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "social_existing_password",
+                                                "value": "{{_global.socialLoginForm?.password ?? ''}}",
+                                                "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "showToggle": true,
+                                                "disabled": "{{_global.socialLoginBusy}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "social_existing_password_submit",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "비밀번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": true,
+                                                                "socialLoginSignupError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-social_login/signup/link-existing/request",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "pending_token": "{{query.social_pending}}",
+                                                                    "method": "password",
+                                                                    "password": "{{_global.socialLoginForm?.password}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "closeModal"
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "socialLoginBusy": false,
+                                                                    "socialLoginSignupError": "{{error.message}}",
+                                                                    "socialLoginForm.password": ""
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "shrink-0 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.password}}"
+                                            },
+                                            "text": "$t:sirsoft-social_login.existing.confirm"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "기존 계정 이메일 인증번호로 확인",
+                            "id": "social_existing_email",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-social_login.existing.by_email"
+                                },
+                                {
+                                    "id": "social_existing_request_code",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "인증번호 받기 — 기존 계정 이메일로 보낸다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginBusy": true,
+                                                        "socialLoginSignupError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-social_login/signup/link-existing/request",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "pending_token": "{{query.social_pending}}",
+                                                            "method": "email"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": false,
+                                                                "socialLoginExistingChallengeId": "{{response.data?.challenge_id}}",
+                                                                "socialLoginForm.existing_code": ""
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "info",
+                                                                "message": "$t:sirsoft-social_login.signup.code_sent"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "socialLoginBusy": false,
+                                                            "socialLoginSignupError": "{{error.message}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.socialLoginBusy}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!_global.socialLoginExistingChallengeId}}",
+                                            "text": "$t:sirsoft-social_login.signup.request_code"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.socialLoginExistingChallengeId}}",
+                                            "text": "$t:sirsoft-social_login.signup.resend_code"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_global.socialLoginExistingChallengeId}}",
+                                    "props": {
+                                        "className": "flex gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginForm.existing_code": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "name": "social_existing_code",
+                                                "value": "{{_global.socialLoginForm?.existing_code ?? ''}}",
+                                                "inputMode": "numeric",
+                                                "autoComplete": "one-time-code",
+                                                "maxLength": "10",
+                                                "placeholder": "$t:sirsoft-social_login.signup.code_placeholder",
+                                                "className": "flex-1 min-w-0 px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "disabled": "{{_global.socialLoginBusy}}"
+                                            }
+                                        },
+                                        {
+                                            "id": "social_existing_verify_code",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "인증번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": true,
+                                                                "socialLoginSignupError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-social_login/signup/link-existing/verify",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "POST",
+                                                                "body": {
+                                                                    "pending_token": "{{query.social_pending}}",
+                                                                    "challenge_id": "{{_global.socialLoginExistingChallengeId}}",
+                                                                    "code": "{{_global.socialLoginForm?.existing_code}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "socialLoginBusy": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "closeModal"
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "socialLoginBusy": false,
+                                                                    "socialLoginSignupError": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "shrink-0 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.existing_code}}"
+                                            },
+                                            "text": "$t:sirsoft-social_login.existing.confirm"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "social_existing_error",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.socialLoginSignupError}}",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400",
+                                "role": "alert"
+                            },
+                            "text": "{{_global.socialLoginSignupError ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col sm:flex-row gap-2 pt-2 border-t border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "id": "social_existing_new_account",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "새 계정으로 가입 — 이 이메일은 쓸 수 없으니 다른 이메일을 받는 가입 모달로 바꾼다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "socialLoginBusy": true,
+                                                        "socialLoginSignupError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-social_login/signup/discard-existing",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "pending_token": "{{query.social_pending}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "socialLoginBusy": false,
+                                                                "socialLoginSignup": "{{response.data}}",
+                                                                "socialLoginForm.email": "",
+                                                                "socialLoginEmailChallengeId": null,
+                                                                "socialLoginEmailVerified": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "social_signup_complete"
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "socialLoginBusy": false,
+                                                            "socialLoginSignupError": "{{error.message}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50",
+                                        "disabled": "{{_global.socialLoginBusy}}"
+                                    },
+                                    "text": "$t:sirsoft-social_login.existing.new_account"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "flex-1 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
+                                    },
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -79,4 +79,30 @@ interface SocialAccountRepositoryInterface
      * @return array<int, array<int, string>> 회원 ID => 제공자 키 목록
      */
     public function providersForUsers(array $userIds): array;
+
+    /**
+     * 회원의 특정 제공자 연결을 찾습니다.
+     *
+     * @param  int  $userId  회원 ID
+     * @param  string  $providerKey  제공자 키
+     * @return SocialAccount|null 연결, 없으면 null
+     */
+    public function findForUserAndProvider(int $userId, string $providerKey): ?SocialAccount;
+
+    /**
+     * 연결 행의 값을 바꿉니다 (프로필 사본·마지막 로그인 등 — 토큰은 updateTokens).
+     *
+     * @param  SocialAccount  $account  연결
+     * @param  array<string, mixed>  $values  컬럼 값
+     * @return void
+     */
+    public function update(SocialAccount $account, array $values): void;
+
+    /**
+     * 연결 1건을 지웁니다.
+     *
+     * @param  SocialAccount  $account  연결
+     * @return void
+     */
+    public function delete(SocialAccount $account): void;
 }

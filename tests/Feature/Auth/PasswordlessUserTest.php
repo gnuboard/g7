@@ -199,7 +199,7 @@ class PasswordlessUserTest extends TestCase
      *
      * @scenario password=none|set, resource=toArray|toAuthArray|toProfileArray|withAdminInfo
      *
-     * @effects has_password_exposed_without_hash
+     * @effects has_password_exposed_without_hash, email_deliverable_exposed
      *
      * @return void 반환값 없음
      */
@@ -224,8 +224,13 @@ class PasswordlessUserTest extends TestCase
                 $this->assertArrayHasKey('has_password', $array, $name);
                 $this->assertSame($expected, $array['has_password'], $name);
                 $this->assertArrayNotHasKey('password', $array, $name);
+                $this->assertTrue($array['email_deliverable'], $name);
             }
         }
+
+        $placeholder = User::factory()->passwordless()->create(['email' => 'kakao_'.Str::lower(Str::random(12)).'@social.invalid']);
+        $this->assertFalse((new UserResource($placeholder))->toProfileArray()['email_deliverable'], '대체 이메일은 메일을 받을 수 없다');
+        $this->assertFalse((new UserResource($placeholder))->resolve(request())['email_deliverable']);
 
         $status = (new UserResource($passwordless->fresh()))->passwordStatusArray();
         $this->assertFalse($status['has_password']);

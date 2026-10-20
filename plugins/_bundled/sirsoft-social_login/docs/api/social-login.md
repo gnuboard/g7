@@ -1,16 +1,17 @@
 # 소셜 로그인 API 레퍼런스
 
-> **소유**: plugin `sirsoft-social_login` · **생성**: 손 작성(1.0.0). 실측 값은 플러그인 시험 `CallbackFlowTest` 와 같다.
+> **소유**: plugin `sirsoft-social_login` · **생성**: 손 작성(1.0.0). 실측 값은 플러그인 시험(`CallbackFlowTest`, `SignupFlowTest`, `LinkExistingTest`, `AccountLinkServiceTest`, `SocialReauthenticationTest`, `PublicProvidersTest`)과 같다.
 
 ---
 
 ## TL;DR (5초 요약)
 
 ```text
-1. 1.0.0 의 JSON API 는 관리자 연결 테스트 시작 1개다 — 로그인 왕복은 브라우저가 오가는 웹 주소다(아래 「웹 엔드포인트」)
-2. 연결 테스트는 제공자를 켜기 전에도 돌릴 수 있고, 로그인하지 않는다 — 결과는 일회용 결과 화면으로만 본다
-3. 결과 화면에는 토큰이 실리지 않고, 제공자 사용자 ID 와 이메일은 가려서 보인다
-4. 콜백 주소는 요청 Host 가 아니라 사이트 주소(app.url) 기준이다 — 제공자 콘솔에 이 값을 등록한다
+1. 로그인 왕복은 브라우저가 오가는 웹 주소다(아래 「웹 엔드포인트」). JSON API 는 그 앞뒤 화면(버튼 목록, 가입 모달, 마이페이지 연결 관리, 관리자 연결 테스트)이 부른다
+2. 가입 모달 API 는 게스트가 부른다 — 콜백이 발급한 48자 가입 대기 토큰(pending_token)이 곧 권한이고, 유효 시간이 지나면 404 `expired`
+3. 로그인 토큰은 이 플러그인이 만들지 않는다 — 가입·연결이 끝나면 코어 로그인 인계 주소(handoff_url)를 돌려주고, 화면이 그 주소로 가서 코어가 로그인시킨다
+4. 실패 응답은 `errors.code` 에 플러그인 코드를 싣는다(아래 「실패 코드」). 화면은 이 코드로 분기한다
+5. 요청 제한은 라우트마다 따로 센다(throttle 세 번째 인자 = 버킷 이름) — 화면마다 부르는 제공자 목록이 인증번호 요청 한도를 깎지 않는다
 ```
 
 ---
@@ -23,15 +24,234 @@
 
 ```json
 { "success": true,  "message": "...", "data": { } }
-{ "success": false, "message": "..." }
+{ "success": false, "message": "...", "errors": { "code": "expired" } }
 ```
 
 | 상태 | 조건 |
 | --- | --- |
-| 401 | 비로그인 요청 (`auth:sanctum`) |
-| 403 | `sirsoft-social_login.settings.update` 권한 없음 |
-| 404 | 레지스트리에 없는 제공자 키 |
-| 429 | 분당 20회 초과 |
+| 401 | 비로그인 요청 (`auth:sanctum` 라우트) |
+| 403 | 권한 없음, 관리자 계정 소셜 로그인 차단(`admin_blocked`), 재확인 대상 아님(`reauth_not_available`) |
+| 404 | 가입 대기 토큰 만료(`expired`), 꺼진 제공자(`provider_disabled`), 연결 없음(`not_linked`), 수령 코드 무효(`reauth_claim_invalid`), 실패 횟수 초과(`too_many_attempts`) |
+| 409 | 다른 회원에 연결된 계정(`already_linked_other_user`), 이미 연결된 제공자(`provider_already_linked`), 마지막 로그인 수단(`last_method`) 등 |
+| 422 | 입력 검증 실패(`errors` 는 필드별 메시지), 흐름 실패(`invalid_code`, `email_taken` 등) |
+| 428 | 코어 본인인증 정책 `core.auth.signup_before_submit` 이 켜졌는데 확인 토큰이 없음(가입 완료만) |
+| 503 | 이메일 인증번호를 보내지 못함(`mail_failed` — 사이트 메일 설정 문제, 시도 기록에 남는다) |
+| 429 | 라우트별 요청 제한 초과 |
+
+### 실패 코드
+
+| 코드 | 상태 | 뜻 |
+| --- | --- | --- |
+| `expired` | 404 | 가입 대기 토큰이 없거나 만료됐다 — 처음부터 다시 로그인한다 |
+| `provider_disabled` | 404 | 제공자가 꺼졌거나 없다 |
+| `admin_blocked` | 403 | 관리자 계정은 소셜 로그인이 꺼져 있다(`allow_admin_social_login`) |
+| `email_taken` | 422 | 입력한 이메일을 다른 회원이 쓴다 |
+| `email_locked` | 422 | 제공자가 확인한 이메일로 고정된 가입에서 다른 이메일을 보냈다 |
+| `email_not_verified` | 422 | 이메일 인증번호 확인 전에 가입을 완료하려 했다 |
+| `challenge_mismatch` | 422 | 이 가입(또는 이 기존 계정)에 발급한 인증 요청이 아니다 |
+| `invalid_code` | 422 | 인증번호가 틀렸다 |
+| `name_required` | 422 | 제공자가 이름을 주지 않았는데 입력도 비었다 |
+| `existing_account_pending` | 409 | 같은 이메일의 기존 계정이 있다 — 연결 단계를 거친다 |
+| `not_existing_step` | 409 | 기존 계정 연결 단계가 아닌데 연결 API 를 불렀다 |
+| `password_mismatch` | 422 | 기존 계정 비밀번호가 틀렸다 |
+| `password_not_available` | 422 | 비밀번호가 없는 기존 계정에 비밀번호 방법을 썼다 |
+| `too_many_attempts` | 404 | 기존 계정 연결 확인을 5번 틀렸다 — 가입 대기 토큰이 폐기된다 |
+| `already_linked_other_user` | 409 | 이 제공자 계정은 다른 회원에 연결돼 있다 |
+| `provider_already_linked` | 409 | 이 회원은 이 제공자에 이미 다른 계정을 연결했다 |
+| `not_linked` | 404 | 해제하거나 재확인하려는 제공자가 이 회원에 연결돼 있지 않다 |
+| `last_method` | 409 | 비밀번호가 없고 연결이 하나뿐이라 해제하면 로그인할 수 없다(설정 `allow_unlink_last_method` 로 허용) |
+| `reauth_not_available` | 403 | 소셜 재확인 대상이 아니다(비밀번호가 있거나, 메일을 받을 수 있거나, 연결이 없음) |
+| `reauth_claim_invalid` | 404 | 재확인 수령 코드가 없거나, 이미 썼거나, 다른 회원의 것이다 |
+| `mail_failed` | 503 | 인증번호 메일 발송이 실패했다(가입 이메일·기존 계정 이메일 모두) — 「관리자에게 문의」 안내 |
+
+제공자·드라이버가 정한 코드(일반 OIDC 의 `discovery_failed` 등)는 `errors.code` 에 그대로 담고, `message` 는 「제공자에 연결하지 못했습니다」 공통 문구입니다.
+
+---
+
+## 공개
+
+### GET /api/plugins/sirsoft-social_login/providers
+
+로그인·가입 화면 버튼용으로 켜진 제공자를 표시 순서대로 돌려줍니다. 자격증명(client id·secret)은 싣지 않습니다. 모의 제공자는 CLI 로 켰을 때만 원 제공자 모양으로 덧붙습니다.
+
+- **라우트명**: `api.plugins.sirsoft-social_login.providers.index`
+- **미들웨어**: `throttle:120,1,sirsoft-social_login.providers`
+
+**응답 200**
+
+```json
+{
+  "success": true,
+  "message": "...",
+  "data": [
+    { "key": "kakao", "label": "카카오", "brand": "kakao", "style": null, "start_url": "/plugins/sirsoft-social_login/oauth/kakao/start" }
+  ]
+}
+```
+
+켜진 제공자가 없으면 `data` 는 빈 배열이고, 화면은 버튼 영역을 그리지 않습니다.
+
+---
+
+## 가입 모달 (게스트)
+
+모든 요청은 `pending_token`(48자 영숫자, 콜백이 `/register?social_pending=…&social_step=…` 으로 넘긴 값)을 받습니다. GET 은 쿼리, POST 는 본문입니다.
+
+### GET /api/plugins/sirsoft-social_login/signup/pending
+
+가입 모달이 그릴 내용을 돌려줍니다.
+
+- **라우트명**: `api.plugins.sirsoft-social_login.signup.pending`
+- **미들웨어**: `throttle:60,1,sirsoft-social_login.signup-pending`
+
+**응답 200**
+
+```json
+{
+  "success": true,
+  "message": "...",
+  "data": {
+    "provider": { "key": "kakao", "label": "카카오", "brand": "kakao" },
+    "step": "complete",
+    "name": "홍길동",
+    "nickname": "길동",
+    "email": { "mode": "input", "value": null, "verified": false, "requires_code": true, "challenge_id": null },
+    "missing": ["email"],
+    "show_profile_fields": false,
+    "existing_account": null,
+    "expires_at": "2026-10-20T12:30:00+09:00"
+  }
+}
+```
+
+- `step`: `complete`(새 계정 가입) 또는 `existing`(같은 이메일의 기존 계정 — `existing_account` 에 `email_masked`, `has_password`).
+- `email.mode`: `locked`(제공자가 확인한 이메일 고정), `input`(입력하고 인증번호 확인), `placeholder`(메일을 받을 수 없는 대체 주소 `{제공자}_{해시}@social.invalid`).
+
+### POST /api/plugins/sirsoft-social_login/signup/email/request
+
+입력 모드에서 이메일 인증번호를 보냅니다(코어 본인인증 `signup` 목적, 메일 수단).
+
+- **라우트명**: `api.plugins.sirsoft-social_login.signup.email.request`
+- **미들웨어**: `throttle:10,1,sirsoft-social_login.signup-email-request`
+- **본문**: `pending_token`, `email`
+
+**응답 200** — `data: { "challenge_id": "…", "expires_at": "…" }`. 실패는 `email_taken`(422), 메일 발송 실패 `mail_failed`(503) 등.
+
+### POST /api/plugins/sirsoft-social_login/signup/email/verify
+
+- **라우트명**: `api.plugins.sirsoft-social_login.signup.email.verify`
+- **미들웨어**: `throttle:10,1,sirsoft-social_login.signup-email-verify`
+- **본문**: `pending_token`, `challenge_id`, `code`
+
+**응답 200** — `data: { "verified_email": "…" }`. 실패는 `challenge_mismatch`, `invalid_code`(422).
+
+### POST /api/plugins/sirsoft-social_login/signup/complete
+
+비밀번호 없이 가입하고 제공자 계정을 연결합니다. 회원 생성은 코어 `AuthService::register(…, ['issue_token' => false])` 로 하므로 코어 가입 규칙(약관 동의, 가입 허용, 이메일 인증 정책)을 그대로 따릅니다.
+
+- **라우트명**: `api.plugins.sirsoft-social_login.signup.complete`
+- **미들웨어**: `identity.policy:core.auth.signup_before_submit`, `throttle:20,1,sirsoft-social_login.signup-complete`
+- **본문**: `pending_token`, `name`?, `nickname`?, `email`?(입력 모드에서 확인한 값), `agree_terms`(accepted), `agree_privacy`(accepted), `verification_token`?(본인인증 정책이 켜졌을 때)
+
+**응답 200**
+
+```json
+{ "success": true, "message": "...", "data": { "handoff_url": "/login?login_handoff=…&redirect=%2F" } }
+```
+
+코어 가입 이메일 인증이 켜진 사이트는 `data.redirect_url` 이 `/login?social_notice=pending_verification` 이고 로그인하지 않습니다.
+
+### POST /api/plugins/sirsoft-social_login/signup/link-existing/request
+
+같은 이메일의 기존 계정에 연결합니다. 비밀번호 방법은 바로 연결하고, 이메일 방법은 기존 계정 주소로 인증번호를 보냅니다(코어 본인인증 `sensitive_action` 목적).
+
+- **라우트명**: `api.plugins.sirsoft-social_login.signup.link-existing.request`
+- **미들웨어**: `throttle:10,1,sirsoft-social_login.link-existing-request`
+- **본문**: `pending_token`, `method`(`password`|`email`), `password`(method=password 일 때)
+
+**응답 200** — 비밀번호: `data: { "handoff_url": "…" }` · 이메일: `data: { "challenge_id": "…", "expires_at": "…" }`. 비밀번호가 틀리면 422 `password_mismatch`, 비밀번호와 인증번호를 합쳐 5번 틀리면 404 `too_many_attempts`, 기존 계정 주소로 메일을 보내지 못하면 503 `mail_failed`.
+
+### POST /api/plugins/sirsoft-social_login/signup/link-existing/verify
+
+- **라우트명**: `api.plugins.sirsoft-social_login.signup.link-existing.verify`
+- **미들웨어**: `throttle:10,1,sirsoft-social_login.link-existing-verify`
+- **본문**: `pending_token`, `challenge_id`, `code`
+
+**응답 200** — `data: { "handoff_url": "…" }`.
+
+### POST /api/plugins/sirsoft-social_login/signup/discard-existing
+
+기존 계정에 연결하지 않고 새 계정으로 가입하는 단계로 바꿉니다. 응답은 `signup/pending` 과 같은 모양이며 `step` 은 `complete` 입니다.
+
+- **라우트명**: `api.plugins.sirsoft-social_login.signup.discard-existing`
+- **미들웨어**: `throttle:10,1,sirsoft-social_login.discard-existing`
+- **본문**: `pending_token`
+
+---
+
+## 마이페이지 연결 관리 (로그인 회원 본인)
+
+공통 미들웨어: `auth:sanctum`, `check.user_status`, `throttle:60,1,sirsoft-social_login.me`. 경로의 `provider` 는 `^[a-z][a-z0-9_]{1,49}$`.
+
+### GET /api/plugins/sirsoft-social_login/me/accounts
+
+- **라우트명**: `api.plugins.sirsoft-social_login.me.accounts.index`
+
+**응답 200**
+
+```json
+{
+  "success": true,
+  "message": "...",
+  "data": {
+    "accounts": [
+      { "provider_key": "kakao", "label": "카카오", "brand": "kakao", "email": "ho***@example.com", "linked_at": "…", "last_login_at": "…" }
+    ],
+    "available": [ { "provider_key": "naver", "label": "네이버", "brand": "naver", "style": null } ],
+    "has_password": false,
+    "can_unlink": { "kakao": { "allowed": false, "reason": "last_method" } },
+    "reauth_via_social": true
+  }
+}
+```
+
+`style` 은 커스텀(일반 OIDC) 제공자의 버튼 색 `{ "bg", "fg", "border" }`(16진 색만, 없으면 `null`)입니다 — 내장 제공자의 모양은 `brand` 가 정합니다. `reauth_via_social` 은 비밀번호도 없고 메일도 받을 수 없는 회원(대체 이메일)이 연결된 제공자가 하나 이상 있어 그 제공자로 본인 재확인을 해야 할 때 `true` 입니다.
+
+### POST /api/plugins/sirsoft-social_login/me/accounts/{provider}/link-start
+
+연결 왕복을 시작하고 제공자 인가 주소를 돌려줍니다. 화면은 이 주소로 이동하고, 콜백은 연결을 만든 뒤 `/mypage/profile?social=linked` 로 돌아옵니다(실패는 `?social_error={코드}&provider={키}`).
+
+- **라우트명**: `api.plugins.sirsoft-social_login.me.accounts.link-start`
+
+**응답 200** — `data: { "authorize_url": "https://…" }`. 이미 연결된 제공자면 409 `provider_already_linked`, 꺼졌거나 없는 제공자면 404 `provider_disabled`, 제공자 설정을 읽지 못하면(일반 OIDC discovery 장애 등) 422 — `errors.code` 에 제공자 코드, `message` 는 공통 문구.
+
+### DELETE /api/plugins/sirsoft-social_login/me/accounts/{provider}
+
+연결을 해제합니다. 제공자가 권한 회수를 지원하면 시도하고, 회수에 실패해도 해제는 진행합니다.
+
+- **라우트명**: `api.plugins.sirsoft-social_login.me.accounts.destroy`
+
+**응답 200** — `data: { "provider_key": "kakao" }`. 실패는 404 `not_linked`, 409 `last_method`.
+
+### POST /api/plugins/sirsoft-social_login/me/reauth/{provider}/start
+
+대체 이메일 회원의 본인 재확인을 시작합니다. 코어 본인인증 수단(`sirsoft-social_login`, `sensitive_action` 목적)으로 인증 요청을 만들고, 연결된 제공자로 다시 로그인하게 합니다.
+
+- **라우트명**: `api.plugins.sirsoft-social_login.me.reauth.start`
+- **본문**: `return`?(돌아올 같은 출처 경로, 기본 `/`)
+
+**응답 200** — `data: { "authorize_url": "https://…" }`. 대상이 아니면 403 `reauth_not_available`, 그 제공자가 이 회원에 연결돼 있지 않으면 404 `not_linked`, 꺼졌거나 없는 제공자면 404 `provider_disabled`, 제공자 설정을 읽지 못하면 422(`errors.code` 에 제공자 코드, `message` 는 공통 문구).
+
+콜백은 같은 제공자 계정이면 `{return}?social_reauth={수령 코드 40자}` 로, 다른 계정이면 `?social_error=reauth_mismatch` 로 돌아옵니다. 확인 토큰은 주소에 싣지 않습니다.
+
+### POST /api/plugins/sirsoft-social_login/me/reauth/claim
+
+수령 코드를 확인 토큰으로 바꿉니다. 코드는 한 번만, 그 회원만 쓸 수 있습니다. 화면은 받은 토큰을 코어 `POST /api/me/verify-password` 의 `verification_token` 으로 넘겨 정보 수정·비밀번호 첫 설정 관문을 통과합니다.
+
+- **라우트명**: `api.plugins.sirsoft-social_login.me.reauth.claim`
+- **본문**: `code`(40자 영숫자)
+
+**응답 200** — `data: { "verification_token": "…" }`. 실패는 404 `reauth_claim_invalid`.
 
 ---
 
@@ -42,7 +262,7 @@
 제공자 연결 테스트 왕복을 시작하고 제공자 인가 주소를 돌려줍니다. 관리자 화면은 이 주소를 새 창으로 엽니다.
 
 - **라우트명**: `api.plugins.sirsoft-social_login.admin.providers.test-login`
-- **미들웨어**: `auth:sanctum`, `permission:admin,sirsoft-social_login.settings.update`, `throttle:20,1`
+- **미들웨어**: `auth:sanctum`, `permission:admin,sirsoft-social_login.settings.update`, `throttle:20,1,sirsoft-social_login.test-login`
 - **경로 파라미터**: `provider` — 제공자 키(`^[a-z][a-z0-9_]{1,49}$`). 꺼진 제공자도 된다(켜기 전 확인용).
 
 **응답 200**
@@ -65,9 +285,9 @@
 
 | 경로 | 동작 |
 | --- | --- |
-| `GET oauth/{provider}/start?redirect=/경로` | 로그인 왕복 시작. 켜진 제공자면 인가 화면으로 302, 아니면 `/login?social_error={코드}` (`provider_disabled`, `provider_unknown`). 이미 로그인한 세션이면 복귀 주소로. `throttle:30,1` |
-| `GET\|POST oauth/{provider}/callback` | 제공자 콜백. state 는 꺼내자마자 지운다(재사용 시 `state_invalid`). 관리자 테스트는 결과 화면으로, 로그인 의도는 1.0.0 에서 `/login?social_error=flow_not_available` 로 돌아간다. CSRF 면제, `throttle:60,1` |
+| `GET oauth/{provider}/start?redirect=/경로` | 로그인 왕복 시작. 켜진 제공자면 인가 화면으로 302, 아니면 `/login?social_error={코드}&provider={키}` (`provider_disabled`, `provider_unknown`). 이미 로그인한 세션이면 복귀 주소로. `throttle:30,1,sirsoft-social_login.oauth-start` |
+| `GET\|POST oauth/{provider}/callback` | 제공자 콜백. state 는 꺼내자마자 지운다(재사용 시 `state_invalid`). 시작한 의도에 따라 갈린다 — 관리자 테스트는 결과 화면, 로그인은 연결된 회원이면 코어 로그인 인계 주소(`/login?login_handoff=…`)·없으면 가입 모달(`/register?social_pending=…`), 연결은 마이페이지, 재확인은 돌아갈 주소. CSRF 면제, `throttle:60,1,sirsoft-social_login.oauth-callback` |
 | `GET test-result/{code}` | 연결 테스트 결과(일회용, `Cache-Control: no-store`). 두 번째 요청은 404 |
-| `GET\|POST mock/authorize` · `GET\|POST mock/token` · `GET mock/userinfo` · `GET mock/.well-known/openid-configuration` · `GET mock/jwks` | 모의 제공자. `php artisan sirsoft-social_login:mock --enable` 로 켰을 때만 응답하고, 꺼져 있으면 404 |
+| `GET\|POST mock/authorize` · `GET\|POST mock/token` · `GET mock/userinfo` · `GET mock/.well-known/openid-configuration` · `GET mock/jwks` | 모의 제공자. `php artisan sirsoft-social_login:mock --enable` 로 켰을 때만 응답하고, 꺼져 있으면 404. `throttle:120,1,sirsoft-social_login.mock` |
 
-로그인 실패 코드는 제공자 오류 코드(`access_denied`, `KOE320`, `024`, `facebook_190` 등) 또는 플러그인 코드(`state_invalid`, `code_missing`, `token_exchange_failed`, `profile_fetch_failed`, `profile_missing_id`, `id_token_*`, `discovery_*`, `jwks_fetch_failed`, 제공자 오류가 아닌 예외를 감싼 `unexpected_error`)다. `unexpected_error` 의 원인은 서버 로그에만 남고 시도 기록에는 예외 종류만 적힌다.
+로그인 실패 코드는 제공자 오류 코드(`access_denied`, `KOE320`, `024`, `facebook_190` 등) 또는 플러그인 코드(`state_invalid`, `code_missing`, `token_exchange_failed`, `profile_fetch_failed`, `profile_missing_id`, `id_token_*`, `discovery_*`, `jwks_fetch_failed`, `admin_blocked`, 제공자 오류가 아닌 예외를 감싼 `unexpected_error`)다. `unexpected_error` 의 원인은 서버 로그에만 남고 시도 기록에는 예외 종류만 적힌다.

@@ -149,4 +149,39 @@ describe('sirsoft-basic 비밀번호 없는 회원 마이페이지 (#40)', () =>
     const passed = flattenActions(gate?.onSuccess).find((a) => a.handler === 'setState');
     expect(passed?.params?.isPasswordVerified).toBe(true);
   });
+
+  /**
+   * @scenario has_password=false, email_deliverable=false|true, surface=profile_edit_gate
+   * @effects profile_gate_offers_extension_for_undeliverable_email
+   */
+  it('메일을 받을 수 없는 회원(대체 이메일)은 인증번호 칸 대신 확장점 `mypage_reauth_methods` 를 본다', () => {
+    const nodes = flatten(verifySection);
+    const codeSection = nodes.find((n) => n.id === 'reauth_email_code_section');
+    const alternative = nodes.find((n) => n.id === 'reauth_alternative_section');
+
+    expect(String(codeSection?.if)).toContain('email_deliverable) !== false');
+    expect(String(alternative?.if)).toContain('has_password) === false');
+    expect(String(alternative?.if)).toContain('email_deliverable) === false');
+
+    const slot = flatten(alternative).find((n) => n.type === 'extension_point');
+    expect(slot?.name).toBe('mypage_reauth_methods');
+    expect(JSON.stringify(slot?.default ?? slot?.children ?? [])).toContain('reauth_unavailable');
+  });
+
+  /**
+   * @scenario has_password=false, email_deliverable=false, surface=change_password
+   * @effects change_password_offers_extension_for_undeliverable_email
+   */
+  it('비밀번호 첫 설정 화면은 메일을 받을 수 없는 회원에게만 확장점 `mypage_change_password_reauth` 를 보인다', () => {
+    const section = flatten(changePassword).find((n) => n.id === 'password_reauth_section');
+
+    // 확장점 기본 내용은 서버가 레이아웃을 풀 때 자식으로 채운다 — 여기서는 노출 조건과 자리만 잰다.
+    expect(String(section?.if)).toContain('has_password) === false');
+    expect(String(section?.if)).toContain('email_deliverable) === false');
+    expect(String(section?.if)).toContain('!_local?.success');
+
+    const slot = flatten(section).find((n) => n.type === 'extension_point');
+    expect(slot?.name).toBe('mypage_change_password_reauth');
+    expect(JSON.stringify(slot)).toContain('change_password_reauth_unavailable');
+  });
 });

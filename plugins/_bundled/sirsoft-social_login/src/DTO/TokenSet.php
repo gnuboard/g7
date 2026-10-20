@@ -27,6 +27,37 @@ final class TokenSet
     ) {}
 
     /**
+     * 가입 대기 보관용 배열로 바꿉니다 (원본 응답은 담지 않는다).
+     *
+     * @return array<string, mixed> 직렬화 값
+     */
+    public function toArray(): array
+    {
+        return [
+            'access_token' => $this->accessToken,
+            'refresh_token' => $this->refreshToken,
+            'expires_at' => $this->expiresAt?->getTimestamp(),
+        ];
+    }
+
+    /**
+     * 보관한 배열로 다시 만듭니다.
+     *
+     * @param  array<string, mixed>  $data  직렬화 값
+     * @return self 토큰
+     */
+    public static function fromArray(array $data): self
+    {
+        $expires = $data['expires_at'] ?? null;
+
+        return new self(
+            accessToken: (string) ($data['access_token'] ?? ''),
+            refreshToken: is_string($data['refresh_token'] ?? null) && $data['refresh_token'] !== '' ? $data['refresh_token'] : null,
+            expiresAt: is_numeric($expires) ? CarbonImmutable::createFromTimestamp((int) $expires) : null,
+        );
+    }
+
+    /**
      * 토큰 응답 본문을 정규화합니다.
      *
      * `expires_in` 은 숫자 또는 숫자 문자열(네이버)로 온다. 갱신 토큰·id_token 은 있을 때만 채운다.

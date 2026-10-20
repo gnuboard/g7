@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 const root=resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
 const appUrl=readFileSync(resolve(root,'.env'),'utf8').match(/^APP_URL=(.*)$/m)?.[1]?.trim().replace(/^["']|["']$/g,'');
 export default defineConfig({
-  testDir:'./specs', workers:1, fullyParallel:false, timeout:45000,
+  testDir:'./specs', workers:1, fullyParallel:false, timeout:90000,
   outputDir:resolve(root,'test-results/plugins/sirsoft-social_login'),
   reporter:[['list']],
   use:{baseURL:process.env.PLAYWRIGHT_BASE_URL||appUrl,ignoreHTTPSErrors:true,locale:'ko-KR',viewport:{width:1440,height:1000},

@@ -96,7 +96,9 @@ class CallbackFlowTest extends PluginTestCase
      * 켜진 제공자로 로그인을 시작하면 state 를 실어 제공자 인가 화면으로 보내는지 확인한다.
      *
      * @scenario intent=login, provider=enabled
+     *
      * @effects start_redirects_to_provider
+     *
      * @return void 반환값 없음
      */
     public function test_login_start_redirects_to_provider_with_state(): void
@@ -115,7 +117,9 @@ class CallbackFlowTest extends PluginTestCase
      * 꺼졌거나 없는 제공자는 로그인 화면 오류로 돌려보내는지 확인한다.
      *
      * @scenario intent=login, provider=disabled|unknown
+     *
      * @effects start_refused_back_to_login
+     *
      * @return void 반환값 없음
      */
     public function test_disabled_or_unknown_provider_returns_to_login(): void
@@ -131,7 +135,9 @@ class CallbackFlowTest extends PluginTestCase
      * 관리자 연결 테스트가 로그인하지 않고 한 번만 보이는 결과 화면을 여는지 확인한다.
      *
      * @scenario intent=test, response=success
+     *
      * @effects test_result_page_shown_once
+     *
      * @return void 반환값 없음
      */
     public function test_test_intent_shows_one_time_result_page(): void
@@ -166,7 +172,9 @@ class CallbackFlowTest extends PluginTestCase
      * 연결 테스트 결과는 60초만 보관해 결과 주소가 오래 살아 있지 않고, 이메일 미동의 같은 빠진 가입 항목을 결과에 보여 주는지 확인한다.
      *
      * @scenario intent=test, response=success, profile=email_not_agreed
+     *
      * @effects test_result_expires_after_sixty_seconds
+     *
      * @return void 반환값 없음
      */
     public function test_test_result_lists_missing_fields_and_expires_after_sixty_seconds(): void
@@ -194,7 +202,9 @@ class CallbackFlowTest extends PluginTestCase
      * 같은 state 로 콜백을 두 번 열면(인가 코드 재사용) 두 번째는 실패한다.
      *
      * @scenario intent=test, replay=state
+     *
      * @effects state_replay_rejected
+     *
      * @return void 반환값 없음
      */
     public function test_replayed_callback_is_rejected(): void
@@ -211,7 +221,9 @@ class CallbackFlowTest extends PluginTestCase
      * 위조 state 와 다른 제공자의 state 를 거절하는지 확인한다.
      *
      * @scenario state=mismatch
+     *
      * @effects forged_state_rejected
+     *
      * @return void 반환값 없음
      */
     public function test_forged_or_cross_provider_state_is_rejected(): void
@@ -230,7 +242,9 @@ class CallbackFlowTest extends PluginTestCase
      * 사용자가 제공자 화면에서 거부하면 결과 화면에 그 코드가 보이는지 확인한다.
      *
      * @scenario intent=test, response=access_denied
+     *
      * @effects provider_error_shown_on_result_page
+     *
      * @return void 반환값 없음
      */
     public function test_provider_denial_is_reported_on_result_page(): void
@@ -247,7 +261,9 @@ class CallbackFlowTest extends PluginTestCase
      * 코드 교환 실패가 진단용 기록(제공자 마지막 오류, 시도 기록)에 남는지 확인한다.
      *
      * @scenario intent=test, response=exchange_failed
+     *
      * @effects exchange_failure_recorded
+     *
      * @return void 반환값 없음
      */
     public function test_exchange_failure_is_recorded_for_diagnostics(): void
@@ -268,7 +284,9 @@ class CallbackFlowTest extends PluginTestCase
      * 앱 키를 바꾼 뒤처럼 저장된 비밀값을 풀 수 없는 상황을 만든다.
      *
      * @scenario intent=test, response=unexpected_exception
+     *
      * @effects unexpected_exception_becomes_provider_error
+     *
      * @return void 반환값 없음
      */
     public function test_unexpected_exception_is_wrapped_and_recorded(): void
@@ -292,7 +310,9 @@ class CallbackFlowTest extends PluginTestCase
      * 제공자 사용자 ID 가 없는 프로필은 실패로 처리하는지 확인한다.
      *
      * @scenario intent=test, response=missing_id
+     *
      * @effects missing_provider_id_fails
+     *
      * @return void 반환값 없음
      */
     public function test_profile_without_id_fails(): void
@@ -306,28 +326,36 @@ class CallbackFlowTest extends PluginTestCase
     }
 
     /**
-     * 로그인 의도의 분기는 다음 단계 산출물 — 지금은 로그인 화면으로 돌려보내고 거절로 남긴다.
+     * 연결된 회원이 없는 로그인 의도는 가입 흐름(가입 화면 + 가입 대기)으로 넘어가는지 확인한다.
      *
      * @scenario intent=login, response=success
-     * @effects login_branch_not_available_yet
+     *
+     * @effects login_without_link_goes_to_signup
+     *
      * @return void 반환값 없음
      */
-    public function test_login_intent_returns_to_login_until_flow_lands(): void
+    public function test_login_intent_without_link_goes_to_signup(): void
     {
         $this->fakeKakao();
         $location = (string) $this->get('/plugins/sirsoft-social_login/oauth/kakao/start?redirect=/mypage')->headers->get('Location');
         parse_str((string) parse_url($location, PHP_URL_QUERY), $q);
 
-        $this->get('/plugins/sirsoft-social_login/oauth/kakao/callback?code=c&state='.$q['state'])
-            ->assertRedirect(url('/login').'?social_error=flow_not_available&redirect=%2Fmypage');
-        $this->assertSame('denied', SocialLoginAttempt::query()->latest('id')->value('outcome'));
+        $response = $this->get('/plugins/sirsoft-social_login/oauth/kakao/callback?code=c&state='.$q['state']);
+
+        $this->assertSame('/register', $this->redirectPath($response));
+        $query = $this->redirectQuery($response);
+        $this->assertSame('complete', $query['social_step']);
+        $this->assertSame(48, strlen($query['social_pending']));
+        $this->assertSame('pending', SocialLoginAttempt::query()->latest('id')->value('outcome'));
     }
 
     /**
      * 연결 테스트 API 가 설정 변경 권한을 요구하는지 확인한다.
      *
      * @scenario api=test_login, role=operator|member
+     *
      * @effects test_login_requires_settings_update
+     *
      * @return void 반환값 없음
      */
     public function test_admin_test_login_api_requires_settings_update_permission(): void

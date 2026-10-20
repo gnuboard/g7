@@ -1,0 +1,14 @@
+<!-- 로그인 화면 폼 아래에 소셜 로그인 버튼을 붙이는 조각 — 켜진 제공자가 없으면 영역째 그리지 않는다.
+     버튼은 이 사이트의 시작 주소로 가는 링크이고, 로그인 뒤 돌아갈 주소(query.redirect)를 함께 싣는다. -->
+<extension extension-point="auth_login_extensions" mode="append" priority="100">
+  <div data-ref="social_login_buttons_section" data-if="{{(socialProviders?.data ?? []).length > 0}}" class="mt-6">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
+      <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.divider.or</span>
+      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
+    </div>
+    <sirsoft-social_login.provider-buttons data-type="composite" data-ref="social_login_provider_buttons" providers="{{socialProviders?.data ?? []}}" intent="login" redirect="{{query.redirect ?? '/'}}"/>
+  </div>
+  <!-- 켜진 제공자 목록 — 비로그인으로 읽는다(자격증명 없음). -->
+  <data-source id="socialProviders" label_key="$t:sirsoft-social_login.editor.data_source.providers" type="api" endpoint="/api/plugins/sirsoft-social_login/providers" method="GET" :auto_fetch="true" auth_mode="optional"/>
+</extension>

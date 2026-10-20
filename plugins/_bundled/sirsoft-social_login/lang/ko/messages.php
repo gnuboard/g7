@@ -49,4 +49,27 @@ return [
         'status_on' => '모의 제공자가 켜져 있습니다. :until 에 꺼집니다.',
         'status_off' => '모의 제공자가 꺼져 있습니다.',
     ],
+    'providers' => [
+        'listed' => '소셜 로그인 제공자 목록입니다.',
+    ],
+    'signup' => [
+        'pending' => '가입 대기 정보입니다.',
+        'code_sent' => '인증번호를 보냈습니다.',
+        'email_verified' => '이메일을 확인했습니다.',
+        'completed' => '가입을 마쳤습니다.',
+    ],
+    'link_existing' => [
+        'linked' => '기존 계정에 소셜 계정을 연결했습니다.',
+    ],
+    'accounts' => [
+        'listed' => '연결된 소셜 계정 목록입니다.',
+        'link_started' => '제공자 화면으로 이동합니다.',
+        'unlinked' => '소셜 계정 연결을 해제했습니다.',
+    ],
+    'reauth' => [
+        'provider_label' => '소셜 계정으로 다시 확인',
+        'channel_label' => '소셜 로그인',
+        'started' => '제공자 화면으로 이동합니다.',
+        'verified' => '본인을 확인했습니다.',
+    ],
 ];

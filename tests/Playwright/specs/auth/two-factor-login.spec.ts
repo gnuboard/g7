@@ -252,31 +252,29 @@ test('관리자 로그인 — 챌린지 응답이 서버 오류가 아니고 코
 });
 
 /**
- * @scenario controller=admin, two_factor=on, delivery=sent, code=valid, actor=non_admin
+ * 관리자 로그인은 관리자가 아닌 계정을 인증번호 발급 전에 거절한다(#40 R12 — 인증번호 메일도 보내지 않는다).
+ * 코드 확인 단계까지 가서 거절하던 이전 순서에서는 그 사이 발급된 토큰을 회수해야 했다 — 지금은 토큰도 challenge 도 없다.
+ *
+ * @scenario controller=admin, two_factor=on, actor=non_admin
  * @effects non_admin_admin_login_revokes_token
  */
-test('관리자 로그인 — 관리자가 아닌 계정은 코드 확인에 성공해도 거부되고 토큰이 남지 않는다', async ({ page }) => {
+test('관리자 로그인 — 관리자가 아닌 계정은 인증번호 단계 전에 거부되고 토큰이 남지 않는다', async ({ page }) => {
   await page.goto('/admin/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  const challengeId = await submitAndReadChallenge(page, '/api/auth/admin/login', async () => {
-    await page.fill('input[name="email"]', nonAdminEmail);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.click('#login_submit_button');
-  });
-
-  const codeInput = page.locator('#two_factor_code');
-  await expect(codeInput).toBeVisible({ timeout: 10_000 });
-  await codeInput.fill(plantTwoFactorCode(challengeId));
-
-  const [verifyResponse] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes('/admin/login/two-factor') && r.request().method() === 'POST'),
-    page.locator('#login_two_factor_submit').click(),
+  await page.fill('input[name="email"]', nonAdminEmail);
+  await page.fill('input[name="password"]', PASSWORD);
+  const [response] = await Promise.all([
+    page.waitForResponse((r) => r.url().includes('/api/auth/admin/login') && r.request().method() === 'POST'),
+    page.click('#login_submit_button'),
   ]);
 
-  expect(verifyResponse.status()).toBe(403);
+  expect(response.status()).toBe(403);
+  const body = await response.json();
+  expect(body?.data?.challenge_id, '거부된 관리자 로그인이 인증 요청을 발급했습니다').toBeFalsy();
+  expect(body?.data?.token, '거부된 관리자 로그인이 토큰을 발급했습니다').toBeFalsy();
 
-  // 코드 확인 시점에 발급된 토큰이 회수되지 않으면 유효한 세션이 남는다.
+  await expect(page.locator('#two_factor_code')).toHaveCount(0);
   const token = await page.evaluate(() => localStorage.getItem('auth_token'));
   expect(token, '거부된 로그인이 토큰을 남겼습니다').toBeFalsy();
   expect(page.url()).toContain('/admin/login');

@@ -13,9 +13,11 @@
 <!-- @intent START -->
 | 계층 | 클래스 |
 |---|---|
-| 웹·API 진입 | `OAuthController`(start, callback, testResult), `Admin\ProviderTestController`, `Mock\MockController` |
-| 요청 검증 | `OAuthStartRequest`, `OAuthCallbackRequest` |
-| 흐름 | `OAuthFlowService`(시작, 콜백, 결과 보관), `StateStore`, `ProviderRegistry`, `IdTokenVerifier` |
+| 웹·API 진입 | `OAuthController`(start, callback, testResult), `ProviderListController`, `SignupController`, `LinkExistingController`, `MyAccountsController`, `Admin\ProviderTestController`, `Mock\MockController` |
+| 요청 검증 | `OAuthStartRequest`, `OAuthCallbackRequest`, `PendingSignupRequest`(← `CompleteSignupRequest`, `SignupEmailRequest`, `VerifyCodeRequest`, `LinkExistingRequest`), `ReauthStartRequest`, `ReauthClaimRequest` |
+| 흐름 | `OAuthFlowService`(시작, 콜백, 결과 보관), `CallbackDispatcher`(의도별 분기), `StateStore`, `ProviderRegistry`, `IdTokenVerifier` |
+| 로그인·가입·연결 | `SocialLoginService`(관리자 차단, 코어 로그인 인계), `SignupFlowService`·`PendingSignupStore`(가입 모달), `LinkExistingService`(같은 이메일 기존 계정), `AccountLinkService`(연결·해제), `SocialReauthService`·`Identity\SocialReauthIdentityProvider`(대체 이메일 회원 본인 재확인), `SignupSurgeMonitor`, `AttemptRecorder`, `AccountCredentialWriter`, `ProviderSettings` |
+| 리스너 | 회원 삭제·탈퇴 시 연결 정리, 회원 응답에 연결 제공자 목록 주입, 활동 기록, 재확인 수단 등록, 모의 제공자 등록, 설정 검증 |
 | 제공자 | `Contracts\ProviderDriverInterface` ← `AbstractOAuth2Driver` ← Kakao, Naver, Google(← Oidc), Facebook |
 | 저장 | Repository 4종(제공자, 연결, 시도, 웹훅) → 모델 4종 |
 | 보조 | `Support\Jwt\*`(JWK→PEM, RS256, 클레임), `Support\HtmlPage`, `Support\RsaKeyFactory` |
@@ -39,9 +41,14 @@
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-social_login --force` (빌드 불필요) |
+| `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-social_login --force` |
+| `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-social_login --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-social_login --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-social_login --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-social_login --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |

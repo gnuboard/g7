@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\SocialLogin\Drivers;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -143,6 +144,24 @@ abstract class AbstractOAuth2Driver implements ProviderDriverInterface
         $clone->config = $config;
 
         return $clone;
+    }
+
+    /**
+     * 비밀값이 아닌 제공자 설정 값 하나를 반환합니다 (가입 허용·이메일 정책·버튼 모양 등).
+     *
+     * 테이블에 행이 없는 제공자(모의 제공자처럼 확장이 등록한 것)도 같은 정책 판정을 받게 한다. 자격증명은 돌려주지 않는다.
+     *
+     * @param  string  $name  설정 이름
+     * @param  mixed  $default  없을 때 값
+     * @return mixed 설정 값
+     */
+    public function setting(string $name, mixed $default = null): mixed
+    {
+        if (in_array($name, ['client_secret', 'admin_key'], true)) {
+            return $default;
+        }
+
+        return $this->config[$name] ?? $default;
     }
 
     /**
@@ -353,9 +372,9 @@ abstract class AbstractOAuth2Driver implements ProviderDriverInterface
     /**
      * 공통 HTTP 클라이언트를 만듭니다.
      *
-     * @return \Illuminate\Http\Client\PendingRequest 클라이언트
+     * @return PendingRequest 클라이언트
      */
-    protected function http(): \Illuminate\Http\Client\PendingRequest
+    protected function http(): PendingRequest
     {
         $client = Http::timeout(self::HTTP_TIMEOUT_SECONDS)->acceptJson();
 

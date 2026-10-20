@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Plugins\Sirsoft\SocialLogin\Enums\AttemptIntent;
 use Plugins\Sirsoft\SocialLogin\Mock\MockGate;
+use Plugins\Sirsoft\SocialLogin\Mock\MockKeyPair;
 use Plugins\Sirsoft\SocialLogin\Services\OAuthFlowService;
 use Plugins\Sirsoft\SocialLogin\Services\ProviderRegistry;
 use Plugins\Sirsoft\SocialLogin\Tests\PluginTestCase;
@@ -175,6 +176,30 @@ class MockProviderTest extends PluginTestCase
         app(MockGate::class)->enable(10);
 
         $this->get('/plugins/sirsoft-social_login/mock/authorize?redirect_uri='.urlencode('https://evil.example.test/cb'))->assertStatus(400);
+    }
+
+    /**
+     * 모의 제공자를 껐다 다시 켜면 서명 키가 바뀐다 — 키 ID 도 바뀌어야 캐시된 공개키 목록을 다시 받아 id_token 을 검증한다.
+     *
+     * @scenario gate=off_then_on, provider=mock_google
+     *
+     * @effects reenabled_gate_rotates_kid
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reenabled_gate_rotates_kid_so_id_token_still_verifies(): void
+    {
+        app(MockGate::class)->enable(10);
+        $this->routeMockHttpIntoApp();
+        $this->assertStringContainsString('me*********@example.test', $this->roundTrip('mock_google', 'full_verified'));
+        $firstKid = app(MockKeyPair::class)->jwk()['kid'];
+
+        app(MockGate::class)->disable();
+        app(MockGate::class)->enable(10);
+        app(ProviderRegistry::class)->flush();
+
+        $this->assertNotSame($firstKid, app(MockKeyPair::class)->jwk()['kid']);
+        $this->assertStringContainsString('me*********@example.test', $this->roundTrip('mock_google', 'full_verified'));
     }
 
     /**

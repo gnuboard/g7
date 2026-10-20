@@ -198,7 +198,7 @@ test('관리자가 정해 준 비밀번호는 연기 없이 변경 단계를 요
  * @effects two_factor_precedes_password_change
  */
 test('2단계 인증이 켜져 있으면 인증번호를 먼저 확인한 뒤 변경 단계가 온다', async ({ page }) => {
-  const twoFactorState = await enableTwoFactorFixture(request!, adminToken);
+  const twoFactorState = await enableTwoFactorFixture(request!, adminToken, { two_factor_scope: 'all' });
   try {
     const account = seedAccount('expired');
     await page.goto('/login');

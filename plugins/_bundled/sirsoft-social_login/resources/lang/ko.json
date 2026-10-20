@@ -2,7 +2,25 @@
     "plugin_read_only": "이 설정을 바꿀 권한이 없습니다. 값만 볼 수 있습니다.",
     "editor": {
         "data_source": {
-            "settings": "소셜 로그인 설정"
+            "settings": "소셜 로그인 설정",
+            "providers": "소셜 로그인 제공자 목록",
+            "accounts": "내 소셜 계정 연결"
+        },
+        "palette": {
+            "group": "소셜 로그인",
+            "provider_buttons": {
+                "label": "소셜 로그인 버튼"
+            }
+        },
+        "state": {
+            "signup_email_input": "가입 모달 — 이메일 입력",
+            "signup_code_sent": "가입 모달 — 인증번호 보낸 뒤",
+            "signup_email_locked": "가입 모달 — 제공자 확인 이메일",
+            "signup_expired": "가입 모달 — 시간 만료",
+            "existing_with_password": "기존 계정 — 비밀번호 있음",
+            "existing_without_password": "기존 계정 — 비밀번호 없음",
+            "unlink_confirm": "연결 해제 확인",
+            "unlink_last_method": "연결 해제 — 마지막 로그인 수단"
         }
     },
     "settings": {
@@ -87,5 +105,101 @@
                 "hint": "한 제공자에서 이 수만큼 연달아 실패하면 관리자에게 알립니다. 0 이면 알리지 않습니다."
             }
         }
+    },
+    "divider": {
+        "or": "또는",
+        "or_email_signup": "또는 이메일로 가입"
+    },
+    "buttons": {
+        "login_with": {
+            "kakao": "카카오 로그인",
+            "naver": "네이버 로그인",
+            "google": "Google 계정으로 로그인",
+            "facebook": "Facebook으로 로그인",
+            "custom": "{{provider}}(으)로 로그인"
+        },
+        "register_with": {
+            "kakao": "카카오로 가입",
+            "naver": "네이버로 가입",
+            "google": "Google 계정으로 가입",
+            "facebook": "Facebook으로 가입",
+            "custom": "{{provider}}(으)로 가입"
+        },
+        "link_with": "{{provider}} 연결",
+        "reauth_with": "{{provider}}(으)로 다시 확인"
+    },
+    "errors": {
+        "provider_error": "소셜 로그인에 실패했습니다. 잠시 뒤 다시 시도하거나 다른 방법으로 로그인해 주세요.",
+        "access_denied": "제공자 화면에서 동의하지 않아 로그인하지 않았습니다.",
+        "state_invalid": "로그인 시간이 지났거나 이미 처리한 요청입니다. 다시 시도해 주세요.",
+        "code_missing": "제공자가 로그인 결과를 보내지 않았습니다. 다시 시도해 주세요.",
+        "unexpected_error": "소셜 로그인 처리 중 문제가 생겼습니다. 잠시 뒤 다시 시도해 주세요.",
+        "profile_missing_id": "제공자가 계정 정보를 보내지 않았습니다. 다시 시도해 주세요.",
+        "profile_fetch_failed": "제공자에서 계정 정보를 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
+        "provider_disabled": "지금은 이 제공자로 로그인할 수 없습니다.",
+        "provider_unknown": "지금은 이 제공자로 로그인할 수 없습니다.",
+        "admin_blocked": "관리자 계정은 소셜 로그인을 쓸 수 없습니다. 비밀번호로 로그인해 주세요.",
+        "signup_disabled": "이 제공자로는 새로 가입할 수 없습니다. 이미 가입한 계정이 있으면 그 계정으로 로그인한 뒤 마이페이지에서 연결해 주세요.",
+        "email_required": "가입에 이메일이 필요합니다. 제공자 화면에서 이메일 제공에 동의한 뒤 다시 시도해 주세요.",
+        "account_missing": "연결된 회원을 찾을 수 없습니다. 다시 가입해 주세요.",
+        "already_linked_other_user": "이 소셜 계정은 다른 회원에게 연결되어 있습니다.",
+        "provider_already_linked": "이 제공자의 다른 계정이 이미 연결되어 있습니다. 먼저 해제한 뒤 연결해 주세요.",
+        "user_missing": "로그인 정보가 바뀌었습니다. 다시 로그인한 뒤 연결해 주세요.",
+        "reauth_mismatch": "연결된 계정과 다른 계정으로 로그인했습니다. 연결한 계정으로 다시 확인해 주세요.",
+        "reauth_failed": "본인 확인을 마치지 못했습니다. 다시 시도해 주세요.",
+        "last_method": "비밀번호를 설정하거나 다른 계정을 연결한 뒤 해제할 수 있습니다.",
+        "expired": "가입 대기 시간이 지났습니다. 소셜 로그인을 처음부터 다시 해 주세요."
+    },
+    "notices": {
+        "pending_verification": "가입을 마쳤습니다. 본인인증을 마친 뒤 로그인할 수 있습니다."
+    },
+    "signup": {
+        "title": "{{provider}} 계정으로 가입",
+        "intro": "아래 내용을 확인하고 동의하면 가입을 마칩니다. 비밀번호는 정하지 않아도 됩니다.",
+        "expired": "가입 대기 시간이 지났거나 이미 가입을 마쳤습니다. 소셜 로그인을 처음부터 다시 해 주세요.",
+        "retry_login": "다시 로그인",
+        "name": "이름",
+        "nickname": "닉네임",
+        "email": "이메일",
+        "placeholder_notice": "이메일 없이 가입합니다. 대체 이메일이 발급되어 메일 알림과 메일 인증번호를 받을 수 없습니다. 가입 뒤 마이페이지에서 이메일을 바꿀 수 있습니다.",
+        "request_code": "인증번호 받기",
+        "resend_code": "인증번호 다시 받기",
+        "code_placeholder": "인증번호 6자리",
+        "code_sent": "인증번호를 보냈습니다. 메일함을 확인해 주세요.",
+        "verify_code": "확인",
+        "email_verified": "이메일을 확인했습니다.",
+        "submit": "가입하고 시작하기",
+        "code_remaining": "남은 시간 {{minutes}}:{{seconds}}",
+        "code_expired": "인증번호 유효 시간이 지났습니다. 재발송을 눌러 주세요."
+    },
+    "existing": {
+        "title": "이미 가입된 이메일",
+        "message": "{{email}} 로 가입한 계정이 있습니다. 그 계정의 주인임을 확인하면 소셜 계정을 연결하고 로그인합니다.",
+        "hint": "이메일이 같다는 것만으로는 계정을 합치지 않습니다.",
+        "by_password": "기존 계정 비밀번호로 확인",
+        "by_email": "기존 계정 이메일로 인증번호 받기",
+        "confirm": "확인",
+        "new_account": "새 계정으로 가입"
+    },
+    "mypage": {
+        "title": "연결된 소셜 계정",
+        "no_password": "비밀번호가 없는 계정입니다. 비밀번호를 설정하면 이메일로도 로그인할 수 있습니다.",
+        "set_password": "비밀번호 설정",
+        "empty": "연결된 소셜 계정이 없습니다.",
+        "linked_label": "연결일",
+        "unlink": "연결 해제",
+        "unlink_title": "소셜 계정 연결 해제",
+        "unlink_confirm": "{{provider}} 계정 연결을 해제할까요? 해제하면 그 계정으로 로그인할 수 없습니다.",
+        "unlinked_toast": "연결을 해제했습니다.",
+        "last_method": "비밀번호가 없고 연결이 하나뿐이라 해제할 수 없습니다. 비밀번호를 설정하거나 다른 계정을 연결한 뒤 해제해 주세요.",
+        "available": "다른 계정 연결하기",
+        "linked_toast": "소셜 계정을 연결했습니다."
+    },
+    "reauth": {
+        "notice": "이 계정은 이메일로 인증번호를 받을 수 없습니다. 연결한 소셜 계정으로 다시 로그인해 본인을 확인해 주세요.",
+        "unavailable": "연결된 소셜 계정이 없어 본인을 확인할 수 없습니다. 관리자에게 문의해 주세요.",
+        "verified_toast": "본인을 확인했습니다.",
+        "password_notice": "비밀번호를 처음 정하기 전에 연결한 소셜 계정으로 다시 로그인해 본인을 확인해 주세요.",
+        "password_ready": "본인을 확인했습니다. 몇 분 안에 새 비밀번호를 저장해 주세요."
     }
 }
