@@ -16,6 +16,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { authenticatePage, issueToken, purgeTrackedExports } from '../../fixtures/export-cleanup';
+import { chooseRowMenuItem } from '../../fixtures/export-row-menu';
 
 const ORDER_LIST_URL = '/admin/ecommerce/orders';
 const PRODUCT_LIST_URL = '/admin/ecommerce/products';
@@ -233,12 +234,7 @@ test.describe('내보내기 창 쓰임새', () => {
     await page.goto(EXPORT_INDEX_URL);
     const row = page.getByRole('row').filter({ hasText: fileName }).first();
     await expect(row).toBeVisible({ timeout: 20_000 });
-    const historyItem = page.getByRole('menuitem', { name: '다운로드 이력' });
-    await expect(async () => {
-      await row.getByRole('button', { name: '작업' }).click();
-      await expect(historyItem).toBeVisible({ timeout: 2_000 });
-    }).toPass({ timeout: 20_000 });
-    await historyItem.click();
+    await chooseRowMenuItem(page, row, '다운로드 이력');
 
     const dialog = page.getByRole('dialog', { name: '다운로드 이력' });
     await expect(dialog.getByText(/항목 수 2개/)).toBeVisible({ timeout: 10_000 });

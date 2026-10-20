@@ -21,6 +21,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { authenticatePage, issueToken, issueScopedToken, purgeTrackedExports } from '../../fixtures/export-cleanup';
+import { chooseRowMenuItem } from '../../fixtures/export-row-menu';
 
 const CORE_ROOT = process.env.G7_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../../../');
 const SERVICE_CLASS = '\\Modules\\Sirsoft\\Ecommerce\\Services\\ExportService';
@@ -394,19 +395,13 @@ test.describe('내보내기 요청·관리', () => {
       return data?.status;
     }, { timeout: 150_000, intervals: [2_000] }).toMatch(/completed|failed/);
     // 실패한 작업으로 만든다 — 큐가 sync 면 이미 완료됐으므로 파일을 지우고 상태를 바꾼다(이 사양이 보는 것은 다시 요청 창이다)
-    execFileSync('php', ['artisan', 'tinker', `--execute=$e=\\Modules\\Sirsoft\\Ecommerce\\Models\\Export::find(${exportId}); if ($e->file_path) { (new \\App\\Extension\\Storage\\ModuleStorageDriver('sirsoft-ecommerce'))->delete(${SERVICE_CLASS}::STORAGE_CATEGORY, $e->file_path); } $e->forceFill(['status' => 'failed', 'error_code' => 'timeout', 'file_path' => null])->save();`], { cwd: CORE_ROOT, stdio: 'pipe' });
+    execFileSync('php', ['artisan', 'tinker', `--execute=$e=\\Modules\\Sirsoft\\Ecommerce\\Models\\Export::find(${exportId}); if ($e->file_path) { app(\\App\\Extension\\ModuleManager::class)->getModule('sirsoft-ecommerce')->getStorage()->delete(${SERVICE_CLASS}::STORAGE_CATEGORY, $e->file_path); } $e->forceFill(['status' => 'failed', 'error_code' => 'timeout', 'file_path' => null])->save();`], { cwd: CORE_ROOT, stdio: 'pipe' });
 
     await authenticatePage(page, issueToken(...perms));
     await page.goto(EXPORT_INDEX_URL);
     const row = page.getByRole('row').filter({ hasText: fileName }).first();
     await expect(row).toBeVisible({ timeout: 20_000 });
-    // 목록이 스스로 새로고침되면 열린 행 메뉴가 닫힐 수 있다 — 메뉴 항목이 보일 때까지 다시 연다
-    const retryItem = page.getByRole('menuitem', { name: '다시 요청' });
-    await expect(async () => {
-      await row.getByRole('button', { name: '작업' }).click();
-      await expect(retryItem).toBeVisible({ timeout: 2_000 });
-    }).toPass({ timeout: 20_000 });
-    await retryItem.click();
+    await chooseRowMenuItem(page, row, '다시 요청');
 
     const dialog = page.getByRole('dialog', { name: '다시 요청' });
     const reason = dialog.getByRole('textbox');

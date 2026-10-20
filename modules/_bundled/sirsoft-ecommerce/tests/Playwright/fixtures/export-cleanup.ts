@@ -6,8 +6,10 @@
  * 돌면 「요청한 운영자 계정을 찾을 수 없어」 실패 작업도 쌓이고, 개인정보가 담긴 파일이 개발 사이트에 남는다.
  *
  * 이 파일이 내보내는 `issueToken`·`issueScopedToken` 은 코어 발급기를 그대로 부르되 발급한 토큰을 기억한다.
- * `purgeTrackedExports()` 는 그 토큰 주인이 요청한 작업만 서비스 삭제 경로(파일 삭제 → 소프트 삭제)로 지운다 —
- * 다른 세션이 같은 사이트에서 돌리는 E2E 의 작업은 건드리지 않는다. 진행중 작업은 끝날 때까지(최대 90초) 기다린다.
+ * `purgeTrackedExports()` 는 그 토큰 주인이 요청한 작업만 서비스 삭제 경로(파일 삭제 → 소프트 삭제)로 지운 뒤
+ * 다운로드 기록과 행까지 물리 삭제한다 — 소프트 삭제만 하면 시험 행이 회차마다 쌓인다. 사양이 화면에서 이미 지운
+ * (소프트 삭제된) 작업도 같이 거둔다. 다른 세션이 같은 사이트에서 돌리는 E2E 의 작업은 건드리지 않는다.
+ * 진행중 작업은 끝날 때까지(최대 90초) 기다린다.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -58,9 +60,12 @@ const PURGE_PHP = [
   '$deadline = time() + 90; $deleted = 0;',
   'do {',
   '  $waiting = 0;',
-  '  foreach (\\Modules\\Sirsoft\\Ecommerce\\Models\\Export::whereIn("requested_by", $userIds)->get() as $export) {',
-  '    if (! $export->status->isDeletable()) { $waiting++; continue; }',
-  '    $service->delete($export, \\App\\Models\\User::findOrFail($export->requested_by)); $deleted++;',
+  '  foreach (\\Modules\\Sirsoft\\Ecommerce\\Models\\Export::withTrashed()->whereIn("requested_by", $userIds)->get() as $export) {',
+  '    if (! $export->trashed()) {',
+  '      if (! $export->status->isDeletable()) { $waiting++; continue; }',
+  '      $service->delete($export, \\App\\Models\\User::findOrFail($export->requested_by));',
+  '    }',
+  '    $export->downloads()->delete(); $export->forceDelete(); $deleted++;',
   '  }',
   '  if ($waiting > 0) { sleep(3); }',
   '} while ($waiting > 0 && time() < $deadline);',
