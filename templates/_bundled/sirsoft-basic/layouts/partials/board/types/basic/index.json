@@ -424,6 +424,19 @@
                                                             "text": "{{post?.title}}"
                                                         },
                                                         {
+                                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 데스크톱 행이라 모바일 카드에도 같은 자리가 있다. 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                                            "type": "extension_point",
+                                                            "name": "board_post_row_badges",
+                                                            "props": {
+                                                                "className": "contents",
+                                                                "data-extension-point": "board_post_row_badges",
+                                                                "post": "{{post}}",
+                                                                "postId": "{{post?.id}}",
+                                                                "boardSlug": "{{route?.slug}}",
+                                                                "context": "board_list"
+                                                            }
+                                                        },
+                                                        {
                                                             "comment": "첨부파일 아이콘",
                                                             "type": "basic",
                                                             "name": "Icon",
@@ -659,6 +672,19 @@
                                                                                 "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
                                                                             },
                                                                             "text": "{{post?.title}}"
+                                                                        },
+                                                                        {
+                                                                            "comment": "확장 자리 — 모바일 카드의 글 배지 자리(#149). 데스크톱 행과 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다",
+                                                                            "type": "extension_point",
+                                                                            "name": "board_post_row_badges",
+                                                                            "props": {
+                                                                                "className": "contents",
+                                                                                "data-extension-point": "board_post_row_badges",
+                                                                                "post": "{{post}}",
+                                                                                "postId": "{{post?.id}}",
+                                                                                "boardSlug": "{{route?.slug}}",
+                                                                                "context": "board_list"
+                                                                            }
                                                                         },
                                                                         {
                                                                             "comment": "첨부파일 아이콘",

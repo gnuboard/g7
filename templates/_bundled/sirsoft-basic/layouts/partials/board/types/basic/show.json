@@ -175,6 +175,19 @@
                                             "text": "{{post?.data?.title ?? ''}}"
                                         },
                                         {
+                                            "comment": "확장 자리 — 확장이 제목 옆에 배지를 붙인다(#149). 이 파일은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다",
+                                            "type": "extension_point",
+                                            "name": "board_post_header_badges",
+                                            "props": {
+                                                "className": "contents",
+                                                "data-extension-point": "board_post_header_badges",
+                                                "post": "{{post?.data}}",
+                                                "postId": "{{post?.data?.id}}",
+                                                "boardSlug": "{{route?.slug}}",
+                                                "context": "board_show"
+                                            }
+                                        },
+                                        {
                                             "comment": "삭제됨 배지",
                                             "type": "basic",
                                             "name": "Span",

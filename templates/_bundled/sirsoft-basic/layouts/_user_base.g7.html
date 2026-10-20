@@ -155,9 +155,9 @@
           <navigate/>
         </on>
         <div data-if="{{_global.settings?.general?.site_logo_url}}" class="min-w-0">
-          <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? 'Site'}}" class="h-8 w-auto max-w-full object-contain object-left"/>
+          <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" class="h-8 w-auto max-w-full object-contain object-left"/>
         </div>
-        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate">{{_global.settings?.general?.site_name ?? 'Site'}}</span>
+        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate">{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}</span>
       </a>
       <!-- 모바일 헤더 우측 - 액션 버튼들 -->
       <div data-ref="mobile_header_right" class="flex items-center gap-1 shrink-0">
@@ -584,7 +584,7 @@
       </div>
     </div>
     <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
-    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
@@ -681,7 +681,7 @@
       </container>
     </div>
     <!-- === 푸터 (Footer 컴포넌트) === -->
-    <footer data-type="composite" data-ref="footer" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? '그누보드7'}}">
+    <footer data-type="composite" data-ref="footer" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}">
       <prop name="socialLinks">
         <field name="github" value="{{_global.settings?.social?.github}}"/>
         <field name="twitter" value="{{_global.settings?.social?.twitter}}"/>

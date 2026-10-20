@@ -111,6 +111,8 @@
                 <!-- 블라인드 아이콘 -->
                 <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
                 <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
+                <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 데스크톱 행이라 모바일 카드에도 같은 자리가 있다. 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
+                <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
                 <!-- 첨부파일 아이콘 -->
                 <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
@@ -157,6 +159,8 @@
                     <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
                     <!-- 제목은 한 줄 … — 공백 없는 긴 제목이 N 배지·댓글 수를 화면 밖으로 밀었다(#143) -->
                     <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
+                    <!-- 확장 자리 — 모바일 카드의 글 배지 자리(#149). 데스크톱 행과 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다 -->
+                    <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
                     <!-- 첨부파일 아이콘 -->
                     <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>

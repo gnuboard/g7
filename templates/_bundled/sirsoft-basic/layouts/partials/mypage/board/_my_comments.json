@@ -423,6 +423,20 @@
                                                         "className": "text-base font-medium text-gray-900 dark:text-white truncate"
                                                     },
                                                     "text": "{{comment.post_title}}"
+                                                },
+                                                {
+                                                    "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 이 목록의 원글 id 는 comment.post_id_val 이다",
+                                                    "type": "extension_point",
+                                                    "name": "board_comment_row_badges",
+                                                    "props": {
+                                                        "className": "contents",
+                                                        "data-extension-point": "board_comment_row_badges",
+                                                        "commentData": "{{comment}}",
+                                                        "commentId": "{{comment.id}}",
+                                                        "postId": "{{comment.post_id_val}}",
+                                                        "boardSlug": "{{comment.board_slug}}",
+                                                        "context": "mypage_comments"
+                                                    }
                                                 }
                                             ]
                                         },

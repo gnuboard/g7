@@ -115,6 +115,8 @@
             <!-- 비밀글 아이콘 -->
             <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-300 dark:text-gray-300 flex-shrink-0"/>
             <span class="text-base font-semibold truncate transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-white'}}">{{post?.title}}</span>
+            <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 카드 전체 링크(z-10)가 위에 덮이므로 누르는 조각은 relative z-20 으로 올린다 -->
+            <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
             <!-- 첨부파일 아이콘 -->
             <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-300 dark:text-gray-300 flex-shrink-0"/>
             <!-- 삭제됨 배지 (제목 옆) -->

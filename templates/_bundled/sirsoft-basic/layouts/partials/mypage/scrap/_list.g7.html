@@ -141,6 +141,8 @@
                   </on>
                   {{item.title ?? ''}}
                 </a>
+                <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 정상 글 행에만 둔다. item.id 는 스크랩 id 라 글 id 는 item.post_id 다 -->
+                <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{item}}" postId="{{item.post_id}}" boardSlug="{{item.board_slug}}" context="mypage_scrap"/>
               </td>
               <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 whitespace-nowrap truncate">{{item.author_name ?? ''}}</td>
               <td class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">{{item.comments_count ?? 0}}</td>
@@ -265,6 +267,8 @@
               <div class="flex items-center gap-2 mb-1">
                 <span class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900">{{item.board_name ?? ''}}</span>
                 <h3 class="min-w-0 text-sm font-medium text-gray-900 dark:text-white truncate hover:underline">{{item.title ?? ''}}</h3>
+                <!-- 확장 자리 — 모바일 카드의 글 배지 자리(#149). PC 표와 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다 -->
+                <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{item}}" postId="{{item.post_id}}" boardSlug="{{item.board_slug}}" context="mypage_scrap"/>
               </div>
               <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                 <span>{{item.author_name ?? ''}}</span>

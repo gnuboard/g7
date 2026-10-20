@@ -343,6 +343,33 @@ Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 
 끼워 넣는 자리입니다.
 <!-- @intent END -->
 
+### 사용자 화면 자리 (sirsoft-basic)
+
+<!-- @intent START -->
+이 모듈은 사용자 화면을 갖지 않습니다 — 방문자가 보는 게시판 화면은 사용자 템플릿(기준 구현 `sirsoft-basic`)이 그립니다.
+그래서 확장이 게시판 사용자 화면에 표시나 입력칸을 붙이는 자리는 템플릿이 확장점으로 엽니다(7.1.1+). 같은 이름의 확장점은
+모든 화면·모든 게시판 유형(basic·gallery·card)에 함께 있으므로, 확장은 이름으로 **한 번만** 등록하면 됩니다.
+
+| 확장점 | 자리 | `context` 값 |
+| --- | --- | --- |
+| `board_post_row_badges` | 글이 보이는 모든 목록의 제목 바로 뒤 | `board_list` · `popular` · `home_recent` · `home_board_summary` · `user_posts` · `user_profile_recent` · `mypage_posts` · `mypage_scrap` · `search_all` · `search_posts` |
+| `board_post_header_badges` | 글 상세 제목 바로 뒤 | `board_show` |
+| `board_comment_row_badges` | 글 상세 댓글 머리 줄, 마이페이지 내 댓글 | `board_show_comment` · `mypage_comments` |
+| `board_post_form_top` | 글쓰기 폼 맨 위(검증 오류 상자 아래) | — (`mode` 로 구분) |
+| `board_post_form_bottom` | 글쓰기 폼 맨 아래(취소·저장 단추 위) | — (`mode` 로 구분) |
+
+props 계약:
+
+- 글 자리: `post`(행 원본) · `postId` · `boardSlug` · `context`. 상세 머리의 `post` 는 상세 응답의 `data` 다.
+- 댓글 자리: `commentData`(행 원본) · `commentId` · `postId` · `boardSlug` · `context`.
+- 글쓰기 자리: `mode`(`create`·`reply`·`edit`) · `boardSlug` · `postId`(새 글은 `null`) · `board`(글쓰기 틀 응답의 게시판).
+
+글쓰기 자리에 끼운 입력칸이 이름(`name`)으로 값을 쓰면 글쓰기 폼 상태에 들어가 저장 요청(`POST`·`PUT …/posts`) 본문에 함께
+실립니다. 이 모듈은 모르는 키를 저장하지 않고 무시하므로, 그 값을 저장하는 것은 확장이 게시글 저장 훅
+(`sirsoft-board.post.after_create`·`after_update` 등, 위 「발행 훅」 표)으로 처리합니다. 목록·상세에 그 값을 실어 보내는 것도
+조회 훅의 몫입니다. 자리마다의 놓는 곳·호스트 규칙은 코어 레이아웃 확장 문서의 「템플릿이 열어 두어야 하는 확장점」을 봅니다.
+<!-- @intent END -->
+
 ## 미들웨어
 
 <!-- @generated:middleware START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

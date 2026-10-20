@@ -120,6 +120,19 @@
                                             "text": "{{post.title}}"
                                         },
                                         {
+                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 게시판 묶음 안의 글이라 게시판은 item.slug 에서 온다",
+                                            "type": "extension_point",
+                                            "name": "board_post_row_badges",
+                                            "props": {
+                                                "className": "contents",
+                                                "data-extension-point": "board_post_row_badges",
+                                                "post": "{{post}}",
+                                                "postId": "{{post.id}}",
+                                                "boardSlug": "{{item.slug}}",
+                                                "context": "home_board_summary"
+                                            }
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{post.is_new}}",

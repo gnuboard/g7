@@ -31,7 +31,7 @@
                     "props": {
                         "className": "text-sm font-medium opacity-90"
                     },
-                    "text": "Welcome"
+                    "text": "$t:home.welcome_badge"
                 }
             ]
         },
@@ -42,7 +42,7 @@
             "props": {
                 "className": "text-xl font-bold mb-2 break-words"
             },
-            "text": "{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix"
+            "text": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}$t:home.welcome_suffix"
         },
         {
             "type": "basic",

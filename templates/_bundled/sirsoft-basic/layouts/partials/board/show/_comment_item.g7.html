@@ -16,6 +16,8 @@
         <div class="flex items-center gap-1">
           <!-- UserInfo 컴포넌트 (이름 + 작성일시 한 줄) -->
           <user-info data-type="composite" author="{{comment?.author}}" subText="{{comment?.created_at_formatted ?? ''}}" subTextTitle="{{comment?.created_at ?? ''}}" layout="horizontal"/>
+          <!-- 확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다 -->
+          <extension-point name="board_comment_row_badges" class="contents" data-extension-point="board_comment_row_badges" commentData="{{comment}}" commentId="{{comment?.id}}" postId="{{post?.data?.id}}" boardSlug="{{route?.slug}}" context="board_show_comment"/>
         </div>
         <!-- 더보기 드롭다운 메뉴 (답글/수정/삭제/신고) - 삭제/블라인드 댓글에서 숨김, 가능한 액션이 없으면 숨김 -->
         <div data-if="{{!comment?.deleted_at &amp;&amp; comment?.status !== 'blinded' &amp;&amp; ((comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author) || (post?.data?.abilities?.can_write_comments &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at))}}" class="relative">

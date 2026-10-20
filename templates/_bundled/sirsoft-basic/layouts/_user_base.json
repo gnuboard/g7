@@ -410,7 +410,7 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{_global.settings?.general?.site_logo_url}}",
-                                                "alt": "{{_global.settings?.general?.site_name ?? 'Site'}}",
+                                                "alt": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                                                 "className": "h-8 w-auto max-w-full object-contain object-left"
                                             }
                                         }
@@ -423,7 +423,7 @@
                                     "props": {
                                         "className": "text-lg font-bold text-gray-900 dark:text-white truncate"
                                     },
-                                    "text": "{{_global.settings?.general?.site_name ?? 'Site'}}"
+                                    "text": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}"
                                 }
                             ]
                         },
@@ -2326,7 +2326,7 @@
                     ],
                     "props": {
                         "logo": "{{_global.settings?.general?.site_logo_url}}",
-                        "siteName": "{{_global.settings?.general?.site_name ?? 'Site'}}",
+                        "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "user": "{{_global.currentUser}}",
                         "cartCount": "{{_global.cartCount ?? 0}}",
                         "notificationCount": "{{_global.notificationCount ?? 0}}",
@@ -2379,9 +2379,9 @@
                     "type": "composite",
                     "name": "Footer",
                     "props": {
-                        "siteName": "{{_global.settings?.general?.site_name ?? 'Site'}}",
+                        "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "siteDescription": "{{_global.settings?.general?.site_description ?? ''}}",
-                        "copyrightText": "$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? '그누보드7'}}",
+                        "copyrightText": "$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "socialLinks": {
                             "github": "{{_global.settings?.social?.github}}",
                             "twitter": "{{_global.settings?.social?.twitter}}",

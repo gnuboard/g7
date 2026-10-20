@@ -13,6 +13,8 @@
         </div>
       </div>
     </div>
+    <!-- 확장 자리 — 글쓰기 맨 위(검증 오류 상자 아래)에 확장이 입력칸을 붙인다(#149). 이 폼은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다. 조각이 _local.form.<키> 에 쓰면 저장 요청 본문에 함께 실린다 -->
+    <extension-point name="board_post_form_top" class="contents" data-extension-point="board_post_form_top" mode="{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}" boardSlug="{{route.slug}}" postId="{{route.id ?? null}}" board="{{form_meta?.data?.board}}"/>
     <!-- 수정 모드일 때 작성자 정보 표시 (Avatar + UserInfo) -->
     <div data-if="{{route.id &amp;&amp; form_data?.data?.author}}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
       <avatar data-type="composite" author="{{form_data?.data?.author}}" size="md"/>
@@ -158,6 +160,8 @@
         </on>
       </file-uploader>
     </div>
+    <!-- 확장 자리 — 글쓰기 맨 아래(취소·저장 단추 바로 위)에 확장이 동의 문구·부가 입력칸을 붙인다(#149). props 는 맨 위 자리와 같다 -->
+    <extension-point name="board_post_form_bottom" class="contents" data-extension-point="board_post_form_bottom" mode="{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}" boardSlug="{{route.slug}}" postId="{{route.id ?? null}}" board="{{form_meta?.data?.board}}"/>
     <!-- 버튼 영역 -->
     <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
       <!-- 취소 버튼 (등록: 목록, 수정: 상세) -->

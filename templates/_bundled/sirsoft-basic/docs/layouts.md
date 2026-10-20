@@ -400,6 +400,28 @@ id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 �
 화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md`
 「PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속」.
 
+### 게시판 확장 자리 (1.2.1+)
+
+확장이 템플릿을 고치지 않고 게시판 화면에 표시·입력칸을 붙이는 자리다. 이름은 바꾸지 않는다 — 확장은 이름으로만 찾는다.
+글쓰기·상세는 같은 조각을 게시판 유형별 갈래(basic·gallery·card) 세 곳에 include 하고, 목록은 세 유형 파일을 한 화면에 함께
+두므로 노드 id 를 겨냥하는 overlay 는 첫 갈래(basic)에만 들어간다. 그래서 이 자리들은 모두 확장점이고, 호스트에 `data-ref` 를
+달지 않는다(행·갈래마다 DOM id 가 중복된다). 호스트는 `class="contents"` + `data-extension-point="이름"` 이다.
+
+| 확장점 | 파일(`layouts/` 기준) | `context` |
+| --- | --- | --- |
+| `board_post_row_badges` | `partials/board/types/{basic(PC·모바일),card,gallery}/index` · `partials/board/popular/_popular_item` · `partials/home/{_recent_posts,_board_summary}` · `users/{posts,show}` · `partials/mypage/board/_my_posts` · `partials/mypage/scrap/_list`(PC·모바일) · `partials/search/posts/{_section,_list}` | `board_list` · `popular` · `home_recent` · `home_board_summary` · `user_posts` · `user_profile_recent` · `mypage_posts` · `mypage_scrap` · `search_all` · `search_posts` |
+| `board_post_header_badges` | `partials/board/types/basic/show`(제목 `h1` 바로 뒤) | `board_show` |
+| `board_comment_row_badges` | `partials/board/show/_comment_item` · `partials/mypage/board/_my_comments` | `board_show_comment` · `mypage_comments` |
+| `board_post_form_top` · `board_post_form_bottom` | `partials/board/form/_post_form`(오류 상자 다음 · 단추 줄 앞) | — (`mode`) |
+
+- 같은 파일의 기존 id `parent_post_card`·`content_section`·`parent_post_html_content` 는 세 갈래에 중복되므로 overlay 로 겨냥하면
+  basic 게시판에만 닿는다(구조는 유지한다). 그 자리 대신 위 확장점을 쓴다.
+- 목록 검색 줄의 `board_search_field_select` 도 세 유형 파일(`partials/board/types/{basic,card,gallery}/index`)에 같은 이름으로
+  있어 overlay 로 겨냥하면 basic 목록에만 닿는다. 검색 줄에는 확장 자리를 따로 열지 않았다.
+- 목록 행에 자리를 더 둘 때는 제목 `span`(`truncate`) **밖 뒤**에 둔다 — 안에 두면 배지가 잘린다.
+- props 계약·`context` 의미는 코어 `docs/extension/layout-extensions.md` 「게시판 확장 자리 5종의 props」 와
+  `modules/_bundled/sirsoft-board/docs/extension-points.md` 「사용자 화면 자리」 가 원문이다.
+
 ## 이관 원문 상세
 
 > 아래는 코어 `docs/frontend/templates/sirsoft-basic/layouts.md` 에 있던 원문을 이 문서로 옮긴 것입니다(#601). 이관 시점 그대로
