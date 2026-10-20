@@ -1,0 +1,47 @@
+feature: board_reorder_contract
+
+description: |
+  게시판 표시 순서(#142)의 계약 케이스 — 순서 저장의 부수 효과(활동 로그·커밋 뒤 훅·SEO 캐시), 화면 권한(can_reorder),
+  라우트 순서, 마이그레이션 멱등, 사용자 게시판 목록 응답 계약, 인기 게시판 대조, 관리자 「순서 변경」 모달 계약과
+  실브라우저 흐름. 적용 화면 × 순서 상태 × 요청자 × 요청 축은 board-display-order.yaml 이 맡는다(계획서 6절 표).
+
+axes:
+  case:
+    - reorder_logs_activity_and_after_hook
+    - all_zero_admin_and_search_creation_order
+    - can_reorder_ability
+    - scoped_actor_forbidden
+    - role_scoped_actor_forbidden
+    - read_scoped_actor_forbidden
+    - route_not_shadowed_by_board_wildcard
+    - migration_idempotent
+    - public_list_lightweight_contract
+    - popular_boards_unchanged
+    - modal_button_visibility
+    - modal_move_swaps_and_edges
+    - modal_sort_end_applies
+    - modal_inactive_badge
+    - modal_save_disabled_when_unchanged
+    - modal_422_error_box
+    - modal_cancel_discards
+    # E2E — 실브라우저에서 모달 열기·옮기기·취소 (저장하지 않는 경로)
+    - e2e_reorder_modal_flow
+
+effects:
+  - activity_log_board_reorder
+  - after_reorder_after_commit
+  - seo_cache_invalidated
+  - can_reorder_reflects_full_scope
+  - order_route_resolves_before_wildcard
+  - migration_runs_twice_without_error
+  - public_list_contract_kept
+  - popular_boards_keep_post_count_order
+  - reorder_modal_contract
+  - e2e_reorder_modal_opens_moves_cancels
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardReorderApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardDisplayOrderTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardListApiTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reorder-modal.test.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-reorder-modal.spec.ts

@@ -86,6 +86,10 @@ class PostReadScopeSidePathTest extends BoardTestCase
         PermissionHelper::clearPermissionScopeCache();
         Cache::flush();
 
+        // 다른 시험 클래스가 남긴 활성 게시판의 더 새 글이 최근글·인기글 상위 N 을 채우면 이 게시판의 글이 밀려난다
+        // (같은 프로세스에서 앞선 클래스 뒤에 돌 때만 실패하던 순서 의존) — 이 클래스는 공용 게시판만 활성으로 둔다
+        DB::table('boards')->where('id', '!=', $this->board->id)->update(['is_active' => false]);
+
         // 비회원은 이 게시판을 읽지 못한다 — 회원 판정만 본다
         $this->setGuestPermissions([]);
 

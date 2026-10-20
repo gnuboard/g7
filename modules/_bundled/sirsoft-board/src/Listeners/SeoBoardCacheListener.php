@@ -97,6 +97,12 @@ class SeoBoardCacheListener implements HookListenerInterface
                 'priority' => 20,
                 'sync' => true,
             ],
+            // 표시 순서가 바뀌면 게시판 목록·홈의 메뉴 순서가 바뀐다
+            'sirsoft-board.board.after_reorder' => [
+                'method' => 'onBoardReorder',
+                'priority' => 20,
+                'sync' => true,
+            ],
             // 게시판 삭제 트랜잭션 안에서 1,000건 청크마다 발화 — 같은 트랜잭션에서 색인을 걷어내야
             // 삭제가 롤백될 때 색인도 함께 남는다. 저비용 whereIn 삭제라 동기 실행한다.
             'sirsoft-board.board.posts.before_force_delete' => [
@@ -254,6 +260,33 @@ class SeoBoardCacheListener implements HookListenerInterface
             }
 
             $this->syncBoardSitemapIndex($board);
+        });
+    }
+
+    /**
+     * 게시판 표시 순서 변경 시 게시판 목록·홈 SEO 캐시를 무효화합니다.
+     *
+     * 봇용 HTML 의 게시판 목록(/boards)·홈 메뉴가 옛 순서로 남지 않게 한다. 게시판 수정과 같은 범위다.
+     *
+     * @param  mixed  ...$args  훅 인자 (첫 번째: 새 순서의 게시판 id 목록, 두 번째: 변경 전 순서)
+     * @return void 반환값 없음
+     */
+    public function onBoardReorder(...$args): void
+    {
+        DB::afterCommit(function () {
+            try {
+                $cache = app(SeoCacheManagerInterface::class);
+
+                $cache->invalidateByUrl('/boards');
+                $cache->invalidateByUrl('/boards?*');
+                $cache->invalidateByLayout('home');
+
+                Log::debug('[SEO] Board cache invalidated on board reorder');
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Board cache invalidation on board reorder failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
         });
     }
 

@@ -2,6 +2,8 @@
 
 return [
     'boards' => [
+        'reorder_success' => '掲示板の並び順を保存しました。',
+        'reorder_failed' => '掲示板の並び順を保存できませんでした。',
         'not_found' => '掲示板が見つかりません。',
         'already_exists' => '既に存在する掲示板スラッグです。',
         'has_posts' => '投稿がある掲示板は削除できません。',

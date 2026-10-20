@@ -263,7 +263,14 @@ return [
             ],
         ],
     ],
+
+    // 게시판 표시 순서 저장 (관리자 게시판 목록 「순서 변경」)
+    'boards' => [
+        'reorder_stale' => '掲示板一覧が変更されました。並び順変更ウィンドウを閉じて、もう一度開いてください。',
+    ],
+
     'attributes' => [
+        'board_ids' => '掲示板の並び順',
         'settings' => [
             'basic_defaults.type' => '掲示板タイプ',
             'basic_defaults.per_page' => 'ページあたりの投稿数',

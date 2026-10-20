@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkBoardMembersRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\IndexBoardRequest;
+use Modules\Sirsoft\Board\Http\Requests\Admin\ReorderBoardsRequest;
 use Modules\Sirsoft\Board\Http\Requests\StoreBoardRequest;
 use Modules\Sirsoft\Board\Http\Requests\UpdateBoardRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardCollection;
@@ -439,6 +440,27 @@ class BoardController extends AdminBaseController
             return $this->validationError($e->errors(), 'sirsoft-board::messages.boards.bulk_members_failed');
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.boards.bulk_members_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 게시판 표시 순서를 저장합니다.
+     *
+     * 사용자 메뉴·게시판 목록 화면·관리자 게시판 목록·통합검색 게시판 선택칸이 이 순서를 따릅니다.
+     *
+     * @param  ReorderBoardsRequest  $request  새 순서의 전체 게시판 id 목록
+     * @return JsonResponse 저장된 순서 (게시판 id·표시 순서)
+     */
+    public function reorder(ReorderBoardsRequest $request): JsonResponse
+    {
+        try {
+            $boards = $this->boardService->reorderBoards($request->validated('board_ids'));
+
+            return $this->success('sirsoft-board::messages.boards.reorder_success', ['boards' => $boards]);
+        } catch (AccessDeniedHttpException $e) {
+            return $this->error('auth.scope_denied', 403);
+        } catch (\Exception $e) {
+            return $this->error('sirsoft-board::messages.boards.reorder_failed', 500, $e->getMessage());
         }
     }
 }

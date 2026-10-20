@@ -317,6 +317,8 @@ class MyReactionsApiTest extends BoardTestCase
      */
     public function test_destroy_own_only_and_recalculates_counts(): void
     {
+        // 반응 등록 라우트는 회원에게도 게시글 열람 권한을 요구한다 — 공용 픽스처는 비회원 권한만 준다
+        $this->grantUserRolePermissions(['posts.read']);
         $author = $this->createUser();
         $other = $this->createUser();
         $postId = $this->createTestPost(['user_id' => $author->id]);

@@ -9,6 +9,8 @@ return [
 
     // Board operation messages
     'boards' => [
+        'reorder_success' => 'Board order saved.',
+        'reorder_failed' => 'Failed to save the board order.',
         'not_found' => 'Board not found.',
         'already_exists' => 'Board slug already exists.',
         'has_posts' => 'Cannot delete board with posts.',

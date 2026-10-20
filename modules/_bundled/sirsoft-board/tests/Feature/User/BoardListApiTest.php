@@ -24,6 +24,8 @@ class BoardListApiTest extends ModuleTestCase
 {
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -44,6 +46,7 @@ class BoardListApiTest extends ModuleTestCase
      * guest 역할에 게시판 읽기 권한을 부여합니다.
      *
      * @param  string  $slug  게시판 슬러그
+     * @return void 반환값 없음
      */
     private function grantGuestRead(string $slug): void
     {
@@ -61,6 +64,10 @@ class BoardListApiTest extends ModuleTestCase
 
     /**
      * 전체 게시판 목록 API가 활성화된 게시판만 반환하는지 테스트
+     *
+     * @effects public_list_contract_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_board_list_returns_only_active_boards(): void
     {
@@ -99,6 +106,12 @@ class BoardListApiTest extends ModuleTestCase
 
     /**
      * 전체 게시판 목록 API가 경량 필드만 반환하는지 테스트
+     *
+     * @scenario case=public_list_lightweight_contract
+     *
+     * @effects public_list_contract_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_board_list_returns_lightweight_fields_only(): void
     {
@@ -136,10 +149,20 @@ class BoardListApiTest extends ModuleTestCase
     }
 
     /**
-     * 전체 게시판 목록 API가 최신순으로 정렬되는지 테스트
+     * 전체 게시판 목록 API가 관리자가 정한 표시 순서를 따르는지 테스트
+     *
+     * 순서를 정하지 않았으면(모두 0) 만든 순서(오래된 순)다 — 종전의 최신 순에서 바뀌었다(#142, 메뉴와 같은 순서).
+     *
+     * @scenario case=public_list_follows_order
+     *
+     * @effects surfaces_follow_display_order, creation_order_when_all_zero
+     *
+     * @return void 반환값 없음
      */
-    public function test_board_list_returns_boards_in_newest_order(): void
+    public function test_board_list_returns_boards_in_display_order(): void
     {
+        // @scenario surface=public_list, state=all_zero, actor=full_scope, request=ok
+        // @effects creation_order_when_all_zero
         // Given: 게시판을 시간 순서대로 생성
         Board::factory()->create([
             'is_active' => true,
@@ -158,17 +181,28 @@ class BoardListApiTest extends ModuleTestCase
         // When: API 호출
         $response = $this->getJson('/api/modules/sirsoft-board/boards');
 
-        // Then: 최신순으로 정렬 (created_at DESC)
+        // Then: 표시 순서가 모두 0 이면 만든 순서(오래된 순)
         $response->assertStatus(200);
 
         $data = $response->json('data');
 
-        $this->assertEquals('new', $data[0]['slug']);
-        $this->assertEquals('old', $data[1]['slug']);
+        $this->assertEquals('old', $data[0]['slug']);
+        $this->assertEquals('new', $data[1]['slug']);
+
+        // 표시 순서를 정하면 그 순서를 따른다
+        DB::table('boards')->where('slug', 'old')->update(['display_order' => 2]);
+        DB::table('boards')->where('slug', 'new')->update(['display_order' => 1]);
+
+        $slugs = collect($this->getJson('/api/modules/sirsoft-board/boards')->json('data'))->pluck('slug')->all();
+        $this->assertSame(['new', 'old'], $slugs);
     }
 
     /**
      * 전체 게시판 목록 API가 다국어를 올바르게 처리하는지 테스트
+     *
+     * @effects public_list_contract_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_board_list_returns_localized_content(): void
     {
@@ -207,6 +241,10 @@ class BoardListApiTest extends ModuleTestCase
 
     /**
      * 전체 게시판 목록 API가 posts_count를 반환하는지 테스트
+     *
+     * @effects public_list_contract_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_board_list_returns_posts_count(): void
     {
@@ -232,6 +270,10 @@ class BoardListApiTest extends ModuleTestCase
 
     /**
      * 게시판이 없을 때 빈 배열을 반환하는지 테스트
+     *
+     * @effects public_list_contract_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_board_list_returns_empty_array_when_no_boards(): void
     {

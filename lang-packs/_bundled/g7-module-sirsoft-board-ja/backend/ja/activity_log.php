@@ -2,6 +2,7 @@
 
 return [
     'action' => [
+        'reorder' => '並び順変更',
         'add_to_menu' => 'メニュー追加',
         'blind' => 'ブラインド',
         'blind_content' => 'コンテンツブラインド',
@@ -34,6 +35,7 @@ return [
         'board_copy' => '掲示板コピー(:board_name)',
         'board_add_to_menu' => '掲示板メニュー追加(:board_name)',
         'board_remove_from_menu' => '掲示板メニュー削除(:board_name)',
+        'board_reorder' => '掲示板の並び順を変更(:count件)',
         'board_type_index' => '掲示板タイプ一覧閲覧',
         'board_type_create' => '掲示板タイプ作成(:type_name)',
         'board_type_update' => '掲示板タイプ編集(:type_name)',

@@ -10,6 +10,7 @@ use App\Support\Query\BoundedPage;
 use App\Support\Query\BoundedPaginator;
 use App\Support\Query\PaginationLimits;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -297,7 +298,8 @@ class CommentRepository implements CommentRepositoryInterface
 
         $descendants = $this->loadDescendantsOfRoots($resolvedBoardId, $postId, $rootIds, $withTrashed, $slug, $scopePermission);
 
-        $comments = collect($rootPage->items())->concat($descendants);
+        // Eloquent 컬렉션으로 묶는다 — 아래 보강·정렬 메서드가 Eloquent 컬렉션을 받는다(collect() 로 묶으면 TypeError 500)
+        $comments = (new Collection($rootPage->items()))->concat($descendants);
 
         if (! $withTrashed && $resolvedBoardId) {
             $comments = $this->restoreTombstoneParents($comments, $resolvedBoardId, $postId);
@@ -865,7 +867,7 @@ class CommentRepository implements CommentRepositoryInterface
      * 보이지 않는 댓글이라 목록에도 통계에도 남기지 않는다. 목록과 통계가 같은 조건을 쓰도록 한곳에 둔다.
      *
      * @param  int  $userId  사용자 ID
-     * @return \Illuminate\Database\Eloquent\Builder<Comment> 댓글 쿼리
+     * @return Builder<Comment> 댓글 쿼리
      */
     private function userCommentsBaseQuery(int $userId)
     {

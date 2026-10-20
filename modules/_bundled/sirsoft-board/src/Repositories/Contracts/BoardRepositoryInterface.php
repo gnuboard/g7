@@ -193,7 +193,7 @@ interface BoardRepositoryInterface
     public function streamActiveForSitemap(int $chunkSize = 500): iterable;
 
     /**
-     * 필터용 전체 활성 게시판 목록을 반환합니다.
+     * 필터용 전체 활성 게시판 목록을 반환합니다 (표시 순서).
      *
      * @return Collection 활성 게시판 컬렉션
      */
@@ -236,11 +236,40 @@ interface BoardRepositoryInterface
     /**
      * 메뉴용 경량 게시판 목록을 조회합니다.
      *
-     * id, name, slug 컬럼만 조회하여 메뉴 렌더링에 필요한 최소 데이터만 반환합니다.
+     * 메뉴 렌더링·결과 훅 리스너에 필요한 최소 컬럼만 조회합니다. 순서는 표시 순서 → 만든 순서 → id 입니다.
      *
-     * @return Collection 활성 게시판 컬렉션 (id, name, slug만 포함)
+     * @return Collection 활성 게시판 컬렉션 (id, name, slug, display_order, created_at)
      */
     public function getActiveBoardsForMenu(): Collection;
+
+    /**
+     * 새 게시판에 매길 표시 순서를 반환합니다 (현재 최댓값 + 1 — 맨 끝).
+     *
+     * @return int 다음 표시 순서
+     */
+    public function nextDisplayOrder(): int;
+
+    /**
+     * 게시판 표시 순서를 일괄 갱신합니다.
+     *
+     * @param  array<int, int>  $idToOrder  게시판 id => 표시 순서
+     * @return void 반환값 없음
+     */
+    public function updateDisplayOrders(array $idToOrder): void;
+
+    /**
+     * 게시판 id => 표시 순서 맵을 반환합니다 (모든 게시판, 활성·비활성 포함).
+     *
+     * @return array<int, int> 게시판 id => 표시 순서
+     */
+    public function getDisplayOrderMap(): array;
+
+    /**
+     * 모든 게시판의 id 목록을 반환합니다 (활성·비활성 포함, id 오름차순).
+     *
+     * @return array<int, int> 게시판 id 목록
+     */
+    public function getAllIds(): array;
 
     /**
      * 특정 유형의 게시판 개수를 반환합니다.

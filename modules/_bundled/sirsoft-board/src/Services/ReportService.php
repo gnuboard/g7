@@ -25,6 +25,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 
 /**
@@ -1558,7 +1559,17 @@ class ReportService
      */
     public function paginateMyReports(int $reporterId, array $filters, int $perPage): LengthAwarePaginator
     {
-        return $this->reportRepository->paginateLogsByReporter($reporterId, $filters, $perPage);
+        $hookContext = ReadHookContext::make(['subject_user_id' => $reporterId, 'filters' => $filters]);
+
+        HookManager::doAction('sirsoft-board.report.before_user_list', $hookContext);
+
+        $reports = $this->reportRepository->paginateLogsByReporter($reporterId, $filters, $perPage);
+
+        $reports = HookManager::applyFilters('sirsoft-board.report.filter_user_list_result', $reports, $hookContext);
+
+        HookManager::doAction('sirsoft-board.report.after_user_list', $reports, $hookContext);
+
+        return $reports;
     }
 
     /**
