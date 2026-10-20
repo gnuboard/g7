@@ -240,7 +240,7 @@ class PostController extends PublicBaseController
                 // 현재 글과 동일 카테고리 글만 이전/다음 후보로 제한 (47-1).
                 // 미분류(null)면 getAdjacentPosts 의 when($category) 가 미적용 → 전체 원글 순회.
                 'category' => $meta['category'] ?? null,
-            ], withTrashed: $withTrashed, board: $board);
+            ], withTrashed: $withTrashed, board: $board, context: 'user');
         } catch (\Throwable $e) {
             // 내부 예외는 로그만 남기고 옆 글 없음으로 degrade
             Log::warning('Post navigation fetch failed, returning empty result', [

@@ -1,0 +1,58 @@
+feature: board_read_result_hooks
+
+description: |
+  게시판 사용자 조회 19곳에 조회 전(before_*)·결과(filter_*_result)·조회 후(after_*) 훅을 둔다(#142).
+  훅은 Service 계층에서, 캐시를 읽은 뒤·사용자별 권한 후처리 뒤에 발행한다 — 리스너가 결과를 바꿔도
+  공용 캐시는 그대로다. 리스너는 같은 타입의 새 값을 돌려주고, after 는 필터가 돌려준 값을 받는다.
+  관리자 경로와 공유하는 Service 메서드는 사용자 맥락에서만 발행한다(관리자 조회 동작 무변경).
+  캐시된 모델 컬렉션(board-menu)은 복제본을 넘겨 리스너가 모델 속성을 바꿔도 같은 요청의 다음 호출이 오염되지 않는다.
+
+  경로별로 실제 HTTP 요청을 보내 before·filter·after 가 각 1회 발행되고, ctx 에 user·locale·경로별 키가 있으며,
+  리스너의 변환(게시판 역순, 글·댓글 제목/내용 접두 등)이 응답 JSON 에 나타나는지 본다(listener=transform).
+  리스너가 없으면 응답이 바이트 동일하다(listener=none, 19경로 전부). 관리자와 공유하는 경로(글 목록·글 상세·
+  상세에 실리는 댓글)는 관리자 요청에서 훅이 발행되지 않는다(audience=admin — 관리자 댓글 목록 조회 API 는 따로 없다).
+  글 상세의 비밀번호 확인 2곳(W10)과 댓글 페이지 경로(comment_page)도 같은 훅을 발행한다.
+  캐시 원본 불변·모델 복제·리스너 등록 경로는 effects 로 잠근다.
+
+axes:
+  path:
+    - board_menu
+    - public_board_list
+    - public_board_show
+    - board_stats
+    - recent_posts
+    - popular_boards
+    - popular_posts
+    - post_list
+    - post_show
+    - post_adjacent
+    - comment_list
+    - my_activities
+    - my_activity_stats
+    - my_comments
+    - user_public_posts
+    - user_public_stats
+    - my_scraps
+    - my_reactions
+    - my_reports
+  listener: [none, transform]
+  audience: [user, admin]
+
+exclusions:
+  - { audience: admin, listener: none, reason: "관리자 대조는 「리스너를 걸어도 발행되지 않음」을 보는 축이라 리스너 없는 조합은 뜻이 없다" }
+  - { audience: admin, path: [board_menu, public_board_list, public_board_show, board_stats, recent_posts, popular_boards, popular_posts, my_activities, my_activity_stats, my_comments, user_public_posts, user_public_stats, my_scraps, my_reactions, my_reports], reason: "관리자 경로와 Service 를 공유하지 않는 사용자 전용 조회 — 관리자 대조 대상이 아니다" }
+
+effects:
+  - before_filter_after_dispatched_once
+  - after_receives_filtered_value
+  - context_carries_user_locale_and_path_keys
+  - listener_transform_reaches_response
+  - no_listener_response_unchanged
+  - admin_paths_not_dispatched
+  - cached_source_unchanged_by_listener
+  - menu_models_cloned_for_listener
+  - registrar_filter_listener_runs_sync
+  - password_and_paginated_variants_dispatch
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Hooks/BoardReadResultHooksTest.php

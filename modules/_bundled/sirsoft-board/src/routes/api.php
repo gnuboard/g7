@@ -251,6 +251,11 @@ Route::prefix('admin/boards')->middleware(['auth:sanctum', 'admin', 'throttle:60
         ->middleware('permission:admin,sirsoft-board.boards.update')
         ->name('bulk-members');
 
+    // 게시판 표시 순서 저장 (와일드카드 라우트보다 먼저 등록 — `order` 가 {board} 로 해석되지 않게)
+    Route::put('/order', [BoardController::class, 'reorder'])
+        ->middleware('permission:admin,sirsoft-board.boards.update')
+        ->name('order');
+
     // 게시판 단건 조회 (ID)
     Route::get('/{board}', [BoardController::class, 'show'])
         ->middleware('permission:admin,sirsoft-board.boards.read')

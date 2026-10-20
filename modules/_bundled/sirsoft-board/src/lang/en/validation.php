@@ -309,8 +309,14 @@ return [
         ],
     ],
 
+    // 게시판 표시 순서 저장 (관리자 게시판 목록 「순서 변경」)
+    'boards' => [
+        'reorder_stale' => 'The board list has changed. Close the reorder window and open it again.',
+    ],
+
     // Field attributes
     'attributes' => [
+        'board_ids' => 'board order',
         'bulk_members' => [
             'apply_all' => 'Target Boards Scope',
             'board_ids' => 'Target Boards',

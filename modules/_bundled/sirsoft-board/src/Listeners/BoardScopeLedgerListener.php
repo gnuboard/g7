@@ -235,10 +235,12 @@ class BoardScopeLedgerListener implements HookListenerInterface
                 'mode' => ScopedPermissionEnforcement::MODE_SERVICE,
                 'routes' => [
                     "{$r}admin.boards.bulk-members",
+                    "{$r}admin.boards.order",
                     "{$r}admin.settings.bulk-apply",
                 ],
                 'paths' => [
                     "{$svc}BoardService::bulkUpdateBoardMembers",
+                    "{$svc}BoardService::reorderBoards",
                 ],
             ],
 

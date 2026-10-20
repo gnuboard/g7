@@ -1,0 +1,23 @@
+feature: cache_key_index_lock
+
+description: |
+  확장 캐시 드라이버의 키 목록(태그 인덱스)은 「읽기 → 고치기 → 쓰기」라, 여러 요청이 동시에 고치면 서로의
+  기록을 덮어써 일부 키가 목록에서 빠졌다. 빠진 키는 태그 비우기로 지워지지 않아 게시판을 만들어도 메뉴 같은
+  캐시가 최대 하루 동안 예전 값으로 남았다(#142 F, 수정 전 실측 8 프로세스 → 목록 1~3개).
+  저장소가 잠금을 지원하면(LockProvider) 키 목록을 고칠 때 잠금을 건다. 지원하지 않거나 잠금이 시간 초과면
+  경고를 한 번 남기고 잠금 없이 진행한다. 잠금을 얻는 중에 저장소 오류가 나도 같다(fail-soft — 잠금 장애가 화면 장애가 되면 안 된다).
+
+axes:
+  store: [no_lock_provider, lock_provider, lock_timeout, lock_error, file_concurrent]
+
+effects:
+  - index_mutation_runs_without_lock_when_unsupported
+  - index_mutation_takes_lock
+  - lock_timeout_warns_once_and_proceeds
+  - lock_error_warns_and_proceeds
+  - concurrent_writers_keep_every_index_entry
+  - flush_tags_removes_every_concurrent_key
+
+test_files:
+  - tests/Unit/Cache/CacheKeyIndexLockTest.php
+  - tests/Feature/Cache/CacheKeyIndexConcurrencyTest.php

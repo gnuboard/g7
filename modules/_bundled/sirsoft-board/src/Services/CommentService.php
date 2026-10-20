@@ -23,6 +23,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardManageScope;
+use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -64,6 +65,15 @@ class CommentService
      */
     public function getCommentsByPostId(string $slug, int $postId, string $context = 'admin', ?bool $withTrashed = null, ?int $boardId = null, ?Board $board = null): Collection
     {
+        // 조회 결과 훅은 사용자 맥락(댓글 목록 API·게시글 상세)에서만 발행한다 — 관리자 조회 동작은 그대로 둔다
+        $hookContext = $context === 'user'
+            ? ReadHookContext::make(['board' => $board, 'post_id' => $postId, 'paginated' => false])
+            : null;
+
+        if ($hookContext !== null) {
+            HookManager::doAction('sirsoft-board.comment.before_public_list', $hookContext);
+        }
+
         // withTrashed가 외부에서 지정되지 않은 경우 권한으로 결정
         if ($withTrashed === null) {
             $withTrashed = $this->checkBoardPermission($slug, 'admin.control')
@@ -91,7 +101,15 @@ class CommentService
             ? "sirsoft-board.{$slug}.admin.comments.read"
             : "sirsoft-board.{$slug}.comments.read";
 
-        return $this->commentRepository->getByPostId($slug, $postId, $withTrashed, $orderDirection, $scopePermission, $boardId);
+        $comments = $this->commentRepository->getByPostId($slug, $postId, $withTrashed, $orderDirection, $scopePermission, $boardId);
+
+        if ($hookContext !== null) {
+            $comments = HookManager::applyFilters('sirsoft-board.comment.filter_public_list_result', $comments, $hookContext);
+
+            HookManager::doAction('sirsoft-board.comment.after_public_list', $comments, $hookContext);
+        }
+
+        return $comments;
     }
 
     /**
@@ -120,6 +138,14 @@ class CommentService
         ?int $boardId = null,
         ?Board $board = null
     ): BoundedPage {
+        $hookContext = $context === 'user'
+            ? ReadHookContext::make(['board' => $board, 'post_id' => $postId, 'paginated' => true])
+            : null;
+
+        if ($hookContext !== null) {
+            HookManager::doAction('sirsoft-board.comment.before_public_list', $hookContext);
+        }
+
         if ($withTrashed === null) {
             $withTrashed = $this->checkBoardPermission($slug, 'admin.control')
                 || $this->checkBoardPermission($slug, 'admin.manage')
@@ -142,7 +168,7 @@ class CommentService
             ? "sirsoft-board.{$slug}.admin.comments.read"
             : "sirsoft-board.{$slug}.comments.read";
 
-        return $this->commentRepository->paginateRootsByPostId(
+        $page = $this->commentRepository->paginateRootsByPostId(
             $slug,
             $postId,
             $perPage,
@@ -152,6 +178,16 @@ class CommentService
             $scopePermission,
             $boardId
         );
+
+        if ($hookContext !== null) {
+            // 페이지 경로도 리스너는 같은 타입(댓글 컬렉션)을 받는다 — 고친 컬렉션을 페이지에 되돌린다
+            $comments = HookManager::applyFilters('sirsoft-board.comment.filter_public_list_result', $page->getCollection(), $hookContext);
+            $page->setCollection($comments);
+
+            HookManager::doAction('sirsoft-board.comment.after_public_list', $comments, $hookContext);
+        }
+
+        return $page;
     }
 
     /**
@@ -603,6 +639,10 @@ class CommentService
      */
     public function getUserComments(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        $hookContext = ReadHookContext::make(['subject_user_id' => $userId, 'filters' => $filters]);
+
+        HookManager::doAction('sirsoft-board.comment.before_user_list', $hookContext);
+
         $boardSlug = $filters['board_slug'] ?? '';
         $search = $filters['search'] ?? '';
 
@@ -624,6 +664,10 @@ class CommentService
             $total = $result->total();
             $this->cache->remember($cacheKey, fn () => $total, $ttl, tags: ['board-stats']);
         }
+
+        $result = HookManager::applyFilters('sirsoft-board.comment.filter_user_list_result', $result, $hookContext);
+
+        HookManager::doAction('sirsoft-board.comment.after_user_list', $result, $hookContext);
 
         return $result;
     }

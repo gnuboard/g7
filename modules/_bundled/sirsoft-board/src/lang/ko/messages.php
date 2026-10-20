@@ -9,6 +9,8 @@ return [
 
     // 게시판 작업 메시지
     'boards' => [
+        'reorder_success' => '게시판 순서를 저장했습니다.',
+        'reorder_failed' => '게시판 순서를 저장하지 못했습니다.',
         'not_found' => '게시판을 찾을 수 없습니다.',
         'already_exists' => '이미 존재하는 게시판 슬러그입니다.',
         'has_posts' => '게시글이 있는 게시판은 삭제할 수 없습니다.',

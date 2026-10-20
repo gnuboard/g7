@@ -16,7 +16,19 @@
     "filter_type_card": "カード型",
     "status": "ステータス",
     "active": "有効化",
-    "inactive": "無効化"
+    "inactive": "無効化",
+    "reorder": {
+      "button": "並び順を変更",
+      "title": "掲示板の並び順を変更",
+      "description": "ユーザーメニューと掲示板一覧にこの順序で表示されます。無効の掲示板は再び有効にするとこの位置に表示されます。",
+      "drag_handle": "{{name}}をドラッグして移動",
+      "move_up": "{{name}}を上へ移動",
+      "move_down": "{{name}}を下へ移動",
+      "inactive": "無効",
+      "save": "保存",
+      "saving": "保存中…",
+      "cancel": "キャンセル"
+    }
   },
   "create": {
     "title": "掲示板を作成"

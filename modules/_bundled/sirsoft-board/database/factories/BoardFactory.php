@@ -30,6 +30,7 @@ class BoardFactory extends Factory
             'slug' => $this->faker->unique()->lexify('test-board-??????'),
             'type' => 'basic',
             'is_active' => true,
+            'display_order' => 0,
             'per_page' => 20,
             'per_page_mobile' => 15,
             'order_by' => 'created_at',

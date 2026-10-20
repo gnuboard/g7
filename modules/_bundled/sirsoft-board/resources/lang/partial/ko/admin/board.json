@@ -16,7 +16,19 @@
     "filter_type_card": "카드형",
     "status": "상태",
     "active": "활성화",
-    "inactive": "비활성화"
+    "inactive": "비활성화",
+    "reorder": {
+      "button": "순서 변경",
+      "title": "게시판 순서 변경",
+      "description": "사용자 메뉴와 게시판 목록에 이 순서로 보입니다. 비활성 게시판은 다시 켜면 이 자리에 나옵니다.",
+      "drag_handle": "{{name}} 끌어서 옮기기",
+      "move_up": "{{name}} 위로 옮기기",
+      "move_down": "{{name}} 아래로 옮기기",
+      "inactive": "비활성",
+      "save": "저장",
+      "saving": "저장 중…",
+      "cancel": "취소"
+    }
   },
   "create": {
     "title": "게시판 생성"

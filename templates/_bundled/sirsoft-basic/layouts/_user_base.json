@@ -27,11 +27,12 @@
             "endpoint": "/api/modules/sirsoft-board/boards/board-menu",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
             },
-            "comment": "헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다."
+            "comment": "헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다.\n    메뉴는 보는 사람이 열람할 수 있는 게시판만 돌려주므로 로그인했으면 토큰을 함께 보낸다(auth_mode optional — 빠지면 회원에게도 비회원 메뉴가 나온다)."
         },
         {
             "id": "current_user",

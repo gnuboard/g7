@@ -31,7 +31,7 @@
 | per_page | query | integer | 아니오 | min 1, max 999 | 페이지당 항목 수 (게시판은 운영자 등록 설정성 테이블 — 전체 목록 셀렉트 소비처의 전량 조회를 수용) |
 | type | query | string | 아니오 | max 50 | 게시판 타입 슬러그 필터 (basic, gallery 등) |
 | search | query | string | 아니오 | max 100 | 검색어 (게시판명/슬러그 부분 일치) |
-| sort_by | query | string | 아니오 | `id`, `slug`, `type`, `is_active`, `posts_count`, `comments_count`, `created_at`, `updated_at` | 정렬 기준 컬럼 (닫힌 집합 — `name` 은 다국어 JSON 컬럼이라 정렬 대상에서 제외) |
+| sort_by | query | string | 아니오 | `id`, `display_order`, `slug`, `type`, `is_active`, `posts_count`, `comments_count`, `created_at`, `updated_at` | 정렬 기준 컬럼 (닫힌 집합 — `name` 은 다국어 JSON 컬럼이라 정렬 대상에서 제외). 생략하면 표시 순서(`display_order` 오름차순, 같은 순서는 만든 순서·id) |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (대문자 `ASC`/`DESC` 로 보내도 검증 전 소문자로 정규화되어 수용) |
 
 **요청 예시**
@@ -59,6 +59,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | posts_count | integer | `0` | 게시글 수 (집계) |
 | type | string | `basic` | 게시판 타입 (basic, gallery, card 등) |
 | is_active | boolean | `true` | 활성 여부 |
+| display_order | integer | `0` | 표시 순서 (작을수록 앞, 0 은 미지정 — 만든 순서로 뒤따름) |
 | categories | array | `[]` | 분류 목록 (배열) |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 게시판의 소유자인지 여부 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
@@ -113,7 +114,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자 화면의 게시판 관리 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.boards.read` 권한이 필요하며, `IndexBoardRequest` 로 검증된 필터/정렬/페이징 파라미터만 서비스에 넘겨 전체 게시판을 페이지네이션합니다. 정렬 컬럼(`sort_by`)과 페이지 크기(`per_page` 1~999)는 닫힌 집합으로 제한되어 허용값 밖 요청은 422 로 거부됩니다. 각 항목은 `BoardCollection::withPermissions()` 로 감싸져 현재 관리자의 생성/수정/삭제 가능 여부(`abilities`)를 함께 반환합니다.
+**설명** 관리자 화면의 게시판 관리 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.boards.read` 권한이 필요하며, `IndexBoardRequest` 로 검증된 필터/정렬/페이징 파라미터만 서비스에 넘겨 전체 게시판을 페이지네이션합니다. 정렬 컬럼(`sort_by`)과 페이지 크기(`per_page` 1~999)는 닫힌 집합으로 제한되어 허용값 밖 요청은 422 로 거부됩니다. 각 항목은 `BoardCollection::withPermissions()` 로 감싸져 현재 관리자의 생성/수정/삭제 가능 여부(`abilities`)를 함께 반환합니다. 목록 단위 `data.abilities.can_reorder` 는 게시판 조회·수정 권한을 모두 범위 제한(본인만·소유역할) 없이 가졌을 때만 `true` 이며, 화면의 「순서 변경」 단추가 이 값을 본다. 정렬을 지정하지 않으면 관리자가 정한 표시 순서다.
 
 
 ### POST /api/modules/sirsoft-board/admin/boards
@@ -451,6 +452,75 @@ HTTP/1.1 200
 
 게시판 환경설정 「게시판 설정」 탭의 「관리자·스텝 일괄 지정」. 한 회원(또는 여러 회원)을 전체 또는 고른 게시판들의 관리자·스텝으로 한 번에 지정하거나 뺀다. 게시판 폼에서 관리자·스텝을 저장할 때와 같은 경로(게시판별 역할 동기화)를 쓰므로 회원의 게시판 역할·권한 캐시가 같은 방식으로 갱신된다. 권한 범위 밖 게시판과, 관리자를 빼면 0명이 되는 게시판은 건너뛰고 `skipped` 에 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다). 바꿀 것이 없던 게시판은 `unchanged_count` 로 따로 세어 화면 결과 줄에 「변화 없음 N개」 로 보인다. 한 트랜잭션으로 처리하며 앞뒤로 `sirsoft-board.board.before_bulk_members`·`sirsoft-board.board.after_bulk_members` 가 발화한다. 제외가 있어도 응답은 200 이다.
 
+
+### PUT /api/modules/sirsoft-board/admin/boards/order
+<!-- @generated:start:api.modules.sirsoft-board.admin.boards.order -->
+- **라우트명**: `api.modules.sirsoft-board.admin.boards.order`
+- **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\BoardController@reorder`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.boards.update` (범위 제한 없는 수정 권한 — 서비스가 추가 판정)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| board_ids | body | array\<integer\> | 예 | min 1, 중복 없음, **현재 전체 게시판 id 집합과 같아야 함**(활성·비활성 전부) | 새 표시 순서대로 나열한 게시판 id |
+
+**요청 예시**
+
+```http
+PUT /api/modules/sirsoft-board/admin/boards/order HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "board_ids": [5, 4, 8, 6, 7]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| boards | array | `[{"id":4,"display_order":2},{"id":5,"display_order":1}]` | 저장된 표시 순서(게시판 id 오름차순). 받은 순서대로 1..N 으로 다시 매긴다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "게시판 순서를 저장했습니다.",
+    "data": {
+        "boards": [
+            { "id": 4, "display_order": 2 },
+            { "id": 5, "display_order": 1 },
+            { "id": 6, "display_order": 4 },
+            { "id": 7, "display_order": 5 },
+            { "id": 8, "display_order": 3 }
+        ]
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.boards.update`)이 없거나, 그 권한의 범위가 「본인만」·「소유역할」로 제한된 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 목록이 비었거나 중복·정수 아님, 또는 현재 게시판 집합과 다른 경우 — 그 사이 다른 관리자가 게시판을 만들거나 지웠으면 `errors.board_ids` 에 「게시판 목록이 바뀌었습니다. 순서 변경 창을 닫고 다시 열어 주세요.」 (`sirsoft-board::validation.boards.reorder_stale`) |
+| 500 | Internal Server Error | 저장 중 예외 발생 (`sirsoft-board::messages.boards.reorder_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 게시판 목록의 「순서 변경」. 사용자 메뉴(`boards/board-menu`)·게시판 목록 화면(`boards`)·관리자 게시판 목록 기본 정렬·통합검색 게시판 선택칸이 이 순서를 따른다(인기 게시판·최근글·인기글·사이트맵은 자체 기준). 전체 게시판 id 목록을 받아 한 번의 UPDATE 로 1..N 을 매기고 게시판 캐시(메뉴·목록·인기 게시판)를 비운다. 앞뒤로 `sirsoft-board.board.before_reorder`·`sirsoft-board.board.after_reorder`(커밋 뒤)가 발화하고, 활동 로그 `board.reorder` 한 건이 남는다. 검증 규칙은 `sirsoft-board.board.reorder_validation_rules` 필터로 늘릴 수 있다. 새로 만들거나 복사한 게시판은 맨 끝(현재 최댓값 + 1)에 붙는다.
 
 ### GET /api/modules/sirsoft-board/admin/boards/form-data
 <!-- @generated:start:api.modules.sirsoft-board.admin.boards.form-data -->
@@ -1723,7 +1793,7 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 <!-- @generated:end -->
 
-**설명** 사용자 화면용 활성 게시판 목록을 경량으로 조회합니다. 전체 게시판 목록 페이지에서 사용하며, `id`/`name`/`slug`/`description`/`posts_count` 만 반환합니다. `limit` 파라미터(0~10, 기본 0)를 주면 게시판별 최신글도 함께 담아주며(답변글·삭제·블라인드 제외), 활성화된 게시판만 노출됩니다.
+**설명** 사용자 화면용 활성 게시판 목록을 경량으로 조회합니다. 전체 게시판 목록 페이지에서 사용하며, `id`/`name`/`slug`/`description`/`posts_count` 만 반환합니다. 호출자가 열람할 수 있는(`sirsoft-board.{slug}.posts.read`) 게시판만 관리자가 정한 표시 순서(같은 순서는 만든 순서)로 돌려준다. 확장은 `sirsoft-board.board.filter_public_list_result` 로 결과를 바꿀 수 있다. `limit` 파라미터(0~10, 기본 0)를 주면 게시판별 최신글도 함께 담아주며(답변글·삭제·블라인드 제외), 활성화된 게시판만 노출됩니다.
 
 
 ### GET /api/modules/sirsoft-board/boards/board-menu
@@ -1779,7 +1849,7 @@ _에러 없음 (공개 조회 — 컨트롤러가 캐시된 조회 결과를 그
 
 <!-- @generated:end -->
 
-**설명** 헤더/네비게이션 메뉴에 노출할 게시판 목록을 최소 필드(`id`/`name`/`slug`)로 반환합니다. 활성 게시판만 오래된 순(created_at ASC)으로 정렬해 캐시에서 제공하는 경량 조회 API입니다.
+**설명** 헤더/네비게이션 메뉴에 노출할 게시판 목록을 최소 필드(`id`/`name`/`slug`)로 반환합니다. 활성 게시판을 관리자가 정한 표시 순서(같은 순서는 만든 순서·id)로 캐시에서 꺼낸 뒤, 호출자가 열람할 수 있는 게시판만 남깁니다(게시판 목록 `boards` 와 같은 기준 — 비회원에게 회원전용 게시판은 나오지 않습니다). 확장은 `sirsoft-board.board.filter_menu_list_result` 로 결과를 바꿀 수 있고, 리스너가 바꾼 값은 공용 캐시에 남지 않습니다.
 
 
 ### GET /api/modules/sirsoft-board/boards/popular

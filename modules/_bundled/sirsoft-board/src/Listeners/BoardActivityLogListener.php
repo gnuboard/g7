@@ -55,6 +55,7 @@ class BoardActivityLogListener implements HookListenerInterface
             'sirsoft-board.board.after_delete' => ['method' => 'handleBoardAfterDelete', 'priority' => 20],
             'sirsoft-board.board.after_add_to_menu' => ['method' => 'handleBoardAfterAddToMenu', 'priority' => 20],
             'sirsoft-board.board.after_remove_from_menu' => ['method' => 'handleBoardAfterRemoveFromMenu', 'priority' => 20],
+            'sirsoft-board.board.after_reorder' => ['method' => 'handleBoardAfterReorder', 'priority' => 20],
             'sirsoft-board.settings.after_bulk_apply' => ['method' => 'handleSettingsAfterBulkApply', 'priority' => 20],
             'sirsoft-board.settings.after_bulk_apply_aborted' => ['method' => 'handleSettingsAfterBulkApplyAborted', 'priority' => 20],
 
@@ -208,6 +209,24 @@ class BoardActivityLogListener implements HookListenerInterface
                 'menu_name' => $menu->name ?? '',
             ],
             'properties' => ['menu_id' => $menu->id, 'board_id' => $board->id],
+        ]);
+    }
+
+    /**
+     * 게시판 표시 순서 변경 후 로그 기록
+     *
+     * 순서는 게시판 전체에 걸친 값이라 게시판마다 남기지 않고 한 건으로 남긴다. 변경 전·후 순서는 속성에 둔다.
+     *
+     * @param  array<int, int>  $boardIds  새 순서의 게시판 id 목록
+     * @param  array<int, int>  $before  변경 전 게시판 id => 표시 순서
+     * @return void 반환값 없음
+     */
+    public function handleBoardAfterReorder(array $boardIds, array $before = []): void
+    {
+        $this->logActivity('board.reorder', [
+            'description_key' => 'sirsoft-board::activity_log.description.board_reorder',
+            'description_params' => ['count' => count($boardIds)],
+            'properties' => ['board_ids' => array_values($boardIds), 'before' => $before],
         ]);
     }
 

@@ -309,8 +309,14 @@ return [
         ],
     ],
 
+    // 게시판 표시 순서 저장 (관리자 게시판 목록 「순서 변경」)
+    'boards' => [
+        'reorder_stale' => '게시판 목록이 바뀌었습니다. 순서 변경 창을 닫고 다시 열어 주세요.',
+    ],
+
     // 필드 속성명 (attributes)
     'attributes' => [
+        'board_ids' => '게시판 순서',
         'bulk_members' => [
             'apply_all' => '대상 게시판 범위',
             'board_ids' => '대상 게시판',

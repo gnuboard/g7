@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
+use App\Enums\PermissionType;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,7 @@ use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
+use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
  * 사용자용 댓글 컨트롤러
@@ -30,6 +32,8 @@ use Modules\Sirsoft\Board\Support\SecretContentGate;
  */
 class CommentController extends PublicBaseController
 {
+    use ChecksBoardPermission;
+
     /**
      * CommentController 생성자
      *
@@ -91,7 +95,18 @@ class CommentController extends PublicBaseController
                 request()->attributes->set('sirsoft_board_parent_post', $post);
             }
 
-            $comments = $this->commentService->getCommentsByPostId($slug, $postId);
+            // 상세 화면 댓글과 같은 규칙으로 부른다 — 맥락을 빼면 기본값 'admin' 이 돼 댓글 범위 권한을
+            // 관리자용 admin.comments.read 로 판정했고(「본인만」 회원에게 남의 댓글이 나감), 매니저에게는
+            // del_cmt 없이도 삭제 댓글이 나갔다(#142).
+            $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+            $comments = $this->commentService->getCommentsByPostId(
+                $slug,
+                $postId,
+                context: 'user',
+                withTrashed: $canViewDeleted && request()->boolean('del_cmt'),
+                boardId: $board->id,
+                board: $board,
+            );
 
             // 내 댓글 반응 일괄 조회 — 프리로드 키가 없으면 Resource 가 댓글마다
             // 개별 조회로 퇴화한다(정당한 null 과 미프리로드를 키 존재로 구분한다).

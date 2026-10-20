@@ -627,13 +627,17 @@ class BoardRepository implements BoardRepositoryInterface
     /**
      * 필터용 전체 활성 게시판 목록을 반환합니다.
      *
-     * @return array 게시판 목록 [{slug, name}, ...]
+     * 관리자가 정한 표시 순서(`display_order`)를 따르고, 같은 순서는 만든 순서·id 로 정한다.
+     *
+     * @return Collection 활성 게시판 컬렉션 (표시 순서)
      */
     public function getActiveBoardsList(): Collection
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('is_active', true)
-            ->orderBy('created_at', 'asc')
+            ->orderBy('display_order')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
     }
 
@@ -693,9 +697,18 @@ class BoardRepository implements BoardRepositoryInterface
     public function getActiveBoardsOrdered(string $orderBy = 'created_at', string $orderDirection = 'desc'): Collection
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
-        return Board::where('is_active', true)
-            ->orderBy($orderBy, $orderDirection)
-            ->get();
+        $query = Board::where('is_active', true)
+            ->orderBy($orderBy, $orderDirection);
+
+        // 동점 구간에서도 순서를 하나로 정한다 — 같은 초에 만든 게시판이 요청마다 다른 순서로 나오지 않게.
+        // 표시 순서 정렬은 「같은 순서면 만든 순서」라 created_at·id 를 오름차순으로 붙인다.
+        if ($orderBy === 'display_order') {
+            $query->orderBy('created_at')->orderBy('id');
+        } else {
+            $query->orderBy('id', $orderDirection);
+        }
+
+        return $query->get();
     }
 
     /**
@@ -715,17 +728,77 @@ class BoardRepository implements BoardRepositoryInterface
     /**
      * 메뉴용 경량 게시판 목록을 조회합니다.
      *
-     * id, name, slug 컬럼만 조회하여 메뉴 렌더링에 필요한 최소 데이터만 반환합니다.
+     * 메뉴 렌더링·결과 훅 리스너에 필요한 최소 컬럼만 조회합니다. 순서는 관리자가 정한 표시 순서이고,
+     * 같은 순서는 만든 순서·id 로 정합니다(같은 초에 만든 게시판의 순서가 요청마다 바뀌지 않게).
      *
-     * @return Collection 활성 게시판 컬렉션 (id, name, slug만 포함)
+     * @return Collection 활성 게시판 컬렉션 (id, name, slug, display_order, created_at)
      */
     public function getActiveBoardsForMenu(): Collection
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('is_active', true)
-            ->select(['id', 'name', 'slug'])
-            ->orderBy('created_at', 'asc')
+            ->select(['id', 'name', 'slug', 'display_order', 'created_at'])
+            ->orderBy('display_order')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * 새 게시판에 매길 표시 순서를 반환합니다 (현재 최댓값 + 1 — 맨 끝).
+     *
+     * 순서를 한 번도 정하지 않은 사이트는 최댓값이 0 이라 1 이 되고, 0 들의 뒤인 맨 끝에 붙는다.
+     *
+     * @return int 다음 표시 순서
+     */
+    public function nextDisplayOrder(): int
+    {
+        return (int) Board::max('display_order') + 1;
+    }
+
+    /**
+     * 게시판 표시 순서를 한 번의 UPDATE 로 일괄 갱신합니다.
+     *
+     * @param  array<int, int>  $idToOrder  게시판 id => 표시 순서
+     * @return void 반환값 없음
+     */
+    public function updateDisplayOrders(array $idToOrder): void
+    {
+        if ($idToOrder === []) {
+            return;
+        }
+
+        // id·순서를 정수로 강제해 식에 직접 넣는다 — update() 의 원시 식에는 바인딩을 따로 줄 수 없다
+        $cases = [];
+        foreach ($idToOrder as $id => $order) {
+            $cases[] = sprintf('WHEN %d THEN %d', (int) $id, (int) $order);
+        }
+
+        Board::whereIn('id', array_keys($idToOrder))->update([
+            'display_order' => DB::raw('CASE id '.implode(' ', $cases).' END'),
+        ]);
+    }
+
+    /**
+     * 게시판 id => 표시 순서 맵을 반환합니다 (모든 게시판, 활성·비활성 포함).
+     *
+     * @return array<int, int> 게시판 id => 표시 순서
+     */
+    public function getDisplayOrderMap(): array
+    {
+        return Board::orderBy('id')->pluck('display_order', 'id')
+            ->map(fn ($order) => (int) $order)
+            ->all();
+    }
+
+    /**
+     * 모든 게시판의 id 목록을 반환합니다 (활성·비활성 포함, id 오름차순).
+     *
+     * @return array<int, int> 게시판 id 목록
+     */
+    public function getAllIds(): array
+    {
+        return Board::orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
     /**

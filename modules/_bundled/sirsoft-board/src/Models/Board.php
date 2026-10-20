@@ -119,6 +119,7 @@ class Board extends Model
         'name',
         'slug',
         'is_active',
+        'display_order',
         'description',
 
         // 게시글 설정
@@ -195,6 +196,7 @@ class Board extends Model
             'allowed_extensions' => AsAllowedExtensions::class,
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
+            'display_order' => 'integer',
             'show_view_count' => 'boolean',
             'use_comment' => 'boolean',
             'use_reply' => 'boolean',

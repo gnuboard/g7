@@ -32,6 +32,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardManageScope;
 use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -108,6 +109,15 @@ class PostService
      */
     public function getPosts(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, string $context = 'admin', ?Board $board = null): Paginator
     {
+        // 조회 결과 훅은 사용자 맥락에서만 발행한다 — 관리자 목록과 공유하는 메서드라 관리자 조회 동작은 그대로 둔다
+        $hookContext = $context === 'user'
+            ? ReadHookContext::make(['board' => $board, 'filters' => $filters, 'with_trashed' => $withTrashed])
+            : null;
+
+        if ($hookContext !== null) {
+            HookManager::doAction('sirsoft-board.post.before_public_list', $hookContext);
+        }
+
         // 게시판 존재성 검증 (board가 전달되지 않은 경우에만)
         if (! $board) {
             $this->validateBoardExists($slug);
@@ -119,7 +129,16 @@ class PostService
             : "sirsoft-board.{$slug}.posts.read";
         $filters['scope_permission'] = $scopePermission;
 
-        return $this->postRepository->paginate($slug, $filters, $perPage, $withTrashed, $board);
+        $posts = $this->postRepository->paginate($slug, $filters, $perPage, $withTrashed, $board);
+
+        if ($hookContext !== null) {
+            // 페이지네이터를 받아 페이지네이터로 돌려준다. 항목을 빼도 건수는 그대로다 — 목록을 좁히는 용도가 아니다
+            $posts = HookManager::applyFilters('sirsoft-board.post.filter_public_list_result', $posts, $hookContext);
+
+            HookManager::doAction('sirsoft-board.post.after_public_list', $posts, $hookContext);
+        }
+
+        return $posts;
     }
 
     /**
@@ -895,6 +914,15 @@ class PostService
     ): Post {
         $boardId = $board?->id ?? $boardId;
 
+        // 사용자 맥락(상세·비밀번호 확인 응답)에서만 조회 결과 훅을 발행한다 — 관리자 상세는 그대로 둔다
+        $hookContext = $context === 'user'
+            ? ReadHookContext::make(['board' => $board, 'post_id' => $id])
+            : null;
+
+        if ($hookContext !== null) {
+            HookManager::doAction('sirsoft-board.post.before_public_show', $hookContext);
+        }
+
         // boardId가 전달되면 이미 검증된 것이므로 중복 조회 방지
         if (! $boardId) {
             $this->validateBoardExists($slug);
@@ -916,6 +944,12 @@ class PostService
             if (! PermissionHelper::checkScopeAccess($post, $scopePermission)) {
                 throw new AccessDeniedHttpException(__('auth.scope_denied'));
             }
+        }
+
+        if ($hookContext !== null) {
+            $post = HookManager::applyFilters('sirsoft-board.post.filter_public_show_result', $post, $hookContext);
+
+            HookManager::doAction('sirsoft-board.post.after_public_show', $post, $hookContext);
         }
 
         return $post;
@@ -960,12 +994,21 @@ class PostService
      * @param  array  $filters  정렬 파라미터 (order_by, order_direction)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
      * @param  Board|null  $board  게시판 모델 (전달 시 재조회 방지)
+     * @param  string  $context  호출 컨텍스트 ('user' 일 때만 조회 결과 훅 발행)
      * @return array{prev: Post|null, next: Post|null} 이전/다음 게시글
      *
      * @throws ModelNotFoundException 게시판을 찾을 수 없는 경우
      */
-    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?Board $board = null): array
+    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?Board $board = null, string $context = 'admin'): array
     {
+        $hookContext = $context === 'user'
+            ? ReadHookContext::make(['board' => $board, 'post_id' => $id, 'filters' => $filters])
+            : null;
+
+        if ($hookContext !== null) {
+            HookManager::doAction('sirsoft-board.post.before_adjacent', $hookContext);
+        }
+
         // 게시판 존재성 검증 및 조회. 이전/다음 후보에는 목록과 같은 읽기 스코프(본인만·소유역할)를 건다 —
         // 걸지 않으면 목록에서 걸러진 남의 글 제목·ID 가 이전/다음 글로 나간다(#789).
         if (! $board) {
@@ -1001,12 +1044,21 @@ class PostService
             .($withTrashed ? '_trashed' : '')
             .($scope !== null ? "_{$filters['scope_permission']}_{$scope}_".Auth::id() : '');
 
-        return $this->cache->remember(
+        $adjacent = $this->cache->remember(
             $cacheKey,
             fn () => $this->postRepository->getAdjacentPosts($slug, $id, $filters, $withTrashed, $board->id),
             $ttl,
             tags: ['board-posts']
         );
+
+        if ($hookContext !== null) {
+            // 캐시를 읽은 뒤에 발행한다 — 리스너가 고친 값은 공용 캐시에 남지 않는다
+            $adjacent = HookManager::applyFilters('sirsoft-board.post.filter_adjacent_result', $adjacent, $hookContext);
+
+            HookManager::doAction('sirsoft-board.post.after_adjacent', $adjacent, $hookContext);
+        }
+
+        return $adjacent;
     }
 
     /**
@@ -1448,6 +1500,10 @@ class PostService
      */
     public function getUserActivities(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        $hookContext = ReadHookContext::make(['subject_user_id' => $userId, 'filters' => $filters]);
+
+        HookManager::doAction('sirsoft-board.post.before_user_activity_list', $hookContext);
+
         $activityType = $filters['activity_type'] ?? 'authored';
         $boardSlug = $filters['board_slug'] ?? '';
         $search = $filters['search'] ?? '';
@@ -1486,6 +1542,10 @@ class PostService
             $this->cache->remember($cacheKey, fn () => $total, $ttl, tags: ['board-stats']);
         }
 
+        $result = HookManager::applyFilters('sirsoft-board.post.filter_user_activity_list_result', $result, $hookContext);
+
+        HookManager::doAction('sirsoft-board.post.after_user_activity_list', $result, $hookContext);
+
         return $result;
     }
 
@@ -1500,8 +1560,11 @@ class PostService
     public function getUserActivityStats(int $userId): array
     {
         $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+        $hookContext = ReadHookContext::make(['subject_user_id' => $userId]);
 
-        return $this->cache->remember(
+        HookManager::doAction('sirsoft-board.post.before_user_activity_stats', $hookContext);
+
+        $stats = $this->cache->remember(
             "user_activity_stats_{$userId}",
             function () use ($userId) {
                 $stats = $this->postRepository->getUserActivityStats($userId);
@@ -1515,6 +1578,12 @@ class PostService
             $ttl,
             tags: ['board-stats']
         );
+
+        $stats = HookManager::applyFilters('sirsoft-board.post.filter_user_activity_stats_result', $stats, $hookContext);
+
+        HookManager::doAction('sirsoft-board.post.after_user_activity_stats', $stats, $hookContext);
+
+        return $stats;
     }
 
     /**
@@ -1538,15 +1607,25 @@ class PostService
      */
     public function getUserPublicPosts(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        $hookContext = ReadHookContext::make(['subject_user_id' => $userId, 'filters' => $filters]);
+
+        HookManager::doAction('sirsoft-board.post.before_user_public_list', $hookContext);
+
         $viewerId = Auth::id();
 
-        return $this->postRepository->getUserActivities($userId, array_merge($filters, [
+        $posts = $this->postRepository->getUserActivities($userId, array_merge($filters, [
             'activity_type' => 'authored',  // 작성글만
             'viewer_id' => $viewerId,       // 비로그인은 null → 타인 관점
             'exclude_board_ids' => $viewerId !== null && $viewerId === $userId
                 ? []
                 : $this->publicProfileExcludedBoardIds($userId),
         ]), $perPage);
+
+        $posts = HookManager::applyFilters('sirsoft-board.post.filter_user_public_list_result', $posts, $hookContext);
+
+        HookManager::doAction('sirsoft-board.post.after_user_public_list', $posts, $hookContext);
+
+        return $posts;
     }
 
     /**
@@ -1559,6 +1638,10 @@ class PostService
      */
     public function getUserPublicStats(int $userId): array
     {
+        $hookContext = ReadHookContext::make(['subject_user_id' => $userId]);
+
+        HookManager::doAction('sirsoft-board.post.before_user_public_stats', $hookContext);
+
         // 작성글 목록(getUserPublicPosts)과 같은 기준 — 본인이 아니면 읽을 수 없는 게시판을 뺀다.
         // 보는 사람마다 뺄 게시판이 달라지므로 그 목록을 캐시 키에 넣는다(키를 바꿔 옛 공용 값은 쓰지 않는다).
         $viewerId = Auth::id();
@@ -1568,12 +1651,18 @@ class PostService
         sort($excludeBoardIds);
         $cacheKey = "user_public_stats_v2_{$userId}_".md5(implode(',', $excludeBoardIds));
 
-        return $this->cache->remember(
+        $stats = $this->cache->remember(
             $cacheKey,
             fn () => $this->postRepository->getUserPublicStats($userId, $excludeBoardIds),
             g7_core_settings('cache.default_ttl', 86400),
             tags: ['board-stats']
         );
+
+        $stats = HookManager::applyFilters('sirsoft-board.post.filter_user_public_stats_result', $stats, $hookContext);
+
+        HookManager::doAction('sirsoft-board.post.after_user_public_stats', $stats, $hookContext);
+
+        return $stats;
     }
 
     /**
