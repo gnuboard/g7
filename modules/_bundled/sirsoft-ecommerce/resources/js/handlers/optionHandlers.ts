@@ -6,6 +6,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { localizedText } from '../utils/localizedText';
 import { convertCurrencyPrice, sumActiveOptionStock } from './productOptionHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -169,7 +170,7 @@ interface ActionWithParams {
  */
 function getValueForLocale(value: string | OptionValueMultilingual, locale: string): string {
     if (typeof value === 'string') return value;
-    return value[locale] ?? value['ko'] ?? Object.values(value)[0] ?? '';
+    return localizedText(value, locale) ?? '';
 }
 
 /**

@@ -9,6 +9,7 @@ use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Models\LanguagePack;
 use App\Services\LanguagePackService;
+use App\Support\LocaleTag;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -326,7 +327,7 @@ class LanguagePackBundledRegistrar
         }
 
         return array_values(array_unique(array_filter($locales, function ($locale) {
-            return preg_match('/^[a-z]{2,3}(-[A-Z]{2})?$/', $locale) === 1;
+            return LocaleTag::isValid($locale);
         })));
     }
 

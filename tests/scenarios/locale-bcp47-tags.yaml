@@ -1,0 +1,90 @@
+feature: BCP 47 세 글자·지역·문자 표기 언어 코드 전면 수용 (7.1.1, 공개 #148)
+
+description: |
+  언어팩 설치 검사(BCP 47)는 `fil`·`fil-PH`·`zh-Hant`·`es-419` 를 통과시키지만 화면·API·정적 게시·DB·국가 추정·
+  관리자 입력 경로가 "언어 코드 = 소문자 2글자" 를 가정해 깨졌다. 허용 규칙을 언어팩 규칙 하나(`App\Support\LocaleTag`,
+  화면 짝 `resources/js/core/support/localeTag.ts`)로 통일하고, 다국어 값이 비면 한국어 고정 대신
+  요청 언어 → 사이트 기본 언어 → 영어 순으로 대체한다(`App\Support\LocalizedValue`, `G7Core.locale.pick`).
+
+axes:
+  # 언어 코드 형태 — 결과 표의 변종 행과 같다. 가장 복잡한 변종은 region_tagged(fil-PH)·script_tagged(zh-Hant).
+  shape: [two_letter, three_letter, region_tagged, script_tagged, numeric_region, malformed, over_length]
+
+effects:
+  # 형식 판정 SSoT
+  - locale_tag_accepts_language_pack_tags            # ko·fil·haw·zh-Hant-TW·es-419·fil-PH·sr-Latn-RS 통과
+  - locale_tag_rejects_malformed_tags                # kor1·KO·fil-ph·fil_PH·zh-hant·../ko·21자 거부
+  - locale_tag_canonicalizes_case_and_separator      # en-us→en-US, zh_hant_tw→zh-Hant-TW
+  - locale_tag_match_prefers_exact_then_primary      # 정확일치 → 주언어 → 같은 주언어 첫 지원항목
+  - locale_tag_extracts_primary_region_country       # fil-PH→fil/PH, es-419→419/국가 없음
+  # 서빙·게시
+  - template_lang_route_serves_bcp47_pack_locale     # /api/templates/{id}/lang/fil.json·fil-PH·zh-Hant·es-419 200
+  - invalid_locale_maps_to_404                        # 형식 위반은 500 이 아니라 404
+  - manifest_validator_accepts_bcp47_pack_locales
+  - manifest_validator_rejects_locale_longer_than_column
+  - region_tagged_pack_icon_is_served                 # …-fil-PH 팩 식별자 아이콘 422 → 200
+  - settings_multilingual_default_recognizes_script_key
+  # 협상·국가·통화
+  - signup_country_reads_region_subtag                # fil-PH→PH, zh-Hant-TW→TW, es-419→null, fil→null
+  - request_locale_negotiates_region_tagged_pack      # fil-PH 만 켠 사이트에서 fil·fil-PH 요청이 fil-PH
+  - geo_country_reads_region_subtag
+  - signup_currency_matches_region_then_primary       # zh-TW→TWD, fil→PHP(fil-PH 통화)
+  # DB 폭
+  - user_language_column_holds_region_tag             # users.language 20자 — 가입 201·zh-Hant-TW 저장
+  - seo_stats_locale_column_holds_region_tag
+  - json_path_search_quotes_hyphen_locale             # '$."fil-PH"' — MySQL 3143 없음
+  # 다국어 값 대체(D7)
+  - multilingual_value_falls_back_to_site_locale_then_en
+  - backend_value_fallback_has_no_hardcoded_ko        # 강제 검사 — fallback_locale 색인·['ko'] 고정 허용 목록 대조
+  - frontend_value_fallback_has_no_hardcoded_ko
+  - localized_object_picks_current_then_site_locale   # SEO ExpressionEvaluator·PipeRegistry
+  # 화면 쪽 짝
+  - frontend_locale_tag_mirrors_backend_rules
+  - asset_recovery_handles_numeric_region_locale      # lang/es-419.json 정적 → API 역변환
+  - admin_locale_label_uses_language_pack_name        # FIL-PH 대신 Filipino (Pilipinas)
+  - dynamic_field_row_has_every_supported_locale
+  - long_locale_badge_is_not_clipped
+  - ckeditor_locale_tab_label_is_text_not_html        # localeNames 문자열이 innerHTML 로 들어가지 않는다
+
+test_files:
+  - tests/Unit/Support/LocaleTagTest.php
+  - tests/Unit/Support/LocalizedValueTest.php
+  - tests/Feature/Template/TemplateLanguageBcp47ServingTest.php
+  - tests/Feature/Template/PublicTemplateControllerInvalidLocaleTest.php
+  - tests/Playwright/specs/locale-bcp47-boot.spec.ts
+  - tests/Unit/Services/LanguagePack/LanguagePackManifestValidatorTest.php
+  - tests/Feature/Extension/ExtensionIconServingTest.php
+  - tests/Unit/Traits/NormalizesSettingsDataLocaleKeyTest.php
+  - tests/Feature/Api/Auth/RegisterRegionTaggedLocaleTest.php
+  - tests/Feature/Middleware/SetLocaleRegionTaggedNegotiationTest.php
+  - tests/Unit/Analytics/GeoLocatorCountryFromLanguageTest.php
+  - tests/Feature/Database/ModifyLanguageInUsersTableMigrationTest.php
+  - tests/Feature/Database/ModifyLocaleInSeoCacheStatsTableMigrationTest.php
+  - tests/Unit/I18n/MultilingualValueFallbackGuardTest.php
+  - tests/Unit/Seo/ExpressionEvaluatorTest.php
+  - tests/Unit/Seo/PipeRegistryLocalizedSiteLocaleTest.php
+  - tests/Unit/Models/ModuleLocalizedNameSiteLocaleTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SignupCurrencyResolverRegionLocaleTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/ProductInquiryRepositoryRegionLocaleSearchTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Models/CategoryLocalizedNameSiteLocaleTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ShippingCountryNameSiteLocaleTest.php
+  - tests/Feature/Api/Admin/NotificationTemplateRecipientRoleNameSiteLocaleTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/initPreferredCurrency.regionLocale.test.ts
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Repositories/BizppurioTemplateRepositoryTest.php
+  - resources/js/core/support/__tests__/localeTag.test.ts
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.test.ts
+  - resources/js/core/template-engine/__tests__/PipeRegistry.test.ts
+  - resources/js/core/support/__tests__/assetUrlRecovery.bcp47Locale.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/support/__tests__/localeName.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MultilingualInput.localeLabel.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MultilingualTabPanel.localeLabel.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DynamicFieldList.supportedLocales.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ExtensionCardGrid.test.tsx
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/localeLabel.test.ts
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/html-editor-fallback.localeLabel.test.tsx
+
+notes: |
+  shape 축 7값은 LocaleTag(PHP)·localeTag(TS) 단위 테스트가 한 값씩 마킹한다. numeric_region(es-419)은 승인된
+  언어팩이 없어 브라우저 실측에서는 라우트 매치만 보고 나머지는 단위로 커버한다. 엔진 부팅·로그인 직후의 꺼진 언어
+  처리(D8)는 `engine-member-locale-align.yaml`, 오류 화면 주언어 비교는 `engine-toast-dedupe-and-error-screen-locale.yaml`,
+  정적 게시 로케일 범위는 `ext-static-cache.yaml` 이 소유한다.

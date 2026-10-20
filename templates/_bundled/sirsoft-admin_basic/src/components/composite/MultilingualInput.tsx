@@ -8,6 +8,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
 import { getSiteLocale } from '../../support/siteLocale';
+import { getLocaleDisplayName } from '../../support/localeName';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 // G7Core.t() 번역 함수 참조
@@ -19,24 +20,8 @@ const getSupportedLocales = (): string[] => {
   return (window as any).G7Core?.locale?.supported?.() ?? ['ko', 'en'];
 };
 
-// 언어 코드로 언어명 가져오기 (다국어 키 사용)
-const getLocaleNameByCode = (code: string): string => {
-  // 다국어 키에서 언어명 가져오기 (common.language_ko, common.language_en 등)
-  const translatedName = t(`common.language_${code}`);
-
-  // 번역이 키 그대로 반환되면 (번역 없음) fallback 맵 사용
-  if (translatedName === `common.language_${code}`) {
-    const fallbackNames: Record<string, string> = {
-      ko: '한국어',
-      en: 'English',
-      ja: '日本語',
-      zh: '中文',
-    };
-    return fallbackNames[code] || code.toUpperCase();
-  }
-
-  return translatedName;
-};
+// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (#148)
+const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code);
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -334,7 +319,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   // 언어명 표시
   const getLocaleName = useCallback((localeCode: string) => {
     const locale = actualAvailableLocales.find(l => l.code === localeCode);
-    return locale?.nativeName || locale?.name || localeCode.toUpperCase();
+    return locale?.nativeName || locale?.name || getLocaleDisplayName(localeCode);
   }, [actualAvailableLocales]);
 
   // 입력칸 이름 — 언어가 둘 이상 켜져 있으면 언어명을 붙인다(D7). 종전에는 이름 prop 이 없어 placeholder 로만 읽혔다(#757)

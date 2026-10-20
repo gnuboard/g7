@@ -73,7 +73,7 @@
 | 항목 | 규칙 |
 |------|------|
 | **파일 위치** | `/templates/{vendor-template}/lang/{locale}.json` |
-| **로케일 형식** | ISO 639-1 (2자리 소문자, 예: `ko`, `en`, `ja`) |
+| **로케일 형식** | BCP 47 — 언어팩 설치 규칙과 같다 (예: `ko`, `ja`, `fil`, `zh-Hant`, `fil-PH`, `es-419`, 20자 이하). 판정 기준 클래스는 `App\Support\LocaleTag` |
 | **제공 방식** | API 엔드포인트 (`/api/templates/{identifier}/lang/{locale}`) |
 | **검증** | supported_locales 확인, 경로 탈출 방지 |
 
@@ -144,9 +144,9 @@ class TemplateService
             return ['success' => false, 'error' => 'Template not active'];
         }
 
-        // 2. 로케일 형식 검증 (ISO 639-1: 2자리 소문자)
-        if (!preg_match('/^[a-z]{2}$/', $locale)) {
-            return ['success' => false, 'error' => 'Invalid locale format'];
+        // 2. 로케일 형식 검증 — 언어팩 설치 규칙(BCP 47, 20자 이하)과 같은 기준
+        if (! LocaleTag::isValid($locale)) {
+            return ['success' => false, 'error' => 'invalid_locale'];
         }
 
         // 3. supported_locales 확인
@@ -246,12 +246,12 @@ class TemplateLanguageController extends PublicBaseController
 ```php
 // routes/api.php
 Route::get('/templates/{identifier}/lang/{locale}', [TemplateLanguageController::class, 'getLanguageFile'])
-    ->where('locale', '[a-z]{2}')
+    ->where('locale', LocaleTag::PATTERN_BODY)
     ->name('api.templates.language');
 ```
 
 **주요 포인트**:
-- `where('locale', '[a-z]{2}')`: ISO 639-1 형식만 허용
+- `where('locale', LocaleTag::PATTERN_BODY)`: 언어팩 설치 규칙(BCP 47)의 정규형만 허용 — `fil-ph`·`ZH-HANT`·`fil_PH` 는 404
 - 라우트 레벨에서 잘못된 형식 차단
 
 ---
@@ -297,7 +297,7 @@ console.log(translations.dashboard.title); // "대시보드"
 ### 허용 (✅)
 
 - 활성화된 템플릿만 접근 가능
-- ISO 639-1 형식 검증 (정규표현식: `/^[a-z]{2}$/`)
+- BCP 47 형식 검증 (`App\Support\LocaleTag::isValid()` — 문자 집합이 `[A-Za-z0-9-]` 뿐이라 경로 문자가 들어갈 수 없다)
 - supported_locales 화이트리스트 확인
 - 경로 트래버설 방지 (`realpath()`, `str_starts_with()`)
 - 파일 확장자 검증 (`.json`만 허용)

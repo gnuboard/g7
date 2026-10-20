@@ -46,6 +46,21 @@ afterEach(() => {
 });
 
 describe('사용자 헤더 언어 메뉴 listbox', () => {
+  // @scenario case=pack_locale_label
+  // @effects option_label_uses_language_pack_name
+  it('언어팩으로 켠 언어는 대문자 코드가 아니라 언어팩의 언어 이름으로 보인다 (#148 — 종전 FIL-PH·ZH-HANT)', async () => {
+    const user = userEvent.setup();
+    (window as any).G7Core.state.get = () => ({ appConfig: { localeNames: { 'fil-PH': 'Filipino (Pilipinas)', 'zh-Hant': '繁體中文' } } });
+    render(<Header siteName="S" availableLocales={['ko', 'fil-PH', 'zh-Hant', 'haw']} currentLocale="ko" />);
+    await user.click(screen.getByRole('button', { name: '언어' }));
+
+    const labels = screen.getAllByRole('option').map((o) => o.textContent?.trim());
+    expect(labels.some((t) => t?.includes('Filipino (Pilipinas)'))).toBe(true);
+    expect(labels.some((t) => t?.includes('繁體中文'))).toBe(true);
+    expect(labels.some((t) => t?.includes('FIL-PH') || t?.includes('ZH-HANT'))).toBe(false);
+    expect(labels.some((t) => t?.includes('haw'))).toBe(true);
+  });
+
   // @scenario case=open_by_click
   // @effects listbox_named, options_have_role, selected_marked, trigger_controls_listbox
   it('펼친 목록은 이름 있는 listbox 이고 단추가 aria-controls 로 가리킨다', async () => {

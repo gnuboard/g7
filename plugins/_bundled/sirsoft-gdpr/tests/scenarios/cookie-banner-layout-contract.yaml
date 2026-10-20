@@ -1,0 +1,32 @@
+feature: 쿠키 동의 배너 레이아웃 계약 (extensions/cookie_banner — 주입·표시 조건·위치·동의 액션·환경설정 패널·푸터)
+
+description: |
+  `resources/extensions/cookie_banner.g7.html` 이 구운 짝 JSON 을 읽어 배너의 계약을 잠근다 — 사용자 템플릿 전역 오버레이에
+  주입되는지, 누가 닫았는지에 따라 다시 보이는지, 위치 분기가 safelist 안의 클래스만 쓰는지, 세 동의 버튼이
+  백엔드 검증 규칙과 같은 본문을 보내고 저장 직후 동의 상태를 다시 읽는지, 환경설정 패널·정책 링크·운영 주체 푸터가
+  설정값대로 그려지는지.
+
+  기존 테스트에 매핑이 없던 것을 7.1.1(#148) 감사 정리에서 묶음 단위로 선언했다. 카테고리 라벨의 언어 선택은
+  `cookie-banner-category-locale.yaml`, 거부 동작은 `cookie-rejection.yaml`, 정책 주소는 `settings-api.yaml` 이 소유한다.
+
+axes:
+  surface: [extension_meta, visibility, position, consent_actions, preferences_panel, category_info, operator_footer, compliance]
+
+effects:
+  - banner_extension_injects_overlay_with_data_sources   # user_global_overlay·append·priority·데이터소스 2종, 모달 없음
+  - banner_component_injected_first
+  - banner_shows_until_current_subject_dismisses         # banner_enabled·has_consented·dismissedFor(닫은 주체 = 현재 사용자) 조건
+  - banner_renewal_button_for_members_only               # 회원 + needs_renewal 한정 「현재 동의 갱신」, 옛 강제 모달·게스트 버튼 없음
+  - banner_position_variants_render_as_popup_box         # bottom_bar·centered_modal 분기, top_bar 제거, dim 없음, 이중 박스 없음
+  - banner_layout_uses_safelisted_classes                # Tailwind 임의값 미사용
+  - consent_actions_post_expected_categories             # 모두 동의·거부·선택 동의가 StoreCookieConsentRequest 와 같은 본문
+  - consent_save_refreshes_consent_state                 # 저장 직후 gdprMyConsent refetch·refreshConsent, auth_mode optional
+  - banner_preferences_toggle_inline                     # 「환경설정」은 모달이 아니라 인라인 펼침
+  - banner_buttons_disable_only_clicked                  # 제출 중 클릭한 버튼만 비활성
+  - banner_preferences_panel_inline_saves_consent        # 패널 표시 조건·필수 토글 잠금·저장 시 POST + 닫은 주체 기록
+  - banner_category_info_user_friendly                   # 운영자용 정보 키 비노출·자세히 보기 토글
+  - banner_operator_footer_line_variants                 # 운영 주체·저장 위치 3분기 + 둘 다 비면 생략
+  - banner_uses_builtin_handlers_and_prefixed_keys       # 내장 핸들러만·i18n 키 접두사
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/cookie_banner.test.tsx

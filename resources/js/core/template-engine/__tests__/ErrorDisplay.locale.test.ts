@@ -87,4 +87,20 @@ describe('ErrorDisplay 화면 언어', () => {
       expect(ErrorDisplay.text(key, 'en')).not.toMatch(/[가-힣]/);
     }
   });
+
+  /**
+   * 내장 문구는 앞 두 글자가 아니라 주 언어 하위 태그로 고른다 (engine-v1.81.0, #148 F2).
+   * 종전 `.slice(0, 2)` 는 콘칸어(`kok`)를 한국어로, 자메이카 크리올(`jam`)을 일본어로 잘못 골랐다.
+   *
+   * @scenario case=error_primary_subtag
+   * @effects error_screen_builtin_text_uses_primary_subtag
+   */
+  it('주 언어 하위 태그로 내장 문구를 고른다 (kok→영어, ja_JP→일본어, ko-KR→한국어)', () => {
+    expect(ErrorDisplay.text('core.errors.reload', 'kok')).toBe('Reload');
+    expect(ErrorDisplay.text('core.errors.reload', 'jam')).toBe('Reload');
+    expect(ErrorDisplay.text('core.errors.page_load_failed', 'ja_JP')).toBe('ページの読み込みに失敗しました');
+    expect(ErrorDisplay.text('core.errors.reload', 'ko-KR')).toBe('새로고침');
+    document.documentElement.lang = 'fil-PH';
+    expect(ErrorDisplay.text('core.errors.reload')).toBe('Reload');
+  });
 });

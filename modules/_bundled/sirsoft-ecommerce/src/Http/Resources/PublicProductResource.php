@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Enums\PermissionType;
 use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
@@ -140,14 +141,11 @@ class PublicProductResource extends BaseApiResource
                     ? $this->notice->template?->getLocalizedName()
                     : null,
                 'values' => collect($this->notice->values ?? [])->map(function ($item) {
-                    $locale = app()->getLocale();
-                    $fallback = config('app.fallback_locale', 'ko');
-
                     $name = is_array($item['name'] ?? null)
-                        ? ($item['name'][$locale] ?? $item['name'][$fallback] ?? '')
+                        ? (LocalizedValue::pick($item['name'], anyAsLast: false) ?? '')
                         : ($item['name'] ?? '');
                     $content = is_array($item['content'] ?? null)
-                        ? ($item['content'][$locale] ?? $item['content'][$fallback] ?? '')
+                        ? (LocalizedValue::pick($item['content'], anyAsLast: false) ?? '')
                         : ($item['content'] ?? '');
 
                     return ['label' => $name, 'value' => $content];
@@ -192,9 +190,7 @@ class PublicProductResource extends BaseApiResource
             return null;
         }
 
-        $locale = app()->getLocale();
-
-        return $field[$locale] ?? $field[config('app.fallback_locale', 'ko')] ?? $field[array_key_first($field)] ?? null;
+        return LocalizedValue::pick($field);
     }
 
     /**

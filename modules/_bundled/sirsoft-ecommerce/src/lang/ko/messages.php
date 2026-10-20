@@ -1433,8 +1433,11 @@ return [
             'reject_reason' => '반려 사유',
             'tracking_lines' => '운송장별 상품 줄 (택배사 · 운송장 · 상품×수량, 줄바꿈 구분)',
             'advance_exchange_notice' => '선교환 헌 상품 반송 기한 안내 (일반 교환은 빈 값)',
-            'refund_amount' => '환불 금액',
-            'refund_method_label' => '환불 수단',
+            'refund_amount' => '환불 금액 (현금 + 마일리지 합계)',
+            'refund_method_label' => '실제 환불 수단 (현금 환불이 없으면 마일리지)',
+            'refund_cash_amount' => '현금으로 환불된 금액 (없으면 빈 값)',
+            'refund_points_amount' => '마일리지로 환불된 금액 (없으면 빈 값)',
+            'refund_breakdown' => '수단별 환불 금액 줄 (줄바꿈 구분)',
             'withdraw_origin_notice' => '판매자 대리 철회 안내 (고객 철회는 빈 값)',
             'processed_count' => '이번에 처리된 상품 수',
             'remaining_count' => '아직 처리되지 않은 상품 수',
@@ -1461,6 +1464,11 @@ return [
             'order_completed_admin' => [
                 'name' => '수신자(운영자) 이름',
                 'order_url' => '주문 화면 URL (운영자에게는 관리자 주소로 치환)',
+            ],
+            'deposit_after_cancel_admin' => [
+                'name' => '수신자(운영자) 이름',
+                'order_url' => '주문 화면 URL (운영자에게는 관리자 주소로 치환)',
+                'deposit_amount' => '취소 후 입금된 금액',
             ],
             'inquiry_received' => [
                 'name' => '수신자(관리자) 이름',

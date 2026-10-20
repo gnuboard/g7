@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources\Traits;
 
+use App\Support\LocalizedValue;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 
 /**
@@ -40,9 +41,7 @@ trait SummarizesAdditionalOptions
 
         $name = $first['name'] ?? '';
         if (is_array($name)) {
-            $name = $name[$locale]
-                ?? $name[config('app.fallback_locale', 'ko')]
-                ?? (! empty($name) ? reset($name) : '');
+            $name = LocalizedValue::pick($name, $locale) ?? '';
         }
 
         $label = (string) $name;

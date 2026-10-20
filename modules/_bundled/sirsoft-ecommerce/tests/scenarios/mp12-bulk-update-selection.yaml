@@ -39,6 +39,12 @@ effects:
   - aggregate_entry_for_unloaded_options  # 미펼침 상품은 집계 엔트리 1건으로 표현 (#518)
   - summary_count_matches_regardless_of_expansion  # 펼침 여부와 무관하게 optionCount 동일 (#518)
   - options_reloaded_after_save     # 저장 후 리페치 → 펼친 행 옵션 재로드 (#518)
+  # 일괄 수정 확인 창 내용 (#148 감사 정리에서 기존 테스트에 매핑)
+  - modified_fields_tracked_per_field     # 인라인 수정한 필드만 modified*Fields 에 기록
+  - confirm_reports_only_modified_fields  # 확인 창은 실제로 바꾼 필드만 보고(undefined 미노출)
+  - confirm_labels_localized              # 상품명·옵션명은 다국어 값에서 화면 언어 → 사이트 기본 언어 순으로 골라 표시
+  - confirm_status_shown_as_label         # 판매·전시 상태는 enum 원문이 아니라 라벨
+  - bulk_failure_surfaces_server_error    # 실패 시 서버 message 토스트 + 상세 오류 보관
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/bulkUpdateHandlers.test.ts

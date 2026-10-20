@@ -41,6 +41,7 @@ import {
 import { notifyAssetFailure, clearAssetFailure, assetText } from './assets/AssetFailureNotice';
 import { suffixed, extStaticUrl, convertToCurrentMode } from './support/assetUrl';
 import { fetchStaticFirst } from './support/fetchStaticFirst';
+import { resolveUsableLocale } from './support/localeTag';
 import {
     normalizeScriptSrcForOriginCheck as normalizeScriptSrcForOriginCheckImpl,
     extractScriptHost as extractScriptHostImpl,
@@ -358,6 +359,13 @@ export class TemplateApp {
      */
     private modalDataSources: Map<string, any[]> = new Map();
 
+    /**
+     * 서버가 이 요청에 정한 로케일 — 저장된 언어가 꺼진 언어일 때 사이트 기본 언어 다음 후보.
+     *
+     * @since engine-v1.81.0
+     */
+    private serverLocale: string | undefined;
+
     constructor(config: TemplateAppConfig) {
         // 전역 상태 초기화
         this.globalState = {
@@ -381,13 +389,25 @@ export class TemplateApp {
         // - 로그인 사용자: users.language (최우선)
         // - 비로그인 사용자: Accept-Language 헤더
         // - 기본값: config('app.locale')
+        //
+        // 저장된 언어가 꺼진 언어(언어팩 비활성 등)면 주 언어가 같은 지원 언어 → 사이트 기본 언어 → 서버 언어 순으로
+        // 연다 — 종전에는 꺼진 언어로 부팅해 화면이 영어로 떨어졌다 (engine-v1.81.0, #148 D8). 저장값(g7_locale)은
+        // 고쳐 쓰지 않는다: 언어팩 업데이트·잠깐 끄기 동안 들어온 비회원의 선택이 지워지지 않고, 팩이 다시 켜지면
+        // 다음 방문부터 그 언어로 돌아온다(설계 확정 2026-10-19). 지원 목록을 모르면 종전대로.
+        this.serverLocale = config.locale;
         const savedLocale = this.loadLocaleFromStorage();
-        const finalLocale = savedLocale || config.locale || 'ko';
+        const finalLocale = savedLocale
+            ? resolveUsableLocale(savedLocale, this.globalState.appConfig, config.locale ?? null) || config.locale || 'ko'
+            : config.locale || 'ko';
 
         this.config = {
             ...config,
             locale: finalLocale,
         };
+
+        if (savedLocale && savedLocale !== finalLocale) {
+            logger.log('Saved locale is not an active locale, opening with:', savedLocale, '→', finalLocale);
+        }
 
         // localStorage 값이 없을 때만 서버 설정을 저장
         // (사용자가 선택한 언어를 보존)
@@ -3662,7 +3682,8 @@ export class TemplateApp {
      * users.language 를 쓴다. 둘이 갈리면(다른 기기에서 언어를 바꾼 경우 등) 화면 문구는 브라우저 언어,
      * 필수 언어 검증 문구와 확장 목록 이름은 회원 언어로 섞였다(결정 2026-10-08: 회원이 설정한 언어 기준).
      * 첫 렌더 전(디스패처 문맥·핸들러 등록 전)에 엔진을 회원 언어로 다시 초기화해 다시 그리지 않는다.
-     * 비로그인, 회원 언어 없음, 사이트가 지원하지 않는 언어면 종전대로 둔다.
+     * 비로그인, 회원 언어 없음이면 종전대로 둔다. 회원 언어가 꺼진 언어면 사이트 기본 언어로 맞춘다 —
+     * 회원 정보(users.language)는 다시 쓰지 않는다(언어팩을 잠깐 껐다 켜도 회원 선택이 남도록, engine-v1.81.0).
      *
      * @param authManager 인증 관리자 (프리로드가 끝난 상태)
      * @param cacheVersion 다국어 파일 캐시 버전
@@ -3671,25 +3692,27 @@ export class TemplateApp {
     private async alignLocaleWithMemberLanguage(authManager: AuthManager, cacheVersion: number): Promise<void> {
         const authState = authManager.getState();
         const memberLocale = authState.isAuthenticated ? authState.user?.language : undefined;
-        if (typeof memberLocale !== 'string' || memberLocale === '' || memberLocale === this.config.locale) {
+        if (typeof memberLocale !== 'string' || memberLocale === '') {
             return;
         }
 
-        const supported = this.globalState?.appConfig?.supportedLocales;
-        if (Array.isArray(supported) && supported.length > 0 && !supported.includes(memberLocale)) {
-            logger.log('Member language is not a supported locale, keeping current locale:', memberLocale);
+        const target = resolveUsableLocale(memberLocale, this.globalState?.appConfig, this.serverLocale ?? null);
+        if (target === this.config.locale) {
             return;
         }
+        if (target !== memberLocale) {
+            logger.log('Member language is not an active locale, switching to site default:', memberLocale, '→', target);
+        }
 
-        logger.log('Aligning locale with member language:', this.config.locale, '→', memberLocale);
-        this.config.locale = memberLocale;
-        this.saveLocaleToStorage(memberLocale);
+        logger.log('Aligning locale with member language:', this.config.locale, '→', target);
+        this.config.locale = target;
+        this.saveLocaleToStorage(target);
 
         destroyTemplate();
         await initTemplateEngine({
             templateId: this.config.templateId,
             templateType: this.config.templateType,
-            locale: memberLocale,
+            locale: target,
             debug: this.config.debug,
             cacheVersion,
         });

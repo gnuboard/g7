@@ -9,6 +9,7 @@ import { Icon } from '../basic/Icon';
 import { HtmlContent } from './HtmlContent';
 import type { EditorAttrs } from '../../types';
 import { getSiteLocale } from '../../support/siteLocale';
+import { getLocaleDisplayName } from '../../support/localeName';
 
 // G7Core 참조
 const G7Core = () => (window as any).G7Core;
@@ -22,20 +23,8 @@ const getSupportedLocales = (): string[] => {
   return G7Core()?.locale?.supported?.() ?? ['ko', 'en'];
 };
 
-// 언어 코드로 언어명 가져오기 (다국어 키 사용)
-const getLocaleNameByCode = (code: string): string => {
-  const translatedName = t(`common.language_${code}`);
-  if (translatedName === `common.language_${code}`) {
-    const fallbackNames: Record<string, string> = {
-      ko: '한국어',
-      en: 'English',
-      ja: '日本語',
-      zh: '中文',
-    };
-    return fallbackNames[code] || code.toUpperCase();
-  }
-  return translatedName;
-};
+// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (#148)
+const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code);
 
 // 다국어 값 타입
 export interface MultilingualValue {

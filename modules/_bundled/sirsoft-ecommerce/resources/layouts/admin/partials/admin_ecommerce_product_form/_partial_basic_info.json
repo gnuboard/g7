@@ -894,7 +894,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "iteration": {
-                                                "source": "((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || c.name?.ko || '' })))",
+                                                "source": "((_local.selectedCategoryInfos ?? []).length > 0) ? (_local.selectedCategoryInfos ?? []) : ((_local.form?.categories ?? []).map(c => ({ id: c.id, breadcrumb: c.breadcrumb || c.name_localized || $localized(c.name) })))",
                                                 "item_var": "catInfo",
                                                 "index_var": "catIdx"
                                             },

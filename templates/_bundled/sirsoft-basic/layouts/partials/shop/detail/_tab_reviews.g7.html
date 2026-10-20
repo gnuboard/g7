@@ -112,7 +112,7 @@
         <!-- 옵션 스냅샷 배지 (option_snapshot.option_values 배열에서 직접 표시) -->
         <div data-if="{{review.option_snapshot?.option_values?.length > 0}}" class="flex flex-wrap gap-1 mb-2">
           <span data-each="opt in {{review.option_snapshot?.option_values ?? []}}">
-            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}</span>
+            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{{$localized(opt.key)}}: {{$localized(opt.value)}}</span>
           </span>
         </div>
         <p class="text-gray-700 dark:text-gray-300 mb-3 text-sm">{{review.content}}</p>

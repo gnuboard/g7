@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Services\GeoIpService;
+use App\Support\LocalizedValue;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
 
 /**
@@ -19,6 +20,13 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileReposit
  */
 class ShippingCountryResolver
 {
+    /**
+     * 배송 국가 리졸버를 생성합니다.
+     *
+     * @param  EcommerceSettingsService  $settings  이커머스 설정 서비스
+     * @param  EcommerceUserProfileRepositoryInterface  $profileRepository  회원 이커머스 프로필 저장소
+     * @param  GeoIpService  $geoIpService  IP 국가 조회 서비스
+     */
     public function __construct(
         protected EcommerceSettingsService $settings,
         protected EcommerceUserProfileRepositoryInterface $profileRepository,
@@ -109,7 +117,7 @@ class ShippingCountryResolver
 
             $name = $country['name'] ?? null;
             if (is_array($name)) {
-                return $name[$locale] ?? $name['en'] ?? $name['ko'] ?? $code;
+                return LocalizedValue::pick($name, $locale, anyAsLast: false) ?? $code;
             }
 
             return is_string($name) && $name !== '' ? $name : $code;

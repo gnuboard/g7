@@ -7,7 +7,7 @@ description: |
   Esc 는 목록을 닫고 단추로 초점을 돌린다. 아이콘만 있던 장바구니 단추는 담긴 수를 함께 말하는 이름을, 좁은 폭에서 그리는 메뉴 단추는 「메뉴」 이름을 갖는다(O-C1-3).
 
 axes:
-  case: [open_by_click, open_by_arrow, arrow_and_enter, escape, cart_name, mobile_menu_name]
+  case: [open_by_click, open_by_arrow, arrow_and_enter, escape, cart_name, mobile_menu_name, pack_locale_label]
 
 effects:
   - listbox_named
@@ -20,6 +20,9 @@ effects:
   - escape_closes_and_returns_focus
   - cart_named_with_count
   - mobile_menu_named
+  # #148 — 언어팩으로 켠 fil-PH·zh-Hant 항목은 대문자 코드가 아니라 언어팩의 언어 이름(appConfig.localeNames)으로 보인다
+  - option_label_uses_language_pack_name
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/HeaderLanguageListbox.test.tsx
+  - templates/_bundled/sirsoft-basic/src/support/__tests__/localeName.test.ts

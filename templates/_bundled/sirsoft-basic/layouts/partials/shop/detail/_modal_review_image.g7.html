@@ -25,7 +25,7 @@
         <!-- 옵션 배지 (있을 때만) -->
         <div data-if="{{(_global.reviewForModal?.optionValues ?? []).length > 0}}" class="flex flex-wrap gap-1">
           <span data-each="opt in {{_global.reviewForModal?.optionValues ?? []}}">
-            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}</span>
+            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{{$localized(opt.key)}}: {{$localized(opt.value)}}</span>
           </span>
         </div>
         <!-- 리뷰 내용 (2줄 말줄임) -->

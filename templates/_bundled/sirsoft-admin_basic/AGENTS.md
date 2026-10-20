@@ -103,6 +103,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 아이콘 컨테이너(`w-N h-N` 상자) 안의 `<icon>` 은 컨테이너와 **다른 줄**에 둔다 — `AuthoringDebtLedgerTest` 가 줄 단위로 `<icon` 과 박스 크기 표기를 함께 재므로 한 줄에 있으면 글리프가 박스 크기를 쓴 것으로 읽힌다(3차 병합 후속, 확장 관리 모달 9파일 선례). 새 `<on>`(자식 있는 액션)·`<data-source>`·`<modal>` 은 S21 주석 자리를 비워 두지 않는다 — `CommentAnchorStageLedgerTest` 가 완료 단락(S21.4·S21.5)의 잔여 앵커 0 을 잠근다
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 컴포넌트가 `localStorage` 에 적는 키는 `g7le.` 접두를 쓴다 — GDPR 동의 플러그인의 strictly-necessary 허용 목록(`plugins/_bundled/sirsoft-gdpr/plugin.php`)이 이 접두만 통과시키고, 밖의 키는 동의 전 쓰기가 조용히 버려지며 부팅 때 정리된다. 쓴 직후 되읽어 성공을 확인한다
 - [ ] 필수 컴포넌트(35개) 의 Props 시그니처를 깨는 변경은 전체 번들 확장 관리자 화면에 영향 — 변경 전 `src/components/{basic,composite}/` 의 실사용처를 넓게 확인
 - [ ] `_admin_base.g7.html` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
@@ -183,7 +184,7 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 412개 | `vitest.config.ts` |
+| Vitest | 416개 | `vitest.config.ts` |
 | Playwright | 25개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 91개 | `tests/scenarios` |
 

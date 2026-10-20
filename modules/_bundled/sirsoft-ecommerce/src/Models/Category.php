@@ -6,6 +6,7 @@ use App\Casts\AsUnicodeJson;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -155,7 +156,8 @@ class Category extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**
@@ -233,6 +235,7 @@ class Category extends Model implements FulltextSearchable
      * 호출자가 먼저 예열합니다. 예열하지 않아도 동작은 같고 쿼리 수만 달라집니다.
      *
      * @param  array<int, int>  $categoryIds  경로를 그릴 카테고리 ID 목록
+     * @return void 반환값 없음
      */
     public static function prefetchAncestors(array $categoryIds): void
     {
@@ -255,6 +258,7 @@ class Category extends Model implements FulltextSearchable
      * 한 번만 부르면 되며, 그러면 조상 조회가 응답당 1회로 고정됩니다.
      *
      * @param  iterable<self>  $categories  path 가 적재된 카테고리들
+     * @return void 반환값 없음
      */
     public static function prefetchAncestorsFor(iterable $categories): void
     {
@@ -265,6 +269,7 @@ class Category extends Model implements FulltextSearchable
      * path 문자열에서 조상 ID 를 뽑아 한 번에 적재합니다.
      *
      * @param  Collection<int, self>  $categories  path 가 있는 카테고리들
+     * @return void 반환값 없음
      */
     private static function warmAncestorsFromPaths(Collection $categories): void
     {
@@ -289,6 +294,8 @@ class Category extends Model implements FulltextSearchable
      *
      * 캐시 수명은 요청 스코프입니다. 같은 프로세스에서 카테고리를 바꾼 뒤 다시 경로를
      * 그려야 하는 경우(테스트·콘솔 작업)에 호출합니다.
+     *
+     * @return void 반환값 없음
      */
     public static function flushAncestorPrefetch(): void
     {
@@ -350,6 +357,8 @@ class Category extends Model implements FulltextSearchable
 
     /**
      * path 자동 생성 (저장 전 호출)
+     *
+     * @return void 반환값 없음
      */
     public function generatePath(): void
     {
@@ -437,6 +446,8 @@ class Category extends Model implements FulltextSearchable
      *
      * 캐시 키는 (부모, 활성여부) 조합이라 변경 하나가 어느 조합에 영향을 주는지
      * 특정하기 어렵다 — 조합 수가 적으므로 전량을 비운다.
+     *
+     * @return void 반환값 없음
      */
     public static function flushTreeCache(): void
     {

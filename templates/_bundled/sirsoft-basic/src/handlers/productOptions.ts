@@ -14,6 +14,7 @@
  */
 
 import { formatCurrencyHandler } from './formatCurrency';
+import { localizedText } from '../support/localizedText';
 
 /**
  * 옵션 그룹 구조 (다국어 지원)
@@ -379,7 +380,7 @@ export function toAdditionalOptionSelectionsPayload(
 function getGroupKey(group: OptionGroup): string {
   if (group.name_localized) return group.name_localized;
   if (typeof group.name === 'string') return group.name;
-  return (group.name as Record<string, string>)?.ko ?? '';
+  return localizedText(group.name) ?? '';
 }
 
 /**
@@ -404,7 +405,7 @@ function getOptionValueByGroupKey(
     });
     if (item) {
       if (typeof item.value === 'string') return item.value;
-      return (item.value as Record<string, string>)?.ko ?? Object.values(item.value)[0];
+      return localizedText(item.value);
     }
     return undefined;
   }
@@ -436,10 +437,10 @@ function convertOptionValuesToRecord(
   for (const item of optionValues) {
     const key = typeof item.key === 'string'
       ? item.key
-      : (item.key as Record<string, string>)?.ko ?? Object.values(item.key)[0] ?? '';
+      : localizedText(item.key) ?? '';
     const value = typeof item.value === 'string'
       ? item.value
-      : (item.value as Record<string, string>)?.ko ?? Object.values(item.value)[0] ?? '';
+      : localizedText(item.value) ?? '';
     if (key) {
       result[key] = value;
     }

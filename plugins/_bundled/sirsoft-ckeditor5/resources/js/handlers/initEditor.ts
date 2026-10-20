@@ -15,6 +15,7 @@ import {
     ckeditorTranslationUrl,
 } from './ckeditorAssets';
 import { ensureCkeditorGlobal } from './ckeditorGlobal';
+import { buildLocaleTabContent } from './localeLabel';
 import { notifyEditorAssetFailure } from './editorFailureNotice';
 import { attachReadOnlySync, readOnlyFromContainer } from './readOnlySync';
 import { createG7UploadAdapterPlugin, UPLOAD_IMAGE_TYPES } from './uploadAdapter';
@@ -719,25 +720,6 @@ export function disconnectDarkModeObserver(): void {
     }
 }
 
-/** locale 코드 → 표시 이름 매핑 */
-const LOCALE_LABELS: Record<string, string> = {
-    ko: '한국어',
-    en: 'English',
-    ja: '日本語',
-    zh: '中文',
-    fr: 'Français',
-    de: 'Deutsch',
-    es: 'Español',
-};
-
-/**
- * locale 코드를 표시 이름으로 변환합니다.
- * 매핑에 없는 경우 대문자 코드를 반환합니다.
- */
-function getLocaleLabel(locale: string): string {
-    return LOCALE_LABELS[locale] ?? locale.toUpperCase();
-}
-
 /**
  * 지원 locale 목록을 반환합니다.
  * localStorage의 g7_locale 값과 서버 설정을 활용합니다.
@@ -1015,7 +997,8 @@ function createMultilingualTabs(
         tab.type = 'button';
         tab.dataset.locale = locale;
         tab.className = [isActive ? 'is-active' : '', isDefault ? 'is-default' : ''].filter(Boolean).join(' ');
-        tab.innerHTML = `<i class="fas fa-globe ck5-lang-icon"></i><span>${getLocaleLabel(locale)}</span>${isDefault ? '<span class="ck5-required">*</span>' : ''}`;
+        // 언어 이름(언어팩 문자열)은 textContent 로만 넣는다 — innerHTML 금지 (#148 F5x)
+        buildLocaleTabContent(tab, locale, isDefault);
         tab.addEventListener('click', async () => {
             // 탭 활성화 전환 (에디터 생성 전에 먼저 실행)
             tabsEl.querySelectorAll('button').forEach(btn => {

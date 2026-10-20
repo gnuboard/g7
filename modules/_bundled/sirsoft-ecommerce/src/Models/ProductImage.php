@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,8 @@ class ProductImage extends Model
 
     /**
      * 모델 부트 메서드
+     *
+     * @return void 반환값 없음
      */
     protected static function boot(): void
     {
@@ -113,7 +116,7 @@ class ProductImage extends Model
         $locale = $locale ?? app()->getLocale();
         $altText = $this->alt_text;
 
-        return $altText[$locale] ?? $altText[config('app.fallback_locale', 'ko')] ?? null;
+        return LocalizedValue::pick($altText, $locale, anyAsLast: false);
     }
 
     /**

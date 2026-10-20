@@ -189908,7 +189908,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다.
+**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). `{locale}` 은 언어팩 설치 규칙과 같은 BCP 47 형식(`App\Support\LocaleTag`)을 받습니다 — `ko`·`fil`·`fil-PH`·`zh-Hant`·`es-419` 처럼 소문자 주 언어 2~3자 + 선택 문자 표기(`Hant`) + 선택 지역(`PH`·`419`), 최대 20자(7.1.1, #148). 정규형이 아닌 표기(`fil-ph`·`fil_PH`·`KO`)는 라우트가 맞지 않아 404, 형식은 맞지만 사이트가 켜지 않은 언어와 20자 초과는 서비스 단계에서 404(`locale_not_supported`)입니다 — 종전 500 이던 형식 위반 사유(`invalid_locale`)도 404 로 응답합니다. 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다.
 
 
 ### GET /api/templates/{identifier}/layout-attachments/{attachment}/file

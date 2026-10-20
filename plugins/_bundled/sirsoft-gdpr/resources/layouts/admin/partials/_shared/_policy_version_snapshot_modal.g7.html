@@ -29,7 +29,7 @@
         <div data-if="{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}" class="flex-center gap-2 flex-wrap">
           <span class="px-3 py-2 text-xs font-mono text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded flex-1 min-w-0 break-all">{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? '-'}}</span>
           <!-- 본문 페이지 새 탭 열기 — 서버가 허용 형식(/ 로 시작하는 사이트 경로 또는 https 주소)으로 푼 주소만 내보내므로 그대로 href 로 쓴다. 화면에서 경로를 조합하지 않는다. -->
-          <a data-ref="policy_version_snapshot_open_policy_page_link" href="{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? ''}}" target="_blank" rel="noopener" class="text-info-soft inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0">
+          <a data-ref="policy_version_snapshot_open_policy_page_link" href="{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? ''}}" target="_blank" rel="noopener" class="gdpr-tone-info inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0">
             <span>$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.open_policy_page</span>
           </a>
         </div>
@@ -45,12 +45,12 @@
           <div class="px-3 py-2 text-xs space-y-1">
             <div class="flex items-baseline gap-2">
               <span class="font-mono text-gray-900 dark:text-gray-100 font-semibold">{{category?.key ?? '?'}}</span>
-              <!-- 라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 ko→en), 아니면 그대로. -->
-              <span class="text-gray-500 dark:text-gray-400">{{(category?.label &amp;&amp; typeof category.label === 'object') ? (category.label[$locale] ?? category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}</span>
-              <span data-if="{{category?.required === true}}" class="ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-warning-soft rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge</span>
+              <!-- 라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 사이트 기본 언어→영어), 아니면 그대로. -->
+              <span class="text-gray-500 dark:text-gray-400">{{(category?.label &amp;&amp; typeof category.label === 'object') ? ($localized(category.label) || '-') : (category?.label ?? '-')}}</span>
+              <span data-if="{{category?.required === true}}" class="ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 gdpr-tone-warning rounded">$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge</span>
             </div>
-            <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 ko→en). -->
-            <p data-if="{{category?.description}}" class="text-gray-600 dark:text-gray-300 leading-relaxed">{{(category?.description &amp;&amp; typeof category.description === 'object') ? (category.description[$locale] ?? category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}</p>
+            <!-- 설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 사이트 기본 언어→영어). -->
+            <p data-if="{{category?.description}}" class="text-gray-600 dark:text-gray-300 leading-relaxed">{{(category?.description &amp;&amp; typeof category.description === 'object') ? $localized(category.description) : (category?.description ?? '')}}</p>
           </div>
         </div>
       </div>

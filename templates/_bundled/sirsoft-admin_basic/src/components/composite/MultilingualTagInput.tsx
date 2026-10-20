@@ -7,6 +7,7 @@ import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
 import { Modal } from './Modal';
 import { getSiteLocale } from '../../support/siteLocale';
+import { getLocaleDisplayName } from '../../support/localeName';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 // G7Core.t() 번역 함수 참조
@@ -18,20 +19,8 @@ const getSupportedLocales = (): string[] => {
   return (window as any).G7Core?.locale?.supported?.() ?? ['ko', 'en'];
 };
 
-// 언어 코드로 언어명 가져오기 (다국어 키 사용)
-const getLocaleNameByCode = (code: string): string => {
-  const translatedName = t(`common.language_${code}`);
-  if (translatedName === `common.language_${code}`) {
-    const fallbackNames: Record<string, string> = {
-      ko: '한국어',
-      en: 'English',
-      ja: '日本語',
-      zh: '中文',
-    };
-    return fallbackNames[code] || code.toUpperCase();
-  }
-  return translatedName;
-};
+// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (#148)
+const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code);
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {

@@ -155,7 +155,7 @@
                                     "props": {
                                         "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
                                     },
-                                    "text": "{{$parent._local.optionModal.targetItem?.option_name_localized ?? $parent._local.optionModal.targetItem?.option_name?.ko ?? ''}}"
+                                    "text": "{{$parent._local.optionModal.targetItem?.option_name_localized ?? $localized($parent._local.optionModal.targetItem?.option_name)}}"
                                 },
                                 {
                                     "type": "basic",
@@ -458,7 +458,7 @@
                                     "props": {
                                         "className": "text-sm text-gray-700 dark:text-gray-300"
                                     },
-                                    "text": "{{$parent._local.matchedOption?.option_name_localized ?? $parent._local.matchedOption?.option_name?.ko ?? ''}}"
+                                    "text": "{{$parent._local.matchedOption?.option_name_localized ?? $localized($parent._local.matchedOption?.option_name)}}"
                                 },
                                 {
                                     "type": "basic",

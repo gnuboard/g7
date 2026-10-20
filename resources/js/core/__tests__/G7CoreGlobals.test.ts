@@ -727,6 +727,20 @@ describe('G7CoreGlobals - locale API', () => {
   });
 
   // @scenario surface=ui
+  // @effects locale_api_reads_supported_and_changes_locale
+  it('locale.site()가 사이트 기본 언어를, locale.pick()이 대체 순서대로 값을 고른다 (engine-v1.81.0, #148)', () => {
+    mockTemplateApp.getLocale = vi.fn(() => 'fil');
+    mockTemplateApp.globalState = { appConfig: { siteLocale: 'ja' } };
+
+    expect(G7Core.locale.site()).toBe('ja');
+    expect(G7Core.locale.pick({ ko: '한국어', en: 'English', ja: '日本語' })).toBe('日本語');
+    expect(G7Core.locale.pick({ ko: '한국어', en: 'English' }, 'ko')).toBe('한국어');
+    expect(G7Core.locale.pick({ fil: '', de: 'Deutsch' })).toBe('Deutsch');
+    expect(G7Core.locale.pick('plain')).toBe('plain');
+    expect(G7Core.locale.pick(null)).toBeNull();
+  });
+
+  // @scenario surface=ui
   // @effects locale_api_falls_back_to_ko_without_template_app
   it('TemplateApp이 없으면 locale.current()가 기본값 ko를 반환해야 함', () => {
     delete (window as any).__templateApp;

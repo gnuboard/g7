@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.1] - 2026-10-19
+
+### Added
+
+- 개인정보 연간 통지 알림의 평문 변수(사이트내 알림·문자용 운영자 서문·확장 처리 내역, `notification_variables.common.introduction_text`·`notice_sections_text`) 설명의 일본어 번역을 추가했습니다.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

@@ -1195,7 +1195,7 @@
                                                             "props": {
                                                                 "className": "text-primary font-medium"
                                                             },
-                                                            "text": "{{opt.option_name_localized ?? opt.option_name?.ko ?? ''}}"
+                                                            "text": "{{opt.option_name_localized ?? $localized(opt.option_name)}}"
                                                         },
                                                         {
                                                             "type": "composite",

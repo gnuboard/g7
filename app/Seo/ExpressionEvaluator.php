@@ -2,6 +2,7 @@
 
 namespace App\Seo;
 
+use App\Support\LocalizedValue;
 use Illuminate\Support\Arr;
 
 class ExpressionEvaluator
@@ -2267,7 +2268,7 @@ class ExpressionEvaluator
      * $localized() 함수 호출을 평가합니다.
      *
      * 다국어 객체 {ko: "한국어", en: "English"} 에서 현재 로케일에 해당하는 값을 반환합니다.
-     * fallback 순서: 현재 로케일 → 'ko' → 첫 번째 값
+     * fallback 순서: 현재 로케일 → 사이트 기본 언어 → 'en' → 첫 번째 값 (#148 — 화면 `$localized` 와 같은 SSoT)
      *
      * @param  mixed  $value  다국어 객체 (배열)
      * @param  array  $context  데이터 컨텍스트
@@ -2279,9 +2280,7 @@ class ExpressionEvaluator
             return $value;
         }
 
-        $locale = app()->getLocale();
-
-        return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? ($value ? reset($value) : '');
+        return LocalizedValue::pick($value) ?? '';
     }
 
     /**
@@ -2853,15 +2852,10 @@ class ExpressionEvaluator
         }
 
         if (is_array($value)) {
-            // 다국어 객체 자동 해석: {"ko": "값", "en": "value"} → 현재 로케일 값
-            $locale = app()->getLocale();
-            if (isset($value[$locale])) {
-                return (string) $value[$locale];
-            }
-            // fallback 로케일
-            $fallbackLocale = config('app.fallback_locale', 'en');
-            if (isset($value[$fallbackLocale])) {
-                return (string) $value[$fallbackLocale];
+            // 다국어 객체 자동 해석: {"ko": "값", "en": "value"} → 현재 로케일 → 사이트 기본 언어 → 영어 (#148)
+            $localized = LocalizedValue::pick($value, anyAsLast: false);
+            if ($localized !== null) {
+                return $localized;
             }
 
             return json_encode($value, JSON_UNESCAPED_UNICODE) ?: '';

@@ -134,7 +134,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden"
+                                                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative"
                                                             },
                                                             "children": [
                                                                 {
@@ -175,7 +175,8 @@
                                                                     "name": "Span",
                                                                     "if": "{{language_pack_detail?.data?.icon_source !== 'manifest'}}",
                                                                     "props": {
-                                                                        "className": "absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800",
+                                                                        "className": "absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase whitespace-nowrap bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800",
+                                                                        "title": "{{language_pack_detail?.data?.locale ?? ''}}",
                                                                         "aria-label": "$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}"
                                                                     },
                                                                     "text": "{{language_pack_detail?.data?.locale}}"

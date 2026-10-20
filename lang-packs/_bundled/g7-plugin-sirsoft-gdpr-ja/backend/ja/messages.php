@@ -367,6 +367,8 @@ return [
             'privacy_policy_url' => 'プライバシーポリシーURL',
             'privacy_policy_link' => 'プライバシーポリシーのリンク行（アドレスがなければ空）',
             'notice_sections' => '拡張機能が追加した処理内容',
+            'introduction_text' => '運営者の序文（プレーンテキスト — サイト内通知・SMS用）',
+            'notice_sections_text' => '拡張機能が追加した処理内容（プレーンテキスト — サイト内通知・SMS用）',
         ],
     ],
     'validation' => [

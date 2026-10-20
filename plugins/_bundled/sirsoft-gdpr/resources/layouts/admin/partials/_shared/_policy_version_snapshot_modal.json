@@ -182,7 +182,7 @@
                                         "href": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? ''}}",
                                         "target": "_blank",
                                         "rel": "noopener",
-                                        "className": "text-info-soft inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0"
+                                        "className": "gdpr-tone-info inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0"
                                     },
                                     "children": [
                                         {
@@ -276,34 +276,34 @@
                                                     "text": "{{category?.key ?? '?'}}"
                                                 },
                                                 {
-                                                    "comment": "라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 ko→en), 아니면 그대로.",
+                                                    "comment": "라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 사이트 기본 언어→영어), 아니면 그대로.",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
                                                         "className": "text-gray-500 dark:text-gray-400"
                                                     },
-                                                    "text": "{{(category?.label && typeof category.label === 'object') ? (category.label[$locale] ?? category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}"
+                                                    "text": "{{(category?.label && typeof category.label === 'object') ? ($localized(category.label) || '-') : (category?.label ?? '-')}}"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{category?.required === true}}",
                                                     "props": {
-                                                        "className": "ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-warning-soft rounded"
+                                                        "className": "ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 gdpr-tone-warning rounded"
                                                     },
                                                     "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge"
                                                 }
                                             ]
                                         },
                                         {
-                                            "comment": "설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 ko→en).",
+                                            "comment": "설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 사이트 기본 언어→영어).",
                                             "type": "basic",
                                             "name": "P",
                                             "if": "{{category?.description}}",
                                             "props": {
                                                 "className": "text-gray-600 dark:text-gray-300 leading-relaxed"
                                             },
-                                            "text": "{{(category?.description && typeof category.description === 'object') ? (category.description[$locale] ?? category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}"
+                                            "text": "{{(category?.description && typeof category.description === 'object') ? $localized(category.description) : (category?.description ?? '')}}"
                                         }
                                     ]
                                 }

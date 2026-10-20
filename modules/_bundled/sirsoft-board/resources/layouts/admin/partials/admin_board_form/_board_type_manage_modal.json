@@ -173,7 +173,7 @@
                                                     "props": {
                                                         "className": "px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
                                                     },
-                                                    "text": "{{btItem.name[$locale ?? 'ko'] ?? btItem.name.ko ?? btItem.slug}}"
+                                                    "text": "{{$localized(btItem.name) || btItem.slug}}"
                                                 },
                                                 {
                                                     "id": "bt_td_actions_{{btIdx}}",

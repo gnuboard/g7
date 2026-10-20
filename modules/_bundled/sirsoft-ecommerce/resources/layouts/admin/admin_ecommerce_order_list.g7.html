@@ -146,13 +146,13 @@
   <computed name="category2Options">{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}</computed>
   <computed name="category3Options">{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}</computed>
   <computed name="category4Options">{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}</computed>
-  <computed name="availableCountries">{{(ecommerce_settings?.data?.shipping?.available_countries || []).filter(c => c.is_active).map(c => ({ code: c.code.toLowerCase(), name: c.name?.[$locale] ?? c.name?.ko ?? c.code }))}}</computed>
-  <computed name="availablePaymentMethods">{{(ecommerce_settings?.data?.order_settings?.payment_methods || []).filter(m => m.is_active).map(m => ({ id: m.id, name: m._cached_name?.[$locale] ?? m._cached_name?.ko ?? m.id }))}}</computed>
+  <computed name="availableCountries">{{(ecommerce_settings?.data?.shipping?.available_countries || []).filter(c => c.is_active).map(c => ({ code: c.code.toLowerCase(), name: $localized(c.name) || c.code }))}}</computed>
+  <computed name="availablePaymentMethods">{{(ecommerce_settings?.data?.order_settings?.payment_methods || []).filter(m => m.is_active).map(m => ({ id: m.id, name: $localized(m._cached_name) || m.id }))}}</computed>
   <computed name="filterShippingPolicy">{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}</computed>
   <computed name="shippingPolicyOptions">{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}</computed>
   <computed name="filterMinShippingFee">{{_local.filter.minShippingFee ?? query.min_shipping_amount ?? ''}}</computed>
   <computed name="filterMaxShippingFee">{{_local.filter.maxShippingFee ?? query.max_shipping_amount ?? ''}}</computed>
-  <computed name="shippingTypeOptions">{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))}}</computed>
+  <computed name="shippingTypeOptions">{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: $localized(t.name) || t.code}))}}</computed>
   <permissions>
     <permission>sirsoft-ecommerce.orders.read</permission>
   </permissions>

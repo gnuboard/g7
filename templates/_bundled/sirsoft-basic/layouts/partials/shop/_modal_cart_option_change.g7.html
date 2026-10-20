@@ -26,7 +26,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <h4 class="font-medium text-gray-900 dark:text-white truncate">{{$parent._local.optionModal.targetItem?.product_name}}</h4>
-          <p data-if="{{$parent._local.optionModal.targetItem?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$parent._local.optionModal.targetItem?.option_name_localized ?? $parent._local.optionModal.targetItem?.option_name?.ko ?? ''}}</p>
+          <p data-if="{{$parent._local.optionModal.targetItem?.option_name}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{$parent._local.optionModal.targetItem?.option_name_localized ?? $localized($parent._local.optionModal.targetItem?.option_name)}}</p>
           <div class="mt-2">
             <p class="text-sm font-medium text-gray-900 dark:text-white">{{$parent._local.optionModal.targetItem?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.optionModal.targetItem?.unit_price_formatted}}</p>
             <!-- 보조 통화들 -->
@@ -94,7 +94,7 @@
       <!-- 선택된 옵션 정보 -->
       <div data-if="{{$parent._local.matchedOption}}" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4">
         <div class="flex justify-between items-start">
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{$parent._local.matchedOption?.option_name_localized ?? $parent._local.matchedOption?.option_name?.ko ?? ''}}</span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{$parent._local.matchedOption?.option_name_localized ?? $localized($parent._local.matchedOption?.option_name)}}</span>
           <div class="text-right">
             <div class="text-sm font-bold text-gray-900 dark:text-white">{{$parent._local.matchedOption?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? $parent._local.matchedOption?.selling_price_formatted ?? ''}}</div>
             <!-- 보조 통화들 -->

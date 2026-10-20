@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Traits;
 
 use App\Extension\HookManager;
 use App\Helpers\ResponseHelper;
+use App\Support\LocalizedValue;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -328,7 +329,7 @@ trait HandlesOrderCreation
         $locale = app()->getLocale();
         $firstName = $options->first()?->product_name;
         $orderName = is_array($firstName)
-            ? ($firstName[$locale] ?? $firstName[config('app.fallback_locale', 'ko')] ?? reset($firstName) ?: '')
+            ? (LocalizedValue::pick($firstName, $locale) ?? '')
             : ($firstName ?? '');
         if ($options->count() > 1) {
             $orderName .= ' 외 '.($options->count() - 1).'건';
@@ -396,12 +397,10 @@ trait HandlesOrderCreation
      */
     protected function buildEscrowProducts(Order $order, string $locale): array
     {
-        $fallback = config('app.fallback_locale', 'ko');
-
-        return $order->options->map(function ($option) use ($locale, $fallback) {
+        return $order->options->map(function ($option) use ($locale) {
             $name = $option->product_name;
             $localizedName = is_array($name)
-                ? ($name[$locale] ?? $name[$fallback] ?? reset($name) ?: '')
+                ? (LocalizedValue::pick($name, $locale) ?? '')
                 : ($name ?? '');
 
             return [

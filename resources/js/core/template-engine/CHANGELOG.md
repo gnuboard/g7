@@ -5,6 +5,24 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.81.0] - 2026-10-19
+
+### Added
+
+- `G7Core.locale.site()`·`G7Core.locale.pick(값, 언어?)` — 사이트 기본 언어(환경설정 「기본 언어」)를 읽고, 다국어 값에서 보여 줄 글자를 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 순으로(빈 칸·공백만 있는 값은 건너뜀) 고릅니다. 고를 값이 없으면 `pick` 은 null 입니다. 규칙 SSoT 는 새 모듈 `support/localeTag.ts`(`isLocaleTag`·`primaryLanguage`·`resolveUsableLocale`·`pickLocalized`)이고 백엔드 `App\Support\LocaleTag`·`LocalizedValue` 와 같은 표로 잠급니다 — 봇(SEO) 화면과 SPA 화면의 글자가 갈리지 않게 (#148, G7CoreGlobals.ts `initLocaleAPI`, 회귀: `support/__tests__/localeTag.test.ts`·`G7CoreGlobals.test.ts`)
+
+### Changed
+
+- 다국어 값의 대체 언어 — `$localized()`·`localized` 파이프·시스템 배너·레이아웃 편집기 사용자 정의 자산 이름이 지금 언어의 값이 없거나 비면 한국어 대신 사이트 기본 언어 → 영어 → 첫 값으로 대신합니다. 한국어가 기본 언어인 사이트는 달라지지 않습니다. 빈 문자열·공백만 있는 값은 건너뜁니다 (DataBindingEngine.ts `$localized`, SystemBannerManager.ts `resolveMessage`, CustomAssetsModal.tsx `displayNameOf`, 회귀: `DataBindingEngine.test.ts` 4건 기대값을 사이트 기본 언어 기준으로 갱신)
+- `localized` 파이프를 언어 인자 없이 쓰면 렌더 문맥의 `$locale`(없으면 화면 언어)을 씁니다 — 종전에는 인자가 없으면 화면 언어와 무관하게 항상 한국어 값을 골랐습니다(2026-01-12 파이프 도입부터). 레이아웃 편집기 미리보기처럼 `$locale` 을 콘텐츠 언어로 두는 렌더에서 `$localized(x)` 와 `x | localized` 가 같은 언어를 고릅니다(트러블슈팅 guide 「렌더 경로 사례 8」 — 렌더 함수는 호스트 값이 아니라 렌더 환경을 읽는다) (PipeRegistry.ts `localized`·`executePipeChain` 의 `env.locale`, DataBindingEngine.ts `evaluatePipeExpression`, 회귀: `PipeRegistry.test.ts`·`DataBindingEngine.pipe.test.ts` 기대값 갱신 · `DataBindingEngine.pipeRenderLocale.test.ts` — 수정 전 red 1)
+
+### Fixed
+
+- 저장된 화면 언어(`g7_locale`)가 꺼진 언어(언어팩 비활성 등)면 화면이 그 언어 그대로 열려 영어로 떨어지던 문제 — 주 언어가 같은 지원 언어(`fil` → `fil-PH`, 서버 `LocaleTag::match` 와 같은 순서) → 사이트 기본 언어 → 서버가 정한 언어 순으로 엽니다. 이 브라우저의 저장값은 고쳐 쓰지 않습니다 — 언어팩 업데이트·잠깐 끄기 동안 들어온 비회원의 선택이 지워지지 않고, 팩이 다시 켜지면 다음 방문부터 그 언어로 돌아옵니다(설계 확정 2026-10-19). 지원 목록을 모르면 종전대로입니다 (TemplateApp.ts 생성자, support/localeTag.ts `matchLocale`·`resolveUsableLocale`, 회귀: `TemplateApp.memberLocale.test.ts` 「stale_saved_locale_on_boot」 5건 — 수정 전 red 4·`localeTag.test.ts`)
+- 로그인 회원의 언어가 꺼진 언어면 부팅·로그인 직후 그 언어로 바꿔(engine-v1.79.0 은 브라우저 언어 유지) 화면 언어가 회원 언어와 갈리거나 영어로 떨어지던 문제 — 사이트 기본 언어로 맞춥니다. 회원 정보의 언어 설정(`users.language`)은 바꾸지 않습니다(`changeLocale(…, { persist: false })`) — 언어팩을 잠깐 껐다 켜도 회원 선택이 남도록 (TemplateApp.ts `alignLocaleWithMemberLanguage`, auth/AuthManager.ts `establishSession`, 회귀: `TemplateApp.memberLocale.test.ts`·`AuthManager.loginLocale.test.ts` — 수정 전 red)
+- 공통 오류 화면의 내장 문구가 언어 코드 앞 두 글자로 골라 `kok`(콘칸어)에서 한국어, `jam`(자메이카 크리올)에서 일본어로 나오던 문제 — 주 언어 하위 태그로 비교합니다. 발생: engine-v1.78.5 (ErrorDisplay.ts `text`, 회귀: `ErrorDisplay.locale.test.ts`)
+- 정적 게시 언어 파일 주소를 API 주소로 되돌리는 복구 규칙이 숫자 지역 언어(`es-419`)를 놓쳐, 정적 파일이 없을 때 그 언어의 화면 문구를 복구하지 못하던 문제. 태그 계층 인라인 복구기(`asset-url-recovery.blade.php`)도 같은 규칙으로 고쳤습니다. 발생: #615 정적 게시 도입(2026-08-25) (support/assetUrl.ts `staticToLegacy`, 회귀: `assetUrlRecovery.test.ts`)
+
 ## [engine-v1.80.1] - 2026-10-14
 
 ### Added

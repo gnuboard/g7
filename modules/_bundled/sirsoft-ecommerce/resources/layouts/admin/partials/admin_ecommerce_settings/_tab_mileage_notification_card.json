@@ -192,7 +192,7 @@
                                                             "props": {
                                                                 "className": "block text-sm text-gray-800 dark:text-gray-200 truncate"
                                                             },
-                                                            "text": "{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty')}}"
+                                                            "text": "{{$localized(tpl.subject) || $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty')}}"
                                                         }
                                                     ]
                                                 }

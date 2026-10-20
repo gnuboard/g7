@@ -96,7 +96,7 @@
                   <div class="col-span-6 sm:col-span-4">
                     <div class="flex-center gap-2 flex-wrap">
                       <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다. 시스템 채널은 저장 맵에 없는 로케일(언어팩으로 늘어난 언어)을 플러그인 번역으로 보강한다 — 운영자가 만든 채널은 키가 번역 키와 우연히 겹칠 수 있어 저장 맵만 쓴다 -->
-                      <span class="text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}</span>
+                      <span class="text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : ($localized(channel.label) || channel.key)}}</span>
                       <span data-if="{{channel.is_system}}" class="text-xs text-blue-700 dark:text-blue-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
                     </div>
                     <span class="text-hint font-mono mt-0.5">{{channel.key}}</span>
@@ -324,7 +324,7 @@
       <div class="row-stack">
         <p class="text-body">$t:sirsoft-marketing.settings.channel_deactivate_modal.message</p>
         <ul class="list-disc list-inside space-y-1">
-          <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="text-heading">{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : (blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key)}} ({{blockedChannel.key}})</li>
+          <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="text-heading">{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : ($localized(blockedChannel.label) || blockedChannel.key)}} ({{blockedChannel.key}})</li>
         </ul>
         <div class="flex justify-end gap-2 mt-4">
           <button type="button" class="btn btn-secondary">

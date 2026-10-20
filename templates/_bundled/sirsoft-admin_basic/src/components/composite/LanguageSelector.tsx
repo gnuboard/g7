@@ -6,6 +6,7 @@ import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
+import { getLocaleDisplayName } from '../../support/localeName';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
 // 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
@@ -24,23 +25,7 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:LanguageSelector'))
 /**
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
-const getLocaleName = (locale: string): string => {
-  // 활성 언어팩의 native_name 을 우선 사용 (LanguagePackServiceProvider 가 주입)
-  const fromAppConfig = (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale];
-  if (fromAppConfig) {
-    return fromAppConfig;
-  }
-  const fallback: Record<string, string> = {
-    ko: '한국어',
-    en: 'English',
-    ja: '日本語',
-    zh: '中文',
-    es: 'Español',
-    fr: 'Français',
-    de: 'Deutsch',
-  };
-  return fallback[locale] || locale;
-};
+const getLocaleName = (locale: string): string => getLocaleDisplayName(locale);
 
 /**
  * LanguageSelector Props

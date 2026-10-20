@@ -929,7 +929,7 @@
                                                                 "props": {
                                                                     "className": "flex-1 text-body font-medium"
                                                                 },
-                                                                "text": "{{option.option_name_localized ?? option.option_name?.ko ?? ''}}"
+                                                                "text": "{{option.option_name_localized ?? $localized(option.option_name)}}"
                                                             }
                                                         ]
                                                     },

@@ -298,6 +298,8 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 레이아웃에 입력칸을 새로 그리면 화면 낭독기가 읽을 이름을 단다 — 제목이 표식 없는 span·표 열 머리면 그 제목 키로 `aria-label`, 체크박스·라디오 옆 글자는 칸과 한 `<label>` 로 감싸고, 목록형 선택칸(`options`·SearchableDropdown)은 placeholder 가 아니라 `aria-label`(정렬 `common.sort_order`·쪽당 개수 `common.per_page`·검색 대상 `common.search_field`)을 단다. 표·반복 행 칸은 「{행 이름} {열 이름}」(`common.row_cell`)으로, DataGrid 셀·펼침 안에서는 `$t:defer:` 로 쓰고(행 문맥 없이 먼저 번역되면 행 이름이 빈다), 행 선택을 켠 DataGrid 는 `rowLabelField` 를 화면에 보이는 식별자로 정한다. 잠금: `resources/js/__tests__/layouts/adminControlNames.test.ts`(#757)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
 - [ ] 통화가 관여하는 표시·기록을 추가할 때 다국어 문구는 `:amount` 로 중립, 과거 거래 표기는 `currency_snapshot` 경유
 - [ ] 금전이 움직이는 훅(쿠폰·마일리지 차감/복원)을 구독·발행할 때 `'sync' => true` 확인
@@ -370,8 +372,8 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 695개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 271개 | `vitest.config.ts` |
+| PHPUnit | 699개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 272개 | `vitest.config.ts` |
 | Playwright | 77개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 374개 | `tests/scenarios` |
 

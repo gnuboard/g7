@@ -77,6 +77,7 @@ use App\Http\Controllers\Api\Public\PublicSearchController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Models\IdentityVerificationLog;
+use App\Support\LocaleTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -151,7 +152,8 @@ Route::group([], function () use ($publicDataThrottle) {
 
         // 다국어 파일 서빙
         Route::dualSuffix('{identifier}/lang/{locale}', 'json', [PublicTemplateController::class, 'serveLanguage'])
-            ->where('locale', '[a-z]{2}(-[A-Z]{2})?')
+            // 언어팩 설치 규칙(BCP 47)과 같은 형식 — fil·fil-PH·zh-Hant·es-419 (#148)
+            ->where('locale', LocaleTag::PATTERN_BODY)
             ->middleware($publicDataThrottle)
             ->name('api.public.templates.language');
 

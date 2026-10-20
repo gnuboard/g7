@@ -482,7 +482,7 @@
                                                                                         "props": {
                                                                                             "className": "text-heading"
                                                                                         },
-                                                                                        "text": "{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}"
+                                                                                        "text": "{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : ($localized(channel.label) || channel.key)}}"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
@@ -1484,7 +1484,7 @@
                                     "props": {
                                         "className": "text-heading"
                                     },
-                                    "text": "{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : (blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key)}} ({{blockedChannel.key}})"
+                                    "text": "{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : ($localized(blockedChannel.label) || blockedChannel.key)}} ({{blockedChannel.key}})"
                                 }
                             ]
                         },

@@ -1,6 +1,7 @@
 // e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
 import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
+import { getLocaleDisplayName } from '../../support/localeName';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
 import { Button } from './Button';
@@ -69,20 +70,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
 function getLocaleName(locale: string): string {
-  const fromAppConfig = (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale];
-  if (fromAppConfig) {
-    return fromAppConfig;
-  }
-  const fallback: Record<string, string> = {
-    ko: '한국어',
-    en: 'English',
-    ja: '日本語',
-    zh: '中文',
-    es: 'Español',
-    fr: 'Français',
-    de: 'Deutsch',
-  };
-  return fallback[locale] || locale;
+  // 언어팩 이름 → 번역 → 내장 표 → 코드 (#148 — 종전 state.get(경로) 는 인자를 무시해 언어팩 이름을 못 읽었다)
+  return getLocaleDisplayName(locale);
 }
 
 /**

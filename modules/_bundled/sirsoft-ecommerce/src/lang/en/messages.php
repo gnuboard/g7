@@ -1444,8 +1444,11 @@ return [
             'reject_reason' => 'Rejection reason',
             'tracking_lines' => 'Product lines per tracking number (carrier · tracking number · product × quantity, one per line)',
             'advance_exchange_notice' => 'Return deadline notice for the old item in an advance exchange (empty for regular exchanges)',
-            'refund_amount' => 'Refund amount',
-            'refund_method_label' => 'Refund method',
+            'refund_amount' => 'Refund amount (cash + mileage total)',
+            'refund_method_label' => 'Actual refund method (mileage when there is no cash refund)',
+            'refund_cash_amount' => 'Amount refunded in cash (empty if none)',
+            'refund_points_amount' => 'Amount refunded as mileage (empty if none)',
+            'refund_breakdown' => 'Refund amount lines per method (line-separated)',
             'withdraw_origin_notice' => 'Notice of seller withdrawal on behalf of the customer (empty for customer withdrawals)',
             'processed_count' => 'Number of items processed this time',
             'remaining_count' => 'Number of items not yet processed',
@@ -1472,6 +1475,11 @@ return [
             'order_completed_admin' => [
                 'name' => 'Recipient (operator) name',
                 'order_url' => 'Order page URL (replaced with the admin address for operators)',
+            ],
+            'deposit_after_cancel_admin' => [
+                'name' => 'Recipient (operator) name',
+                'order_url' => 'Order page URL (replaced with the admin address for operators)',
+                'deposit_amount' => 'Amount deposited after cancellation',
             ],
             'inquiry_received' => [
                 'name' => 'Recipient (administrator) name',

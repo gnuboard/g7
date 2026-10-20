@@ -46,7 +46,7 @@
             </input>
             <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.filter.all</span>
           </label>
-          <label data-each="option in (ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))" class="inline-clickable">
+          <label data-each="option in (ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: $localized(t.name) || t.code}))" class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{(_local.filter.shipping_methods || []).includes(option.value)}}">
               <on type="change">
                 <!-- 배송 방법 낱개 — 넣기 전에 같은 코드를 먼저 걸러 내므로 두 번 눌러도 중복이 쌓이지 않는다. 선택지는 이커머스 설정의 활성 배송 방법에서 온다. -->

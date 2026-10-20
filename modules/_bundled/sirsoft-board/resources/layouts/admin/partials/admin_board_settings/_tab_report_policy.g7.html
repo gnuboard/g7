@@ -135,7 +135,7 @@
                       <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
                       <div class="min-w-0">
                         <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
-                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
+                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
                       </div>
                     </div>
                     <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>
@@ -181,7 +181,7 @@
                       <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
                       <div class="min-w-0">
                         <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
-                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
+                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
                       </div>
                     </div>
                     <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>

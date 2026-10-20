@@ -251,7 +251,7 @@
                     <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
                   </on>
                 </input>
-                <span class="text-primary font-medium">{{opt.option_name_localized ?? opt.option_name?.ko ?? ''}}</span>
+                <span class="text-primary font-medium">{{opt.option_name_localized ?? $localized(opt.option_name)}}</span>
                 <toggle data-type="composite" name="option_active_mobile_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.active')}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->

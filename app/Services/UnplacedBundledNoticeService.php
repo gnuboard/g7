@@ -6,6 +6,7 @@ use App\Contracts\Extension\CacheInterface;
 use App\Extension\CoreVersionChecker;
 use App\Services\Core\BundledInventory;
 use App\Services\Core\BundledSourcePlanner;
+use App\Support\LocalizedValue;
 
 /**
  * 미배치 공식 번들 안내 서비스 (공개 #146).
@@ -154,7 +155,7 @@ class UnplacedBundledNoticeService
     }
 
     /**
-     * 다국어 이름에서 현재 로케일 값을 고릅니다(없으면 ko → en → 첫 값 → 식별자).
+     * 다국어 이름에서 현재 로케일 값을 고릅니다(없으면 사이트 기본 언어 → 영어 → 첫 값 → 식별자).
      *
      * @param  mixed  $name  기록의 name (array 또는 string)
      * @param  string  $fallback  값이 없을 때 쓸 식별자
@@ -169,8 +170,7 @@ class UnplacedBundledNoticeService
             return $fallback;
         }
 
-        $locale = app()->getLocale();
-        $value = $name[$locale] ?? $name['ko'] ?? $name['en'] ?? reset($name);
+        $value = LocalizedValue::pick($name);
 
         return is_string($value) && $value !== '' ? $value : $fallback;
     }

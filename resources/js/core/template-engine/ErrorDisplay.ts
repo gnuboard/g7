@@ -1,6 +1,7 @@
 import type { TranslationContext } from './TranslationEngine';
 import { TemplateEngineError } from './TemplateEngineError';
 import { createLogger } from '../utils/Logger';
+import { primaryLanguage } from '../support/localeTag';
 
 const logger = createLogger('ErrorDisplay');
 
@@ -91,7 +92,8 @@ export class ErrorDisplay {
         } catch {
             // 번역 엔진이 아직 준비되지 않았으면 내장 문구로 내려간다
         }
-        const lang = (locale || document.documentElement.lang || 'ko').slice(0, 2) as 'ko' | 'en' | 'ja';
+        // 앞 두 글자가 아니라 주 언어 하위 태그로 비교한다 — kok(콘칸어)가 ko 로 잡히지 않게 (engine-v1.81.0)
+        const lang = primaryLanguage(locale || document.documentElement.lang || 'ko') as 'ko' | 'en' | 'ja';
         const builtin = BUILTIN_TEXT[key];
         if (!builtin) return key;
 

@@ -166,6 +166,8 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-board` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 관리자 템플릿의 빌드된 CSS 에 존재하는지 확인하고 없으면 `resources/css/main.css` 에 `board-` 접두 클래스로 정의한 뒤 `php artisan module:build sirsoft-board --production`
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 한국어 문구에 「이(가)」「(으)로」처럼 조사를 괄호로 남기거나 자리표시 바로 뒤에 조사를 붙이지 않는다(값의 받침에 따라 틀린 문장이 된다) — 「값이」「상태로」「에 대해」처럼 받침과 무관한 말로 잇는다. 새 FormRequest 에 `in`·`exists`·`required_with` 같은 규칙을 두면 칸별 문구를 주거나 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다(코어 기본 문구는 조사 자리표시를 남긴다). 잠금: `tests/Unit/Lang/KoreanParticlePlaceholderTest.php`
 - [ ] 검증 문구의 항목 이름 자리에 필드 키(`sort`, `board id`)가 보이지 않게 한다 — 새 요청 칸은 `attributes()` 로 이름을 주거나, 게시판 공용 이름 `validation.fallback_attributes`(ko·en·ja 팩 모두)에 더하고 요청에 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다. 배열 항목(`키.*`)은 부모 칸 이름을 물려받는다. 잠금: `tests/Feature/ValidationAttributeNameTest.php`(게시판 요청 전부를 ko·en 으로 조립해 본다)
 - [ ] 비밀글이 관여하는 새 조회 경로(댓글·첨부·검색 결과 등)를 추가할 때 `SecretContentGate` 재적용 (KVE-2026-1914 — 부모에서 한 번 판정하고 끝나지 않는다)

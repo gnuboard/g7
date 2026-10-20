@@ -34,7 +34,7 @@ effects:
   - missing_path_renders_empty_string
   - scalar_values_rendered_as_strings
   - text_without_binding_passes_through
-  - localized_object_picks_current_then_fallback_locale
+  - localized_object_picks_current_then_site_locale   # #148 D7 — 대체 언어는 사이트 기본 언어(app.site_locale)
   - translation_prefix_resolves_key
   # 비교·논리
   - comparison_operators_render_true_or_false

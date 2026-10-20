@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { pickLocalized } from '@core/support/localeTag';
 
 const SNAPSHOT_MODAL = path.resolve(
     __dirname,
@@ -52,9 +53,15 @@ function findDescriptionExpression(): string {
  * @returns 화면에 그려질 설명 문자열
  */
 function renderDescription(category: Record<string, unknown>, locale: string): string {
+    // 엔진 $localized 와 같은 규칙(코어 pickLocalized) — 사이트 기본 언어 ko 인 사이트 (#148)
+    (window as any).G7Config = { appConfig: { siteLocale: 'ko' } };
+    const $localized = (value: unknown): string =>
+        value == null ? '' : typeof value === 'string' ? value : (pickLocalized(value, locale) ?? '');
     // eslint-disable-next-line no-new-func
-    const fn = new Function('category', '$locale', 'return (' + findDescriptionExpression() + ');');
-    return fn(category, locale) as string;
+    const fn = new Function('category', '$locale', '$localized', 'return (' + findDescriptionExpression() + ');');
+    const result = fn(category, locale, $localized) as string;
+    delete (window as any).G7Config;
+    return result;
 }
 
 describe('정책 버전 스냅샷 창 — 카테고리 설명 로케일 해석', () => {
@@ -80,7 +87,7 @@ describe('정책 버전 스냅샷 창 — 카테고리 설명 로케일 해석',
      * @scenario viewer_locale=en, category_description=missing_for_locale
      * @effects snapshot_category_description_falls_back_when_locale_missing
      */
-    it('그 언어 설명이 없으면 한국어 → 영어 순으로 대체한다', () => {
+    it('그 언어 설명이 없으면 사이트 기본 언어(ko) → 영어 순으로 대체한다', () => {
         expect(renderDescription({ key: 'x', description: { ko: '한국어만' } }, 'ja')).toBe('한국어만');
         expect(renderDescription({ key: 'x', description: { en: 'English only' } }, 'ja')).toBe('English only');
     });
