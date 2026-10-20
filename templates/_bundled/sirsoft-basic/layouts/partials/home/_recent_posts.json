@@ -136,6 +136,19 @@
                                             "text": "{{post.title}}"
                                         },
                                         {
+                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                            "type": "extension_point",
+                                            "name": "board_post_row_badges",
+                                            "props": {
+                                                "className": "contents",
+                                                "data-extension-point": "board_post_row_badges",
+                                                "post": "{{post}}",
+                                                "postId": "{{post.id}}",
+                                                "boardSlug": "{{post.board_slug}}",
+                                                "context": "home_recent"
+                                            }
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{post.is_new}}",

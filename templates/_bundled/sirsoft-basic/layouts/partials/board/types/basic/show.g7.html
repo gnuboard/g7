@@ -35,6 +35,8 @@
           <div class="flex items-center gap-2 flex-1 min-w-0">
             <!-- 제목 -->
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">{{post?.data?.title ?? ''}}</h1>
+            <!-- 확장 자리 — 확장이 제목 옆에 배지를 붙인다(#149). 이 파일은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다 -->
+            <extension-point name="board_post_header_badges" class="contents" data-extension-point="board_post_header_badges" post="{{post?.data}}" postId="{{post?.data?.id}}" boardSlug="{{route?.slug}}" context="board_show"/>
             <!-- 삭제됨 배지 -->
             <span data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
             <!-- 새글 배지 (제목 바로 옆) -->

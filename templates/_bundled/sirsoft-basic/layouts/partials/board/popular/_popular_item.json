@@ -62,6 +62,19 @@
                                         "className": "inline-block text-center justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
                                     },
                                     "text": "{{post.title}}"
+                                },
+                                {
+                                    "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                    "type": "extension_point",
+                                    "name": "board_post_row_badges",
+                                    "props": {
+                                        "className": "contents",
+                                        "data-extension-point": "board_post_row_badges",
+                                        "post": "{{post}}",
+                                        "postId": "{{post.id}}",
+                                        "boardSlug": "{{post.board_slug}}",
+                                        "context": "popular"
+                                    }
                                 }
                             ]
                         },

@@ -5,6 +5,7 @@
     "login_prompt": "Sign in and join the community.",
     "greeting": "Hello, {{name}}!"
   },
+  "welcome_badge": "Welcome",
   "welcome_suffix": " Welcome",
   "welcome_description": "Share various stories in a growing community together.",
   "get_started": "Get Started",

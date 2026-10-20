@@ -469,6 +469,19 @@
                                             "text": "{{post?.title ?? ''}}"
                                         },
                                         {
+                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 카드 전체 링크(z-10)가 위에 덮이므로 누르는 조각은 relative z-20 으로 올린다",
+                                            "type": "extension_point",
+                                            "name": "board_post_row_badges",
+                                            "props": {
+                                                "className": "contents",
+                                                "data-extension-point": "board_post_row_badges",
+                                                "post": "{{post}}",
+                                                "postId": "{{post?.id}}",
+                                                "boardSlug": "{{route?.slug}}",
+                                                "context": "board_list"
+                                            }
+                                        },
+                                        {
                                             "comment": "첨부파일 아이콘 (제목 뒤)",
                                             "type": "basic",
                                             "name": "Icon",

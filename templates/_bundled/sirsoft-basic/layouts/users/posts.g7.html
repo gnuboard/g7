@@ -89,6 +89,8 @@
                   <div class="flex-1 min-w-0 flex items-center gap-1">
                     <!-- 제목 -->
                     <span class="truncate font-medium text-gray-900 dark:text-white">{{post.title}}</span>
+                    <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
+                    <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post.id}}" boardSlug="{{post.board_slug}}" context="user_posts"/>
                     <!-- 댓글 수 -->
                     <span data-if="{{post.comment_count > 0}}" class="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium">[{{post.comment_count}}]</span>
                   </div>

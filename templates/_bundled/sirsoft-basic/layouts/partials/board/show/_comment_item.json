@@ -67,6 +67,20 @@
                                         "subTextTitle": "{{comment?.created_at ?? ''}}",
                                         "layout": "horizontal"
                                     }
+                                },
+                                {
+                                    "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다",
+                                    "type": "extension_point",
+                                    "name": "board_comment_row_badges",
+                                    "props": {
+                                        "className": "contents",
+                                        "data-extension-point": "board_comment_row_badges",
+                                        "commentData": "{{comment}}",
+                                        "commentId": "{{comment?.id}}",
+                                        "postId": "{{post?.data?.id}}",
+                                        "boardSlug": "{{route?.slug}}",
+                                        "context": "board_show_comment"
+                                    }
                                 }
                             ]
                         },
