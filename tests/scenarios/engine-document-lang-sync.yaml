@@ -7,14 +7,18 @@ description: |
   (밑줄 로케일은 서버 템플릿과 같이 하이픈으로 바꾼다).
   로그인 상태 부팅에서 화면 언어를 회원 언어로 다시 맞출 때(engine-v1.79.0)도 문서 언어를 맞춘다 — 그 경로가
   빠져 English·日本語 계정의 관리자 화면에서 `<html lang>` 이 ko 로 남았다(7.1.1 출시 전 실측).
+  회원 언어가 꺼진 언어면 화면은 사이트 기본 언어로 열린다(engine-v1.81.0) — 문서 언어도 회원 언어가 아니라 실제로 연
+  언어여야 한다(두 수정이 만난 자리, 7.1.1 리베이스에서 잠금).
 
 axes:
   entry: [boot_with_saved_locale, change_locale, boot_member_language]
-  locale_form: [plain, underscore]
+  locale_form: [plain, underscore, unsupported_member]
 
 exclusions:
   - { entry: boot_with_saved_locale, locale_form: underscore, reason: "시작 경로와 변경 경로가 같은 변환 함수를 쓰므로 밑줄 형태는 변경 경로 하나로 잠근다" }
   - { entry: boot_member_language, locale_form: underscore, reason: "회원 언어 맞춤도 같은 변환 함수(syncDocumentLang)를 쓰므로 밑줄 형태는 변경 경로 하나로 잠근다" }
+  - { entry: boot_with_saved_locale, locale_form: unsupported_member, reason: "회원 언어가 없는 경로 — 꺼진 저장 언어는 memberLocale 시험(stale_saved_locale_on_boot)이 잠근다" }
+  - { entry: change_locale, locale_form: unsupported_member, reason: "회원 언어 맞춤과 무관한 경로 — 고른 언어가 그대로 문서 언어다" }
 
 effects:
   - document_lang_follows_app_locale

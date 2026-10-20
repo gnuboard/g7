@@ -13,7 +13,7 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-mobile-sidebar-escape.test.tsx
 
 axes:
-  surface: [admin_base]   # 관리자 기반 레이아웃(_admin_base.json) 뿌리 노드
+  surface: [admin_base]   # 관리자 기반 레이아웃(_admin_base.g7.html) 뿌리 노드
 
 effects:
   - mobile_sidebar_closes_on_escape   # 열린 채 Esc → sidebarOpen=false, 닫혀 있으면 쓰지 않고 다른 키로는 닫지 않으며, 뿌리의 Escape 받기는 열림 조건 갈래 하나

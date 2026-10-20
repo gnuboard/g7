@@ -272,6 +272,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "칸 값을 편집 중인 배송지의 받는 사람(`_global.editingShippingAddress.recipient_name`)에 옮긴다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -323,6 +324,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "칸 값을 편집 중인 배송지의 연락처(`_global.editingShippingAddress.recipient_phone`)에 옮긴다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -459,6 +461,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "칸 값을 편집 중인 배송지의 상세 주소(`_global.editingShippingAddress.address_detail`)에 옮긴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {

@@ -18,4 +18,4 @@ test_files:
 validation:
   audit_rule: frontend-change-requires-e2e
   note: |
-    수정 전 red 대조(2026-10-19): HEAD 의 _currency_selector.json 에는 type·aria-expanded·aria-pressed 가 없어 세 시험 모두 빨개진다.
+    수정 전 red 대조(2026-10-19): HEAD 의 _currency_selector.g7.html 에는 type·aria-expanded·aria-pressed 가 없어 세 시험 모두 빨개진다.

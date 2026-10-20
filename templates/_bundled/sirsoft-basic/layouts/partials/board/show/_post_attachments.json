@@ -24,6 +24,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "누를 때마다 첨부파일 목록을 접고 편다(처음은 펼침)",
                             "type": "click",
                             "handler": "setState",
                             "params": {

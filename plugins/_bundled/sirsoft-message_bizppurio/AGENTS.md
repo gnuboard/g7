@@ -215,7 +215,7 @@ HookManager::addAction(
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 46개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
-| Vitest | 21개 | `vitest.config.ts` |
+| Vitest | 24개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 26개 | `tests/scenarios` |
 

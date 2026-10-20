@@ -89,6 +89,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "트리거를 누르면 통화 목록을 열고 닫는다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {

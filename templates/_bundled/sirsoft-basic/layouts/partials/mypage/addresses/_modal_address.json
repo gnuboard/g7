@@ -208,6 +208,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "칸 값을 편집 중인 배송지의 받는 사람(`_global.editingAddress.recipient_name`)에 옮긴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -281,6 +282,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "칸 값을 편집 중인 배송지의 연락처(`_global.editingAddress.recipient_phone`)에 옮긴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -458,6 +460,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "칸 값을 편집 중인 배송지의 주소 1줄(`_global.editingAddress.address_line_1`)에 옮긴다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -480,6 +483,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "칸 값을 편집 중인 배송지의 주소 2줄(`_global.editingAddress.address_line_2`)에 옮긴다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -509,6 +513,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "칸 값을 편집 중인 배송지의 도시(`_global.editingAddress.intl_city`)에 옮긴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -531,6 +536,7 @@
                                     "name": "Input",
                                     "actions": [
                                         {
+                                            "comment": "칸 값을 편집 중인 배송지의 주·지역(`_global.editingAddress.intl_state`)에 옮긴다",
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
@@ -555,6 +561,7 @@
                             "name": "Input",
                             "actions": [
                                 {
+                                    "comment": "칸 값을 편집 중인 배송지의 우편번호(`_global.editingAddress.intl_postal_code`)에 옮긴다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -612,6 +619,7 @@
                             },
                             "actions": [
                                 {
+                                    "comment": "칸 값을 편집 중인 배송지의 상세 주소(`_global.editingAddress.address_detail`)에 옮긴다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {

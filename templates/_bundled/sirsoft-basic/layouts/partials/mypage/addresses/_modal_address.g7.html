@@ -52,6 +52,7 @@
           <input aria-label="$t:mypage.addresses.form.recipient" type="text" name="recipient_name" value="{{_global.editingAddress?.recipient_name ?? ''}}" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" error="{{_local.addressErrors?.recipient_name?.[0] ?? ''}}" class="{{_local.addressErrors?.recipient_name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
             <responsive on="portable" type="text" name="recipient_name" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="{{_local.addressErrors?.recipient_name ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"/>
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 받는 사람(`_global.editingAddress.recipient_name`)에 옮긴다 -->
               <set-state target="global" editingAddress.recipient_name="{{$event.target.value}}"/>
             </on>
           </input>
@@ -66,6 +67,7 @@
           <input aria-label="$t:mypage.addresses.form.phone" type="tel" name="recipient_phone" value="{{_global.editingAddress?.recipient_phone ?? ''}}" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" error="{{_local.addressErrors?.recipient_phone?.[0] ?? ''}}" class="{{_local.addressErrors?.recipient_phone ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
             <responsive on="portable" type="tel" name="recipient_phone" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="{{_local.addressErrors?.recipient_phone ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"/>
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 연락처(`_global.editingAddress.recipient_phone`)에 옮긴다 -->
               <set-state target="global" editingAddress.recipient_phone="{{$event.target.value}}"/>
             </on>
           </input>
@@ -106,28 +108,33 @@
         </label>
         <input aria-label="$t:mypage.addresses.form.address" type="text" name="address_line_1" value="{{_global.editingAddress?.address_line_1 ?? ''}}" placeholder="$t:shop.checkout.intl_address1_placeholder" class="{{_local.addressErrors?.address_line_1 ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
           <on type="change">
+            <!-- 칸 값을 편집 중인 배송지의 주소 1줄(`_global.editingAddress.address_line_1`)에 옮긴다 -->
             <set-state target="global" editingAddress.address_line_1="{{$event.target.value}}"/>
           </on>
         </input>
         <input aria-label="$t:shop.checkout.detail_address" type="text" name="address_line_2" value="{{_global.editingAddress?.address_line_2 ?? ''}}" placeholder="$t:shop.checkout.intl_address2_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
           <on type="change">
+            <!-- 칸 값을 편집 중인 배송지의 주소 2줄(`_global.editingAddress.address_line_2`)에 옮긴다 -->
             <set-state target="global" editingAddress.address_line_2="{{$event.target.value}}"/>
           </on>
         </input>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input aria-label="$t:shop.checkout.intl_city" type="text" name="intl_city" value="{{_global.editingAddress?.intl_city ?? ''}}" placeholder="$t:shop.checkout.intl_city_placeholder" class="{{_local.addressErrors?.intl_city ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 도시(`_global.editingAddress.intl_city`)에 옮긴다 -->
               <set-state target="global" editingAddress.intl_city="{{$event.target.value}}"/>
             </on>
           </input>
           <input aria-label="$t:shop.checkout.intl_state" type="text" name="intl_state" value="{{_global.editingAddress?.intl_state ?? ''}}" placeholder="$t:shop.checkout.intl_state_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 주·지역(`_global.editingAddress.intl_state`)에 옮긴다 -->
               <set-state target="global" editingAddress.intl_state="{{$event.target.value}}"/>
             </on>
           </input>
         </div>
         <input aria-label="$t:shop.checkout.intl_postal_code" type="text" name="intl_postal_code" value="{{_global.editingAddress?.intl_postal_code ?? ''}}" placeholder="$t:shop.checkout.intl_postal_code_placeholder" class="{{_local.addressErrors?.intl_postal_code ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
           <on type="change">
+            <!-- 칸 값을 편집 중인 배송지의 우편번호(`_global.editingAddress.intl_postal_code`)에 옮긴다 -->
             <set-state target="global" editingAddress.intl_postal_code="{{$event.target.value}}"/>
           </on>
         </input>
@@ -139,6 +146,7 @@
         <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" value="{{_global.editingAddress?.address_detail ?? ''}}" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_local.addressErrors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
           <responsive on="portable" type="text" name="address_detail" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_local.addressErrors?.address_detail ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors text-base' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-base'}}"/>
           <on type="change">
+            <!-- 칸 값을 편집 중인 배송지의 상세 주소(`_global.editingAddress.address_detail`)에 옮긴다 -->
             <set-state target="global" editingAddress.address_detail="{{$event.target.value}}"/>
           </on>
         </input>

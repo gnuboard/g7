@@ -174,7 +174,8 @@ class AdminAbilitiesGateLayoutTest extends TestCase
         }
 
         $encoded = json_encode($tree, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $this->assertSame(2, substr_count($encoded, '"if":"{{notifications?.data?.abilities?.can_update === true}}"'));
+        // 알림 센터마다 클릭 읽음(onNotificationClick)과 새 탭으로 연 뒤 읽음(onNotificationRead, 7.1.1 링크 전환) 두 갈래 × 데스크톱·모바일
+        $this->assertSame(4, substr_count($encoded, '"if":"{{notifications?.data?.abilities?.can_update === true}}"'));
     }
 
     /**
@@ -296,7 +297,7 @@ class AdminAbilitiesGateLayoutTest extends TestCase
         $encode = fn (string $rel) => json_encode($this->layout($rel), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         $plugins = $encode('admin_plugin_list.json');
-        $this->assertStringContainsString("iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_update !== true", $plugins);
+        $this->assertStringContainsString("iconName: 'cog', href: p.settings_route, disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_update !== true", $plugins);
         $this->assertStringContainsString('plugins?.data?.abilities?.can_view_language_packs !== true', $plugins);
         $this->assertStringContainsString('modules?.data?.abilities?.can_view_language_packs !== true', $encode('admin_module_list.json'));
 

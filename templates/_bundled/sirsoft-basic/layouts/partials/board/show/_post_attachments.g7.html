@@ -5,6 +5,7 @@
     <h3 class="mb-3">
       <button type="button" class="flex w-full items-center justify-between cursor-pointer text-left" aria-expanded="{{_local.showAttachments !== false}}">
         <on type="click">
+          <!-- 누를 때마다 첨부파일 목록을 접고 편다(처음은 펼침) -->
           <set-state target="local" showAttachments="{{_local.showAttachments === false ? true : false}}"/>
         </on>
         <span class="flex items-center gap-2">

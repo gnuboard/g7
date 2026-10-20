@@ -1091,6 +1091,7 @@
                             },
                             "children": [
                                 {
+                                    "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [

@@ -14,6 +14,7 @@
     },
     "children": [
         {
+            "comment": "창 본문 — 닫힐 때(unmount) 접수 상태와 타이머를 정리하는 자리를 겸한다",
             "type": "basic",
             "name": "Div",
             "lifecycle": {

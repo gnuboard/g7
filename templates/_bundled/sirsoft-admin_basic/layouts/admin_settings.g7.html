@@ -489,6 +489,7 @@
         <include src="partials/admin_settings/_tab_info.g7.html"/>
       </div>
       <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
+        <!-- 취소 — 저장하지 않은 변경을 버리고 받은 값으로 되돌린다 -->
         <button type="button" data-ref="cancel_button" class="btn btn-secondary">
           <on type="click">
             <sequence>

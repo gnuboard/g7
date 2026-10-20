@@ -5,7 +5,7 @@ description: |
   경고 등급은 화면 맨 아래 카드에 묻히지 않도록 상단 배너로 올라가 amber 로 그려지고, 그 밖의 알림은
   하단 카드에 남는다. 같은 알림이 두 곳에 함께 보이지 않고, 경고가 여러 건이면 모두 쌓인다.
   비어 있는 영역은 그리지 않으며, 상단으로 올라간 경고도 닫기 버튼을 그대로 갖는다.
-  실제 admin_dashboard.json 을 렌더해 확인한다.
+  실제 admin_dashboard.g7.html 을 렌더해 확인한다.
 
 # axis 의미:
 #   severity — 알림의 심각도. warning 은 상단 배너, info 는 하단 카드, unspecified 는 type 이 없는 알림(하단 회색).

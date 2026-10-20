@@ -66,6 +66,7 @@
             </label>
             <input aria-label="$t:mypage.addresses.form.recipient" type="text" name="recipient_name" value="{{_global.editingShippingAddress?.recipient_name ?? ''}}" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm">
               <on type="change">
+                <!-- 칸 값을 편집 중인 배송지의 받는 사람(`_global.editingShippingAddress.recipient_name`)에 옮긴다 -->
                 <set-state target="global" editingShippingAddress.recipient_name="{{$event.target.value}}"/>
               </on>
             </input>
@@ -77,6 +78,7 @@
             </label>
             <input aria-label="$t:mypage.addresses.form.phone" type="tel" name="recipient_phone" value="{{_global.editingShippingAddress?.recipient_phone ?? ''}}" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm">
               <on type="change">
+                <!-- 칸 값을 편집 중인 배송지의 연락처(`_global.editingShippingAddress.recipient_phone`)에 옮긴다 -->
                 <set-state target="global" editingShippingAddress.recipient_phone="{{$event.target.value}}"/>
               </on>
             </input>
@@ -109,6 +111,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
           <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" value="{{_global.editingShippingAddress?.address_detail ?? ''}}" placeholder="$t:mypage.addresses.form.detail_placeholder" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors text-sm">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 상세 주소(`_global.editingShippingAddress.address_detail`)에 옮긴다 -->
               <set-state target="global" editingShippingAddress.address_detail="{{$event.target.value}}"/>
             </on>
           </input>

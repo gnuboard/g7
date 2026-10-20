@@ -8,7 +8,7 @@ description: |
 
 axes:
   surface:
-    - notification_channels_card   # plugin_settings.json 의 gdpr_cancel_channels_{{defIdx}} 단추
+    - notification_channels_card   # plugin_settings.g7.html 의 gdpr_cancel_channels_{{defIdx}} 단추
 
 effects:
   - channel_cancel_clears_pending_values     # 취소 뒤 임시 채널 값이 {} — 고친 정의 키가 남지 않는다

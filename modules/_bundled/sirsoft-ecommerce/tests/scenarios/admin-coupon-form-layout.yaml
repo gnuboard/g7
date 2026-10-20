@@ -1,7 +1,7 @@
 feature: 관리자 쿠폰 등록/수정 화면 레이아웃 계약
 
 description: |
-  관리자 쿠폰 폼(admin_ecommerce_promotion_coupon_form.json)과 네 카드 partial(기본 정보·혜택 설정·발급 설정·사용 조건)이
+  관리자 쿠폰 폼(admin_ecommerce_promotion_coupon_form.g7.html)과 네 카드 partial(기본 정보·혜택 설정·발급 설정·사용 조건)이
   지키는 화면 계약. 상태 기본값·데이터소스·수정 모드 매핑(initLocal)·저장 시퀀스, 선택지가 백엔드 Enum 과 같은 값인지,
   선택에 따라 보이고 숨는 필드와 값 초기화, 다국어 입력, 상품 검색(무한 스크롤 포함)·카테고리 선택의 이벤트·응답 필드 계약,
   다국어 키 네임스페이스, 다크 모드 대비, 백엔드 요청 필드명 일치, 카드 본문 간격을 실제 레이아웃 JSON 으로 확인한다.

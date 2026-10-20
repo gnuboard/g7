@@ -4,7 +4,7 @@ description: |
   플러그인 새 버전이 현재 코어와 호환되지 않으면(is_compatible=false) 업데이트 창은 코어 호환성 안내와
   「경고를 이해했으며 강제로 업데이트합니다」 체크박스를 보이고, 그 체크박스를 켜기 전까지 진행 버튼을 막는다.
   체크박스는 _global.pluginForceUpdate 를 토글하고, 진행 버튼은 그 값을 업데이트 요청 본문의 force 로 보낸다.
-  호환되는 버전이면 안내와 체크박스 없이 바로 진행할 수 있다. 실제 _modal_update.json partial 을 렌더해 확인한다.
+  호환되는 버전이면 안내와 체크박스 없이 바로 진행할 수 있다. 실제 _modal_update.g7.html partial 을 렌더해 확인한다.
 
 # axis 의미:
 #   core_compat — 새 버전과 현재 코어의 호환 여부. incompatible 은 강제 체크가 필요한 경로, compatible 은 바로 진행하는 경로.

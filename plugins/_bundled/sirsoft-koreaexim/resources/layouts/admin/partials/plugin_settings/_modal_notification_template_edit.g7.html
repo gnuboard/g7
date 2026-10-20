@@ -290,6 +290,7 @@
           </button>
         </div>
         <div class="flex gap-2">
+          <!-- 취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다 -->
           <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.koreaexim_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <close-modal target="modal_koreaexim_notification_template_edit"/>

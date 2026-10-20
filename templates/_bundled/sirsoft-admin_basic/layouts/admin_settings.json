@@ -1164,6 +1164,7 @@
                         },
                         "children": [
                             {
+                                "comment": "취소 — 저장하지 않은 변경을 버리고 받은 값으로 되돌린다",
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",

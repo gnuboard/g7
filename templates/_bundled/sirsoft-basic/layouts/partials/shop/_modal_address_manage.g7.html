@@ -187,6 +187,7 @@
           </label>
           <input aria-label="$t:mypage.addresses.form.label" type="text" name="name" value="{{_global.checkoutAddressModal?.editing?.name ?? ''}}" placeholder="$t:mypage.addresses.form.label_placeholder" :required="true" class="{{_global.checkoutAddressModal?.errors?.name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 배송지 이름(`_global.checkoutAddressModal.editing.name`)에 옮긴다 -->
               <set-state target="global" checkoutAddressModal.editing.name="{{$event.target.value}}"/>
             </on>
           </input>
@@ -197,6 +198,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
           <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_global.checkoutAddressModal?.editing?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 국가(`_global.checkoutAddressModal.editing.country_code`)에 옮긴다 -->
               <set-state target="global" checkoutAddressModal.editing.country_code="{{$event.target.value}}"/>
             </on>
           </select>
@@ -212,6 +214,7 @@
             </label>
             <input aria-label="$t:mypage.addresses.form.recipient" type="text" name="recipient_name" value="{{_global.checkoutAddressModal?.editing?.recipient_name ?? ''}}" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="{{_global.checkoutAddressModal?.errors?.recipient_name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
               <on type="change">
+                <!-- 칸 값을 편집 중인 배송지의 받는 사람(`_global.checkoutAddressModal.editing.recipient_name`)에 옮긴다 -->
                 <set-state target="global" checkoutAddressModal.editing.recipient_name="{{$event.target.value}}"/>
               </on>
             </input>
@@ -225,6 +228,7 @@
             </label>
             <input aria-label="$t:mypage.addresses.form.phone" type="tel" name="recipient_phone" value="{{_global.checkoutAddressModal?.editing?.recipient_phone ?? ''}}" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="{{_global.checkoutAddressModal?.errors?.recipient_phone ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
               <on type="change">
+                <!-- 칸 값을 편집 중인 배송지의 연락처(`_global.checkoutAddressModal.editing.recipient_phone`)에 옮긴다 -->
                 <set-state target="global" checkoutAddressModal.editing.recipient_phone="{{$event.target.value}}"/>
               </on>
             </input>
@@ -260,28 +264,33 @@
         <div data-if="{{(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') !== 'KR'}}" class="space-y-2">
           <input aria-label="$t:shop.checkout.intl_address" type="text" name="address_line_1" value="{{_global.checkoutAddressModal?.editing?.address_line_1 ?? ''}}" placeholder="$t:shop.checkout.intl_address1_placeholder" class="{{_global.checkoutAddressModal?.errors?.address_line_1 ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 주소 1줄(`_global.checkoutAddressModal.editing.address_line_1`)에 옮긴다 -->
               <set-state target="global" checkoutAddressModal.editing.address_line_1="{{$event.target.value}}"/>
             </on>
           </input>
           <input aria-label="$t:shop.checkout.detail_address" type="text" name="address_line_2" value="{{_global.checkoutAddressModal?.editing?.address_line_2 ?? ''}}" placeholder="$t:shop.checkout.intl_address2_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 주소 2줄(`_global.checkoutAddressModal.editing.address_line_2`)에 옮긴다 -->
               <set-state target="global" checkoutAddressModal.editing.address_line_2="{{$event.target.value}}"/>
             </on>
           </input>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input aria-label="$t:shop.checkout.intl_city" type="text" name="intl_city" value="{{_global.checkoutAddressModal?.editing?.intl_city ?? ''}}" placeholder="$t:shop.checkout.intl_city_placeholder" class="{{_global.checkoutAddressModal?.errors?.intl_city ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
               <on type="change">
+                <!-- 칸 값을 편집 중인 배송지의 도시(`_global.checkoutAddressModal.editing.intl_city`)에 옮긴다 -->
                 <set-state target="global" checkoutAddressModal.editing.intl_city="{{$event.target.value}}"/>
               </on>
             </input>
             <input aria-label="$t:shop.checkout.intl_state" type="text" name="intl_state" value="{{_global.checkoutAddressModal?.editing?.intl_state ?? ''}}" placeholder="$t:shop.checkout.intl_state_placeholder" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
               <on type="change">
+                <!-- 칸 값을 편집 중인 배송지의 주·지역(`_global.checkoutAddressModal.editing.intl_state`)에 옮긴다 -->
                 <set-state target="global" checkoutAddressModal.editing.intl_state="{{$event.target.value}}"/>
               </on>
             </input>
           </div>
           <input aria-label="$t:shop.checkout.intl_postal_code" type="text" name="intl_postal_code" value="{{_global.checkoutAddressModal?.editing?.intl_postal_code ?? ''}}" placeholder="$t:shop.checkout.intl_postal_code_placeholder" class="{{_global.checkoutAddressModal?.errors?.intl_postal_code ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 우편번호(`_global.checkoutAddressModal.editing.intl_postal_code`)에 옮긴다 -->
               <set-state target="global" checkoutAddressModal.editing.intl_postal_code="{{$event.target.value}}"/>
             </on>
           </input>
@@ -292,6 +301,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
           <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" value="{{_global.checkoutAddressModal?.editing?.address_detail ?? ''}}" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_global.checkoutAddressModal?.errors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}">
             <on type="change">
+              <!-- 칸 값을 편집 중인 배송지의 상세 주소(`_global.checkoutAddressModal.editing.address_detail`)에 옮긴다 -->
               <set-state target="global" checkoutAddressModal.editing.address_detail="{{$event.target.value}}"/>
             </on>
           </input>

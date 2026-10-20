@@ -1,7 +1,7 @@
 feature: GDPR 마이페이지 동의 관리 카드 — 주입 · 고지 메타 · 동의 행 · 철회/동의 창 · 정책 갱신 안내
 
 description: |
-  마이페이지 프로필에 주입되는 GDPR 동의 관리 카드(extensions/mypage_privacy_tab.json)의 화면 계약.
+  마이페이지 프로필에 주입되는 GDPR 동의 관리 카드(extensions/mypage_privacy_tab.g7.html)의 화면 계약.
   카드는 mypage/profile 의 profile_view_bio_card 에 붙고, 회원에게 동의 데이터가 있을 때만 보인다. 운영 주체·저장 위치
   고지는 헤더 다음 줄에 값 유무에 따른 자연어 한 줄로 보인다. 동의 행은 라벨·설명·상태 배지·날짜 줄을 보이고,
   철회·동의는 확인 창을 거쳐 서버에 보낸 뒤 목록을 다시 받고 코어 동의 런타임을 갱신한다. 정책이 바뀌면 카드 안

@@ -38,7 +38,7 @@
 
 회귀 잠금: `template-engine/__tests__/TemplateApp.routeSupersedeAndRefresh.test.tsx`(13 — 실물 Router·TemplateApp·DataSourceManager. 렌더 주기 예산 2건(화면 이동 1회의 `startRenderCycle` ≤ 수정 전 엔진, 응답 시차 하네스 9 — 받는 중 표시를 다른 화면 이월 소스에 걸고 해제를 따로 내면 15). 수정 전 엔진으로 결함 7 red · 가드 2 green, 갈래별 되돌림 onSuccess 세대 2 red·입력 잠금 1 red·마지막 값 재시딩 1 red·경로 없음 정리 1 red) · `TemplateApp.reentryErrorPage.test.ts`(밀린 이동의 세대 증가 반영).
 
-## [engine-v1.81.2] - 2026-10-19
+## [engine-v1.81.2] - 2026-10-20
 
 ### Changed
 
@@ -62,7 +62,7 @@
 - 모달에서 페이지(첫 모달을 연 화면)의 `_local` 에 쓴 값(`$parent._local`·`$root._local` setState, `G7Core.state.setLocal({ scope: 'parent' | 'root' })`)이 페이지 저장소 A 에만 들어가 화면은 바뀌는데 `getLocal()`·커스텀 핸들러·이탈 가드 등 저장소 B 를 읽는 쪽은 옛 값을 보던 문제(레이아웃은 전역 이중 쓰기로 피해 왔다). 대상이 페이지면 쓴 키만 live B 에 얹는다 — 모달 자신의 상태는 넣지 않고(종전 보호 유지), 중첩 모달의 `$parent`(모달)는 그대로다. `setParentLocal` 과 같은 계약이 됐다. 발생: 모달 부모 스코프 쓰기 도입 이래(7.1.0 포함). 회귀 잠금: `dual-store-mirror-contract.test.tsx` 「모달 $parent._local 쓰기」 쌍 (ActionDispatcher.ts `handleParentScopeSetState`·`mirrorPageScopeLocalWrite`, G7CoreGlobals.ts `setLocal` scope 분기)
 - apiCall 이 끝나도 로딩 플래그(`_local.loadingActions` 의 `apiCall_…: true`)가 남아 호출마다 쌓이고(같은 화면 반복 시 `_local` 단조 증가), 「하나라도 true 면 잠금」 으로 읽는 소비자(LoginForm 꼴)가 첫 요청 뒤 풀리지 않던 문제. 해제를 클릭 시점 사본에서 키를 생략한 객체로 써서 렌더러의 깊은 병합이 키를 지우지 못했고, 남은 플래그가 A 전용 키 보충으로 저장소 B 에 옮겨졌다. 시작·해제를 최신 상태 위 함수형 갱신(`__g7MergeMode: 'shallow'`)으로 쓰고, 해제 때와 동작이 끝날 때 정본 B·pending·getLocal 대체 스냅샷에서도 끝난 플래그를 뺀다(겹친 요청의 진행 중 키·레이아웃 키는 유지, 전역 폴백 문맥의 `_global.loadingActions` 도 같은 갱신). setState 없는 문맥이 연 창의 부모 문맥 writer 는 함수형 갱신을 지금 `_local` 로 풀어 쓴다(종전에는 `_local` 자리에 함수가 들어갔다). 발생: 7.0.0-beta.1 부터(B 누적은 7.1.0 포함). 회귀 잠금: `ActionDispatcher.apiCallLoadingFlags.test.tsx`·`dual-store-mirror-contract.test.tsx` 「apiCall 로딩 플래그 해제」 쌍 (ActionDispatcher.ts, 새 helpers/loadingFlags.ts)
 
-## [engine-v1.81.1] - 2026-10-18
+## [engine-v1.81.1] - 2026-10-20
 
 ### Added
 

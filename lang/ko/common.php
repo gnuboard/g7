@@ -501,7 +501,7 @@ return [
                 'no_admin' => '관리자 사용자가 없습니다. AdminUserSeeder를 먼저 실행해주세요.',
                 'done' => '템플릿 레이아웃 버전 시더가 성공적으로 생성되었습니다.',
                 'cleaned' => '기존 샘플 레이아웃 버전 :count건을 삭제했습니다.',
-                'version_created' => '레이아웃 \':layout\'의 버전 :version이 생성되었습니다.',
+                'version_created' => '레이아웃 \':layout\'의 :version 버전이 생성되었습니다.',
             ],
             'template' => [
                 'no_admin_template' => '설치된 관리자 템플릿이 없습니다. 관리자 템플릿을 먼저 설치하세요 — 레이아웃 버전 샘플을 건너뜁니다.',

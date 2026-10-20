@@ -24,4 +24,4 @@ effects:
 validation:
   audit_rule: frontend-change-requires-e2e
   note: |
-    수정 전 red 대조(2026-10-19): HEAD 의 _modal_notification_template_form.json 에는 query.exclude_withdrawn 이 없어 첫 단언이 빨개진다.
+    수정 전 red 대조(2026-10-19): HEAD 의 _modal_notification_template_form.g7.html 에는 query.exclude_withdrawn 이 없어 첫 단언이 빨개진다.

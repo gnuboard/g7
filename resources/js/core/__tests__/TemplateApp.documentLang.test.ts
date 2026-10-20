@@ -1,3 +1,4 @@
+// e2e:allow 부팅 직후 회원 언어 맞춤의 문서 언어 값 잠금 — 런타임 코드 무변경(7.1.1 리베이스 합집합 지점), 화면 확인 절차는 리베이스 이력 엔진 절
 /**
  * TemplateApp — 문서 언어(`<html lang>`) 동기화 테스트
  *
@@ -206,5 +207,33 @@ describe('TemplateApp — <html lang> 동기화', () => {
 
     expect(app.getLocale()).toBe(member);
     expect(document.documentElement.lang).toBe(member);
+  });
+
+  /**
+   * 회원 언어가 꺼진 언어면 화면은 사이트 기본 언어로 열린다(engine-v1.81.0). 문서 언어도 그 값이어야 한다 —
+   * 회원 언어(`ja`)를 그대로 쓰면 화면은 영어인데 `<html lang="ja">` 로 갈린다(두 수정이 만난 자리, 7.1.1 리베이스).
+   *
+   * @scenario entry=boot_member_language, locale_form=unsupported_member
+   * @effects document_lang_follows_app_locale
+   */
+  it('꺼진 회원 언어로 부팅을 맞추면 <html lang> 은 회원 언어가 아니라 실제로 연 사이트 기본 언어다', async () => {
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'], siteLocale: 'en' } };
+    try {
+      document.documentElement.lang = 'ko';
+      store['g7_locale'] = 'ko';
+      mockMember('ja');
+      vi.mocked(globalThis.fetch).mockImplementation(async (url: any) => ({
+        ok: true,
+        json: async () => ({ success: true, data: String(url).includes('/routes') ? { routes: [] } : {} }),
+      }) as unknown as Response);
+
+      const app = new TemplateApp({ ...baseConfig, templateType: 'admin', locale: 'ko' });
+      await app.init();
+
+      expect(app.getLocale()).toBe('en');
+      expect(document.documentElement.lang).toBe('en');
+    } finally {
+      delete (window as any).G7Config;
+    }
   });
 });

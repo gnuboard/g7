@@ -11,9 +11,9 @@ description: |
 
 axes:
   surface:
-    - modal           # partials/shop/detail/_modal_cart_added.json
-    - show_layout     # shop/show.json (modals 등록·init_actions)
-    - purchase_card   # partials/shop/detail/_purchase_card.json (담기 onSuccess)
+    - modal           # partials/shop/detail/_modal_cart_added.g7.html
+    - show_layout     # shop/show.g7.html (modals 등록·init_actions)
+    - purchase_card   # partials/shop/detail/_purchase_card.g7.html (담기 onSuccess)
 
 effects:
   - cart_added_modal_structure_and_text               # Modal id·다국어 제목·문구·체크 아이콘·다크 모드 색

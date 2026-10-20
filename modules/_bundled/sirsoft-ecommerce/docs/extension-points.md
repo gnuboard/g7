@@ -490,7 +490,7 @@
 | `sirsoft-ecommerce.review.update_status_validation_messages` | filter | — | `src/Http/Requests/Admin/UpdateReviewStatusRequest.php:51` |
 | `sirsoft-ecommerce.review.update_status_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateReviewStatusRequest.php:36` |
 | `sirsoft-ecommerce.search.brand.index_should_update` | filter | — | `src/Models/Brand.php:151` |
-| `sirsoft-ecommerce.search.category.index_should_update` | filter | — | `src/Models/Category.php:599` |
+| `sirsoft-ecommerce.search.category.index_should_update` | filter | — | `src/Models/Category.php:612` |
 | `sirsoft-ecommerce.search.coupon.index_should_update` | filter | — | `src/Models/Coupon.php:518` |
 | `sirsoft-ecommerce.search.product.index_should_update` | filter | — | `src/Models/Product.php:709` |
 | `sirsoft-ecommerce.search.product_common_info.index_should_update` | filter | — | `src/Models/ProductCommonInfo.php:179` |

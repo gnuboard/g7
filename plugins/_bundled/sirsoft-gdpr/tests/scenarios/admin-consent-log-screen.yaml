@@ -1,7 +1,7 @@
 feature: GDPR 관리자 동의 이력 화면 — 필터 · 주체 열 · 정책 버전 · 카테고리 스냅샷 · 액션 배지
 
 description: |
-  관리자 동의 이력 레이아웃(gdpr_consent_log.json)이 지키는 화면 계약. 검색은 named_actions.searchConsentLogs
+  관리자 동의 이력 레이아웃(gdpr_consent_log.g7.html)이 지키는 화면 계약. 검색은 named_actions.searchConsentLogs
   (navigate) 한 곳에서 _local.filter 의 모든 키를 query 로 넘긴다. 체크박스 필터는 setState 뒤 검색을 잇는
   sequence 로 즉시 적용되고, 이메일·세션 ID 텍스트 입력은 검색 버튼·Enter 로만 적용된다. 회원 행은 회원 상세로
   이동하고 게스트 행은 이동하지 않는다. 정책 버전은 평문으로 보이고 값이 있을 때만 본문 보기 버튼이 스냅샷 창을 연다.
