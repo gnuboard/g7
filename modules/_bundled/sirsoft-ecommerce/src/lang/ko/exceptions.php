@@ -226,11 +226,9 @@ return [
         'not_retryable' => '실패한 작업만 다시 요청할 수 있습니다.',
         'no_rows' => '지금 조건에 맞는 행이 없어 다시 요청하지 않았습니다. 목록에서 기간이나 검색 조건을 바꿔 새로 요청하세요.',
         'download_link_expired' => '다운로드 주소가 만료됐거나 이미 사용됐습니다. 내보내기 관리에서 파일명을 다시 누르세요.',
-        'ecommerce_unavailable' => '이커머스 모듈이 꺼져 있어 내보내기를 만들 수 없습니다. 이커머스 모듈을 켠 뒤 다시 요청하세요.',
         'scope_denied' => '다른 운영자가 요청한 내보내기입니다. 전체 내보내기 관리 권한이 필요합니다.',
         'domain_permission_required' => '이 파일의 원본 데이터를 볼 권한이 없습니다.',
         'declaration_missing_personal' => ':model 의 내보내기 선언 :column 에 personal(개인정보 여부)이 없습니다.',
         'declaration_invalid_type' => ':model 의 내보내기 선언 :column 의 type 이 올바르지 않습니다.',
-        'source_unavailable' => '이커머스 목록 조건을 읽을 수 없습니다(:class). 이커머스 모듈 버전을 확인하세요.',
     ],
 ];

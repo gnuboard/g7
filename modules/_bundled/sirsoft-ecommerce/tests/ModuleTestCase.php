@@ -509,7 +509,10 @@ abstract class ModuleTestCase extends TestCase
      * 컬렉션이 `CompiledRouteCollection` 이 되는데, 그 위에 fluent `->name()` 으로 등록한
      * 라우트는 add 시점에 이름이 비어 있고 `refreshNameLookups()` 가 no-op 이라 **매칭은
      * 되지만 `route()`/서명 URL 생성에서 "Route not defined"** 가 된다. 전체를 일반
-     * `RouteCollection` 으로 옮겨 이름 조회를 재구축한다 — 캐시가 없으면 아무것도 하지 않는다.
+     * `RouteCollection` 으로 옮겨 이름 조회를 재구축한다.
+     *
+     * 캐시가 없어도 이름 조회는 다시 만든다 — 부팅 뒤에 붙인 라우트의 이름(`->name()`)은 조회표에 자동으로
+     * 들어가지 않아, 그대로 두면 일회용 주소(`exports.file`) 같은 `route()` 생성이 "Route not defined" 가 된다.
      *
      * @return void 반환값 없음
      */
@@ -518,6 +521,8 @@ abstract class ModuleTestCase extends TestCase
         $collection = Route::getRoutes();
 
         if (! $collection instanceof CompiledRouteCollection) {
+            $collection->refreshNameLookups();
+
             return;
         }
 

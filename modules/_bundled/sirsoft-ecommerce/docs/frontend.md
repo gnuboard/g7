@@ -736,4 +736,10 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 서버 로그도 남기지 않고 화면 기능만 조용히 사라지기 때문입니다. 자산 URL 을 문자열로 조립하지
 않고 `G7Core.asset.module` 을 쓰는 것도 같은 이유입니다 — 확장자를 정적 location 이 가로채는
 서버에서는 조립한 URL 만 404 가 됩니다.
+
+레이아웃의 안내·경고 글자색은 템플릿의 의미 색 클래스(`text-info-soft`·`text-warning-soft` 등)를
+빌려 쓰지 않고 `resources/css/main.css` 의 `ecommerce-tone-info-soft`·`ecommerce-tone-warning-soft` 등(다크 짝 포함)을
+씁니다. 템플릿 의미 클래스는 템플릿마다 이름·값이 달라 다른 관리자 템플릿에서는 색이 조용히 사라지기
+때문입니다. 접두 클래스는 색만 맡으므로 글자 크기(`text-xs` 등)는 레이아웃에 함께 적고, 새 의미 색이
+필요하면 같은 파일에 `ecommerce-tone-*` 로 더한 뒤 `--production` 으로 다시 굽습니다.
 <!-- @intent END -->

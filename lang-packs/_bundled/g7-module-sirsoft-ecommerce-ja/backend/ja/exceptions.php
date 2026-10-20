@@ -198,12 +198,10 @@ return [
         'processing_not_deletable' => '進行中の作業は削除できません。',
         'not_retryable' => '失敗した作業のみ再度要求できます。',
         'download_link_expired' => 'ダウンロードアドレスが期限切れまたは既に使用されています。エクスポート管理でファイル名をもう一度クリックしてください。',
-        'ecommerce_unavailable' => 'eコマースモジュールが無効になっているため、エクスポートを作成できません。eコマースモジュールを有効化した後、再度要求してください。',
         'scope_denied' => '別の管理者が要求したエクスポートです。全エクスポート管理権限が必要です。',
         'domain_permission_required' => 'このファイルの元のデータを表示する権限がありません。',
         'declaration_missing_personal' => ':model のエクスポート宣言 :column に personal(個人情報の有無)がありません。',
         'declaration_invalid_type' => ':model のエクスポート宣言 :column の type が正しくありません。',
-        'source_unavailable' => 'eコマース一覧条件を読み込むことができません(:class)。eコマースモジュールのバージョンを確認してください。',
         'no_rows' => '現在の条件に合致する行がないため、再度リクエストしませんでした。一覧から期間または検索条件を変更して新たにリクエストしてください。',
     ],
 ];

@@ -223,11 +223,9 @@ return [
         'not_retryable' => 'Only failed jobs can be requested again.',
         'no_rows' => 'No rows match these conditions now, so the export was not requested again. Change the period or search conditions in the list and request a new export.',
         'download_link_expired' => 'The download link has expired or was already used. Click the file name again in Export Management.',
-        'ecommerce_unavailable' => 'The ecommerce module is turned off, so the export cannot be created. Turn the ecommerce module on and request again.',
         'scope_denied' => 'This export was requested by another operator. Permission to manage all exports is required.',
         'domain_permission_required' => 'You do not have permission to view the source data of this file.',
         'declaration_missing_personal' => 'Export declaration :column of :model is missing "personal".',
         'declaration_invalid_type' => 'Export declaration :column of :model has an invalid "type".',
-        'source_unavailable' => 'Could not read the ecommerce list conditions (:class). Check the ecommerce module version.',
     ],
 ];

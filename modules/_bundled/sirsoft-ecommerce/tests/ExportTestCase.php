@@ -55,10 +55,6 @@ abstract class ExportTestCase extends ModuleTestCase
 
         Storage::fake('modules');
 
-        // 모듈 테스트 기반은 라우트 캐시가 있을 때만 이름 조회를 다시 만든다 — 캐시가 없으면 부팅 뒤에 붙인
-        // 라우트의 이름(`->name()`)이 조회표에 없어 일회용 주소(`exports.file`)를 route() 로 만들지 못한다
-        app('router')->getRoutes()->refreshNameLookups();
-
         // 출처는 부팅 때 모듈 관리자가 쓰는 식별자와 같아야 한다 — 등록기가 「출처 + 클래스」로 중복을 거르므로,
         // 설치본이 이미 리스너를 등록한 환경에서 다른 출처로 또 등록하면 같은 훅이 두 번 돈다(활동 로그 2건)
         foreach ([ExportActivityLogListener::class, ExportActivityLogDescriptionResolver::class, ExportNotificationDataListener::class] as $listener) {
