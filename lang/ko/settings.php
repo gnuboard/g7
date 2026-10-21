@@ -476,6 +476,8 @@ return [
         ],
         'vendor' => [
             'install_failed' => '개발자 패키지(custom/vendor) 설치에 실패했습니다 — 개발자 화면이 패키지를 못 찾을 수 있습니다: :reason',
+            'no_composer_json' => 'custom/composer.json 이 없습니다 — 먼저 `composer require <패키지> -d custom` 으로 개발자 패키지를 설치하세요.',
+            'no_bundle_zip' => 'custom/vendor-bundle.zip 이 없습니다 — `php artisan custom:vendor-bundle` 로 먼저 만드세요.',
         ],
     ],
 ];

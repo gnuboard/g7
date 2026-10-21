@@ -406,6 +406,13 @@ return [
                 'dashboard_menu_missing' => 'ダッシュボードメニュー(admin-dashboard)が見つからないため、マネージャーのメニュー権限の付与をスキップします。',
                 'manager_dashboard_granted' => 'マネージャーロールにダッシュボードメニュー権限を付与しました。',
             ],
+            'core_schedule' => [
+                'start' => 'コアスケジュールのシーディングを開始...',
+                'no_catalog' => 'config/core.php に schedules カタログがありません。',
+                'skipped' => '  - :name をスキップ: :errors',
+                'removed' => '  - カタログから外れたコアスケジュール :count 個を整理',
+                'done' => 'コアスケジュールのシーディング完了 (:count 件)',
+            ],
             'database' => [
                 'sample_start' => 'コアサンプルシーダーの実行開始',
                 'sample_done' => 'コアサンプルシーダーの実行完了',

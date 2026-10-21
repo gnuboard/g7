@@ -421,6 +421,13 @@ return [
                 'dashboard_menu_missing' => 'Dashboard menu (admin-dashboard) not found; skipping the manager menu permission grant.',
                 'manager_dashboard_granted' => 'Granted the dashboard menu permission to the manager role.',
             ],
+            'core_schedule' => [
+                'start' => 'Seeding core schedules...',
+                'no_catalog' => 'No schedules catalog is declared in config/core.php.',
+                'skipped' => '  - :name skipped: :errors',
+                'removed' => '  - Cleaned up :count core schedule(s) removed from the catalog',
+                'done' => 'Core schedules seeded (:count)',
+            ],
             'database' => [
                 'sample_start' => 'Running core sample seeders',
                 'sample_done' => 'Core sample seeders finished',

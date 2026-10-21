@@ -476,6 +476,8 @@ return [
         ],
         'vendor' => [
             'install_failed' => 'Failed to install developer packages (custom/vendor) — developer screens may not find their packages: :reason',
+            'no_composer_json' => 'custom/composer.json does not exist — install developer packages first with `composer require <package> -d custom`.',
+            'no_bundle_zip' => 'custom/vendor-bundle.zip does not exist — create it first with `php artisan custom:vendor-bundle`.',
         ],
     ],
 ];

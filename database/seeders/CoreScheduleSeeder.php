@@ -30,11 +30,11 @@ class CoreScheduleSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command?->info('코어 스케줄 시딩 시작...');
+        $this->command?->info(__('common.console.seeders.core_schedule.start'));
 
         $catalog = config('core.schedules', []);
         if (! is_array($catalog) || $catalog === []) {
-            $this->command?->warn('config/core.php 에 schedules 카탈로그가 없습니다.');
+            $this->command?->warn(__('common.console.seeders.core_schedule.no_catalog'));
 
             return;
         }
@@ -48,12 +48,12 @@ class CoreScheduleSeeder extends Seeder
         );
 
         foreach ($result['skipped'] as $name => $errors) {
-            $this->command?->warn("  - {$name} 건너뜀: ".implode(' / ', $errors));
+            $this->command?->warn(__('common.console.seeders.core_schedule.skipped', ['name' => $name, 'errors' => implode(' / ', $errors)]));
         }
         if ($result['removed'] > 0) {
-            $this->command?->line("  - 카탈로그에서 빠진 코어 스케줄 {$result['removed']}개 정리");
+            $this->command?->line(__('common.console.seeders.core_schedule.removed', ['count' => $result['removed']]));
         }
 
-        $this->command?->info('코어 스케줄 시딩 완료 ('.count($result['synced']).'건)');
+        $this->command?->info(__('common.console.seeders.core_schedule.done', ['count' => count($result['synced'])]));
     }
 }

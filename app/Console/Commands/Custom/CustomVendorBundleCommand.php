@@ -38,7 +38,7 @@ class CustomVendorBundleCommand extends Command
     public function handle(VendorBundler $bundler): int
     {
         if (! is_file(base_path('custom/composer.json'))) {
-            $this->warn('custom/composer.json 이 없습니다 — 먼저 `composer require <패키지> -d custom` 으로 개발자 패키지를 설치하세요.');
+            $this->warn(__('settings.custom_reserved.vendor.no_composer_json'));
 
             return self::SUCCESS;
         }

@@ -421,6 +421,13 @@ return [
                 'dashboard_menu_missing' => '대시보드 메뉴(admin-dashboard)를 찾을 수 없어 매니저 메뉴 권한 부여를 건너뜁니다.',
                 'manager_dashboard_granted' => '매니저 역할에 대시보드 메뉴 권한을 부여했습니다.',
             ],
+            'core_schedule' => [
+                'start' => '코어 스케줄 시딩 시작...',
+                'no_catalog' => 'config/core.php 에 schedules 카탈로그가 없습니다.',
+                'skipped' => '  - :name 건너뜀: :errors',
+                'removed' => '  - 카탈로그에서 빠진 코어 스케줄 :count개 정리',
+                'done' => '코어 스케줄 시딩 완료 (:count건)',
+            ],
             'database' => [
                 'sample_start' => '코어 샘플 시더 실행 시작',
                 'sample_done' => '코어 샘플 시더 실행 완료',

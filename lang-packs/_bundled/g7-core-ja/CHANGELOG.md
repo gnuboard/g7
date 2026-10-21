@@ -16,6 +16,7 @@
 - 큐 관리 화면의 응답·검증 문구(대기·실패 작업 조회, 재시도·삭제 결과, 처리 기록 정리)의 일본어 번역을 추가했습니다.
 - 코어 예약 작업 32종의 이름과 설명 일본어 번역을 추가했습니다. 스케줄 관리 화면에서 일본어로 표시됩니다.
 - 스케줄 보안 정책 조회 응답 문구와 서버 관리자 덮어쓰기 파일(`storage/app/schedule_security.json`) 형식 오류 안내 9종, 큐 대기·실패·처리 기록 목록 정렬 검증 문구와 항목 이름의 일본어 번역을 추가했습니다.
+- 코어 스케줄 시딩(`common.console.seeders.core_schedule.*` — 시작·카탈로그 없음·건너뜀·정리·완료)과 개발자 패키지 명령(`custom:vendor-bundle`·`custom:vendor-verify`)의 「custom/composer.json 없음」「custom/vendor-bundle.zip 없음」 안내(`settings.custom_reserved.vendor.no_composer_json`·`no_bundle_zip`) 콘솔 출력의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
 
 ### Changed
 

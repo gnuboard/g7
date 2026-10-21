@@ -419,6 +419,8 @@ return [
         ],
         'vendor' => [
             'install_failed' => '開発者パッケージ(custom/vendor)のインストールに失敗しました — 開発者画面がパッケージを見つけられない可能性があります: :reason',
+            'no_composer_json' => 'custom/composer.json がありません — 先に `composer require <パッケージ> -d custom` で開発者パッケージをインストールしてください。',
+            'no_bundle_zip' => 'custom/vendor-bundle.zip がありません — 先に `php artisan custom:vendor-bundle` で作成してください。',
         ],
     ],
 ];

@@ -34,7 +34,7 @@ class CustomVendorVerifyCommand extends Command
     public function handle(VendorIntegrityChecker $checker): int
     {
         if (! is_file(base_path('custom/'.VendorIntegrityChecker::ZIP_FILENAME))) {
-            $this->warn('custom/vendor-bundle.zip 이 없습니다 — `php artisan custom:vendor-bundle` 로 먼저 만드세요.');
+            $this->warn(__('settings.custom_reserved.vendor.no_bundle_zip'));
 
             return self::SUCCESS;
         }
