@@ -146,6 +146,7 @@
                     ],
                     "props": {
                         "name": "bulk_status",
+                        "aria-label": "$t:admin.schedules.bulk.select_status",
                         "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "value": "{{_global.bulkStatusAction ?? ''}}",
                         "disabled": "{{schedules?.data?.abilities?.can_update !== true}}",
@@ -526,9 +527,12 @@
             ],
             "props": {
                 "selectedCountText": "",
+                "rowLabelField": "label_localized",
                 "data": "{{schedules?.data?.data}}",
                 "pagination": true,
                 "serverSidePagination": true,
+                "pageHref": "/admin/schedules?page={page}",
+                "pageHrefMergeQuery": true,
                 "serverCurrentPage": "{{schedules?.data?.pagination?.current_page ?? 1}}",
                 "serverTotalPages": "{{schedules?.data?.pagination?.last_page ?? null}}",
                 "serverHasMorePages": "{{schedules?.data?.pagination?.has_more_pages ?? false}}",
@@ -542,7 +546,7 @@
                 "visibleColumns": "{{_global.visibleColumns_admin_schedules}}",
                 "responsiveBreakpoint": 768,
                 "actionsColumnHeader": "$t:common.actions",
-                "emptyMessage": "$t:admin.schedules.empty",
+                "emptyMessage": "{{schedules === undefined ? '' : $t('admin.schedules.empty')}}",
                 "rowActions": [
                     {
                         "id": "edit",
@@ -681,29 +685,44 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "실행 조건 미충족 배지 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다(즉시 실행은 된다). 첫 조건이 코어 환경설정이고\n                 그 탭이 있으면 그 탭으로 가는 링크다(가운데 클릭·새 탭 열기 — #757 링크화). 확장 설정·config 조건은 화면 위치가\n                 정해져 있지 않아 누를 수 없는 배지로 이름만 보인다(마우스를 올리면 키).",
+                                                "id": "schedule_condition_unmet_link",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
+                                                "if": "{{row.unmet_conditions[0]?.source === 'core_setting' && ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0])}}",
                                                 "actions": [
                                                     {
-                                                        "comment": "실행 조건 미충족 배지 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다(즉시 실행은 된다). 첫 조건이 코어 환경설정이고\n                     그 탭이 있으면 그 탭으로 간다. 확장 설정·config 조건은 화면 위치가 정해져 있지 않아 이름만 보인다(마우스를 올리면 키).",
                                                         "type": "click",
-                                                        "handler": "conditions",
-                                                        "conditions": [
-                                                            {
-                                                                "if": "{{row.unmet_conditions[0]?.source === 'core_setting' && ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0])}}",
-                                                                "then": {
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/settings",
-                                                                        "query": "{{ {tab: row.unmet_conditions[0].key.split('.')[0]} }}"
-                                                                    }
-                                                                }
-                                                            }
-                                                        ]
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
+                                                    "href": "{{'/admin/settings?tab=' + (row.unmet_conditions[0]?.key ?? '').split('.')[0]}}",
+                                                    "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:underline",
+                                                    "title": "{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "triangle-exclamation",
+                                                            "className": "text-xs"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.schedules.condition_unmet"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "schedule_condition_unmet_badge",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!(row.unmet_conditions[0]?.source === 'core_setting' && ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0]))}}",
+                                                "props": {
                                                     "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
                                                     "title": "{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}"
                                                 },

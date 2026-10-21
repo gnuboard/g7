@@ -42,7 +42,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" data-ref="queue_logs_grid" data="{{queue_logs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{queue_logs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{queue_logs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{queue_logs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="$t:admin.schedules.queue.empty.logs">
+    <data-grid data-type="composite" data-ref="queue_logs_grid" data="{{queue_logs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules/queue?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{queue_logs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{queue_logs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{queue_logs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{queue_logs === undefined ? '' : $t('admin.schedules.queue.empty.logs')}}">
       <blur-until-loaded sources="queue_logs"/>
       <column field="display_name" header="$t:admin.schedules.queue.columns.job" :sortable="false" :required="true">
         <cell>

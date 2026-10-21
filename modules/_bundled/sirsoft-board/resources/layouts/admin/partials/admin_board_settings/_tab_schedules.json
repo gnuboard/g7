@@ -161,7 +161,7 @@
                         "selectable": false,
                         "showColumnSelector": false,
                         "responsiveBreakpoint": 768,
-                        "emptyMessage": "$t:sirsoft-board.admin.settings.schedules.empty",
+                        "emptyMessage": "{{boardSchedules === undefined ? '' : $t('sirsoft-board.admin.settings.schedules.empty')}}",
                         "columns": [
                             {
                                 "field": "name",

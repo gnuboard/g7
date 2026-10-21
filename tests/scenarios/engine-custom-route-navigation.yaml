@@ -26,4 +26,5 @@ effects:
   - non_custom_navigate_unchanged
   - no_patterns_unchanged
   - custom_popstate_reloads
+  - custom_popstate_respects_leave_guard
   - menu_click_opens_custom_screen_full_page

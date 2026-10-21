@@ -56,6 +56,7 @@ import cancelOrderModal from '../../../layouts/admin/partials/admin_ecommerce_or
 import claimRequestModal from '../../../layouts/admin/partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json';
 import privacyTargetsModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_modal_privacy_targets.json';
 import extraFeeTemplateModal from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json';
+import schedulesTab from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_schedules.json';
 
 type Node = Record<string, any>;
 
@@ -83,6 +84,8 @@ const CASES: GridCase[] = [
   { screen: '상품 문의 목록', layout: inquiryIndex, source: 'inquiries', emptyKey: 'sirsoft-ecommerce.admin.inquiries.table.empty' },
   { screen: '찜 목록', layout: wishlistIndex, source: 'wishlists', emptyKey: 'sirsoft-ecommerce.admin.wishlists.table.empty' },
   { screen: '상품 후기 목록', layout: reviewIndex, source: 'reviews', emptyKey: 'sirsoft-ecommerce.admin.product_review.table.empty' },
+  // 환경설정 「스케줄」 탭(7.2.0) — develop-7.2.0 병합(2026-10-21)에서 전수 시험이 처음 만난 표
+  { screen: '환경설정 스케줄 탭', layout: schedulesTab, source: 'ecommerceSchedules', emptyKey: 'sirsoft-ecommerce.admin.settings.schedules.empty' },
 ];
 
 /** 스텁이 쓰는 기본 빈 문구 — 실제 DataGrid 의 `t('common.no_data')` 자리 */

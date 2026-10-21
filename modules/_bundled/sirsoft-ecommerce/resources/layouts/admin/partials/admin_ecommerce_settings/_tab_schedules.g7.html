@@ -35,7 +35,7 @@
           </div>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="ecommerce_schedules_grid" data="{{ecommerceSchedules?.data?.data}}" :pagination="false" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.settings.schedules.empty">
+      <data-grid data-type="composite" data-ref="ecommerce_schedules_grid" data="{{ecommerceSchedules?.data?.data}}" :pagination="false" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{ecommerceSchedules === undefined ? '' : $t('sirsoft-ecommerce.admin.settings.schedules.empty')}}">
         <blur-until-loaded sources="ecommerceSchedules"/>
         <column field="name" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.name" :sortable="false" :required="true">
           <cell>

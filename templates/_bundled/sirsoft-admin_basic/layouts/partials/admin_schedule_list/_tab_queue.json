@@ -369,17 +369,20 @@
                         "tabs": [
                             {
                                 "id": "pending",
+                                "href": "/admin/schedules/queue?view=pending",
                                 "label": "$t:admin.schedules.queue.views.pending",
                                 "iconName": "hourglass-half"
                             },
                             {
                                 "id": "failed",
+                                "href": "/admin/schedules/queue?view=failed",
                                 "label": "$t:admin.schedules.queue.views.failed",
                                 "iconName": "circle-xmark",
                                 "badge": "{{queue_status?.data?.failed_count ?? 0}}"
                             },
                             {
                                 "id": "logs",
+                                "href": "/admin/schedules/queue?view=logs",
                                 "label": "$t:admin.schedules.queue.views.logs",
                                 "iconName": "list-check"
                             }

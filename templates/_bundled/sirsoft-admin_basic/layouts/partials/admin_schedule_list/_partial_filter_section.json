@@ -313,6 +313,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:admin.schedules.filter.owner_select",
                                                 "options": "{{(schedule_owners?.data ?? []).filter(o => o.type === _local.filter.ownerType).map(o => ({ value: o.identifier, label: o.name, description: o.identifier + ' · ' + $t('admin.schedules.filter.owner_schedule_count') + ' ' + o.schedule_count }))}}",
                                                 "value": "{{_local.filter.ownerIdentifier || ''}}",
                                                 "triggerLabel": "$t:admin.schedules.filter.owner_select",
@@ -2355,6 +2356,7 @@
                             ],
                             "props": {
                                 "name": "searchField",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-32",
                                 "value": "{{_local.filter.searchField || 'all'}}",
                                 "options": [

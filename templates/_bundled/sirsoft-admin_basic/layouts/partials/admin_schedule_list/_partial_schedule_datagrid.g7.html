@@ -44,7 +44,7 @@
       </dropdown>
     </responsive>
     <span data-ref="selected_count" class="text-body font-medium whitespace-nowrap">$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}</span>
-    <select name="bulk_status" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_global.bulkStatusAction ?? ''}}" disabled="{{schedules?.data?.abilities?.can_update !== true}}">
+    <select name="bulk_status" aria-label="$t:admin.schedules.bulk.select_status" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_global.bulkStatusAction ?? ''}}" disabled="{{schedules?.data?.abilities?.can_update !== true}}">
       <options>
         <option value="" disabled>$t:admin.schedules.bulk.select_status</option>
         <option value="active">$t:admin.schedules.status.active</option>
@@ -113,7 +113,7 @@
       </select>
     </div>
   </div>
-  <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true || schedules?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedScheduleIds || []}}" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_schedules}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions" emptyMessage="$t:admin.schedules.empty">
+  <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" rowLabelField="label_localized" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true || schedules?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedScheduleIds || []}}" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_schedules}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions" emptyMessage="{{schedules === undefined ? '' : $t('admin.schedules.empty')}}">
     <blur-until-loaded sources="schedules"/>
     <column field="name" header="$t:admin.schedules.columns.name" width="280px" :sortable="false" :required="true">
       <cell>
@@ -150,19 +150,20 @@
           <span class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.name}}</span>
           <code class="block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate">{{row.command}}</code>
           <div data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" class="mt-1">
-            <button type="button" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}">
+            <!-- 실행 조건 미충족 배지 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다(즉시 실행은 된다). 첫 조건이 코어 환경설정이고
+                 그 탭이 있으면 그 탭으로 가는 링크다(가운데 클릭·새 탭 열기 — #757 링크화). 확장 설정·config 조건은 화면 위치가
+                 정해져 있지 않아 누를 수 없는 배지로 이름만 보인다(마우스를 올리면 키). -->
+            <a data-ref="schedule_condition_unmet_link" data-if="{{row.unmet_conditions[0]?.source === 'core_setting' &amp;&amp; ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0])}}" href="{{'/admin/settings?tab=' + (row.unmet_conditions[0]?.key ?? '').split('.')[0]}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:underline" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}">
               <on type="click">
-                <!-- 실행 조건 미충족 배지 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다(즉시 실행은 된다). 첫 조건이 코어 환경설정이고
-                     그 탭이 있으면 그 탭으로 간다. 확장 설정·config 조건은 화면 위치가 정해져 있지 않아 이름만 보인다(마우스를 올리면 키). -->
-                <conditions>
-                  <when if="{{row.unmet_conditions[0]?.source === 'core_setting' &amp;&amp; ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0])}}">
-                    <navigate path="/admin/settings" query="{{ {tab: row.unmet_conditions[0].key.split('.')[0]} }}"/>
-                  </when>
-                </conditions>
+                <navigate/>
               </on>
               <icon name="triangle-exclamation" class="text-xs"/>
               <span>$t:admin.schedules.condition_unmet</span>
-            </button>
+            </a>
+            <span data-ref="schedule_condition_unmet_badge" data-if="{{!(row.unmet_conditions[0]?.source === 'core_setting' &amp;&amp; ['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'identity', 'privacy'].includes((row.unmet_conditions[0]?.key ?? '').split('.')[0]))}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}">
+              <icon name="triangle-exclamation" class="text-xs"/>
+              <span>$t:admin.schedules.condition_unmet</span>
+            </span>
           </div>
         </div>
       </cell>

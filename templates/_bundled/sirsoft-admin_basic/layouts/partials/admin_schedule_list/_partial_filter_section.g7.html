@@ -71,7 +71,7 @@
           <!-- 확장 선택 — 쿠폰 「만든 사람」 필터와 같은 검색 선택 상자. 소유가 모듈·플러그인일 때만 보이고 그 종류의 확장만 나온다.
                선택지는 owners API(확장 이름은 현재 언어로 해석됨)이고, 아래 작은 글씨는 「식별자 · 스케줄 N」이다. -->
           <div data-ref="owner_identifier_holder" data-if="{{['module', 'plugin'].includes(_local.filter.ownerType)}}" class="flex-center gap-2">
-            <searchable-dropdown data-type="composite" data-ref="owner_identifier_dropdown" options="{{(schedule_owners?.data ?? []).filter(o => o.type === _local.filter.ownerType).map(o => ({ value: o.identifier, label: o.name, description: o.identifier + ' · ' + $t('admin.schedules.filter.owner_schedule_count') + ' ' + o.schedule_count }))}}" value="{{_local.filter.ownerIdentifier || ''}}" triggerLabel="$t:admin.schedules.filter.owner_select" searchPlaceholder="$t:admin.schedules.filter.owner_search" noResultsText="$t:common.no_results" class="w-64">
+            <searchable-dropdown data-type="composite" data-ref="owner_identifier_dropdown" aria-label="$t:admin.schedules.filter.owner_select" options="{{(schedule_owners?.data ?? []).filter(o => o.type === _local.filter.ownerType).map(o => ({ value: o.identifier, label: o.name, description: o.identifier + ' · ' + $t('admin.schedules.filter.owner_schedule_count') + ' ' + o.schedule_count }))}}" value="{{_local.filter.ownerIdentifier || ''}}" triggerLabel="$t:admin.schedules.filter.owner_select" searchPlaceholder="$t:admin.schedules.filter.owner_search" noResultsText="$t:common.no_results" class="w-64">
               <responsive on="portable" class="w-full"/>
               <on type="change" event="onChange">
                 <!-- 확장 하나 고르기. 값은 식별자(예: sirsoft-board)다 — 검색이 extension_identifier 로 싣는다. -->
@@ -537,7 +537,7 @@
       <responsive on="portable" class="row-stack mb-4"/>
       <div data-ref="search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
         <responsive on="portable" class="flex gap-2 w-full"/>
-        <select data-ref="search_field_select" name="searchField" class="w-32" value="{{_local.filter.searchField || 'all'}}">
+        <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.filter.searchField || 'all'}}">
           <responsive on="portable" class="w-24"/>
           <options>
             <option value="all">$t:admin.schedules.search_fields.all</option>

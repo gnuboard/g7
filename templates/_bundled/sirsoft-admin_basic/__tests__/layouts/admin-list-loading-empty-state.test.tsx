@@ -87,7 +87,11 @@ const CASES: Case[] = [
   { screen: '본인인증 로그 표', file: 'partials/admin_identity_logs/_partial_datagrid.json', find: { id: 'identity_log_datagrid' }, source: 'identityLogs', kind: 'grid', emptyKey: 'common.no_data', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
   { screen: '회원 알림 표', file: 'partials/admin_member_notification_list/_partial_datagrid.json', find: { id: 'member_notification_datagrid' }, source: 'memberNotifications', kind: 'grid', emptyKey: 'admin.member_notification.empty_message', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
   { screen: '알림 발송 로그 표', file: 'partials/admin_notification_log_list/_partial_datagrid.json', find: { id: 'notification_log_datagrid' }, source: 'notificationLogs', kind: 'grid', emptyKey: 'common.no_data', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
-  { screen: '스케줄 목록 표', file: 'partials/admin_schedule_list/_tab_schedules.json', find: { id: 'schedules_data_grid' }, source: 'schedules', kind: 'grid', emptyKey: 'common.no_data', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
+  // 스케줄 목록 표는 7.2.0 에서 _partial_schedule_datagrid 로 옮겨지고 큐 관리 표 3개가 생겼다(develop-7.2.0 병합 2026-10-21).
+  { screen: '스케줄 목록 표', file: 'partials/admin_schedule_list/_partial_schedule_datagrid.json', find: { id: 'schedules_data_grid' }, source: 'schedules', kind: 'grid', emptyKey: 'admin.schedules.empty', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
+  { screen: '큐 대기 작업 표', file: 'partials/admin_schedule_list/_queue_pending_grid.json', find: { id: 'queue_pending_grid' }, source: 'queue_pending', kind: 'grid', emptyKey: 'admin.schedules.queue.empty.pending', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
+  { screen: '큐 실패 작업 표', file: 'partials/admin_schedule_list/_queue_failed_grid.json', find: { id: 'queue_failed_grid' }, source: 'queue_failed', kind: 'grid', emptyKey: 'admin.schedules.queue.empty.failed', empty: list([]), rows: list([{ uuid: 'a' }, { uuid: 'b' }]) },
+  { screen: '큐 처리 기록 표', file: 'partials/admin_schedule_list/_queue_logs_grid.json', find: { id: 'queue_logs_grid' }, source: 'queue_logs', kind: 'grid', emptyKey: 'admin.schedules.queue.empty.logs', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
 
   // ── 빈 안내(EmptyState·문단) ──
   { screen: '봇 분석 · 봇별 집계 빈 안내', file: 'admin_analytics_bots.json', find: { name: 'EmptyState', ifIncludes: 'analytics_bots' }, source: 'analytics_bots', kind: 'node', empty: list([]), rows: list([{ id: 1 }]) },

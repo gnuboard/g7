@@ -411,9 +411,12 @@
             ],
             "props": {
                 "selectedCountText": "",
+                "rowLabelField": "display_name",
                 "data": "{{queue_failed?.data?.data}}",
                 "pagination": true,
                 "serverSidePagination": true,
+                "pageHref": "/admin/schedules/queue?page={page}",
+                "pageHrefMergeQuery": true,
                 "serverCurrentPage": "{{queue_failed?.data?.pagination?.current_page ?? 1}}",
                 "serverTotalPages": "{{queue_failed?.data?.pagination?.last_page ?? null}}",
                 "serverHasMorePages": "{{queue_failed?.data?.pagination?.has_more_pages ?? false}}",
@@ -426,7 +429,7 @@
                 "showColumnSelector": false,
                 "responsiveBreakpoint": 768,
                 "actionsColumnHeader": "$t:common.actions",
-                "emptyMessage": "$t:admin.schedules.queue.empty.failed",
+                "emptyMessage": "{{queue_failed === undefined ? '' : $t('admin.schedules.queue.empty.failed')}}",
                 "rowActions": [
                     {
                         "id": "detail",

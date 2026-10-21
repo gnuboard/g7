@@ -9,6 +9,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Router } from '../Router';
 import { isCustomRoutePath, normalizeCustomRoutePath } from '../CustomRouteMatcher';
+import { configureLeaveGuard, resetLeaveGuardForTests, shouldConfirmLeave } from '../LeaveGuard';
+import { DataBindingEngine } from '../../template-engine/DataBindingEngine';
 
 vi.mock('../../auth/AuthManager', () => ({
   AuthManager: { getInstance: vi.fn() },
@@ -165,5 +167,45 @@ describe('Router — custom 주소 전체 페이지 이동', () => {
     window.dispatchEvent(new PopStateEvent('popstate'));
     expect(reload).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * 이탈 가드(engine-v1.82.0)와 custom 주소 재적재(engine-v1.83.0)가 같은 popstate 에서 만나는 순서 —
+   * `navigate` 와 같이 가드를 먼저 묻고, 머무르기면 다시 적재하지 않고 확정 주소를 다시 쌓는다.
+   * 떠나기를 고르면 재적재하며, 이미 허락했으므로 beforeunload 가 다시 묻지 않는다(develop-7.2.0 병합 2026-10-21).
+   *
+   * @scenario case=popstate
+   * @effects custom_popstate_respects_leave_guard
+   */
+  it('이탈 가드가 참이면 custom 주소 popstate 도 먼저 묻고, 머무르면 재적재하지 않는다', () => {
+    const engine = new DataBindingEngine();
+    configureLeaveGuard({
+      getLayoutJson: () => ({ layout_name: 'board/form', meta: { leave_guard: '{{_local.hasChanges === true}}' }, components: [] }),
+      getDataContext: () => ({ route: {}, query: {} }),
+      getBindingEngine: () => engine,
+      translate: (key: string) => key,
+    });
+    (window as any).G7Core = { state: { get: () => ({ _local: { hasChanges: true } }), getLocal: () => ({ hasChanges: true }) } };
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const spy = vi.spyOn(router, 'navigateToCurrentPath').mockResolvedValue(undefined);
+
+    try {
+      (window as any).location.pathname = '/board/free/3';
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      expect(confirmSpy).toHaveBeenCalledTimes(1);
+      expect(reload).not.toHaveBeenCalled();
+      expect(pushState).toHaveBeenCalledTimes(1);
+      expect(spy).not.toHaveBeenCalled();
+
+      confirmSpy.mockReturnValue(true);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      expect(confirmSpy).toHaveBeenCalledTimes(2);
+      expect(reload).toHaveBeenCalledTimes(1);
+      expect(shouldConfirmLeave()).toBe(false);
+    } finally {
+      confirmSpy.mockRestore();
+      resetLeaveGuardForTests();
+      delete (window as any).G7Core;
+    }
   });
 });

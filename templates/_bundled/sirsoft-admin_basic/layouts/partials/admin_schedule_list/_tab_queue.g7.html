@@ -70,9 +70,9 @@
     <div data-ref="queue_subtab_wrapper" class="mb-4">
       <tab-navigation data-type="composite" data-ref="queue_subtab_navigation" activeTabId="{{query.view || 'pending'}}" variant="underline">
         <prop name="tabs">
-          <item id="pending" label="$t:admin.schedules.queue.views.pending" iconName="hourglass-half"/>
-          <item id="failed" label="$t:admin.schedules.queue.views.failed" iconName="circle-xmark" badge="{{queue_status?.data?.failed_count ?? 0}}"/>
-          <item id="logs" label="$t:admin.schedules.queue.views.logs" iconName="list-check"/>
+          <item id="pending" href="/admin/schedules/queue?view=pending" label="$t:admin.schedules.queue.views.pending" iconName="hourglass-half"/>
+          <item id="failed" href="/admin/schedules/queue?view=failed" label="$t:admin.schedules.queue.views.failed" iconName="circle-xmark" badge="{{queue_status?.data?.failed_count ?? 0}}"/>
+          <item id="logs" href="/admin/schedules/queue?view=logs" label="$t:admin.schedules.queue.views.logs" iconName="list-check"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- 하위 탭 전환 — 세 하위 탭이 함께 받는 조건(검색어·큐·연결)은 지금 걸린 값(query)으로 이어 가고, 그 탭만 받는 조건(처리 결과·기간)

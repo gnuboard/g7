@@ -161,7 +161,7 @@
                         "selectable": false,
                         "showColumnSelector": false,
                         "responsiveBreakpoint": 768,
-                        "emptyMessage": "$t:sirsoft-ecommerce.admin.settings.schedules.empty",
+                        "emptyMessage": "{{ecommerceSchedules === undefined ? '' : $t('sirsoft-ecommerce.admin.settings.schedules.empty')}}",
                         "columns": [
                             {
                                 "field": "name",

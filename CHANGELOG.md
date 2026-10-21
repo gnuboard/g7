@@ -8,6 +8,7 @@
 
 ### Added
 
+- 코어 스케줄 시딩과 개발자 패키지 명령(`custom:vendor-bundle`·`custom:vendor-verify`)의 콘솔 안내가 사이트 언어(ko·en·ja)로 나옵니다.
 #### 개발자 화면 자리(custom 예약 자리)
 
 - 그누보드7 화면 대신 개발자가 직접 만든 화면(Blade·HTML+jQuery·외부 프레임워크)을 쓸 수 있는 예약 자리를 마련했습니다 — `routes/custom.php`·`app/Custom`·`resources/views/custom`·`public/custom`·`lang/custom`·`config/custom.php`·`database/migrations/custom`·`custom/`. 코어 업데이트는 이 자리를 덮지도 지우지도 않으며, 업데이트 패키지에 이 자리의 파일이 들어 있으면 시작 전에 멈춥니다(`G7_UPDATE_RESERVED_PATHS` 로 목록 조정). 사용법은 `docs/custom-development.md` 에 정리했습니다.

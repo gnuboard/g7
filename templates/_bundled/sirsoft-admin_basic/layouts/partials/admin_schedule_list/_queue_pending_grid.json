@@ -206,6 +206,8 @@
                         "data": "{{queue_pending?.data?.data}}",
                         "pagination": true,
                         "serverSidePagination": true,
+                        "pageHref": "/admin/schedules/queue?page={page}",
+                        "pageHrefMergeQuery": true,
                         "serverCurrentPage": "{{queue_pending?.data?.pagination?.current_page ?? 1}}",
                         "serverTotalPages": "{{queue_pending?.data?.pagination?.last_page ?? null}}",
                         "serverHasMorePages": "{{queue_pending?.data?.pagination?.has_more_pages ?? false}}",
@@ -215,7 +217,7 @@
                         "selectable": false,
                         "showColumnSelector": false,
                         "responsiveBreakpoint": 768,
-                        "emptyMessage": "$t:admin.schedules.queue.empty.pending",
+                        "emptyMessage": "{{queue_pending === undefined ? '' : $t('admin.schedules.queue.empty.pending')}}",
                         "columns": [
                             {
                                 "field": "display_name",
