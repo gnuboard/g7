@@ -1,6 +1,6 @@
 // e2e:allow 레이아웃 계약 단위 테스트 자체다 — 화면 동작은 세션2 재실측(83행 → 1행)이 브라우저로 쟀다
 /**
- * 회원 자동완성이 **지금 친 검색어의 목록만** 그리는지 잠근다 (T2-D1 · #599 3차 실측)
+ * 회원 자동완성이 **지금 친 검색어의 목록만** 그리는지 잠근다 (#599 실측)
  *
  * @description
  * 관리자 회원 검색 자동완성은 글자마다 요청을 내고 응답의 도착 순서는 보장되지 않는다.
@@ -75,10 +75,11 @@ describe('[case:state-global-autocomplete-stale-response-keyword] 회원 자동�
      * @effects member_search_stamps_the_keyword_the_response_carried
      */
     it('마일리지 수동 지급 창이 response.meta.keyword 로 도장한다', () => {
-        const stamps = setStateValues(manualTransactionModal, 'mileageManual.memberSearchResultsKeyword');
+        const stamps = setStateValues(manualTransactionModal, 'mileageManual');
 
         expect(stamps.length).toBeGreaterThan(0);
-        expect(stamps.some((v) => v.includes('response?.meta?.keyword'))).toBe(true);
+        // 도장은 이름 공간 전체를 쓰는 값 식 안의 `memberSearchResultsKeyword:` 자리에 있다(7.1.1 — 닫힌 뒤 도착한 응답이 이름 공간을 되살리지 않게)
+        expect(stamps.some((v) => v.includes('memberSearchResultsKeyword:') && v.includes('response?.meta?.keyword'))).toBe(true);
         // 되돌아가면 red — 도장을 입력칸에서 읽는 것이 결함 그 자체였다.
         expect(stamps.some((v) => v.includes('$event.target.value'))).toBe(false);
     });

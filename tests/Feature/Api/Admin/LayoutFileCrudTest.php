@@ -461,7 +461,7 @@ class LayoutFileCrudTest extends TestCase
     /**
      * 출처 차단 안내의 확장 종류가 내부 값(`module`)이 아니라 사용 언어로 보인다.
      *
-     * 실측 2026-10-06(7.1.0 전수 실측 I1): 코드 편집기에서 게시판 모듈 레이아웃을 지우려 하자
+     * 실측 2026-10-06(7.1.0 전수 실측): 코드 편집기에서 게시판 모듈 레이아웃을 지우려 하자
      * 「module(sirsoft-board)이(가) 제공한 레이아웃은 삭제할 수 없습니다.」 처럼 종류가 영어 원값으로 떴다.
      *
      * @scenario operation=delete, target=module_owned

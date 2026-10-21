@@ -17,6 +17,11 @@ export interface NotificationItem {
     time: string;
     read?: boolean;
     iconName?: IconName;
+    /**
+     * 알림의 이동 주소(응답 `url`) — 있으면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+     * 보통 클릭은 종전처럼 알림 클릭 콜백(이동·읽음 처리), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
+     */
+    url?: string | null;
     data?: Record<string, unknown>;
     onClick?: () => void;
 }
@@ -46,6 +51,11 @@ export interface NotificationCenterProps {
     unreadOnly?: boolean;
     /** 알림 클릭 핸들러 (알림 전체 객체 전달) */
     onNotificationClick?: (notification: NotificationItem) => void;
+    /**
+     * 링크 알림을 브라우저가 새 탭·새 창에서 열었을 때(Ctrl·Meta·Shift·가운데 클릭, 바깥 주소) — 이동 콜백
+     * (onNotificationClick)은 부르지 않으므로 읽음 처리만 여기로 알린다. 안 읽은 알림만, 읽음 권한(canUpdate)이 있을 때만 부른다.
+     */
+    onNotificationRead?: (notification: NotificationItem) => void;
     /** 드롭다운 닫힐 때 (뷰포트에 들어온 미읽음 알림 ID 목록 — READ_BATCH_MAX_IDS 건 단위로 나눠 여러 번 호출될 수 있음) */
     onClose?: (visibleUnreadIds: (string | number)[]) => void;
     /** 추가 로드 요청 */

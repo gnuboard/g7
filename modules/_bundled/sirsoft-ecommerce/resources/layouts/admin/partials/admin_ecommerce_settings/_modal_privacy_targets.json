@@ -35,7 +35,7 @@
                             "props": {
                                 "className": "text-label"
                             },
-                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.total|count={{privacyTargets?.data?.pagination?.total ?? 0}}"
+                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.total|count={{_global.privacyTargets?.loadFailed === true ? 0 : (privacyTargets?.data?.pagination?.total ?? 0)}}"
                         }
                     ]
                 },
@@ -43,7 +43,7 @@
                     "id": "privacy_targets_table",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(privacyTargets?.data?.data ?? []).length > 0}}",
+                    "if": "{{_global.privacyTargets?.loadFailed !== true && (privacyTargets?.data?.data ?? []).length > 0}}",
                     "props": {
                         "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
                     },
@@ -262,12 +262,25 @@
                     ]
                 },
                 {
+                    "comment": "받기 실패 안내 — 다시 받기 실패는 데이터소스 오류 처리가 남긴 표시로 가른다(엔진이 실패 값을 null 로 두지 않던 판에서는 처음이면 「받는 중」, 다시 열었으면 앞 명단이 남았다). 실패한 채 「대상이 없습니다」를 보이면 처리할 주문이 없다고 오해한다",
+                    "id": "privacy_targets_load_failed",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.privacyTargets?.loadFailed === true}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "py-6 text-center text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
+                },
+                {
+                    "comment": "빈 명단 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다",
                     "id": "privacy_targets_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(privacyTargets?.data?.data ?? []).length === 0}}",
+                    "if": "{{privacyTargets !== undefined && privacyTargets !== null && _global.privacyTargets?.loadFailed !== true && (privacyTargets?.data?.data ?? []).length === 0}}",
                     "props": {
-                        "className": "flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500 py-6"
+                        "className": "flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400 py-6"
                     },
                     "children": [
                         {

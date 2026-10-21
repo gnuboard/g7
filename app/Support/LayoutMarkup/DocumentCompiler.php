@@ -499,7 +499,8 @@ final class DocumentCompiler
                 // 표기 규칙은 액션 `<field name>`(G6)·`<prop>`(G3) 과 같은 `StructuredValueCompiler`.
                 $name = (string) $this->requiredAttribute($child, 'name', $path);
                 $this->assertDataSourceKeyUnset($child, $source, $name, $path);
-                $source[$name] = $this->values->compileChildren($child, $path);
+                // 자식 없는 `<field name :value>` 는 리프 값 (종전에는 값을 버리고 `[]`)
+                $source[$name] = $this->values->compileFieldValue($child, $path);
 
                 return;
         }

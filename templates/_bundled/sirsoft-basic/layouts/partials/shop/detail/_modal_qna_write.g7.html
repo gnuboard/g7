@@ -11,12 +11,12 @@
       </div>
       <!-- 이미지 없을 때 아이콘 placeholder -->
       <div data-if="{{!_global.qnaProductImage &amp;&amp; !!_global.qnaProductName}}" class="shrink-0 w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-        <icon name="box" class="text-gray-400 dark:text-gray-500"/>
+        <icon name="box" class="text-gray-500 dark:text-gray-300"/>
       </div>
       <div class="flex-1 min-w-0">
         <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{{_global.qnaProductName ?? ''}}</span>
         <!-- 작성일 (수정 모드일 때만) -->
-        <span data-if="{{!!_global.qnaEditId &amp;&amp; !!_global.qnaCreatedAt}}" class="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">$t:shop.qna.written_at|value={{_global.qnaCreatedAt | datetime}}</span>
+        <span data-if="{{!!_global.qnaEditId &amp;&amp; !!_global.qnaCreatedAt}}" class="block text-xs text-gray-500 dark:text-gray-300 mt-0.5">$t:shop.qna.written_at|value={{_global.qnaCreatedAt | datetime}}</span>
       </div>
     </div>
     <!-- 폼 본문 -->
@@ -41,7 +41,7 @@
       <!-- 문의 유형 (categories가 있을 때만 노출) -->
       <div data-if="{{(_global.qnaModalBoardSettings)?.categories &amp;&amp; (_global.qnaModalBoardSettings).categories.length > 0}}" class="space-y-1">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.qna.category</label>
-        <select class="{{(_global.qnaErrors?.category) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500'}}" value="{{_global.qnaForm.category ?? ''}}" options="{{[{ value: '', label: $t('shop.qna.category_placeholder') }].concat(((_global.qnaModalBoardSettings)?.categories ?? []).map(function(c) { return typeof c === 'object' ? { value: c.value, label: c.label ?? c.value } : { value: c, label: c }; }))}}" disabled="{{_global.qnaSubmitting}}">
+        <select aria-label="$t:shop.qna.category" class="{{(_global.qnaErrors?.category) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500'}}" value="{{_global.qnaForm.category ?? ''}}" options="{{[{ value: '', label: $t('shop.qna.category_placeholder') }].concat(((_global.qnaModalBoardSettings)?.categories ?? []).map(function(c) { return typeof c === 'object' ? { value: c.value, label: c.label ?? c.value } : { value: c, label: c }; }))}}" disabled="{{_global.qnaSubmitting}}">
           <on type="change">
             <!-- 문의 유형 — 고를 값은 게시판 설정에서 오므로 설정이 비면 이 줄이 통째로 사라진다 -->
             <set-state target="global">
@@ -51,12 +51,12 @@
             </set-state>
           </on>
         </select>
-        <span data-if="{{_global.qnaErrors?.category}}" class="text-red-500 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.category ?? [])[0] ?? ''}}</span>
+        <span data-if="{{_global.qnaErrors?.category}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.category ?? [])[0] ?? ''}}</span>
       </div>
       <!-- 제목 입력 -->
       <div class="space-y-1">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.qna.title</label>
-        <input type="text" class="{{(_global.qnaErrors?.title) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'}}" placeholder="$t:shop.qna.title_placeholder" value="{{_global.qnaForm.title ?? ''}}" disabled="{{_global.qnaSubmitting}}">
+        <input aria-label="$t:shop.qna.title" type="text" class="{{(_global.qnaErrors?.title) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500'}}" placeholder="$t:shop.qna.title_placeholder" value="{{_global.qnaForm.title ?? ''}}" disabled="{{_global.qnaSubmitting}}">
           <on event="onChange">
             <!-- 제목. 길이 제한은 화면에서 막지 않고 서버 검증 결과를 아래 오류 줄에 보여 준다 -->
             <set-state target="global">
@@ -66,12 +66,12 @@
             </set-state>
           </on>
         </input>
-        <span data-if="{{_global.qnaErrors?.title}}" class="text-red-500 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.title ?? [])[0] ?? ''}}</span>
+        <span data-if="{{_global.qnaErrors?.title}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.title ?? [])[0] ?? ''}}</span>
       </div>
       <!-- 문의 내용 -->
       <div class="space-y-1">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.qna.content</label>
-        <textarea class="{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}" placeholder="$t:shop.qna.content_placeholder" :rows="5" value="{{_global.qnaForm.content ?? ''}}" disabled="{{_global.qnaSubmitting}}">
+        <textarea aria-label="$t:shop.qna.content" class="{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}" placeholder="$t:shop.qna.content_placeholder" :rows="5" value="{{_global.qnaForm.content ?? ''}}" disabled="{{_global.qnaSubmitting}}">
           <on event="onChange">
             <!-- 본문. 제목과 같은 이유로 길이 판정은 서버에 맡긴다 -->
             <set-state target="global">
@@ -81,7 +81,7 @@
             </set-state>
           </on>
         </textarea>
-        <span data-if="{{_global.qnaErrors?.content}}" class="text-red-500 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}</span>
+        <span data-if="{{_global.qnaErrors?.content}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}</span>
       </div>
     </div>
     <!-- 모달 푸터 - 취소 / 등록 -->

@@ -146,7 +146,7 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
 
     public function run(): void
     {
-        $this->command->info('배송사 초기 데이터 동기화를 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.shipping_carrier.sync_start'));
 
         $helper = app(GenericEntitySyncHelper::class);
         $created = 0;
@@ -168,7 +168,7 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
                 $synced++;
             } else {
                 $created++;
-                $this->command->line("  - 배송사 생성: {$carrier['name']['ko']} ({$carrier['code']})");
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.shipping_carrier.created', ['name' => $carrier['name']['ko'], 'code' => $carrier['code']]));
             }
         }
 
@@ -202,6 +202,6 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
 
         $preserved = count($inUseCodes);
         $total = ShippingCarrier::count();
-        $this->command->info("배송사 동기화 완료: {$created}건 생성, {$synced}건 동기화, stale {$deleted}건 삭제, 사용 중 {$preserved}건 보존 (전체 {$total}건)");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.shipping_carrier.sync_done', ['created' => $created, 'synced' => $synced, 'deleted' => $deleted, 'preserved' => $preserved, 'total' => $total]));
     }
 }

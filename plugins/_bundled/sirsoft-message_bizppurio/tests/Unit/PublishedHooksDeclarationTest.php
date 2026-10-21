@@ -10,7 +10,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * 관리자 확장 관리의 플러그인 상세 창 「훅」·「필터」 칸과 확장 문서의 발행 훅 표는 `getHooks()` 선언을
  * 읽는다. 이 플러그인은 잔액 부족 훅(`balance.low`)을 발행하면서 선언하지 않아 상세 창이
- * 「제공하는 훅이 없습니다」로 보였다(2026-10-07 실측 O-M2-10). 소스에서 발행하는 훅이 모두 선언돼
+ * 「제공하는 훅이 없습니다」로 보였다(2026-10-07 실측). 소스에서 발행하는 훅이 모두 선언돼
  * 있고 유형·설명이 채워져 있는지 본다.
  */
 class PublishedHooksDeclarationTest extends PluginTestCase

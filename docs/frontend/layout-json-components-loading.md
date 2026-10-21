@@ -26,6 +26,47 @@
 ✅ 자동: 표현식이 truthy일 때 blur 효과 적용 (표현식 문자열인 경우)
 ```
 
+### 받는 중 판정
+
+빈 안내·「조회 중」·카드 그리드 `loading` 처럼 **받는 중과 받은 뒤를 가르는 식**은 데이터소스 값이 `undefined` 인지로 가른다.
+엔진은 데이터소스 값(API 응답)에 `loading`·`error` 같은 표식을 싣지 않는다 — 흐림 판정(`blur_until_loaded`)도 같은 기준이다.
+
+```text
+❌ {{users?.loading}} · {{!users?.loading && …}}                        — 늘 거짓/참이라 받는 중을 가르지 못한다
+❌ {{(users?.data?.data ?? []).length === 0}}                           — 받기 전에도 참 → 받는 동안 「없음」이 보인다
+✅ {{users === undefined}}                                              — 받는 중
+✅ {{users !== undefined && (users?.data?.data ?? []).length === 0}}    — 받은 뒤 0건(받기 실패 null 포함)
+✅ emptyMessage="{{users === undefined ? '' : $t('common.no_data')}}"  — 표 빈 문구
+❌ {{!!users?.error}}                                                    — 값에 error 가 없다 → 늘 거짓
+✅ {{!!_dataSourceErrors?.users}}                                       — 받기 실패(값은 null)
+```
+
+- 화면 진입 때 받기에 실패하면 값은 `null` 이 된다(`fallback` 을 선언했으면 그 값). `=== undefined` 로 가르면 실패 때 받는 중으로 남지 않는다 — `== null`·`!users` 로 쓰지 않는다.
+- `sequence` 안에서 `refetch-data-source` 를 **기다린 뒤** `open-modal` 하는 창은 열린 동안 받는 중이 없다. 열렸는데 값이 없으면 받기 실패(engine-v1.81.2 부터 refetch 실패는 값 `null`, 그 전에는 값을 바꾸지 않음)이므로 `undefined` 로 가리지 않고 안내를 보인다.
+- 금액·「무료배송」처럼 받은 값이 있어야 뜻이 생기는 표기는 받은 응답이 있을 때만 그린다(`{{!!order?.data && …}}`).
+- 반환값 상태표: [G7Core.state.getDataSource](state-management-advanced.md#g7corestategetdatasourcedatasourceid). 정적 검사 대상(위반 시 차단).
+
+### 폼을 채우는 소스의 받기 실패
+
+설정·수정 폼을 데이터소스로 채우는 화면(`initLocal` 이 `form`·`…Form` 을 채움)은 받기에 실패하면 **본문 오류 화면**을 띄운다.
+오류 처리가 없으면 엔진은 토스트만 띄우고 화면을 그려, 빈 폼이나 `fallback` 기본값으로 선 폼을 그대로 저장해 실제 값을 덮어쓸 수 있다.
+`fallback` 을 선언한 소스는 실패가 성공으로 처리되어 `_dataSourceErrors` 에도 남지 않으므로 레이아웃 조건으로는 실패를 가를 수 없다 — 오류 처리기만이 실패를 안다.
+
+```text
+❌ <data-source id="settings" … initLocal="form"/>                      — 실패하면 빈 폼이 서고 저장 단추가 산다
+❌ <data-source id="settings" … initLocal="form"><fallback>…</fallback>  — 실패가 기본값 폼으로 보인다
+✅ <data-source id="settings" … initLocal="form">
+     <error-handling>
+       <on-code code="403"><show-error-page target="content"/></on-code>
+       <default><show-error-page target="content"/></default>
+     </error-handling>
+   </data-source>
+```
+
+- 첫 설치·빈 설정처럼 「값이 없음」이 정상인 경우는 서버가 기본값을 담은 **성공 응답**으로 준다 — 실패와 섞지 않는다.
+- 저장·주문·편집이 이어지는 폼 밖의 소스(레이아웃 편집기 본문, 주문서, 장바구니 등)도 같은 방식이다.
+- 정적 검사 대상(위반 시 차단).
+
 ### 사용법
 
 #### 1. Boolean 값 (기본)
@@ -206,7 +247,7 @@
 | `true` (boolean) | `blur_until_loaded: true` | 데이터 소스 로딩 중 또는 페이지 전환 중 blur |
 | `false` (boolean) | `blur_until_loaded: false` | blur 미적용 |
 | 표현식 문자열 | `"{{_global.isSaving}}"` | 표현식 결과가 truthy일 때 blur |
-| 객체 (engine-v1.6.0+) | `{ enabled: true, data_sources: "users" }` | 지정된 데이터 소스가 undefined일 때 blur |
+| 객체 (engine-v1.6.0+) | `{ enabled: true, data_sources: "users" }` | 지정된 데이터 소스가 undefined일 때, 또는 앞 값을 둔 채 다시 받는 중일 때(같은 화면 쪽 넘김·검색 — engine-v1.82.0) blur |
 
 ### Blur 적용 조건
 
@@ -446,7 +487,9 @@
 
 - **트리거 1 — 페이지 진입**: handleRouteChange step 2.5 에서 `wait_for` 에 명시된 ID 중 progressive/blocking 데이터소스가 1개 이상 존재하면 오버레이 표시
 - **트리거 2 — 탭 전환/페이지네이션** (engine-v1.35.0+): `navigate replace:true` 로 `updateQueryParams` 경로에 진입할 때도 동일 조건으로 오버레이 표시. handleRouteChange 와 동일 정책으로 `wait_for` 검사 + 오버레이 호출
-- **해제**: 모든 progressive 데이터소스 fetch 완료 시 (hideTransitionOverlay 호출)
+- **해제** (engine-v1.82.0): 새 화면이 커밋되고 `wait_for` 에 명시한 소스가 모두 오면 걷는다. `wait_for` 가 없으면 커밋 직후 걷는다 — 다른 progressive·background 소스는 기다리지 않고 각 소스의 `blur_until_loaded`·`=== undefined` 조건이 받는 중을 보인다. 종전(engine-v1.81.2 이하)에는 모든 progressive·background 소스를 받을 때까지 그려진 화면 위에 남아 조작을 막았다.
+- **렌더 직전 한두 프레임**: 덮개 설정이 있는 화면은 레이아웃이 캐시돼 있어도 렌더 직전에 덮개를 붙였다가 커밋 뒤 걷는다(앞 화면 DOM 이 새 화면 커밋 전에 비치지 않게). 레이아웃 받기가 150ms 를 넘으면 그 사이에도 앞 화면 덮개 설정으로 덮개가 뜬다(engine-v1.81.2).
+- **받는 동안 앞 화면 입력 잠금** (engine-v1.82.0): 새 화면 폼을 blocking 응답의 initLocal 로 통째로 채우는 이동(같은 레이아웃의 글 수정 → 새 글 등)은 받는 동안 덮개 대상(`target` → `fallback_target`) 안의 앞 화면 내용에 `inert` 를 걸어 입력·포커스를 막고, 새 화면 렌더 뒤 푼다. 그 밖의 이동은 받는 동안 친 글자·포커스를 지킨다.
 - **존재하지 않는 ID**: 엔진이 자동 무시 (백엔드 검증과 별개로 런타임 안전 가드)
 
 #### 동적 target override (engine-v1.36.0+)

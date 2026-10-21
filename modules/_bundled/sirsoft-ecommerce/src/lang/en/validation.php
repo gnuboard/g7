@@ -663,6 +663,7 @@ return [
         'user_ids_required' => 'Please select members to issue the coupon to.',
         'user_ids_min' => 'Please select at least one member.',
         'user_ids_invalid' => 'One or more selected members do not exist.',
+        'user_withdrawn' => 'Coupons cannot be issued to a withdrawn member.',
     ],
 
     // Order validation messages (orders.* format - unified with FormRequest)
@@ -2256,6 +2257,7 @@ return [
         'user_required' => 'Please select a target member.',
         'amount_min' => 'The amount must be at least 1 point.',
         'action_invalid' => 'Only grant or deduct is allowed.',
+        'user_withdrawn' => 'Mileage cannot be granted to a withdrawn member.',
         'expires_at_invalid' => 'The expiry must be a valid date.',
         'duplicate_currency' => 'Duplicate currency code.',
         'first_must_be_default' => 'The first currency must be the default currency (:currency).',

@@ -4,6 +4,7 @@ return [
     // 액션 라벨 (마지막 세그먼트 기준).
     // ActivityLog::getActionLabelAttribute 가 모듈 origin 라벨을 자체 lang 에서 우선 조회.
     'action' => [
+        'reorder' => '순서 변경',
         'add' => '반응 등록',
         'add_to_menu' => '메뉴 추가',
         'blind' => '블라인드',
@@ -38,6 +39,7 @@ return [
         'board_copy' => '게시판 복사 (:board_name)',
         'board_add_to_menu' => '게시판 메뉴 추가 (:board_name)',
         'board_remove_from_menu' => '게시판 메뉴 제거 (:board_name)',
+        'board_reorder' => '게시판 순서 변경 (:count개)',
 
         // 게시판 유형 (Admin)
         'board_type_index' => '게시판 유형 목록 조회',

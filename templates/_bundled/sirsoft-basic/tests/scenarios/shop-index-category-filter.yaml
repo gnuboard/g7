@@ -1,0 +1,23 @@
+feature: sirsoft-basic 쇼핑 첫 화면 카테고리 필터
+
+description: |
+  쇼핑 첫 화면(shop/index)의 카테고리 단추는 상품 목록을 그 카테고리로 거른다. 단추는 `/products?category={id}` 주소를 가진
+  링크이고 누르면 page 를 1 로 되돌리며 query.category 를 실어 목록으로 이동한다. 카테고리 슬러그 페이지(`/category/{slug}`)로
+  보내던 죽은 연결은 없다. 상품 데이터소스는 category_id 를 query.category 에 묶어 같은 주소를 다시 열어도 같은 목록이 나온다.
+  지금 고른 카테고리 단추는 강조되고, 카테고리를 고르지 않았을 때는 「전체」 단추가 강조된다.
+
+axes:
+  selection: [all, category]   # 카테고리 미선택(전체) / 특정 카테고리 선택
+
+effects:
+  - products_filtered_by_query_category              # products 데이터소스 category_id ← query.category
+  - category_link_targets_products_query_with_page_reset  # 카테고리 링크 → /products?category={id}, page=1
+  - no_category_slug_page_navigation                 # /category/{slug} 로 가는 이동·링크 없음
+  - selected_category_marked_active                  # query.category 와 같은 단추 강조, 미선택이면 「전체」 강조
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-index-category-filter.test.tsx
+
+notes: |
+  e2e_browser=partial — 레이아웃 JSON 의 데이터소스 바인딩·이동 액션·조건부 className 을 정적으로 잠근다. 링크를 새 탭으로
+  여는 동작 일반은 navigation-links.yaml 이 담당한다.

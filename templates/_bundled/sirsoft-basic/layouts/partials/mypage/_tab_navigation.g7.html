@@ -6,16 +6,16 @@
 <partial description="마이페이지 공통 탭 네비게이션">
   <tab-navigation data-type="composite" data-ref="mypageTabNavigation" variant="underline" class="mb-6" hiddenTabIds="{{[...(_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['inquiries']), ...(_global.modules?.['sirsoft-ecommerce']?.mileage?.enabled ? [] : ['mileage'])]}}" activeTabId="{{_computed?.currentTab}}">
     <prop name="tabs">
-      <item id="profile" label="$t:mypage.tabs.profile" iconName="user"/>
-      <item id="board" label="$t:mypage.tabs.board" iconName="message-square"/>
-      <item id="scrap" label="$t:mypage.tabs.scrap" iconName="bookmark"/>
-      <item id="orders" label="$t:mypage.tabs.orders" iconName="package"/>
-      <item comment="취소·반품·교환 — 주문내역 바로 뒤에 둔다. 이 탭이 여는 화면(/mypage/claims)은 주문에서 파생된 신청 내역이라 주문과 붙어 있어야 찾는다." id="claims" label="$t:mypage.tabs.claims" iconName="rotate-left"/>
-      <item id="mileage" label="$t:mypage.tabs.mileage" iconName="coins"/>
-      <item id="wishlist" label="$t:mypage.tabs.wishlist" iconName="heart"/>
-      <item id="addresses" label="$t:mypage.tabs.addresses" iconName="map-pin"/>
-      <item id="notifications" label="$t:mypage.tabs.notifications" iconName="bell"/>
-      <item id="inquiries" label="$t:mypage.tabs.inquiries" iconName="comment"/>
+      <item id="profile" href="/mypage/profile" label="$t:mypage.tabs.profile" iconName="user"/>
+      <item id="board" href="/mypage/board" label="$t:mypage.tabs.board" iconName="message-square"/>
+      <item id="scrap" href="/mypage/scrap" label="$t:mypage.tabs.scrap" iconName="bookmark"/>
+      <item id="orders" href="/mypage/orders" label="$t:mypage.tabs.orders" iconName="package"/>
+      <item comment="취소·반품·교환 — 주문내역 바로 뒤에 둔다. 이 탭이 여는 화면(/mypage/claims)은 주문에서 파생된 신청 내역이라 주문과 붙어 있어야 찾는다." id="claims" href="/mypage/claims" label="$t:mypage.tabs.claims" iconName="rotate-left"/>
+      <item id="mileage" href="/mypage/mileage" label="$t:mypage.tabs.mileage" iconName="coins"/>
+      <item id="wishlist" href="/mypage/wishlist" label="$t:mypage.tabs.wishlist" iconName="heart"/>
+      <item id="addresses" href="/mypage/addresses" label="$t:mypage.tabs.addresses" iconName="map-pin"/>
+      <item id="notifications" href="/mypage/notifications" label="$t:mypage.tabs.notifications" iconName="bell"/>
+      <item id="inquiries" href="/mypage/inquiries" label="$t:mypage.tabs.inquiries" iconName="comment"/>
     </prop>
     <on type="change" event="onTabChange">
       <!-- audit:allow layout-list-context-navigate-merge-query 마이페이지 탭 전환 — 탭마다 다루는 목록이 달라 이전 탭의 페이지·필터를 물려받으면 잘못된 화면이 된다. -->

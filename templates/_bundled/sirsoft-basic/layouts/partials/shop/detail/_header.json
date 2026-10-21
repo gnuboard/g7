@@ -46,7 +46,7 @@
                                     "text": "{{product.data?.name_localized}}"
                                 },
                                 {
-                                    "comment": "라벨 뱃지",
+                                    "comment": "라벨 뱃지 — 바탕은 운영자 라벨 색 그대로, 글자는 그 바탕의 상대 휘도로 검정·흰색 중 대비가 큰 쪽을 고른다(어느 색이든 4.58 이상).\n            흰 글자 고정이면 밝은 라벨 색(초록·노랑 500 등)에서 2 안팎으로 읽히지 않았다. #rrggbb 가 아닌 값은 기본 회색으로 그린다(상품 카드와 같은 규칙).",
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{product.data?.labels?.length > 0}}",
@@ -62,8 +62,8 @@
                                                 "item_var": "labelItem"
                                             },
                                             "props": {
-                                                "className": "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium text-white",
-                                                "style": "background-color: {{labelItem.color ?? '#6B7280'}}"
+                                                "className": "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                                "style": "background-color: {{String(labelItem.color ?? '').length === 7 && String(labelItem.color).startsWith('#') ? labelItem.color : '#6B7280'}}; color: {{((h) => ((c) => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) > 0.179 ? '#000000' : '#ffffff')([1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4))))(String(labelItem.color ?? '').length === 7 && String(labelItem.color).startsWith('#') ? labelItem.color : '#6B7280')}}"
                                             },
                                             "text": "{{labelItem.name}}"
                                         }
@@ -172,7 +172,7 @@
                                 "type": "button",
                                 "aria-label": "{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? '$t:shop.product.remove_from_wishlist' : '$t:shop.product.add_to_wishlist'}}",
                                 "aria-pressed": "{{!!(_local.isWishlisted ?? product.data?.is_wishlisted)}}",
-                                "className": "p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "p-2 text-gray-500 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_local.wishlistLoading}}"
                             },
                             "children": [

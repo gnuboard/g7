@@ -2,7 +2,7 @@
  * @file TagInput.a11yMessages.test.tsx
  * @description 태그 입력 — 화면 읽기 안내문(라이브 영역)·태그 지우기 버튼 이름이 화면 언어를 따른다
  *
- * 라이브 실측(7.1.0 영역 C, O-C5): ko 화면의 권한 그룹 필터·역할 일괄 추가 칸에서 react-select 기본 안내문이
+ * 라이브 실측(7.1.0): ko 화면의 권한 그룹 필터·역할 일괄 추가 칸에서 react-select 기본 안내문이
  * 영어로 남았다(「1 result available…」, 태그 지우기 버튼 「Remove 매니저」). 안내문·버튼 이름을 템플릿 다국어
  * 키(`common.tag_input.*`)로 낸다.
  */

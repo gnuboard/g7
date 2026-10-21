@@ -18,7 +18,7 @@
       <div>
         <div class="flex justify-between mb-1">
           <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message</span>
-          <span class="text-hint">{{(_local.smsMessage || '').length}}자</span>
+          <span class="text-hint">$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.char_count|count={{(_local.smsMessage || '').length}}</span>
         </div>
         <textarea class="input w-full min-h-[100px]" placeholder="$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.message_placeholder" value="{{_local.smsMessage}}">
           <prop name="dataKey">"smsMessage"</prop>
@@ -30,13 +30,13 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSending}}">
         <icon data-if="{{_global.isSending}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isSending ? '$t:common.sending' : '$t:sirsoft-ecommerce.admin.order.detail.modal.send_sms.send'}}</span>
       </button>

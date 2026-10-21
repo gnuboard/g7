@@ -116,6 +116,7 @@
                                         ],
                                         "props": {
                                             "name": "searchField",
+                                            "aria-label": "$t:common.search_field",
                                             "className": "w-32",
                                             "value": "{{_local.searchField}}",
                                             "options": [
@@ -171,7 +172,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
                                                 }
                                             }
                                         ]
@@ -427,7 +428,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "calendar",
-                                                    "className": "text-base icon-muted"
+                                                    "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                 }
                                             },
                                             {
@@ -446,6 +447,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "date",
+                                                    "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.deposit.filter.start_date",
                                                     "className": "input w-36",
                                                     "value": "{{_local.startDate}}"
@@ -465,7 +467,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "calendar",
-                                                    "className": "text-base icon-muted"
+                                                    "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                 }
                                             },
                                             {
@@ -484,6 +486,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "date",
+                                                    "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.deposit.filter.end_date",
                                                     "className": "input w-36",
                                                     "value": "{{_local.endDate}}"
@@ -554,7 +557,7 @@
                                 "props": {
                                     "className": "text-sm text-secondary"
                                 },
-                                "text": "0개 선택됨"
+                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.selected_count|count=0"
                             },
                             {
                                 "type": "basic",
@@ -588,7 +591,7 @@
                                 "props": {
                                     "className": "text-sm text-secondary"
                                 },
-                                "text": "총 11개"
+                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.total_count|count=11"
                             },
                             {
                                 "type": "basic",
@@ -613,6 +616,7 @@
                                         ],
                                         "props": {
                                             "name": "sortBy",
+                                            "aria-label": "$t:common.sort_order",
                                             "className": "w-44",
                                             "value": "{{_local.sortBy}}",
                                             "options": [
@@ -651,24 +655,25 @@
                                         ],
                                         "props": {
                                             "name": "perPage",
+                                            "aria-label": "$t:common.per_page",
                                             "className": "w-32",
                                             "value": "{{_local.perPage}}",
                                             "options": [
                                                 {
                                                     "value": "10",
-                                                    "label": "10개씩 보기"
+                                                    "label": "$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=10"
                                                 },
                                                 {
                                                     "value": "20",
-                                                    "label": "20개씩 보기"
+                                                    "label": "$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=20"
                                                 },
                                                 {
                                                     "value": "50",
-                                                    "label": "50개씩 보기"
+                                                    "label": "$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=50"
                                                 },
                                                 {
                                                     "value": "100",
-                                                    "label": "100개씩 보기"
+                                                    "label": "$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=100"
                                                 }
                                             ]
                                         }
@@ -687,9 +692,9 @@
                                     {
                                         "id": "mobile_select_all",
                                         "type": "basic",
-                                        "name": "Div",
+                                        "name": "Label",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4"
+                                            "className": "flex-center gap-2 mb-4 cursor-pointer"
                                         },
                                         "children": [
                                             {
@@ -706,7 +711,7 @@
                                                 "props": {
                                                     "className": "text-sm text-primary"
                                                 },
-                                                "text": "전체선택 (10/10)"
+                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.select_all_count|selected=10|total=10"
                                             }
                                         ]
                                     },
@@ -735,6 +740,7 @@
                                                                 "name": "Input",
                                                                 "props": {
                                                                     "type": "checkbox",
+                                                                    "aria-label": "$t:common.select_item|name=ORD20240127-002",
                                                                     "className": "rounded mt-1"
                                                                 }
                                                             },
@@ -758,7 +764,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "이영희"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -776,7 +782,7 @@
                                                                         "props": {
                                                                             "className": "text-lg font-semibold text-primary"
                                                                         },
-                                                                        "text": "159,000원"
+                                                                        "text": "₩159,000"
                                                                     }
                                                                 ]
                                                             }
@@ -835,7 +841,7 @@
                                                                         "props": {
                                                                             "className": "text-primary"
                                                                         },
-                                                                        "text": "우리은행 1002-467-890123"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.woori|account=1002-467-890123"
                                                                     }
                                                                 ]
                                                             },
@@ -860,7 +866,7 @@
                                                                         "props": {
                                                                             "className": "text-primary"
                                                                         },
-                                                                        "text": "이영희"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                     }
                                                                 ]
                                                             }
@@ -955,6 +961,7 @@
                                                                 "name": "Input",
                                                                 "props": {
                                                                     "type": "checkbox",
+                                                                    "aria-label": "$t:common.select_row_n|n=2",
                                                                     "className": "rounded mt-1"
                                                                 }
                                                             },
@@ -978,7 +985,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "박민수"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -996,7 +1003,7 @@
                                                                         "props": {
                                                                             "className": "text-lg font-semibold text-primary"
                                                                         },
-                                                                        "text": "49,000원"
+                                                                        "text": "₩49,000"
                                                                     }
                                                                 ]
                                                             }
@@ -1055,7 +1062,7 @@
                                                                         "props": {
                                                                             "className": "text-primary"
                                                                         },
-                                                                        "text": "카카오뱅크 789-012-3456"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|account=789-012-3456"
                                                                     }
                                                                 ]
                                                             }
@@ -1087,7 +1094,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-sm flex-1 text-pink-500 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30"
+                                                                            "className": "btn btn-sm flex-1 text-pink-700 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.actions.match"
                                                                     },
@@ -1153,6 +1160,7 @@
                                                                 "name": "Input",
                                                                 "props": {
                                                                     "type": "checkbox",
+                                                                    "aria-label": "$t:common.select_all",
                                                                     "className": "rounded"
                                                                 }
                                                             }
@@ -1261,7 +1269,7 @@
                                                 "type": "basic",
                                                 "name": "Tr",
                                                 "props": {
-                                                    "className": "hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                    "className": "hover:bg-gray-50 dark:hover:bg-gray-700"
                                                 },
                                                 "children": [
                                                     {
@@ -1276,6 +1284,7 @@
                                                                 "name": "Input",
                                                                 "props": {
                                                                     "type": "checkbox",
+                                                                    "aria-label": "$t:common.select_item|name=ORD20240127-002",
                                                                     "className": "rounded"
                                                                 }
                                                             }
@@ -1312,7 +1321,7 @@
                                                         "props": {
                                                             "className": "px-4 py-4 text-primary"
                                                         },
-                                                        "text": "우리은행 1002-467-890123"
+                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.woori|account=1002-467-890123"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1320,7 +1329,7 @@
                                                         "props": {
                                                             "className": "px-4 py-4 text-primary"
                                                         },
-                                                        "text": "이영희"
+                                                        "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1328,7 +1337,7 @@
                                                         "props": {
                                                             "className": "px-4 py-4 text-right text-primary font-medium"
                                                         },
-                                                        "text": "159,000원"
+                                                        "text": "₩159,000"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1376,7 +1385,7 @@
                                                                 "props": {
                                                                     "className": "text-primary"
                                                                 },
-                                                                "text": "이영희"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1453,7 +1462,7 @@
                                                 "type": "basic",
                                                 "name": "Tr",
                                                 "props": {
-                                                    "className": "hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                    "className": "hover:bg-gray-50 dark:hover:bg-gray-700"
                                                 },
                                                 "children": [
                                                     {
@@ -1468,6 +1477,7 @@
                                                                 "name": "Input",
                                                                 "props": {
                                                                     "type": "checkbox",
+                                                                    "aria-label": "$t:common.select_row_n|n=2",
                                                                     "className": "rounded"
                                                                 }
                                                             }
@@ -1504,7 +1514,7 @@
                                                         "props": {
                                                             "className": "px-4 py-4 text-primary"
                                                         },
-                                                        "text": "카카오뱅크 789-012-3456"
+                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|account=789-012-3456"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1512,7 +1522,7 @@
                                                         "props": {
                                                             "className": "px-4 py-4 text-primary"
                                                         },
-                                                        "text": "박민수"
+                                                        "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1520,7 +1530,7 @@
                                                         "props": {
                                                             "className": "px-4 py-4 text-right text-primary font-medium"
                                                         },
-                                                        "text": "49,000원"
+                                                        "text": "₩49,000"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1566,7 +1576,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "btn btn-sm text-pink-500 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30"
+                                                                    "className": "btn btn-sm text-pink-700 dark:text-pink-300 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.actions.match"
                                                             }

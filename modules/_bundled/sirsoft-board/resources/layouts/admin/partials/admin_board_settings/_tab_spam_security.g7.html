@@ -1,10 +1,6 @@
 <!-- 설정의 「스팸·보안」 탭 — 도배·자동 글쓰기를 막는 값들과, 맨 아래에 게시판 모듈이 쥐고 있는 캐시를 비우는 버튼이 하나 붙어 있다(위 SEO 탭의 캐시와는 다른 것) -->
 <partial description="게시판 환경설정 스팸/보안 탭 콘텐츠">
   <div data-ref="tab_content_spam_security" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'spam_security'}}">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <div>
       <!-- ========== 섹션: 쿨다운 ========== -->
       <section-layout data-type="layout" data-ref="section_cooldown" class="admin-card">
@@ -40,7 +36,7 @@
         <div data-ref="spam_security_identifier_info" class="alert-info">
           <div class="flex-center gap-2">
             <icon name="circle-info" class="text-blue-600 dark:text-blue-400 flex-shrink-0" size="sm"/>
-            <span class="text-info-soft">$t:sirsoft-board.admin.settings.fields.spam_security_identifier_info</span>
+            <span class="text-xs board-tone-info">$t:sirsoft-board.admin.settings.fields.spam_security_identifier_info</span>
           </div>
         </div>
       </section-layout>

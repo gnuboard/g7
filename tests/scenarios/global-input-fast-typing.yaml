@@ -1,0 +1,21 @@
+feature: 전역 상태에 묶인 입력칸의 빠른 연속 입력에서 글자가 빠지지 않는다 (engine-v1.80.1, 7.1.1 출시 전 실측 — 7.1.0 부터의 결함)
+
+description: |
+  `_global` 에 값이 있는 입력칸(`data-key="_global.*"` 자동바인딩, `value="{{_global…}}"` + 전역 setState 제어 입력)은 키 입력마다 전역
+  상태를 쓰는데, 전역 상태의 다시 그리기는 동적 import 뒤 startTransition 으로 미뤄진다. 미뤄진 렌더가 키 간격보다 늦으면 제어 입력
+  복원·늦게 온 중간 값 동기화로 직전 글자가 빠졌다. 엔진이 그 칸만 표시용 대기 값으로 바로 다시 그리고, 상태가 그 값이 되면 확정,
+  다른 값으로 바뀌면(외부 초기화) 버린다. 축 store 는 값이 있는 저장소, typing 은 입력 모양이다.
+
+axes:
+  store: [global, local]
+  typing: [fast_12ms, external_reset, external_reset_to_baseline, debounced]
+
+exclusions:
+  - { store: local, typing: [external_reset, external_reset_to_baseline, debounced], reason: "`_local` 칸은 상태 소유 루트가 이벤트 안에서 바로 갱신해 대기 값이 없다 — 대조군은 fast_12ms 하나로 충분" }
+
+effects:
+  - global_autobinding_fast_typing_keeps_every_char
+  - external_reset_beats_pending_display_value
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.globalAutoBindingFastTyping.test.tsx

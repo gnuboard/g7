@@ -40,17 +40,17 @@ class CheckVolumeCommand extends Command
     {
         $result = $service->check(AnalyticsConfig::fromSettings());
 
-        $this->info(sprintf('방문 %d행 · 액션 %d행', $result['visits'], $result['actions']));
+        $this->info(__('analytics.console.check_volume.rows', ['visits' => $result['visits'], 'actions' => $result['actions']]));
 
         if (! $result['exceeded']) {
-            $this->info('경고 한계 안입니다.');
+            $this->info(__('analytics.console.check_volume.within_limit'));
 
             return self::SUCCESS;
         }
 
         $this->warn($result['notified']
-            ? '경고 한계를 넘어 알림을 보냈습니다.'
-            : '경고 한계를 넘었으나 오늘 이미 알린 뒤라 다시 보내지 않았습니다.');
+            ? __('analytics.console.check_volume.exceeded_notified')
+            : __('analytics.console.check_volume.exceeded_already_notified'));
 
         return self::SUCCESS;
     }

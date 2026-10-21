@@ -1,0 +1,29 @@
+feature: 사용자 알림 센터(NotificationCenter) 드롭다운 계약
+
+description: |
+  헤더 종 버튼과 그 아래 열리는 알림 드롭다운이다. 종 버튼은 안 읽은 수 배지(99 초과는 99+, 0 이면 없음)를 보이고,
+  드롭다운은 열고 닫기·바깥 클릭으로 닫기·빈 목록 안내를 한다. 알림 카드는 버튼 안 버튼을 만들지 않도록 div 이고,
+  카드 클릭·개별 삭제·모두 읽음·모두 삭제·안 읽은 알림만 보기가 각자 콜백을 부른다(삭제는 카드 클릭으로 번지지 않는다).
+  읽음/미읽음은 바탕·파란 점으로 구분하되 읽음 카드를 흐리게 하지 않는다. 무한 스크롤은 같은 목록 길이에서 한 번만
+  더 불러오고, 닫을 때 읽을 것이 없으면 읽음 처리 요청을 보내지 않으며, 드롭다운은 뷰포트 밖으로 나가지 않게 보정된다.
+
+# axis 의미:
+#   dropdown — closed 는 종 버튼만 그린 상태(배지 검사), open 은 종 버튼을 눌러 드롭다운을 연 상태.
+axes:
+  dropdown: [closed, open]
+
+effects:
+  - trigger_shows_unread_badge                     # 종 버튼과 안 읽은 수 배지(99+ 상한, 0 이면 숨김)
+  - dropdown_toggles_and_closes_on_outside_click   # 종 버튼으로 열리고 바깥 클릭으로 닫힌다
+  - empty_list_shows_empty_text                    # 알림이 없으면 emptyText 를 보인다
+  - notification_card_is_not_nested_button         # 알림 카드는 button 이 아닌 div 다
+  - card_click_passes_full_notification            # 카드 클릭 콜백에 알림 객체 전체가 전달된다
+  - delete_button_isolated_from_card_click         # 개별 삭제는 onDelete 만 부르고 카드 클릭으로 번지지 않는다
+  - bulk_actions_invoke_callbacks                  # 모두 읽음·모두 삭제·안 읽은 알림만 토글이 각 콜백을 부른다
+  - read_and_unread_visually_distinct              # 미읽음은 파란 점·파란 바탕, 읽음은 흰 바탕이고 흐리게 하지 않는다
+  - infinite_scroll_loads_once_per_length          # 같은 목록 길이에서는 한 번만 더 불러오고 loading·hasMore=false 면 부르지 않는다
+  - close_skips_read_batch_without_unread          # 닫을 때 안 읽은 알림이 없으면 onClose(읽음 처리)를 부르지 않는다
+  - dropdown_aligned_within_viewport               # 정렬(left/right)과 최대 폭, 뷰포트 이탈 시 translateX 보정
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NotificationCenter.test.tsx

@@ -12,7 +12,7 @@ use Tests\TestCase;
  * 이름(`x-circle`·`refresh-cw`·`more-horizontal` 같은 Lucide 식 이름)은 클래스만 붙고 글리프가 없어 **빈칸**으로
  * 그려진다 — 오류도 경고도 없다. 사용자 템플릿(sirsoft-basic)의 `Icon` 은 변환표(`iconNameMap`)로 몇몇 별칭을
  * FA 이름으로 바꿔 주지만, 관리자 템플릿(sirsoft-admin_basic)의 `Icon` 은 변환표를 쓰지 않는다. 그래서 같은
- * 이름이라도 **어느 템플릿이 그리는 화면이냐**로 판정한다(#682 PO 실측 후속 4 — 전수조사에서 35개 파일 126곳).
+ * 이름이라도 **어느 템플릿이 그리는 화면이냐**로 판정한다(#682 실측 후속 4 — 전수조사에서 35개 파일 126곳).
  *
  * 이름 목록의 원천은 저장소에 커밋된 FA 스타일시트(`dist/vendor/font-awesome/6.4.0/css/all.inlined.css`)다 —
  * 화면이 실제로 싣는 파일과 같은 것이다.
@@ -255,8 +255,8 @@ class FontIconNameTest extends TestCase
     /**
      * 서버(PHP)가 글리프 이름을 내려 주는 기존 계약(결제수단·PG·현금영수증 제공자·정렬 메뉴 Resource 등)의 이름은
      * 풀리는 FA 이름이어야 한다 — 어느 템플릿이 그릴지 모르므로 변환표 없이 판정한다. 새 백엔드 표면은 글리프 이름
-     * 대신 의미 토큰(`status-*`)을 내고 템플릿 `iconNameMap` 이 해석하므로(PO 지시 — 메모리
-     * `backend-emits-icon-semantic-tokens-not-glyph-names`) 그 토큰은 이 판정에서 뺀다.
+     * 대신 의미 토큰(`status-*`)을 내고 템플릿 `iconNameMap` 이 해석하므로
+     * 그 토큰은 이 판정에서 뺀다.
      *
      * @scenario source=server
      *

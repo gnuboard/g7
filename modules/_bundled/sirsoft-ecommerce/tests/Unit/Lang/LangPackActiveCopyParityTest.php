@@ -48,7 +48,7 @@ class LangPackActiveCopyParityTest extends ModuleTestCase
      * 저장소 루트.
      *
      * 단계 수를 고정하지 않는다 — 이 파일은 `_bundled` 원본과 활성 사본 양쪽에 복제되고
-     * 두 경로의 깊이가 한 단계 다르다(2차 결함3 과 같은 이유).
+     * 두 경로의 깊이가 한 단계 다르다(같은 결함과 같은 이유).
      *
      * @return string 저장소 루트 절대 경로
      */
@@ -98,7 +98,7 @@ class LangPackActiveCopyParityTest extends ModuleTestCase
      *
      * 활성 사본이 아예 없는 패키지는 **미설치**이지 드리프트가 아니다 — 건너뛴다.
      *
-     * @return array<int, array{pack: string, rel: string, bundled: string, active: string}>
+     * @return array<int, array{pack: string, rel: string, bundled: string, active: string}> 번들 원본·활성 사본 파일 쌍 목록
      */
     private function langPackFilePairs(): array
     {
@@ -146,6 +146,8 @@ class LangPackActiveCopyParityTest extends ModuleTestCase
      * @scenario langpack_copy=active_parity
      *
      * @effects every_bundled_langpack_key_exists_in_the_active_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_language_pack_pairs_are_discovered(): void
     {
@@ -174,6 +176,8 @@ class LangPackActiveCopyParityTest extends ModuleTestCase
      * @scenario langpack_copy=active_parity
      *
      * @effects every_bundled_langpack_key_exists_in_the_active_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_every_bundled_key_exists_in_the_active_copy(): void
     {

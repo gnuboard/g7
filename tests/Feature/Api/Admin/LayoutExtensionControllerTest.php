@@ -991,7 +991,7 @@ class LayoutExtensionControllerTest extends TestCase
     }
 
     /**
-     * storePreview - 미리보기 주소는 템플릿 종류의 화면 셸을 가리킨다 (7.1.0 O-G3-6).
+     * storePreview - 미리보기 주소는 템플릿 종류의 화면 셸을 가리킨다 (7.1.0).
      *
      * 관리자 템플릿의 확장 조각을 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿 자원으로 그려졌다.
      *

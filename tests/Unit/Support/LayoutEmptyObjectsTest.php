@@ -12,7 +12,7 @@ use stdClass;
  * 레이아웃 JSON 빈 객체 보존 보조 테스트
  *
  * 값 자리(initLocal 류 값, params·fallback 아래)의 빈 객체는 stdClass 로 남아 응답에서 `{}` 가 되고,
- * 병합 코드가 배열로 다루는 섹션·구조 키는 배열로 남아야 한다(7.1.0 실측 O-K3-4).
+ * 병합 코드가 배열로 다루는 섹션·구조 키는 배열로 남아야 한다(7.1.0 실측).
  */
 class LayoutEmptyObjectsTest extends TestCase
 {

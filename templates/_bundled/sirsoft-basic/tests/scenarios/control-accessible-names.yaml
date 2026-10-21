@@ -1,0 +1,24 @@
+feature: sirsoft-basic 레이아웃 입력칸의 접근 가능한 이름 (#757)
+
+description: |
+  사용자 화면의 입력칸 일부(마이페이지 필터 선택칸·목록 체크박스, 주문서 쿠폰·환불 은행·배송 국가·배송 메모,
+  회원정보 수정 국가·언어·시간대·통화, 교환 재배송지, 신고 사유, 게시판 분류·검색 대상, 상품 후기 필터 등)가
+  화면 낭독기에서 이름 없이 「콤보 상자」「체크박스」「편집 가능 텍스트」로만 읽혔다.
+  사용자 템플릿에는 곁 라벨 자동 연결이 없으므로 레이아웃마다 이름을 직접 단다 —
+  보이는 제목이 있으면 그 제목 키, 체크박스와 옆 글자는 한 label 로 감싸기, 목록 행 체크박스는 「{행 이름} 선택」,
+  제목 없는 정렬·검색 대상 선택칸은 공용 키(정렬 기준·검색 대상).
+  잠금 시험은 레이아웃 전수에서 이름 없는 칸 0 을 단언하고, 공용 키가 ko·en·ja 에 모두 있는지 본다.
+
+axes:
+  surface: [user_layout, user_extension]
+
+effects:
+  - controls_have_accessible_name
+  - row_controls_read_row_and_column
+  - listbox_reads_name_and_value
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/control-accessible-names.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/Select.accessibleName.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/auth-register-agreement-binding.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/user-control-names.spec.ts

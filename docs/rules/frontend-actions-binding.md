@@ -21,7 +21,8 @@
 ```text
 필수: 기본 컴포넌트만 사용 (Div, Button, H2 등 — HTML 태그 직접 사용 금지)
 필수: 집합 컴포넌트 재사용 우선
-필수: 다크 모드 light/dark variant 함께 지정
+필수: 다크 모드 light/dark variant 함께 지정 — 변형까지 맞춘다(`hover:bg-gray-50` 에는 `dark:hover:bg-gray-700`), 라이트 바탕 없는 `dark:bg-*` 단독 금지
+필수: 화면 글자는 `$t:` 키 — 레이아웃 글자·속성·식 안 표시 문자열·라우트 meta.title 에 한국어 금지(견본 화면 예시 값 포함)
 필수: HtmlEditor 사용 (RichTextEditor 미구현)
 ```
 
@@ -36,7 +37,9 @@
 | `handler: "setLocalState"` | `handler: "setState"` + `target: "local"` |
 | `navigate` + `replace: true` (URL만 변경 시) | `handler: "replaceUrl"` |
 | `navigate` `params.path: "back"` (동작 키워드로 착각) | `handler: "navigateBack"` — path 는 주소로 해석되어 조용히 `/back` 으로 이동한다 |
-| `navigate` `params.url` / `href` / `to` 로 목적지 전달 | `params.path` (또는 액션 `target`) — 엔진은 이 둘만 읽는다. 다른 이름은 무시되어 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다 |
+| `navigate` `params.url` / `href` / `to` 로 목적지 전달 | `params.path` (또는 액션 `target`) — 엔진은 이 둘과, 링크(`<a href>`) 클릭에서 시작한 액션에서 path·target **키가 없을 때만** 클릭한 링크의 같은 출처 `href` 를 읽는다(engine-v1.80.1). 다른 이름은 무시되어 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다 |
+| 다른 화면으로 옮기는 단추(메뉴·목록 행 보기/수정·등록/목록/상세 이동·쪽 번호·탭)를 `<button>` + `navigate` `path` 로 작성 — 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 안 된다 | `<a href="…">` + path 없는 `<navigate/>`(주소는 href 한 곳, 목록 문맥은 `:mergeQuery="true"`, 비활성은 A `disabled`). 합성 컴포넌트는 `rowActions[].href`·`pageHref`·탭 `href`. 바꾸지 않는 자리: 저장 뒤 자동 이동·확인 창 이동·비회원 주문 조회 화면·이동 뒤 주소가 지금과 같은 새로고침·필터·검색 — 그중 `<a>` 인데 새 탭을 막을 곳은 `:preventDefault="true"`. 확장마다 `navigation-links.test.ts` 가 잠근다 |
+| 쿼리·서버 값(`{{query.redirect}}`·응답의 복귀 주소·알림 이동 주소)으로 이동하는 `navigate` 를 대체 경로 없이 작성하거나 식으로 직접 거름(`?? '/'`·람다 검사) — 거부된 주소(실행 스킴·다른 사이트·`//host`)는 이동하지 않아 화면에 머문다 | `<navigate path="{{query.redirect}}" fallbackPath="/"/>`(JSON `params.fallbackPath`) — path 가 비었거나 거부되면 엔진이 같은 판정으로 대체 경로를 고른다(engine-v1.80.1). 미등록 라우트 핸들러 `fallback` 과 다른 인자 |
 | 에러 전파 방지를 위한 무의미한 `setState` | `{ "handler": "suppress" }` |
 | apiCall `params.target` (params 내부) | `target` 은 액션 top-level. params 내부 위치 시 URL 미해석 |
 | apiCall `params.onSuccess` / `params.onError` (params 내부) | 액션 top-level. params 내부면 무시됨 |
@@ -87,7 +90,9 @@
 |------|------------|
 | `Icon className="w-4 h-4"` | `className="text-base"` (아래 등가표) 또는 `size` prop |
 | `Select valueKey/labelKey` | `{ value, label }` 로 변환 — 두 곳 이상에서 쓰면 computed, 한 곳뿐이면 `options` 식에서 바로 `.map()` |
-| Form 내 `Button` type 없음 | `type="button"` 명시 (submit 방지) |
+| `Button` type 없음 (폼 안·밖 모두) | 누르기만 하는 단추는 `type="button"`, 제출은 `type="submit"` 명시 — 기본값이 submit 이고, 파셜·확장점 조각은 어느 화면의 폼 안에 포함될지 파일만 보고는 알 수 없다 |
+| 링크(`<a href>`) 안에 단추·다른 링크·입력·메뉴(`UserInfo` 등)·HTML 본문(`HtmlContent`)·click 액션 요소 | 카드·행 전체 링크는 덮는 링크(stretched link)로 그리고 안쪽 조작은 링크 밖에 형제로 둔다 — `<a>` 안 대화형 요소는 HTML 위반이고 낭독기 이름·키보드 초점·클릭이 겹친다 |
+| 비활성 링크(`<a disabled="…">`)의 꾸밈을 `disabled:` 변형으로 | `aria-disabled:` 변형 — `<a>` 에는 `:disabled` 가 없어 `disabled:opacity-50` 이 걸리지 않는다(단추를 링크로 바꿀 때 클래스를 그대로 옮기면 잠긴 링크가 멀쩡해 보인다) |
 | `options={{options}}` | `options={{options ?? []}}` (fallback) |
 | boolean 필드를 `RadioGroup`/`Select` 의 `name` 자동바인딩만으로 폼에 묶기 | `autoBinding: false` + `value: "{{String(_local.form?.필드 ?? 기본값)}}"` + `change` 액션 `"{{$event.target.value === 'true'}}"` 캐스팅. 자동바인딩 value 경로는 `e.target.value` 문자열을 그대로 저장해 서버 `boolean` 규칙에서 422 가 된다 (표시만 보면 정상이라 저장 시점에야 드러남) |
 | `options` 지정 커스텀 `Select`(composite) 에 `defaultValue` | `value: "{{상태 ?? 기본값}}"` + `change` 액션 + 열기 지점 상태 시드 — 커스텀 Select 는 value-제어 전용이라 `defaultValue` 는 렌더되지 않고(빈 표시) 숨은 input 도 없어 값이 조용히 미전송된다 (options 없는 네이티브 렌더 경로만 defaultValue 유효) |

@@ -97,6 +97,10 @@
 | `permissions` | string[] | ❌ | 레이아웃 접근 권한 식별자 배열 (engine-v1.15.0+) |
 | `globalHeaders` | array | ❌ | 전역 HTTP 헤더 규칙 배열 (engine-v1.16.0+) |
 | `meta.seo` | object | ❌ | SEO 페이지 생성기 설정 (아래 참조) |
+| `meta.leave_guard` | string | ❌ | 저장하지 않은 변경 이탈 확인 식 `{{…}}` (engine-v1.82.0, 아래 참조) |
+| `meta.leave_message` | string | ❌ | 이탈 확인 문구(`$t:키` 또는 글자). 없으면 코어 기본 문구 |
+| `meta.icon` | string | ❌ | 레이아웃 편집기 라우트 트리의 메뉴 아이콘 (편집기 [기본 정보] 탭) |
+| `meta.editor_label` | string | ❌ | 레이아웃 편집기 트리·후보 목록의 표시 이름(`$t:키` 허용). 없으면 `title` |
 | `components` | array | ✅ | 컴포넌트 배열 |
 
 ### 한 객체에 같은 키를 두 번 쓰지 않는다
@@ -144,6 +148,7 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 > - `permissions`: [아래 섹션](#레이아웃-권한-permissions)
 > - `globalHeaders`: [아래 섹션](#전역-헤더-globalheaders)
 > - `meta.seo`: [아래 섹션](#metaseo-seo-페이지-생성기)
+> - `meta.leave_guard`: [아래 섹션](#metaleave_guard-저장하지-않은-변경-이탈-확인)
 
 ### meta.seo (SEO 페이지 생성기)
 
@@ -159,6 +164,9 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 | seo.changefreq | string | X | sitemap changefreq (daily/weekly 등) |
 | seo.og | object | X | Open Graph 메타태그 |
 | seo.structured_data | object | X | JSON-LD 구조화 데이터 |
+| seo.title | string | X | 편집기 SEO 탭 공유 미리보기의 제목 대체값(Open Graph 제목이 없을 때) |
+| seo.description | string | X | 편집기 SEO 탭 공유 미리보기의 설명 대체값 |
+| seo.twitter | object | X | Twitter 카드 메타태그 (없는 칸은 Open Graph 값으로 채운다) |
 
 #### seo.extensions
 
@@ -183,6 +191,37 @@ meta.seo 추가/변경 시 UpdateLayoutContentRequest 검증 규칙 동기화 �
 data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략)
 
 > 상세: [seo-system.md](../backend/seo-system.md)
+
+### meta.leave_guard (저장하지 않은 변경 이탈 확인)
+
+폼 화면에서 입력을 저장하지 않고 다른 화면으로 떠나면 입력이 사라진다. `meta.leave_guard` 에 「지금 저장하지 않은 변경이 있는가」를 식으로 적으면, 엔진이 떠나는 순간 그 식을 한 번 평가해 참일 때 확인 창을 띄운다 (engine-v1.82.0).
+
+```html
+<meta leave_guard="{{_local.hasChanges === true}}" leave_message="$t:board.leave_confirm" title="…"/>
+```
+
+```json
+"meta": {
+  "leave_guard": "{{_local.hasChanges === true}}",
+  "leave_message": "$t:board.leave_confirm"
+}
+```
+
+| 떠나는 방법 | 묻는 방식 |
+| --- | --- |
+| `navigate` 액션·링크 클릭·`G7Core.dispatch` navigate | 주소를 바꾸기 **전에** 확인 창. 머무르면 아무 일도 없다(스크롤도 그대로) |
+| 브라우저 뒤로/앞으로·`navigateBack` | 주소가 바뀐 뒤 확인 창. 머무르면 떠나던 화면의 주소를 다시 쌓는다(앞으로 가기 기록은 잃을 수 있다) |
+| 새로고침·탭 닫기·같은 탭 전체 이동(`openWindow` `_self`·`redirect`) | 브라우저 자체 확인 창(`beforeunload`) — 문구는 브라우저가 정한다 |
+
+- 같은 경로로의 이동(쿼리·해시만 바뀜 — 탭·검색·쪽 번호)은 같은 화면이라 묻지 않는다. `navigate` 의 `replace: true`(같은 화면 쿼리 교체)도 묻지 않는다.
+- 식은 `{{…}}` 하나여야 한다. 문맥은 `_local`(`G7Core.state.getLocal()` 과 같은 값)·`_global`·`route`·`query`·데이터 소스·`_computed` 다. 평가는 읽기 전용이고 상태를 바꾸지 않는다. 식이 아니거나 평가에 실패하면 묻지 않는다(사용자를 화면에 가두지 않는다).
+- 판정 근거는 `_local` 의 변경 표시(`hasChanges` 등)를 쓴다. 자동바인딩(`data-key`)·`setState`·`G7Core.state.setLocal` 이 쓴 값이 보인다. 화면 렌더러 안에서만 다시 계산되는 `_computed` 는 이동 순간 최신이 아닐 수 있으니 판정 근거로 쓰지 않는다.
+- 디바운스 입력(`debounce`) 칸에 친 값이 아직 상태에 닿기 전(마지막 입력 뒤 디바운스 시간 안)이면, 식이 거짓이어도 「변경 있음」 으로 보고 묻는다(브라우저 뒤로 가기·새로고침·닫기 포함). 대기 입력은 그대로 두고 존재만 본다. 링크·단추로 떠나는 이동은 대기 입력을 먼저 반영한 뒤 판정한다. 그래서 디바운스 검색칸처럼 변경 표시와 무관한 칸도 친 직후 잠깐은 묻는다.
+- 저장 성공 뒤 이동·취소·삭제 뒤 이동처럼 **묻지 않아야 하는** 이동은 그 액션에 `bypassLeaveGuard: true` 를 준다(`navigate`·`navigateBack`·`openWindow`·`redirect` 공통 — [actions-handlers-navigation.md](actions-handlers-navigation.md#이탈-확인-건너뛰기-bypassleaveguard)). 저장 성공 뒤 화면에 머무르면 변경 표시도 내린다.
+- 한 번 떠나기로 한 이동(확인 승인 또는 우회)은 다음 화면이 그려질 때까지 다시 묻지 않는다(리다이렉트 라우트·로그인 리다이렉트에서 두 번 묻지 않는다). 세션 만료로 로그인 화면으로 옮기는 이동은 묻지 않는다.
+- 이 키는 브라우저 화면 전용이다. 검색엔진용 화면(SEO 렌더러)은 `meta.seo` 만 읽으므로 출력에 영향이 없다.
+- 상속 레이아웃은 `meta` 를 키 단위로 병합하므로 자식이 선언하면 그 화면에만 적용된다.
+- 확장 핸들러에서 확인 여부를 알아야 하면 `G7Core.navigation.isLeaveGuarded()` 를 쓴다([g7core-api.md](g7core-api.md#저장하지-않은-변경-확인--isleaveguarded)).
 
 ---
 
@@ -710,6 +749,14 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 - 편집 모드 서빙(`?with_source_meta=1`, 편집 권한 필요)에서는 편집기가 `comment` 를 편집 가능한 속성으로 노출하므로 **보존**된다. 공개/편집 응답은 별도 캐시 키로 분리되어 있어 조건부 제거가 안전하다.
 - 따라서 `comment` 는 편집기·저장본에서는 유지되고, 일반 사용자에게 서빙되는 응답에서만 사라진다. 레이아웃 로직이 `comment` 값에 의존해서는 안 된다.
 - 화면 조각의 설명(`<partial description="…">` → 조각 루트 `meta: {is_partial: true, description}`)도 개발자용 설명이므로 같은 응답에서 제거된다. 레이아웃 최상단 `meta.description` 은 화면 설명(SEO)이라 보존된다 — 조각 표식(`is_partial: true`)이 있는 `meta` 만 대상이다.
+- **요청 본문 자리는 제거하지 않는다** — `body`·`query`·`headers` 아래와 데이터소스의 `params` 아래는 서버로 보낼 데이터라 `comment` 키도 값으로 남는다(예: 검수 의견을 보내는 `apiCall` 의 `params.body.comment`).
+- 반대로 액션 `params`·`props`·`initLocal` **바로 아래**의 `comment` 는 설명으로 보고 지운다. 설명은 노드·액션에 붙이고, 서버로 보낼 데이터 키 `comment` 는 `body`·`query` 에 둔다.
+
+| 자리 | `comment` 키 | 서빙 응답 |
+| --- | --- | --- |
+| 노드·액션·데이터소스·모달·명명 액션 정의 | 설명 | 제거 |
+| 액션 `params` 바로 아래 · `props` 아래 · `initLocal` 아래 | 설명(예약 — 데이터로 쓰지 않는다) | 제거 |
+| `body`·`query`·`headers` 아래 · 데이터소스 `params` 아래 | 요청 데이터 | **보존** |
 
 #### 제거는 소비자마다 서야 한다
 

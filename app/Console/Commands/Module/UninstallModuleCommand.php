@@ -85,7 +85,7 @@ class UninstallModuleCommand extends Command
                 $this->line(trans_choice('modules.commands.uninstall.confirm_details.layouts', $layoutsCount));
                 $this->line(__('modules.commands.uninstall.confirm_details.data'));
                 if ($this->option('delete-data')) {
-                    $this->warn('⚠️  --delete-data: 마이그레이션 롤백 및 환경설정 파일이 함께 삭제됩니다.');
+                    $this->warn('⚠️  '.__('modules.commands.uninstall.delete_data_warning'));
                 }
                 $this->newLine();
 

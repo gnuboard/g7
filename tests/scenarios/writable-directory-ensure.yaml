@@ -1,0 +1,19 @@
+feature: 쓰기 가능 디렉토리 확보(FilePermissionHelper::ensureWritableDirectory) — 실패가 경고·500 으로 번지지 않는 계약
+
+description: |
+  제3자 라이브러리에 쓰기 경로를 지정하는 목적은 vendor 쓰기 실패로 인한 500 을 막는 것이다. 확보 지점이 PHP 경고를
+  내면 예외 핸들러가 ErrorException 으로 승격시켜 같은 500 이 다른 줄에서 난다. 그래서 없는 경로는 만들고, 있는 경로는
+  그대로 쓰며, 같은 이름의 파일이 자리를 차지하거나 경로 중간이 파일이면 경고 없이 실패 사유만 돌려준다. 최근접 상위
+  탐색과 정합화(hardenDirectory)도 대상이 없을 때 조용해야 한다.
+
+axes:
+  target_state: [missing, existing_writable, occupied_by_file, segment_is_file]
+
+effects:
+  - writable_directory_created_or_reused
+  - ensure_failure_reported_without_warning
+  - nearest_existing_ancestor_found
+  - harden_directory_silent_on_absent_target
+
+test_files:
+  - tests/Unit/Helpers/FilePermissionHelperWritableDirectoryTest.php

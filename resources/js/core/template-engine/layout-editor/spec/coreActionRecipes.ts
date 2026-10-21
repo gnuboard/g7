@@ -92,6 +92,8 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
     label: `$t:${L}.navigate.label`,
     params: [
       { key: 'path', label: `$t:${L}.navigate.param_path`, widget: 'page-picker', required: true },
+      // 이동 주소가 비었거나 거부될 때(실행 스킴·다른 사이트) 갈 안전한 경로 (engine-v1.80.1)
+      { key: 'fallbackPath', label: `$t:${L}.navigate.param_fallback_path`, widget: 'page-picker' },
       { key: 'query', label: `$t:${L}.navigate.param_query`, widget: 'key-value' },
       { key: 'mergeQuery', label: `$t:${L}.navigate.param_merge_query`, widget: 'toggle' },
       {
@@ -121,6 +123,7 @@ export const CORE_ACTION_RECIPES: Record<string, ActionRecipeSpec> = {
       handler: 'navigate',
       params: {
         path: '{{path}}',
+        fallbackPath: '{{fallbackPath}}',
         query: '{{query}}',
         mergeQuery: '{{mergeQuery}}',
         scroll: '{{scroll}}',

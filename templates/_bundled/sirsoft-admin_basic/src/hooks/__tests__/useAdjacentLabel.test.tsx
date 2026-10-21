@@ -1,6 +1,6 @@
 /**
  * @file useAdjacentLabel.test.tsx
- * @description 곁 라벨을 입력 부품 이름으로 잇기 (7.1.0 영역 J D-J7, 관측 O-G2·O-H2)
+ * @description 곁 라벨을 입력 부품 이름으로 잇기 (7.1.0)
  *
  * 관리자 레이아웃은 라벨과 입력을 형제로 둔다(`for` 없음). 그래서 숫자 칸은 placeholder 값(「30」),
  * 스위치는 필드 키(「security.force_https」), 선택 상자는 고른 값(「Artisan」)으로 읽혔다.
@@ -244,7 +244,7 @@ describe('태그 입력 곁 라벨', () => {
 
 describe('곁 글자 오연결 방지 — 단추 글자', () => {
   /**
-   * 스위치 바로 앞 형제가 단추면 그 글자는 행 제목이 아니다(확장 카드 「업데이트」 단추, O-Q2-1).
+   * 스위치 바로 앞 형제가 단추면 그 글자는 행 제목이 아니다(확장 카드 「업데이트」 단추).
    *
    * @scenario control=switch_after_button
    * @effects adjacent_label_never_borrows_button_text

@@ -4,8 +4,8 @@
     <div class="flex-center gap-2 mb-3">
       <icon name="reply" class="text-base text-blue-600 dark:text-blue-400"/>
       <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.posts.form.reply_to</span>
-      <span data-if="{{form_meta?.data?.parent_post?.is_notice}}" class="text-danger-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900">$t:sirsoft-board.admin.posts.notice</span>
-      <span data-if="{{form_meta?.data?.parent_post?.is_secret}}" class="text-warning-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900">$t:sirsoft-board.admin.posts.secret</span>
+      <span data-if="{{form_meta?.data?.parent_post?.is_notice}}" class="text-xs board-tone-danger inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900">$t:sirsoft-board.admin.posts.notice</span>
+      <span data-if="{{form_meta?.data?.parent_post?.is_secret}}" class="text-xs board-tone-warning inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900">$t:sirsoft-board.admin.posts.secret</span>
     </div>
     <div class="flex-center gap-2 mb-2">
       <h4 class="section-heading-md">{{form_meta?.data?.parent_post?.title}}</h4>

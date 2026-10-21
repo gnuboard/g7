@@ -25,7 +25,8 @@ const TARGETS = [
     },
     {
         file: path.join(PARTIALS, 'admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.json'),
-        resultKey: 'mileageManual.memberSearchResults',
+        // 창이 닫힌 뒤 도착한 응답이 이름 공간을 되살리지 않도록 이름 공간 전체를 값 식으로 쓴다(7.1.1 — adminModalLateSearchResponse.test.ts)
+        resultKey: 'mileageManual',
     },
 ];
 

@@ -13,7 +13,7 @@ use Tests\TestCase;
 /**
  * API 문서 실측 샘플 권한 정리 테스트
  *
- * 2026-10-07 실측(O-D2): 개발 DB 관리자 권한 트리에 docgen 이 남긴 「API 문서 샘플 권한」·「하위 권한」이 실제 권한처럼
+ * 2026-10-07 실측: 개발 DB 관리자 권한 트리에 docgen 이 남긴 「API 문서 샘플 권한」·「하위 권한」이 실제 권한처럼
  * 보였고, 하위 권한은 실제 역할에 배정할 수 있었다. 실측이 끝나면 샘플 권한과 그 역할 연결만 지우는지 고정한다.
  *
  * @scenario-manifest tests/scenarios/apidoc-sample-permission-purge.yaml

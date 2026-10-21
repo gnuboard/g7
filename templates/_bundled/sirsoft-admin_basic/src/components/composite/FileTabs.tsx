@@ -130,7 +130,7 @@ export const FileTabs: React.FC<FileTabsProps> = ({
               role="button"
               tabIndex={-1}
               aria-label={t('admin.templates.layout_edit.tabs.close', { name: tab.label })}
-              className="w-4 text-center text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 shrink-0"
+              className="w-4 text-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 shrink-0"
               onClick={(event: React.MouseEvent) => {
                 // 닫기는 탭 선택과 다른 동작이다 — 전파를 막지 않으면 닫으면서 동시에 연다.
                 event.stopPropagation();

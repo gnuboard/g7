@@ -315,24 +315,34 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       layout = loadAdminLayout('errors/maintenance.json');
     });
 
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('_admin_base를 상속한다', () => {
       expect(layout.extends).toBe('_admin_base');
     });
 
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('meta에 에러 레이아웃 플래그와 503 코드를 갖는다', () => {
       expect(layout.meta.is_error_layout).toBe(true);
       expect(layout.meta.error_code).toBe(503);
     });
 
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('i18n 제목을 $t:errors.maintenance.title로 설정한다', () => {
       expect(layout.meta.title).toBe('$t:errors.maintenance.title');
     });
 
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('content 슬롯에 maintenance 컨테이너가 있다', () => {
       expect(layout.slots.content).toHaveLength(1);
       expect(layout.slots.content[0].id).toBe('maintenance_container');
     });
 
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('spinning gear 아이콘이 포함되어 있다', () => {
       const icon = findInTree(layout.slots.content, (n: any) => n.name === 'Icon');
       expect(icon).toBeDefined();
@@ -340,6 +350,8 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(icon.props.className).toContain('animate-spin');
     });
 
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('제목, 메시지, 설명 텍스트가 i18n 키를 사용한다', () => {
       const h1 = findInTree(layout.slots.content, (n: any) => n.name === 'H1');
       expect(h1.text).toBe('$t:errors.maintenance.title');
@@ -358,27 +370,39 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       layout = loadUserLayout('errors/maintenance.json');
     });
 
+    // @scenario surface=user_maintenance
+    // @effects maintenance_page_structure
     it('_user_base를 상속한다', () => {
       expect(layout.extends).toBe('_user_base');
     });
 
+    // @scenario surface=user_maintenance
+    // @effects maintenance_page_structure
     it('meta에 에러 레이아웃 플래그를 갖는다', () => {
       expect(layout.meta.is_error_layout).toBe(true);
     });
 
+    // @scenario surface=user_maintenance
+    // @effects maintenance_page_structure
     it('error. 네임스페이스의 i18n 키를 사용한다', () => {
       expect(layout.meta.title).toBe('$t:error.maintenance.title');
     });
 
-    it('홈으로 돌아가기 버튼이 포함되어 있다', () => {
-      const button = findInTree(layout.slots.content, (n: any) => n.name === 'Button');
-      expect(button).toBeDefined();
-      expect(button.actions).toBeDefined();
-      const navigateAction = button.actions.find((a: any) => a.handler === 'navigate');
+    // @scenario surface=user_maintenance
+    // @effects maintenance_page_structure
+    it('홈으로 돌아가기 링크가 포함되어 있다', () => {
+      // 링크(#757) — 주소는 A 의 href, 보통 클릭은 path 없는 navigate 가 그 href 로 SPA 이동
+      const link = findInTree(layout.slots.content, (n: any) => n.name === 'A');
+      expect(link).toBeDefined();
+      expect(link.props.href).toBe('/');
+      expect(link.actions).toBeDefined();
+      const navigateAction = link.actions.find((a: any) => a.handler === 'navigate');
       expect(navigateAction).toBeDefined();
-      expect(navigateAction.params.path).toBe('/');
+      expect(navigateAction.params?.path).toBeUndefined();
     });
 
+    // @scenario surface=user_maintenance
+    // @effects maintenance_page_structure
     it('spinning gear 아이콘이 포함되어 있다', () => {
       const icon = findInTree(layout.slots.content, (n: any) => n.name === 'Icon' && n.props?.name === 'gear');
       expect(icon).toBeDefined();
@@ -393,14 +417,20 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       modal = loadPartial('admin_settings/_modal_core_update_result.json');
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('모달 ID가 core_update_result_modal이다', () => {
       expect(modal.id).toBe('core_update_result_modal');
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('모달 사이즈가 md이다', () => {
       expect(modal.props.size).toBe('md');
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('현재 버전과 최신 버전 표시 영역이 있다', () => {
       const spans = findAllInTree(modal.children, (n: any) => n.name === 'Span');
       const currentVersionText = spans.find((s: any) => s.text === '$t:admin.settings.info.current_version');
@@ -409,18 +439,24 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(latestVersionText).toBeDefined();
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('업데이트 가능 섹션이 if 조건으로 제어된다', () => {
       const updateSection = findInTree(modal.children, (n: any) => n.id === 'update_available_section');
       expect(updateSection).toBeDefined();
       expect(updateSection.if).toBe('{{$parent._local.coreUpdateInfo?.update_available}}');
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('업데이트 없음 섹션이 if 조건으로 제어된다', () => {
       const noUpdateSection = findInTree(modal.children, (n: any) => n.id === 'no_update_section');
       expect(noUpdateSection).toBeDefined();
       expect(noUpdateSection.if).toBe('{{!$parent._local.coreUpdateInfo?.update_available}}');
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('변경사항 보기 버튼에 changelog API 호출 액션이 있다 (closeModal 없이 직접 apiCall)', () => {
       const buttons = findAllInTree(modal.children, (n: any) => n.name === 'Button');
       const viewChangelogBtn = buttons.find((b: any) => b.text === '$t:admin.settings.info.view_changelog');
@@ -438,6 +474,8 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(openModalInSuccess.target).toBe('core_changelog_modal');
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('업데이트 방법 버튼에 openModal 액션이 있다 (closeModal 없이 직접 openModal)', () => {
       const buttons = findAllInTree(modal.children, (n: any) => n.name === 'Button');
       const howToUpdateBtn = buttons.find((b: any) => b.text === '$t:admin.settings.info.how_to_update');
@@ -457,6 +495,8 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       tabInfo = loadPartial('admin_settings/_tab_info.json');
     });
 
+    // @scenario surface=check_button
+    // @effects update_result_reflects_availability
     it('업데이트 확인 성공 시 openModal이 target 형식을 사용한다', () => {
       // 업데이트 확인 버튼 찾기: sequence → apiCall → onSuccess → openModal
       const allButtons = findAllInTree(
@@ -495,14 +535,20 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       modal = loadPartial('admin_settings/_modal_core_changelog.json');
     });
 
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('모달 ID가 core_changelog_modal이다', () => {
       expect(modal.id).toBe('core_changelog_modal');
     });
 
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('모달 사이즈가 lg이다', () => {
       expect(modal.props.size).toBe('lg');
     });
 
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('빈 상태 메시지가 if 조건으로 제어된다', () => {
       const emptyDiv = findInTree(modal.children, (n: any) =>
         n.if === '{{!$parent._local.coreChangelog || $parent._local.coreChangelog.length === 0}}'
@@ -511,6 +557,8 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(emptyDiv.text).toBe('$t:admin.settings.info.no_changelog');
     });
 
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('3단 iteration 구조를 갖는다 (entry → category → items)', () => {
       // 1단: coreChangelog entries ($parent._local 경로 사용 - 모달 컨텍스트)
       const entryIteration = findInTree(modal.children, (n: any) =>
@@ -535,6 +583,8 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(itemIteration.text).toBe('{{changeItem}}');
     });
 
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('버전과 날짜 표시 영역이 있다', () => {
       const entryIteration = findInTree(modal.children, (n: any) =>
         n.iteration?.source === '$parent._local.coreChangelog'
@@ -559,14 +609,20 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       modal = loadPartial('admin_settings/_modal_core_update_guide.json');
     });
 
+    // @scenario surface=guide_modal
+    // @effects guide_shows_command
     it('모달 ID가 core_update_guide_modal이다', () => {
       expect(modal.id).toBe('core_update_guide_modal');
     });
 
+    // @scenario surface=guide_modal
+    // @effects guide_shows_command
     it('모달 사이즈가 md이다', () => {
       expect(modal.props.size).toBe('md');
     });
 
+    // @scenario surface=guide_modal
+    // @effects guide_shows_command
     it('경고 아이콘(triangle-exclamation)이 포함되어 있다', () => {
       const icon = findInTree(modal.children, (n: any) =>
         n.name === 'Icon' && n.props?.name === 'triangle-exclamation'
@@ -574,6 +630,8 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(icon).toBeDefined();
     });
 
+    // @scenario surface=guide_modal
+    // @effects guide_shows_command
     it('터미널 명령어 표시 영역이 있다', () => {
       const commandText = findInTree(modal.children, (n: any) =>
         n.text === '$t:admin.settings.info.update_guide_cmd'
@@ -582,6 +640,8 @@ describe('코어 업데이트 레이아웃 JSON 구조', () => {
       expect(commandText.props.className).toContain('font-mono');
     });
 
+    // @scenario surface=guide_modal
+    // @effects guide_shows_command
     it('경고 시맨틱 자산(alert-warning)이 있다 (#408)', () => {
       const warningDiv = findInTree(modal.children, (n: any) =>
         n.props?.className?.includes('alert-warning')
@@ -607,6 +667,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
   });
 
   describe('Admin Maintenance 페이지 렌더링', () => {
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('제목, 메시지, 설명이 렌더링된다', async () => {
       const layout = loadAdminLayout('errors/maintenance.json');
       const contentLayout = {
@@ -630,6 +692,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
+    // @scenario surface=admin_maintenance
+    // @effects maintenance_page_structure
     it('spinning gear 아이콘이 렌더링된다', async () => {
       const layout = loadAdminLayout('errors/maintenance.json');
       const contentLayout = {
@@ -654,6 +718,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
   });
 
   describe('업데이트 확인 결과 모달 렌더링', () => {
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('업데이트가 있을 때 업데이트 가능 섹션이 표시된다', async () => {
       const modal = loadPartial('admin_settings/_modal_core_update_result.json');
       const layout = {
@@ -684,6 +750,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
+    // @scenario surface=result_modal
+    // @effects update_result_reflects_availability
     it('업데이트가 없을 때 최신 버전 메시지가 표시된다', async () => {
       const modal = loadPartial('admin_settings/_modal_core_update_result.json');
       const layout = {
@@ -714,6 +782,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
   });
 
   describe('변경사항 모달 렌더링', () => {
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('changelog 데이터가 없을 때 빈 상태 메시지가 표시된다', async () => {
       const modal = loadPartial('admin_settings/_modal_core_changelog.json');
       const layout = {
@@ -738,6 +808,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('changelog 데이터로 버전별 변경사항이 렌더링된다', async () => {
       const modal = loadPartial('admin_settings/_modal_core_changelog.json');
       const layout = {
@@ -768,6 +840,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
       testUtils.cleanup();
     });
 
+    // @scenario surface=changelog_modal
+    // @effects changelog_renders_versions
     it('여러 버전의 changelog가 모두 렌더링된다', async () => {
       const modal = loadPartial('admin_settings/_modal_core_changelog.json');
       const layout = {
@@ -799,6 +873,8 @@ describe('코어 업데이트 레이아웃 렌더링', () => {
   });
 
   describe('업데이트 안내 모달 렌더링', () => {
+    // @scenario surface=guide_modal
+    // @effects guide_shows_command
     it('경고 메시지와 터미널 명령어가 렌더링된다', async () => {
       const modal = loadPartial('admin_settings/_modal_core_update_guide.json');
       const layout = {

@@ -1,10 +1,6 @@
 <!-- 「기본값」 탭의 답변글 구획 — 새 게시판이 답글을 받을지, 받는다면 몇 단까지 이어 붙일지. 댓글 깊이와는 다른 축이다(이쪽은 글이 글에 달리는 것) -->
 <partial description="게시판 설정 > 답변글 탭">
   <div data-ref="reply" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <div>
       <section-layout data-type="layout" data-ref="section_reply" class="admin-card">
         <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.reply</h3>
@@ -23,7 +19,7 @@
                   <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_reply</p>
                 </div>
               </label>
-              <toggle data-type="composite" name="basic_defaults.use_reply" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+              <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_reply" data-type="composite" name="basic_defaults.use_reply" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_max_reply_depth" class="">
@@ -41,7 +37,7 @@
                 </div>
               </label>
               <div class="flex-shrink-0">
-                <input type="number" name="basic_defaults.max_reply_depth" min="{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}" class="{{(_local.errors?.['basic_defaults.max_reply_depth']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <input aria-label="$t:sirsoft-board.admin.settings.fields.max_reply_depth" type="number" name="basic_defaults.max_reply_depth" min="{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}" class="{{(_local.errors?.['basic_defaults.max_reply_depth']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
                 <span data-if="{{_local.errors?.['basic_defaults.max_reply_depth']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_reply_depth']) ? _local.errors['basic_defaults.max_reply_depth'][0] : _local.errors?.['basic_defaults.max_reply_depth']) ?? ''}}</span>
               </div>
             </div>
@@ -60,7 +56,7 @@
                   <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.reply_delete_policy</p>
                 </div>
               </label>
-              <select name="basic_defaults.reply_delete_policy" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+              <select aria-label="$t:sirsoft-board.admin.settings.fields.reply_delete_policy" name="basic_defaults.reply_delete_policy" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
                 <options>
                   <option value="cascade">$t:sirsoft-board.admin.settings.options.reply_delete_policy.cascade</option>
                   <option value="block">$t:sirsoft-board.admin.settings.options.reply_delete_policy.block</option>
@@ -82,7 +78,7 @@
                   <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.secret_reply_visibility</p>
                 </div>
               </label>
-              <select name="basic_defaults.secret_reply_visibility" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+              <select aria-label="$t:sirsoft-board.admin.settings.fields.secret_reply_visibility" name="basic_defaults.secret_reply_visibility" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
                 <prop name="options">
                   <item value="thread_path" label="$t:sirsoft-board.admin.settings.options.secret_reply_visibility.thread_path" description="$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.thread_path"/>
                   <item value="descendants_only" label="$t:sirsoft-board.admin.settings.options.secret_reply_visibility.descendants_only" description="$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.descendants_only"/>

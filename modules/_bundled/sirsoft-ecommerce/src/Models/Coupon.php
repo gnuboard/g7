@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -212,7 +213,7 @@ class Coupon extends Model implements FulltextSearchable
     {
         $locale = $locale ?? app()->getLocale();
 
-        return $this->name[$locale] ?? $this->name['ko'] ?? '';
+        return LocalizedValue::pick($this->name, $locale, anyAsLast: false) ?? '';
     }
 
     /**
@@ -228,7 +229,7 @@ class Coupon extends Model implements FulltextSearchable
         }
         $locale = $locale ?? app()->getLocale();
 
-        return $this->description[$locale] ?? $this->description['ko'] ?? null;
+        return LocalizedValue::pick($this->description, $locale, anyAsLast: false);
     }
 
     /**

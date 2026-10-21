@@ -88,7 +88,7 @@ describe('admin_basic en 사전 — 단수·복수', () => {
 
   // @scenario count_form=numeric
   // @effects number_free_wording
-  it('O-Q2-2: 업데이트 호환 경고가 유형 이름을 문장 가운데 대문자로 넣지 않는다', () => {
+  it('업데이트 호환 경고가 유형 이름을 문장 가운데 대문자로 넣지 않는다', () => {
     expect(en['extensions.update_modal.compat_warning_message']).toBe('This update requires core version {{required}} (current: {{installed}})');
   });
 });

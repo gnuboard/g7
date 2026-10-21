@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 적어 두었다. 코드가 실리지 않으면 모든 승인 거절이 같은 토큰으로 수렴해, 구매자는 사유를
  * 모르고 고객센터는 건을 특정할 식별자를 못 받는다.
  *
- * 회귀 배경 (#599 3차 실측 F-5, 2026-09-22): 토스 Confirm 이 `PG_API_ERROR` 로 거절하고
+ * 회귀 배경 (#599 실측, 2026-09-22): 토스 Confirm 이 `PG_API_ERROR` 로 거절하고
  * 결제행에 사유가 정상 기록됐는데도 화면 배너는 「실패 코드 **failed**」였다. `errorCode()`
  * 가 예외 **키**의 마지막 조각만 보았고, `OrderClaimException::paymentFailed()` 의 키 조각은
  * 상수 `failed` 이며 진짜 코드는 치환 파라미터에 따로 실려 있었기 때문이다.

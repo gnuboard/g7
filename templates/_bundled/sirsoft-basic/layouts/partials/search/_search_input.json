@@ -23,7 +23,7 @@
                     "props": {
                         "name": "search",
                         "size": "sm",
-                        "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
+                        "className": "absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 pointer-events-none"
                     }
                 },
                 {
@@ -79,6 +79,7 @@
                 }
             ],
             "props": {
+                "type": "button",
                 "className": "px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-95 active:bg-gray-700 dark:active:bg-gray-200 transition-all cursor-pointer"
             },
             "text": "$t:search.button"

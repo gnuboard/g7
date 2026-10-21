@@ -1,6 +1,6 @@
 /**
  * @file G7CoreGlobals.stateContracts.test.ts
- * @description `G7Core.stateContracts` 읽기 전용 조회 API (#639, 결정 P8)
+ * @description `G7Core.stateContracts` 읽기 전용 조회 API (#639, 결정)
  *
  * 서버가 인라인한 `G7Config.stateContracts`(코어 예약 + 활성 확장 선언)를 확장 코드가 읽는다. 읽기 전용이어야
  * 한다 — 확장이 계약 목록을 고치면 다른 확장이 보는 소유자·모양이 바뀐다.

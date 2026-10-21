@@ -33,7 +33,11 @@ class DatabaseSeederSampleTest extends TestCase
      */
     public function test_core_sample_seed_completes(): void
     {
-        // 설치가 끝난 사이트처럼 관리자 템플릿과 그 레이아웃이 있어야 레이아웃 버전 샘플이 돈다 (빈 DB 는 건너뛰어 결함을 못 잡는다)
+        // 설치가 끝난 사이트처럼 최고관리자·관리자 템플릿·그 레이아웃이 있어야 레이아웃 버전 샘플이 돈다 (빈 DB 는 건너뛰어 결함을 못 잡는다).
+        // 최고관리자는 시험 DB 에 남은 행에 기대지 않고 직접 만든다 — 없으면 레이아웃 버전 시더가 「관리자 없음」 으로 건너뛴다.
+        if (! User::query()->where('is_super', true)->exists()) {
+            User::factory()->create(['is_super' => true]);
+        }
         $template = Template::factory()->create(['type' => 'admin', 'status' => 'active']);
         TemplateLayout::create([
             'template_id' => $template->id,

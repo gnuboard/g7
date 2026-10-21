@@ -43,7 +43,7 @@ class CommentReactionApiTest extends BoardTestCase
             'active_reaction_types' => ['like', 'dislike'],
         ]);
 
-        // 댓글 반응 엔드포인트는 글·댓글 읽기 권한을 요구한다(7.1.0 abilities 게이트 S7) — 회원 역할에 부여해 둔다
+        // 댓글 반응 엔드포인트는 글·댓글 읽기 권한을 요구한다(7.1.0 abilities 게이트) — 회원 역할에 부여해 둔다
         $this->grantUserRolePermissions(['posts.read', 'comments.read']);
     }
 

@@ -197,4 +197,14 @@ return [
             'recipient_email' => '수신자 이메일',
         ],
     ],
+    // `notification:cleanup` 명령 출력
+    'console' => [
+        'cleanup' => [
+            'start' => '알림 정리 시작...',
+            'retention' => '읽음 보관: :read_days일, 미읽음 보관: :unread_days일',
+            'deleted_read' => '읽음 알림 삭제: :count건',
+            'deleted_unread' => '미읽음 알림 삭제: :count건',
+            'done' => '알림 정리 완료',
+        ],
+    ],
 ];

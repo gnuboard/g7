@@ -1,0 +1,31 @@
+feature: API 문서 실측 응답의 식별정보 마스킹 — 메일·설치 경로·호스트·공인 IP·민감 키
+
+description: |
+  `api:docgen` 은 개발 DB 에 대고 실측한 응답을 공개 문서의 JSON 예시 블록과 필드 표 샘플값으로 옮긴다.
+  종전에는 예시 블록만 민감 키(token·password 등)와 실측 base URL 호스트를 가렸고, 필드 표 샘플값은 원본 body 에서
+  추론돼 실제 메일 주소·설치 경로·APP_URL 호스트·공인 IP·토큰 앞부분이 그대로 실렸다(7.1.1 출시 전 공개 문서 점검).
+  예시 블록과 필드 표 추론 직전 두 곳에서 같은 마스킹기를 거쳐, 메일은 `user@example.com`, 설치 경로는 `<설치 경로>`,
+  APP_URL·실측 호스트는 `example.com`, 값 전체가 공인 IPv4 이면 `203.0.113.10`, 민감 키 값은 `{MASKED}` 로 바뀐다.
+  예약 도메인 주소·`@2x` 파일명·사설 IP·버전 문자열·이름만 겹치는 형제 경로와 호스트는 그대로 둔다.
+  URL 안의 밑줄 호스트(공개 DNS 이름이 아닌 개발 환경 호스트)는 목록에 없어도 `example.com` 으로 바꾼다 — 개발 DB 설정값에
+  남은 다른 개발 환경 호스트가 사이트 주소 예시로 실리던 경로다. 슬래시가 이스케이프된 `https:\/\/…` 꼴도 같은 경계로 잡는다.
+
+axes:
+  surface: [example_block, schema_table]
+  value_kind: [email, install_path, app_url_host, public_ip, probe_host, sensitive_key]
+
+exclusions:
+  - { surface: example_block, value_kind: probe_host, reason: "예시 블록의 실측 base URL 호스트는 종전 maskResponseHost 가 api.example.com 으로 가린다 — 기존 ApiDocgenCommandTest 회귀가 고정" }
+  - { surface: example_block, value_kind: sensitive_key, reason: "종전 sanitizeSensitive 의 키 규칙을 마스킹기로 옮긴 것 — 같은 walk 를 쓰는 schema_table x sensitive_key 칸이 대표" }
+  - { surface: schema_table, value_kind: email, reason: "문자열 치환 규칙은 두 면이 같은 sanitize 를 쓴다 — example_block x email 칸이 규칙을, schema_table x sensitive_key 칸이 표 경로 연결을 고정(같은 테스트가 메일도 단언)" }
+  - { surface: schema_table, value_kind: install_path, reason: "같은 sanitize — example_block x install_path 칸이 규칙을 고정, 표 경로 연결은 schema_table x sensitive_key 칸이 함께 단언" }
+  - { surface: schema_table, value_kind: app_url_host, reason: "같은 sanitize — example_block x app_url_host 칸이 규칙을 고정, 표 경로 연결은 schema_table x sensitive_key 칸이 함께 단언" }
+  - { surface: schema_table, value_kind: public_ip, reason: "같은 sanitize — example_block x public_ip 칸이 규칙을 고정" }
+
+effects:
+  - apidoc_identifiers_masked_in_example_block
+  - apidoc_identifiers_masked_in_schema_samples
+  - apidoc_reserved_values_kept
+
+test_files:
+  - tests/Unit/Support/ApiDoc/ApiDocExampleSanitizerTest.php

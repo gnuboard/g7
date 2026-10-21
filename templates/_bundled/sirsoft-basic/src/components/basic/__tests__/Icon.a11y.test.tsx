@@ -1,6 +1,6 @@
 /**
  * @file Icon.a11y.test.tsx
- * @description sirsoft-basic Icon — 꾸밈 아이콘 숨김 회귀 테스트 (7.1.0 영역 J D-J4, admin_basic 대칭)
+ * @description sirsoft-basic Icon — 꾸밈 아이콘 숨김 회귀 테스트 (7.1.0, admin_basic 대칭)
  *
  * 이름 없는 아이콘에 글리프 이름(영어)을 이름표로 달아, 마이페이지 알림 삭제 단추가 「trash can」 으로,
  * 글자 단추는 「heart 찜하기」 처럼 읽혔다. 이름(ariaLabel)을 받은 아이콘만 이미지로 읽히고 나머지는 숨긴다.

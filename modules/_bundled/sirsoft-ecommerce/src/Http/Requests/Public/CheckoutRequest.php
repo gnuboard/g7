@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Public;
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesGuestCartKeyHeader;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 
 /**
@@ -14,6 +16,8 @@ use Modules\Sirsoft\Ecommerce\Models\Cart;
  */
 class CheckoutRequest extends FormRequest
 {
+    use ValidatesGuestCartKeyHeader;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -68,6 +72,20 @@ class CheckoutRequest extends FormRequest
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.checkout.validation_rules', $rules, $this);
+    }
+
+    /**
+     * 비회원 X-Cart-Key 헤더를 검증합니다 — 조회·연장·삭제(CartKeyRequest)와 같은 판정.
+     * 키 없는 비회원 요청이 주인 없는(user_id·cart_key 모두 null) 임시 주문을 만들지 않게 한다.
+     *
+     * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $this->validateCartKeyHeader($validator);
+        });
     }
 
     /**

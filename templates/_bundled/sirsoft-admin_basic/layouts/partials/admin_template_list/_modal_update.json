@@ -648,7 +648,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "file-alt",
-                                                                "className": "text-amber-500 dark:text-amber-400 shrink-0"
+                                                                "className": "text-amber-600 dark:text-amber-400 shrink-0"
                                                             }
                                                         },
                                                         {
@@ -664,7 +664,7 @@
                                                             "name": "Span",
                                                             "if": "{{modLayout.size_diff !== 0}}",
                                                             "props": {
-                                                                "className": "{{modLayout.size_diff > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
+                                                                "className": "{{modLayout.size_diff > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
                                                             },
                                                             "text": "{{Math.abs(modLayout.size_diff) >= 1024 ? (modLayout.size_diff > 0 ? '+' : '-') + (Math.abs(modLayout.size_diff) / 1024).toFixed(1) + 'KB' : (modLayout.size_diff > 0 ? '+' : '') + modLayout.size_diff + 'B'}}"
                                                         },
@@ -672,7 +672,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
+                                                                "className": "text-gray-500 dark:text-gray-400 shrink-0"
                                                             },
                                                             "text": "{{modLayout.updated_at}}"
                                                         }
@@ -684,7 +684,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1"
+                                                "className": "flex-center mt-2 text-xs text-amber-700 dark:text-amber-400 gap-1"
                                             },
                                             "children": [
                                                 {
@@ -974,6 +974,15 @@
                                             }
                                         },
                                         {
+                                            "comment": "멈춘 업데이트를 정리하고 다시 업데이트했으면 확장은 비활성으로 남는다(정리 규칙) — 다시 켜라고 알린다",
+                                            "handler": "toast",
+                                            "if": "{{_global.selectedTemplate?.stuck_update === true}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:admin.templates.stuck_update_reactivate_hint"
+                                            }
+                                        },
+                                        {
                                             "handler": "refetchDataSource",
                                             "params": {
                                                 "dataSourceId": "templates"
@@ -1037,7 +1046,7 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isTemplateUpdating || (_global.selectedTemplate?.is_compatible === false && _global.templateForceUpdate !== true)}}",
                         "type": "button"
                     },

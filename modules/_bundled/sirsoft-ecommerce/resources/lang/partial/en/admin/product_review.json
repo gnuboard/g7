@@ -77,7 +77,8 @@
     "reply_status": {
       "replied": "Replied",
       "not_replied": "Not Replied"
-    }
+    },
+    "quantity_value": "{{count}}"
   },
   "detail": {
     "purchase_info": {

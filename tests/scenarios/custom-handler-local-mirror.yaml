@@ -1,0 +1,19 @@
+feature: 커스텀 핸들러 setState 미러 — 저장소 A 전용 쓰기를 저장소 B(_global._local)에도 싣는 계약
+
+description: |
+  커스텀 핸들러가 `context.setState`(저장소 A)로만 쓰면 후속 액션(sequence 의 `currentState`, apiCall body)은
+  저장소 B 의 옛 값을 읽어 화면과 요청이 서로 다른 값을 봤다(engine-v1.63.5, 트러블슈팅 setState 사례 42).
+  미러가 붙는 조건과 붙지 않아야 하는 조건(모달 컨텍스트 스택·replace 병합·errors 키·File 같은 non-plain 값·
+  함수형 업데이터·scope parent)을 함께 잠근다. 저장소 B 는 손으로 채우지 않고 실제 `G7Core.state.setLocal` 로 심는다.
+
+axes:
+  gate: [mirrored, excluded]
+
+effects:
+  - handler_write_reaches_store_b
+  - store_a_written_once_without_recursion
+  - mirror_skipped_for_unsafe_writes
+  - mirror_proxy_does_not_leak_to_parent_scope
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.canonicalLocalWrite.test.ts

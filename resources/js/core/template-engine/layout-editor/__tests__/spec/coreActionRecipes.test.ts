@@ -133,6 +133,38 @@ describe('coreActionRecipes — 카탈로그 무결성 (C1~C27)', () => {
 
   /**
    * @scenario catalog_aspect=param_widget
+   * @effects editor_core_catalog_lists_every_core_handler, navigate_fallback_path_survives_editor_roundtrip
+   */
+  it('navigate 의 fallbackPath 는 편집기 칸(page-picker)으로 보이고 폼 왕복 뒤에도 남는다 (engine-v1.80.1)', () => {
+    // 로그인 복귀(`{{query.redirect}}`)처럼 거부·빈 주소 대신 갈 경로. 칸이나 build 틀에 없으면 편집기로 그 navigate 를
+    // 열어 저장할 때 값이 빠져, 잘못된 복귀 주소로 들어온 사용자가 로그인 뒤 화면에 머무는 결함이 되살아난다.
+    const param = CORE_ACTION_RECIPES.navigate.params?.find((p) => p.key === 'fallbackPath');
+    expect(param).toBeDefined();
+    expect(param?.widget).toBe('page-picker');
+    expect(param?.label).toBe('$t:layout_editor.action_recipe.navigate.param_fallback_path');
+
+    const normalized = normalizeActionRecipes(CORE_ACTION_RECIPES);
+    const recipe = normalized.find((r) => r.id === 'navigate')!;
+
+    // 기존 navigate(fallbackPath 있음)를 열면 칸에 값이 채워지고, 그대로 적용하면 같은 값이 나온다
+    for (const fallbackPath of ['/', '/admin', '{{_global.shopBase}}/guest/orders']) {
+      const action = { handler: 'navigate', params: { path: '{{query.redirect}}', fallbackPath } };
+      const card = resolveActionCard(action, normalized);
+      expect(card.kind).toBe('preset');
+      if (card.kind !== 'preset') continue;
+      expect(card.values.fallbackPath).toBe(fallbackPath);
+      const rebuilt = buildAction(normalized.find((r) => r.id === card.recipeId)!, card.values) as { params?: Record<string, unknown> };
+      expect(rebuilt.params?.fallbackPath).toBe(fallbackPath);
+      expect(rebuilt.params?.path).toBe('{{query.redirect}}');
+    }
+
+    // 칸에 값을 넣어 적용하면 params.fallbackPath 가 생기고, 비워 두면 키 자체가 없다(종전 navigate 와 같은 모양)
+    expect((buildAction(recipe, { path: '{{query.redirect}}', fallbackPath: '/mypage' }) as { params?: Record<string, unknown> }).params?.fallbackPath).toBe('/mypage');
+    expect((buildAction(recipe, { path: '/board' }) as { params?: Record<string, unknown> }).params).not.toHaveProperty('fallbackPath');
+  });
+
+  /**
+   * @scenario catalog_aspect=param_widget
    * @effects editor_core_catalog_lists_every_core_handler, switch_cases_param_locked_advanced
    */
   it('switch 의 cases 는 advanced 잠금 — cases 는 객체맵(Record)이라 action-list 로 표현 불가', () => {

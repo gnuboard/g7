@@ -13,7 +13,7 @@ use Modules\Sirsoft\Page\Tests\FeatureTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 공개 페이지 응답의 관리자 링크 판정 회귀 테스트 (7.1.0 abilities 게이트 G28)
+ * 공개 페이지 응답의 관리자 링크 판정 회귀 테스트 (7.1.0 abilities 게이트)
  *
  * 공개 페이지의 [편집]·버전 배지·없는 페이지의 [페이지 만들기]가 `is_admin` 만 보고 열려, 페이지 수정·등록
  * 권한이 없는 관리자도 링크를 눌러 403 화면을 만났다. 응답이 그 링크의 대상 화면과 같은 권한을 싣는다.

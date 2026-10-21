@@ -4,7 +4,7 @@
 feature: tosspayments_validate_p2_claim_payment_hardening
 
 description: |
-  #599 `/validate branch` 07-core-plugins 가 찾은 결제 플러그인 결함 중 토스페이먼츠 몫.
+  #599 브랜치 검증이 찾은 결제 플러그인 결함 중 토스페이먼츠 몫.
 
   - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove` → `UserClaimService::approve`)는
     서버 콜백과 같은 `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(취소)은 서버 콜백의

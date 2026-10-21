@@ -27,7 +27,7 @@ use PHPUnit\Framework\Attributes\Group;
  * 저장값은 UTC 이고, 앱 시간대(`app.timezone`)도 UTC 다. 「오늘」을 앱 시간대로 자르면
  * 한국 사이트에서는 오전 9시에 하루가 바뀐다 — 일일 신고 한도가 오전 9시에 풀리고(「오늘 신고
  * 가능 횟수」 문구와 어긋난다), 게시판 대시보드의 일 집계가 새벽 글을 전날로 센다(K2 실측
- * 2026-10-06, 주 세션 관측 O-CF3). 사이트 표준시(`general.timezone` → `app.default_user_timezone`,
+ * 2026-10-06). 사이트 표준시(`general.timezone` → `app.default_user_timezone`,
  * 스케줄러도 같은 값 `app.schedule_timezone`)로 자른다.
  */
 #[Group('board')]

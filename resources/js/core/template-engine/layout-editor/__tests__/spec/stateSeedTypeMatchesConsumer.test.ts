@@ -204,6 +204,8 @@ function nonStringUsages(
 const SPEC_FILES = discoverSpecFiles();
 const LAYOUT_FILES = discoverLayouts();
 const PROP_TYPES = discoverComponentPropTypes();
+/** 레이아웃 원문 전체 — 수집 단계에서 한 번 읽는다(시험 한도 밖). 시험은 판정만 한다 */
+const LAYOUT_MARKUP = LAYOUT_FILES.map((abs) => readFileSync(abs, 'utf8')).join('\n');
 
 // 모집단이 비면 아래 단언은 조용히 통과한다 — 「위반 0」과 「검사 대상 0」은 다른 명제다.
 describe('표본 타입 가드 모집단', () => {
@@ -227,7 +229,7 @@ describe('자동 채움 표본의 타입 정합', () => {
    * @effects sample_seed_type_matches_component_prop_type
    */
   it('레이아웃이 배열·수로 읽는 자리에 문자열 표본이 남아 있지 않다', () => {
-    const markup = LAYOUT_FILES.map((abs) => readFileSync(abs, 'utf8')).join('\n');
+    const markup = LAYOUT_MARKUP;
     const offenders = new Set<string>();
     // (부모,키) 쌍으로 묶어 같은 판정을 반복하지 않는다. 키 이름이 마크업에 아예 없으면
     // 정규식을 돌리지 않는다 — 스펙 표본 수백 건 × 정규식 6종을 전 마크업에 그대로 돌리면

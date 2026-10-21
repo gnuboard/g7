@@ -2,8 +2,10 @@
 
 namespace Plugins\Sirsoft\Tosspayments\Tests;
 
+use App\Enums\ExtensionStatus;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
+use App\Models\Module as ModuleRegistration;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -14,6 +16,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\TestingSeeder;
 use Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 use Tests\TestCase;
 
 /**
@@ -96,6 +100,7 @@ abstract class PluginTestCase extends TestCase
 
         // 이커머스 모듈 ServiceProvider 등록 (Repository 바인딩)
         $this->app->register(EcommerceServiceProvider::class);
+        $this->ensureEcommerceModuleReady();
 
         // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
@@ -111,6 +116,39 @@ abstract class PluginTestCase extends TestCase
 
         // HookManager 상태 스냅샷 (tearDown 에서 복원)
         $this->snapshotHookManager();
+    }
+
+    /**
+     * 이커머스 등록 행과 설정 미러를 매 테스트마다 보장합니다.
+     *
+     * 등록 행은 TestingSeeder 가 만들지만 시딩은 migrate:fresh 와 함께 프로세스당 1회만 돈다. 같은 프로세스에서
+     * 코어 테스트(Tests\TestCase 상속)가 먼저 migrate:fresh 를 돌리면 스키마만 있고 이 행이 없는 DB 가 되고,
+     * 앱 부팅 때 설정 미러(`g7_module_settings()`)는 활성 모듈만 싣기 때문에 이커머스 통화 설정이 빈다.
+     * 그러면 KRW 소수 자릿수가 2로 읽혀 청구액 3,000 이 300,000 으로 대조되고, 청구 승인 리스너가
+     * 금액 불일치로 거절한다(단독 실행 통과·묶음 실행 실패). 이커머스 ModuleTestCase 와 같은 방식으로
+     * 행을 보장하고 미러·통화 서비스 싱글톤·통화 설정 캐시를 다시 만든다. 테스트 트랜잭션 안이라 롤백된다.
+     *
+     * @return void 반환값 없음
+     */
+    private function ensureEcommerceModuleReady(): void
+    {
+        $registration = ModuleRegistration::firstOrCreate(
+            ['identifier' => 'sirsoft-ecommerce'],
+            [
+                'vendor' => 'sirsoft',
+                'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
+                'status' => ExtensionStatus::Active->value,
+                'version' => '1.0.0',
+            ]
+        );
+
+        if ($registration->status !== ExtensionStatus::Active->value) {
+            $registration->update(['status' => ExtensionStatus::Active->value]);
+        }
+
+        g7_refresh_module_settings_config('sirsoft-ecommerce');
+        $this->app->forgetInstance(CurrencyConversionService::class);
+        CurrencySettingsCache::clear();
     }
 
     /**

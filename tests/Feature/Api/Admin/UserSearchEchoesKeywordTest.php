@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 회원 검색 응답이 **자기 키워드를 싣고 오는지** 검증합니다. (T2-D1 · #599 3차 실측)
+ * 회원 검색 응답이 **자기 키워드를 싣고 오는지** 검증합니다. (#599 실측)
  *
  * 관리자 마일리지 수동 지급 모달의 회원 자동완성은 글자마다 요청을 낸다. 응답은 도착 순서가
  * 보장되지 않아 **가장 큰 옛 응답이 가장 늦게** 오고, 화면은 그때 입력칸을 다시 읽어 그 목록에
@@ -155,7 +155,7 @@ class UserSearchEchoesKeywordTest extends TestCase
         User::factory()->create(['name' => 'qa-wildXa', 'nickname' => null, 'email' => 'qa-under-wild@example.test']);
 
         // 회원 목록 검색(core 55)과 같이 자동완성 검색도 `%`·`_` 를 글자 그대로 찾는다 — 그대로 두면 `%` 한 글자가
-        // 범위 안 전체 회원을 돌려준다(#736 영역 C 실측: keyword=% → 167명 전부).
+        // 범위 안 전체 회원을 돌려준다(#736 실측: keyword=% → 167명 전부).
         $pct = $this->withToken($this->token)->getJson('/api/admin/users/search?keyword='.urlencode('pct%1'))->assertOk();
         $this->assertSame([$percent->uuid], collect($pct->json('data'))->pluck('uuid')->all());
 

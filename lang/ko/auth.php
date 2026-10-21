@@ -61,4 +61,14 @@ return [
     'reset_token_expired' => '비밀번호 재설정 토큰이 만료되었습니다. 다시 요청해주세요.',
     'password_reset_email_sent' => '비밀번호 재설정 이메일이 발송되었습니다.',
     'email_send_failed' => '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    // `auth:process-password-expiry` 명령 출력
+    'console' => [
+        'process_password_expiry' => [
+            'disabled' => '비밀번호 만료 기능이 꺼져 있어 실행하지 않았습니다. (security.password_expiry_enabled = false)',
+            'locked' => '관리자 직권 실행이 비밀번호 만료 처리를 하고 있어 이번 주기는 건너뛰었습니다.',
+            'notice' => '만료 사전 안내: :count건 (남은 대상 :remaining건)',
+            'expire' => '만료일 처리: :count건 (남은 대상 :remaining건)',
+            'stage_failed' => '단계 실패 — :stage: :error',
+        ],
+    ],
 ];

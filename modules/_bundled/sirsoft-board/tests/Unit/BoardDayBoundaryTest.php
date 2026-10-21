@@ -17,7 +17,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 게시판 「하루」 경계 테스트 (7.1.0 전수 실측 O-CF3 · 결정 P4)
+ * 게시판 「하루」 경계 테스트 (7.1.0 전수 실측 · 결정)
  *
  * 원칙: 사람이 보는 화면의 하루는 그 사람의 시간대, 서버에 적는 시각은 UTC.
  * 게시판의 하루 경계 세 곳이 UTC 자정으로 잘려, 한국 시간 새벽 0~9시에 생긴 글·신고가 전날로 묶였다.

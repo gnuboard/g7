@@ -321,7 +321,7 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         const tabNav = findById(content, 'tab_navigation');
         const tabChange = asArray(tabNav?.actions)[0];
 
-        // 고친 것이 있으면 확인 창을 먼저 띄우고(7.1.0 조치 G2 — admin-board-settings-unsaved-tab-confirm.test.ts),
+        // 고친 것이 있으면 확인 창을 먼저 띄우고(7.1.0 브라우저 실측 조치 — admin-board-settings-unsaved-tab-confirm.test.ts),
         // 고친 것이 없으면 아래 순서로 바로 옮긴다
         expect(tabChange.handler).toBe('conditions');
         const tabAction = tabChange.conditions[1].then;

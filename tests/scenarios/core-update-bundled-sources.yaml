@@ -70,11 +70,16 @@ effects:
   # core:bundled-sources
   - list_shows_inventory_and_refreshes_record
   - list_falls_back_to_record_then_disk
+  - list_record_fallback_lists_disk_bundles_and_unplaced_count   # 기록 파일 갈래도 디스크 번들 전체(판·의존 대상)+디스크에 없는 미배치를 보이고 미배치 수를 알린다(미배치 0 이면 빈 표이던 문제)
+  - list_disk_fallback_reads_disk_manifests   # 배포본·기록이 없을 때 디스크 _bundled manifest 의 판·샘플 표시·의존 대상을 채운다(버전 열이 전부 `-` 이던 7.1.1 출시 전 관찰)
   - place_copies_bundle_dependencies_and_language_pack
   - mismatched_or_invalid_release_is_rejected
   - prune_previews_by_default_and_deletes_with_force
   - prune_never_touches_installed_or_user_dirs
   - prune_keeps_modified_and_their_dependencies
+  # 배포본 없음 안내 — 「추출 실패」가 아니라 「찾지 못함」, prune 은 정리 문구(7.1.1 출시 전)
+  - github_missing_release_is_reported_as_not_found
+  - prune_without_release_speaks_of_pruning
   # 관리자 안내 API
   - notice_lists_unplaced_by_type_without_hidden
   - notice_hides_types_without_read_permission

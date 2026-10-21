@@ -96,7 +96,7 @@
                                 "comment": "로딩/에러 상태 처리",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{profile.loading}}",
+                                "if": "{{profile === undefined}}",
                                 "props": {
                                     "className": "flex justify-center items-center py-20"
                                 },
@@ -114,7 +114,7 @@
                                 "comment": "프로필 내용",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{profile.data && !profile.loading && !profile.error}}",
+                                "if": "{{profile.data}}",
                                 "props": {
                                     "className": "space-y-6"
                                 },
@@ -296,12 +296,12 @@
                                                                 "responsive": {
                                                                     "portable": {
                                                                         "props": {
-                                                                            "className": "text-xl font-bold text-gray-400 dark:text-gray-500 line-through"
+                                                                            "className": "text-xl font-bold text-gray-500 dark:text-gray-500 line-through"
                                                                         }
                                                                     }
                                                                 },
                                                                 "props": {
-                                                                    "className": "text-2xl font-bold text-gray-400 dark:text-gray-500 line-through"
+                                                                    "className": "text-2xl font-bold text-gray-500 dark:text-gray-500 line-through"
                                                                 },
                                                                 "text": "$t:userinfo.withdrawn_user"
                                                             }
@@ -406,18 +406,16 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/users/{{route.userId}}/posts"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                            "href": "/users/{{route.userId}}/posts",
+                                                            "className": "inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -438,7 +436,7 @@
                                                 "children": [
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "iteration": {
                                                             "source": "{{recentPosts.data?.data ?? []}}",
                                                             "item_var": "post"
@@ -446,13 +444,11 @@
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/board/{{post.board_slug}}/{{post.id}}"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
+                                                            "href": "/board/{{post.board_slug}}/{{post.id}}",
                                                             "className": "block w-full text-left px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                                                         },
                                                         "children": [
@@ -486,7 +482,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{post.category}}",
                                                                                 "props": {
-                                                                                    "className": "flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap"
+                                                                                    "className": "flex-shrink-0 truncate max-w-32 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded whitespace-nowrap"
                                                                                 },
                                                                                 "text": "{{post.category}}"
                                                                             },
@@ -498,7 +494,7 @@
                                                                                 "props": {
                                                                                     "name": "lock",
                                                                                     "size": "xs",
-                                                                                    "className": "flex-shrink-0 text-yellow-500 dark:text-yellow-400"
+                                                                                    "className": "flex-shrink-0 text-yellow-700 dark:text-yellow-400"
                                                                                 }
                                                                             },
                                                                             {
@@ -509,7 +505,7 @@
                                                                                 "props": {
                                                                                     "name": "eye-slash",
                                                                                     "size": "xs",
-                                                                                    "className": "flex-shrink-0 text-orange-500 dark:text-orange-400"
+                                                                                    "className": "flex-shrink-0 text-orange-600 dark:text-orange-400"
                                                                                 }
                                                                             },
                                                                             {
@@ -528,6 +524,19 @@
                                                                                             "className": "truncate text-sm font-medium text-gray-900 dark:text-white"
                                                                                         },
                                                                                         "text": "{{post.title}}"
+                                                                                    },
+                                                                                    {
+                                                                                        "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                                                                        "type": "extension_point",
+                                                                                        "name": "board_post_row_badges",
+                                                                                        "props": {
+                                                                                            "className": "contents",
+                                                                                            "data-extension-point": "board_post_row_badges",
+                                                                                            "post": "{{post}}",
+                                                                                            "postId": "{{post.id}}",
+                                                                                            "boardSlug": "{{post.board_slug}}",
+                                                                                            "context": "user_profile_recent"
+                                                                                        }
                                                                                     },
                                                                                     {
                                                                                         "comment": "댓글 수",
@@ -586,18 +595,16 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/users/{{route.userId}}/posts"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                            "href": "/users/{{route.userId}}/posts",
+                                                            "className": "inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -622,7 +629,7 @@
                                                         "props": {
                                                             "name": "file-circle-xmark",
                                                             "size": "2xl",
-                                                            "className": "text-gray-300 dark:text-gray-600 mb-4"
+                                                            "className": "text-gray-500 dark:text-gray-500 mb-4"
                                                         }
                                                     },
                                                     {

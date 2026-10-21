@@ -1,6 +1,6 @@
 /**
  * @file ColumnSelector.a11y.test.tsx
- * @description 컬럼 선택 목록의 체크박스 이름·키보드 조작 (7.1.0 영역 J D-J13)
+ * @description 컬럼 선택 목록의 체크박스 이름·키보드 조작 (7.1.0)
  *
  * 컬럼 선택 목록의 체크박스가 읽기 전용(readOnly)·pointer-events 없음이라 접근성 트리에 이름 없는 체크박스로만
  * 보였고, 키보드(Tab → Space)로는 켜고 끌 수 없었다(행 div 클릭만 동작). 체크박스에 열 이름을 달고 직접 조작한다.

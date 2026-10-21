@@ -1,0 +1,23 @@
+feature: 레이아웃 편집기 속성 창 [속성] 탭 — 노드별 노출 조건과 편집기 디스패치
+
+description: |
+  [속성] 탭은 노드가 편집할 거리를 가질 때만 뜨고 탭 순서는 설정→속성→스타일이다. 등장 근거는 넷이다 —
+  propControls(구조·수치 컨트롤), capability.nodeEditor(등록된 kind 의 노드 에디터를 직접 렌더, 미등록 kind 는
+  렌더 0 으로 디그레이드), dataProps 선언(데이터 연결 영역), node.iteration(반복 데이터 연결 영역 — capability 와
+  무관한 구조 키). dataProps 가 없는 구조·수치 prop 만 가진 노드에는 데이터 연결 영역이 뜨지 않는다. 코어 dataKey
+  컨트롤은 props 가 아니라 노드 최상위(`node.dataKey`)에 쓴다.
+
+axes:
+  node: [prop_controls, node_editor, data_props, iteration, core_props]
+
+effects:
+  - props_tab_appears_for_editable_node
+  - props_tab_ordered_between_settings_and_style
+  - registered_node_editor_renders_in_props_tab
+  - unregistered_node_editor_degrades_without_render
+  - data_binding_area_only_for_declared_dataprops
+  - iteration_binding_area_follows_node_structure
+  - core_data_key_written_to_node_not_props
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PropertyEditorModal.propsTab.test.tsx

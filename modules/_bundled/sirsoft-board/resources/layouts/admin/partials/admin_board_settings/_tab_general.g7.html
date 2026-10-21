@@ -1,10 +1,6 @@
 <!-- 설정의 「일반」 탭 — 「기본값」 탭과 성격이 다르다. 이쪽은 새 게시판이 물려받는 값이 아니라 이미 있는 게시판 전부에 곧바로 걸리는 전역 설정이라 일괄 적용 체크박스가 없다. 날짜 표기 방식(절대/상대)을 카드째 눌러 고른다 -->
 <partial description="게시판 환경설정 기본 설정 탭 콘텐츠 (전역 즉시 적용 설정)">
   <div data-ref="tab_content_general" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'general'}}">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <div data-ref="general_section" class="admin-card">
       <h2 class="card-title">$t:sirsoft-board.admin.settings.sections.general</h2>
       <div class="card-description">$t:sirsoft-board.admin.settings.sections.general_description</div>

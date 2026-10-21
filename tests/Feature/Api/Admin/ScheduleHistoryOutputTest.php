@@ -15,7 +15,7 @@ use Tests\TestCase;
  * 스케줄 실행 이력 목록 — 회차별 출력 회귀 테스트
  *
  * 실행 이력 창은 회차마다 정상 출력과 오류 출력을 펼쳐 보이는데(실패 원인을 여기서 가른다), 목록 응답이
- * `output`/`error_output` 을 빼고 있어 창에서 출력이 한 번도 보이지 않았다(7.1.0 영역 J D-J2).
+ * `output`/`error_output` 을 빼고 있어 창에서 출력이 한 번도 보이지 않았다(7.1.0).
  * 저장소는 지연 조인으로 넓은 칸까지 이번 쪽 분량만 읽으므로 응답에서도 그대로 싣는다.
  *
  * 시나리오 SSoT: tests/scenarios/schedule-history-modal.yaml

@@ -203,6 +203,46 @@ class LayoutMarkupDecompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 이벤트 받기의 키 한정자는 `<on listen key>` 로 역변환되고 왕복한다 (7.1.1 출시 전 실측).
+     *
+     * 컴파일러가 구독 갈래의 key 를 산출에 남기게 됐으므로(저장 검사 경고용), 역변환기도 그 key 를 핸들러 속성이
+     * 아니라 `<on>` 속성으로 찍는다 — 여러 동작(암묵 sequence)에서도 래퍼가 생기지 않는다.
+     *
+     * @scenario compile_unit=decompile,source_health=valid
+     *
+     * @effects listen_key_round_trips_on_on_element
+     *
+     * @return void 반환값 없음
+     */
+    public function test_listen_key_round_trips_on_on_element(): void
+    {
+        $json = [
+            'layout_name' => 'listen_key',
+            'slots' => [
+                'content' => [[
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'onComponentEvent' => [[
+                        'event' => 'search:submit',
+                        'key' => 'Enter',
+                        'handler' => 'sequence',
+                        'actions' => [
+                            ['handler' => 'setState', 'params' => ['target' => 'local', 'a' => 1]],
+                            ['handler' => 'refetchDataSource', 'params' => ['dataSourceId' => 'list']],
+                        ],
+                    ]],
+                ]],
+            ],
+        ];
+
+        $markup = $this->decompiler->decompile($json);
+        $this->assertStringContainsString('<on listen="search:submit" key="Enter">', $markup);
+        $this->assertStringNotContainsString('<sequence', $markup);
+        $this->assertStringNotContainsString('<json', $markup);
+        $this->assertRoundTrips($json);
+    }
+
+    /**
      * 자식이 하나인 명시 `sequence` 는 래퍼를 잃지 않는다.
      *
      * 컴파일러는 블록 자식이 하나면 그 액션에 트리거만 얹고 sequence 로 감싸지 않는다

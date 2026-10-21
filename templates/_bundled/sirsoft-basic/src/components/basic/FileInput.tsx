@@ -7,7 +7,7 @@ import { Input } from './Input';
 import { Button } from './Button';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 지우기 단추 이름·용량 초과 문구·기본 단추/안내 글자가 언어와 무관하게 영어였다(7.1.0 영역 J D-J8, 관측 O-F3).
+// 지우기 단추 이름·용량 초과 문구·기본 단추/안내 글자가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -131,7 +131,7 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
         <Button
           type="button"
           onClick={handleClear}
-          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           aria-label={tOr('common.file_input.clear', 'Clear file')}
         >
           <Svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

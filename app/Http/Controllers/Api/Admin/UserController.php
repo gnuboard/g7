@@ -265,10 +265,15 @@ class UserController extends AdminBaseController
                 $user = $this->userService->getUserById($validated['id']);
                 $users = $user ? collect([$user]) : collect();
             } else {
-                $users = $this->userService->searchByKeyword($validated['keyword']);
+                // 알림 수신자처럼 회원을 「고르는」 창은 탈퇴 회원을 뺀다(exclude_withdrawn) — 탈퇴 회원은 연락처가 익명화되고
+                // 바깥 채널 발송이 막혀 골라도 받지 못한다. 기록을 찾는 목록 필터(활동 로그·주문 등)는 옵션 없이 부른다.
+                $users = $this->userService->searchByKeyword(
+                    $validated['keyword'],
+                    (bool) ($validated['exclude_withdrawn'] ?? false),
+                );
             }
 
-            // **이 목록을 만든 키워드를 함께 싣는다** (T2-D1 · #599 3차 실측).
+            // **이 목록을 만든 키워드를 함께 싣는다** (#599 실측).
             //
             // 회원 자동완성은 글자마다 요청을 내고 응답의 도착 순서는 보장되지 않는다. 화면이
             // 「지금 입력값」으로 도착한 목록에 도장을 찍으면, 가장 큰 옛 응답(한 글자가 부른

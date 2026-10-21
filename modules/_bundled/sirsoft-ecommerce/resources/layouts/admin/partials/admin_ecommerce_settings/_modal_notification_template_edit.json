@@ -18,6 +18,18 @@
             "type": "basic",
             "name": "Div",
             "blur_until_loaded": "{{_global.ecommerce_notification_template_form_modal?.isSaving}}",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창 닫힘 정리 — 창 머리 닫기·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때, 「특정 회원」 검색 결과(이름·이메일)와 고른 회원 이름을 담은 창 이름 공간을 비운다(7.1.1). 여는 쪽이 열 때마다 새로 채운다",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "ecommerce_notification_template_form_modal": null
+                        }
+                    }
+                ]
+            },
             "props": {
                 "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
             },
@@ -62,7 +74,7 @@
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "text-error-strong"
+                                                        "className": "ecommerce-tone-error-strong text-sm font-medium"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.edit_modal.validation_error"
                                                 },
@@ -82,7 +94,7 @@
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "text-error-soft"
+                                                                "className": "ecommerce-tone-error-soft text-sm"
                                                             },
                                                             "text": "{{errMsg}}"
                                                         }
@@ -130,7 +142,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "·"
                                 },
@@ -231,7 +243,7 @@
                                                             "props": {
                                                                 "type": "button",
                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}",
-                                                                "className": "p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                                "className": "p-1 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                                                             },
                                                             "children": [
                                                                 {
@@ -279,6 +291,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "value": "{{rcpt.type ?? ''}}",
+                                                                        "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}",
                                                                         "className": "w-full text-sm",
                                                                         "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.ecommerce_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
                                                                     }
@@ -318,6 +331,7 @@
                                                                             ],
                                                                             "props": {
                                                                                 "value": "{{rcpt.relation ?? ''}}",
+                                                                                "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.relation_label')}}",
                                                                                 "className": "w-full text-sm",
                                                                                 "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.ecommerce_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.ecommerce_notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}"
                                                                             }
@@ -328,7 +342,7 @@
                                                                             "name": "P",
                                                                             "if": "{{((rcpt.relation ?? '') !== '') && !(_global.ecommerce_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}",
                                                                             "props": {
-                                                                                "className": "text-warning-soft mt-1"
+                                                                                "className": "ecommerce-tone-warning-soft mt-1 text-xs"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}"
                                                                         }
@@ -434,17 +448,18 @@
                                                                                     },
                                                                                     "debounce": 300,
                                                                                     "onSuccess": {
+                                                                                        "comment": "창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1)",
                                                                                         "handler": "setState",
                                                                                         "params": {
                                                                                             "target": "global",
-                                                                                            "ecommerce_notification_template_form_modal.roleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
+                                                                                            "ecommerce_notification_template_form_modal": "{{_global.ecommerce_notification_template_form_modal == null ? null : ({ roleSearchResults: (response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier })) })}}"
                                                                                         }
                                                                                     },
                                                                                     "onError": {
                                                                                         "handler": "setState",
                                                                                         "params": {
                                                                                             "target": "global",
-                                                                                            "ecommerce_notification_template_form_modal.roleSearchResults": []
+                                                                                            "ecommerce_notification_template_form_modal": "{{_global.ecommerce_notification_template_form_modal == null ? null : ({ roleSearchResults: [] })}}"
                                                                                         }
                                                                                     }
                                                                                 },
@@ -461,6 +476,7 @@
                                                                             "props": {
                                                                                 "multiple": true,
                                                                                 "value": "{{rcpt.value ?? []}}",
+                                                                                "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.role_label')}}",
                                                                                 "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.ecommerce_notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
                                                                                 "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
                                                                                 "noResultsText": "$t:admin.settings.notification_definitions.recipients.role_no_options",
@@ -558,7 +574,7 @@
                                                                             "name": "SearchableDropdown",
                                                                             "actions": [
                                                                                 {
-                                                                                    "comment": "회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다.\n                          검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다(역할 목록은 빈 검색어면 전체를 주므로 조건이 없다).",
+                                                                                    "comment": "회원 검색. 역할 쪽과 같은 관용구이고, 이쪽은 여러 명을 고를 수 있어 값이 배열이다.\n                          검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다(역할 목록은 빈 검색어면 전체를 주므로 조건이 없다).\n                          탈퇴 회원은 수신자로 고르지 않는다(exclude_withdrawn) — 연락처가 익명화되고 바깥 채널 발송이 막혀 골라도 받지 못한다(2026-10-18 관찰).",
                                                                                     "event": "onSearch",
                                                                                     "handler": "apiCall",
                                                                                     "target": "/api/admin/users/search",
@@ -567,22 +583,24 @@
                                                                                     "params": {
                                                                                         "method": "GET",
                                                                                         "query": {
-                                                                                            "keyword": "{{$args[0]}}"
+                                                                                            "keyword": "{{$args[0]}}",
+                                                                                            "exclude_withdrawn": "1"
                                                                                         }
                                                                                     },
                                                                                     "debounce": 300,
                                                                                     "onSuccess": {
+                                                                                        "comment": "창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1)",
                                                                                         "handler": "setState",
                                                                                         "params": {
                                                                                             "target": "global",
-                                                                                            "ecommerce_notification_template_form_modal.userSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                                                                            "ecommerce_notification_template_form_modal": "{{_global.ecommerce_notification_template_form_modal == null ? null : ({ userSearchResults: (response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email })) })}}"
                                                                                         }
                                                                                     },
                                                                                     "onError": {
                                                                                         "handler": "setState",
                                                                                         "params": {
                                                                                             "target": "global",
-                                                                                            "ecommerce_notification_template_form_modal.userSearchResults": []
+                                                                                            "ecommerce_notification_template_form_modal": "{{_global.ecommerce_notification_template_form_modal == null ? null : ({ userSearchResults: [] })}}"
                                                                                         }
                                                                                     }
                                                                                 },
@@ -597,6 +615,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.users_label')}}",
                                                                                 "multiple": true,
                                                                                 "value": "{{rcpt.value ?? []}}",
                                                                                 "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.ecommerce_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
@@ -636,6 +655,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "ariaLabel": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.exclude_trigger_user')}}",
                                                                         "label": "$t:admin.settings.notification_definitions.recipients.exclude_trigger_user",
                                                                         "checked": "{{rcpt.exclude_trigger_user ?? false}}"
                                                                     }
@@ -1088,9 +1108,22 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "취소 — 창을 닫은 뒤 창 이름 공간(회원 검색 결과 이름·이메일 포함)을 비운다",
                                             "type": "click",
-                                            "handler": "closeModal",
-                                            "target": "modal_ecommerce_notification_template_edit"
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "modal_ecommerce_notification_template_edit"
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ecommerce_notification_template_form_modal": null
+                                                    }
+                                                }
+                                            ]
                                         }
                                     ],
                                     "props": {

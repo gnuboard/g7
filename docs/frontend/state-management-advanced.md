@@ -751,23 +751,28 @@ useEffect(() => {
 const menus = G7Core.state.getDataSource('menus');
 console.log(menus?.data);  // API 응답 데이터
 
-// 로딩 상태 확인
+// 아직 받지 않았는지 확인 — 값이 없으면 받는 중(또는 아직 부르지 않음)
 const users = G7Core.state.getDataSource('users');
-if (users?.loading) {
-  console.log('로딩 중...');
+if (users === undefined) {
+  console.log('아직 받지 않음');
 }
 ```
 
 #### 반환값 구조
 
-```typescript
-interface DataSourceValue {
-  data: any;           // API 응답 데이터
-  loading: boolean;    // 로딩 중 여부
-  error?: Error;       // 에러 객체 (실패 시)
-  lastFetched?: Date;  // 마지막 fetch 시간
-}
-```
+반환값은 **받은 API 응답 그대로**다(`{ success, data, ... }`). 엔진은 이 값에 로딩·오류 표식을 싣지 않는다 — `loading`·`error`·`lastFetched` 같은 필드는 없다.
+
+| 상태 | 레이아웃 식에서 보는 값 | `getDataSource()` |
+| --- | --- | --- |
+| 아직 받지 않음(progressive·background 를 받는 중, `auto_fetch: false` 를 아직 부르지 않음) | `undefined` | `undefined` |
+| 받음 | API 응답 객체 | API 응답 객체 |
+| 화면 진입 때 받기 실패(blocking) | `undefined` — 화면은 그 소스의 오류 처리(`errorHandling`)를 따른다 | `undefined` |
+| 화면 진입 때 받기 실패(progressive·background) | `null`(메시지·상태 코드는 `_dataSourceErrors[id]`) | `undefined` |
+| `fallback` 을 선언한 소스의 실패 | `fallback` 값 | `fallback` 값 |
+| `refetchDataSource` 실패 (engine-v1.81.2+) | `null`(`_dataSourceErrors[id]` 에 기록) — 같은 요청의 마지막 값·`fallback` 이 있으면 그 값 | `null` (마지막 값·`fallback` 이면 그 값) |
+| `refetchDataSource` 실패 (engine-v1.81.2 이전) | 바뀌지 않음(이전 값 그대로) | 바뀌지 않음 |
+
+받기 실패 여부는 값이 아니라 `_dataSourceErrors?.{id}` 로 가른다(`fallback` 을 선언한 소스는 실패해도 성공으로 처리되어 기록이 없다). 레이아웃에서 「받는 중」을 가를 때도 같은 기준을 쓴다 — [로딩 상태 판정](layout-json-components-loading.md#받는-중-판정).
 
 #### 사용 사례
 

@@ -201,7 +201,7 @@ class InicisLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * ko 요청에서 설정 항목 7개 모두의 오류 문구가 화면과 같은 한국어 항목 이름을 쓴다.
      *
-     * 7.1.0 전수 실측(P-11): 리스너가 라이브 자격증명만, 그것도 라이브 모드일 때만 언어별 이름을
+     * 7.1.0 전수 실측: 리스너가 라이브 자격증명만, 그것도 라이브 모드일 때만 언어별 이름을
      * 등록했다. 나머지 항목은 설정 스키마 label 로 대체돼 「중복체크 기준」이 「중복 판정 필드」로 나갔다.
      *
      * @scenario locale=ko

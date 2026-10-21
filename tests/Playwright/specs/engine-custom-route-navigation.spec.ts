@@ -1,5 +1,5 @@
 /**
- * E2E: 엔진 화면 안 이동이 개발자 화면(custom) 주소면 전체 페이지 이동 (#792 W6, engine-v1.81.0)
+ * E2E: 엔진 화면 안 이동이 개발자 화면(custom) 주소면 전체 페이지 이동 (#792 W6, engine-v1.83.0)
  *
  * 서버 셸이 `window.G7Config.customRoutes` 로 `routes/custom.php` 의 GET 주소 패턴을 내린다. 엔진 Router 는 그
  * 패턴과 맞는 주소로 갈 때 pushState 로 직접 그리지 않고 `location.assign` 으로 서버에 넘기고, 패턴이 없거나 맞지

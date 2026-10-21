@@ -57,7 +57,9 @@ export async function initCommonInfoFromUrlHandler(
         return;
     }
 
-    const data = await waitForDataSource('commonInfos', (ds) => ds?.data);
+    // 목록은 응답 본문의 data.data 다(레이아웃 목록 `commonInfos?.data?.data` 와 같은 경로) — `ds.data` 는 목록·쪽 정보를
+    // 담은 객체라 배열이 아니어서 기다리다 포기했다(주소 직접 진입·새 탭에서 빈 패널, #757)
+    const data = await waitForDataSource('commonInfos', (ds) => ds?.data?.data);
 
     if (!data) {
         logger.warn('[initCommonInfoFromUrl] commonInfos data not available after waiting');

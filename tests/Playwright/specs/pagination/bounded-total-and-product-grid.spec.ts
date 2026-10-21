@@ -113,7 +113,8 @@ test.describe('총 건수 상한과 페이지 이동', () => {
     // 검색에서 2페이지 이후에 도달할 방법이 없어진다.
     // 이 화면의 페이저는 아이콘이 아니라 글리프(`‹` `›`)로 이전/다음을 그린다 —
     // 마지막 페이지를 모르면 번호 목록과 끝 페이지 점프가 빠지고 이 둘만 남는다.
-    const nextControl = page.locator('button').filter({ hasText: /^›$/ }).first();
+    // 페이저는 쪽 주소를 받으면 이전/다음을 링크로 그린다(새 탭으로 열 수 있게) — 링크·단추 어느 쪽이든 잡는다.
+    const nextControl = page.locator(':is(a, button)').filter({ hasText: /^›$/ }).first();
 
     await expect(nextControl, '마지막 페이지를 모른다는 이유로 "다음" 이동이 사라졌다')
       .toBeVisible({ timeout: 15_000 });
@@ -144,7 +145,8 @@ test.describe('상품 그리드 페이저', () => {
     await gotoAndSettle(page, SHOP_LIST_PATH);
 
     // last_page 가 null 이라고 페이저가 통째로 사라지면 1페이지 밖 상품에 도달할 방법이 없다
-    const nextButton = page.locator('button:has(i.fa-chevron-right)').last();
+    // 그리드 이전·다음은 쪽 주소를 가진 링크다 — 갈 수 없으면 href 를 빼고 aria-disabled 로 알리므로 toBeEnabled 가 그 상태를 잰다
+    const nextButton = page.locator(':is(a, button):has(i.fa-chevron-right)').last();
     await expect(nextButton).toBeVisible({ timeout: 15_000 });
     await expect(nextButton).toBeEnabled();
   });

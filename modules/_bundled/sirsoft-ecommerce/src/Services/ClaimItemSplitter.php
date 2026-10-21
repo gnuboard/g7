@@ -49,7 +49,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderReturnOptionRepository
  * `replicate()` 가 그대로 복사하므로 잔여 행은 원래 값을 가진다 — 「셔츠 3개 중 1개에만 송장」 이면
  * 호출부가 쪼갠 뒤 전이분 행에만 새 송장을 쓴다(R4).
  *
- * ## 교환품을 이미 보낸 교환 행도 쪼갠다 (R10 — PO 2026-09-25)
+ * ## 교환품을 이미 보낸 교환 행도 쪼갠다 (2026-09-25 결정)
  *
  * 선교환에서는 새 물건을 먼저 보낸 뒤 헌 물건을 나눠 받는다. 교환품의 후속 주문옵션
  * (`new_order_option_id`)이 있는 행을 쪼갤 때는 **후속 주문옵션도 같은 수량으로 쪼개고**

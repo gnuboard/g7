@@ -328,7 +328,7 @@ class RateLifecycleTest extends PluginTestCase
         }
         $input = ['auto_manage' => true, 'auth_key' => '••••••••', 'run_days' => []];
         $this->assertFalse(Validator::make($input, $listener->rules([], 'sirsoft-koreaexim', $input))->fails());
-        // 갱신 시각은 스케줄 관리로 옮겼다(1.0.1) — 설정 검증 규칙에 남지 않는다
+        // 갱신 시각은 스케줄 관리로 옮겼다(1.0.2) — 설정 검증 규칙에 남지 않는다
         $this->assertArrayNotHasKey('update_time', $listener->rules([], 'sirsoft-koreaexim', $input));
     }
 

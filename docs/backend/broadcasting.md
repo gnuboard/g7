@@ -109,7 +109,7 @@ WebSocket은 두 가지 endpoint를 가집니다:
 
 | Endpoint | 용도 | 사용 주체 | 예시 |
 |----------|------|---------|------|
-| 클라이언트 (외부) | 브라우저가 WebSocket 접속 | 브라우저 → Reverb (직접 또는 리버스 프록시 경유) | `g7.dev:443` (https) |
+| 클라이언트 (외부) | 브라우저가 WebSocket 접속 | 브라우저 → Reverb (직접 또는 리버스 프록시 경유) | `example.com:443` (https) |
 | 서버 (내부) | 백엔드가 broadcast HTTP API 호출 | Pusher SDK → Reverb (Laravel queue worker 내부) | `127.0.0.1:8080` (http) |
 
 **환경설정 → 드라이버 → 웹소켓**에서 두 endpoint를 분리 입력할 수 있습니다:
@@ -604,6 +604,19 @@ autostart=true
 autorestart=true
 redirect_stderr=true
 stdout_logfile=/var/log/queue-worker-long.log
+
+[program:queue-worker-sitemap]
+; 사이트맵 생성 전용 큐 — 등록과 무관하게 큐 드라이버 연결의 sitemap 큐로 잡이 간다(「큐 워커」 화면에 명령이 나온다).
+; 동시 중복 생성을 막으려 워커는 1개만 둔다
+command=php /var/www/g7/artisan queue:work database --queue=sitemap --sleep=3 --tries=3 --max-time=3600 --timeout=1800
+directory=/var/www/g7
+user=www-data
+numprocs=1
+stopwaitsecs=1860
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/queue-worker-sitemap.log
 ```
 
 드라이버 탭을 저장하면 서버가 `queue:restart` 를 보낸다 — 워커는 지금 잡을 마치고 종료하며 Supervisor 가 새 설정으로 다시 띄운다. 큐 드라이버가 `sync` 면 워커가 필요 없다.

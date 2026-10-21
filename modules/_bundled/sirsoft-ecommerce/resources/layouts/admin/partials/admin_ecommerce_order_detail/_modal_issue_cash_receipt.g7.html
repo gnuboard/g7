@@ -3,6 +3,10 @@
   <modal data-type="composite" data-ref="modal_issue_cash_receipt" title="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue_title" width="480px">
     <!-- 모달은 부모와 별도 컨텍스트라 iteration 변수(payment)나 부모 _local 을 참조할 수 없다. 발급 버튼이 열기 전에 _global.adminCashReceiptForm 을 시드하며, 주문 식별은 데이터소스(order) 응답을 직접 참조한다. -->
     <div class="space-y-4">
+      <on event="unmount">
+        <!-- 창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1) -->
+        <set-state target="global" :adminCashReceiptForm="null"/>
+      </on>
       <!-- 용도 -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.purpose</label>
@@ -48,7 +52,7 @@
           </on>
         </input>
         <!-- 서버 검증 메시지 인라인 노출 (사업자번호 체크섬 · 용도×수단 조합 위반 등) -->
-        <span data-if="{{!!_global.adminCashReceiptForm?.error}}" class="block text-red-500 text-xs mt-1">{{_global.adminCashReceiptForm?.error ?? ''}}</span>
+        <span data-if="{{!!_global.adminCashReceiptForm?.error}}" class="block text-red-600 dark:text-red-400 text-xs mt-1">{{_global.adminCashReceiptForm?.error ?? ''}}</span>
       </div>
       <p class="text-xs text-secondary">$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.immutable_help</p>
       <!-- 액션 — 데스크톱 가로 우측정렬 → portable full-width 세로 스택 -->
@@ -56,11 +60,15 @@
         <responsive on="portable" class="flex flex-col gap-2 w-full pt-2"/>
         <button type="button" class="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
-            <close-modal/>
+            <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
+            <sequence>
+              <close-modal/>
+              <set-state target="global" :adminCashReceiptForm="null"/>
+            </sequence>
           </on>
           $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel
         </button>
-        <button data-ref="modal_cash_receipt_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.adminCashReceiptForm?.identifier ?? '') || _global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}">
+        <button data-ref="modal_cash_receipt_submit" type="button" class="px-4 py-2 text-sm rounded-lg bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!(_global.adminCashReceiptForm?.identifier ?? '') || _global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}">
           <on type="click">
             <!-- 요청 중에는 잠근다 — 두 번 누르면 결제사 발급이 두 번 나간다(S3-D22). -->
             <sequence>

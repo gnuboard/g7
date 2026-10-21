@@ -16,7 +16,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 구매 흐름 버튼을 잠그는 주문 권한 키 테스트 (7.1.0 abilities 게이트 basic-shop#3)
+ * 구매 흐름 버튼을 잠그는 주문 권한 키 테스트 (7.1.0 abilities 게이트)
  *
  * [바로 구매]·장바구니 [주문하기]·주문서 [결제하기] 는 최종적으로 `POST user/orders`(`user-orders.create`)에서 막힌다.
  * 그 권한이 없는 회원·비회원이 결제 직전까지 진행한 뒤에야 403 을 받지 않도록, 상품 상세·장바구니 응답이

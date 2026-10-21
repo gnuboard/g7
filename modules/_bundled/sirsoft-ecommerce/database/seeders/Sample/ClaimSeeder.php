@@ -120,48 +120,50 @@ class ClaimSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('클레임 샘플 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.claim.start'));
 
         // 이 시더는 지우고 다시 만드는 대신 **있는 주문**에 클레임을 붙이고 주문 상태·마일리지를 바꾼다.
         // 샘플 재시드가 방금 만든 주문이 아니면 실제 고객 주문일 수 있으므로, 단독 실행은 건너뛴다.
         if (! $this->withinSampleReseed) {
-            $this->command->warn('  - 클레임 샘플은 샘플 재시드(module:seed sirsoft-ecommerce --sample)에서만 만듭니다. 기존 주문을 바꾸지 않도록 건너뜁니다.');
+            $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.claim.skip_not_reseed'));
 
             return;
         }
 
         $this->admin = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->orderBy('id')->first();
         if ($this->admin === null) {
-            $this->command->warn('  - 관리자 계정이 없어 클레임 샘플을 건너뜁니다.');
+            $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.claim.skip_no_admin'));
 
             return;
         }
 
         $cases = [
             // 마일리지를 쓴 배송완료 주문은 드물다 — 다른 사례가 먼저 가져가지 않게 맨 앞에서 고른다
-            '환불 마일리지 지급' => fn () => $this->refundToMileageCase(),
-            '교환 신청(첨부)' => fn () => $this->exchangeCase(ExchangeStatusEnum::REQUESTED, attach: true),
-            '교환 회수중' => fn () => $this->exchangeCase(ExchangeStatusEnum::COLLECTING, sellerFault: true),
-            '교환 재발송중' => fn () => $this->exchangeCase(ExchangeStatusEnum::REDELIVERING),
-            '교환 완료' => fn () => $this->exchangeCase(ExchangeStatusEnum::COMPLETED, optionChange: true),
-            '상위 옵션 교환(추가결제)' => fn () => $this->exchangeCase(ExchangeStatusEnum::COMPLETED, optionChange: true, upgrade: true, keepForReturn: true),
-            '선교환 회수 지연' => fn () => $this->exchangeCase(ExchangeStatusEnum::REDELIVERED, advance: true),
-            '교환품 반품(차액 환급)' => fn () => $this->returnOfExchangedItem(),
-            '반품 신청(운영자 대리)' => fn () => $this->returnCase(ReturnStatusEnum::REQUESTED, byAdmin: true),
-            '반품 완료+환불' => fn () => $this->returnCase(ReturnStatusEnum::COMPLETED),
-            '환불 직접 신청' => fn () => $this->refundRequestCase(RefundStatusEnum::REQUESTED, RefundSourceTypeEnum::DIRECT),
-            '환불 보류' => fn () => $this->refundRequestCase(RefundStatusEnum::ON_HOLD, RefundSourceTypeEnum::ADMIN),
-            '철회·반려' => fn () => $this->withdrawnAndRejectedCases(),
-            '부분 수량 반품·취소 재활성' => fn () => $this->partialAndReactivationCases(),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.refund_to_mileage') => fn () => $this->refundToMileageCase(),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.exchange_requested') => fn () => $this->exchangeCase(ExchangeStatusEnum::REQUESTED, attach: true),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.exchange_collecting') => fn () => $this->exchangeCase(ExchangeStatusEnum::COLLECTING, sellerFault: true),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.exchange_redelivering') => fn () => $this->exchangeCase(ExchangeStatusEnum::REDELIVERING),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.exchange_completed') => fn () => $this->exchangeCase(ExchangeStatusEnum::COMPLETED, optionChange: true),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.exchange_upgrade') => fn () => $this->exchangeCase(ExchangeStatusEnum::COMPLETED, optionChange: true, upgrade: true, keepForReturn: true),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.advance_exchange_delayed') => fn () => $this->exchangeCase(ExchangeStatusEnum::REDELIVERED, advance: true),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.exchanged_item_return') => fn () => $this->returnOfExchangedItem(),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.return_requested') => fn () => $this->returnCase(ReturnStatusEnum::REQUESTED, byAdmin: true),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.return_completed') => fn () => $this->returnCase(ReturnStatusEnum::COMPLETED),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.refund_direct') => fn () => $this->refundRequestCase(RefundStatusEnum::REQUESTED, RefundSourceTypeEnum::DIRECT),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.refund_on_hold') => fn () => $this->refundRequestCase(RefundStatusEnum::ON_HOLD, RefundSourceTypeEnum::ADMIN),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.withdrawn_rejected') => fn () => $this->withdrawnAndRejectedCases(),
+            __('sirsoft-ecommerce::messages.seeders.claim.cases.partial_and_reactivation') => fn () => $this->partialAndReactivationCases(),
         ];
 
         foreach ($cases as $label => $case) {
             $done = $case();
-            $this->command->line(($done ? '  - 생성: ' : '  - 건너뜀(대상 주문 없음): ').$label);
+            $this->command->line('  - '.($done
+                ? __('sirsoft-ecommerce::messages.seeders.claim.case_created', ['label' => $label])
+                : __('sirsoft-ecommerce::messages.seeders.claim.case_skipped', ['label' => $label])));
             $this->created += $done ? 1 : 0;
         }
 
-        $this->command->info("클레임 샘플 {$this->created}/".count($cases).'건을 만들었습니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.claim.done', ['created' => $this->created, 'total' => count($cases)]));
     }
 
     /**
@@ -1321,7 +1323,7 @@ class ClaimSeeder extends Seeder
                 ->get()
                 ->each(fn ($log) => $log->update(['properties' => array_merge((array) $log->properties, ['seeded_by' => ActivityLogSampleSeeder::SEED_MARK])]));
         } catch (\Throwable $e) {
-            $this->command->warn('  - 클레임 첨부 샘플을 올리지 못했습니다: '.$e->getMessage());
+            $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.claim.attachment_failed', ['error' => $e->getMessage()]));
         } finally {
             @unlink($path);
             @unlink($tempFile);

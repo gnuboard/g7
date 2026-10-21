@@ -19,6 +19,8 @@
  *    → 사용자 변경 시 dataKey 자동바인딩이 _local.registerForm.language 갱신, 우선 적용
  *
  * 본 테스트는 위 3가지 보호 장치가 회귀로 사라지지 않도록 JSON 정합성을 검증함.
+ *
+ * @scenario-manifest tests/scenarios/auth-register-language-default.yaml
  */
 
 import { describe, it, expect } from 'vitest';
@@ -47,6 +49,9 @@ function walk(input: Node | Node[] | undefined, visit: (node: Node) => void): vo
 
 describe('회원가입 폼 언어 Select 기본값', () => {
   describe('register.json init_actions', () => {
+    /**
+     * @scenario layout_part=register_init_actions
+     */
     it('init_actions 에 registerForm 초기 상태 setState 가 존재한다', () => {
       const initActions = (registerLayout as any).init_actions ?? [];
       expect(initActions.length).toBeGreaterThan(0);
@@ -60,13 +65,19 @@ describe('회원가입 폼 언어 Select 기본값', () => {
       expect(seed).toBeDefined();
     });
 
+    /**
+     * @scenario layout_part=register_init_actions
+     * @effects register_form_seed_without_language
+     */
     it('registerForm 시드는 language 를 미리 박지 않는다 ($locale 미주입 컨텍스트라 잘못된 ko 가 박히는 회귀 방지)', () => {
       const initActions = (registerLayout as any).init_actions ?? [];
+      // 앞의 `registerForm: null` 은 이전 입력을 지우는 단계(7.1.1) — 시드는 그 뒤의 객체 값이다
       const seed = initActions.find(
         (a: any) =>
           a.handler === 'setState' &&
           a.params?.target === 'local' &&
-          a.params?.registerForm !== undefined,
+          a.params?.registerForm !== undefined &&
+          a.params?.registerForm !== null,
       );
       const registerForm = seed.params.registerForm;
       expect(registerForm.language).toBeUndefined();
@@ -74,6 +85,10 @@ describe('회원가입 폼 언어 Select 기본값', () => {
   });
 
   describe('_register_form.json (lifecycle.onMount 충돌 패턴 회피)', () => {
+    /**
+     * @scenario layout_part=register_form_partial
+     * @effects register_form_no_onmount_seed
+     */
     it('Form 루트에 lifecycle.onMount 가 정의되어 있지 않다', () => {
       const form = registerForm as any;
       expect(form.type).toBe('basic');
@@ -97,16 +112,27 @@ describe('회원가입 폼 언어 Select 기본값', () => {
       return found;
     }
 
+    /**
+     * @scenario layout_part=register_form_partial
+     */
     it('Select 에 name="language" 가 존재한다', () => {
       const select = findLanguageSelect();
       expect(select).toBeDefined();
     });
 
+    /**
+     * @scenario layout_part=register_form_partial
+     * @effects language_select_value_prefers_local_then_locale
+     */
     it('Select 에 명시적 value prop 이 정의되어 있다 (렌더 시점 $locale 평가)', () => {
       const select = findLanguageSelect();
       expect(select?.props?.value).toBeDefined();
     });
 
+    /**
+     * @scenario layout_part=register_form_partial
+     * @effects language_select_value_prefers_local_then_locale
+     */
     it('value 표현식이 _local.registerForm.language 우선, $locale fallback 패턴이다', () => {
       const select = findLanguageSelect();
       const value = select?.props?.value as string;
@@ -116,6 +142,10 @@ describe('회원가입 폼 언어 Select 기본값', () => {
       expect(value).toContain('$locale');
     });
 
+    /**
+     * @scenario layout_part=register_form_partial
+     * @effects language_select_options_from_locales
+     */
     it('options 가 $locales 배열을 매핑한다', () => {
       const select = findLanguageSelect();
       const options = select?.props?.options as string;

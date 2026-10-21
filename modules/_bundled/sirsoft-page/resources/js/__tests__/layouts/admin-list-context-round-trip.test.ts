@@ -101,6 +101,8 @@ function readLayout(rel: string): unknown {
 }
 
 describe('#75 관리자 페이지 목록 컨텍스트 왕복 — mergeQuery 전수', () => {
+    // @scenario leg=enter, leg=back
+    // @effects navigation_preserves_list_query, list_return_preserves_query
     it.each(CLUSTER_FILES)('%s 의 클러스터 내 navigate 는 모두 mergeQuery: true', (rel) => {
         const offenders = collectNavActions(readLayout(rel))
             .filter((a) => {
@@ -115,6 +117,8 @@ describe('#75 관리자 페이지 목록 컨텍스트 왕복 — mergeQuery 전�
         expect(offenders, `목록 상태를 떨구는 navigate: \n  ${offenders.join('\n  ')}`).toEqual([]);
     });
 
+    // @scenario leg=back
+    // @effects list_return_preserves_query
     it("페이지 상세의 '목록' 버튼이 목록 상태를 복원한다", () => {
         const backs = collectNavActions(readLayout('admin_page_detail.json')).filter(
             (a) => a.params.path === '/admin/pages'
@@ -169,9 +173,29 @@ function queryOf(dest: string): URLSearchParams {
  * @returns 액션
  */
 function findNavAction(json: unknown, destPath: string): NavAction {
-    const action = collectNavActions(json).find((a) => a.params.path === destPath);
-    expect(action, `navigate 액션(${destPath})을 실 JSON 에서 찾지 못함`).toBeTruthy();
-    return action as NavAction;
+    const direct = collectNavActions(json).find((a) => a.params.path === destPath);
+    if (direct) return direct;
+
+    // 링크(#757)가 된 자리는 목적지가 링크의 href 이고 클릭은 경로 없는 navigate 다 — 엔진은 그 navigate 를
+    // 클릭한 링크의 href 로 보내므로, 실행 재현을 위해 href 를 경로로 채운 액션을 돌려준다.
+    let found: NavAction | undefined;
+    const walk = (n: unknown): void => {
+        if (found || !n || typeof n !== 'object') return;
+        if (Array.isArray(n)) return n.forEach(walk);
+        const obj = n as Record<string, any>;
+        if (obj.props?.href === destPath) {
+            const nav = collectNavActions(obj.actions ?? []).find((a) => !a.params.path);
+            if (nav) {
+                const merge = obj.props.mergeQuery === true && nav.params.mergeQuery === true;
+                found = { ...nav, params: { ...nav.params, path: destPath, mergeQuery: merge } } as NavAction;
+                return;
+            }
+        }
+        Object.values(obj).forEach(walk);
+    };
+    walk(json);
+    expect(found, `navigate 액션·링크(${destPath})을 실 JSON 에서 찾지 못함`).toBeTruthy();
+    return found as NavAction;
 }
 
 describe('#75 관리자 페이지 목록 컨텍스트 왕복 — 실행 결과 URL', () => {
@@ -179,6 +203,8 @@ describe('#75 관리자 페이지 목록 컨텍스트 왕복 — 실행 결과 U
         window.history.replaceState({}, '', '/');
     });
 
+    // @scenario leg=enter
+    // @effects navigation_preserves_list_query
     it('목록 행 클릭이 목록 상태를 상세 URL 로 나른다', async () => {
         window.history.replaceState({}, '', '/admin/pages?page=3&per_page=2&sort_by=title');
 
@@ -189,6 +215,8 @@ describe('#75 관리자 페이지 목록 컨텍스트 왕복 — 실행 결과 U
         expect(q.get('sort_by')).toBe('title');
     });
 
+    // @scenario leg=back
+    // @effects list_return_preserves_query
     it("상세의 '목록' 버튼이 상세 URL 의 목록 상태를 목록으로 복귀시킨다", async () => {
         window.history.replaceState({}, '', '/admin/pages/7?page=3&per_page=2&sort_by=title');
 
@@ -199,6 +227,8 @@ describe('#75 관리자 페이지 목록 컨텍스트 왕복 — 실행 결과 U
         expect(q.get('sort_by')).toBe('title');
     });
 
+    // @scenario leg=enter
+    // @effects navigation_preserves_list_query
     it('상세 → 수정 이동에서도 목록 상태가 이어진다', async () => {
         window.history.replaceState({}, '', '/admin/pages/7?page=3&per_page=2');
 

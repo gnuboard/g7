@@ -102,6 +102,9 @@ abstract class ModuleTestCase extends TestCase
         // 테스트 환경에서 module.php 가 선언한 getHookListeners() 의 리스너들을 수동 등록.
         $this->registerBundledModuleInstance();
 
+        // 번역 네임스페이스를 시험 대상 원본(_bundled)의 lang 으로 맞춘다 (쇼핑몰 시험 기반 클래스와 같은 처리)
+        $this->isolateModuleTranslations();
+
         // 설정 미러(`g7_module_settings()` 가 읽는 config)를 이 테스트 시점의 모듈 설정으로 다시 채운다.
         // 미러는 앱 부팅 때 「활성 모듈」만 싣는데, 같은 프로세스에서 코어 시험이 먼저 스키마를 새로 만들어
         // 이 모듈의 등록 행이 없던 DB 로 부팅하면 미러가 비어 게시판 기본 권한(basic_defaults)이 빈다.
@@ -121,6 +124,30 @@ abstract class ModuleTestCase extends TestCase
         // PermissionMiddleware::$guestRoleCache 초기화 — 이전 테스트에서 로드된 guest role/permissions 캐시가
         // DatabaseTransactions 롤백 후에도 남아있어 다음 테스트의 새 permission 설정이 반영되지 않는 문제 회피.
         PermissionMiddleware::clearGuestRoleCache();
+    }
+
+    /**
+     * 모듈 다국어 네임스페이스를 시험 대상 원본(_bundled)의 lang 디렉터리로 다시 등록합니다.
+     *
+     * 앱 부팅 때 등록되는 `sirsoft-board::` 경로는 활성 사본(`modules/sirsoft-board/src/lang`)이라, 원본에 새로 더한 키가
+     * 설치본 반영 전에는 원문 키로 나온다. 또 선행 시험이 활성 사본에서 읽은 그룹이 번역기에 남아 있으면 경로를 바꿔도
+     * 다시 읽지 않으므로, 읽어 둔 그룹도 비운다.
+     *
+     * @return void 반환값 없음
+     */
+    private function isolateModuleTranslations(): void
+    {
+        $langPath = $this->getModuleBasePath().'/src/lang';
+
+        if (is_dir($langPath)) {
+            $translator = $this->app['translator'];
+            $translator->addNamespace('sirsoft-board', $langPath);
+
+            // 이 모듈 네임스페이스로 이미 읽어 둔 그룹만 비운다 (다른 네임스페이스·런타임 추가 문구는 그대로)
+            $loaded = (fn () => $this->loaded)->call($translator);
+            unset($loaded['sirsoft-board']);
+            $translator->setLoaded($loaded);
+        }
     }
 
     /**

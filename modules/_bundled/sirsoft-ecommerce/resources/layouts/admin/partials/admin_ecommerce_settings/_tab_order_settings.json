@@ -78,6 +78,7 @@
                             ],
                             "props": {
                                 "value": "{{_local.form?.order_settings?.default_pg_provider ?? ''}}",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.default_pg_provider.title",
                                 "className": "w-64",
                                 "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",
                                 "disabled": "{{_computed.isReadOnly}}"
@@ -649,6 +650,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "order_settings.auto_cancel_days",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.days_label",
                                         "value": "{{_local.form?.order_settings?.auto_cancel_days ?? 3}}",
                                         "min": "{{_local?.form?._meta?.limits?.auto_cancel_days_min ?? 1}}",
                                         "max": "{{_local?.form?._meta?.limits?.auto_cancel_days_max ?? 30}}",
@@ -699,6 +701,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "order_settings.pending_order_expire_minutes",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.auto_cancel.pending_minutes_label",
                                         "value": "{{_local.form?.order_settings?.pending_order_expire_minutes ?? 1440}}",
                                         "min": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_min ?? 0}}",
                                         "max": "{{_local?.form?._meta?.limits?.pending_order_expire_minutes_max ?? 20160}}",
@@ -1005,6 +1008,7 @@
                             "props": {
                                 "type": "number",
                                 "name": "order_settings.cart_expiry_days",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.cart_expiry.title",
                                 "value": "{{_local.form?.order_settings?.cart_expiry_days ?? 30}}",
                                 "min": "{{_local?.form?._meta?.limits?.cart_expiry_days_min ?? 1}}",
                                 "max": "{{_local?.form?._meta?.limits?.cart_expiry_days_max ?? 365}}",

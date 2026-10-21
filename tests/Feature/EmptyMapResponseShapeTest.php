@@ -7,6 +7,8 @@ use App\Enums\ExtensionStatus;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\TemplateManager;
 use App\Http\Resources\AttachmentResource;
+use App\Http\View\Composers\TemplateComposer;
+use App\Http\View\Composers\UserTemplateComposer;
 use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
@@ -20,6 +22,8 @@ use App\Traits\FiltersFrontendSchema;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\View\View;
+use Mockery;
 use Tests\TestCase;
 
 /**
@@ -110,6 +114,40 @@ class EmptyMapResponseShapeTest extends TestCase
         );
 
         $this->assertSame('{"display":{},"basic":{"a":1}}', json_encode($filtered));
+    }
+
+    /**
+     * 코어 설정 중 노출 카테고리지만 보이는 필드가 하나도 없는 카테고리(`identity`)도 `{}` 로 심는다(7.1.1 출시 전).
+     *
+     * 최상위 `settings` 만 `(object)` 로 감싸면 그 아래 카테고리 값은 여전히 PHP 빈 배열이라 `[]` 로 나간다.
+     * 카테고리 값은 화면이 이름표로 읽는 맵이므로 사용자·관리자 셸 모두 `{}` 여야 한다.
+     *
+     * @scenario surface=g7config
+     *
+     * @effects g7config_empty_maps_render_as_objects
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_category_without_visible_fields_is_an_object(): void
+    {
+        foreach ([TemplateComposer::class, UserTemplateComposer::class] as $composerClass) {
+            $captured = [];
+            $view = Mockery::mock(View::class);
+            $view->shouldReceive('with')->andReturnUsing(function ($key, $value = null) use (&$captured, $view) {
+                foreach (is_array($key) ? $key : [$key => $value] as $name => $item) {
+                    $captured[$name] = $item;
+                }
+
+                return $view;
+            });
+
+            app($composerClass)->compose($view);
+
+            $json = json_encode((object) $captured['frontendSettings']);
+            $this->assertStringContainsString('"identity":{}', $json, $composerClass.' — 보이는 필드가 없는 카테고리가 빈 맵이 아니다');
+            $this->assertStringNotContainsString('"identity":[]', $json, $composerClass);
+            $this->assertIsArray($captured['frontendSettings']['general'] ?? null, $composerClass.' — 값이 있는 카테고리는 그대로 배열');
+        }
     }
 
     /**

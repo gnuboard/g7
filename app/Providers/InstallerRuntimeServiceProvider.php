@@ -38,7 +38,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     {
         // testing 환경은 .env.testing 의 DB/APP_KEY 가 SSoT 이며,
         // 인스톨러 runtime 파일이 존재하더라도 그 값으로 덮어쓰면
-        // 프로덕션 DB(g7_2 등) 가 테스트 대상이 되어 RefreshDatabase 가
+        // 운영·개발 DB 가 테스트 대상이 되어 RefreshDatabase 가
         // 프로덕션 데이터를 파괴할 수 있다. 테스트 환경에서는 무조건 skip.
         if ($this->app->environment('testing')) {
             return;

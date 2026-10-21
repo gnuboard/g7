@@ -5,10 +5,10 @@ namespace App\Extension;
 use App\Contracts\Extension\CacheInterface;
 use App\Exceptions\CoreVersionMismatchException;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Support\BootDeferredLog;
 use App\Support\CoreUpdateContext;
 use Composer\Semver\Semver;
 use Exception;
-use Illuminate\Support\Facades\Log;
 
 /**
  * 그누보드7 코어 버전 호환성 검증 유틸리티
@@ -81,7 +81,8 @@ class CoreVersionChecker
         try {
             return Semver::satisfies(self::getCoreVersion(), $constraint);
         } catch (Exception $e) {
-            Log::warning(__('extensions.errors.version_check_failed'), [
+            // 부팅 중(자동 비활성화 판정)에도 불리므로 언어팩 번역 등록 뒤에 남긴다
+            BootDeferredLog::warning('extensions.errors.version_check_failed', [], [
                 'constraint' => $constraint,
                 'error' => $e->getMessage(),
             ]);
@@ -149,6 +150,8 @@ class CoreVersionChecker
 
     /**
      * 모든 버전 검증 캐시 삭제
+     *
+     * @return void 반환값 없음
      */
     public static function clearCache(): void
     {

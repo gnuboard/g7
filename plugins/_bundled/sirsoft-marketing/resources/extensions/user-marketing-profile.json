@@ -52,7 +52,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "circle-notch",
-                                        "className": "text-blue-600 animate-spin text-3xl"
+                                        "className": "text-blue-600 dark:text-blue-500 animate-spin text-3xl"
                                     }
                                 }
                             ]
@@ -705,7 +705,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block ml-8"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block ml-8"
                                                     },
                                                     "text": "$t:sirsoft-marketing.info_disclosure_warning"
                                                 }

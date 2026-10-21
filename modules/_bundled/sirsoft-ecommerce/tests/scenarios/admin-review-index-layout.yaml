@@ -21,6 +21,21 @@ effects:
   - review_admin_list_requires_read_permission_and_extends_admin_base
   - review_admin_list_selection_state_starts_empty
   - review_admin_list_translation_keys_exist_in_module_lang
+  # 아래는 하네스 렌더 시험(admin_ecommerce_product_review_index.test.tsx)이 실제로 단언하는 범위만 적는다
+  - review_admin_list_layout_identity_declared   # 레이아웃 이름·버전
+  - review_admin_list_reviews_source_targets_admin_endpoint_and_auto_fetches   # 후기 소스 주소·자동 조회
+  - review_admin_list_permissions_include_reviews_read   # 권한 목록에 후기 읽기
+  - review_admin_list_initial_state_declares_selection_and_expansion_arrays   # 선택·펼침 초기 배열
+  - review_admin_list_renders_markup_with_reviews_response   # 응답이 있으면 마크업이 그려짐
+  - review_admin_list_header_renders_title   # 제목(설명은 보지 않음)
+  - review_admin_list_test_registry_provides_datagrid   # 시험 레지스트리 전제
+  - review_admin_list_empty_result_shows_translated_empty_message   # 0건이면 번역된 빈 문구
+  - review_admin_list_local_state_exists_after_render   # 렌더 뒤 지역 상태
+  - review_admin_list_render_has_no_slot_or_binding_warnings   # 슬롯·바인딩 경고 없음
+  - review_admin_list_grid_data_reads_reviews_data_path   # 표 data 가 reviews.data 경로
+  - review_admin_list_selected_reviews_state_is_writable   # 선택 목록 상태 쓰기
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceProductReviewIndex.test.tsx
+  # 같은 화면의 하네스 렌더 시험 — 소유 없이 있던 것을 빈 문구 조건(받은 뒤에만 표시) 변경 때 등재한다
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_product_review_index.test.tsx

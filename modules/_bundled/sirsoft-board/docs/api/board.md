@@ -1068,7 +1068,7 @@ _단건 응답: `data` 객체의 필드._
 | comments_truncated | boolean | `false` | 댓글 목록이 상한에서 끊겼는지 여부. `true` 면 `comments` 에 실린 것이 전부가 아닙니다 |
 | comments_total | integer\|null | `12` | 댓글 총 건수. 끊기지 않았으면 `comments` 길이와 같고, 끊겼으면 상한값(그 이상)입니다 |
 | comments_total_is_exact | boolean | `true` | 위 총 건수가 정확한지 여부. `false` 면 "N건 이상" 으로 표기합니다 |
-| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. |
+| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. 각 항목의 `meta` 는 이미지면 `{"width":…,"height":…}`, 정보가 없으면 `null`, 비어 있으면 `{}` 입니다(코어 첨부 응답과 같은 모양). |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
 | reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |

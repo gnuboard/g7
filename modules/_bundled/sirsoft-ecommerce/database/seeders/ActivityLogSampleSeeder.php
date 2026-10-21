@@ -68,7 +68,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $admins = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->get();
         if ($admins->isEmpty()) {
-            $this->command->warn('관리자 사용자가 없어 이커머스 활동 로그 시더를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_no_admin'));
 
             return;
         }
@@ -83,7 +83,7 @@ class ActivityLogSampleSeeder extends Seeder
             ->where('properties->seeded_by', self::SEED_MARK)
             ->delete();
         if ($deleted > 0) {
-            $this->command->info("기존 이커머스 샘플 활동 로그 {$deleted}건 삭제 (표식 없는 실제 로그는 보존).");
+            $this->command->info(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.purged', ['count' => $deleted]));
         }
 
         $count = 0;
@@ -110,7 +110,7 @@ class ActivityLogSampleSeeder extends Seeder
         $count += $this->seedUserOrderLogs($users);
         $count += $this->seedClaimLogs($admins);
 
-        $this->command->info("이커머스 활동 로그 {$count}건 생성 완료.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.done', ['count' => $count]));
     }
 
     // ──────────────────────────────────────────────
@@ -127,7 +127,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $products = Product::get();
         if ($products->isEmpty()) {
-            $this->command->warn('상품 데이터가 없어 상품 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_products'));
 
             return 0;
         }
@@ -183,7 +183,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $images = ProductImage::with('product')->get();
         if ($images->isEmpty()) {
-            $this->command->warn('상품 이미지 데이터가 없어 이미지 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_product_images'));
 
             return 0;
         }
@@ -213,7 +213,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $options = ProductOption::with('product')->get();
         if ($options->isEmpty()) {
-            $this->command->warn('상품 옵션 데이터가 없어 옵션 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_product_options'));
 
             return 0;
         }
@@ -249,7 +249,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $orders = Order::with('options')->get();
         if ($orders->isEmpty()) {
-            $this->command->warn('주문 데이터가 없어 주문 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_orders'));
 
             return 0;
         }
@@ -353,7 +353,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $coupons = Coupon::get();
         if ($coupons->isEmpty()) {
-            $this->command->warn('쿠폰 데이터가 없어 쿠폰 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_coupons'));
 
             return 0;
         }
@@ -397,7 +397,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $policies = ShippingPolicy::get();
         if ($policies->isEmpty()) {
-            $this->command->warn('배송정책 데이터가 없어 배송정책 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_shipping_policies'));
 
             return 0;
         }
@@ -441,7 +441,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $categories = Category::get();
         if ($categories->isEmpty()) {
-            $this->command->warn('카테고리 데이터가 없어 카테고리 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_categories'));
 
             return 0;
         }
@@ -482,7 +482,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $brands = Brand::get();
         if ($brands->isEmpty()) {
-            $this->command->warn('브랜드 데이터가 없어 브랜드 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_brands'));
 
             return 0;
         }
@@ -522,7 +522,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $reviews = ProductReview::with('product')->get();
         if ($reviews->isEmpty()) {
-            $this->command->warn('리뷰 데이터가 없어 리뷰 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_reviews'));
 
             return 0;
         }
@@ -754,7 +754,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $products = Product::where('sales_status', ProductSalesStatus::ON_SALE)->get();
         if ($products->isEmpty()) {
-            $this->command->warn('판매중 상품이 없어 장바구니 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_carts'));
 
             return 0;
         }

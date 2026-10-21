@@ -190,7 +190,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | --- | --- | --- | --- |
 | uuid | string | `a1e0a91a-fba6-491c-a53e-7285a5686857` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `관리자` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
-| email | string | `heuristing@gmail.com` | 이 버전을 발행한 운영자의 이메일. publisher 관계에서 노출되며 감사 화면에서 발행자를 식별하는 용도입니다 |
+| email | string | `admin@example.com` | 이 버전을 발행한 운영자의 이메일. publisher 관계에서 노출되며 감사 화면에서 발행자를 식별하는 용도입니다 |
 
 **응답 예시**
 

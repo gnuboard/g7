@@ -117,7 +117,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `heuristing@gmail.com` | 이메일 주소 |
+| email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() 산물, 미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
@@ -189,7 +189,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "heuristing@gmail.com",
+        "email": "admin@example.com",
         "avatar": null,
         "language": "ko",
         "timezone": "Asia/Seoul",

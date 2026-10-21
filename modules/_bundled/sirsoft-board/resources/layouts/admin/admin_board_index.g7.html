@@ -19,7 +19,7 @@
   <slot name="content">
     <div data-ref="board_list_content" class="admin-page-content-responsive-fluid">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
-        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
+        <button type="button" data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75). -->
             <navigate path="/admin/boards" :mergeQuery="true">
@@ -28,16 +28,41 @@
           </on>
           <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
         </button>
-        <button data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="reorder_button" data-testid="board-reorder-button" data-if="{{boards?.data?.abilities?.can_reorder &amp;&amp; (boards?.data?.pagination?.total ?? 0) &gt; 1}}" type="button" class="flex-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reorderLoading}}">
+          <on type="click">
+            <!-- 순서 변경 창을 연다. 보고 있는 페이지·검색과 무관하게 **전체 게시판**(활성·비활성)을 지금 표시 순서로 새로 받아 창에
+              싣는다 — 서버는 전체 목록이 아니면 저장을 거부한다(그 사이 다른 관리자가 게시판을 만들거나 지우면 422).
+              창은 별도 컨텍스트라 페이지 `_local` 을 볼 수 없으므로 복사·삭제 창처럼 전역에 싣는다. 받은 순서를 원본으로도 남겨
+              바뀐 것이 없으면 저장을 잠근다 -->
+            <sequence>
+              <set-state target="global" :reorderLoading="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards" method="GET">
+                <success>
+                  <set-state target="global" :reorderLoading="false" :reorderSaving="false" :reorderError="null" reorderItems="{{(response?.data?.data ?? []).map(b =&gt; ({id: b.id, slug: b.slug, name: b.name, is_active: b.is_active}))}}" reorderOriginal="{{(response?.data?.data ?? []).map(b =&gt; ({id: b.id, slug: b.slug, name: b.name, is_active: b.is_active}))}}"/>
+                  <open-modal target="board_reorder_modal"/>
+                </success>
+                <fail>
+                  <set-state target="global" :reorderLoading="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body :per_page="999" sort_by="display_order" sort_order="asc"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.reorderLoading}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{!_global.reorderLoading}}" name="fa-solid fa-arrow-down-short-wide" class="text-base"/>
+          <span>$t:sirsoft-board.admin.board.index.reorder.button</span>
+        </button>
+        <a href="/admin/boards/create" :mergeQuery="true" data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="button flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
           <on type="click">
             <!-- 새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
-            <navigate path="/admin/boards/create" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="plus" class="text-xl"/>
           <span>$t:sirsoft-board.admin.board.index.add_board</span>
-        </button>
+        </a>
       </page-header>
       <div data-ref="content_area" class="admin-card">
         <div data-ref="search_area" class="flex justify-end mb-6">
@@ -50,7 +75,7 @@
             </on>
           </search-bar>
         </div>
-        <card-grid data-type="composite" data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <card-grid data-type="composite" data-ref="boards_card_grid" pageHref="/admin/boards?page={page}" :pageHrefMergeQuery="true" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
           <card id="board_card">
             <div data-ref="card_header_row" class="flex items-start justify-between">
               <div data-ref="header_left" class="flex items-center gap-3">
@@ -59,7 +84,7 @@
                 <span data-ref="board_type" class="text-label-subtle">({{row.type}})</span>
               </div>
               <div data-ref="header_right" class="flex items-center gap-3">
-                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" ariaLabel="$t:defer:common.item_enabled|name={{row.name}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
                   <on type="change">
                     <!-- 카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다 -->
                     <sequence>
@@ -78,8 +103,8 @@
                 </toggle>
                 <action-menu data-type="composite" data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-h" position="right">
                   <prop name="items">
-                    <item id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
-                    <item id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
+                    <item href="/admin/boards/{{row.slug}}/edit" :mergeQuery="true" id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
+                    <item href="/admin/board/{{row.slug}}" id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
                     <item id="copy" label="$t:sirsoft-board.admin.board.actions.copy" iconName="copy" disabled="{{row.abilities?.can_create !== true}}"/>
                     <item id="delete" label="$t:sirsoft-board.admin.board.actions.delete" iconName="trash" variant="danger" disabled="{{row.abilities?.can_delete !== true}}"/>
                   </prop>
@@ -155,13 +180,13 @@
           </p>
         </div>
         <div data-ref="copy_button_group" class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button data-ref="copy_cancel_button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400">
+          <button type="button" data-ref="copy_cancel_button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400">
             <on type="click">
               <close-modal target="copy_confirm_modal"/>
             </on>
             $t:common.cancel
           </button>
-          <button data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+          <button type="button" data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400">
             <on type="click">
               <close-modal target="copy_confirm_modal"/>
             </on>
@@ -187,13 +212,13 @@
         <p data-ref="delete_backup_notice" data-if="{{_global.modal_data.posts_count > 0}}" class="text-label">$t:sirsoft-board.admin.modals.delete.backup_notice</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
             <!-- 삭제 실행 — 진행 표시를 켜 두 번 눌리는 것을 막고, 성공하면 목록과 «관리자 메뉴」를 함께 다시 읽는다(게시판이 메뉴에 등재돼 있으면 사이드바에 유령 항목이 남기 때문) -->
             <sequence>
@@ -218,6 +243,109 @@
           <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
           <span>{{_global.isDeleting ? '$t:sirsoft-board.common.deleting' : '$t:sirsoft-board.common.delete'}}</span>
         </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 게시판 순서 변경 — 사용자 메뉴·게시판 목록 화면·관리자 목록·통합검색 게시판 선택칸이 이 순서를 따른다.
+      넓은 화면은 손잡이를 끌거나 ▲▼ 로, 좁은 화면은 ▲▼ 로만 옮긴다(끌기가 스크롤과 다투므로 손잡이를 숨긴다 — 반응 유형 카드와 같은 이유).
+      손잡이는 키보드 포커스를 받지 못해(끌기 엔진 한계) 낭독기에서 숨기고, 키보드 사용자는 ▲▼ 단추로 옮긴다.
+      비활성 게시판도 자리를 가진다 — 다시 켜면 정한 자리에 나온다. 그래서 흐린 글자와 「비활성」 배지로 함께 보인다 -->
+    <modal data-type="composite" data-ref="board_reorder_modal" title="$t:sirsoft-board.admin.board.index.reorder.title" size="md">
+      <on type="click" event="onClose">
+        <!-- ✕·Esc·바깥 클릭으로 닫아도 취소와 같다 — 저장하지 않고 작업본을 버린다 -->
+        <sequence>
+          <close-modal target="board_reorder_modal"/>
+          <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+        </sequence>
+      </on>
+      <div data-ref="reorder_modal_content" class="flex flex-col gap-3">
+        <p data-ref="reorder_description" class="text-label">$t:sirsoft-board.admin.board.index.reorder.description</p>
+        <!-- 정렬 노드는 엔진이 자기 컨테이너로 그려 그 노드의 class·testid 가 빠진다 — 테두리·스크롤 영역은 바깥 래퍼가 맡는다. 높이 상한은 관리자 템플릿 safelist 에 있는 max-h-[70vh] (모듈 레이아웃의 임의값 클래스는 safelist 에 있어야 빌드된다) -->
+        <div data-ref="reorder_list_frame" data-testid="board-reorder-list" class="max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <div data-ref="reorder_list" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <sortable source="{{(_global.reorderItems ?? []).map((r, i) =&gt; ({...r, _idx: i}))}}" item-var="row" item-key="id" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]"/>
+          <item-template>
+            <div data-testid="board-reorder-row-{{row.slug}}" class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 {{row.is_active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}}">
+              <div data-testid="board-reorder-drag-{{row.slug}}" :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-board.admin.board.index.reorder.drag_handle', { name: row.name })}}" class="hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
+              </div>
+              <span data-testid="board-reorder-index-{{row.slug}}" class="w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">{{row._idx + 1}}</span>
+              <div class="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2 min-w-0 flex-1">
+                <span class="truncate font-medium">{{row.name}}</span>
+                <div class="flex items-center gap-2">
+                  <!-- 슬러그 배지 — 목록 카드의 슬러그 배지와 같은 모양 -->
+                  <status-badge data-type="composite" data-testid="board-reorder-slug-{{row.slug}}" status="info" label="{{row.slug}}" :showIcon="false"/>
+                  <span data-testid="board-reorder-inactive-{{row.slug}}" data-if="{{!row.is_active}}" class="px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.board.index.reorder.inactive</span>
+                </div>
+              </div>
+              <button data-testid="board-reorder-up-{{row.slug}}" type="button" aria-label="{{$t('sirsoft-board.admin.board.index.reorder.move_up', { name: row.name })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors board-move-button disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
+                <on type="click">
+                  <!-- 위로 한 칸 — 두 자리를 맞바꾼다 -->
+                  <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
+                </on>
+                <icon name="fa-solid fa-chevron-up" class="text-xs"/>
+              </button>
+              <button data-testid="board-reorder-down-{{row.slug}}" type="button" aria-label="{{$t('sirsoft-board.admin.board.index.reorder.move_down', { name: row.name })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors board-move-button disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
+                <on type="click">
+                  <!-- 아래로 한 칸 -->
+                  <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>
+                </on>
+                <icon name="fa-solid fa-chevron-down" class="text-xs"/>
+              </button>
+            </div>
+          </item-template>
+          <on event="onSortEnd">
+            <!-- 끌어 놓은 결과를 그대로 새 순서로 삼는다(화면용 자리 번호 `_idx` 는 빼고 싣는다) -->
+            <set-state target="global" reorderItems="{{$sortedItems.map(r =&gt; ({id: r.id, slug: r.slug, name: r.name, is_active: r.is_active}))}}" :reorderError="null"/>
+          </on>
+        </div>
+        </div>
+        <!-- 저장이 422(그 사이 게시판 목록이 바뀜)로 거부되면 창을 닫지 않고 안내한다 — 창을 닫았다 다시 열면 새 목록을 받는다 -->
+        <div data-ref="reorder_error_box" data-testid="board-reorder-error" data-if="{{!!_global.reorderError}}" role="alert" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">{{_global.reorderError}}</div>
+        <div class="modal-footer-buttons">
+          <button data-testid="board-reorder-cancel" type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving}}">
+            <on type="click">
+              <!-- 취소 — 저장하지 않고 창의 작업본을 버린다 -->
+              <sequence>
+                <close-modal target="board_reorder_modal"/>
+                <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+              </sequence>
+            </on>
+            <span>$t:sirsoft-board.admin.board.index.reorder.cancel</span>
+          </button>
+          <button data-testid="board-reorder-save" type="button" :lockRepeatClick="true" class="flex-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || (_global.reorderItems ?? []).map(i =&gt; i.id).join(',') === (_global.reorderOriginal ?? []).map(i =&gt; i.id).join(',')}}">
+            <on type="click">
+              <!-- 저장 — 지금 창의 순서를 전체 id 목록으로 보낸다. 요청 중에는 잠가 두 번 눌러도 한 번만 간다.
+                성공하면 창을 닫고 목록을 다시 읽는다(관리자 목록 기본 정렬도 이 순서다). 422 는 창 안에 사유를 남기고, 그 밖의 실패는 토스트로 알린다 -->
+              <sequence>
+                <set-state target="global" :reorderSaving="true" :reorderError="null"/>
+                <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards/order" method="PUT">
+                  <success>
+                    <set-state target="global" :reorderSaving="false" :reorderItems="null" :reorderOriginal="null"/>
+                    <close-modal target="board_reorder_modal"/>
+                    <toast type="success" message="{{response.message}}"/>
+                    <refetch-data-source dataSourceId="boards" :sync="true"/>
+                  </success>
+                  <fail>
+                    <conditions>
+                      <when if="{{error.status === 422}}">
+                        <set-state target="global" :reorderSaving="false" reorderError="{{error.errors?.board_ids?.[0] ?? error.message}}"/>
+                      </when>
+                      <else>
+                        <set-state target="global" :reorderSaving="false"/>
+                        <toast type="error" message="{{error.message}}"/>
+                      </else>
+                    </conditions>
+                  </fail>
+                  <body board_ids="{{(_global.reorderItems ?? []).map(i =&gt; i.id)}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="spinner-sm"/>
+            <span>{{_global.reorderSaving ? '$t:sirsoft-board.admin.board.index.reorder.saving' : '$t:sirsoft-board.admin.board.index.reorder.save'}}</span>
+          </button>
+        </div>
       </div>
     </modal>
   </modal>

@@ -1,12 +1,23 @@
 <!-- 수출입은행 환율 플러그인 설정 — 관리자가 인증키·자동 갱신 정책·실패 알림 발송 수단을 정하고 실행 이력을 본다. 탭은 query.tab 으로 가르며 설정 탭이 기본이다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
-<meta title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description"/>
+<meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description"/>
 <!-- 플러그인 설정값 — 화면을 열 때마다 다시 받아 폼(_local.form)의 초기값으로 깐다. 저장 뒤에도 다시 받는다 -->
 <data-source id="settings" label_key="$t:sirsoft-koreaexim.settings_tab" type="api" endpoint="/api/admin/plugins/sirsoft-koreaexim/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
 <error-handling>
 <on-code code="403">
 <set-state target="local" :koreaeximSettingsForbidden="true"/>
 </on-code>
+  <default>
+    <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+    <conditions>
+      <when if="{{error.refetch}}">
+        <toast type="error" message="$t:core.errors.refresh_failed"/>
+      </when>
+      <else>
+        <show-error-page errorCode="{{error.status}}" target="content"/>
+      </else>
+    </conditions>
+  </default>
 </error-handling>
 </data-source>
 <!-- 상태 요약(자동 관리·키 등록·마지막 실행·호출 예산·다음 실행 시각). 권한이 없으면 403 을 콘텐츠 영역 오류 화면으로 보인다 -->
@@ -88,18 +99,18 @@
 <slot name="content">
 <div data-ref="koreaexim_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
 <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description">
-<button data-ref="koreaexim_back" type="button" class="btn btn-secondary whitespace-nowrap" aria-label="$t:admin.plugins.back_to_list">
+<a href="/admin/plugins" data-ref="koreaexim_back" class="button btn btn-secondary whitespace-nowrap" aria-label="$t:admin.plugins.back_to_list">
 <on type="click">
-<navigate path="/admin/plugins"/>
+<navigate/>
 </on>
 <icon name="arrow-left"/>
 <span>$t:common.back</span>
-</button>
+</a>
 </page-header>
 <tab-navigation data-type="composite" data-ref="koreaexim_tab_navigation" activeTabId="{{_computed.activeTab}}" variant="default" class="sticky-tab-nav-responsive">
 <prop name="tabs">
-<item id="settings" label="$t:sirsoft-koreaexim.settings_tab"/>
-<item id="history" label="$t:sirsoft-koreaexim.history_tab"/>
+<item href="/admin/plugins/sirsoft-koreaexim/settings?tab=settings" id="settings" label="$t:sirsoft-koreaexim.settings_tab"/>
+<item href="/admin/plugins/sirsoft-koreaexim/settings?tab=history" id="history" label="$t:sirsoft-koreaexim.history_tab"/>
 </prop>
 <on type="change" event="onTabChange">
 <!-- 탭 전환 — 전역에 기억해 두고 query.tab 을 replace 로 바꿔 뒤로 가기 이력을 쌓지 않는다 -->
@@ -114,7 +125,7 @@
 <!-- 읽기 전용 안내 — 빠진 권한마다 따로 알린다. 플러그인 설정 수정 권한이 없으면 설정 폼이, 환율 관리 권한이 없으면 설정 폼과 환율 갱신이 잠긴다. 응답이 오기 전·설정 403 일 때는 띄우지 않는다 -->
 <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mb-4">
 <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-<span class="text-warning-soft">$t:sirsoft-koreaexim.plugin_read_only</span>
+<span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-koreaexim.plugin_read_only</span>
 </div>
 <div data-ref="koreaexim_read_only_banner" data-if="{{_computed.isReadOnly &amp;&amp; !!koreaeximStatus?.data}}" role="status" class="alert-info mb-4">$t:sirsoft-koreaexim.read_only</div>
 <div data-ref="koreaexim_settings_forbidden" data-if="{{_local.koreaeximSettingsForbidden === true}}" role="status" class="alert-warning mb-4">$t:sirsoft-koreaexim.settings_forbidden</div>
@@ -123,12 +134,12 @@
 <include src="partials/plugin_settings/_tab_history.g7.html"/>
 </div>
 <div data-if="{{_computed.activeTab === 'settings'}}" class="sticky-footer-buttons">
-<button type="button" class="btn btn-secondary">
+<a data-ref="koreaexim_cancel" href="/admin/plugins" class="button btn btn-secondary">
 <on type="click">
-<navigate path="/admin/plugins"/>
+<navigate :bypassLeaveGuard="true"/>
 </on>
 <span>$t:common.cancel</span>
-</button>
+</a>
 <button type="button" data-ref="koreaexim_save" disabled="{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
 <on type="click">
 <!-- 설정 저장 — 폼 전체를 PUT 하고 성공하면 설정·상태를 다시 받아 변경 표시를 내린다. 검증 오류는 _local.errors 로 각 필드 밑에 그린다 -->

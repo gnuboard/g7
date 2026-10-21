@@ -139,8 +139,8 @@ export const Modal: React.FC<ModalProps> = ({
     openModalStack.push(token);
 
     // 창 안에서 펼친 팝업(선택 목록·검색 드롭다운·작업 메뉴 등)이 있으면 이 Esc 는 팝업 몫이다 — 팝업이 자기 리스너로 닫는다.
-    // 창과 팝업이 각자 Esc 를 받아, 목록을 펼친 채 누른 Esc 한 번에 창까지 닫혀 저장 안 한 입력이 사라졌다(7.1.0 O-K3-16,
-    // g7 D-J3 와 같은 결함, admin_basic 대칭). 아코디언처럼 aria-haspopup 없는 펼침은 팝업이 아니므로 막지 않는다.
+    // 창과 팝업이 각자 Esc 를 받아, 목록을 펼친 채 누른 Esc 한 번에 창까지 닫혀 저장 안 한 입력이 사라졌다(7.1.0,
+    // 다른 화면과 같은 결함, admin_basic 대칭). 아코디언처럼 aria-haspopup 없는 펼침은 팝업이 아니므로 막지 않는다.
     // 자기 onKeyDown 으로 닫는 팝업은 브라우저에서 이 리스너보다 먼저 닫힌 상태가 그려지므로, 키를 누른 순간(캡처 단계)의
     // 펼침 여부를 함께 본다.
     const hasOpenPopup = () => Boolean(
@@ -272,8 +272,8 @@ export const Modal: React.FC<ModalProps> = ({
               <Button
                 onClick={onClose}
                 // 사용자 템플릿 기반 스타일은 button 에 손가락 커서를 주지 않는다 — 같은 창의 「취소」·확인 버튼처럼
-                // 직접 단다(7.1.0 실측 O-K2-8: 닫기만 cursor default).
-                className="ml-auto text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none cursor-pointer"
+                // 직접 단다(7.1.0 실측: 닫기만 cursor default).
+                className="ml-auto text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none cursor-pointer"
                 aria-label={t('common.close_modal')}
               >
                 <svg

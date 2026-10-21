@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\App;
 use Tests\TestCase;
 
 /**
- * 확장·코어에 내장된(보호) 언어팩의 표시 이름 (7.1.0 전수 실측 #736 O-F4).
+ * 확장·코어에 내장된(보호) 언어팩의 표시 이름 (7.1.0 전수 실측, #736).
  *
  * 내장 언어팩은 매니페스트 파일이 없어 이름이 없다. 언어팩 관리 카드는 이름이 없으면 식별자를 그려,
  * 보호 언어팩 카드 34장이 「sirsoft-template-sirsoft-admin_basic-en」 같은 내부 식별자로만 보였다

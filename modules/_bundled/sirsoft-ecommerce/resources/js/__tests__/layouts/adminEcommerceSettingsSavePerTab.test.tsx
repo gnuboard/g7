@@ -228,7 +228,7 @@ describe('환경설정 탭별 개별 저장 패턴 검증', () => {
             );
             expect(tabChangeAction).toBeDefined();
 
-            // 고친 것이 있으면 확인 창을 먼저 띄운다(7.1.0 조치 G2 — admin-ecommerce-settings-unsaved-tab-confirm.test.ts).
+            // 고친 것이 있으면 확인 창을 먼저 띄운다(7.1.0 브라우저 실측 조치 — admin-ecommerce-settings-unsaved-tab-confirm.test.ts).
             // 고친 것이 없으면 탭 전환 이벤트만 보낸다 — 정리·전역 탭·이동은 탭 본문 틀의 이벤트 받기가 한다(#753)
             expect(tabChangeAction.handler).toBe('conditions');
             const directSwitch = tabChangeAction.conditions[1].then;

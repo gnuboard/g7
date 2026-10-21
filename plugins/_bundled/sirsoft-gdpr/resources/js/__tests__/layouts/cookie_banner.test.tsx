@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 import extension from '../../../extensions/cookie_banner.json';
 import { findById, collectHandlers, collectGdprI18nKeys, type AnyNode , serializeForSearch } from './helpers';
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { pickLocalized } from '@core/support/localeTag';
 
 describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     const root = extension as unknown as AnyNode & {
@@ -25,18 +26,25 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     };
 
     describe('Extension 메타데이터', () => {
+        /**
+         * @scenario surface=extension_meta
+         * @effects banner_extension_injects_overlay_with_data_sources
+         */
         it('extension_point 가 user_global_overlay 이다 (sirsoft-basic _user_base 가 사전 정의)', () => {
             expect(root.extension_point).toBe('user_global_overlay');
         });
 
+        /** @effects banner_extension_injects_overlay_with_data_sources */
         it('mode 는 append (default 컴포넌트 뒤에 추가)', () => {
             expect(root.mode).toBe('append');
         });
 
+        /** @effects banner_extension_injects_overlay_with_data_sources */
         it('priority 는 50 (높은 우선순위)', () => {
             expect(root.priority).toBe(50);
         });
 
+        /** @effects banner_extension_injects_overlay_with_data_sources */
         it('gdprPublicSettings 데이터소스가 포함된다', () => {
             const ds = (root as { data_sources?: AnyNode[] }).data_sources ?? [];
             const settings = ds.find((d) => d.id === 'gdprPublicSettings');
@@ -44,6 +52,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect((settings as { auth_required?: boolean }).auth_required).toBe(false);
         });
 
+        /** @effects banner_extension_injects_overlay_with_data_sources */
         it('gdprMyConsent 데이터소스가 포함된다 (현재 방문자 동의 완료 여부, auth_mode:optional)', () => {
             // 회귀 가드: 새로고침 후에도 배너 재출력 방지를 위한 서버 조회 데이터소스.
             // /api/plugins/sirsoft-gdpr/consent/cookie/status — 회원/게스트 통합 응답.
@@ -59,6 +68,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect((myConsent as { auth_mode?: string }).auth_mode).toBe('optional');
         });
 
+        /** @effects banner_extension_injects_overlay_with_data_sources */
         it('modals 섹션이 없다 (환경설정은 인라인 펼침으로 처리)', () => {
             // 회귀 가드: 이전엔 gdpr_preferences_modal 모달을 분리 정의했으나
             // 배너 내부 인라인 펼침 패널(gdpr_preferences_panel)로 통합됨.
@@ -67,6 +77,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     });
 
     describe('주입 컴포넌트', () => {
+        /** @effects banner_component_injected_first */
         it('components 배열의 첫 컴포넌트가 gdpr_cookie_banner', () => {
             const first = root.components?.[0];
             expect((first as { id?: string })?.id).toBe('gdpr_cookie_banner');
@@ -76,10 +87,15 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     describe('배너 표시 조건', () => {
         const banner = findById(root, 'gdpr_cookie_banner');
 
+        /**
+         * @scenario surface=visibility
+         * @effects banner_shows_until_current_subject_dismisses
+         */
         it('배너 컴포넌트가 존재한다', () => {
             expect(banner).toBeTruthy();
         });
 
+        /** @effects banner_shows_until_current_subject_dismisses */
         it('banner_enabled + has_consented + dismissedFor 3중 조건 — 데이터소스 경로는 한 단계 (?.data?.<key>)', () => {
             // 회귀 가드:
             // 1. ResponseHelper::success($msg, $data) 응답은 데이터소스에서 그대로 보존되므로 단일 객체 응답은 `<id>.data.<key>` 한 단계 경로.
@@ -111,6 +127,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 return fn(gdprPublicSettings, gdprMyConsent, _global) as boolean;
             };
 
+            /** @effects banner_shows_until_current_subject_dismisses */
             it('게스트로 배너를 닫으면(dismissedFor="guest") 같은 게스트 방문에는 배너가 다시 뜨지 않는다', () => {
                 const shown = evaluateBannerIf(
                     { data: { has_consented: false } },
@@ -119,6 +136,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 expect(shown).toBe(false);
             });
 
+            /** @effects banner_shows_until_current_subject_dismisses */
             it('게스트로 배너를 닫은 뒤 미동의 계정으로 로그인하면 배너가 다시 뜬다 (회귀 재현 케이스)', () => {
                 const shown = evaluateBannerIf(
                     { data: { has_consented: false } },
@@ -127,6 +145,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 expect(shown).toBe(true);
             });
 
+            /** @effects banner_shows_until_current_subject_dismisses */
             it('회원 A 가 닫은 뒤 같은 세션에서 회원 A 로 계속 조회하면 배너가 다시 뜨지 않는다', () => {
                 const shown = evaluateBannerIf(
                     { data: { has_consented: false } },
@@ -135,6 +154,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 expect(shown).toBe(false);
             });
 
+            /** @effects banner_shows_until_current_subject_dismisses */
             it('회원 A 가 닫은 뒤 (동일 세션에서) 회원 B 로 전환되면 배너가 다시 뜬다', () => {
                 const shown = evaluateBannerIf(
                     { data: { has_consented: false } },
@@ -143,6 +163,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 expect(shown).toBe(true);
             });
 
+            /** @effects banner_shows_until_current_subject_dismisses */
             it('회원이 닫은 뒤 로그아웃하면(게스트로 전환) 배너가 다시 뜬다', () => {
                 // currentUser 가 undefined 로 바뀌므로 식별자는 fallback 'guest' 로 평가된다.
                 // dismissedFor 는 이전 회원 uuid 로 남아있어 'guest' 와 불일치 → 재노출(안전측 동작).
@@ -153,6 +174,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 expect(shown).toBe(true);
             });
 
+            /** @effects banner_shows_until_current_subject_dismisses */
             it('서버가 이미 동의 완료(has_consented=true)로 응답하면 dismissedFor 값과 무관하게 배너를 띄우지 않는다', () => {
                 const shown = evaluateBannerIf(
                     { data: { has_consented: true } },
@@ -161,6 +183,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 expect(shown).toBe(false);
             });
 
+            /** @effects banner_shows_until_current_subject_dismisses */
             it('dismissedFor 가 아직 설정되지 않은 최초 방문(게스트)에는 배너가 뜬다', () => {
                 const shown = evaluateBannerIf(
                     { data: { has_consented: false } },
@@ -170,6 +193,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             });
         });
 
+        /** @effects banner_renewal_button_for_members_only */
         it('needs_renewal 강제 모달 (gdpr_needs_renewal_modal) 이 더 이상 존재하지 않는다 (결정 — 배너 통합)', () => {
             // 모달 폐기 회귀 가드: 모달과 배너의 시각적 중복 + UX 혼란 + dark pattern 회피 위해
             // 모달 통째 제거하고 배너에 사유 안내 + 회원 한정 "현 상태 유지" 액션 통합.
@@ -177,6 +201,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(modal).toBeNull();
         });
 
+        /** @effects banner_renewal_button_for_members_only */
         it('회원 + needs_renewal=true 한정 「현재 동의 갱신」 버튼이 배너 액션 영역에 노출 (POST /consent/renew-all)', () => {
             const keepBtn = findById(root, 'gdpr_keep_consent_button');
             expect(keepBtn).not.toBeNull();
@@ -194,16 +219,19 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(json).toContain('|renewed=');
         });
 
+        /** @effects banner_renewal_button_for_members_only */
         it('게스트 전용 갱신 버튼 (gdpr_keep_consent_button_guest) 은 더 이상 존재하지 않는다 (결정 — 게스트는 status 미사용 + history 기반이라 이전 의사 자동 복원 인프라 부재 → "모두 동의" 그대로 사용)', () => {
             const guestBtn = findById(root, 'gdpr_keep_consent_button_guest');
             expect(guestBtn).toBeNull();
         });
 
+        /** @effects banner_renewal_button_for_members_only */
         it('옛 banner.keep_label 키는 더 이상 참조되지 않는다 (회귀 가드 — 신 키 banner.btn_renew_consent 로 통일)', () => {
             const text = serializeForSearch(root);
             expect(text).not.toContain('banner.keep_label');
         });
 
+        /** @effects banner_shows_until_current_subject_dismisses */
         it('master_switch 표현식 미사용 (v1.1.0)', () => {
             expect(banner?.if ?? '').not.toContain('master_switch');
         });
@@ -213,6 +241,10 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         const banner = findById(root, 'gdpr_cookie_banner');
         const className = (banner?.props as { className?: string })?.className ?? '';
 
+        /**
+         * @scenario surface=position
+         * @effects banner_position_variants_render_as_popup_box
+         */
         it.each([
             'bottom_left_popup',
             'bottom_right_popup',
@@ -221,17 +253,20 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(className).toContain(`'${position}'`);
         });
 
+        /** @effects banner_position_variants_render_as_popup_box */
         it('기본(bottom_bar) 위치는 풀폭 팝업 카드 (bottom-4 left-4 right-4 rounded-lg)', () => {
             // 회귀 가드: 이전엔 화면 하단에 딱 붙는 띠(bottom-0)였지만,
             // 설계 결정으로 화면에서 살짝 떠 있는 풀폭 카드 형태로 변경됨.
             expect(className).toContain('bottom-4 left-4 right-4 rounded-lg');
         });
 
+        /** @effects banner_position_variants_render_as_popup_box */
         it('top_bar 분기는 제거되어 있다', () => {
             // 회귀 가드: 설계 결정으로 banner_position 옵션에서 top_bar 제거됨.
             expect(className).not.toContain("'top_bar'");
         });
 
+        /** @effects banner_position_variants_render_as_popup_box */
         it('centered_modal 분기는 다른 팝업과 동일한 박스 형태 — 중앙 정렬만 다름', () => {
             // 누적 검토 #12: 이전 구현은 외곽 Div 에 inset-0 + bg-black/40 (전체 화면 dim) +
             // 자식 Div 에 별도 bg-white 박스. 외곽 className 이 'fixed ... bg-white' 와 'bg-black/40'
@@ -250,6 +285,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             }
         });
 
+        /** @effects banner_position_variants_render_as_popup_box */
         it('centered_modal 에서 dim 오버레이를 사용하지 않는다 (의도: 다른 팝업과 동일 외형)', () => {
             // 회귀 가드: 이전 구현은 외곽에 bg-black/40 dim 을 깔았으나 자식 박스가 dim 위에 떠야 하는
             // 구조 — 외곽이 bg-white 와 함께 정의되어 dim 의도가 깨졌었다. dim 강제 모달이 아닌
@@ -262,12 +298,14 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(className).not.toMatch(/'centered_modal'\s*\?\s*'[^']*inset-0/);
         });
 
+        /** @effects banner_layout_uses_safelisted_classes */
         it('Tailwind 임의값(arbitrary value) 미사용 — safelist 규정 준수', () => {
             // 회귀 가드: w-[calc(100%-2rem)] 같은 임의값은 safelist 미등록 시 빌드에서 제외되어
             // 클래스 미적용. memory/feedback_layout_tailwind_arbitrary_values.md 규정.
             expect(className).not.toMatch(/\[\S+\]/);
         });
 
+        /** @effects banner_position_variants_render_as_popup_box */
         it('자식 Div 에 centered_modal 분기 className 이 남아 있지 않다 (이중 박스 회귀 가드)', () => {
             // 회귀 가드: 이전 구현은 자식 Div 에도
             // 'bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full mx-4 shadow-xl' 를 centered_modal
@@ -285,6 +323,10 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         const banner = findById(root, 'gdpr_cookie_banner');
         const text = serializeForSearch(banner);
 
+        /**
+         * @scenario surface=consent_actions
+         * @effects consent_actions_post_expected_categories
+         */
         it('"모두 동의" 시 모든 카테고리 true로 POST (cookie_ prefix)', () => {
             // 백엔드 화이트리스트는 cookie_necessary / cookie_functional / cookie_analytics / cookie_marketing
             // (CookieCategoryService::getAllConsentKeys 가 'cookie_' . c.key 반환).
@@ -293,6 +335,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('/api/plugins/sirsoft-gdpr/consent/cookie');
         });
 
+        /** @effects consent_actions_post_expected_categories */
         it('Phase 1: iteration 이 gdprPublicSettings.data.cookie_categories 기반이라 functional 등 4종 카테고리가 자동 토글 노출', () => {
             // 카테고리 토글은 cookie_categories 데이터를 iteration 으로 렌더 → 서버 응답에 functional 가 있으면 자동 노출.
             // 별도 분기 추가 불필요. 회귀 가드: iteration source 가 cookie_categories 전체 사용.
@@ -301,6 +344,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('c.required === true');
         });
 
+        /** @effects consent_actions_post_expected_categories, banner_renewal_button_for_members_only */
         it('"모두 동의" 버튼은 회원 + needs_renewal=true 일 때만 미노출 (GDPR Art.7(3) 자유 변경권 보호 — 이전 철회 의사 덮어쓰기 방지)', () => {
             // 회원: 옆 keep_consent 버튼이 활성 동의만 신정책으로 갱신 → "모두 동의" 숨김.
             // 게스트: status 미사용 + history 기반이라 이전 의사 자동 복원 인프라 부재 → "모두 동의" 그대로 사용.
@@ -308,6 +352,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('!(gdprMyConsent?.data?.is_member === true && gdprMyConsent?.data?.needs_renewal === true)');
         });
 
+        /** @effects consent_actions_post_expected_categories */
         it('"동의하지 않고 계속하기"(거부) 시 required 카테고리만 true (cookie_ prefix)', () => {
             // 이슈 #430 — 기존 '필수만 사용'(reject_all) 을 거부 버튼으로 대체. body 는 필수만 true 로 재활용.
             expect(text).toContain("['cookie_' + c.key]: c.required === true");
@@ -322,6 +367,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain("intent: 'reject'");
         });
 
+        /** @effects consent_actions_post_expected_categories */
         it('거부 버튼 라벨은 banner.reject_continue, 기존 banner.reject_all 은 제거됨', () => {
             expect(text).toContain('sirsoft-gdpr.banner.reject_continue');
             expect(text).not.toContain('sirsoft-gdpr.banner.reject_all');
@@ -363,6 +409,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(rejectSubtree).not.toContain('$t:sirsoft-gdpr.consent.granted"');
         });
 
+        /** @effects consent_actions_post_expected_categories */
         it('POST body 키는 백엔드 검증 규칙(StoreCookieConsentRequest)과 일치 — consents + source 사용', () => {
             // 회귀 가드: 백엔드는 consents (객체, cookie_ prefix 키) + source ("banner") 를 요구한다.
             // 과거 categories / policy_version 으로 잘못 보내서 422 "유효하지 않은 동의 항목입니다." 반환됨.
@@ -371,6 +418,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).not.toContain('categories:');
         });
 
+        /** @effects consent_save_refreshes_consent_state */
         it('동의 저장 직후 onSuccess 에서 gdprMyConsent 를 refetch (3개 버튼 모두)', () => {
             // 회귀 가드: 동의 후 새로고침 시 배너 재출력을 막으려면 서버 동의 상태를 다시 조회해야 함.
             // setState gdprBannerDismissedFor=<uuid|'guest'> 만으로는 글로벌 상태가 새로고침 시 휘발됨.
@@ -379,6 +427,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('"dataSourceId": "gdprMyConsent"');
         });
 
+        /** @effects consent_save_refreshes_consent_state */
         it('동의 저장 apiCall 3건 모두 auth_mode:optional (회원 토큰 전달)', () => {
             // 회귀 가드: 회원이 로그인 상태로 배너에서 동의해도 토큰을 보내지 않으면
             // 서버 라우트 optional.sanctum 가 항상 게스트로 인식 → g7_gdpr_user_consents 에 저장 안 되고
@@ -389,6 +438,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).not.toContain('"auth_required": false,\n                                                            "target": "/api/plugins/sirsoft-gdpr/consent/cookie"');
         });
 
+        /** @effects consent_save_refreshes_consent_state */
         it('동의 저장 직후 onSuccess 에서 코어 refreshConsent 핸들러를 호출 (3개 버튼 모두)', () => {
             // 회귀 가드: 동의 저장 직후 코어 동의 런타임을 다시 읽지 않으면 consent:changed 가 오지 않아
             // 자동 차단 엔진 캐시가 그대로다 — G-4 시나리오(분석/마케팅 스크립트 동의 직후 즉시 로드)가
@@ -398,6 +448,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).not.toContain('sirsoft-gdpr.syncConsent');
         });
 
+        /** @effects banner_preferences_toggle_inline */
         it('"환경설정" 클릭 시 인라인 펼침 토글 (모달 미사용)', () => {
             // 회귀 가드: 이전엔 openModal handler 로 별도 모달을 열었으나,
             // 배너 내부 인라인 펼침으로 변경되어 setState 로 _global.gdprPreferencesOpen 토글.
@@ -410,6 +461,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(toggleText).not.toContain('openModal');
         });
 
+        /** @effects banner_buttons_disable_only_clicked */
         it('배너 4버튼은 gdprBannerSubmittingAction 식별자 패턴으로 클릭한 버튼만 spinner + 다른 버튼은 원래 라벨 유지', () => {
             // 회귀 가드: 피드백 — 단일 boolean 플래그면 모든 버튼이 "동의 중..." 으로 동시 변경되어
             // 어느 버튼을 클릭했는지 시각적으로 알 수 없음. 식별자 string 으로 변경하여 클릭한 버튼만
@@ -465,30 +517,38 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         const banner = findById(root, 'gdpr_cookie_banner');
         const panel = findById(banner ?? null, 'gdpr_preferences_panel');
 
+        /**
+         * @scenario surface=preferences_panel
+         * @effects banner_preferences_panel_inline_saves_consent
+         */
         it('gdpr_preferences_panel 이 배너 내부에 존재한다', () => {
             expect(panel).toBeTruthy();
         });
 
+        /** @effects banner_preferences_panel_inline_saves_consent */
         it('_global.gdprPreferencesOpen === true 일 때만 표시된다', () => {
             expect(panel?.if).toBe('{{_global.gdprPreferencesOpen === true}}');
         });
 
+        /** @effects banner_preferences_panel_inline_saves_consent */
         it('필수 카테고리 토글은 disabled', () => {
             const text = serializeForSearch(panel);
             expect(text).toContain('"disabled": "{{category?.required === true}}"');
         });
 
+        /** @effects banner_category_label_uses_current_locale */
         it('카테고리 라벨·설명은 현재 로케일($locale)을 먼저 본다', () => {
             const text = serializeForSearch(panel);
 
-            // 엔진은 현재 로케일을 전역 변수 $locale 로 노출한다. _global.locale 은 심는 곳이
-            // 없어 항상 undefined 이고, 그러면 ?? 폴백이 걸려 **모든 언어에서 한국어**가 나간다.
-            expect(text).toContain('category?.label?.[$locale]');
-            expect(text).toContain('category?.description?.[$locale]');
+            // 엔진의 $localized() 가 현재 로케일($locale) → 사이트 기본 언어 → 영어 순으로 고른다(#148).
+            // _global.locale 은 심는 곳이 없어 항상 undefined 이고, 그러면 **모든 언어에서 한국어**가 나간다.
+            expect(text).toContain('$localized(category?.label)');
+            expect(text).toContain('$localized(category?.description)');
             expect(text).not.toContain('_global.locale');
             expect(text).not.toContain('_global?.locale');
         });
 
+        /** @effects banner_preferences_panel_inline_saves_consent */
         it('저장 버튼 클릭 시 POST /consent/cookie + 배너 dismissedFor 갱신 + 성공 토스트', () => {
             const text = serializeForSearch(panel);
             expect(text).toContain('/api/plugins/sirsoft-gdpr/consent/cookie');
@@ -506,11 +566,13 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
      * @effects banner_links_operator_privacy_policy_url
      */
     describe('정책 링크', () => {
+        /** @effects banner_links_operator_privacy_policy_url */
         it('privacy_policy_available일 때만 링크 표시', () => {
             const text = serializeForSearch(extension);
             expect(text).toContain('privacy_policy_available === true');
         });
 
+        /** @effects banner_links_operator_privacy_policy_url */
         it('링크 href 는 공개 설정의 privacy_policy_url 을 그대로 쓰고 /page/ 를 조합하지 않는다', () => {
             const text = JSON.stringify(extension);
             expect(text).toContain(`"href":"{{gdprPublicSettings?.data?.privacy_policy_url ?? ''}}"`);
@@ -525,6 +587,10 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         const text = serializeForSearch(panel);
         const fullText = serializeForSearch(extension);
 
+        /**
+         * @scenario surface=category_info
+         * @effects banner_category_info_user_friendly
+         */
         it('운영자용 info.{key}.{scope|tools|legal_basis} 키를 직접 참조하지 않는다', () => {
             // 누적 검토 #14: 사용자(게스트) 측은 운영자 측과 동일한 info.* 키를 그대로 노출하던 회귀.
             // 운영자 측 info 는 분류 결정에 필요한 기술/법규 상세 (자동 차단 대상, GDPR Art.6(1)(a) 등)
@@ -540,6 +606,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).not.toContain('cookie_categories.info.marketing.legal_basis');
         });
 
+        /** @effects banner_category_info_user_friendly */
         it('"자세히 보기" 토글 + 펼침 영역이 통째로 제거되었다 (카테고리 description 한 줄로 일원화)', () => {
             // 설계 결정: 펼침 영역의 user_info description 이 카테고리 카드 자체의 description 과
             // 의미상 중복 → "자세히 보기" 토글 자체를 없애고, 카테고리 description 을 사용자 친화
@@ -551,12 +618,14 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).not.toContain('"chevron-up"');
         });
 
+        /** @effects banner_category_info_user_friendly */
         it('사용자 측에서 user_info.* 키 참조가 모두 제거되었다 (description 시더로 이전됨)', () => {
             // 펼침 영역과 함께 user_info.* 키 참조도 통째로 제거. 사용자 친화 description 은
             // 카테고리 데이터의 description 필드에 직접 들어감 (시더 디폴트).
             expect(fullText).not.toContain('cookie_categories.user_info');
         });
 
+        /** @effects banner_category_info_user_friendly */
         it('legal_basis / scope / tools / description 라벨 키 참조 모두 제거', () => {
             // 회귀 가드: 일반 사용자에게 "GDPR Art.6(1)(a)" 등 법조항 / 운영자용 분류 라벨 노출 금지.
             expect(fullText).not.toContain('banner.category_legal_basis_label');
@@ -576,6 +645,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     describe('카테고리 카드 — 임의값 회귀 가드 (#14 글씨 키우기)', () => {
         // 설계 결정: 카테고리 카드 자체의 보조 텍스트 (필수 배지, 카테고리 설명) 도 너무 작아
         // 가독성 저하. 임의값 text-[10px] 11건을 모두 표준 text-xs 로 통일.
+        /** @effects banner_layout_uses_safelisted_classes */
         it('cookie_banner.json 전체에서 text-[10px] 임의값이 사용되지 않는다', () => {
             const fullText = serializeForSearch(extension);
             expect(fullText).not.toMatch(/text-\[10px\]/);
@@ -586,18 +656,24 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         const banner = findById(root, 'gdpr_cookie_banner');
         const footer = findById(banner ?? null, 'gdpr_banner_operator_footer');
 
+        /**
+         * @scenario surface=operator_footer
+         * @effects banner_operator_footer_line_variants
+         */
         it('gdpr_banner_operator_footer 가 배너 내부에 존재한다', () => {
             // EDPB Guidelines 05/2020 §64: controller identity 가 동의 1차 화면에서 즉시 식별 가능해야
             // informed consent 의 유효성을 입증할 수 있다. 처리방침 링크 뒤로 숨기는 구조는 불충분.
             expect(footer).toBeTruthy();
         });
 
+        /** @effects banner_operator_footer_line_variants */
         it('둘 다 비면 푸터 라인 전체 숨김 — 어느 한 값만 있어도 노출', () => {
             expect(footer?.if).toBe(
                 '{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}'
             );
         });
 
+        /** @effects banner_operator_footer_line_variants */
         it('3-case 분기: 둘 다 / 운영자만 / 저장위치만 — 동시 노출 회피를 위해 각 케이스 if 가 상호 배타적', () => {
             // 한국어 조사 분기 + 자연어 한 줄 표현을 위해 ko/en lang 에 3종 키를 두고 if 가드로 분기.
             const children = asArray(footer?.children) as AnyNode[];
@@ -625,6 +701,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             );
         });
 
+        /** @effects banner_operator_footer_line_variants */
         it('각 케이스의 다국어 키 + 토큰 보간 사용 (entity/location 자연어 분기)', () => {
             const text = serializeForSearch(footer);
             expect(text).toContain('sirsoft-gdpr.banner.operator_and_storage_line|entity=');
@@ -633,6 +710,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             expect(text).toContain('sirsoft-gdpr.banner.storage_only_line|location=');
         });
 
+        /** @effects banner_operator_footer_line_variants */
         it('푸터 라인은 시각적 무게 최소화 — 작은 보조 텍스트 (공통 Tailwind 코어 클래스) + 상단 구분선', () => {
             // 동의 행위 자체에 시선이 가도록 운영 주체는 부드러운 보조 정보로 처리.
             // 이슈 #430 — 배너는 user 페이지에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은 미해석.
@@ -647,6 +725,10 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     });
 
     describe('규정 준수', () => {
+        /**
+         * @scenario surface=compliance
+         * @effects banner_uses_builtin_handlers_and_prefixed_keys
+         */
         it('핸들러는 G7 내장 핸들러만 사용 (이 플러그인은 핸들러를 등록하지 않는다)', () => {
             // #639(결정 D22): 플러그인 전용 syncConsent 가 코어 내장 refreshConsent 로 대체돼 이 플러그인은
             // ActionDispatcher 에 핸들러를 등록하지 않는다(plugin.json assets.handlers=false).
@@ -658,6 +740,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             }
         });
 
+        /** @effects banner_uses_builtin_handlers_and_prefixed_keys */
         it('i18n 키 prefix 검증', () => {
             for (const k of collectGdprI18nKeys(extension)) {
                 expect(k).toMatch(/^\$t:sirsoft-gdpr\./);
@@ -687,7 +770,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
                 }
                 if (!node || typeof node !== 'object') continue;
                 const text = (node as { text?: unknown }).text;
-                if (typeof text === 'string' && text.includes('category?.label?.[$locale]')) return text;
+                if (typeof text === 'string' && text.includes('$localized(category?.label)')) return text;
                 stack.push(...Object.values(node as Record<string, unknown>));
             }
             throw new Error('카테고리 라벨 표현식을 cookie_banner.json 에서 찾지 못했다');
@@ -698,9 +781,15 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
             locale: string,
         ): string => {
             const expr = findLabelExpression().replace(/^\{\{/, '').replace(/\}\}$/, '');
+            // 엔진 $localized 와 같은 규칙(코어 pickLocalized) — 사이트 기본 언어 ko 인 사이트
+            (window as any).G7Config = { appConfig: { siteLocale: 'ko' } };
+            const $localized = (value: unknown): string =>
+                value == null ? '' : typeof value === 'string' ? value : (pickLocalized(value, locale) ?? '');
             // eslint-disable-next-line no-new-func
-            const fn = new Function('category', '$locale', 'return (' + expr + ');');
-            return fn(category, locale) as string;
+            const fn = new Function('category', '$locale', '$localized', 'return (' + expr + ');');
+            const result = fn(category, locale, $localized) as string;
+            delete (window as any).G7Config;
+            return result;
         };
 
         const BOTH = { key: 'analytics', label: { ko: '분석 쿠키', en: 'Analytics' } };

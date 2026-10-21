@@ -636,6 +636,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "iconName": "refresh",
                                     "variant": "outline",
                                     "size": "md",
@@ -854,10 +855,12 @@
                                     "tabs": [
                                         {
                                             "id": "schedules",
+                                            "href": "/admin/schedules",
                                             "label": "$t:admin.schedules.tabs.schedules"
                                         },
                                         {
                                             "id": "queue",
+                                            "href": "/admin/schedules/queue",
                                             "label": "$t:admin.schedules.tabs.queue"
                                         }
                                     ]

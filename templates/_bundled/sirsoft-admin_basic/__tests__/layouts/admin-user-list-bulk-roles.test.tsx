@@ -337,7 +337,7 @@ describe('회원 목록 — 역할 일괄 변경 창 (#708)', () => {
     expect(adminEn.users.bulk_roles.hint).toContain('rejected');
   });
 
-  // 라이브 실측(O-C3): 4명을 골라 역할을 추가했는데 결과가 「2명 변경, 1명 제외」 — 이미 그 역할을 가진 1명이 어디에도 안 잡혔다.
+  // 라이브 실측: 4명을 골라 역할을 추가했는데 결과가 「2명 변경, 1명 제외」 — 이미 그 역할을 가진 1명이 어디에도 안 잡혔다.
   // @scenario mode=add, target=normal, role=within_ceiling
   // @effects unchanged_reported
   it('이미 반영되어 변경 없는 회원은 결과 요약에 수가 실리고 「이미 반영」 사유 행으로 보인다 (ko·en·ja 키)', async () => {
@@ -385,7 +385,7 @@ describe('회원 목록 — 역할 일괄 변경 창 (#708)', () => {
     expect(screen.queryByTestId('bulk_roles_unchanged')).toBeNull();
   });
 
-  // 라이브 실측(O-C6): 제거 창 안내에 「역할이 남지 않는 회원은 건너뜀」 이 없어 결과 창에서야 알았다.
+  // 라이브 실측: 제거 창 안내에 「역할이 남지 않는 회원은 건너뜀」 이 없어 결과 창에서야 알았다.
   // @scenario mode=remove, target=normal, role=within_ceiling
   // @effects last_role_skipped
   it('제거 모드에만 「역할이 하나도 남지 않는 회원은 건너뜀」 안내가 보인다 (ko·en·ja)', async () => {

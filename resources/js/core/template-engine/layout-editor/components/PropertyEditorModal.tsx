@@ -218,7 +218,7 @@ export function PropertyEditorModal({
   const hasNodeEditor = !!NodeEditorComp;
   // 데이터 연결 — capability.dataProps 선언 시 [속성] 탭 상단에
   // "데이터 연결" 전용 영역을 렌더한다. 데이터를 바라보는 prop(단일값/배열)만 대상이며,
-  // 구조/수치/enum/boolean prop 은 propControls 정적 편집(토글 없음 — 1차 결함 근절).
+  // 구조/수치/enum/boolean prop 은 propControls 정적 편집(토글 없음 — 결함 근절).
   const dataProps: DataPropSpec[] = Array.isArray(
     (capability as { dataProps?: unknown } | null)?.dataProps,
   )

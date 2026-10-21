@@ -1,5 +1,5 @@
 /**
- * 대시보드 「오늘」 주문 배지 → 주문 목록 링크의 날짜 (7.1.0 전수 실측 QE-O2 · 원칙)
+ * 대시보드 「오늘」 주문 배지 → 주문 목록 링크의 날짜 (7.1.0 전수 실측 · 원칙)
  *
  * 배지 숫자는 사이트 표준시의 오늘 집계 행(ecommerce_stats)을 읽는다. 배지를 눌러 여는 주문 목록 링크가
  * `toISOString().slice(0, 10)`(UTC 날짜)을 실으면, 한국 시간 오전 9시 전에는 배지가 센 날(사이트 오늘)이 아니라
@@ -53,8 +53,9 @@ describe('대시보드 오늘 배지 링크 — 사이트 표준시의 오늘', 
     const layout = JSON.parse(fs.readFileSync(EXTENSION, 'utf-8'));
     const paths: string[] = collect(
       layout,
-      (n) => n.handler === 'navigate' && typeof n.params?.path === 'string' && n.params.path.includes('start_date='),
-    ).map((n) => n.params.path);
+      // 배지는 링크다(#757 WP-L) — 주소는 A 의 href 한 곳에 있고 클릭 navigate 는 path 없이 그 href 로 간다
+      (n) => n.name === 'A' && typeof n.props?.href === 'string' && n.props.href.includes('start_date='),
+    ).map((n) => n.props.href);
 
     expect(paths.length).toBeGreaterThanOrEqual(7);
     const _global = { settings: { general: { timezone: 'Pacific/Honolulu' } } };

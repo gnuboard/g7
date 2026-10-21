@@ -2,7 +2,7 @@
  * @file TemplateApp.memberLocale.test.ts
  * @description 로그인 회원의 언어(users.language)를 화면 언어의 기준으로 삼는다 (engine-v1.79.0)
  *
- * 버그 (7.1.0 실측 O-C1-2, O-C2a-3):
+ * 버그 (7.1.0 실측):
  *   이 브라우저에 남은 언어(g7_locale)가 회원 언어와 다르면(다른 기기에서 언어를 바꾼 경우 등) 부팅 때 화면은
  *   브라우저 언어로 그려지는데, 서버는 로그인 회원의 요청 언어로 users.language 를 써서 필수 언어 검증 문구와
  *   확장 목록 이름이 회원 언어로 섞였다. 헤더에서 같은 언어를 다시 골라도 changeLocale 이 같은 언어면 바로
@@ -160,9 +160,26 @@ describe('회원 언어 기준 화면 언어 (engine-v1.79.0)', () => {
   });
 
   // @scenario case=member_unsupported
-  // @effects unsupported_member_language_ignored
-  it('회원 언어가 사이트 지원 언어가 아니면(언어팩 비활성 등) 브라우저 언어를 유지한다', async () => {
-    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'] } };
+  // @effects unsupported_member_language_falls_back_to_site_default
+  it('회원 언어가 꺼진 언어면(언어팩 비활성 등) 사이트 기본 언어로 열고 g7_locale 을 고친다 — users.language 는 쓰지 않는다 (engine-v1.81.0)', async () => {
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'], siteLocale: 'en' } };
+    localStorage.setItem('g7_locale', 'ko');
+    mockAuth({ language: 'ja' });
+
+    const app = new TemplateApp({ templateId: 'sirsoft-admin_basic', templateType: 'admin', locale: 'ko', debug: false });
+    await app.init();
+
+    expect(app.getLocale()).toBe('en');
+    expect(localStorage.getItem('g7_locale')).toBe('en');
+    expect(initTemplateEngine).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(initTemplateEngine).mock.calls[1][0]).toMatchObject({ locale: 'en' });
+    expect(fetchCalls.filter((c) => /language/.test(c.url) && c.init?.method && c.init.method !== 'GET')).toHaveLength(0);
+  });
+
+  // @scenario case=member_unsupported
+  // @effects unsupported_member_language_falls_back_to_site_default
+  it('회원 언어가 꺼져 있어도 지금 화면이 이미 사이트 기본 언어면 다시 초기화하지 않는다', async () => {
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'], siteLocale: 'ko' } };
     localStorage.setItem('g7_locale', 'ko');
     mockAuth({ language: 'ja' });
 
@@ -171,6 +188,67 @@ describe('회원 언어 기준 화면 언어 (engine-v1.79.0)', () => {
 
     expect(app.getLocale()).toBe('ko');
     expect(initTemplateEngine).toHaveBeenCalledTimes(1);
+  });
+
+  // @scenario case=stale_saved_locale_on_boot
+  // @effects stale_saved_locale_switches_to_site_default
+  it('저장된 화면 언어(g7_locale)가 꺼진 언어면 사이트 기본 언어로 열되 저장값은 그대로 둔다 (engine-v1.81.0, #148 D8 — 설계 확정 2026-10-19)', async () => {
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'], siteLocale: 'en' } };
+    localStorage.setItem('g7_locale', 'fil');
+    mockAuth(null);
+
+    const app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false });
+
+    expect(app.getLocale()).toBe('en');
+    // 언어팩 업데이트·잠깐 끄기 동안 들어온 방문자의 선택이 지워지지 않게 저장값은 남긴다
+    expect(localStorage.getItem('g7_locale')).toBe('fil');
+    expect(document.documentElement.lang).toBe('en');
+  });
+
+  // @scenario case=stale_saved_locale_on_boot
+  // @effects stale_saved_locale_switches_to_site_default
+  it('언어팩이 다시 켜지면 다음 방문부터 저장해 둔 언어로 돌아온다', () => {
+    localStorage.setItem('g7_locale', 'fil');
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'], siteLocale: 'en' } };
+    expect(new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false }).getLocale()).toBe('en');
+
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en', 'fil'], siteLocale: 'en' } };
+    expect(new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false }).getLocale()).toBe('fil');
+  });
+
+  // @scenario case=stale_saved_locale_on_boot
+  // @effects stale_saved_locale_switches_to_site_default
+  it('주 언어가 같은 지역 언어만 켜져 있으면 그 언어로 연다 — 서버 협상(LocaleTag::match)과 같다', () => {
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'fil-PH'], siteLocale: 'ko' } };
+    localStorage.setItem('g7_locale', 'fil');
+
+    const app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false });
+
+    expect(app.getLocale()).toBe('fil-PH');
+    expect(localStorage.getItem('g7_locale')).toBe('fil');
+  });
+
+  // @scenario case=stale_saved_locale_on_boot
+  // @effects stale_saved_locale_switches_to_site_default
+  it('사이트 기본 언어도 꺼져 있으면 서버가 정한 언어로 연다', () => {
+    (window as any).G7Config = { appConfig: { supportedLocales: ['ko', 'en'], siteLocale: 'ja' } };
+    localStorage.setItem('g7_locale', 'fil');
+
+    const app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false });
+
+    expect(app.getLocale()).toBe('ko');
+    expect(localStorage.getItem('g7_locale')).toBe('fil');
+  });
+
+  // @scenario case=stale_saved_locale_on_boot
+  // @effects stale_saved_locale_switches_to_site_default
+  it('지원 목록을 모르면 저장값을 그대로 쓴다(종전 동작)', () => {
+    localStorage.setItem('g7_locale', 'fil');
+
+    const app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko', debug: false });
+
+    expect(app.getLocale()).toBe('fil');
+    expect(localStorage.getItem('g7_locale')).toBe('fil');
   });
 
   // @scenario case=reselect_same_language

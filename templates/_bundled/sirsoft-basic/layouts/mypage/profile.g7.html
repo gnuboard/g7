@@ -1,7 +1,21 @@
 <!-- 마이페이지 «내 정보» 탭 — 보기 전용이고 고치기는 `profile-edit` 로 넘어간다. 회원 탈퇴도 여기 있다. -->
 <layout name="mypage/profile" version="1.0.0" extends="_user_base">
   <!-- 로그인한 본인 정보. `initLocal` 로 폼 상태의 초깃값도 함께 채워, 수정 화면으로 넘어가도 값이 이어진다 -->
-  <data-source id="user" label_key="$t:editor.data_source.user" type="api" endpoint="/api/me" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" initLocal="profileEditForm"/>
+  <data-source id="user" label_key="$t:editor.data_source.user" type="api" endpoint="/api/me" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" initLocal="profileEditForm">
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
   <computed name="currentTab">profile</computed>
   <permissions/>
   <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">

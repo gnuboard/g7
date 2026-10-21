@@ -78,7 +78,7 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "responsive": {
-                                        "mobile": {
+                                        "0-767": {
                                             "props": {
                                                 "className": "{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-full' : 'input w-full'}}"
                                             }
@@ -466,7 +466,7 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "responsive": {
-                                        "mobile": {
+                                        "0-767": {
                                             "props": {
                                                 "className": "{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-full' : 'input w-full'}}"
                                             }
@@ -1138,7 +1138,7 @@
                                     "if": "{{!!_local.form?.basic_info?.public_asset_disk_unavailable}}",
                                     "props": {
                                         "role": "status",
-                                        "className": "text-warning-soft mt-2"
+                                        "className": "ecommerce-tone-warning-soft mt-2 text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.unavailable|disk={{_local.form?.basic_info?.public_asset_disk_unavailable}}"
                                 },
@@ -1213,7 +1213,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-info-soft"
+                                                "className": "ecommerce-tone-info-soft text-xs"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.module_not_installed"
                                         }

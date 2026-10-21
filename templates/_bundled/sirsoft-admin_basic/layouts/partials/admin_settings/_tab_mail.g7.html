@@ -10,7 +10,7 @@
           <div data-ref="field_mailer">
             <label class="form-label">
               <span>$t:admin.settings.mail.mailer</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.mailer'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <select name="mail.mailer" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailer'] === true}}" placeholder="$t:admin.settings.mail.select_mailer" options="{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}" error="{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"/>
@@ -36,7 +36,7 @@
             <div data-ref="field_host">
               <label class="form-label">
                 <span>$t:admin.settings.mail.host</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="text" name="mail.host" placeholder="smtp.example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.host'] === true}}" class="input {{_local.errors?.['mail.host'] ? 'input-error' : ''}}"/>
@@ -47,7 +47,7 @@
             <div data-ref="field_port">
               <label class="form-label">
                 <span>$t:admin.settings.mail.port</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="number" name="mail.port" placeholder="587" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.port'] === true}}" class="input {{_local.errors?.['mail.port'] ? 'input-error' : ''}}"/>
@@ -74,7 +74,7 @@
             <div data-ref="field_mailgun_domain">
               <label class="form-label">
                 <span>$t:admin.settings.mail.mailgun_domain</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.mailgun_domain'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="text" name="mail.mailgun_domain" placeholder="mg.example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_domain'] === true}}" class="input {{_local.errors?.['mail.mailgun_domain'] ? 'input-error' : ''}}"/>
@@ -83,7 +83,7 @@
             <div data-ref="field_mailgun_secret">
               <label class="form-label">
                 <span>$t:admin.settings.mail.mailgun_secret</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.mailgun_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="password" name="mail.mailgun_secret" placeholder="key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_secret'] === true}}" class="input {{_local.errors?.['mail.mailgun_secret'] ? 'input-error' : ''}}"/>
@@ -103,7 +103,7 @@
             <div data-ref="field_ses_key">
               <label class="form-label">
                 <span>$t:admin.settings.mail.ses_key</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.ses_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="text" name="mail.ses_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_key'] === true}}" class="input {{_local.errors?.['mail.ses_key'] ? 'input-error' : ''}}"/>
@@ -112,7 +112,7 @@
             <div data-ref="field_ses_secret">
               <label class="form-label">
                 <span>$t:admin.settings.mail.ses_secret</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.ses_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="password" name="mail.ses_secret" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_secret'] === true}}" class="input {{_local.errors?.['mail.ses_secret'] ? 'input-error' : ''}}"/>
@@ -122,7 +122,7 @@
           <div data-ref="field_ses_region">
             <label class="form-label">
               <span>$t:admin.settings.mail.ses_region</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.ses_region'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <select name="mail.ses_region" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_region'] === true}}" placeholder="$t:admin.settings.mail.select_ses_region" error="{{_local.errors?.['mail.ses_region']?.[0] ?? ''}}">
@@ -144,7 +144,7 @@
               <div data-ref="field_from_address">
                 <label class="form-label">
                   <span>$t:admin.settings.mail.from_address</span>
-                  <span class="text-red-500 ml-1">*</span>
+                  <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.from_address'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
                 </label>
                 <input type="email" name="mail.from_address" placeholder="noreply@example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.from_address'] === true}}" class="input {{_local.errors?.['mail.from_address'] ? 'input-error' : ''}}"/>
@@ -153,10 +153,10 @@
               <div data-ref="field_from_name">
                 <label class="form-label">
                   <span>$t:admin.settings.mail.from_name</span>
-                  <span class="text-red-500 ml-1">*</span>
+                  <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.from_name'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
                 </label>
-                <input type="text" name="mail.from_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.from_name'] === true}}" class="input {{_local.errors?.['mail.from_name'] ? 'input-error' : ''}}"/>
+                <input type="text" name="mail.from_name" placeholder="$t:admin.brand_name" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.from_name'] === true}}" class="input {{_local.errors?.['mail.from_name'] ? 'input-error' : ''}}"/>
                 <span data-if="{{_local.errors?.['mail.from_name']}}" class="form-error">{{_local.errors?.['mail.from_name']?.[0] ?? ''}}</span>
               </div>
             </div>
@@ -169,7 +169,7 @@
       <div class="card-description">$t:admin.settings.mail.test_mail_desc</div>
       <div class="flex flex-col gap-2 sm:flex-row">
         <input type="email" name="mail.test_email" placeholder="$t:admin.settings.mail.test_email_placeholder" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
-        <button data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+        <button type="button" data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
           <on type="click">
             <!-- 시험 발송 — **저장하지 않은 화면 값으로 보낸다**(저장 전에 접속 정보가 맞는지 보라는 뜻).
                  그래서 요청 본문이 길다: 발송 방식(smtp/mailgun/ses)에 따라 그쪽 칸만 담고 나머지는
@@ -197,11 +197,11 @@
       </div>
       <div data-ref="test_mail_result" data-if="{{_local.testMailResult}}" class="{{_local.testMailResult === 'success' ? 'mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm' : 'mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm'}}">
         <div class="flex-center gap-2">
-          <icon data-if="{{_local.testMailResult === 'success'}}" name="check-circle" class="text-green-500 dark:text-green-400 flex-shrink-0"/>
+          <icon data-if="{{_local.testMailResult === 'success'}}" name="check-circle" class="text-green-700 dark:text-green-400 flex-shrink-0"/>
           <icon data-if="{{_local.testMailResult === 'error'}}" name="exclamation-circle" class="text-red-500 dark:text-red-400 flex-shrink-0"/>
           <span class="font-medium">{{_local.testMailResultMessage ?? ''}}</span>
         </div>
-        <div data-if="{{_local.testMailResult === 'success' &amp;&amp; _local.testMailSubject}}" class="mt-2 pl-7 space-y-1 text-green-600 dark:text-green-300">
+        <div data-if="{{_local.testMailResult === 'success' &amp;&amp; _local.testMailSubject}}" class="mt-2 pl-7 space-y-1 text-green-700 dark:text-green-300">
           <div>
             <span class="font-medium">$t:admin.settings.mail.test_mail_subject_label</span>
             <span>{{_local.testMailSubject ?? ''}}</span>
@@ -211,7 +211,7 @@
             <span>{{_local.testMailBody ?? ''}}</span>
           </div>
         </div>
-        <div data-if="{{_local.testMailResult === 'error' &amp;&amp; _local.testMailError}}" class="mt-2 pl-7 text-xs text-red-600 dark:text-red-300 break-all">
+        <div data-if="{{_local.testMailResult === 'error' &amp;&amp; _local.testMailError}}" class="mt-2 pl-7 text-xs text-red-700 dark:text-red-300 break-all">
           <span>{{_local.testMailError ?? ''}}</span>
         </div>
       </div>

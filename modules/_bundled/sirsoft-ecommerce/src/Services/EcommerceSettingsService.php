@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Extension\HookManager;
 use App\Support\ExtensionStoragePath;
+use App\Support\LocalizedValue;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -1157,7 +1158,7 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             return $bankCode;
         }
 
-        return $bank['name'][app()->getLocale()] ?? $bank['name']['ko'] ?? $bankCode;
+        return LocalizedValue::pick($bank['name'] ?? null, anyAsLast: false) ?? $bankCode;
     }
 
     /**

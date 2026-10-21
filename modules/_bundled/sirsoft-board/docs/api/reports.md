@@ -74,7 +74,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | processed_at | string | `2026-06-01 09:35:42` | processed 일시 |
 | metadata | null | `null` | 메타데이터 (IP, User Agent 등) |
 | report_count | integer | `1` | report 개수 (집계) |
-| last_reported_at | string | `2026-06-02 09:35:42` | last reported 일시 |
+| last_reported_at | string | `2026-06-02 09:35:42` | 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준 |
 | is_reactivated | boolean | `false` | reactivated 여부 |
 | target_status | string | `published` | 신고 대상 콘텐츠(게시글/댓글)의 현재 상태. 대상 테이블의 status 컬럼을 서브쿼리로 조인한 값입니다 (예: published, blinded). |
 | target_trigger_type | string | `admin` | 신고 대상의 현재 상태를 유발한 트리거 유형. 대상 테이블의 trigger_type 값으로, 블라인드 처리가 자동(auto_hide)/관리자 수동(admin) 중 무엇에 의한 것인지 구분합니다. |
@@ -180,7 +180,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 신고 관리 화면의 목록을 조회합니다. `auth:sanctum` 인증과 `sirsoft-board.reports.view` 권한이 필요합니다. 동일 대상(게시글/댓글)에 대한 여러 신고는 그룹화되어 최초 신고 1건만 목록에 노출되며, `filters`/`status`/`target_type`/`target_status`/`board_id`/기간(`reported_at_from`~`reported_at_to`)으로 필터링하고 `sort_by`/`sort_order`로 정렬합니다. `per_page`는 10~20 범위로 강제 제한되며, 응답에는 상태별 통계와 사용자 권한 정보가 함께 포함됩니다.
+**설명** 신고 관리 화면의 목록을 조회합니다. `auth:sanctum` 인증과 `sirsoft-board.reports.view` 권한이 필요합니다. 동일 대상(게시글/댓글)에 대한 여러 신고는 그룹화되어 최초 신고 1건만 목록에 노출되며, `filters`/`status`/`target_type`/`target_status`/`board_id`/기간(`reported_at_from`~`reported_at_to`)으로 필터링하고 `sort_by`/`sort_order`로 정렬합니다. `per_page`는 10~20 범위로 강제 제한되며, 응답에는 상태별 통계와 사용자 권한 정보가 함께 포함됩니다. 작성자(`author`)는 세 갈래로 싣습니다 — 계정이 남은 회원은 회원 정보와 `is_guest: false`, 계정이 지워진 회원(케이스 `author_id` 가 비워져도 대상 글·댓글의 회원 번호나 신고 당시 스냅샷으로 회원이었음을 아는 경우)은 `uuid`·`email` 없이 스냅샷 이름(없으면 `null` — 화면이 「알 수 없음」으로 대신 보입니다)과 `is_guest: false`, 비회원은 스냅샷 이름(없으면 「비회원」)과 `is_guest: true` 입니다.
 
 
 ### PATCH /api/modules/sirsoft-board/admin/reports/bulk-status
@@ -452,7 +452,7 @@ _단건 응답: `data` 객체의 필드._
 | report_count | integer | `1` | report 개수 (집계) |
 | reason_summary | string | `욕설/비방 1건` | 신고 사유 요약 문자열. 상위 2개 사유를 "사유 N건" 형식으로 나열하고 나머지는 "외 N건"으로 합산해 표시합니다. |
 | first_reported_at | string | `2026-06-04 09:35:42` | first reported 일시 |
-| last_reported_at | string | `2026-05-13 09:35:42` | last reported 일시 |
+| last_reported_at | string | `2026-05-13 09:35:42` | 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준 |
 | histories | array | `[{"id":1,"type":"reported","action_label":"신고 접수","proces…` | 신고 처리 이력 타임라인 (process_histories JSON 기반, 최신순). 각 항목은 이벤트 유형·라벨·처리자·사유·신고자 수·발생 일시를 포함하며, 접수 이벤트에는 처리자가 없습니다. |
 | metadata | object | `{"ip":"127.0.0.1","user_agent":"Mozilla\/5.0 (Windows NT …` | 메타데이터 (IP, User Agent 등) |
 | created_at | string | `2026-06-04 09:35:42` | 생성 일시 |
@@ -532,7 +532,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 신고 케이스 1건의 상세 정보를 조회합니다. `auth:sanctum` 인증과 `sirsoft-board.reports.view` 권한이 필요합니다. 경로의 `report`(신고 ID)를 기준으로 동일 대상에 대한 모든 신고를 그룹화한 상세 정보와 신고 대상 콘텐츠(reportable) 데이터를 함께 반환하며, 처리 이력(histories), 신고자 목록(reporters), 사유 요약(reason_summary), 전환 가능한 상태(available_actions) 등을 포함합니다. 대상이 없으면 404, 스코프 권한 위반 시 403을 반환합니다.
+**설명** 신고 케이스 1건의 상세 정보를 조회합니다. `auth:sanctum` 인증과 `sirsoft-board.reports.view` 권한이 필요합니다. 경로의 `report`(신고 ID)를 기준으로 동일 대상에 대한 모든 신고를 그룹화한 상세 정보와 신고 대상 콘텐츠(reportable) 데이터를 함께 반환하며, 처리 이력(histories), 신고자 목록(reporters), 사유 요약(reason_summary), 전환 가능한 상태(available_actions) 등을 포함합니다. 대상이 없으면 404, 스코프 권한 위반 시 403을 반환합니다. 작성자(`author`)는 세 갈래로 싣습니다 — 계정이 남은 회원은 회원 정보와 `is_guest: false`, 계정이 지워진 회원(케이스 `author_id` 가 비워져도 대상 글·댓글의 회원 번호나 신고 당시 스냅샷으로 회원이었음을 아는 경우)은 `uuid`·`email` 없이 스냅샷 이름(없으면 `null` — 화면이 「알 수 없음」으로 대신 보입니다)과 `is_guest: false`, 비회원은 스냅샷 이름(없으면 「비회원」)과 `is_guest: true` 입니다.
 
 
 ### GET /api/modules/sirsoft-board/admin/reports/{report}/reporters
@@ -655,7 +655,7 @@ _단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 
 | content | null | `null` | 본문 내용 (상세(`show`) 요청에서만 채워지며, 상태 변경 응답에서는 null) |
 | content_mode | string | `html` | 대상 본문의 형식 모드 (`text`/`html`). 스냅샷이 없으면 `text` |
 | content_preview | string | `API 레퍼런스 실측용 완전 샘플 게시글 본문입니다.` | 대상 본문의 미리보기 (앞 100자 발췌) |
-| author | object | `{"uuid":"...","name":"홍길동","email":"user@example.com","is_guest":false}` | 신고 대상 콘텐츠의 작성자. 회원 정보가 없으면 스냅샷 이름 + `is_guest: true` |
+| author | object | `{"uuid":"...","name":"홍길동","email":"user@example.com","is_guest":false}` | 신고 대상 콘텐츠의 작성자. 계정이 남은 회원은 회원 정보, 계정이 지워진 회원은 스냅샷 이름(없으면 null) + `is_guest: false`, 비회원은 스냅샷 이름(없으면 「비회원」) + `is_guest: true` |
 | reporter | object \| null | `{"uuid":"...","name":"신고자","email":"reporter@example.com","is_guest":false}` | 대표 신고자(첫 번째 신고 로그) 정보. 신고 로그가 없으면 null |
 | reason_type | string \| null | `abuse` | 대표 신고 사유 코드 (첫 신고 로그의 사유 Enum 값) |
 | reason_type_label | string \| null | `욕설/비방` | `reason_type` 의 사람이 읽는 라벨 |
@@ -666,7 +666,7 @@ _단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 
 | processed_at | string \| null | `2026-07-08 10:41:34` | 처리 일시 |
 | metadata | null | `null` | 메타데이터 (상세(`show`) 요청에서만 채워지며, 상태 변경 응답에서는 null) |
 | report_count | integer \| null | `null` | 케이스 신고 건수 집계. 목록(`paginateGrouped`) 응답에서만 채워지며 단건 재조회에서는 null |
-| last_reported_at | string \| null | `2026-07-08 10:41:34` | 마지막 신고 일시 (재접수 시 갱신) |
+| last_reported_at | string \| null | `2026-07-08 10:41:34` | 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준 |
 | is_reactivated | boolean | `false` | 반려/중단 후 재접수된 케이스인지 여부 (`last_activated_at` 존재 여부) |
 | target_status | null | `null` | 대상 콘텐츠의 현재 상태. 목록 조회의 서브쿼리로만 주입되며 단건 재조회에서는 null |
 | target_trigger_type | null | `null` | 대상 상태를 유발한 트리거 유형. 목록 조회에서만 채워지며 단건 재조회에서는 null |
@@ -827,7 +827,7 @@ _단건 응답: `data` 객체의 필드 (`ReportResource` — 상태 변경 후 
 
 마지막 신고자가 취소해 남은 로그가 0 이 되면 케이스를 **영구 삭제**합니다. 소프트 삭제로
 두면 `unique_report_case` 제약이 같은 대상의 재신고를 영구히 막기 때문입니다.
-로그가 남아 있으면 케이스는 유지하고 `last_reported_at` 을 다시 계산한 뒤 처리 이력에
+로그가 남아 있으면 케이스는 유지하고 `last_reported_at` 을 남은 로그의 가장 늦은 신고 시각으로 다시 계산한 뒤 처리 이력에
 `report_cancelled` 를 남깁니다.
 
 훅: `sirsoft-board.report.before_cancel` (로그·케이스를 인자로 받습니다)

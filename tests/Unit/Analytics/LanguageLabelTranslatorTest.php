@@ -11,7 +11,7 @@ use Tests\TestCase;
  *
  * 방문자 상세는 국가 칸(「한국」)과 브라우저 언어 칸(「한국어(대한민국)」)을 나란히 보인다. 국가
  * 이름은 `config/countries.php` 가 정본인데 언어 이름만 intl 사전의 국가 이름을 따라, 한 화면에
- * 같은 나라가 두 이름으로 섰다(7.1.0 실측 O-E3).
+ * 같은 나라가 두 이름으로 섰다(7.1.0 실측).
  */
 class LanguageLabelTranslatorTest extends TestCase
 {

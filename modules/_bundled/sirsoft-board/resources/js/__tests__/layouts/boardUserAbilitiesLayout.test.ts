@@ -5,6 +5,8 @@
  * - permissions -> abilities 키 마이그레이션 완료 검증
  * - user_permissions -> user_abilities 키 마이그레이션 완료 검증
  * - 모든 board 관련 레이아웃 JSON에서 구 키(permissions, user_permissions) 잔존 여부 확인
+ *
+ * @scenario-manifest tests/scenarios/board-user-abilities-layout-keys.yaml
  */
 
 import { describe, it, expect } from 'vitest';
@@ -106,6 +108,8 @@ const formRelatedLayouts: Array<{ name: string; json: unknown }> = [
 
 describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검증', () => {
     describe('permissions -> abilities 키 잔존 검사 (전체 레이아웃)', () => {
+        // @scenario check=legacy_key_absent
+        // @effects legacy_permission_keys_absent
         it.each(allBoardLayouts)(
             '$name: permissions 키가 남아있지 않아야 합니다',
             ({ json }) => {
@@ -126,6 +130,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
     });
 
     describe('user_permissions -> user_abilities 키 잔존 검사 (폼 관련 레이아웃)', () => {
+        // @scenario check=legacy_key_absent
+        // @effects legacy_permission_keys_absent
         it.each(formRelatedLayouts)(
             '$name: user_permissions 키가 남아있지 않아야 합니다',
             ({ json }) => {
@@ -144,6 +150,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
     });
 
     describe('abilities 키 사용 확인 (양성 검증)', () => {
+        // @scenario check=ability_key_present
+        // @effects write_entry_splits_on_can_write
         it('_write_button.json: posts?.data?.abilities?.can_write 표현식 포함', () => {
             const expressions = findExpressionsInJson(writeButton);
             const abilitiesExpressions = findExpressionsContaining(
@@ -153,13 +161,20 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(abilitiesExpressions.length).toBeGreaterThanOrEqual(1);
         });
 
-        it('_write_button.json: disabled prop에 abilities?.can_write 체크 포함', () => {
-            const button = writeButton as Record<string, unknown>;
-            const props = button.props as Record<string, unknown>;
-            expect(props.disabled).toBeDefined();
-            expect(String(props.disabled)).toContain('abilities?.can_write');
+        // @scenario check=ability_key_present
+        // @effects write_entry_splits_on_can_write
+        it('_write_button.json: 쓸 수 있으면 링크 갈래, 아니면 disabled 에 abilities?.can_write 체크가 있는 단추 갈래', () => {
+            // #757 — 쓸 수 있는 회원은 글쓰기 화면 링크(새 탭 가능), 그 밖은 단추. 감싸개 Div 아래 두 갈래로 나뉜다
+            const children = (writeButton as { children: Array<Record<string, unknown>> }).children;
+            const link = children.find((c) => c.name === 'A');
+            const button = children.find((c) => c.name === 'Button');
+
+            expect(String(link?.if)).toContain('abilities?.can_write === true');
+            expect(String((button?.props as Record<string, unknown> | undefined)?.disabled)).toContain('abilities?.can_write');
         });
 
+        // @scenario check=ability_key_present
+        // @effects comment_and_manage_entries_read_abilities
         it('_comment_input.json: post?.data?.abilities?.can_write_comments 표현식 포함', () => {
             const expressions = findExpressionsInJson(commentInput);
             const abilitiesExpressions = findExpressionsContaining(
@@ -169,6 +184,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(abilitiesExpressions.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario check=ability_key_present
+        // @effects comment_and_manage_entries_read_abilities
         it('_comment_section.json: abilities?.can_read_comments 및 abilities?.can_write_comments 표현식 포함', () => {
             const expressions = findExpressionsInJson(commentSection);
 
@@ -185,6 +202,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(canWriteComments.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario check=ability_key_present
+        // @effects comment_and_manage_entries_read_abilities
         it('_comment_item.json: abilities?.can_write_comments 및 abilities?.can_manage 표현식 포함', () => {
             const expressions = findExpressionsInJson(commentItem);
 
@@ -201,6 +220,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(canManage.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario check=ability_key_present
+        // @effects comment_and_manage_entries_read_abilities
         it('types/basic/show.json: abilities?.can_write 및 abilities?.can_manage 표현식 포함', () => {
             const expressions = findExpressionsInJson(basicShow);
 
@@ -217,6 +238,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(canManage.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario check=ability_key_present
+        // @effects comment_and_manage_entries_read_abilities
         it('types/basic/show.json: abilities?.can_read_comments 표현식 포함', () => {
             const expressions = findExpressionsInJson(basicShow);
             const canReadComments = findExpressionsContaining(
@@ -226,6 +249,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(canReadComments.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario check=ability_key_present
+        // @effects form_entries_read_user_abilities
         it('form/_post_form.json: user_abilities?.can_manage 및 user_abilities?.can_upload 표현식 포함', () => {
             const expressions = findExpressionsInJson(postForm);
 
@@ -242,6 +267,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(canUpload.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario check=ability_key_present
+        // @effects form_entries_read_user_abilities
         it('form/_type_renderer.json: user_abilities?.can_manage 표현식 포함', () => {
             const expressions = findExpressionsInJson(typeRenderer);
             const canManage = findExpressionsContaining(
@@ -251,6 +278,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(canManage.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario check=ability_key_present
+        // @effects form_entries_read_user_abilities
         it('form/_password_verify_modal.json: user_abilities?.can_manage 표현식 포함', () => {
             const expressions = findExpressionsInJson(passwordVerifyModal);
             const canManage = findExpressionsContaining(
@@ -263,6 +292,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
     });
 
     describe('findExpressionsInJson 헬퍼 정합성 검증', () => {
+        // @scenario check=extractor
+        // @effects expression_extractor_collects_all
         it('중첩 JSON에서 모든 표현식을 추출합니다', () => {
             const testNode = {
                 if: '{{a.permissions.x}}',
@@ -284,6 +315,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(expressions[2].expression).toBe('{{c.value}}');
         });
 
+        // @scenario check=extractor
+        // @effects expression_extractor_collects_all
         it('표현식이 없는 정적 문자열은 무시합니다', () => {
             const testNode = {
                 type: 'basic',
@@ -295,6 +328,8 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(expressions).toHaveLength(0);
         });
 
+        // @scenario check=extractor
+        // @effects expression_extractor_collects_all
         it('한 문자열에 여러 표현식이 있으면 모두 추출합니다', () => {
             const testNode = {
                 text: '{{a.permissions}} and {{b.abilities}}',

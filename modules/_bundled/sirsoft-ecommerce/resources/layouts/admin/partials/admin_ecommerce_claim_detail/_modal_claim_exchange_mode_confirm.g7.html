@@ -11,7 +11,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button data-ref="cem_004_confirm" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingExchangeMode === true}}">
+        <button data-ref="cem_004_confirm" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingExchangeMode === true}}">
           <on type="click">
             <!-- 확인하면 교환 진행 방식을 실제로 바꾼다 — 대상·방식은 창을 연 핸들러가 _global 문맥에 둔 값이다 -->
             <action handler="sirsoft-ecommerce.setClaimExchangeMode" claimId="{{_global.claimExchangeModeContext?.claimId ?? null}}" mode="{{_global.claimExchangeModeContext?.mode ?? ''}}">

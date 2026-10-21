@@ -41,6 +41,7 @@ class BoardResource extends BaseApiResource
             'name' => $isFormRequest ? $this->name : $this->getLocalizedName(),
             'slug' => $this->slug,
             'is_active' => $this->is_active,
+            'display_order' => (int) $this->display_order,
             'type' => $this->type,
             'description' => $isFormRequest ? $this->description : $this->getLocalizedDescription(),
 
@@ -184,6 +185,7 @@ class BoardResource extends BaseApiResource
 
             'type' => $this->getValue('type'),
             'is_active' => (bool) $this->getValue('is_active'),
+            'display_order' => (int) $this->getValue('display_order'),
             'categories' => $this->getValue('categories') ?? [],
 
             // 관리자 목록 화면은 「등록일」 컬럼을 그린다(admin_board_index.json). `toListArray` 에는

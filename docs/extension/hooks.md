@@ -11,7 +11,7 @@
 2. Filter 훅: applyFilters() - 데이터 변형 (type => 'filter' 필수!)
 3. 네이밍: [vendor-module].[entity].[action]_[timing]
 4. 우선순위: 1-5(높음), 10(기본), 15+(낮음)
-5. Service 패턴: before_* → filter_* → 로직 → after_*
+5. Service 패턴: before_* → filter_* → 로직 → after_* (조회 결과 훅은 캐시를 읽은 뒤·권한 후처리 뒤에 — §조회 결과 훅과 캐시)
 6. 공개 훅의 이름·인자 모양은 마이너에서 바꾸지 않는다 — 새 훅 추가 + 옛 훅 deprecated, 제거는 메이저
 ```
 
@@ -243,6 +243,32 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 예제: 이커머스 `UserListMileageFilterListener`(마일리지 잔액 범위)·`UserListAddressFilterListener`(배송지 국가·등록 여부).
 화면 쪽 규약은 [관리자 목록 필터 컨벤션](../frontend/admin-list-filter-convention.md) 을 본다.
 
+### 목록 쿼리 확장 훅(`*.list_query_extensions`) 표준
+
+확장이 다른 확장·코어의 **목록 쿼리에 조건을 더하는** 표준 형태다. 이름은 `{vendor-module}.{entity}.list_query_extensions`
+(코어는 `core.{entity}.list_query_extensions`) 이고 filter 다. 리스너는 받은 배열에 **조건 함수**
+`fn (Builder $query, array $context): void` 를 더해 돌려준다. 발행하는 쪽은 자기 조건을 다 건 **뒤에** 조건 함수를
+붙이므로 확장은 결과를 좁히기만 한다. 구현 예: 코어 회원 목록(`core.user.list_query_extensions`, 위 절),
+게시판 목록(`sirsoft-board.post.list_query_extensions` — 목록·건수·공지·답글·상세의 답글 스레드·이전/다음·검색·통합검색·최근/인기·
+마이페이지·프로필·관리자 대시보드·사이트맵을 `$context['context']` 로 구분, 게시판 모듈의 확장 포인트 문서).
+
+발행하는 쪽 규칙:
+
+- 훅은 Service·리스너에서 발행하고, 저장소에는 모은 조건을 값 객체·인자로 넘겨 **적용만** 한다(저장소는 훅을 모른다).
+- 같은 목록의 행과 건수(페이지 수)는 같은 조건을 받아야 한다 — 건수 경로에도 같은 훅을 발행한다.
+- 리스너가 없으면 쿼리·결과·캐시 키가 지금과 같아야 한다.
+- 목록 캐시가 있으면 **캐시 축 훅**(`{vendor-module}.{entity}.filter_list_cache_variant`)을 짝으로 둔다. 리스너가 돌려준
+  축 값(스칼라 목록)으로 키 접미사를 만들고, 비면 키를 바꾸지 않는다. 조건을 사람·언어마다 다르게 거는 리스너는
+  같은 축을 이 훅으로 돌려줘야 한다 — 돌려주지 않으면 먼저 연 사람의 건수·위젯이 다른 사람에게 보인다.
+- 저장된 총계(글 수 컬럼·일별 통계)처럼 쿼리가 아닌 숫자는 조건으로 나눌 수 없다. 반영되지 않는 값을 문서에 적는다.
+
+리스너 규칙은 위 절과 같다 — 저장소 서브쿼리(`whereIn`)로 걸고, 조인이 있는 쿼리에서는 `$query->qualifyColumn()` 으로
+컬럼을 한정하고, 볼 권한이 없는 운영자에게는 걸지 않는다.
+
+> `*.filter_list_query`·`*.filter_list_params` 는 **검색 조건 배열**을 고치는 필터이며 쿼리 빌더가 아니다
+> (예: `sirsoft-page.page.filter_list_query`, `sirsoft-ecommerce.product.filter_public_list_params`). 쿼리에 조건을 더하려면
+> 이 절의 `*.list_query_extensions` 를 쓴다.
+
 ### 알림 추출의 선택 채널
 
 `{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면
@@ -438,13 +464,13 @@ sirsoft-ecommerce.product.after_update
 sirsoft-ecommerce.product.filter_create_data
 
 # 조회 작업
-sirsoft-ecommerce.product.before_list
-sirsoft-ecommerce.product.after_list
-sirsoft-ecommerce.product.filter_list_query
-sirsoft-ecommerce.product.filter_list_result
-sirsoft-ecommerce.product.before_show
-sirsoft-ecommerce.product.after_show
-sirsoft-ecommerce.product.filter_show_result
+sirsoft-ecommerce.product.before_public_list
+sirsoft-ecommerce.product.filter_public_list_params   # 검색 조건 배열 필터 — 쿼리 빌더가 아니다
+sirsoft-ecommerce.product.after_public_list
+sirsoft-ecommerce.product.filter_list_params          # 관리자 목록의 검색 조건 배열 필터
+sirsoft-ecommerce.product.filter_popular_list_result  # 결과 필터
+sirsoft-ecommerce.product.after_read
+sirsoft-board.post.list_query_extensions              # 목록 쿼리에 조건 함수를 더한다 — §목록 쿼리 확장 훅 표준
 
 # 이벤트/기타
 sirsoft-ecommerce.order.on_payment_success
@@ -623,6 +649,49 @@ core.analytics.extension_purged          # (Action) 확장을 데이터까지 �
 ```
 
 > `sitemap.index.collect_for_resource` 는 제3자 확장이 리소스 하나에 대한 sitemap 항목을 추가/보정할 때 씁니다(filter — `'type' => 'filter'` 명시 필수). `core.seo.sitemap.after_regenerate_failed` 는 재생성 잡이 실패했을 때 확장이 알림/복구를 걸 수 있는 action 훅입니다.
+
+### 조회 결과 훅과 캐시
+
+조회 작업도 변경 작업처럼 `before_*` / `filter_*_result` / `after_*` 세 훅을 둔다. 확장은 결과 훅으로 목록을 재정렬·변환하거나 값을 덧붙인다. 결과 훅은 **캐시와 권한 후처리의 바깥**에 있어야 한다 — 위치를 잘못 잡으면 한 사용자의 결과가 모든 방문자에게 나간다.
+
+1. **Service 계층에서 발행한다.** 컨트롤러·Repository 에서 발행하지 않는다. Service 메서드를 관리자 화면과 함께 쓰면 사용자 맥락(`$context === 'user'`)에서만 발행해 관리자 조회 동작을 바꾸지 않는다.
+2. **캐시를 읽은 뒤에 발행한다.** `remember()` 콜백 안에서 `applyFilters()` 를 부르면 처음 채운 요청의 결과(그 사용자의 권한·언어로 거른 값)가 공용 캐시에 저장된다. 캐시는 사용자와 무관한 값으로 채우고, 결과 훅은 꺼낸 값에 적용한다.
+3. **사용자별 권한 후처리 뒤에 발행한다.** 열람 권한으로 거르기·시간 표시 다시 계산 같은 사용자별 처리를 먼저 하고 결과 훅을 부른다. 리스너는 이미 걸러진 목록을 받으므로 권한 필터를 다시 구현하지 않는다(리스너가 목록에 항목을 더하면 그 항목의 열람 판정은 리스너 책임이다).
+4. **리스너는 같은 타입의 새 값을 돌려준다.** 컬렉션은 `map()`·`reverse()` 등으로 새 컬렉션을, 페이지네이터는 `through()`·`setCollection()` 으로 고쳐 돌려준다. 캐시에서 꺼낸 모델을 제자리에서 바꾸지 않는다 — `array` 캐시 저장소는 직렬화 없이 같은 인스턴스를 돌려주므로 같은 요청의 다음 호출이 오염된다. 캐시된 모델 컬렉션을 넘기는 Service 는 복제본을 넘긴다.
+5. **페이지네이터에서 항목을 빼도 건수(`total`·`last_page`)는 그대로다.** 결과 훅은 변환·재정렬·주석 용도이고, 목록을 좁히려면 조회 쿼리 단계의 확장 지점을 쓴다.
+6. **리스너는 가볍게 둔다.** 결과 훅은 요청마다 동기로 돈다. 무거운 일(외부 호출·집계)은 `after_*` 액션 훅에서 큐로 보낸다.
+
+훅 인자는 `(값, 요청 정보 배열)` 이다. 요청 정보에는 현재 사용자(`user`, 비회원은 `null`)와 화면 언어(`locale`)가 들어 있고, 경로마다 필요한 값(게시판·필터·조회 대상 회원 등)이 더해진다. `after_*` 는 결과 훅이 돌려준 값을 받는다. 단건 조회에서 대상이 없으면 `before_*` 만 발행한다.
+
+```php
+// 올바른 예 — 캐시를 읽고, 사용자별로 거른 뒤, 복제본에 결과 훅을 적용한다
+public function getMenuBoards(): Collection
+{
+    $context = ['user' => Auth::user(), 'locale' => app()->getLocale()];
+
+    HookManager::doAction('sirsoft-board.board.before_menu_list', $context);
+
+    $boards = $this->cache->remember('board_menu', fn () => $this->repository->getActiveBoardsForMenu(), $ttl, tags: ['board-menu'])
+        ->filter(fn (Board $board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $context['user']))
+        ->map(fn (Board $board) => clone $board)
+        ->values();
+
+    $boards = HookManager::applyFilters('sirsoft-board.board.filter_menu_list_result', $boards, $context);
+
+    HookManager::doAction('sirsoft-board.board.after_menu_list', $boards, $context);
+
+    return $boards;
+}
+```
+
+```php
+// 잘못된 예 — 콜백 안에서 거른 결과가 공용 캐시에 저장된다
+$boards = $this->cache->remember('board_menu', function () {
+    return HookManager::applyFilters('sirsoft-board.board.filter_menu_list_result', $this->repository->getActiveBoardsForMenu());
+}, $ttl);
+```
+
+서버 훅은 어느 화면이 불렀는지 모른다. 리스너를 등록하면 같은 API 를 쓰는 모든 화면(헤더 메뉴·모바일 메뉴·검색엔진용 페이지 등)의 결과가 함께 바뀐다. 한 템플릿의 한 화면에서만 순서를 바꾸려면 레이아웃의 데이터 바인딩에서 정렬한다(예: `{{[...(boards.data ?? [])].reverse()}}`).
 
 ### 방문자 통계 확장 기여 훅 페이로드
 

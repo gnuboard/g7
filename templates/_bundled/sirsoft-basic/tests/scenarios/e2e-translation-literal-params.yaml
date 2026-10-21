@@ -1,0 +1,19 @@
+feature: 레이아웃 문자열 번역 리터럴 인자 식 브라우저 회귀 (7.1.1)
+
+description: |
+  홈 레이아웃 응답에 이 브라우저에서만 Span 을 주입해 `count={{1}}`·`{{1 + 1}}`·`{{0}}`·`?? 0` 식과
+  구분자를 담은 문자열 리터럴이 값으로 치환되는지 본다. 서버 레이아웃은 바꾸지 않는다.
+
+axes:
+  case:
+    - user_home_injected
+
+effects:
+  - literal_param_expressions_resolve
+  - literal_string_keeps_separators
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/translation-literal-params.spec.ts
+
+notes: |
+  수정 전(HEAD) 엔진 번들에서는 「{{count}}/{{max}}개 첨부됨」 으로 실패한다(2026-10-18 실측).

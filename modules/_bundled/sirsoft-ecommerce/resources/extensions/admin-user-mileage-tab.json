@@ -210,7 +210,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-lg font-semibold text-amber-600 dark:text-amber-400"
+                                                        "className": "block text-lg font-semibold text-amber-700 dark:text-amber-400"
                                                     },
                                                     "text": "{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}} P"
                                                 }

@@ -29,18 +29,15 @@
                 {
                     "id": "view_transactions_button",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/admin/ecommerce/mileage-transactions"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "type": "button",
+                        "href": "/admin/ecommerce/mileage-transactions",
                         "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     },
                     "children": [
@@ -160,7 +157,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.default_earn_rate']}}",
                     "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                     },
                     "text": "{{_local.errors?.['mileage.default_earn_rate']?.[0] ?? ''}}"
                 },

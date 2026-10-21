@@ -197,4 +197,14 @@ return [
             'recipient_email' => 'Recipient email',
         ],
     ],
+    // `notification:cleanup` command output
+    'console' => [
+        'cleanup' => [
+            'start' => 'Cleaning up notifications...',
+            'retention' => 'Read retention: :read_days days, unread retention: :unread_days days',
+            'deleted_read' => 'Read notifications deleted: :count',
+            'deleted_unread' => 'Unread notifications deleted: :count',
+            'done' => 'Notification cleanup complete',
+        ],
+    ],
 ];

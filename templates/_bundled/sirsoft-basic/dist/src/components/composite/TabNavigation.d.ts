@@ -7,6 +7,11 @@ export interface Tab {
     iconName?: IconName;
     disabled?: boolean;
     badge?: string | number;
+    /**
+     * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+     * 보통 클릭은 지금처럼 탭 전환(onTabChange)이다(#757).
+     */
+    href?: string;
 }
 export interface TabNavigationProps {
     tabs: Tab[];
@@ -19,6 +24,11 @@ export interface TabNavigationProps {
     hiddenTabIds?: (string | number)[];
     /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
     mobileBreakpoint?: number;
+    /**
+     * 탭 주소(`tabs[].href`)에 현재 주소의 쿼리를 합친다(탭 주소 자신의 키가 이긴다).
+     * 같은 화면 안에서 쿼리만 바꾸는 탭이 목록 문맥(쪽·정렬·검색어)을 이고 갈 때 — 보통 클릭과 새 탭이 같은 주소가 된다.
+     */
+    tabHrefMergeQuery?: boolean;
     /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */

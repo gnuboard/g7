@@ -127,6 +127,8 @@ const downloadFile = (url: string, filename: string): void => {
   link.href = url;
   link.download = filename;
   link.target = '_blank';
+  // 다른 출처 이미지는 download 가 무시되고 새 탭으로 열린다 — 새 탭이 window.opener 로 원래 탭을 바꾸지 못하게 한다(#757)
+  link.rel = 'noopener noreferrer';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -260,7 +262,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             />
           ))
         ) : (
-          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-400 dark:text-gray-500">
+          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
             <I className="fa-regular fa-images mr-2" />
             {t('editor.component.image_gallery')}
           </Div>

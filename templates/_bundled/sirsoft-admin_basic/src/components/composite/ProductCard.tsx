@@ -93,7 +93,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             className="w-full h-64 object-cover"
           />
           {hasDiscount && (
-            <Div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-md">
+            <Div className="absolute top-2 right-2 bg-red-600 dark:bg-red-600 text-white px-2 py-1 rounded-md">
               <Span className="text-sm font-bold">-{discountRate}%</Span>
             </Div>
           )}
@@ -127,7 +127,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {currency}{formattedPrice}
           </Span>
           {originalPrice && (
-            <Span className="text-sm text-gray-400 dark:text-gray-500 line-through">
+            <Span className="text-sm text-gray-500 dark:text-gray-400 line-through">
               {currency}{formattedOriginalPrice}
             </Span>
           )}
@@ -137,7 +137,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {buttonText && (
           <Button
             onClick={onButtonClick}
-            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
           >
             {buttonText}
           </Button>

@@ -1,4 +1,4 @@
-feature: hello 관리자 메모 화면 abilities 게이트 — 새 메모·메모 폼 읽기 전용 (7.1.0 abilities 게이트 page-hello #7·#8)
+feature: hello 관리자 메모 화면 abilities 게이트 — 새 메모·메모 폼 읽기 전용 (7.1.0 abilities 게이트)
 
 description: |
   - 목록 「새 메모」는 컬렉션 abilities.can_create 로 잠근다.

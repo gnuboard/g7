@@ -1,0 +1,24 @@
+feature: 늦은 오류 화면이 SPA 로 옮긴 다음 화면을 덮지 않는다 — 브라우저 회귀 (7.1.1)
+
+description: |
+  잘못된 주소의 데이터 응답을 page.route 로 2.5초 붙잡아 재현 창을 고정하고, 그 사이 다른 화면으로 SPA 이동한 뒤
+  응답(404)을 풀어 도착 화면이 남는지 본다. 같은 붙잡기에서 옮기지 않으면 404 가 뜨는 대조군을 함께 둔다.
+  게시판 축은 비회원, 마이페이지 클레임 축은 실행 환경변수 계정으로만 돈다.
+
+axes:
+  case:
+    - guest_board_move_away
+    - guest_board_control
+    - member_claim_move_away
+    - member_claim_control
+
+effects:
+  - stale_404_does_not_cover_destination
+  - destination_route_kept
+  - held_path_shows_404_when_staying
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/stale-error-page-after-spa-move.spec.ts
+
+notes: |
+  게시판 축은 수정 전 번들에서도 통과한다(2026-10-18 실측에서도 게시판은 0/5 — 회귀 가드). 결함을 가르는 축은 회원 클레임 축이다.

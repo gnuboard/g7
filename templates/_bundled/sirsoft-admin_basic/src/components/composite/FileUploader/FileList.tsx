@@ -148,7 +148,7 @@ export const FileList: React.FC<FileListProps> = ({
                 className="w-full aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
                 onClick={onAddClick}
               >
-                <I className="fa-solid fa-plus text-2xl text-gray-400 dark:text-gray-500 mb-1" aria-hidden="true" />
+                <I className="fa-solid fa-plus text-2xl text-gray-500 dark:text-gray-500 mb-1" aria-hidden="true" />
                 <Span className="text-xs text-gray-500 dark:text-gray-400">{t('common.add')}</Span>
               </Button>
             )}

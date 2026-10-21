@@ -29,13 +29,21 @@ use Tests\TestCase;
  */
 class CoreUpdateBundledSourcesOptionTest extends TestCase
 {
-    private const CONFIRM = '코어를 업데이트하시겠습니까? (yes/no) [no]';
-
     private string $root;
 
     private string $release;
 
     private string $originalStoragePath;
+
+    /**
+     * core:update 진행 확인 질문 문자열을 반환합니다.
+     *
+     * @return string 질문 문자열 (yes/no 기본값 표기 포함)
+     */
+    private function confirmQuestion(): string
+    {
+        return __('settings.core_update.console.confirm_update').' (yes/no) [no]';
+    }
 
     /**
      * 픽스처 배포본·격리 storage·판정 서비스를 준비합니다.
@@ -91,7 +99,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldNotReceive('enableMaintenanceMode');
 
         $this->artisan('core:update', ['--source' => $this->release])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsOutputToContain('이 프로젝트에 없는 공식 번들 확장 3개가 새 배포본에 있습니다')
             ->expectsOutputToContain('[플러그인] g7test-bundled_probe — 프로브 (1.0.0)')
             ->expectsOutputToContain('[플러그인] g7test-bundled_hidden — g7test-bundled_hidden (1.0.0) (샘플)')
@@ -113,7 +121,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $this->serviceStoppingAtStep2();
 
         $this->artisan('core:update', ['--source' => $this->release])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsChoice('어떻게 할까요?', '골라서 배치', ['배치하지 않음 (기본)', '모두 배치', '골라서 배치'])
             ->expectsChoice(
                 '배치할 번들을 고르세요 (쉼표로 여러 개)',
@@ -138,7 +146,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $this->serviceStoppingAtStep2();
 
         $this->artisan('core:update', ['--source' => $this->release, '--force' => true])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsOutputToContain('--bundled-sources 를 지정하지 않아, 이 프로젝트에 없는 공식 번들 3개를 배치하지 않습니다')
             ->doesntExpectOutputToContain('어떻게 할까요?')
             ->assertExitCode(1);
@@ -161,7 +169,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $this->serviceStoppingAtStep2();
 
         $this->artisan('core:update', ['--source' => $this->release, '--bundled-sources' => $value])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsOutputToContain($expected)
             ->doesntExpectOutputToContain('어떻게 할까요?')
             ->assertExitCode(1);
@@ -201,7 +209,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
 
         $pending = $this->artisan('core:update', ['--source' => $this->release, '--bundled-sources' => $value]);
         if ($confirmFirst) {
-            $pending->expectsQuestion(self::CONFIRM, 'yes');
+            $pending->expectsQuestion($this->confirmQuestion(), 'yes');
         }
         $pending->assertExitCode(1);
     }
@@ -236,7 +244,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         File::deleteDirectory($this->release.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'g7test-bundled_probe_module');
 
         $this->artisan('core:update', ['--source' => $this->release])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->doesntExpectOutputToContain('어떻게 할까요?')
             ->assertExitCode(1);
     }
@@ -259,7 +267,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldReceive('generateFailureReport')->andReturn('report.log');
 
         $this->artisan('core:update')
-            ->expectsQuestion('코어를 업데이트하시겠습니까? (yes/no) [no]', 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsOutputToContain('사이트가 유지보수 중입니다 — 빠르게 답해 주세요.')
             ->expectsChoice('어떻게 할까요?', '배치하지 않음 (기본)', ['배치하지 않음 (기본)', '모두 배치', '골라서 배치'])
             ->assertExitCode(1);
@@ -283,7 +291,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldReceive('disableMaintenanceMode')->once();
 
         $this->artisan('core:update', ['--bundled-sources' => 'acme-nothing'])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsOutputToContain('공식 번들 선택이 잘못되어 업데이트를 중단했습니다')
             ->assertExitCode(1);
     }
@@ -302,7 +310,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $captured = $this->serviceCapturingApplyThenRollback();
 
         $this->artisan('core:update', ['--source' => $this->release])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsChoice('어떻게 할까요?', '모두 배치', ['배치하지 않음 (기본)', '모두 배치', '골라서 배치'])
             ->assertExitCode(1);
 
@@ -339,7 +347,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldNotReceive('extractZipToPending');
 
         $this->artisan('core:update', ['--zip' => $this->zipRelease()])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsOutputToContain('이 프로젝트에 없는 공식 번들 확장 3개가 새 배포본에 있습니다')
             ->doesntExpectOutputToContain('사이트가 유지보수 중입니다')
             ->expectsChoice('어떻게 할까요?', '배치하지 않음 (기본)', ['배치하지 않음 (기본)', '모두 배치', '골라서 배치'])
@@ -371,7 +379,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldReceive('generateFailureReport')->andReturn('report.log');
 
         $this->artisan('core:update', ['--zip' => $this->zipRelease()])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->expectsOutputToContain('ZIP 목록을 읽을 수 없어 공식 번들 배치 여부는 압축을 푼 뒤에 묻습니다.')
             ->expectsOutputToContain('사이트가 유지보수 중입니다 — 빠르게 답해 주세요.')
             ->expectsChoice('어떻게 할까요?', '배치하지 않음 (기본)', ['배치하지 않음 (기본)', '모두 배치', '골라서 배치'])
@@ -398,7 +406,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldNotReceive('enableMaintenanceMode');
 
         $this->artisan('core:update', ['--local' => true])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->doesntExpectOutputToContain('사이트가 유지보수 중입니다')
             ->expectsChoice('어떻게 할까요?', '배치하지 않음 (기본)', ['배치하지 않음 (기본)', '모두 배치', '골라서 배치'])
             ->assertExitCode(1);
@@ -449,7 +457,7 @@ class CoreUpdateBundledSourcesOptionTest extends TestCase
         $service->shouldReceive('disableMaintenanceMode')->once();
 
         $this->artisan('core:update', ['--source' => $this->release, '--bundled-sources' => 'none'])
-            ->expectsQuestion(self::CONFIRM, 'yes')
+            ->expectsQuestion($this->confirmQuestion(), 'yes')
             ->assertExitCode(1);
 
         $this->assertSame([

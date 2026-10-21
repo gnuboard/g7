@@ -136,7 +136,7 @@
                             "name": "P",
                             "if": "{{!orderData?.data?.payment?.paid_at}}",
                             "props": {
-                                "className": "text-xs text-amber-600 dark:text-amber-400"
+                                "className": "text-xs text-amber-700 dark:text-amber-400"
                             },
                             "text": "$t:sirsoft-pay_nhnkcp.user.vbank_notice"
                         }
@@ -287,7 +287,7 @@
                                                 "href": "{{_local._kcpOcCashReceiptUrl}}",
                                                 "target": "_blank",
                                                 "rel": "noopener noreferrer",
-                                                "className": "inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline"
+                                                "className": "inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline"
                                             },
                                             "children": [
                                                 {

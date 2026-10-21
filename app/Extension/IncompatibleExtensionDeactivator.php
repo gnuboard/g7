@@ -5,9 +5,12 @@ namespace App\Extension;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
+use App\Support\BootDeferredLog;
 use App\Support\ConfigCacheHelper;
 use App\Support\CoreVersionDiskReader;
+use App\Support\DeferredTranslation;
 use App\Support\RouteCacheHelper;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -25,6 +28,9 @@ use Throwable;
  *     남긴다. 그 회차는 판정 캐시를 저장하지 않아 다음 부팅이 다시 시도한다.
  *   - 재생성 묶기: 1건마다 돌던 config·라우트 캐시 재생성(일회용 앱 부팅)을 묶어 마지막에 한 번만 한다
  *     (17건 연쇄에서 MySQL 연결 151개가 고갈된 실측).
+ *   - 기록 언어: 판정은 언어팩 번역 등록(`LanguagePackServiceProvider` booted 콜백)보다 먼저 돈다. 번역 문구 기록은
+ *     `BootDeferredLog` 로 등록이 끝난 뒤 남겨 사이트 언어(ja 등) 문구가 되게 한다. 「못 끔」 기록의 맥락 `reason` 은
+ *     매니저가 부팅 중 이미 만든 문장(폴백 문구)이라, 매니저가 쓰는 번역 키로 되짚어 기록 시점에 다시 번역한다.
  *
  * 자동 재활성화는 하지 않는다(#302) — 재호환 감지는 `CoreServiceProvider::detectRecoveredExtensions()` 가 알림만 남긴다.
  */
@@ -184,7 +190,7 @@ class IncompatibleExtensionDeactivator
                 $deactivated[] = ['identifier' => $identifier, 'required' => $required];
 
                 // 문구의 :type·:identifier 자리를 채운다 — 예전에는 맥락 배열만 넘겨 로그에 자리표시자가 그대로 남았다.
-                Log::warning(__('extensions.warnings.auto_deactivated', ['type' => $type, 'identifier' => $identifier]), [
+                BootDeferredLog::warning('extensions.warnings.auto_deactivated', ['type' => $type, 'identifier' => $identifier], [
                     'type' => $type,
                     'identifier' => $identifier,
                     'required_version' => $required,
@@ -196,13 +202,13 @@ class IncompatibleExtensionDeactivator
 
             $blocked[] = ['identifier' => $identifier, 'required' => $required, 'dependents' => $outcome['dependents'] ?? []];
 
-            Log::warning(__('extensions.warnings.auto_deactivate_blocked'), [
+            BootDeferredLog::warning('extensions.warnings.auto_deactivate_blocked', [], [
                 'type' => $type,
                 'identifier' => $identifier,
                 'required_version' => $required,
                 'core_version' => $coreVersion,
                 'dependents' => $outcome['dependents'] ?? [],
-                'reason' => $outcome['reason'] ?? null,
+                'reason' => $this->deferredReason($type, $identifier, $outcome['reason'] ?? null),
             ]);
         }
 
@@ -237,7 +243,7 @@ class IncompatibleExtensionDeactivator
             }
         }
 
-        Log::warning(__('extensions.warnings.auto_deactivate_skipped_stale_version'), [
+        BootDeferredLog::warning('extensions.warnings.auto_deactivate_skipped_stale_version', [], [
             'current' => $current,
             'shipped' => $shipped,
             'config_cached' => $configCached,
@@ -274,6 +280,45 @@ class IncompatibleExtensionDeactivator
         }
 
         return $identifiers;
+    }
+
+    /**
+     * 「못 끔」 사유 문장을 매니저가 쓰는 번역 키로 되짚어, 기록 시점에 번역할 문구로 바꿉니다.
+     *
+     * 매니저(`deactivateModule`·`deactivatePlugin`·`deactivateTemplate`)는 사유를 부팅 중 그 자리에서 `__()` 로 만든다.
+     * 그때는 언어팩 번역이 아직 없어 폴백 문장이 되므로, 같은 키·치환값으로 지금 만든 문장과 같으면 그 키로 되짚는다.
+     * 확장이 직접 만든 사유·예외 문구처럼 키로 되짚을 수 없으면 받은 값을 그대로 둔다.
+     *
+     * @param  string  $type  확장 타입 (modules, plugins, templates)
+     * @param  string  $identifier  확장 식별자
+     * @param  mixed  $reason  매니저가 돌려준 사유
+     * @return mixed 번역할 문구(`DeferredTranslation`) 또는 받은 값
+     */
+    private function deferredReason(string $type, string $identifier, mixed $reason): mixed
+    {
+        if (! is_string($reason) || $reason === '') {
+            return $reason;
+        }
+
+        $placeholder = match ($type) {
+            'modules' => 'module',
+            'plugins' => 'plugin',
+            default => 'template',
+        };
+
+        $candidates = [
+            ["{$type}.warnings.has_dependents", []],
+            ["{$type}.errors.not_found", [$placeholder => $identifier]],
+            ["{$type}.errors.unknown_error", []],
+        ];
+
+        foreach ($candidates as [$key, $replace]) {
+            if (Lang::has($key) && __($key, $replace) === $reason) {
+                return new DeferredTranslation($key, $replace);
+            }
+        }
+
+        return $reason;
     }
 
     /**

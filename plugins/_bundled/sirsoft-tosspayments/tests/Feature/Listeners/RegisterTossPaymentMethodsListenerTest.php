@@ -20,6 +20,11 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
 {
     private RegisterTossPaymentMethodsListener $listener;
 
+    /**
+     * 시험 대상 결제수단 등록 리스너를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,7 +34,8 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
     /**
      * 플러그인 설정을 mock 으로 주입합니다.
      *
-     * @param  array<string, mixed>  $settings
+     * @param  array<string, mixed>  $settings  주입할 플러그인 설정 값
+     * @return void 반환값 없음
      */
     private function mockSettings(array $settings): void
     {
@@ -41,7 +47,7 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
     /**
      * builtin 결제수단 배열 (phone / point 포함).
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> phone·point 를 포함한 코어 결제수단 목록
      */
     private function builtinMethods(): array
     {
@@ -52,6 +58,13 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 리스너가 결제수단 목록 필터 훅을 우선순위 20 으로 구독하는지 검증한다.
+     *
+     * @effects toss_methods_listener_subscribes_filter_hook_with_priority_20
+     *
+     * @return void 반환값 없음
+     */
     public function test_subscribes_as_filter_with_priority_20(): void
     {
         $hooks = RegisterTossPaymentMethodsListener::getSubscribedHooks();
@@ -62,6 +75,15 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertSame(20, $hook['priority']);
     }
 
+    /**
+     * 주문서 결제수단 선택 모드가 꺼져 있으면 토스 결제수단을 하나도 넣지 않는지 검증한다.
+     *
+     * @scenario order_sheet_mode=false
+     *
+     * @effects no_toss_methods_injected_when_disabled
+     *
+     * @return void 반환값 없음
+     */
     public function test_order_sheet_mode_off_injects_nothing(): void
     {
         $this->mockSettings(['order_sheet_mode' => false, 'method_card' => true]);
@@ -72,6 +94,15 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertSame(['card', 'phone', 'point'], array_column($result, 'id'));
     }
 
+    /**
+     * 설정에서 켠 결제수단만 주입하고 끈 수단은 빼는지 검증한다.
+     *
+     * @scenario order_sheet_mode=true
+     *
+     * @effects enabled_methods_exposed_with_core_mapping
+     *
+     * @return void 반환값 없음
+     */
     public function test_injects_only_enabled_methods(): void
     {
         $this->mockSettings([
@@ -89,6 +120,13 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertNotContains('toss_transfer', $ids);
     }
 
+    /**
+     * 토스 결제수단이 휴대폰 결제 뒤, 포인트 앞에 들어가는지 검증한다.
+     *
+     * @effects toss_methods_inserted_after_phone_or_appended
+     *
+     * @return void 반환값 없음
+     */
     public function test_inserts_after_phone_before_point(): void
     {
         $this->mockSettings(['order_sheet_mode' => true, 'method_card' => true]);
@@ -104,6 +142,13 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertLessThan($pointIndex, $tossIndex);
     }
 
+    /**
+     * 휴대폰 결제가 목록에 없으면 토스 결제수단을 맨 끝에 붙이는지 검증한다.
+     *
+     * @effects toss_methods_inserted_after_phone_or_appended
+     *
+     * @return void 반환값 없음
+     */
     public function test_appends_when_phone_absent(): void
     {
         $this->mockSettings(['order_sheet_mode' => true, 'method_card' => true]);
@@ -115,6 +160,13 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertSame('toss_card', end($ids));
     }
 
+    /**
+     * 각 토스 결제수단이 코어 결제수단 값(가상계좌=vbank, 간편결제=card)과 고정 PG 를 선언하는지 검증한다.
+     *
+     * @effects enabled_methods_exposed_with_core_mapping, toss_methods_declare_pg_locked_to_tosspayments
+     *
+     * @return void 반환값 없음
+     */
     public function test_entry_declares_core_payment_method(): void
     {
         $this->mockSettings([
@@ -134,6 +186,13 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertSame('tosspayments', $byId['toss_virtual_account']['defaults']['pg_provider']);
     }
 
+    /**
+     * 주문서 모드가 켜져 있어도 결제수단 토글이 모두 꺼져 있으면 아무것도 넣지 않는지 검증한다.
+     *
+     * @effects no_toss_methods_injected_when_disabled
+     *
+     * @return void 반환값 없음
+     */
     public function test_all_toggles_off_injects_nothing(): void
     {
         $this->mockSettings(['order_sheet_mode' => true]);
@@ -151,6 +210,10 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
      * 채로 needs_pg 만 참이 되어, 관리자 화면이 "PG 고정" 배지 대신 **선택지가 하나도 없는**
      * PG 셀렉트를 그렸다(토스 PG 는 toss_* id 를 supported_methods 로 선언하지 않는다).
      * 서버 쪽으로도 PG 없는 결제수단으로 오인되어 결제 실패 시 임시주문이 삭제될 수 있었다.
+     *
+     * @effects toss_methods_declare_pg_locked_to_tosspayments
+     *
+     * @return void 반환값 없음
      */
     public function test_all_methods_declare_pg_locked_to_self(): void
     {
@@ -197,6 +260,8 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
      * @scenario order_sheet_mode=true, payment_method=toss_card
      *
      * @effects only_card_backed_methods_declare_auto_approve_refund
+     *
+     * @return void 반환값 없음
      */
     public function test_only_card_backed_methods_declare_auto_approve_refund(): void
     {
@@ -252,6 +317,10 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
      * 회색 기본 아이콘을 그렸다. 같은 브랜드가 다른 PG 를 통할 때와 다르게 보였다.
      *
      * 같은 브랜드는 어느 PG 를 통하든 같은 배지여야 하므로 text/class 를 함께 고정한다.
+     *
+     * @effects toss_easy_pay_methods_declare_brand_mark_matching_other_pg
+     *
+     * @return void 반환값 없음
      */
     public function test_easy_pay_methods_declare_brand_mark_consistent_with_other_pg(): void
     {
@@ -268,11 +337,11 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
 
         // 다른 PG 플러그인(nicepayments·nhnkcp)이 같은 브랜드에 쓰는 값과 동일해야 한다.
         $expected = [
-            'toss_naverpay' => ['text' => 'N', 'class' => 'bg-green-500 text-white'],
+            'toss_naverpay' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
             'toss_kakaopay' => ['text' => 'K', 'class' => 'bg-yellow-400 text-gray-950'],
             'toss_samsungpay' => ['text' => 'S', 'class' => 'bg-blue-600 text-white'],
-            'toss_payco' => ['text' => 'P', 'class' => 'bg-red-500 text-white'],
-            'toss_tosspay' => ['text' => 'T', 'class' => 'bg-blue-500 text-white'],
+            'toss_payco' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
+            'toss_tosspay' => ['text' => 'T', 'class' => 'bg-blue-700 text-white'],
         ];
 
         foreach ($expected as $id => $mark) {
@@ -288,6 +357,10 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
     /**
      * 카드·가상계좌·계좌이체·휴대폰은 브랜드가 아니라 결제 형태이므로 마크를 두지 않는다.
      * (코어 빌트인 수단과 동일한 표현)
+     *
+     * @effects toss_non_brand_methods_have_no_brand_mark
+     *
+     * @return void 반환값 없음
      */
     public function test_non_brand_methods_have_no_brand_mark(): void
     {
@@ -315,6 +388,8 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
      * 각자 들고 있으므로 한쪽만 바뀌는 것을 테스트가 막는다.
      *
      * @effects locked_pg_id_matches_registered_provider
+     *
+     * @return void 반환값 없음
      */
     public function test_locked_pg_id_matches_registered_provider_id(): void
     {
@@ -338,6 +413,8 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
      * @scenario kg_coexists=true
      *
      * @effects other_plugin_methods_untouched_by_toss_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_touch_other_plugin_methods(): void
     {

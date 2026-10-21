@@ -97,7 +97,7 @@
                             "name": "P",
                             "if": "{{_local.errors?.ecommerce_preferred_currency}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1"
+                                "className": "text-red-600 dark:text-red-300 text-xs mt-1"
                             },
                             "text": "{{_local.errors?.ecommerce_preferred_currency?.[0] ?? ''}}"
                         },

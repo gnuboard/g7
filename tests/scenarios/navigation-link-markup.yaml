@@ -1,0 +1,22 @@
+feature: 화면 이동 링크 마크업 — `<a href>` + path 없는 navigate · 액션 키 preventDefault (서버 쪽)
+
+description: |
+  화면 이동을 링크로 그려 새 탭 열기가 되게 하는 형식(engine-v1.80.1)의 서버 쪽 계약. 클라이언트 클릭 판정은
+  navigation-link-click 매니페스트가 잠근다.
+
+  축 surface 는 서버의 어느 자리인가 — `.g7.html` 컴파일러(markup_compile), 봇(SEO) HTML 렌더러(bot_html).
+
+axes:
+  surface: [markup_compile, bot_html]
+
+effects:
+  - prevent_default_key_is_top_level
+  - navigate_without_path_compiles_inside_link
+  - bot_html_keeps_anchor_href
+
+test_files:
+  - tests/Unit/Support/LayoutMarkup/NavigationLinkMarkupTest.php
+
+notes: |
+  `preventDefault` 는 `ActionHandlerManifest::UNIVERSAL_TOP_LEVEL_KEYS` 에 `stopPropagation` 옆으로 등록됐다. 봇 렌더러는
+  path 가 비면 `resolveNavigateHref` 가 null 이라 원래 href 를 바꾸지 않는다(코드 무변경, 이 시험으로 잠금).

@@ -60,7 +60,8 @@ describe('관리자 긴 글 넘침', () => {
    */
   it('글 관리 목록 제목 칸은 flex-1 min-w-0, 제목은 min-w-0 wrap-anywhere', () => {
     const layout = load('resources/layouts/admin/admin_board_posts_index.json');
-    const title = findAll(layout, (n) => n.name === 'Span' && n.text === '{{row.title}}');
+    // 제목은 글 상세로 가는 링크(A, #757)다 — 예전 Span 과 같은 클래스 계약을 진다
+    const title = findAll(layout, (n) => (n.name === 'A' || n.name === 'Span') && n.text === '{{row.title}}');
     expect(title.length).toBe(1);
     expect(tokens(title[0])).toEqual(expect.arrayContaining(['min-w-0', 'wrap-anywhere']));
     const column = findAll(layout, (n) => tokens(n).includes('flex-1') && findAll(n.children ?? [], (c) => c === title[0]).length > 0);

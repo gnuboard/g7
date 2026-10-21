@@ -11,7 +11,7 @@
       </div>
       <!-- 할인율 + 판매가 (할인 있을 때) -->
       <div data-if="{{product.data?.discount_rate > 0}}" class="flex items-center gap-2">
-        <span class="text-lg font-bold text-red-500">{{product.data?.discount_rate}}%</span>
+        <span class="text-lg font-bold text-red-600 dark:text-red-400">{{product.data?.discount_rate}}%</span>
         <span class="text-2xl font-bold text-gray-900 dark:text-white">{{product.data?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? product.data?.selling_price_formatted}}</span>
       </div>
       <!-- 판매가 (할인 없을 때) -->
@@ -21,7 +21,7 @@
     <div data-if="{{(productDownloadableCoupons.data?.data ?? []).length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
       <!-- 쿠폰 배지 목록 (좁은 화면에서 여러 줄로 줄바꿈 — 칩 라벨 자체는 whitespace-nowrap 으로 한 줄 유지) -->
       <div class="flex flex-wrap items-center gap-2 pb-1">
-        <icon name="ticket" class="text-sm text-orange-500 dark:text-orange-400 flex-shrink-0"/>
+        <icon name="ticket" class="text-sm text-orange-600 dark:text-orange-400 flex-shrink-0"/>
         <div data-each="dlCoupon, dlCouponIdx in {{(productDownloadableCoupons.data?.data ?? []).slice(0, 3)}}">
           <button type="button" disabled="{{dlCoupon.is_downloaded}}" class="{{dlCoupon.is_downloaded ? 'flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors'}}">
             <on type="click">
@@ -49,9 +49,18 @@
           <on type="click">
             <conditions>
               <when if="{{_global.currentUser?.uuid}}">
-                <!-- 「+N」 배지는 이 상품에 적용되는 쿠폰 수(productDownloadableCoupons)로 계산되므로, 모달도 같은 목록을 보여준다. 전체 다운로드 쿠폰을 다시 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다. -->
+                <!-- 「+N」 배지는 이 상품에 적용되는 쿠폰 수(productDownloadableCoupons)로 계산되므로, 모달도 같은 목록을 보여준다. 전체 다운로드 쿠폰을 다시 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다.
+                     창 상태는 창 고유 전역 이름 공간에 비운 뒤 다시 쓴다 — 창은 영구 마운트라 페이지 _local 에 넣으면 창이 앞서 쥔 목록(받음 표시)에 가린다(7.1.1). -->
                 <sequence>
-                  <set-state target="local" downloadableCoupons="{{productDownloadableCoupons.data}}" :downloadableCouponsLoading="false" :downloadingMore="false"/>
+                  <set-state target="global" :couponDownloadModal="null"/>
+                  <set-state target="global">
+                    <field name="couponDownloadModal">
+                      <field name="coupons" value="{{productDownloadableCoupons.data ?? null}}"/>
+                      <field name="loading" :value="false"/>
+                      <field name="loadingMore" :value="false"/>
+                      <field name="downloadingCouponId" :value="null"/>
+                    </field>
+                  </set-state>
                   <open-modal target="coupon_download_modal"/>
                 </sequence>
               </when>
@@ -95,7 +104,7 @@
         </div>
         <div data-if="{{product.data?.shipping_policy?.free_threshold_formatted}}" class="flex items-center gap-2">
           <span class="text-sm text-gray-500 dark:text-gray-400 w-20">$t:shop.product.free_shipping_threshold</span>
-          <span class="text-sm text-green-600 dark:text-green-400">$t:shop.product.free_shipping_over|amount={{product.data?.shipping_policy?.free_threshold_formatted}}</span>
+          <span class="text-sm text-green-700 dark:text-green-400">$t:shop.product.free_shipping_over|amount={{product.data?.shipping_policy?.free_threshold_formatted}}</span>
         </div>
       </div>
     </div>

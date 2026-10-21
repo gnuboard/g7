@@ -22,7 +22,7 @@ class RolePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('기본 권한과 역할 생성을 시작합니다.');
+        $this->command->info(__('common.console.seeders.role_permission.start'));
 
         DB::transaction(function () {
             // 기존 데이터 삭제
@@ -43,7 +43,7 @@ class RolePermissionSeeder extends Seeder
 
         $this->warnUnenforcedScopedGrants();
 
-        $this->command->info('기본 권한과 역할이 성공적으로 생성되었습니다.');
+        $this->command->info(__('common.console.seeders.role_permission.done'));
     }
 
     /**
@@ -60,14 +60,14 @@ class RolePermissionSeeder extends Seeder
     {
         foreach (app(ScopedPermissionEnforcement::class)->findUnenforcedScopedGrants() as $grant) {
             $message = "스코프가 강제되지 않는 권한 부여: 역할 '{$grant['role']}' · 권한 '{$grant['permission']}' · 스코프 '{$grant['scope_type']}'";
-            $this->command->warn($message);
+            $this->command->warn(__('common.console.seeders.role_permission.unenforced_scope_grant', ['role' => $grant['role'], 'permission' => $grant['permission'], 'scope' => $grant['scope_type']]));
             Log::warning($message, $grant);
         }
 
         // 비회원 역할은 스코프를 가질 수 없다(7.1.1) — 남아 있으면 실제로는 전체 접근이다.
         foreach (app(ScopedPermissionEnforcement::class)->findGuestScopedGrants() as $grant) {
             $message = "비회원 역할의 권한 범위 부여(범위를 가질 수 없음): 권한 '{$grant['permission']}' · 스코프 '{$grant['scope_type']}'";
-            $this->command->warn($message);
+            $this->command->warn(__('common.console.seeders.role_permission.guest_scoped_grant', ['permission' => $grant['permission'], 'scope' => $grant['scope_type']]));
             Log::warning($message, $grant);
         }
     }
@@ -84,7 +84,7 @@ class RolePermissionSeeder extends Seeder
         $deletedPermissions = Permission::where('extension_type', ExtensionOwnerType::Core)->delete();
 
         if ($deletedPermissions > 0) {
-            $this->command->info("기존 코어 권한 {$deletedPermissions}개가 삭제되었습니다.");
+            $this->command->info(__('common.console.seeders.role_permission.deleted_permissions', ['count' => $deletedPermissions]));
         }
     }
 
@@ -180,7 +180,7 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        $this->command->info('계층형 권한이 생성되었습니다.');
+        $this->command->info(__('common.console.seeders.role_permission.permissions_created'));
     }
 
     /**
@@ -254,7 +254,7 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        $this->command->info('역할이 생성/업데이트되었습니다.');
+        $this->command->info(__('common.console.seeders.role_permission.roles_synced'));
     }
 
     /**
@@ -274,7 +274,7 @@ class RolePermissionSeeder extends Seeder
             // 기본 관리자를 슈퍼 관리자로 설정
             $adminUser->update(['is_super' => true]);
 
-            $this->command->info('관리자 계정에 admin 역할이 부여되고 슈퍼 관리자로 설정되었습니다.');
+            $this->command->info(__('common.console.seeders.role_permission.admin_assigned'));
         }
     }
 }

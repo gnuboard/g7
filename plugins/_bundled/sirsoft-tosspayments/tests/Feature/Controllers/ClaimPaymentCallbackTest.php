@@ -207,7 +207,7 @@ class ClaimPaymentCallbackTest extends PluginTestCase
 
         // 테스트 이름이 약속한 「with an error code」 는 **토스가 준 그 코드**다. 여기가 일반
         // 토큰이면 모든 승인 거절이 같은 주소로 수렴해, 구매자 배너는 사유를 말하지 못하고
-        // 고객센터도 건을 특정할 값을 받지 못한다 (#599 3차 실측 F-5 로 실거래에서 확인).
+        // 고객센터도 건을 특정할 값을 받지 못한다 (#599 실측, 실거래에서 확인).
         $response->assertRedirect("/mypage/claims/{$return->return_number}?claim_payment=failed&error=REJECT_CARD_COMPANY&claim_number={$return->return_number}");
         $this->assertSame(ClaimPaymentStatusEnum::PENDING, $payment->fresh()->payment_status);
 

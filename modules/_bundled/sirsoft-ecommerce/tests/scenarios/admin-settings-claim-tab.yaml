@@ -114,7 +114,7 @@ effects:
   - settings_claim_reason_label_follows_viewer_locale
   - settings_claim_charge_payment_methods_accept_extension_ids
   - settings_claim_charge_payment_method_options_derive_from_order_settings
-  # 3차 실측 T1-D1: 선택지를 주문 카탈로그의 is_active 로 거르면 이미 저장된 비활성 수단이
+  # 실측: 선택지를 주문 카탈로그의 is_active 로 거르면 이미 저장된 비활성 수단이
   # 라벨을 잃고(원문 키 노출) 한 번 지우면 이 화면에서 다시 고를 수 없다.
   - settings_claim_charge_payment_method_options_do_not_filter_by_order_catalog_active
   - settings_claim_status_vocabulary_matches_server_gate

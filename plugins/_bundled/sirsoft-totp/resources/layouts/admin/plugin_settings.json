@@ -48,6 +48,31 @@
             "errorHandling": {
                 "403": {
                     "handler": "suppress"
+                },
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "사이트 운영 설정(발급자 표기·미등록자 메일 폴백). 위 등록 상태는 「내 계정」이고 이쪽은 사이트 전체 값이다.\n       플러그인 설정을 읽을 권한이 없으면 카드만 숨긴다 — 등록 화면 전체를 오류로 바꾸지 않는다."
@@ -125,7 +150,7 @@
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-sm text-red-600 dark:text-red-400"
+                                    "className": "text-sm text-red-700 dark:text-red-400"
                                 },
                                 "text": "{{_local.error ?? ''}}"
                             }
@@ -383,7 +408,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "className": "px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                             "disabled": "{{String(_local.code ?? '').trim().length < 6 || _local.busy}}"
                                         },
                                         "children": [
@@ -504,7 +529,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                     "disabled": "{{_local.busy}}"
                                 },
                                 "children": [
@@ -754,7 +779,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                                             "disabled": "{{!_local.code || _local.code.length < 6 || _local.busy}}"
                                                         },
                                                         "children": [
@@ -946,7 +971,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer"
+                                            "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
                                         },
                                         "children": [
                                             {
@@ -993,7 +1018,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-warning-soft"
+                                            "className": "text-xs totp-tone-warning"
                                         },
                                         "text": "$t:sirsoft-totp.plugin_read_only"
                                     }
@@ -1037,7 +1062,7 @@
                                             "index_var": "errorIndex"
                                         },
                                         "props": {
-                                            "className": "text-sm text-red-600 dark:text-red-400"
+                                            "className": "text-sm text-red-700 dark:text-red-400"
                                         },
                                         "text": "{{message}}"
                                     }
@@ -1174,7 +1199,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-warning-soft"
+                                            "className": "text-xs totp-tone-warning"
                                         },
                                         "text": "$t:sirsoft-totp.admin.settings.fallback_off_warning"
                                     }
@@ -1246,7 +1271,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                             "disabled": "{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}"
                                         },
                                         "children": [

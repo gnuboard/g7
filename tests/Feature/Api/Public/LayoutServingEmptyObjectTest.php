@@ -19,7 +19,7 @@ use Tests\TestCase;
  * GET /api/layouts/{template}/{layout}.json
  *
  * 원본·DB 행이 `{}` 인 자리가 응답에서 `[]` 로 바뀌면 화면이 키-값 상태를 배열로 받는다
- * (7.1.0 실측 O-K3-4 — 게시판 환경설정 `_local.expandedNotifications` 가 배열).
+ * (7.1.0 실측 — 게시판 환경설정 `_local.expandedNotifications` 가 배열).
  *
  * 트러블슈팅 `[case:backend-52]` 의 회귀 그물이다.
  */

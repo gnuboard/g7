@@ -13,7 +13,7 @@
           </label>
           <!-- w-80(320px) 고정폭은 폰(<768px)의 콘텐츠 영역을 넘긴다(320px 뷰포트에서 32px 초과). 태블릿(768~1023px)은 넘치지 않으므로 portable 이 아니라 mobile(0~767px) 로 한정한다 — portable 로 잡으면 태블릿에서 입력칸이 불필요하게 늘어난다. className 오버라이드는 통째 교체라 에러 분기 표현식을 복제한다. -->
           <input type="text" name="basic_info.shop_name" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.shop_name_placeholder" class="{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-80' : 'input w-80'}}" disabled="{{_computed.isReadOnly}}">
-            <responsive on="mobile" class="{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-full' : 'input w-full'}}"/>
+            <responsive on="0-767" class="{{_local.errors?.['basic_info.shop_name'] ? 'input input-error w-full' : 'input w-full'}}"/>
           </input>
           <span data-if="{{_local.errors?.['basic_info.shop_name']}}" class="form-error">{{_local.errors?.['basic_info.shop_name']?.[0] ?? ''}}</span>
         </div>
@@ -69,7 +69,7 @@
           <label class="form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_category</label>
           <!-- w-80(320px) 고정폭은 폰(<768px)의 콘텐츠 영역을 넘긴다(320px 뷰포트에서 32px 초과). 태블릿(768~1023px)은 넘치지 않으므로 portable 이 아니라 mobile(0~767px) 로 한정한다 — portable 로 잡으면 태블릿에서 입력칸이 불필요하게 늘어난다. className 오버라이드는 통째 교체라 에러 분기 표현식을 복제한다. -->
           <input type="text" name="basic_info.business_category" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.business_category_placeholder" class="{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-80' : 'input w-80'}}" disabled="{{_computed.isReadOnly}}">
-            <responsive on="mobile" class="{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-full' : 'input w-full'}}"/>
+            <responsive on="0-767" class="{{_local.errors?.['basic_info.business_category'] ? 'input input-error w-full' : 'input w-full'}}"/>
           </input>
           <span data-if="{{_local.errors?.['basic_info.business_category']}}" class="form-error">{{_local.errors?.['basic_info.business_category']?.[0] ?? ''}}</span>
         </div>
@@ -178,7 +178,7 @@
           <select name="basic_info.public_asset_disk" disabled="{{_computed.isReadOnly}}" class="w-full" error="{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}" options="{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"/>
           <span data-if="{{_local.errors?.['basic_info.public_asset_disk']}}" class="form-error">{{_local.errors?.['basic_info.public_asset_disk']?.[0] ?? ''}}</span>
           <!-- 쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다 -->
-          <div data-if="{{!!_local.form?.basic_info?.public_asset_disk_unavailable}}" role="status" class="text-warning-soft mt-2">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.unavailable|disk={{_local.form?.basic_info?.public_asset_disk_unavailable}}</div>
+          <div data-if="{{!!_local.form?.basic_info?.public_asset_disk_unavailable}}" role="status" class="ecommerce-tone-warning-soft mt-2 text-xs">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.unavailable|disk={{_local.form?.basic_info?.public_asset_disk_unavailable}}</div>
           <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.settings.basic_info.public_asset_storage.help</div>
         </div>
       </div>
@@ -191,7 +191,7 @@
           <default>
             <div data-ref="inquiry_board_setting_fallback" class="alert-info">
               <icon data-ref="inquiry_board_setting_fallback_icon" name="circle-info" class="text-blue-500 dark:text-blue-400 shrink-0"/>
-              <span data-ref="inquiry_board_setting_fallback_text" class="text-info-soft">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.module_not_installed</span>
+              <span data-ref="inquiry_board_setting_fallback_text" class="ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.module_not_installed</span>
             </div>
           </default>
         </extension-point>

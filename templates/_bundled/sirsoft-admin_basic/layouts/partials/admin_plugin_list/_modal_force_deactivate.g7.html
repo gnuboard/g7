@@ -6,7 +6,7 @@
   <modal data-type="composite" data-ref="plugin_force_deactivate_modal" title="$t:admin.plugins.modals.deactivate_warning_title" size="sm">
     <div class="py-2">
       <div class="alert-warning">
-        <icon name="warning" class="text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <icon name="warning" class="text-xl text-yellow-700 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
         <div>
           <p class="text-warning-soft">$t:admin.plugins.modals.deactivate_warning_message</p>
         </div>
@@ -27,7 +27,7 @@
           <div data-each="module in _global.deactivateWarningData?.dependent_modules ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
             <icon name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
             <span class="text-body">{{module.name || module.identifier}}</span>
-            <span class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded">v{{module.version}}</span>
+            <span class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">v{{module.version}}</span>
           </div>
         </div>
       </div>
@@ -37,14 +37,14 @@
           <div data-each="plugin in _global.deactivateWarningData?.dependent_plugins ?? []" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
             <icon name="plug" class="text-base text-gray-500 dark:text-gray-400"/>
             <span class="text-body">{{plugin.name || plugin.identifier}}</span>
-            <span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded">v{{plugin.version}}</span>
+            <span class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded">v{{plugin.version}}</span>
           </div>
         </div>
       </div>
       <p class="mt-4 text-label">$t:admin.plugins.modals.force_deactivate_description</p>
     </div>
     <div class="modal-footer-buttons">
-      <button class="btn btn-secondary" disabled="{{_global.isForceDeactivating}}">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isForceDeactivating}}">
         <on type="click">
           <!-- 앞 창의 취소와 같은 이유로 목록을 다시 받는다 — 이쪽은 스위치가 **꺼진 모양**으로 남아 있어 그것을 서버 값으로 되돌린다. -->
           <sequence>
@@ -55,7 +55,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceDeactivating}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isForceDeactivating}}">
         <on type="click">
           <!-- 끌 때도 관리자 메뉴를 함께 다시 받는다 — 이 플러그인이 더해 둔 메뉴 항목을 걷어내야 사라진 화면으로 가는 길이 남지 않는다. -->
           <sequence>

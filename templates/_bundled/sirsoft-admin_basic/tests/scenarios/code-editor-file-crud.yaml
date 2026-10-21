@@ -37,6 +37,7 @@ axis_notes:
 effects:
   - code_editor_records_file_operations_in_activity_log   # 생성·이름변경·삭제가 활동 로그(layout.create/rename/delete)에 남는다
   - code_editor_can_create_rename_and_delete_files       # 화면에서 왕복이 끝까지 돈다
+  - code_editor_creates_renames_and_deletes_a_file       # 브라우저에서 한 파일을 만들고 이름을 바꾸고 지운다
   - code_editor_creates_a_compilable_skeleton            # 빈 본문 대신 곧바로 컴파일되는 골격
   - code_editor_rejects_invalid_file_names               # 세그먼트 판정 — 상위 이동·선행 슬래시·빈 세그먼트
   - code_editor_blocks_deleting_module_owned_layouts     # 확장이 준 원본은 지울 수 없다

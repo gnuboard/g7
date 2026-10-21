@@ -4,7 +4,7 @@
     <div class="p-4 space-y-4">
       <!-- 로딩 -->
       <div data-if="{{_local.changeProductLoading === true}}" class="py-8 text-center">
-        <icon name="spinner" class="text-xl text-gray-400 dark:text-gray-500 animate-spin"/>
+        <icon name="spinner" class="text-xl text-gray-500 dark:text-gray-500 animate-spin"/>
       </div>
       <!-- 교환 방식 선택 — 동일상품 / 옵션변경 -->
       <div data-if="{{_local.changeProductLoading !== true}}" class="space-y-2">
@@ -34,7 +34,7 @@
           <div class="mb-3">
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}</label>
             <!-- 옵션 그룹은 차례로 고른다 — 앞 그룹을 골라야 다음 그룹이 풀리고, 고를 때마다 지금까지의 선택 조합으로 실제 옵션을 다시 찾아 아래 요약(가격·재고)에 세운다. -->
-            <select class="w-full" value="{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{claimOptionGroupIdx > 0 &amp;&amp; !_local.changeProductSelections?.[_local.changeProductProduct?.option_groups[claimOptionGroupIdx - 1]?.name_localized]}}" options="{{[{ value: '', label: $t('shop.select') }, ...(claimOptionGroup.values_localized ?? claimOptionGroup.values ?? []).map(v => ({ value: v, label: v }))]}}">
+            <select aria-label="{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}" class="w-full" value="{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{claimOptionGroupIdx > 0 &amp;&amp; !_local.changeProductSelections?.[_local.changeProductProduct?.option_groups[claimOptionGroupIdx - 1]?.name_localized]}}" options="{{[{ value: '', label: $t('shop.select') }, ...(claimOptionGroup.values_localized ?? claimOptionGroup.values ?? []).map(v => ({ value: v, label: v }))]}}">
               <on type="change">
                 <set-state target="_local" changeProductSelections="{{Object.assign({}, _local.changeProductSelections ?? {}, { [claimOptionGroup.name_localized]: $event.target.value })}}"/>
                 <!-- 갱신된 선택으로 매칭 옵션을 찾는다 (stale state 방지 — 템플릿 공용 핸들러 재사용) -->
@@ -51,26 +51,28 @@
         <div data-each="claimAddGroup in {{_local.changeProductProduct?.additional_options ?? []}}">
           <div class="mb-2">
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{claimAddGroup.name}}</label>
-            <!-- 추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다. -->
-            <select class="w-full" value="{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(claimAddGroup.values ?? []).map(v => ({ value: v.id, label: v.name }))]}}">
+            <!-- 추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다.
+                 빼는 것은 그 키를 «뺀» 객체가 아니라 그 키를 null 로 쓴 객체다 — 기본(deep) 병합은 이번 객체에 없는 키를 남겨 비운 선택이 그대로 신청서에
+                 실렸다(7.1.1). 적용 핸들러(applyClaimChangeProduct)가 null 을 거른다. -->
+            <select aria-label="{{claimAddGroup.name}}" class="w-full" value="{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(claimAddGroup.values ?? []).map(v => ({ value: v.id, label: v.name }))]}}">
               <on type="change">
-                <set-state target="_local" changeProductAdditionalSelections="{{$event.target.value === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalSelections ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalSelections ?? {}, { [claimAddGroup.id]: Number($event.target.value) })}}" changeProductAdditionalTexts="{{Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id)))}}"/>
+                <set-state target="_local" changeProductAdditionalSelections="{{Object.assign({}, _local.changeProductAdditionalSelections ?? {}, { [claimAddGroup.id]: $event.target.value === '' ? null : Number($event.target.value) })}}" changeProductAdditionalTexts="{{Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: null })}}"/>
               </on>
             </select>
             <div data-if="{{(claimAddGroup.values ?? []).find(v => v.id === Number(_local.changeProductAdditionalSelections?.[claimAddGroup.id]))?.allow_custom_text === true}}" class="mt-2">
-              <!-- 직접입력 글 — 공백만 남기면 그 그룹의 글을 아예 지워 빈 글이 신청서에 실리지 않게 한다. 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다. -->
-              <input type="text" :maxLength="255" value="{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+              <!-- 직접입력 글 — 공백만 남기면 그 그룹의 글을 null 로 지워 빈 글이 신청서에 실리지 않게 한다(키를 빼면 deep 병합이 앞 글을 남긴다 — 7.1.1). 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다. -->
+              <input type="text" aria-label="$t:common.row_cell|row={{claimAddGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}" :maxLength="255" value="{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 <on type="input">
-                  <set-state target="_local" changeProductAdditionalTexts="{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: $event.target.value })}}"/>
+                  <set-state target="_local" changeProductAdditionalTexts="{{Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: $event.target.value.trim() === '' ? null : $event.target.value })}}"/>
                 </on>
               </input>
             </div>
           </div>
         </div>
       </div>
-      <!-- 고른 조합을 지금 살 수 없을 때의 안내 (T2-D10 · #599 3차 실측 L-4). 옵션 찾기(`findMatchingOption`)는 판매중지(`is_active=false`) 옵션을 건너뛰므로, 모든 그룹을 골랐는데도 찾은 옵션이 없으면 **그 조합은 지금 교환받을 수 없다**는 뜻이다. 종전에는 이 경우 가격 줄도 안내도 없이 [적용]만 조용히 잠겨, 같은 화면의 재고 0(「선택한 옵션의 재고가 없습니다.」)과 달리 왜 안 되는지 알 수 없었다. 서버도 같은 조합을 거절한다(T2-D11 — 교환 대상은 지금 살 수 있는 옵션만). -->
+      <!-- 고른 조합을 지금 살 수 없을 때의 안내 (#599 실측). 옵션 찾기(`findMatchingOption`)는 판매중지(`is_active=false`) 옵션을 건너뛰므로, 모든 그룹을 골랐는데도 찾은 옵션이 없으면 **그 조합은 지금 교환받을 수 없다**는 뜻이다. 종전에는 이 경우 가격 줄도 안내도 없이 [적용]만 조용히 잠겨, 같은 화면의 재고 0(「선택한 옵션의 재고가 없습니다.」)과 달리 왜 안 되는지 알 수 없었다. 서버도 같은 조합을 거절한다(교환 대상은 지금 살 수 있는 옵션만). -->
       <div data-if="{{_local.changeProductMode === 'change' &amp;&amp; !_local.changeProductMatched &amp;&amp; (_local.changeProductProduct?.option_groups ?? []).length > 0 &amp;&amp; (_local.changeProductProduct?.option_groups ?? []).every(g => !!_local.changeProductSelections?.[g.name_localized])}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
-        <p class="text-xs text-red-600 dark:text-red-400 font-medium">$t:claim.change_product.unavailable</p>
+        <p class="text-xs text-red-700 dark:text-red-400 font-medium">$t:claim.change_product.unavailable</p>
       </div>
       <!-- 선택된 옵션 요약 — 재고가 없으면 서버가 exchange_target_out_of_stock 으로 거절하므로 여기서 먼저 드러낸다. 차액은 신청서 요약(서버 미리보기)이 확정하므로 여기서는 안내만 한다. -->
       <div data-if="{{_local.changeProductMode === 'change' &amp;&amp; !!_local.changeProductMatched}}" class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
@@ -78,8 +80,8 @@
           <span class="text-sm text-gray-700 dark:text-gray-300">{{_local.changeProductMatched?.option_name_localized ?? ''}}</span>
           <span class="text-sm font-bold text-gray-900 dark:text-white">{{_local.changeProductMatched?.selling_price_formatted ?? ''}}</span>
         </div>
-        <p data-if="{{(_local.changeProductMatched?.stock_quantity ?? 0) <= 0}}" class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">$t:claim.change_product.out_of_stock</p>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:claim.change_product.difference_notice</p>
+        <p data-if="{{(_local.changeProductMatched?.stock_quantity ?? 0) <= 0}}" class="mt-1 text-xs text-red-700 dark:text-red-400 font-medium">$t:claim.change_product.out_of_stock</p>
+        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">$t:claim.change_product.difference_notice</p>
       </div>
     </div>
     <!-- 모달 푸터 -->

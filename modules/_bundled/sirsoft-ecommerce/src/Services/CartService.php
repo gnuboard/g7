@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Support\LocalizedValue;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -732,8 +733,8 @@ class CartService
         foreach ($topLevelOptions as $orderOption) {
             $rawName = $orderOption->product_name;
             if (is_array($rawName)) {
-                // 보는 언어 → 앱 폴백 언어 → 남은 아무 언어 순(ko·en 고정 순서가 아니다)
-                $productName = (string) ($rawName[$locale] ?? $rawName[config('app.fallback_locale')] ?? collect($rawName)->first(fn ($name) => is_string($name) && $name !== '') ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
+                // 보는 언어 → 사이트 기본 언어 → 영어 → 남은 아무 언어 순 (#148)
+                $productName = (string) (LocalizedValue::pick($rawName, $locale) ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             } else {
                 $productName = (string) ($rawName ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             }

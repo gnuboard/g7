@@ -48,6 +48,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:common.search_field",
                                 "name": "searchField",
                                 "className": "select-composite w-44",
                                 "value": "{{_local.searchField || 'all'}}",
@@ -98,7 +99,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-search",
-                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     ]
@@ -368,7 +369,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "~"
                                 },

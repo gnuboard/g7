@@ -297,7 +297,7 @@
         </on>
       </filter-visibility-selector>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.schedules.title" description="$t:admin.schedules.description">
-        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md" ariaLabel="$t:common.refresh">
+        <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md" ariaLabel="$t:common.refresh">
           <on type="click">
             <!-- 새로고침 — 조건은 그대로 두고 지금 탭의 목록과 상태 카드만 다시 받는다(예전에는 같은 주소로
                  navigate 해 아무 일도 일어나지 않았다). 큐 탭이면 보고 있는 하위 탭의 목록만 다시 받는다. -->
@@ -377,8 +377,8 @@
       <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav-responsive">
         <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeScheduleTab || (route.path === '/admin/schedules/queue' ? 'queue' : 'schedules')}}" variant="default">
           <prop name="tabs">
-            <item id="schedules" label="$t:admin.schedules.tabs.schedules"/>
-            <item id="queue" label="$t:admin.schedules.tabs.queue"/>
+            <item id="schedules" href="/admin/schedules" label="$t:admin.schedules.tabs.schedules"/>
+            <item id="queue" href="/admin/schedules/queue" label="$t:admin.schedules.tabs.queue"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 탭 전환 — 탭이 **URL 경로**라 이동이다. 떠나는 탭의 조건(query)을 전역에 담아 두고, 가는 탭은 지난번에

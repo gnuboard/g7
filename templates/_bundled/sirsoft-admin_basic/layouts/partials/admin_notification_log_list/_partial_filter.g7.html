@@ -6,7 +6,7 @@
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select name="searchType" class="select-composite w-36" value="{{_local.filter.searchType || 'all'}}">
+        <select name="searchType" aria-label="$t:common.search_field" class="select-composite w-36" value="{{_local.filter.searchType || 'all'}}">
           <options>
             <option value="all">$t:admin.notification_log.filter.search_type_all</option>
             <option value="recipient">$t:admin.notification_log.filter.search_type_recipient</option>
@@ -18,7 +18,7 @@
           </on>
         </select>
         <div class="relative flex-1">
-          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
           <input name="search" type="text" placeholder="$t:admin.notification_log.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
             <on type="change">
               <!-- 받는 사람으로 찾을 때는 회원 이름뿐 아니라 비회원에게 보낸 주소·번호도 걸린다(그쪽은 회원 연결 없이 식별자만 남는다). -->

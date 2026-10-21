@@ -39,7 +39,7 @@ class PruneExpiredTempOrdersCommand extends Command
     {
         $deleted = $tempOrderService->cleanupExpiredTempOrders();
 
-        $this->info("만료된 임시 주문 {$deleted}건이 삭제되었습니다.");
+        $this->info(__('sirsoft-ecommerce::messages.console.prune_temp_orders.done', ['count' => $deleted]));
 
         return Command::SUCCESS;
     }

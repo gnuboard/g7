@@ -10,6 +10,7 @@
 3. 설정 주입과 `.env` 우선
 4. 입력 크기에 비례해 커지는 메모리는 PHP 기본 한계 안에서 잰다
 5. 통화 단위는 설정이 정한다 / 보조 통화 줄
+6. 콘솔 명령 출력은 번역 키로 쓴다
 ```
 
 > 원본: 이 규칙들은 2026-09-10 까지 루트 AGENTS.md 「CRITICAL RULES」 에 있었다. 제목·표는 그대로 옮겼고 앵커는 바뀌지 않았다. 색인: [docs/rules/README.md](README.md)
@@ -185,6 +186,38 @@ G7 은 **기본 통화**(상품·쿠폰·배송비 저장 기준), **표시 통�
 `message`(첫 인자)와 `errors`(셋째 인자)는 다른 통로다. **키 자리에 원문을 넘기는 것은 언제나 금지**지만, `errors` 페이로드의 원문은 금지 대상이 아니다 — `ResponseHelper::error` 가 문자열 `errors` 를 `500+` 비디버그에서만 차단하고 배열은 통과시키는 것은 `tests/Unit/Helpers/ResponseHelperTest.php` 가 고정한 의도다. 관리자에게 결제대행사·외부 시스템이 돌려준 사유를 감추면 조치 근거가 사라지고, 다국어 키는 유한해서 예상 못 한 실패를 담지 못한다. 판단 축은 "원문이냐 키냐" 가 아니라 **누구에게 / 무엇의 원문인가 / 어느 통로인가** 셋이다.
 
 상세: [exceptions.md "예외 → 응답 매핑"](../backend/exceptions.md). `tests/Feature/Http/GenericCatchStatusCodeContractTest.php` 가 코어와 모든 번들 확장의 컨트롤러를 전수 스캔해 두 규칙을 고정한다. 판정기를 한 확장 안에 두면 그 확장 밖의 동형 결함이 검출되지 않는다. 치환 자리 축은 `tests/Feature/Http/ErrorMessageParamSubstitutionTest.php` 가 고정한다 — 호출부를 열거하지 않고 `->error(...)` 전수를 괄호 균형으로 잘라, 키를 실제로 번역해 `:error` 를 요구하는지 판정한다. 같은 판정기가 `new *OperationException(...)` 생성자 축도 덮는다(파라미터 배열이 넷째가 아니라 둘째 인자다). 이 축이 없으면 키를 들고 다니는 예외로 던지는 경로가 통째로 사각이 된다.
+
+## 콘솔 명령 출력은 번역 키로 쓴다
+
+Artisan 명령과 그 명령이 돌리는 시더(`module:install`·`db:seed`)가 콘솔에 찍는 문구도 사용자(운영자) 화면이다. 사이트 언어가 `ja`·`en` 인 설치에서 운영자가 `php artisan` 을 실행하면 출력도 그 언어여야 한다. 코드에 한국어를 직접 적으면 언어팩이 있어도 한국어로 고정된다.
+
+| 금지 | 올바른 사용 |
+|------|------------|
+| `$this->info('설치 완료')` · `$this->error('실패: '.$msg)` | `$this->info(__('modules.commands.install.success', ['module' => $id]))` — 연결 문자열은 치환 자리 하나로 합친다 |
+| `$this->table(['이름', '상태'], $rows)` · 셀 값 `'활성'` | 머리글·셀 값도 키 — `__('…headers.name')` |
+| `$this->confirm('계속할까요?')` · `ask`·`choice` 질문 | 질문 문구도 키 |
+| 이모지·들여쓰기를 키 값에 넣기 | 기호는 키 밖에 둔다 — `$this->info('✅ '.__('…'))` |
+| 명령을 넘겨받은 헬퍼·트레이트에서 `$command->line('…')` | 같은 규칙 — 헬퍼가 쓰는 도메인 파일의 키 |
+| 시더에서 `$this->command->info('샘플 생성 완료')` | 같은 규칙 — 시드가 DB 에 넣는 데이터 값은 대상이 아니다 |
+
+키 위치:
+
+| 명령 | 키 |
+|------|----|
+| `module:*` · `plugin:*` · `template:*` | `modules`·`plugins`·`templates` 파일의 `commands.{동작}.*` |
+| `extension:*` · `ext-static:*` · `ext-bundles:*` · `vendor-bundle:*` · `ext:docgen` | `extensions.commands.{명령}.*` |
+| `language-pack:*` | `language_packs.commands.{동작}.*` |
+| `core:update` | `settings.core_update.console.*` |
+| 명령 이름 앞 토큰과 같은 코어 lang 파일이 있는 명령(`analytics:*`·`seo:*`·`layout*:*`·`privacy:*`·`identity:*` …) | 그 파일의 `console.{동작}.*` |
+| 그 밖의 코어 명령(`core:build`·`security:*`·`playwright:*` …) | `common.console.{명령}.*` |
+| 번들 모듈·플러그인 명령 | 그 확장 `messages.php` 의 `console.{동작}.*` (`__('vendor-ext::messages.console.…')`) |
+| 코어 시더 · 확장 시더 | `common.console.seeders.{시더}.*` · 그 확장 `messages.php` 의 `seeders.{시더}.*` |
+
+키를 더하면 ko·en 원본과 함께 번들 언어팩(`lang-packs/_bundled/*-{locale}`)의 같은 파일에도 번역을 더한다 — 빠지면 그 로케일에서 키 원문이나 폴백 문구가 찍힌다.
+
+예외: `Log::*` 운영 로그, 주석, `$signature`·`$description`(명령 설명), 시드가 DB 에 넣는 데이터 값, 다른 프로그램이 파싱하는 고정 형식 줄. 마지막 경우는 위반 지점 직전 5줄 안에 `audit:allow console-output-hardcoded-korean reason: …` 표식과 사유를 남긴다.
+
+자동 검증이 출력 메서드 인자 안의 한국어 리터럴을 검출한다. 한국어를 변수에 담았다가 출력하는 경로는 정적으로 잡히지 않으므로 리뷰에서 본다. 모듈 명령의 같은 규칙: [module-commands.md](../extension/module-commands.md).
 
 ## Listener 데이터 접근
 

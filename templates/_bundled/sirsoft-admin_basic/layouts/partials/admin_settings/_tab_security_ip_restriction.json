@@ -49,7 +49,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5"
                             }
                         },
                         {
@@ -471,7 +471,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "ariaLabel": "$t:admin.settings.security.ip_restriction.col_enabled",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{rule.pattern || $t('common.row_n', {n: idx + 1})}}|column={{$t('admin.settings.security.ip_restriction.col_enabled')}}",
                                                                         "checked": "{{rule.enabled !== false}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}"
@@ -530,7 +530,7 @@
                                                                     "props": {
                                                                         "type": "button",
                                                                         "disabled": "{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}",
-                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -646,6 +646,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "ariaLabel": "$t:common.row_cell|row={{rule.pattern || $t('common.row_n', {n: idx + 1})}}|column={{$t('admin.settings.security.ip_restriction.col_enabled')}}",
                                                         "label": "$t:admin.settings.security.ip_restriction.col_enabled",
                                                         "checked": "{{rule.enabled !== false}}",
                                                         "size": "sm",
@@ -703,7 +704,7 @@
                                                             "props": {
                                                                 "type": "button",
                                                                 "disabled": "{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}",
-                                                                "className": "text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                "className": "text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                             },
                                                             "children": [
                                                                 {

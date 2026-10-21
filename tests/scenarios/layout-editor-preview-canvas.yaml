@@ -10,10 +10,10 @@ description: |
   responsive 가 적용된 실시간 렌더로 전환.
 
   배경:
- - Phase 1 산출물(셸/툴바/라우트 트리) 위에 얹힘. 셸은 동일하게 코어 React tree.
- - `with_source_meta=1` 옵션이 백엔드 응답에 __source 메타를 부여.
- - DataSourceManager 의 sampleProvider 옵션이 fetch 를 대체.
- - ResponsiveProvider overrideWidth 로 디바이스 폭 강제.
+    - Phase 1 산출물(셸/툴바/라우트 트리) 위에 얹힘. 셸은 동일하게 코어 React tree.
+    - `with_source_meta=1` 옵션이 백엔드 응답에 __source 메타를 부여.
+    - DataSourceManager 의 sampleProvider 옵션이 fetch 를 대체.
+    - ResponsiveProvider overrideWidth 로 디바이스 폭 강제.
 
 axes:
   edit_mode: [route, base, modal, extension]

@@ -1,0 +1,26 @@
+feature: 관리자 이커머스 디바운스 폼 입력 직후 저장 본문 최신값 브라우저 회귀 (7.1.1)
+
+description: |
+  `data-key="form" data-debounce="300"` 관리자 폼(상품 수정 「정가」 · 쿠폰 수정 「최소주문금액」)에서 칸을 비우고 새 값을 40ms
+  간격으로 친 뒤, 미리 찾아 둔 「저장」 을 페이지 안에서 바로 누른다(입력 끝에서 클릭까지 디바운스보다 짧은지 페이지 안에서 잰다).
+  나가는 PUT 은 네트워크 단에서 abort 하고 본문의 키 값이 마지막 입력값인지, 저장 뒤 칸 표시가 그 값으로 남는지(옛 값으로
+  되돌아가지 않는지) 본다. 대조로 상품 「정가」 를 1초 기다려 저장한다(수정 전에도 정상인 갈래).
+  상품·쿠폰은 관리자 목록 API(GET)의 첫 수정 가능 항목이고, GET·HEAD 가 아닌 `/api/` 요청은 모두 abort 한다(서버 값 불변).
+
+axes:
+  case:
+    - product_list_price_within_debounce
+    - coupon_min_order_amount_within_debounce
+    - product_list_price_after_debounce
+
+effects:
+  - save_body_has_latest_value            # 저장 PUT 본문의 키 값 = 마지막 입력값
+  - field_keeps_typed_value_after_save    # 저장(abort) 뒤에도 칸 표시 = 마지막 입력값
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-debounce-form-save-latest.spec.ts
+
+notes: |
+  관리자 토큰 필요(G7_E2E_TOKEN) — 없으면 건너뛴다. 회차 수는 G7_E2E_DEBOUNCE_REPEAT(기본 1 — 수정 전 실측 재현율 5/5·3/3).
+  수정 전 대조는 G7_E2E_ENGINE_BUNDLE 로 엔진 수정 전 번들(44903535)을 이 브라우저에만 끼운다 — *_within_debounce 두 시험이
+  red, product_list_price_after_debounce 는 green 이어야 한다.

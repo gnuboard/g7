@@ -1,0 +1,34 @@
+feature: 찜 — 상품 상세의 찜 단추와 마이페이지 찜 목록
+
+description: |
+  구매자는 상품 상세의 찜 단추로 상품을 찜하고, 마이페이지 「찜 목록」에서 보고 지운다. 레이아웃 구조 시험
+  (`wishlist.test.tsx`)이 찜 단추의 중복 클릭 차단·아이콘 상태·회원/비회원 분기·찜 API 호출과 로딩 복원,
+  찜 목록의 데이터 출처·그리드 바인딩·삭제·쪽 나눔·빈 목록을 잠근다.
+
+  결정 사항:
+    - 찜 단추는 응답을 받기 전까지 잠근다 — 두 번 누르면 찜·해제가 연달아 나가 결과가 뒤집힌다.
+    - 빈 목록의 「쇼핑하러 가기」는 상품 목록 주소를 가진 링크다(#757 WP-L — 가운데 클릭·새 탭). 주소는 상점 경로
+      설정(`_global.shopBase`)으로 만든다. E2E(`mypage-wishlist-empty-link.spec.ts`)가 풀린 주소와 이동을 본다.
+
+  이 매니페스트는 #757(WP-L 링크) 작업 중 빈 목록 단언을 링크 기준으로 고칠 때, 이 시험에 소유 매니페스트가
+  없던 상태(기존 부채)를 함께 정리한 것이다.
+
+axes:
+  surface:
+    - product_detail   # 상품 상세 머리의 찜 단추(_header)
+    - mypage_list      # 마이페이지 찜 목록(레이아웃·목록 partial)
+    - mypage_empty     # 찜 목록이 비었을 때
+
+effects:
+  - wishlist_toggle_blocks_duplicate_clicks          # 찜 단추가 wishlistLoading 동안 잠긴다
+  - wishlist_toggle_icon_reflects_state              # 아이콘 모양이 찜 상태를 따른다
+  - wishlist_toggle_branches_guest_and_member        # 비회원·회원 분기
+  - wishlist_toggle_calls_api_and_restores_loading   # 회원 분기가 찜 API 를 부르고 성공·실패 모두 로딩을 푼다
+  - mypage_wishlist_reads_the_wishlist_api           # 찜 목록 레이아웃이 찜 API 를 읽고 마이페이지 바탕을 잇는다
+  - mypage_wishlist_list_binds_wishlist_data         # 그리드·빈 목록 분기·쪽 나눔이 찜 응답에 묶인다
+  - mypage_wishlist_remove_calls_delete_api          # 삭제가 찜 DELETE API 를 부른다
+  - mypage_wishlist_empty_state_links_to_products    # 빈 목록 「쇼핑하러 가기」가 상점 경로로 풀린 상품 목록 링크다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/wishlist.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/mypage-wishlist-empty-link.spec.ts

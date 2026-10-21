@@ -224,8 +224,21 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 그 체인에 들어가지 않으므로, overlay 가 겨냥한 `target_id` 노드가 partial 안에 있으면
 **그 partial 을 쓰는 다른 레이아웃에서는 주입이 일어나지 않는다.**
 
-증상이 조용하다. 카드 자체는 정상으로 뜨고 주입 블록만 빠진 채 열리며, 매칭 실패는 오류도
-경고도 콘솔 로그도 남기지 않는다. 두 화면을 나란히 놓고 보기 전에는 드러나지 않는다.
+증상이 조용하다. 카드 자체는 정상으로 뜨고 주입 블록만 빠진 채 열리며, 매칭 실패는 브라우저에
+오류도 경고도 콘솔 로그도 남기지 않는다(서버 로그에만 `Layout extension target not found` 경고가 남는다).
+두 화면을 나란히 놓고 보기 전에는 드러나지 않는다.
+
+**같은 파일을 한 화면의 여러 갈래에 include 해도 같다.** overlay 는 트리에서 `target_id` 가 일치하는 **첫 노드 하나**에만
+들어간다. `sirsoft-basic` 의 글쓰기·글 상세는 같은 조각을 게시판 유형별 갈래(basic·gallery·card) 세 곳에 include 하므로,
+그 안의 `parent_post_card`·`content_section`·`parent_post_html_content` 를 겨냥한 overlay 는 **basic 게시판에만** 들어간다.
+글쓰기에는 `board_post_form_top`·`board_post_form_bottom`, 상세에는 `board_post_header_badges` 확장점을 쓴다 — 확장점은 같은
+이름의 모든 자리를 채운다. 목록도 세 유형 파일이 한 화면에 함께 있으므로 행에는 `board_post_row_badges` 를 쓴다.
+목록 검색 줄의 `board_search_field_select` 도 세 유형 파일에 같은 이름으로 있어, 이를 겨냥한 overlay 는 basic 목록에만 들어간다.
+
+반복 행이나 여러 자리에 들어가는 조각에 **고정 `data-ref` 를 쓰지 않는다.** 자리 수(행 수 × 갈래 수)만큼 같은 DOM id 가 생긴다.
+id 가 필요하면 반복 문맥 값을 보간한다(예: `my_badge_{{extensionPointProps.context}}_{{extensionPointProps.postId}}`).
+basic 목록과 마이페이지 스크랩은 PC·모바일 두 자리라 조각이 행마다 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다.
+카드·갤러리 목록은 카드 전체를 덮는 링크(`z-10`)가 위에 있으므로, 누를 수 있어야 하는 조각은 `relative z-20` 으로 올린다.
 
 | 상황 | 방식 |
 | --- | --- |
@@ -509,12 +522,40 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `shop_checkout_cash_receipt_slot` | 주문서 결제 영역 | 이커머스 | 주문서에서 현금영수증을 신청할 수 없다 |
 | `shop_checkout_extensions` | 주문서 화면(모달 자리) | 토스페이먼츠 | 결제 실패·취소 안내 창이 뜨지 않는다 |
 | `address_search_slot` | 배송지·회원정보의 주소 입력 칸(5곳) | 다음 우편번호 | 주소 검색 단추가 없다 |
-| `html_content` | 페이지 본문·약관·개인정보 창 | 편집기 플러그인(CKEditor5) | 편집기 본문 서식(`ck-content`)이 빠진 채 기본 HTML 로 보인다 |
+| `html_content` | 페이지 본문·약관·개인정보 창, 게시글 본문·원글·답글, 글쓰기의 원글 미리보기 | 편집기 플러그인(CKEditor5) | 편집기 본문 서식(`ck-content`)이 빠진 채 기본 HTML 로 보인다 |
+| `html_editor` | 글쓰기 본문 입력 칸 | 편집기 플러그인(CKEditor5) | 본문이 서식 편집기 대신 기본 입력 칸으로 나온다 |
+| `identity_provider_ui:provider` | 본인인증 요구 창(`_user_base` 모달) | 본인인증 플러그인 2종(KG이니시스·NHN KCP) | 본인인증 창에 제공자 인증 단추가 없다 |
 | `user_global_overlay` | `_user_base` 끝 | GDPR | 쿠키 동의 배너가 뜨지 않는다 |
+| `user_global_footer` | `_user_base` 푸터 바로 뒤 | (번들 사용처 없음 — 확장 공용 자리) | 푸터 아래 정보 영역을 붙일 곳이 없다 |
+| `board_post_row_badges` (7.1.1+) | 글이 보이는 모든 목록의 제목 바로 뒤 — 게시판 목록 세 유형(basic 은 PC·모바일 두 자리), 홈 최근 글·게시판 요약, 인기글, 통합 검색(전체·글 탭), 회원 글·회원 프로필, 마이페이지 내 글·스크랩(PC·모바일) | (번들 사용처 없음 — 확장 공용 자리) | 글마다 표시(언어·상태 배지 등)를 붙일 곳이 없다 |
+| `board_post_header_badges` (7.1.1+) | 글 상세 제목 바로 뒤(게시판 유형 세 갈래 모두) | (번들 사용처 없음) | 상세 제목 옆 표시를 붙일 곳이 없다 |
+| `board_comment_row_badges` (7.1.1+) | 글 상세 댓글 머리 줄(작성자·시각 옆), 마이페이지 내 댓글의 원글 제목 뒤 | (번들 사용처 없음) | 댓글마다 표시를 붙일 곳이 없다 |
+| `board_post_form_top` (7.1.1+) | 글쓰기 폼 맨 위(검증 오류 상자 아래, 작성자 정보 앞) | (번들 사용처 없음) | 글쓰기에 입력칸을 더할 곳이 없다 |
+| `board_post_form_bottom` (7.1.1+) | 글쓰기 폼 맨 아래(취소·저장 단추 바로 위) | (번들 사용처 없음) | 동의 문구·부가 입력칸을 더할 곳이 없다 |
 
 - 슬롯형 확장점은 `<extension-point name="…"><default/></extension-point>` 로 둔다. 주입이 없으면 아무것도 그리지 않는다.
 - 모달 안의 목록(예: 탈퇴 경고)은 노드 id 를 겨냥하는 Overlay 가 닿지 않으므로 확장점으로 연다.
 - 표시 분기(결제수단·PG·발급 상태 등)는 주입하는 쪽이 조건으로 처리한다 — 템플릿은 자리만 둔다.
+
+##### 게시판 확장 자리 5종의 props
+
+게시판 자리는 화면마다 반복 변수 이름(`post`·`item`·`comment`)과 응답 모양이 다르다. 그래서 확장점이 **정규화한 props** 를
+넘기고, 조각은 화면을 몰라도 같은 이름으로 읽는다(`{{extensionPointProps.postId}}`).
+
+| 확장점 | props | `context` 값 |
+| --- | --- | --- |
+| `board_post_row_badges` | `post`(행 원본) · `postId` · `boardSlug` · `context` | `board_list`(목록 세 유형 공통) · `popular` · `home_recent` · `home_board_summary` · `user_posts` · `user_profile_recent` · `mypage_posts` · `mypage_scrap` · `search_all` · `search_posts` |
+| `board_post_header_badges` | `post`(상세 응답의 `data`) · `postId` · `boardSlug` · `context` | `board_show` |
+| `board_comment_row_badges` | `commentData`(행 원본) · `commentId` · `postId` · `boardSlug` · `context` | `board_show_comment` · `mypage_comments` |
+| `board_post_form_top` · `board_post_form_bottom` | `mode`(`create`·`reply`·`edit`) · `boardSlug` · `postId`(새 글은 `null`) · `board`(글쓰기 틀 응답의 게시판) | — |
+
+- 마이페이지 스크랩의 행 원본 `id` 는 스크랩 번호다. 글 번호는 `postId` 로 읽는다. 내 댓글 목록의 글 번호도 `postId` 로 읽는다.
+- 댓글 행 원본은 `comment` 가 아니라 `commentData` 다 — 화면 응답은 props 의 `comment` 키를 개발자 주석으로 보고 지운다.
+- 글쓰기 자리에 끼운 입력칸이 이름(`name`)으로 값을 쓰면 글쓰기 폼 상태(`_local.form`)에 들어가고, 저장 요청 본문에 함께 실린다.
+  서버에 저장하는 것은 게시판 모듈 훅의 몫이다(모르는 키는 저장하지 않고 무시한다).
+- 호스트는 `<div class="contents" data-extension-point="이름">` 로 렌더된다. 상자를 만들지 않으므로 제목 줄 흐름을 깨지 않고,
+  주입이 없을 때 행 높이도 그대로다. 자리를 CSS·테스트로 찾을 때는 `[data-extension-point="이름"]` 을 쓴다(검색 봇 화면의
+  HTML 에는 이 표지가 실리지 않는다).
 
 #### 셀 템플릿 안의 확장점
 

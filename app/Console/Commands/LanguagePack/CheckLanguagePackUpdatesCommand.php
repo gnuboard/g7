@@ -48,33 +48,38 @@ class CheckLanguagePackUpdatesCommand extends Command
             $result = $this->service->checkUpdates($identifier);
 
             if ($result['checked'] === 0) {
-                $this->info('확인할 GitHub 기반 언어팩이 없습니다.');
+                $this->info(__('language_packs.commands.check_updates.none'));
 
                 return Command::SUCCESS;
             }
 
             foreach ($result['details'] as $entry) {
                 if ($entry['error']) {
-                    $this->warn(sprintf('  [%s] 조회 실패: %s', $entry['identifier'], $entry['error']));
+                    $this->warn('  '.__('language_packs.commands.check_updates.entry_failed', ['identifier' => $entry['identifier'], 'error' => $entry['error']]));
 
                     continue;
                 }
 
-                $line = sprintf(
-                    '  [%s] %s → %s%s',
-                    $entry['identifier'],
-                    $entry['current'],
-                    $entry['latest'] ?? '?',
-                    $entry['has_update'] ? '  (업데이트 가능)' : '',
-                );
+                $line = $entry['has_update']
+                    ? '  '.__('language_packs.commands.check_updates.entry_update_available', [
+                        'identifier' => $entry['identifier'],
+                        'current' => $entry['current'],
+                        'latest' => $entry['latest'] ?? '?',
+                    ])
+                    : sprintf(
+                        '  [%s] %s → %s',
+                        $entry['identifier'],
+                        $entry['current'],
+                        $entry['latest'] ?? '?',
+                    );
                 $this->line($line);
             }
 
-            $this->info(sprintf('확인 완료: %d 건 검사, %d 건 업데이트 가능.', $result['checked'], $result['updates']));
+            $this->info(__('language_packs.commands.check_updates.done', ['checked' => $result['checked'], 'updates' => $result['updates']]));
 
             return Command::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('업데이트 확인 실패: '.$e->getMessage());
+            $this->error(__('language_packs.commands.check_updates.failed', ['error' => $e->getMessage()]));
             Log::error('language-pack:check-updates 실패', [
                 'identifier' => $identifier,
                 'error' => $e->getMessage(),

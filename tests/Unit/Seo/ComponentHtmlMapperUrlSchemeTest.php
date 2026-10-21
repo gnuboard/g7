@@ -4,6 +4,7 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\ExpressionEvaluator;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 /**
@@ -157,5 +158,179 @@ class ComponentHtmlMapperUrlSchemeTest extends TestCase
         );
 
         $this->assertStringContainsString('<a href="/login"', $html);
+    }
+
+    /**
+     * 첫 화면 `/` 로 가는 navigate(정적 경로·쿼리에서 온 값 모두)도 링크가 되는지 검증합니다.
+     *
+     * 평가기의 「빈 바인딩 뒤 남은 연산자 정리」가 `/` 한 글자를 지워 홈 링크가 사라지던 결함의 잠금.
+     *
+     * @scenario target_kind=same_origin, sink=same_tab
+     *
+     * @effects same_origin_redirect_preserved
+     *
+     * @return void 반환값 없음
+     */
+    public function test_navigate_link_to_home_path_is_injected(): void
+    {
+        $render = fn (string $path, array $query = []): string => $this->mapper->render(
+            [['name' => 'Button', 'text' => '홈', 'actions' => [['handler' => 'navigate', 'params' => ['path' => $path]]]]],
+            ['query' => $query],
+            $this->evaluator,
+        );
+
+        $this->assertStringContainsString('<a href="/"', $render('/'));
+        $this->assertStringContainsString('<a href="/"', $render('{{query.redirect}}', ['redirect' => '/']));
+    }
+
+    /**
+     * 다른 출처로 풀리는 navigate 경로(`//host`·백슬래시 우회·사용자 정보 포함)는 링크로 만들지 않는지 검증합니다.
+     *
+     * 클라이언트는 이 값들로 이동하지 않는다(무동작) — 봇 HTML 이 바깥 링크로 내보내면 쿼리 유래 주소가
+     * 검색 로봇용 화면에 주입된다.
+     *
+     * @scenario target_kind=offsite, sink=same_tab
+     *
+     * @effects nav_sink_rejects_offsite_target
+     *
+     * @return void 반환값 없음
+     */
+    public function test_navigate_link_is_not_injected_for_offsite_path(): void
+    {
+        config(['app.url' => 'https://g7.test']);
+
+        $payloads = [
+            'https://evil.example/x',
+            'HTTPS://EVIL.EXAMPLE/x',
+            ' https://evil.example/x',
+            '//evil.example/x',
+            '///evil.example/x',
+            '/\\evil.example/x',
+            '\\\\evil.example/x',
+            "/\t/evil.example/x",
+            'https://g7.test@evil.example/x',
+            'https://g7.test:8443/x',
+            'http://g7.test/x',
+            'ftp://g7.test/x',
+        ];
+
+        foreach ($payloads as $payload) {
+            $html = $this->mapper->render(
+                [[
+                    'name' => 'Button',
+                    'text' => '이동',
+                    'actions' => [['handler' => 'navigate', 'params' => ['path' => '{{query.redirect}}']]],
+                ]],
+                ['query' => ['redirect' => $payload]],
+                $this->evaluator,
+            );
+
+            $this->assertStringNotContainsString('<a ', $html, '링크가 만들어진 값: '.json_encode($payload));
+            $this->assertStringNotContainsStringIgnoringCase('evil.example', $html);
+        }
+    }
+
+    /**
+     * 같은 출처 전체 주소 navigate 는 경로(+쿼리·해시)로 바꿔 링크를 만드는지 검증합니다.
+     *
+     * 같은 출처 = 사이트 주소(`app.url`) 또는 이 요청의 주소. 어느 쪽이든 내보내는 값은 경로뿐이라
+     * 위조한 Host 헤더로 바깥 링크가 만들어지지 않는다.
+     *
+     * @scenario target_kind=same_origin_full_url, sink=same_tab
+     *
+     * @effects same_origin_full_url_becomes_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_navigate_same_origin_full_url_becomes_relative_path(): void
+    {
+        config(['app.url' => 'https://g7.test']);
+
+        $cases = [
+            'https://g7.test/board/free?page=2#c1' => '/board/free?page=2#c1',
+            'HTTPS://G7.TEST:443/shop' => '/shop',
+            'https://g7.test' => '/',
+        ];
+
+        foreach ($cases as $payload => $expected) {
+            $html = $this->mapper->render(
+                [[
+                    'name' => 'Button',
+                    'text' => '이동',
+                    'actions' => [['handler' => 'navigate', 'params' => ['path' => '{{query.redirect}}']]],
+                ]],
+                ['query' => ['redirect' => $payload]],
+                $this->evaluator,
+            );
+
+            $this->assertStringContainsString('<a href="'.e($expected).'"', $html, '입력: '.$payload);
+            $this->assertStringNotContainsString('g7.test', $html);
+        }
+
+        // 이 요청의 주소(사이트 주소의 별칭 도메인)도 같은 출처 — 경로만 내보낸다
+        $this->app->instance('request', Request::create('https://alias.g7.test/'));
+
+        $html = $this->mapper->render(
+            [[
+                'name' => 'Button',
+                'text' => '이동',
+                'actions' => [['handler' => 'navigate', 'params' => ['path' => 'https://alias.g7.test/mypage']]],
+            ]],
+            [],
+            $this->evaluator,
+        );
+
+        $this->assertStringContainsString('<a href="/mypage"', $html);
+    }
+
+    /**
+     * openWindow 의 같은 탭(`target: _self`)은 navigate 와 같은 판정, 새 창은 실행 스킴·https 아닌 외부 주소만 막는지 검증합니다.
+     *
+     * 엔진 `handleOpenWindow` 와 같다 — 같은 탭은 같은 출처 경로만, 새 창의 외부 주소는 https 만 연다.
+     *
+     * @scenario target_kind=offsite, sink=same_tab
+     *
+     * @effects nav_sink_rejects_offsite_target
+     *
+     * @return void 반환값 없음
+     */
+    public function test_open_window_link_follows_engine_policy(): void
+    {
+        config(['app.url' => 'https://g7.test']);
+
+        $render = fn (array $params): string => $this->mapper->render(
+            [['name' => 'Button', 'text' => '열기', 'actions' => [['handler' => 'openWindow', 'params' => $params]]]],
+            [],
+            $this->evaluator,
+        );
+
+        $this->assertStringNotContainsString('<a ', $render(['path' => 'https://evil.example/x', 'target' => '_self']));
+        $this->assertStringContainsString('<a href="/x"', $render(['path' => 'https://g7.test/x', 'target' => '_self']));
+        $this->assertStringNotContainsString('<a ', $render(['path' => 'http://insecure.example/x']));
+        $this->assertStringNotContainsString('<a ', $render(['path' => '//evil.example/x']));
+    }
+
+    /**
+     * openWindow 새 창 링크에 `rel="noopener noreferrer"` 가 붙고 정상 외부 https 주소는 그대로인지 검증합니다.
+     *
+     * @effects external_link_preserved, new_window_link_has_noopener
+     *
+     * @return void 반환값 없음
+     */
+    public function test_open_window_link_has_noopener(): void
+    {
+        config(['app.url' => 'https://g7.test']);
+
+        $html = $this->mapper->render(
+            [
+                ['name' => 'Button', 'text' => '외부', 'actions' => [['handler' => 'openWindow', 'params' => ['path' => 'https://sir.kr/']]]],
+                ['name' => 'A', 'text' => '안내', 'actions' => [['handler' => 'openWindow', 'params' => ['path' => '/guide']]]],
+            ],
+            [],
+            $this->evaluator,
+        );
+
+        $this->assertStringContainsString('<a href="https://sir.kr/" target="_blank" rel="noopener noreferrer"', $html);
+        $this->assertStringContainsString('<a href="/guide" target="_blank" rel="noopener noreferrer"', $html);
     }
 }

@@ -302,7 +302,8 @@ export const Card: React.FC<CardProps> = ({ title, content }) => {
 
 ### 주의 사항
 
-- 다크 모드 전용 색상만 하드코딩 (예: `border-gray-700`만 사용)
+- 다크 모드 전용 색상만 하드코딩 (예: `border-gray-700`만 사용, 라이트 바탕 없이 `dark:bg-gray-800` 만)
+- 변형 짝 누락 (예: `hover:bg-gray-50` 만 있고 `dark:hover:*` 가 없으면 다크에서 마우스를 올릴 때 밝은 면이 번쩍인다 — `hover:bg-gray-50 dark:hover:bg-gray-700`)
 - 인라인 스타일로 색상 지정 (`style={{ color: '#000' }}`)
 - JavaScript로 색상 동적 변경 (Tailwind 사용)
 

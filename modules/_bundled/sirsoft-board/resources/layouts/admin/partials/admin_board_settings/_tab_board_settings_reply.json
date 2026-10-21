@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "type": "basic",
@@ -111,6 +104,7 @@
                                                     "type": "composite",
                                                     "name": "Toggle",
                                                     "props": {
+                                                        "ariaLabel": "$t:sirsoft-board.admin.settings.fields.use_reply",
                                                         "name": "basic_defaults.use_reply",
                                                         "className": "flex-shrink-0",
                                                         "disabled": "{{_computed.isReadOnly}}"
@@ -195,6 +189,7 @@
                                                             "type": "basic",
                                                             "name": "Input",
                                                             "props": {
+                                                                "aria-label": "$t:sirsoft-board.admin.settings.fields.max_reply_depth",
                                                                 "type": "number",
                                                                 "name": "basic_defaults.max_reply_depth",
                                                                 "min": "{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}",
@@ -286,6 +281,7 @@
                                                     "type": "basic",
                                                     "name": "Select",
                                                     "props": {
+                                                        "aria-label": "$t:sirsoft-board.admin.settings.fields.reply_delete_policy",
                                                         "name": "basic_defaults.reply_delete_policy",
                                                         "className": "w-48 flex-shrink-0 text-sm",
                                                         "disabled": "{{_computed.isReadOnly}}",
@@ -373,6 +369,7 @@
                                                     "type": "basic",
                                                     "name": "Select",
                                                     "props": {
+                                                        "aria-label": "$t:sirsoft-board.admin.settings.fields.secret_reply_visibility",
                                                         "name": "basic_defaults.secret_reply_visibility",
                                                         "className": "w-48 flex-shrink-0 text-sm",
                                                         "disabled": "{{_computed.isReadOnly}}",

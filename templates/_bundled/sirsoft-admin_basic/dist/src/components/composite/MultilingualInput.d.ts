@@ -47,6 +47,13 @@ export interface MultilingualInputProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
+    /**
+     * 입력칸 접근 가능한 이름. 켜진 언어가 둘 이상이면 각 칸이 「{이름} ({언어명})」으로 읽힌다.
+     * 없으면 바깥 상자 곁의 라벨(`form-label` 등) 글자를 이름으로 삼는다 — 그때도 언어명을 붙인다(#757).
+     */
+    ariaLabel?: string;
+    /** ariaLabel 과 같은 뜻 — 레이아웃이 `aria-label` 로 줘도 된다 */
+    'aria-label'?: string;
 }
 /**
  * 다국어 입력 컴포넌트

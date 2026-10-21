@@ -860,7 +860,10 @@ MD;
         }
 
         $result = ChangelogParser::parse($path);
-        $items = $result[0]['categories'][0]['items'];
+        // 이어 쓴 줄이 있는 판(0.2.0)을 판 번호로 찾는다 — 위에 새 판이 쌓여도 같은 항목을 본다
+        $entry = collect($result)->firstWhere('version', '0.2.0');
+        $this->assertNotNull($entry, 'Hello 모듈 CHANGELOG 에 0.2.0 판이 있어야 합니다.');
+        $items = $entry['categories'][0]['items'];
 
         $this->assertStringContainsString('레이아웃에서는 모듈 식별자와 점을 앞에 붙인 태그로 씁니다', $items[1]);
     }

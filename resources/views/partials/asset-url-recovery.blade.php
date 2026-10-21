@@ -140,7 +140,7 @@
             return '/api/' + bundle[1] + '/bundle.' + bundle[2] + '?v=' + version;
         }
 
-        var templateFetch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([a-zA-Z-]+)\.json)$/);
+        var templateFetch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([A-Za-z0-9-]+)\.json)$/);
         if (templateFetch) {
             return '/api/templates/' + templateFetch[1] + '/' +
                 templateFetch[2].replace(/\.json$/, '') + '.json?v=' + version;

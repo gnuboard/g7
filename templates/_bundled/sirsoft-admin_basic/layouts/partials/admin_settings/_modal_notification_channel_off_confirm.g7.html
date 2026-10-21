@@ -25,7 +25,7 @@
         </on>
         $t:admin.settings.notification_definitions.channel_off_confirm.btn_cancel
       </button>
-      <button data-ref="channel_off_confirm_button" type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.notification_channel_off_modal?.isSaving ?? false}}">
+      <button data-ref="channel_off_confirm_button" type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.notification_channel_off_modal?.isSaving ?? false}}">
         <on type="click">
           <!-- 끄기 — 화면 [저장]과 같은 요청(알림 채널 묶음)을 보낸다. 성공하면 부모 화면의 「고친 것 있음」 표시를
                끄고 설정을 다시 받는다. 실패하면 창을 열어 둔 채 서버 문구를 띄운다. -->

@@ -96,7 +96,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "clock",
-                        "className": "text-5xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                        "className": "text-5xl mx-auto mb-2 text-gray-500 dark:text-gray-500"
                     }
                 },
                 {

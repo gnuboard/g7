@@ -20,6 +20,14 @@
 > #524·#525 가 손으로 더한 행(`scraps`·`reaction*` 3종)이 표에는 들어갔지만 총계에는 반영되지 않은 상태이며,
 > 위 두 주의 항목이 밝힌 대로 이 블록은 `--check` 가드 때문에 부분 재생성이 불가합니다. 가드가 풀려
 > 생성기를 다시 돌리면 총계가 산식으로 바로잡힙니다 — 엔드포인트 문서 자체의 정확성과는 무관합니다.
+>
+> **없는 게시판(`{slug}`)**: 게시판별 하위 경로(`boards/{slug}/posts/**`·`boards/{slug}/posts/{postId}/comments/**`·
+> `boards/{slug}/attachments/**`·`boards/{slug}/attachment/{hash}`·`boards/{slug}/comments/{commentId}/verify-password`·
+> 신고 접수(`boards/{slug}/posts/{postId}/reports`·`…/comments/{commentId}/reports`), 관리자
+> `admin/board/{slug}/posts/**`·`…/attachments/**`·`…/posts/{postId}/comments/**`)는 권한 검사보다 먼저 게시판
+> 존재를 확인해 없으면 **404** 로 끝냅니다. 게시판별 권한 식별자는 게시판이 있어야 생기므로, 종전에는 없는 게시판이
+> 비회원 401·회원/관리자 403 으로 보였습니다. 이 변경은 각 엔드포인트 절의 오류 응답 표에 아직 반영되지 않았습니다 —
+> 이 문서의 실측 재생성(`api:docgen`)은 개발 서버 실측이 필요해 손으로 이 안내만 더했습니다.
 
 <!-- @generated:start:api-readme-index -->
 - **문서 수**: 12 · **엔드포인트 수**: 94

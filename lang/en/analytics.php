@@ -339,4 +339,78 @@ return [
         'ch' => 'client hints',
         'wd' => 'automated browser flag',
     ],
+    // `analytics:*` command output
+    'console' => [
+        'anonymize' => [
+            'invalid_octets' => 'The number of octets to mask must be between 0 and 3.',
+            'option_required' => 'Either --mask-octets or --hash must be specified.',
+            'confirm' => 'This irreversibly changes the visit records already collected. Continue?',
+            'cancelled' => 'Cancelled.',
+            'failed' => 'Retroactive anonymization failed: :error',
+            'done' => 'Anonymized :count visits.',
+        ],
+        'archive' => [
+            'invalid_period' => 'The aggregation period must be hour or day.',
+            'stale_closed' => 'Closed :count stalled runs that never reported completion as failed.',
+            'invalid_date' => 'Dates must be in Y-m-d format.',
+            'range_reversed' => 'The start date is later than the end date.',
+            'range_dry_run' => 'Re-aggregation period :from ~ :to (dry run — aggregate tables were not changed)',
+            'range_done' => 'Re-aggregated :days days (:failed failed)',
+            'date_dry_run' => 'Checked aggregation targets for :date (dry run — aggregate tables were not changed)',
+            'date_failed' => 'Aggregation failed for :date: :error',
+            'date_skipped' => 'Skipped aggregation for :date — the same period is already being aggregated.',
+            'date_done' => 'Aggregation complete for :date — :visits visits, :actions actions, :chunks chunks',
+        ],
+        'broadcast_realtime' => [
+            'done' => 'Broadcast :count current visitors.',
+        ],
+        'check_volume' => [
+            'rows' => ':visits visit rows · :actions action rows',
+            'within_limit' => 'Within the warning threshold.',
+            'exceeded_notified' => 'The warning threshold was exceeded and a notification was sent.',
+            'exceeded_already_notified' => 'The warning threshold was exceeded, but a notification was already sent today, so none was sent again.',
+        ],
+        'prune' => [
+            'headers' => [
+                'target' => 'Target',
+                'to_delete' => 'To delete',
+                'deleted' => 'Deleted',
+            ],
+            'dry_run' => 'Dry run — nothing was deleted.',
+            'done' => 'Pruned :count visitor statistics records.',
+        ],
+        'purge' => [
+            'confirm_option_required' => 'A full purge runs only with --confirm. This cannot be undone.',
+            'confirm' => 'This deletes all visitor statistics records and aggregates. This cannot be undone. Continue?',
+            'cancelled' => 'Cancelled.',
+            'headers' => [
+                'target' => 'Target',
+                'deleted' => 'Deleted',
+            ],
+            'done' => 'Deleted :count visitor statistics records.',
+        ],
+        'purge_extension' => [
+            'invalid_arguments' => 'The extension type must be module or plugin, and an identifier is required.',
+            'extension_active' => ':type :identifier is active. Deactivate or uninstall it first, or add --force to purge while it stays active.',
+            'confirm_option_required' => 'Purging extension statistics runs only with --confirm. This cannot be undone.',
+            'not_installed' => ':type :identifier is not installed. If it was uninstalled with its data kept, continue; if the identifier is mistyped, cancel.',
+            'confirm' => 'This deletes the visitor statistics conversions and dimension aggregates of :type :identifier. This cannot be undone. Continue?',
+            'cancelled' => 'Cancelled.',
+            'failed' => 'The purge failed. Check the run history on the diagnostics screen and the application log for the reason.',
+            'headers' => [
+                'target' => 'Target',
+                'deleted' => 'Deleted',
+            ],
+        ],
+        'report' => [
+            'invalid_period' => 'The period must be weekly or monthly.',
+            'disabled' => 'Report delivery is turned off, so nothing was sent.',
+            'sent' => 'Sent the :period report — :visits visits, :visitors visitors, :pageviews pageviews',
+        ],
+        'update_cloud_ranges' => [
+            'failed_sources' => 'Sources that could not be fetched: :sources',
+            'none_received' => 'No ranges were fetched, so the existing list is kept as is.',
+            'done' => 'Updated :count cloud IP ranges.',
+        ],
+    ],
 ];

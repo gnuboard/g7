@@ -8,6 +8,7 @@ use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Tests\Concerns\CountsQueries;
 
@@ -64,6 +65,35 @@ class ListQueryCountRegressionTest extends BoardTestCase
             grow: fn () => $this->seedPosts(10, '추가'),
             context: '게시글 목록',
         );
+    }
+
+    /**
+     * 목록 쿼리 확장 훅(#147)에 리스너가 없으면 서비스 목록·건수 경로의 쿼리 수가 저장소 직접 호출과 같다.
+     *
+     * 서비스는 리스너가 있을 때만 확장 조건을 모으고 게시판을 조회한다 — 없으면 종전과 같은 쿼리만 나간다.
+     *
+     * @scenario case=no_listener
+     *
+     * @effects no_extra_queries_without_listener
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_query_extensions_add_no_queries_without_listener(): void
+    {
+        $repository = app(PostRepositoryInterface::class);
+        $service = app(PostService::class);
+        $this->seedPosts(5, '확장없음');
+        $slug = $this->board->slug;
+        $scope = ['scope_permission' => "sirsoft-board.{$slug}.posts.read"];
+
+        $viaRepository = $this->countQueries(fn () => $repository->paginate($slug, $scope, 50, false, $this->board));
+        $viaService = $this->countQueries(fn () => $service->getPosts($slug, [], 50, false, 'user', $this->board));
+        $this->assertSame($viaRepository, $viaService, '리스너가 없으면 목록 경로에 쿼리가 더해지지 않는다');
+
+        $countViaRepository = $this->countQueries(fn () => $repository->countNormalPosts($slug, $scope, false));
+        $countViaService = $this->countQueries(fn () => $service->getTotalNormalPosts($slug, [], false, 'user'));
+        // 서비스 건수 경로는 종전부터 게시판 존재 확인(validateBoardExists) 1건이 앞선다
+        $this->assertSame($countViaRepository + 1, $countViaService, '리스너가 없으면 건수 경로에 쿼리가 더해지지 않는다');
     }
 
     /**

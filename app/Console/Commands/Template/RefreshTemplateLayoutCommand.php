@@ -23,14 +23,14 @@ class RefreshTemplateLayoutCommand extends Command
     use SelectsLayoutInstallSource;
 
     /**
-     * The name and signature of the console command.
+     * 커맨드 이름 및 시그니처
      */
     protected $signature = 'template:refresh-layout
         {identifier? : 특정 템플릿의 식별자 (생략 시 모든 활성 템플릿)}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
 
     /**
-     * The console command description.
+     * 커맨드 설명
      */
     protected $description = '템플릿 레이아웃을 갱신합니다 (빌드 없이 레이아웃만 DB에 동기화)';
 
@@ -46,7 +46,7 @@ class RefreshTemplateLayoutCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 커맨드를 실행합니다.
      *
      * @return int 종료 코드
      */
@@ -84,19 +84,19 @@ class RefreshTemplateLayoutCommand extends Command
      */
     private function refreshSingle(string $identifier): int
     {
-        $this->info("템플릿 '{$identifier}' 레이아웃 갱신 중...");
+        $this->info(__('templates.commands.refresh_layout.refreshing', ['template' => $identifier]));
 
         $result = $this->templateService->refreshTemplateLayouts($identifier);
 
         if ($result) {
-            $this->info("✅ 템플릿 '{$identifier}' 레이아웃 갱신 완료");
+            $this->info('✅ '.__('templates.commands.refresh_layout.success', ['template' => $identifier]));
             $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
             Log::info('템플릿 레이아웃 갱신 완료', ['template' => $identifier]);
 
             return Command::SUCCESS;
         }
 
-        $this->error("❌ 템플릿 '{$identifier}' 레이아웃 갱신 실패");
+        $this->error('❌ '.__('templates.commands.refresh_layout.failed', ['template' => $identifier]));
 
         return Command::FAILURE;
     }
@@ -111,28 +111,28 @@ class RefreshTemplateLayoutCommand extends Command
         $templates = Template::where('status', 'active')->pluck('identifier')->toArray();
 
         if (empty($templates)) {
-            $this->line('활성화된 템플릿이 없습니다.');
+            $this->line(__('templates.commands.refresh_layout.none_active'));
 
             return Command::SUCCESS;
         }
 
-        $this->info('모든 활성 템플릿 레이아웃 갱신 중...');
+        $this->info(__('templates.commands.refresh_layout.refreshing_all'));
 
         $successCount = 0;
         $failCount = 0;
 
         foreach ($templates as $templateIdentifier) {
-            $this->line("  {$templateIdentifier} 갱신 중...");
+            $this->line('  '.__('templates.commands.refresh_layout.item_refreshing', ['identifier' => $templateIdentifier]));
 
             try {
                 $result = $this->templateService->refreshTemplateLayouts($templateIdentifier);
 
                 if ($result) {
-                    $this->info("  ✅ {$templateIdentifier} 완료");
+                    $this->info('  ✅ '.__('templates.commands.refresh_layout.item_done', ['identifier' => $templateIdentifier]));
                     $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                     $successCount++;
                 } else {
-                    $this->warn("  ⚠️ {$templateIdentifier} 실패");
+                    $this->warn('  ⚠️ '.__('templates.commands.refresh_layout.item_failed', ['identifier' => $templateIdentifier]));
                     $failCount++;
                 }
             } catch (\Exception $e) {
@@ -142,7 +142,7 @@ class RefreshTemplateLayoutCommand extends Command
         }
 
         $this->newLine();
-        $this->info("✅ 총 {$successCount}개 성공, {$failCount}개 실패");
+        $this->info('✅ '.__('templates.commands.refresh_layout.summary', ['success' => $successCount, 'failed' => $failCount]));
 
         Log::info('템플릿 레이아웃 일괄 갱신 완료', [
             'success' => $successCount,

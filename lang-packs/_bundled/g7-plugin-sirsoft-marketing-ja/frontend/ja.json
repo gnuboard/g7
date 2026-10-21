@@ -92,8 +92,6 @@
       "key": "項目キー",
       "key_hint": "英小文字、数字、アンダースコア（_）のみ使用可能です。",
       "key_placeholder": "例：sms_subscription",
-      "label_ko": "項目名（日本語）",
-      "label_en": "項目名（English）",
       "label_placeholder": "例：広告性SMS受信",
       "page_slug": "約款ページslug",
       "page_slug_hint": "空欄の場合は約款表示ボタンが非表示になります。",

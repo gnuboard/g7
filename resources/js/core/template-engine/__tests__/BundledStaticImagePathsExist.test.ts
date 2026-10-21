@@ -44,6 +44,14 @@ function collect(dir: string, out: string[]): void {
   }
 }
 
+/** 번들 전체 정적 검사의 시험 한도 — 동시 실행 부하 대비. 전역 한도는 그대로 두고 전수 시험에만 명시한다. */
+const STATIC_SCAN_TIMEOUT_MS = 60_000;
+
+/** 검사 대상 파일과 원문 — 수집 단계에서 한 번 훑고 읽는다(시험 한도 밖). 두 전수 시험이 같은 원문을 나눠 쓴다. */
+const BUNDLED_FILES: string[] = [];
+for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), BUNDLED_FILES);
+const BUNDLED_TEXT = new Map<string, string>(BUNDLED_FILES.map((file): [string, string] => [file, readFileSync(file, 'utf-8')]));
+
 describe('번들 정적 이미지 경로 실재', () => {
   // @scenario source=fixture
   // @effects root_image_paths_are_extracted
@@ -62,29 +70,25 @@ describe('번들 정적 이미지 경로 실재', () => {
   // @scenario source=bundled
   // @effects bundled_image_paths_exist_in_public
   it('번들 레이아웃과 편집기 표본의 정적 이미지 경로가 public 에 실재한다', () => {
-    const files: string[] = [];
-    for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), files);
-    expect(files.length, '검사 대상 파일이 없습니다(경로 해석 확인).').toBeGreaterThan(100);
+    expect(BUNDLED_FILES.length, '검사 대상 파일이 없습니다(경로 해석 확인).').toBeGreaterThan(100);
 
     const missing: string[] = [];
-    for (const file of files) {
-      for (const path of new Set(rootImagePaths(readFileSync(file, 'utf-8')))) {
+    for (const [file, text] of BUNDLED_TEXT) {
+      for (const path of new Set(rootImagePaths(text))) {
         if (!existsSync(join(ROOT, 'public', path))) missing.push(`${relative(ROOT, file).split(sep).join('/')}: ${path}`);
       }
     }
 
     expect(missing).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   // @scenario source=bundled
   // @effects editor_sample_images_do_not_point_to_absent_server_files
   it('편집기 표본의 그림 칸이 표본용으로 실재하지 않는 서버 파일(첨부 미리보기·storage)을 가리키지 않는다', () => {
-    // 7.1.0 실측(영역 I2): 게시판 글 상세 첨부 미리보기(`/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview`)와
+    // 7.1.0 실측: 게시판 글 상세 첨부 미리보기(`/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview`)와
     // 페이지 첨부(`/storage/pages/b7e2d4/thumb_…png`)가 편집기에서 깨진 그림으로 그려졌다. 표본의 그림 칸은 인라인 그림을 쓴다.
     // 확장 아이콘(`/api/extensions/{type}/{id}/icon`)처럼 서버가 늘 내어 주는 주소는 허용한다.
-    const files: string[] = [];
-    for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), files);
-    const specFiles = files.filter((f) => f.split(sep).includes('editor-spec') || f.endsWith(`${sep}editor-spec.json`));
+    const specFiles = BUNDLED_FILES.filter((f) => f.split(sep).includes('editor-spec') || f.endsWith(`${sep}editor-spec.json`));
     expect(specFiles.length).toBeGreaterThan(5);
 
     const IMAGE_KEY = /(thumb|image|img|avatar|photo|preview_url|cover|banner)/i;
@@ -107,10 +111,10 @@ describe('번들 정적 이미지 경로 실재', () => {
         }
       }
     };
-    for (const file of specFiles) visit(JSON.parse(readFileSync(file, 'utf-8')), file);
+    for (const file of specFiles) visit(JSON.parse(BUNDLED_TEXT.get(file) ?? 'null'), file);
 
     expect([...new Set(offenders)]).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   // @scenario source=bundled
   // @effects missing_thumbnail_falls_back_to_icon

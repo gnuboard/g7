@@ -56,7 +56,7 @@
               </div>
               <div class="col-span-2 flex justify-center">
                 <responsive on="portable" class="flex justify-start"/>
-                <input type="number" class="w-16 text-center rounded px-1" min="1" max="{{confirmItem.quantity}}" value="{{_local.changeQuantities?.[confirmItem.id] ?? $parent._local.changeQuantities?.[confirmItem.id] ?? confirmItem.quantity}}">
+                <input type="number" class="w-16 text-center rounded px-1" aria-label="$t:common.row_cell|row={{[confirmItem.product_name, confirmItem.product_option_name].filter(Boolean).join(' ')}}|column={{$t('sirsoft-ecommerce.admin.order.detail.modal.batch_change.change_quantity_col')}}" min="1" max="{{confirmItem.quantity}}" value="{{_local.changeQuantities?.[confirmItem.id] ?? $parent._local.changeQuantities?.[confirmItem.id] ?? confirmItem.quantity}}">
                   <on type="change">
                     <!-- 부분 처리 수량. 화면이 직접 상태에 쓰지 않고 핸들러에 맡긴다 — 상한 검사와 항목별 맵 갱신이 함께 필요하고, 그 맵이 아래 실행 액션으로 그대로 넘어간다. -->
                     <action handler="sirsoft-ecommerce.updateChangeQuantity" optionId="{{confirmItem.id}}" maxQuantity="{{confirmItem.quantity}}" value="{{$event.target.value}}"/>
@@ -109,7 +109,7 @@
             <p data-if="{{(_global.manualPaidPreview?.orders?.[0]?.restoration?.totals_before?.total_amount ?? 0) > 0}}" class="text-hint">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_hint_partial</p>
             <p data-if="{{(_global.manualPaidPreview?.orders?.[0]?.restoration?.totals_before?.total_amount ?? 0) <= 0}}" class="text-hint">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_hint</p>
             <p data-ref="manual_paid_restoration_conflict" data-if="{{(_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_coupon_conflict_single|coupons={{(_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).map(c => c.coupon_name ?? c.coupon_issue_id).join(', ')}}</p>
-            <p data-ref="manual_paid_restoration_legacy" data-if="{{_global.manualPaidPreview?.orders?.[0]?.restoration?.legacy_snapshot === true}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_legacy_snapshot_single</p>
+            <p data-ref="manual_paid_restoration_legacy" data-if="{{_global.manualPaidPreview?.orders?.[0]?.restoration?.legacy_snapshot === true}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_legacy_snapshot_single</p>
           </div>
           <label data-ref="manual_paid_stock" data-if="{{_global.manualPaidPreview?.orders?.[0]?.stock_deduction?.applicable === true }}" class="flex items-start gap-2 cursor-pointer select-none">
             <input type="checkbox" name="apply_stock_deduction" class="checkbox mt-0.5" checked="{{_global.manualPaidOptions?.apply_stock_deduction !== false}}">
@@ -121,7 +121,7 @@
             <div class="flex-1">
               <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.manual_paid.stock_label_single|count={{_global.manualPaidPreview?.orders?.[0]?.stock_deduction?.option_count ?? 0}}</span>
               <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.manual_paid.stock_hint</span>
-              <span data-if="{{_global.manualPaidOptions?.apply_stock_deduction === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.stock_off_warning</span>
+              <span data-if="{{_global.manualPaidOptions?.apply_stock_deduction === false}}" class="text-xs text-amber-700 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.stock_off_warning</span>
             </div>
           </label>
           <label data-ref="manual_paid_mileage" data-if="{{_global.manualPaidPreview?.orders?.[0]?.mileage_deduction?.applicable === true }}" class="flex items-start gap-2 cursor-pointer select-none">
@@ -135,7 +135,7 @@
               <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_label_single|amount={{_global.manualPaidPreview?.orders?.[0]?.mileage_deduction?.amount_formatted ?? '-'}}</span>
               <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_hint</span>
               <span data-ref="manual_paid_mileage_short" data-if="{{_global.manualPaidOptions?.apply_mileage_deduction !== false &amp;&amp; _global.manualPaidPreview?.orders?.[0]?.mileage_deduction?.balance_sufficient === false}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_short_warning_single|balance={{_global.manualPaidPreview?.orders?.[0]?.mileage_deduction?.balance ?? 0}}</span>
-              <span data-if="{{_global.manualPaidOptions?.apply_mileage_deduction === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_off_warning</span>
+              <span data-if="{{_global.manualPaidOptions?.apply_mileage_deduction === false}}" class="text-xs text-amber-700 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_off_warning</span>
             </div>
           </label>
           <label data-ref="manual_paid_record" data-if="{{_global.manualPaidPreview?.orders?.[0]?.paid_amount_record?.applicable === true }}" class="flex items-start gap-2 cursor-pointer select-none">
@@ -148,26 +148,26 @@
             <div class="flex-1">
               <span class="text-body font-medium block">$t:sirsoft-ecommerce.admin.order.manual_paid.record_label_single|amount={{_global.manualPaidPreview?.orders?.[0]?.paid_amount_record?.amount_formatted ?? '-'}}</span>
               <span class="text-hint block">$t:sirsoft-ecommerce.admin.order.manual_paid.record_hint</span>
-              <span data-if="{{_global.manualPaidOptions?.record_paid_amount === false}}" class="text-xs text-amber-600 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.record_off_warning</span>
+              <span data-if="{{_global.manualPaidOptions?.record_paid_amount === false}}" class="text-xs text-amber-700 dark:text-amber-400 block mt-1">$t:sirsoft-ecommerce.admin.order.manual_paid.record_off_warning</span>
             </div>
           </label>
           <!-- 결제행에 입금이 이미 기록된 주문은 체크와 무관하게 헤더 결제금액을 맞춘다(S2-D4) — 체크박스 없이 안내만. -->
           <p data-ref="manual_paid_auto_sync" data-if="{{_global.manualPaidPreview?.orders?.[0]?.paid_amount_record?.auto_sync === true}}" class="text-hint">$t:sirsoft-ecommerce.admin.order.manual_paid.auto_sync_note_single|amount={{_global.manualPaidPreview?.orders?.[0]?.paid_amount_record?.auto_sync_amount_formatted ?? '-'}}</p>
           <!-- 입금 전에 취소된 주문의 재활성(Q28) — 「결제금액 기록」을 켜 두면 복원 합계를 받은 것으로 기록한다. -->
-          <p data-ref="manual_paid_never_paid" data-if="{{_global.manualPaidPreview?.orders?.[0]?.paid_amount_record?.reason === 'never_paid'}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.never_paid_note_single</p>
+          <p data-ref="manual_paid_never_paid" data-if="{{_global.manualPaidPreview?.orders?.[0]?.paid_amount_record?.reason === 'never_paid'}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.never_paid_note_single</p>
           <!-- PG 결제가 이미 취소된 주문의 재활성(Q24) — 이후 환불은 계좌·마일리지로만 가능하다는 경고만 한다(수단 강제 없음). -->
-          <p data-ref="manual_paid_pg_warning" data-if="{{(_global.manualPaidPreview?.orders?.[0]?.warnings ?? []).includes('pg_already_cancelled')}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled</p>
+          <p data-ref="manual_paid_pg_warning" data-if="{{(_global.manualPaidPreview?.orders?.[0]?.warnings ?? []).includes('pg_already_cancelled')}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled</p>
         </div>
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.batch_change.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!$parent._local.batchOrderStatus &amp;&amp; !$parent._local.batchCarrierId &amp;&amp; !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') &amp;&amp; (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(!$parent._local.batchOrderStatus &amp;&amp; !$parent._local.batchCarrierId &amp;&amp; !$parent._local.batchTrackingNumber) || (($parent._local.batchOrderStatus === 'shipping_ready' || $parent._local.batchOrderStatus === 'shipping' || $parent._local.batchOrderStatus === 'delivered') &amp;&amp; (!$parent._local.batchCarrierId || !$parent._local.batchTrackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.orders?.[0]?.restoration?.coupon_conflicts ?? []).length > 0 || _global.isProcessing}}">
         <on type="click">
           <!-- 일괄 변경 실행. 부모가 들고 있던 값들을 여기서 한 번에 모아 핸들러로 넘긴다 — 재고·
             마일리지·알림까지 얽히는 처리라 화면에서 조립하지 않는다.

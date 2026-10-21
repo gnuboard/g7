@@ -6,7 +6,7 @@
       "redirect": "/admin/dashboard",
       "auth_required": true,
       "meta": {
-        "title": "관리자"
+        "title": "$t:admin.base_layout_title"
       }
     },
     {
@@ -14,7 +14,7 @@
       "layout": "admin_login",
       "auth_required": false,
       "meta": {
-        "title": "관리자 로그인"
+        "title": "$t:auth.login.title"
       }
     },
     {
@@ -38,7 +38,7 @@
       "layout": "admin_dashboard",
       "auth_required": true,
       "meta": {
-        "title": "관리자 대시보드"
+        "title": "$t:admin.dashboard.title"
       }
     },
     {
@@ -46,7 +46,7 @@
       "layout": "admin_user_list",
       "auth_required": true,
       "meta": {
-        "title": "관리자 - 사용자 관리"
+        "title": "$t:admin.users.page_title"
       }
     },
     {
@@ -54,7 +54,7 @@
       "layout": "admin_user_form",
       "auth_required": true,
       "meta": {
-        "title": "관리자 - 사용자 등록"
+        "title": "$t:admin.users.form.page_title_create"
       }
     },
     {
@@ -62,7 +62,7 @@
       "layout": "admin_user_detail",
       "auth_required": true,
       "meta": {
-        "title": "관리자 - 사용자 상세보기"
+        "title": "$t:admin.users.detail.page_title"
       }
     },
     {
@@ -70,7 +70,7 @@
       "layout": "admin_user_form",
       "auth_required": true,
       "meta": {
-        "title": "관리자 - 사용자 정보 수정"
+        "title": "$t:admin.users.form.page_title_edit"
       }
     },
     {
@@ -78,7 +78,7 @@
       "layout": "admin_module_list",
       "auth_required": true,
       "meta": {
-        "title": "모듈 관리"
+        "title": "$t:admin.modules.page_title"
       }
     },
     {
@@ -86,7 +86,7 @@
       "redirect": "/admin/settings?tab=language_packs",
       "auth_required": true,
       "meta": {
-        "title": "언어팩 관리"
+        "title": "$t:admin.language_packs.page_title"
       }
     },
     {
@@ -94,7 +94,7 @@
       "layout": "admin_module_language_packs",
       "auth_required": true,
       "meta": {
-        "title": "모듈 언어팩 관리"
+        "title": "$t:admin.language_packs.page_title"
       }
     },
     {
@@ -102,7 +102,7 @@
       "layout": "admin_plugin_language_packs",
       "auth_required": true,
       "meta": {
-        "title": "플러그인 언어팩 관리"
+        "title": "$t:admin.language_packs.page_title"
       }
     },
     {
@@ -110,7 +110,7 @@
       "layout": "admin_template_language_packs",
       "auth_required": true,
       "meta": {
-        "title": "템플릿 언어팩 관리"
+        "title": "$t:admin.language_packs.page_title"
       }
     },
     {
@@ -118,7 +118,7 @@
       "layout": "admin_plugin_list",
       "auth_required": true,
       "meta": {
-        "title": "플러그인 관리"
+        "title": "$t:admin.plugins.page_title"
       }
     },
     {
@@ -126,7 +126,7 @@
       "layout": "admin_menu_list",
       "auth_required": true,
       "meta": {
-        "title": "메뉴 관리"
+        "title": "$t:admin.menus.page_title"
       }
     },
     {
@@ -134,7 +134,7 @@
       "redirect": "/admin/templates/user",
       "auth_required": true,
       "meta": {
-        "title": "템플릿 관리"
+        "title": "$t:admin.templates.page_title"
       }
     },
     {
@@ -142,7 +142,7 @@
       "layout": "admin_template_layout_edit",
       "auth_required": true,
       "meta": {
-        "title": "레이아웃 편집"
+        "title": "$t:admin.templates.layout_edit.title"
       }
     },
     {
@@ -150,7 +150,7 @@
       "layout": "admin_template_list",
       "auth_required": true,
       "meta": {
-        "title": "템플릿 관리"
+        "title": "$t:admin.templates.page_title"
       }
     },
     {
@@ -158,7 +158,7 @@
       "layout": "template_partial_test",
       "auth_required": true,
       "meta": {
-        "title": "템플릿 Partial 시스템 테스트"
+        "title": "$t:admin.template_partial_test.title"
       }
     },
     {

@@ -17,31 +17,31 @@
       <responsive on="portable" class="grid grid-cols-2 gap-3 mb-4"/>
       <!-- 작성한 게시글 카드 -->
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
-        <icon name="file-text" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <icon name="file-text" size="lg" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_posts ?? 0) | number}}</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_posts</div>
       </div>
       <!-- 작성한 댓글 카드 -->
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
-        <icon name="comment" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <icon name="comment" size="lg" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_comments ?? 0) | number}}</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_comments</div>
       </div>
       <!-- 총 조회수 카드 -->
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
-        <icon name="eye" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <icon name="eye" size="lg" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_views ?? 0) | number}}</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_views</div>
       </div>
       <!-- 남긴 반응 카드 -->
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
-        <icon name="heart" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <icon name="heart" size="lg" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_reactions ?? 0) | number}}</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_reactions</div>
       </div>
       <!-- 신고한 건 카드 -->
       <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center">
-        <icon name="flag" size="lg" class="mx-auto text-gray-400 dark:text-gray-500 mb-2"/>
+        <icon name="flag" size="lg" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">{{(myActivityStats?.data?.total_reports ?? 0) | number}}</div>
         <div class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.board_activities.stats.total_reports</div>
       </div>
@@ -49,7 +49,7 @@
     <!-- 탭 네비게이션 (4탭: 내가 쓴 글, 내가 쓴 댓글, 내 반응, 내 신고) — 네 탭이 좁은 화면(390px) 폭을 넘으므로 막대 안에서 가로로 흐르게 한다(페이지 전체가 밀리지 않게) -->
     <div class="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto whitespace-nowrap">
       <!-- 내가 쓴 글 탭 -->
-      <button class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+      <button type="button" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
         <on type="click">
           <set-state target="global" boardActivitySubTab="my-posts" :myPostsPage="1"/>
           <refetch-data-source dataSourceId="myPosts"/>
@@ -59,7 +59,7 @@
         <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_posts ?? 0) | number}}</span>
       </button>
       <!-- 내가 쓴 댓글 탭 -->
-      <button class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+      <button type="button" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
         <on type="click">
           <set-state target="global" boardActivitySubTab="my-comments" :myCommentsPage="1"/>
           <refetch-data-source dataSourceId="myComments"/>
@@ -69,7 +69,7 @@
         <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_comments ?? 0) | number}}</span>
       </button>
       <!-- 내 반응 탭 — 이 소스는 `auto_fetch=false` 라 탭을 눌러야 처음 받는다 -->
-      <button data-testid="mypage-subtab-my-reactions" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reactions' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+      <button type="button" data-testid="mypage-subtab-my-reactions" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reactions' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
         <on type="click">
           <set-state target="global" boardActivitySubTab="my-reactions" :myReactionsPage="1"/>
           <refetch-data-source dataSourceId="myReactions"/>
@@ -79,7 +79,7 @@
         <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full">{{(myActivityStats?.data?.total_reactions ?? 0) | number}}</span>
       </button>
       <!-- 내 신고 탭 -->
-      <button data-testid="mypage-subtab-my-reports" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reports' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
+      <button type="button" data-testid="mypage-subtab-my-reports" class="px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reports' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}">
         <on type="click">
           <set-state target="global" boardActivitySubTab="my-reports" :myReportsPage="1"/>
           <refetch-data-source dataSourceId="myReports"/>

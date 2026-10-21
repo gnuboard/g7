@@ -7,6 +7,10 @@ description: |
   세로로 쌓이고, 상품 상세 쿠폰 칩 라벨은 한 줄을 유지한다.
   드로어를 여는 단계는 메뉴 단추의 aria-expanded 가 true 가 될 때까지 다시 누른다 — 엔진이 핸들러를 붙이기 전의 클릭은
   무시되어 파일 전체 실행에서 드로어 안 단추가 「outside of the viewport」로 멈췄다(7.1.0 종합 최종 검증).
+  레이아웃 구조 단언(mobile-viewport-overflow.test.tsx)은 같은 좁은 화면 결함군을 JSON 수준에서 잠근다 — 비회원 댓글 입력의
+  이름·비밀번호 행이 세로로 쌓이고, 쿠폰 칩 목록은 숨은 가로 스크롤 대신 줄바꿈하며, 모달은 화면 좌우 여백을 지키고,
+  클레임 신청서 금액 비교표의 좁은 열 라벨은 단어 중간에서 끊기지 않는다. 게시판명이 긴 게시글 상단 이동줄은 좁은 화면에서
+  게시판명이 자기 줄로 내려가 목록·이전·다음 단추를 누르지 않으며, 해외 배송지의 도시·주 같은 2열 행은 좁은 화면에서 1열이 된다.
 
 axes:
   case:
@@ -18,10 +22,15 @@ axes:
     - narrow_320_menu_reachable
     - desktop_currency_dropdown
     - guest_write_form_stacked
+    - guest_comment_form_stacked
     - coupon_chip_single_line
     - shop_search_row_narrow
     - post_action_buttons_wrap
     - popular_period_filter_wrap
+    - modal_side_margin
+    - claim_comparison_narrow_column
+    - post_navigation_long_board_name
+    - overseas_address_city_state
 
 effects:
   - document_no_horizontal_overflow
@@ -33,7 +42,14 @@ effects:
   - desktop_currency_dropdown_absolute
   - guest_fields_stack_vertically
   - coupon_chip_label_nowrap
+  - coupon_chips_wrap_instead_of_hidden_scroll
+  - modal_keeps_viewport_side_margin
+  - narrow_column_labels_break_keep
+  - post_navigation_buttons_not_squeezed
+  - two_column_rows_single_column_on_narrow
 
 test_files:
   - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mobile-viewport-overflow.spec.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/narrow-viewport-rows.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mobile-viewport-overflow.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/board-navigation-long-name.spec.ts

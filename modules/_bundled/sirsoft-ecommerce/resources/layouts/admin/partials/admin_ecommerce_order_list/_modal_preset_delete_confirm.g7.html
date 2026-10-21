@@ -5,13 +5,13 @@
   <modal data-type="composite" data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.order.modal.preset_delete.title" size="sm">
     <p class="text-body">$t:sirsoft-ecommerce.admin.order.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
     <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
           <!-- 프리셋 삭제. 성공하면 프리셋 목록만 다시 부르고 창을 닫는다 — 지운 것은 검색조건이지 주문이 아니므로 주문 목록은 건드리지 않는다 -->
           <sequence>

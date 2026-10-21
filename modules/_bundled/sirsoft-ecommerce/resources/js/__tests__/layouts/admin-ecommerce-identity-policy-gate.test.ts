@@ -1,4 +1,4 @@
-// e2e:allow 권한 게이트(탭 안내·쓰기 잠금) 레이아웃 계약 검증 — 서버 403·abilities 는 PHPUnit EcommerceIdentityPolicyPermissionGateTest 가 잠그고, 브라우저 실측은 통합 뒤 총괄 세션이 권한 회수 계정으로 한다
+// e2e:allow 권한 게이트(탭 안내·쓰기 잠금) 레이아웃 계약 검증 — 서버 403·abilities 는 PHPUnit EcommerceIdentityPolicyPermissionGateTest 가 잠그고, 브라우저 실측은 통합 실측에서 권한을 회수한 계정으로 한다
 /**
  * @file admin-ecommerce-identity-policy-gate.test.ts
  * @description 이커머스 환경설정 「본인인증 정책」 탭의 권한 게이트 (제품 결정 2026-10-10)

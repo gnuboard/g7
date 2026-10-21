@@ -19,7 +19,7 @@ axes:
     - define_filter
 
 effects:
-  # 7.1.0 abilities 게이트(G25) — 모달 children·props 안 컴포넌트 목록까지 재귀
+  # 7.1.0 abilities 게이트 — 모달 children·props 안 컴포넌트 목록까지 재귀
   - layout_modal_children_filtered_by_permission
   - layout_props_embedded_children_filtered_by_permission
   - layout_children_with_non_component_entry_still_filtered

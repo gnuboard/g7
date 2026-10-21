@@ -124,7 +124,7 @@ export const LayoutEditorHeader: React.FC<LayoutEditorHeaderProps> = ({
             px-4 py-2 rounded-lg transition-colors border-0 cursor-pointer
             ${isSaving
               ? 'bg-blue-400 dark:bg-blue-600 cursor-not-allowed'
-              : 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600'
+              : 'bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700'
             }
             text-white
           `.trim().replace(/\s+/g, ' ')}

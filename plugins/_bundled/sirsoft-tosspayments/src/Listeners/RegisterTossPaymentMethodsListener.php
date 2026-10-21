@@ -47,7 +47,7 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
         'toss_mobile_phone' => ['icon' => 'mobile-screen-button'],
         'toss_tosspay' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'T', 'class' => 'bg-blue-500 text-white'],
+            'brand_mark' => ['text' => 'T', 'class' => 'bg-blue-700 text-white'],
         ],
         'toss_kakaopay' => [
             'icon' => 'wallet',
@@ -55,11 +55,11 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
         ],
         'toss_naverpay' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-500 text-white'],
+            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
         ],
         'toss_payco' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-500 text-white'],
+            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
         ],
         'toss_samsungpay' => [
             'icon' => 'mobile-screen-button',

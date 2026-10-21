@@ -173,8 +173,6 @@
     "product_coupon_2": "상품 쿠폰 2",
     "order_coupon": "주문 할인 쿠폰",
     "shipping_coupon": "배송비 할인 쿠폰",
-    "exclusive_coupon_title": "중복 할인 불가 쿠폰",
-    "exclusive_coupon_message": "중복 할인 불가 쿠폰을 사용하면 다른 쿠폰은 자동으로 해제됩니다. 계속하시겠습니까?",
     "coupon_disabled_exclusive": "다른 쿠폰과 중복 사용 불가",
     "coupon_disabled_already_applied": "이미 적용됨",
     "coupon_min_amount_not_met": "최소 주문금액 조건을 충족하지 않습니다",

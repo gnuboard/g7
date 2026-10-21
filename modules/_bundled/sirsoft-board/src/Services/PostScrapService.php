@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
+use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -151,7 +152,21 @@ class PostScrapService
         ?string $search = null,
         string $searchField = PostScrapRepositoryInterface::SEARCH_FIELD_DEFAULT
     ): LengthAwarePaginator {
-        return $this->repository->paginateByUser($userId, $perPage, $search, $searchField);
+        $hookContext = ReadHookContext::make([
+            'subject_user_id' => $userId,
+            'search' => $search,
+            'search_field' => $searchField,
+        ]);
+
+        HookManager::doAction('sirsoft-board.scrap.before_user_list', $hookContext);
+
+        $scraps = $this->repository->paginateByUser($userId, $perPage, $search, $searchField);
+
+        $scraps = HookManager::applyFilters('sirsoft-board.scrap.filter_user_list_result', $scraps, $hookContext);
+
+        HookManager::doAction('sirsoft-board.scrap.after_user_list', $scraps, $hookContext);
+
+        return $scraps;
     }
 
     /**

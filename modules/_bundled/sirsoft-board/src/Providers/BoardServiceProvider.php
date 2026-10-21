@@ -9,6 +9,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Board\Console\Commands\AggregateBoardStatsCommand;
+use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardPosts;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardReaction;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardRetention;
 use Modules\Sirsoft\Board\Console\Commands\PlaywrightSeedBoardScrap;
@@ -110,6 +111,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     protected array $commands = [
         AggregateBoardStatsCommand::class,
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
+        PlaywrightSeedBoardPosts::class,
         PlaywrightSeedBoardReaction::class,
         PlaywrightSeedBoardRetention::class,
         PlaywrightSeedBoardScrap::class,

@@ -86,6 +86,10 @@ describe('추가옵션 추가금 통화 환산 (기본통화 ≠ 표시통화)',
     delete (window as any).G7Core;
   });
 
+  /**
+   * @scenario step=quantity_total
+   * @effects additional_price_converted_to_display_currency_in_total
+   */
   it('표시통화 KRW 합계에 추가금이 환산되어 더해진다 (기준통화 값이 그대로 섞이지 않는다)', () => {
     const setState = vi.fn();
 
@@ -113,6 +117,10 @@ describe('추가옵션 추가금 통화 환산 (기본통화 ≠ 표시통화)',
     expect(arg.selectedTotalMultiCurrency.JPY.value).toBe(15000);
   });
 
+  /**
+   * @scenario step=quantity_increase
+   * @effects additional_price_scales_with_quantity
+   */
   it('수량이 늘면 환산된 추가금도 수량만큼 곱해진다', () => {
     const setState = vi.fn();
 
@@ -136,6 +144,10 @@ describe('추가옵션 추가금 통화 환산 (기본통화 ≠ 표시통화)',
     expect(arg.selectedTotalMultiCurrency.KRW.value).toBe(427500);
   });
 
+  /**
+   * @scenario step=no_additional_option
+   * @effects total_without_additional_option_is_converted_product_price
+   */
   it('추가옵션을 선택하지 않으면 상품가만 환산되어 합계가 된다', () => {
     const setState = vi.fn();
 
@@ -164,6 +176,10 @@ describe('추가옵션 추가금 통화 환산 (기본통화 ≠ 표시통화)',
   });
 
   // 블럭 생성 시 자동 적용되는 기본 선택지는 **필수 그룹** 한정이므로 is_required: true 로 둔다
+  /**
+   * @scenario step=selected_item_created
+   * @effects selected_item_carries_multi_currency_additional_total
+   */
   it('선택 항목 생성 시 통화별 추가금 합계가 항목에 실린다', () => {
     const setState = vi.fn();
 

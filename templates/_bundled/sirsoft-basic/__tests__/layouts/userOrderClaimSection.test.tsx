@@ -247,7 +247,7 @@ describe('회원 주문상세 클레임 섹션 — 기본 서브탭 (서버가 �
 
   /** 활성(굵게·밑줄 진한) 서브탭의 라벨 */
   function activeTabs(): string[] {
-    return [...document.querySelectorAll('button')]
+    return [...document.querySelectorAll('a, button')]
       .filter((b) => b.className.includes('border-gray-900'))
       // 라벨만 본다 — 탭에는 건수 배지(#599 후속 F12)가 함께 실려 textContent 끝에 숫자가 붙는다.
       .map((b) => (b.querySelector('span')?.textContent ?? b.textContent ?? '').trim());

@@ -57,7 +57,7 @@
             <badge data-type="composite" data-if="{{!!originImage.uploader_type_label}}" color="{{originImage.uploader_type === 'admin' ? 'purple' : 'blue'}}" size="sm" text="{{originImage.uploader_type_label ?? ''}}"/>
             <span class="font-medium">{{originImage.original_name ?? ''}}</span>
             <span data-if="{{!!originImage.uploader_name}}" class="text-gray-500 dark:text-gray-400">{{originImage.uploader_name ?? ''}}</span>
-            <span data-if="{{!!originImage.created_at}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}</span>
+            <span data-if="{{!!originImage.created_at}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}</span>
           </div>
         </div>
         <!-- 첨부 일괄 정리 (F6). 개별 삭제는 업로더가 하고, 이 버튼은 반려·종결 건을 한 번에 비울 때 쓴다. -->

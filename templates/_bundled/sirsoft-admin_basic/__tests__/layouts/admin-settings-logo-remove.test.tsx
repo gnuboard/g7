@@ -98,22 +98,59 @@ const settingsLogoLayout = {
   ],
 };
 
+/**
+ * setState 경로가 window 에 남기는 엔진 전역.
+ *
+ * 같은 파일의 시험끼리는 jsdom window 를 함께 쓴다. 앞 시험의 pending·forced·override 기록이
+ * 다음 시험의 setState 기준(`pending ?? context.state`)이 되지 않도록 시험마다 비운다.
+ */
+const ENGINE_WINDOW_GLOBALS = [
+  '__g7PendingLocalState',
+  '__g7ForcedLocalFields',
+  '__g7SetLocalOverrideKeys',
+  '__g7SetLocalReplacedKeys',
+  '__g7LastSetLocalSnapshot',
+  '__g7SequenceLocalSync',
+  '__g7ActionContext',
+  '__g7LayoutContextStack',
+];
+
+function resetEngineWindowGlobals(): void {
+  for (const key of ENGINE_WINDOW_GLOBALS) {
+    delete (window as any)[key];
+  }
+}
+
 describe('환경설정 사이트 로고 파일 상태 변경', () => {
   let registry: ComponentRegistry;
+  let created: Array<{ cleanup: () => void }> = [];
+
+  /** 시험이 만든 인스턴스를 기록해 단언이 실패해도 afterEach 에서 반드시 정리한다. */
+  function track<T extends { cleanup: () => void }>(utils: T): T {
+    created.push(utils);
+    return utils;
+  }
 
   beforeEach(() => {
+    resetEngineWindowGlobals();
     registry = setupTestRegistry();
   });
 
   afterEach(() => {
+    // 렌더 트리를 먼저 내린 뒤 레지스트리를 비운다 — 반대 순서면 남은 트리가 빈 레지스트리로 다시 그려질 수 있다.
+    for (const utils of created) utils.cleanup();
+    created = [];
+    resetEngineWindowGlobals();
     (registry as any).registry = {};
   });
 
   describe('onRemove - 로고 삭제 시 form 동기화', () => {
+    // @scenario event=onRemove
+    // @effects site_logo_remove_keeps_remaining_files
     it('로고 2개 중 1개 삭제 시 나머지 1개만 form에 남아야 한다', async () => {
-      const testUtils = createLayoutTest(settingsLogoLayout, {
+      const testUtils = track(createLayoutTest(settingsLogoLayout, {
         componentRegistry: registry,
-      });
+      }));
 
       testUtils.setState('form', {
         general: { site_logo: [LOGO_1, LOGO_2] },
@@ -133,14 +170,14 @@ describe('환경설정 사이트 로고 파일 상태 변경', () => {
       const state = testUtils.getState();
       expect(state._local.form.general.site_logo).toHaveLength(1);
       expect(state._local.form.general.site_logo[0].id).toBe(202);
-
-      testUtils.cleanup();
     });
 
+    // @scenario event=onRemove
+    // @effects site_logo_remove_all_leaves_empty_list
     it('모든 로고 삭제 시 빈 배열이어야 한다', async () => {
-      const testUtils = createLayoutTest(settingsLogoLayout, {
+      const testUtils = track(createLayoutTest(settingsLogoLayout, {
         componentRegistry: registry,
-      });
+      }));
 
       testUtils.setState('form', {
         general: { site_logo: [LOGO_1] },
@@ -159,14 +196,14 @@ describe('환경설정 사이트 로고 파일 상태 변경', () => {
 
       const state = testUtils.getState();
       expect(state._local.form.general.site_logo).toEqual([]);
-
-      testUtils.cleanup();
     });
 
+    // @scenario event=onRemove
+    // @effects site_logo_change_marks_form_dirty
     it('삭제 시 hasChanges가 true로 설정되어야 한다', async () => {
-      const testUtils = createLayoutTest(settingsLogoLayout, {
+      const testUtils = track(createLayoutTest(settingsLogoLayout, {
         componentRegistry: registry,
-      });
+      }));
 
       testUtils.setState('form', {
         general: { site_logo: [LOGO_1] },
@@ -186,16 +223,16 @@ describe('환경설정 사이트 로고 파일 상태 변경', () => {
 
       const state = testUtils.getState();
       expect(state._local.hasChanges).toBe(true);
-
-      testUtils.cleanup();
     });
   });
 
   describe('onFilesChange - 파일 선택 시 hasChanges 활성화', () => {
+    // @scenario event=onFilesChange
+    // @effects site_logo_change_marks_form_dirty
     it('파일 선택 시 hasChanges가 true로 설정되어야 한다', async () => {
-      const testUtils = createLayoutTest(settingsLogoLayout, {
+      const testUtils = track(createLayoutTest(settingsLogoLayout, {
         componentRegistry: registry,
-      });
+      }));
 
       testUtils.setState('hasChanges', false, 'local');
 
@@ -211,16 +248,16 @@ describe('환경설정 사이트 로고 파일 상태 변경', () => {
 
       const state = testUtils.getState();
       expect(state._local.hasChanges).toBe(true);
-
-      testUtils.cleanup();
     });
   });
 
   describe('onUploadComplete - 업로드 완료 시 form 동기화', () => {
+    // @scenario event=onUploadComplete
+    // @effects site_logo_upload_appends_file
     it('업로드 완료 시 form.general.site_logo에 새 파일이 추가되어야 한다', async () => {
-      const testUtils = createLayoutTest(settingsLogoLayout, {
+      const testUtils = track(createLayoutTest(settingsLogoLayout, {
         componentRegistry: registry,
-      });
+      }));
 
       testUtils.setState('form', {
         general: { site_logo: [LOGO_1] },
@@ -241,8 +278,6 @@ describe('환경설정 사이트 로고 파일 상태 변경', () => {
       expect(state._local.form.general.site_logo).toHaveLength(2);
       expect(state._local.form.general.site_logo[1].id).toBe(303);
       expect(state._local.hasChanges).toBe(true);
-
-      testUtils.cleanup();
     });
   });
 });

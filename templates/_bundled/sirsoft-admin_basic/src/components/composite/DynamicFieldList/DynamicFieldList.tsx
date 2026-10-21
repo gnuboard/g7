@@ -49,7 +49,8 @@ const createDefaultItemFromColumns = (columns: DynamicFieldColumn[]): Record<str
   columns.forEach((column) => {
     if (column.type === 'multilingual') {
       const g7Core = getG7Core();
-      const locales = g7Core?.locale?.all?.() || ['ko', 'en'];
+      // 켜진 언어마다 칸을 만든다 — 종전 locale.all() 은 없는 API 라 늘 ko·en 만 생겼다 (#148)
+      const locales = g7Core?.locale?.supported?.() || ['ko', 'en'];
       const multiValue: Record<string, string> = {};
       locales.forEach((locale: string) => {
         multiValue[locale] = '';
@@ -310,7 +311,7 @@ export const DynamicFieldList: React.FC<DynamicFieldListProps> = ({
           >
             {column.label}
             {column.required && (
-              <Span className="text-red-500 dark:text-red-400 ml-0.5">*</Span>
+              <Span className="text-red-600 dark:text-red-400 ml-0.5">*</Span>
             )}
           </Div>
         ))}

@@ -1,7 +1,7 @@
 <!-- 상품정보제공고시 템플릿 관리 (운영자) — 상품 등록 시 불러 쓸 고시 항목 묶음을 여기서 만든다.
   왼쪽 목록은 무한 스크롤이라 페이지 상태를 전역에 두고, 오른쪽 패널이 조회·수정·등록을 겸한다. -->
 <layout name="admin_ecommerce_product_notice_index" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-ecommerce.admin.product_notice_template.title" description="$t:sirsoft-ecommerce.admin.product_notice_template.description"/>
+  <meta leave_guard="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}" title="$t:sirsoft-ecommerce.admin.product_notice_template.title" description="$t:sirsoft-ecommerce.admin.product_notice_template.description"/>
   <!-- 첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 검색어는 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 처음부터 다시 받는다 -->
   <data-source id="templates" label_key="$t:sirsoft-ecommerce.editor.data_source.templates" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-notice-templates" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
     <params search="{{query.search}}" :per_page="20"/>
@@ -10,7 +10,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <init-local>
@@ -72,7 +80,7 @@
           <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.product_notice_template.description</p>
         </div>
         <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
-          <button data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+          <button type="button" data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
             <on type="click">
               <!-- 검색어와 쌓인 스크롤 페이지를 함께 떨어뜨린다 — 소스만 다시 태우면 이어 붙인 목록이 남는다 -->
               <navigate path="/admin/ecommerce/product-notices" :mergeQuery="true">
@@ -81,7 +89,7 @@
             </on>
             <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
           </button>
-          <button data-ref="add_template_button" disabled="{{templates?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" data-ref="add_template_button" disabled="{{templates?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <!-- 오른쪽 패널을 등록 모드로 전환. 빈 폼에 항목 한 줄을 미리 넣어 두는 것은 항목이 0개인 템플릿은 저장할 수 없기 때문이다 -->
               <sequence>

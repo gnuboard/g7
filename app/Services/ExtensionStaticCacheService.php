@@ -14,6 +14,7 @@ use App\Helpers\ResponseHelper;
 use App\Models\Template;
 use App\Rules\AllowedTemplateFileType;
 use App\Support\CustomAssets;
+use App\Support\LocaleTag;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -44,9 +45,6 @@ class ExtensionStaticCacheService
 
     /** 확장 식별자 패턴 (vendor-name) — 경로 세그먼트 화이트리스트 */
     private const IDENTIFIER_PATTERN = '/^[a-z0-9]+-[a-z0-9_]+$/';
-
-    /** 로케일 패턴 — 경로 세그먼트 화이트리스트 */
-    private const LOCALE_PATTERN = '/^[a-z]{2}(?:[-_][A-Za-z0-9]{2,8})?$/';
 
     /** 게시 작업 디렉토리(.tmp/.old)를 미완료 잔존물로 보는 나이 (초) — 게시 락 TTL 300 의 2배 */
     private const WORK_DIR_STALE_SECONDS = 600;
@@ -1304,6 +1302,9 @@ class ExtensionStaticCacheService
      * 게시 대상 로케일을 열거합니다 — `/api/locales/active` 와 동일 소스
      * (언어팩이 추가한 로케일 포함).
      *
+     * 경로 세그먼트 화이트리스트는 언어팩 설치 규칙(BCP 47, `LocaleTag`)과 같다 — `fil`·`zh-Hant`
+     * 도 게시한다(#148). `_` 는 manifest 검증상 활성 로케일에 올 수 없어 받지 않는다.
+     *
      * @return array<string> 로케일 목록 (패턴 검증 통과분)
      */
     private function publishableLocales(): array
@@ -1312,7 +1313,7 @@ class ExtensionStaticCacheService
 
         return array_values(array_filter(
             is_array($locales) ? $locales : [],
-            static fn ($locale) => is_string($locale) && preg_match(self::LOCALE_PATTERN, $locale)
+            static fn ($locale) => LocaleTag::isValid($locale)
         ));
     }
 

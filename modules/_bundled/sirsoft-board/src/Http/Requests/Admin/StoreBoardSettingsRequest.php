@@ -244,7 +244,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.reaction_types.*.id' => ['nullable', 'integer', Rule::exists(ReactionType::class, 'id')],
             'basic_defaults.reaction_types.*.code' => ['required', 'string', 'regex:/^[a-z][a-z0-9_]{1,49}$/', 'distinct'],
             // 이름은 화면(요청) 언어 값만 필수 — 게시판 유형 이름과 같은 계약이다. 한국어를 고정 필수로 받아 영어 화면 관리자도
-            // 쓰지 않는 한국어 칸을 채워야 했다(7.1.0 S2 #9). 오류는 이름 칸 전체 키(name)로 돌아간다
+            // 쓰지 않는 한국어 칸을 채워야 했다(7.1.0 화면 검증). 오류는 이름 칸 전체 키(name)로 돌아간다
             'basic_defaults.reaction_types.*.name' => ['required', new LocaleRequiredTranslatable(maxLength: 50)],
             'basic_defaults.reaction_types.*.icon_attachment_id' => ['nullable', 'integer', Rule::exists(Attachment::class, 'id')
                 ->where('collection', ReactionTypeService::ICON_COLLECTION)

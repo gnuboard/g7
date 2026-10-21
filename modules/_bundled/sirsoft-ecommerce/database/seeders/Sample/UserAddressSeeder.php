@@ -58,12 +58,12 @@ class UserAddressSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('사용자 배송지 샘플 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.user_address.start'));
 
         $users = $this->resolveTargetUsers();
 
         if ($users->isEmpty()) {
-            $this->command->warn('배송지를 만들 회원이 없습니다 (주문이 있고 배송지가 없는 일반 회원 0명). 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.user_address.skip_no_users'));
 
             return;
         }
@@ -73,7 +73,7 @@ class UserAddressSeeder extends Seeder
             $created += $this->createAddressesFor($user);
         }
 
-        $this->command->info("사용자 배송지 샘플 {$created}건을 회원 {$users->count()}명에게 만들었습니다 (기존 배송지는 그대로 둡니다).");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.user_address.done', ['count' => $created, 'users' => $users->count()]));
     }
 
     /**

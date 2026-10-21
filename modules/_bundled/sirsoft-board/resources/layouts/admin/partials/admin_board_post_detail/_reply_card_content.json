@@ -115,7 +115,7 @@
                                             "if": "{{item.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -145,22 +145,23 @@
                         {
                             "id": "detail_button_{{item.id}}",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "if": "{{item.id != route.id}}",
                             "actions": [
                                 {
-                                    "comment": "댓글 작성자의 회원 상세로. 같은 사람이 여러 건에 걸려 있는지 확인하는 자리다",
+                                    "comment": "이 답글의 상세 화면으로. 보던 목록 상태를 이고 간다",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "/admin/board/{{route.slug}}/post/{{item.id}}",
                                         "mergeQuery": true,
                                         "query": {}
                                     }
                                 }
                             ],
                             "props": {
-                                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors"
+                                "href": "/admin/board/{{route.slug}}/post/{{item.id}}",
+                                "mergeQuery": true,
+                                "className": "button flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors"
                             },
                             "children": [
                                 {
@@ -184,7 +185,7 @@
                             "id": "author_name_menu_{{item.id}}",
                             "type": "composite",
                             "name": "ActionMenu",
-                            "if": "{{!item.author?.is_guest}}",
+                            "if": "{{!item.author?.is_guest && item.author?.uuid}}",
                             "actions": [
                                 {
                                     "comment": "답글 쓴 사람의 관리자 상세로 — 대상이 반복 변수 `item` 이라 여러 답글이 각자 자기 글쓴이를 가리킨다",
@@ -208,6 +209,7 @@
                                 "position": "right",
                                 "items": [
                                     {
+                                        "href": "/admin/users/{{item.author?.uuid}}",
                                         "id": "view_user_info",
                                         "label": "$t:sirsoft-board.admin.posts.detail.user_info",
                                         "iconName": "user"
@@ -218,11 +220,11 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{item.author?.is_guest}}",
+                            "if": "{{item.author?.is_guest || !item.author?.uuid}}",
                             "props": {
                                 "className": "text-heading"
                             },
-                            "text": "{{item.author?.name}}"
+                            "text": "{{item.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                         },
                         {
                             "type": "basic",
@@ -388,10 +390,10 @@
                                 {
                                     "id": "attachment_card_{{index}}_{{item.id}}",
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Button",
                                     "actions": [
                                         {
-                                            "comment": "답글 첨부 내려받기 — 관리자 다운로드 라우트로 받고 그 권한(can_download)이 없으면 실행하지 않는다. 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
+                                            "comment": "답글 첨부 내려받기 — 카드가 단추라 Tab·Enter·Space 로도 받는다(7.1.1). 관리자 다운로드 라우트로 받고 그 권한(can_download)이 없으면 실행하지 않는다. 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
                                             "type": "click",
                                             "handler": "sirsoft-board.downloadAttachment",
                                             "if": "{{post?.data?.abilities?.can_download === true}}",
@@ -409,7 +411,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "flex-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group"
+                                        "type": "button",
+                                        "className": "flex-center justify-start w-full text-left gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
                                     },
                                     "children": [
                                         {

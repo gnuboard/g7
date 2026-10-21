@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 회원 검색 응답이 자기 키워드를 싣는다 (T2-D1 · #599 3차 실측)
+# 시나리오 매니페스트 — 회원 검색 응답이 자기 키워드를 싣는다 (#599 실측)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: admin_user_search_keyword_echo
@@ -28,7 +28,7 @@ axes:
     - narrow_keyword   # 한 건만 맞는 키워드
     - broad_keyword    # 여러 건이 맞는 한 글자 — 늦게 도착하는 큰 응답의 대역
     - by_uuid          # 키워드 없이 uuid 로 한 건
-    - literal_wildcards  # 키워드의 `%`·`_` 를 글자 그대로 찾는다(#736 영역 C 실측)
+    - literal_wildcards  # 키워드의 `%`·`_` 를 글자 그대로 찾는다(#736 실측)
 
 exclusions:
   - { lookup: by_uuid, reason: "제외 없음 — 축 값마다 테스트가 하나씩 있고 조합이 필요한 축이 없다(단일 축)" }

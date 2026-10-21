@@ -34,7 +34,7 @@
           <span class="text-gray-900 dark:text-white font-medium">{{order.data.payment?.due_date_formatted}}</span>
         </div>
       </div>
-      <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
+      <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
       <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title</p>
@@ -88,26 +88,26 @@
       <form method="post" action="{{nhnkcp_mock_deposit.data.mock_url ?? ''}}" target="_blank" class="space-y-2">
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_trade_no</span>
-          <input type="text" name="e_trade_no" value="{{nhnkcp_mock_deposit.data.trade_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+          <input type="text" name="e_trade_no" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_trade_no" value="{{nhnkcp_mock_deposit.data.trade_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
         </div>
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_deposit_no</span>
-          <input type="text" name="deposit_no" value="{{nhnkcp_mock_deposit.data.account_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+          <input type="text" name="deposit_no" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_deposit_no" value="{{nhnkcp_mock_deposit.data.account_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
         </div>
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_depositor</span>
           <!-- 입금자명 — 테스트 입금통보에 실을 이름이라 직접 고칠 수 있다 -->
-          <input type="text" name="req_name" value="NHN KCP" class="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"/>
+          <input type="text" name="req_name" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_depositor" value="NHN KCP" class="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"/>
         </div>
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_notify_url</span>
-          <input type="text" name="noti_url" value="{{nhnkcp_mock_deposit.data.notify_url ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+          <input type="text" name="noti_url" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_notify_url" value="{{nhnkcp_mock_deposit.data.notify_url ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
         </div>
         <div class="pt-1">
           <button type="submit" class="w-full py-1.5 text-xs font-semibold rounded border border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors">$t:sirsoft-pay_nhnkcp.user.mock_submit</button>
         </div>
       </form>
-      <p data-if="{{nhnkcp_mock_deposit.data.is_admin_view === true}}" class="mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium">$t:sirsoft-pay_nhnkcp.user.mock_admin_notice</p>
+      <p data-if="{{nhnkcp_mock_deposit.data.is_admin_view === true}}" class="mt-2 text-xs text-center text-orange-700 dark:text-orange-400 font-medium">$t:sirsoft-pay_nhnkcp.user.mock_admin_notice</p>
     </div>
     <!-- 모의입금 정보 — 로그인 전용 주소라 비회원이면 요청하지 않는다(auth_mode=required). 주소에 주문번호가 있는 주문 상세에서만 부른다(신청서 상세는 주소가 신청번호다). 주문 본체와 따로 늦게 와도 되므로 progressive 다.
          엔진은 토큰이 없어 요청을 건너뛴 사실을 401 로 알리므로 401·403 은 여기서 조용히 넘긴다 — 처리기가 없으면 템플릿 기본 401 처리(로그인 이동)로 떨어져,

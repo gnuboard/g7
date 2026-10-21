@@ -1,7 +1,7 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
 /**
  * @file plugin-abilities-gate.test.ts
- * @description sirsoft-ckeditor5 화면 abilities 게이트 (7.1.0 abilities 게이트 plugins·G04)
+ * @description sirsoft-ckeditor5 화면 abilities 게이트 (7.1.0 abilities 게이트)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -36,7 +36,7 @@ function writeButtons(tree: unknown, exclude: (target: string) => boolean = () =
   return collect(tree, (n) => n.name === 'Button' && collect(n, (a) => a.handler === 'apiCall' && WRITE.includes(String(a.params?.method ?? '')) && !exclude(String(a.target ?? ''))).length > 0);
 }
 
-describe('업로드 관리 (#9·#13)', () => {
+describe('업로드 관리', () => {
   /**
    * 삭제 권한이 없으면 행 선택·행 삭제·일괄 바가 잠기고, 설정 수정 권한이 없으면 [설정 열기]가 잠긴다.
    *

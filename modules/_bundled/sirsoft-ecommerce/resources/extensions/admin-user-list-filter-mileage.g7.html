@@ -25,7 +25,7 @@
           </sequence>
         </on>
       </input>
-      <span class="text-gray-400 dark:text-gray-500">~</span>
+      <span class="text-gray-500 dark:text-gray-400">~</span>
       <input type="number" name="ecommerceMileageMax" min="0" class="input w-32" placeholder="$t:sirsoft-ecommerce.admin.user_filter.mileage_max" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_max=')) || '').slice('sirsoft-ecommerce.mileage_max='.length)}}">
         <on type="change">
           <!-- 잔액 상한. 하한보다 작으면 서버가 422 로 거절한다. 잔액 행이 없는 회원은 0 으로 보고 상한 안에 든다. -->

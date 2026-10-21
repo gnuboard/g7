@@ -186,7 +186,7 @@ class ArchiveRunControllerTest extends AnalyticsApiTestCase
      *
      * 재집계가 다른 집계에 밀려 건너뛰면 화면이 그 사실을 알려야 한다. 사유는 기록 당시 언어로
      * 저장돼 있어, 그대로 내보내면 영어 화면에 한국어 사유가 찍히고 화면은 어떤 사유인지 가릴
-     * 수 없다(7.1.0 실측 O-E5 — 「건너뜀」 배지만 보이고 사유는 어디에도 없었다).
+     * 수 없다(7.1.0 실측 — 「건너뜀」 배지만 보이고 사유는 어디에도 없었다).
      *
      * @return void 없음
      *
@@ -223,7 +223,7 @@ class ArchiveRunControllerTest extends AnalyticsApiTestCase
      * 실행 이력과 전환의 생성 시각이 다른 원장처럼 UTC 로 찍히는지 확인합니다.
      *
      * 두 표만 생성 시각을 DB 기본값(`CURRENT_TIMESTAMP`)에 맡겨, DB 세션 시간대가 서울인 서버에서
-     * 같은 행의 `started_at`·`occurred_at`(UTC)과 9시간 어긋난 벽시계가 남았다(7.1.0 실측 O-E11).
+     * 같은 행의 `started_at`·`occurred_at`(UTC)과 9시간 어긋난 벽시계가 남았다(7.1.0 실측).
      * 다른 원장 표(방문·액션·봇·실패)는 앱이 UTC 로 직접 찍는다.
      *
      * @return void 없음

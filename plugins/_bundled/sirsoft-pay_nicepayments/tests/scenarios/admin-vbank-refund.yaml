@@ -5,7 +5,7 @@ description: |
   환불 계좌로 돌려주며 PG 취소와 주문 취소를 함께 한다.
   - PG 취소가 성공하면 주문·결제를 취소 상태로 바꾸고 취소 금액·환불 기록·결제 메타(vbank_refund_status)를 남긴다
   - 환불 금액이 결제 금액과 다르면 PG 취소 전에 422 로 거절한다
-  - 「환불 실행」 권한(sirsoft-ecommerce.claims.execute-refund)이 있어야 한다 — 주문 수정 권한만으로는 403 (제품 결정 R1, 7.1.0)
+  - 「환불 실행」 권한(sirsoft-ecommerce.claims.execute-refund)이 있어야 한다 — 주문 수정 권한만으로는 403 (7.1.0 제품 결정)
   - 환불 계좌 형식 위반과 배열 주입은 VbankRefundRequest 가 422 로 차단하고 PG 취소 API 를 부르지 않는다
 
   기존 회귀 테스트(AdminVbankRefundControllerTest)의 소유권을 7.1.0 abilities 게이트 작업 중 시험 파일을 고치며 사후 등재했다.

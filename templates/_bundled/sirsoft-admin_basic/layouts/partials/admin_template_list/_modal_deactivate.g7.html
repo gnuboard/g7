@@ -7,7 +7,7 @@
       <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.deactivate_confirm|name={{_global.selectedTemplate.name}}</p>
     </div>
     <div class="modal-footer-buttons">
-      <button class="btn btn-secondary" disabled="{{_global.isTemplateDeactivating}}">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isTemplateDeactivating}}">
         <on type="click">
           <!-- 취소 — 카드 목록을 다시 마운트해 눌린 스위치 모양을 되돌린다(서버에 다시 묻지 않는다). -->
           <sequence>
@@ -17,7 +17,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeactivating}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeactivating}}">
         <on type="click">
           <!-- 비활성 실행 — 목록과 확장 번들을 함께 갱신한다.
                활성 창과 달리 화면을 다시 읽지 않는다(끄는 쪽은 지금 보는 화면을 갈아치우지 않는다). -->

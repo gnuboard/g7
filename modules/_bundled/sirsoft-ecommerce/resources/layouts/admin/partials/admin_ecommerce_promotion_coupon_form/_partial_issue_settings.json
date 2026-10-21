@@ -47,7 +47,7 @@
                                             "type": "composite",
                                             "name": "RadioGroup",
                                             "responsive": {
-                                                "mobile": {
+                                                "0-767": {
                                                     "props": {
                                                         "inline": false
                                                     }
@@ -150,7 +150,7 @@
                                             "type": "composite",
                                             "name": "RadioGroup",
                                             "responsive": {
-                                                "mobile": {
+                                                "0-767": {
                                                     "props": {
                                                         "inline": false
                                                     }
@@ -290,7 +290,7 @@
                                             "type": "composite",
                                             "name": "RadioGroup",
                                             "responsive": {
-                                                "mobile": {
+                                                "0-767": {
                                                     "props": {
                                                         "inline": false
                                                     }
@@ -358,6 +358,7 @@
                                                     "props": {
                                                         "type": "number",
                                                         "name": "per_user_limit",
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.per_user_limit_label",
                                                         "className": "input w-24",
                                                         "min": 1
                                                     }

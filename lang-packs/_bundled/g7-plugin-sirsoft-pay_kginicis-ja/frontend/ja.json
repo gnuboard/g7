@@ -230,7 +230,21 @@
     "cbt_cvs_recheck_success": "CBT コンビニ決済ステータスを再確認しました。",
     "cbt_cvs_simulate_success": "CBT コンビニ入金完了テストが処理されました。",
     "cbt_cvs_expire_success": "CBT コンビニ決済注文を入金期限切れとして処理しました。",
-    "cbt_cvs_action_error": "CBT コンビニ決済作業に失敗しました。"
+    "cbt_cvs_action_error": "CBT コンビニ決済作業に失敗しました。",
+    "escrow_couriers": {
+      "hanjin": "韓進宅配",
+      "cj": "CJ大韓通運",
+      "lotte_parcel": "ロッテ宅配",
+      "epost": "郵便局宅配",
+      "lotte_global": "ロッテグローバルロジス",
+      "kyungdong": "慶東宅配",
+      "cvs": "コンビニ宅配",
+      "ilyang": "一陽ロジス",
+      "chunil": "天一宅配",
+      "cvsnet": "CVSnetコンビニ",
+      "daesin": "大信宅配",
+      "kunyoung": "建栄宅配"
+    }
   },
   "settings": {
     "title": "KGイニシス設定",

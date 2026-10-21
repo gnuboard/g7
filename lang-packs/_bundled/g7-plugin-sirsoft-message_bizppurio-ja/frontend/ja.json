@@ -217,7 +217,8 @@
       "hint": "代替SMSとSMS単独送信に共通で使用する本文です。#{変数} は送信時に自動置換されます。",
       "btn_save": "保存",
       "saved_toast": "SMS本文を保存しました。",
-      "editor_label": "SMS本文の編集"
+      "editor_label": "SMS本文の編集",
+      "body_label": "SMS本文"
     },
     "cancel_approval": {
       "modal_title": "承認取り消しの確認",

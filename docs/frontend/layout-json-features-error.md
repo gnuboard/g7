@@ -274,6 +274,23 @@ API 에러 발생
 
 액션(api-call 등)의 오류 처리는 원래 그 화면의 데이터 문맥 전체(`route`·`query`·`_local`·`_global` 포함)를 읽는다. 데이터소스 오류 처리에 더해지는 것은 `route`·`query` 뿐이다.
 
+**다시 받기 실패는 `{{error.refetch}}` 로 가른다** (engine-v1.82.0) — 이 화면에서 이미 값을 받은 소스를 다시 받다가(`refetchDataSource` 액션·`G7Core.dataSource.refetch`·같은 화면 쿼리 갱신 `navigate replace`) 실패했으면 `true`, 화면에 들어와 처음 받기(blocking·progressive·background) 실패나, 아직 값이 없는 소스의 첫 다시 받기(`auto_fetch: false` 소스) 실패면 거짓이다. 폼·목록을 채운 뒤 사용자 조작(선택 해제·쪽 넘김·저장 뒤 갱신)으로 다시 받는 소스가 `default` 에서 본문 오류 화면을 띄우면, 일시 실패 한 번에 받아 둔 화면·선택이 통째로 사라진다. 처음 받기만 오류 화면으로 보내고 다시 받기는 알리기만 한다:
+
+```html
+<error-handling>
+  <default>
+    <conditions>
+      <when if="{{error.refetch}}"><toast type="error" message="$t:core.errors.refresh_failed"/></when>
+      <else><show-error-page errorCode="{{error.status}}" target="content"/></else>
+    </conditions>
+  </default>
+</error-handling>
+```
+
+- `conditions` 안에 넣은 `showErrorPage` 에는 처리기 키(`default`)에서 상태 코드가 자동으로 들어가지 않는다 — `errorCode="{{error.status}}"` 로 실제 코드를 넘긴다.
+- 같은 요청의 마지막 값으로 버틴 `refetchDataSource` 실패는 그 값으로 `initLocal`·`initGlobal` 을 다시 심지 않는다 — 사용자가 바꾼 선택·입력이 그대로 남는다(engine-v1.82.0). 쿼리 갱신(탭 전환) 재조회는 종전대로 다시 심는다.
+- 화면을 옮긴 뒤에 끝난 앞 화면 fetch 의 오류 처리기·성공 처리(`onSuccess`)는 실행되지 않는다(engine-v1.82.0) — 새 화면은 자기 fetch 로 다시 판정한다.
+
 > **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 작성 권장 경로가 아니다.
 
 ### 시스템 기본값

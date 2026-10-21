@@ -1,0 +1,47 @@
+feature: 영구 마운트된 창의 상태를 창 고유 전역 이름 공간에 둔다 — 주문서 배송지 관리·회원 탈퇴·클레임 사진 확대 (7.1.1)
+
+description: |
+  modals 섹션 창은 페이지와 따로 영구 마운트된 렌더러로 그려지고, 창 안 `_local` 은 «마지막 전체 렌더 때의 페이지 _local 스냅샷»
+  위에 «창 루트 자신의 지역 상태»를 deep 병합한 값이다(창 쪽이 이긴다). 창이 `_local` 키를 쓰고 창 밖(페이지)도 같은 키를 쓰면
+  페이지가 쓴 값이 창에 닿지 않는다. 주문서 「배송지 관리」 수정 폼을 닫기·Esc 로 나간 뒤 다시 열면 수정 폼 그대로였고, 「뒤로」 →
+  「새 배송지」 가 앞 배송지와 합쳐져 PUT 됐다. 회원 탈퇴 창은 체크 → 취소 → 다시 열기에서 체크된 채 탈퇴 단추가 열려 있었고,
+  클레임 사진 확대 창은 닫기 단추로 닫은 뒤 다른 사진을 열면 빈 창이었다. 세 창의 상태를 창 고유 `_global` 이름 공간으로 옮기고
+  여는 쪽이 null 로 비운 뒤 다시 쓴다(modal-usage.md 편집 창 표준, 엔진 무변경). 시험은 운영과 같은 TemplateApp + renderTemplate 로
+  창을 modals 섹션에 그린다.
+
+# axis 의미:
+#   close — 창을 떠나는 방법(Esc / 창 닫기 단추 / 창 안 「뒤로」·「취소」 / 바깥(배경) 클릭 / 「선택」 / 저장 성공 / 떠나지 않음 / 정적 판정)
+axes:
+  close: [escape, close_button, back_button, cancel_button, backdrop, select_button, save_success, none, static]
+
+effects:
+  - reopen_shows_list_after_edit_closed        # 수정 폼을 닫고 다시 열면 목록이다
+  - add_after_reopen_is_blank_and_posts        # 그 뒤 새 배송지는 빈 등록 폼이고 저장이 POST(id 없음)다
+  - typed_value_cleared_on_reopen_form         # 입력 뒤 뒤로 → 새 배송지면 칸이 비어 있다(전역 칸 표시용 대기 값 갈래)
+  - rapid_typing_keeps_all_characters          # 빠른 연속 입력에서 글자가 빠지지 않는다(전역 쓰기 갈래)
+  - country_select_follows_namespace           # 국가 선택칸이 이름 공간 값을 따르고 새 배송지에서 다시 KR 로 시작한다
+  - address_search_dot_path_write_shows        # 주소 검색 결과(점 경로 쓰기)가 칸에 보이고 먼저 적은 칸은 남는다
+  - withdraw_confirm_unchecked_on_reopen       # 탈퇴 창을 다시 열면 체크가 풀려 있고 탈퇴 단추가 잠겨 있다
+  - image_viewer_shows_reopened_image          # 사진 창을 닫기 단추로 닫은 뒤 다른 사진을 열면 그 사진이 보인다
+  - modal_and_page_do_not_share_local_keys     # basic 창과 창 밖이 같은 지역 상태 키를 함께 쓰는 자리는 보류·무해 목록뿐이다
+  - edit_open_maps_intl_fields                 # 수정 열기가 해외 주소 칸(intl_*)과 id 를 채운다(마이페이지·주문서 창 — 이름 공간 판독)
+  - withdraw_submit_chain_intact               # 탈퇴 제출의 성공·실패 연쇄(로그아웃·처리 중 해제)가 이름 공간으로 옮긴 뒤에도 그대로다
+  - rapid_field_switch_keeps_all_fields        # 칸 사이 쉼 없이 칸을 옮겨 쳐도(렌더 전) 모든 칸이 상태·저장 본문에 남는다 — 전역 data-key 자동바인딩 폼 0(7.1.1)
+  - select_reaches_page_checkout_state         # 「선택」 뒤 페이지 동작의 PUT /checkout 이 고른 배송지 우편번호·국가를 싣고 페이지 정본(getLocal)도 바뀐다(7.1.1)
+  - order_change_address_modal_contract       # 주문 상세 배송지 변경 창의 구조 계약(적용 단추 1액션·confirm 1회·직접 입력 칸 value 읽기 + change 점 경로 쓰기)
+  - modal_namespace_cleared_on_close          # 창을 닫으면(닫기 단추·Esc·바깥 클릭·취소·「선택」·저장 성공으로 닫힘) 배송지·서명 URL 을 담은 창 이름 공간이 null 이다(7.1.1)
+  - form_pii_cleared_on_save_success          # 창을 닫지 않는 저장 성공(주문서 창)은 쓰던 배송지(editing)를 비우고 목록으로 돌아간다
+  - namespace_kept_while_open                 # 열려 있는 동안(목록↔폼 전환·전체 렌더·닫히지 않는 바깥 클릭)에는 이름 공간이 비워지지 않아 입력이 남는다
+  - overwrite_chain_reads_namespace_before_clear # 409 덮어쓰기 확인 창이 위에 떠 있는 동안 편집 창 이름 공간이 남아 다시 보내는 본문에 입력이 실리고, 두 창이 닫힌 뒤 비워진다
+  - unmount_clear_node_persistent_while_open   # 정리 동작(unmount)은 창 본문 중 열려 있는 동안 조건·반복 없이 붙어 있는 노드에 있다(정적 잠금)
+  - cart_option_reopen_drops_previous_item_additional_keys # 장바구니 옵션 변경 — 추가옵션 있는 품목 A 의 창을 연 뒤 B 의 창에서 적용하면 본문은 B 의 추가옵션뿐이다(7.1.1)
+  - additional_option_clear_drops_key_from_body   # 창 안에서 추가옵션·직접입력을 비우면 그 그룹이 적용 본문에서 빠진다 — 키를 뺀 객체를 deep 으로 다시 쓰는 자리 0(정적 잠금)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-order-change-address-modal.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/checkout-address-modal-real-structure.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/address-edit-intl-field-mapping.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-withdraw-modal.test.tsx
+
+validation:
+  browser_check: 재실측 — 주문서 「배송지 관리」 수정 폼 → 닫기 단추/Esc → 다시 열기(목록) → 새 배송지(빈 폼·POST), 빠른 입력 30자 글자 손실 0·입력 지연 체감, 국가 선택칸 US↔KR, 주소 검색 뒤 칸 값. — 마이페이지 회원 탈퇴 창 체크 → 취소 → 다시 열기, 클레임 상세 사진 2장 번갈아 열기. — 주문서 배송지 관리·마이페이지 배송지·주문 상세 배송지 변경·클레임 사진 창을 닫기 단추/Esc/바깥 클릭/취소/선택/저장으로 닫은 뒤 DevTools 콘솔 `G7Core.state.get()` 의 해당 이름 공간이 null(관리자 앱 키 비밀번호 창 `appKeyPassword` 는 빈 문자열)

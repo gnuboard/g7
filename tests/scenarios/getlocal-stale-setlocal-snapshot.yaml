@@ -1,0 +1,21 @@
+feature: 자동바인딩 입력 뒤 명시적 setState 로 비우면 G7Core.state.getLocal() 도 빈 값을 돌려준다 (engine-v1.81.1, 7.1.1)
+
+description: |
+  setLocal(자동바인딩 포함)은 getLocal 대체 값으로 `__g7LastSetLocalSnapshot` 을 남기는데, 그 뒤 명시적 setState 가 저장소 B 를 live B
+  기반으로 고쳐도 스냅샷이 남아 getLocal() 이 deepMerge(B, 스냅샷)으로 지운 값을 되살렸다(통화 추가 → 이름 입력 → 취소).
+  live B 기반으로 B 를 쓴 setState 가 스냅샷을 지운다. 축 writer 는 B 를 고친 쓰기 모양이다.
+
+axes:
+  writer: [setstate_dot_key, setstate_dot_path_target, setstate_target_local, setlocal_after_await]
+
+effects:
+  - getlocal_reflects_setstate_after_autobinding
+
+test_files:
+  - resources/js/core/template-engine/__tests__/G7CoreGlobals.getLocalStaleSnapshot.test.tsx
+
+validation:
+  note: |
+    점 경로 target 갈래(setstate_dot_path_target, 7.1.1, 2026-10-19): 실 TemplateApp·자동바인딩 경유 시험이 현 엔진 green, 그 갈래의
+    스냅샷 지움 줄(ActionDispatcher 점 경로 target 분기)을 잠시 주석 처리하면 1 failed / 4(getLocal 이 앞 입력 객체) — 원복 뒤 4 passed.
+    같은 시험에서 화면(저장소 A 병합)은 앞 입력을 계속 보였다(__g7ForcedLocalFields 미해제) — 스냅샷 축과 별개라 단언하지 않고 후보 결함으로 보고.

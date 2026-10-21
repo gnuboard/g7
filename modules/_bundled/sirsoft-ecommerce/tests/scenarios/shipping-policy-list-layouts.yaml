@@ -1,0 +1,60 @@
+# 시나리오 매니페스트 — 배송정책 목록 레이아웃 구조 (국가별 설정 요약 기반)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+# 이 시험 파일은 소유 매니페스트 없이 들어와 있었다 — #757 에서 다국어 키 단언(관리자 템플릿 공용 키 허용)을 고치며
+# 시나리오 소유를 붙였다. 축은 시험이 덮는 레이아웃 구획이다.
+
+feature: shipping_policy_list_layouts
+
+description: >-
+  배송정책 목록 화면(admin_ecommerce_shipping_policy_list)의 메타·상태·데이터소스·초기/이름 있는 액션·부분 레이아웃 참조,
+  DataGrid(국가 요약 열·행 메뉴·국가별 상세 하위 행·이벤트), 국가 필터(설정의 사용 가능 국가로 만드는 동적 체크박스),
+  머리·정렬·쪽수·빈 화면·DataGrid 내장 쪽수, 검색 뒤 필터 보존, 다국어 키 경로를 정적 구조로 고정한다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicyListLayouts.test.tsx
+
+coverage_strategy: pairwise
+
+axes:
+  section:
+    - main_layout
+    - state
+    - data_sources
+    - init_actions
+    - named_actions
+    - partials
+    - datagrid
+    - filter
+    - page_header
+    - sort_pagination
+    - empty_state
+    - conditional_render
+    - builtin_pagination
+    - no_init_local
+    - i18n
+
+exclusions:
+  - { section: main_layout, reason: "단일 축 — 구획마다 정적 구조를 직접 단언한다" }
+
+effects:
+  - layout_meta_declared   # 레이아웃 이름·확장 대상·메타
+  - initial_state_shape   # 지역 상태 초기 모양
+  - data_sources_declared   # 목록·설정 데이터소스
+  - init_actions_declared   # 진입 시 액션
+  - named_actions_declared   # 이름 있는 액션(필터 적용 등)
+  - partials_referenced   # 부분 레이아웃 참조
+  - datagrid_structure   # 열·행 메뉴·국가별 하위 행·이벤트
+  - country_filter_dynamic   # 설정의 사용 가능 국가로 만드는 체크박스 필터
+  - page_header_rendered   # 머리 제목·등록 단추
+  - sort_and_pagination_wired   # 정렬·쪽당 개수 선택
+  - single_empty_message   # 빈 화면 문구는 DataGrid emptyMessage 하나
+  - no_conditional_data_area   # 데이터 영역 조건부 렌더링 없음
+  - datagrid_builtin_pagination   # DataGrid 내장 쪽수
+  - filter_preserved_after_search   # 데이터소스 initLocal 없음 — 검색 뒤 필터 보존
+  - i18n_keys_namespaced   # 다국어 키는 모듈 네임스페이스 또는 관리자 템플릿 공용 키(common.*)
+
+validation:
+  audit_rule: test-scenario-reverse-mapping
+  note: |
+    레이아웃 JSON 정적 구조 단언이라 브라우저 축은 없다(e2e:allow 성격). 렌더 동작은
+    admin_ecommerce_shipping_policy_list.test.tsx 와 spec shipping-policy-list-country-settings.spec.ts 가 덮는다.

@@ -20,7 +20,7 @@ use Tests\TestCase;
  *
  * 선언만 보면 「고쳤다」를 흉내 내기 쉬워 **행 수로** 잰다 — 큐 드라이버를 데이터베이스로
  * 두고 비콘을 쏜 뒤 `jobs` 가 비어 있고 원장에 행이 생겼는지 본다(#682 S3 라운드 6,
- * PO 확정 「큐는 꼭 필요한 부분에만」).
+ * 「큐는 꼭 필요한 부분에만」 확정).
  */
 class CollectionDispatchTest extends TestCase
 {

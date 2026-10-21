@@ -722,7 +722,7 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 내부 API 호출에 앱 키로 서명한 SEO 렌더 표식 헤더를 붙인다 — 받는 쪽(게시판 조회수 등)이
-     * 서버 자신의 렌더 호출을 사람의 열람과 구분할 수 있어야 한다(7.1.0 실측 O-K3-1).
+     * 서버 자신의 렌더 호출을 사람의 열람과 구분할 수 있어야 한다(7.1.0 실측).
      *
      * @scenario aspect=request_headers
      *
@@ -745,5 +745,66 @@ class DataSourceResolverTest extends TestCase
 
             return $value !== null && hash_equals(SeoRenderRequest::signature(), $value);
         });
+    }
+
+    /**
+     * 같은 id 의 조건부 판이 여럿이면 조건을 만족하는 첫 판만 부릅니다 — 엔진 `DataSourceManager.filterByCondition` 과 같은 규칙
+     * (7.1.1 출시 전 실측). 종전에는 조건을 보지 않고 두 판을 다 불러 뒤 판 결과가 앞 판을 덮었다.
+     *
+     * @scenario aspect=condition_selection
+     *
+     * @effects same_id_conditional_first_match_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_same_id_conditional_variants_call_only_the_first_matching_one(): void
+    {
+        Http::fake([
+            '*/api/users/7' => Http::response(['data' => ['who' => 'one']], 200),
+            '*/api/users/me' => Http::response(['data' => ['who' => 'me']], 200),
+        ]);
+
+        $dataSources = [
+            ['id' => 'user', 'if' => '{{route.id}}', 'endpoint' => '/api/users/{{route.id}}', 'method' => 'GET'],
+            ['id' => 'user', 'if' => '{{!route.id}}', 'endpoint' => '/api/users/me', 'method' => 'GET'],
+        ];
+
+        $withId = $this->resolver->resolve($dataSources, ['user'], ['id' => '7'], 'ko');
+        $this->assertSame(['data' => ['who' => 'one']], $withId['user']);
+        Http::assertSentCount(1);
+
+        $withoutId = $this->resolver->resolve($dataSources, ['user'], [], 'ko');
+        $this->assertSame(['data' => ['who' => 'me']], $withoutId['user']);
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn ($request) => str_ends_with($request->url(), '/api/users/'));
+    }
+
+    /**
+     * 조건이 거짓인 판은 부르지 않고(`conditions` 그룹 포함), 조건 없는 판은 종전대로 부릅니다.
+     *
+     * @scenario aspect=condition_selection
+     *
+     * @effects false_condition_source_not_called
+     *
+     * @return void 반환값 없음
+     */
+    public function test_false_condition_source_is_not_called(): void
+    {
+        Http::fake([
+            '*/api/a' => Http::response(['a' => 1], 200),
+            '*/api/b' => Http::response(['b' => 1], 200),
+            '*/api/c' => Http::response(['c' => 1], 200),
+        ]);
+
+        $dataSources = [
+            ['id' => 'a', 'conditions' => ['and' => ["{{query.mode == 'x'}}"]], 'endpoint' => '/api/a'],
+            ['id' => 'b', 'if' => '{{false}}', 'endpoint' => '/api/b'],
+            ['id' => 'c', 'endpoint' => '/api/c'],
+        ];
+
+        $result = $this->resolver->resolve($dataSources, ['a', 'b', 'c'], [], 'ko', ['mode' => 'y']);
+
+        $this->assertSame(['c'], array_keys($result));
+        Http::assertSentCount(1);
     }
 }

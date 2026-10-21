@@ -54,13 +54,13 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="btn btn-secondary" disabled="{{_global.isTemplateRefreshingLayouts}}">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isTemplateRefreshingLayouts}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateRefreshingLayouts}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateRefreshingLayouts}}">
         <on type="click">
           <!-- 다시 심기 실행 — 편집기로 고친 레이아웃이 원본으로 덮인다. -->
           <sequence>

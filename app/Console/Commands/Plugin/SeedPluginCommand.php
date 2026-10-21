@@ -28,6 +28,9 @@ class SeedPluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
+     *
+     * @param  PluginManager  $pluginManager  플러그인 관리자 (플러그인 적재·활성 플러그인 조회)
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 설치 레코드를 조회하는 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
@@ -37,7 +40,9 @@ class SeedPluginCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 커맨드를 실행합니다.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -47,7 +52,7 @@ class SeedPluginCommand extends Command
 
         // 프로덕션 환경 확인
         if (app()->environment('production') && ! $force) {
-            $this->error('❌ 프로덕션 환경에서는 --force 옵션이 필요합니다.');
+            $this->error('❌ '.__('plugins.commands.seed.production_requires_force'));
 
             return Command::FAILURE;
         }
@@ -94,8 +99,8 @@ class SeedPluginCommand extends Command
         $pluginRecord = $this->pluginRepository->findByIdentifier($identifier);
 
         if (! $pluginRecord || $pluginRecord->status !== ExtensionStatus::Active->value) {
-            $this->error('❌ 플러그인이 활성화되어 있지 않습니다: '.$identifier);
-            $this->line('   먼저 php artisan plugin:activate '.$identifier.' 명령을 실행하세요.');
+            $this->error('❌ '.__('plugins.commands.seed.not_active', ['identifier' => $identifier]));
+            $this->line('   '.__('plugins.commands.seed.activate_hint', ['identifier' => $identifier]));
 
             return Command::FAILURE;
         }
@@ -105,7 +110,7 @@ class SeedPluginCommand extends Command
         $seederPath = $pluginPath.'/database/seeders';
 
         if (! is_dir($seederPath)) {
-            $this->warn('⚠️  플러그인에 시더 디렉토리가 없습니다: '.$identifier);
+            $this->warn('⚠️  '.__('plugins.commands.seed.no_seeder_directory', ['identifier' => $identifier]));
 
             return Command::SUCCESS;
         }
@@ -114,13 +119,13 @@ class SeedPluginCommand extends Command
         $seederClassName = $this->resolveSeederClass($identifier, $seederClass);
 
         if (! class_exists($seederClassName)) {
-            $this->error('❌ 시더 클래스를 찾을 수 없습니다: '.$seederClassName);
+            $this->error('❌ '.__('plugins.commands.seed.seeder_class_not_found', ['class' => $seederClassName]));
 
             return Command::FAILURE;
         }
 
-        $this->info("🌱 시더 실행 시작: {$identifier}");
-        $this->line('   클래스: '.$seederClassName);
+        $this->info('🌱 '.__('plugins.commands.seed.start', ['identifier' => $identifier]));
+        $this->line('   '.__('plugins.commands.seed.class', ['class' => $seederClassName]));
         $this->line('');
 
         // 시더 실행
@@ -141,7 +146,7 @@ class SeedPluginCommand extends Command
         $seeder->run();
 
         $this->line('');
-        $this->info("✅ 시더 실행 완료: {$identifier}");
+        $this->info('✅ '.__('plugins.commands.seed.done', ['identifier' => $identifier]));
 
         return Command::SUCCESS;
     }
@@ -157,7 +162,7 @@ class SeedPluginCommand extends Command
         $activePlugins = $this->pluginManager->getActivePlugins();
 
         if (empty($activePlugins)) {
-            $this->warn('⚠️  활성화된 플러그인이 없습니다.');
+            $this->warn('⚠️  '.__('plugins.commands.seed.no_active'));
 
             return Command::SUCCESS;
         }
@@ -175,13 +180,13 @@ class SeedPluginCommand extends Command
         }
 
         if (empty($seedablePlugins)) {
-            $this->warn('⚠️  시더가 있는 활성 플러그인이 없습니다.');
+            $this->warn('⚠️  '.__('plugins.commands.seed.no_seedable'));
 
             return Command::SUCCESS;
         }
 
-        $this->info('🌱 모든 활성 플러그인 시더 실행 시작');
-        $this->line('   대상 플러그인: '.implode(', ', array_keys($seedablePlugins)));
+        $this->info('🌱 '.__('plugins.commands.seed.start_all'));
+        $this->line('   '.__('plugins.commands.seed.targets', ['list' => implode(', ', array_keys($seedablePlugins))]));
         $this->line('');
 
         $successCount = 0;
@@ -200,7 +205,7 @@ class SeedPluginCommand extends Command
             $this->line('');
         }
 
-        $this->info("📊 시더 실행 결과: 성공 {$successCount}개, 실패 {$failCount}개");
+        $this->info('📊 '.__('plugins.commands.seed.summary', ['success' => $successCount, 'failed' => $failCount]));
 
         return $failCount > 0 ? Command::FAILURE : Command::SUCCESS;
     }

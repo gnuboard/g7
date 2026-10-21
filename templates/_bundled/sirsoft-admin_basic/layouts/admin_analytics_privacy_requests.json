@@ -376,7 +376,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "~"
                                                     },
@@ -695,7 +695,7 @@
                                 "id": "subjects_empty",
                                 "type": "composite",
                                 "name": "EmptyState",
-                                "if": "{{!analytics_subjects?.loading && (analytics_subjects?.data?.visits ?? []).length === 0}}",
+                                "if": "{{analytics_subjects !== undefined && (analytics_subjects?.data?.visits ?? []).length === 0}}",
                                 "props": {
                                     "iconName": "user-shield",
                                     "title": "$t:admin.analytics.privacy_requests.no_results",
@@ -744,22 +744,22 @@
                                                     "cellChildren": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "A",
                                                             "actions": [
                                                                 {
                                                                     "comment": "이 화면은 검색 조건(대상·값·기간)을 주소에 싣는다. 병합하지 않고 이동하면\n                         상세 화면이 기간 없이 열리고 그 화면의 단건 CSV 도 다른 기간을 내려준다 —\n                         형제 화면(방문자 목록)의 같은 드릴다운과도 어긋난다(#682 S3 라운드 5).",
                                                                     "type": "click",
                                                                     "handler": "navigate",
                                                                     "params": {
-                                                                        "path": "/admin/analytics/visitors/{{row.visitor_key}}",
                                                                         "mergeQuery": true,
                                                                         "query": {}
                                                                     }
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "type": "button",
-                                                                "className": "text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm"
+                                                                "href": "/admin/analytics/visitors/{{row.visitor_key}}",
+                                                                "mergeQuery": true,
+                                                                "className": "button text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm"
                                                             },
                                                             "text": "{{String(row.visitor_key ?? '').slice(0, 8)}}"
                                                         }
@@ -786,7 +786,7 @@
                                                     "width": "140px",
                                                     "cellChildren": [
                                                         {
-                                                            "comment": "열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은\n                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8).",
+                                                            "comment": "열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은\n                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측).",
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {

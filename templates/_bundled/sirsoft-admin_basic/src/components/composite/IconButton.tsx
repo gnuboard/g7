@@ -26,7 +26,7 @@ export interface IconButtonProps {
   editorAttrs?: EditorAttrs;
 }
 
-/** 아이콘만 있는 버튼의 기본 이름 키 — 아이콘은 꾸밈으로 숨겨지므로 버튼에 이름을 단다(7.1.0 J D-J4) */
+/** 아이콘만 있는 버튼의 기본 이름 키 — 아이콘은 꾸밈으로 숨겨지므로 버튼에 이름을 단다(7.1.0 실측) */
 const ICON_DEFAULT_LABEL_KEYS: Record<string, string> = {
   refresh: 'common.refresh',
   'arrows-rotate': 'common.refresh',

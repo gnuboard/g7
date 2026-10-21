@@ -357,7 +357,7 @@ test.describe('좁은 화면 고정 줄 (297·320px)', () => {
     test(`${width}px 인기글 기간 단추가 화면 안에 있다`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/boards/popular');
-      const first = page.locator('button', { hasText: /오늘|Today/ }).first();
+      const first = page.locator(':is(a, button)', { hasText: /오늘|Today/ }).first();
       await expect(first).toBeVisible({ timeout: 60_000 });
       const m = await first.evaluate((el) => {
         const row = el.parentElement!;

@@ -24,7 +24,7 @@ effects:
   - gdpr_rich_editor_writes_to_active_language_body
   - gdpr_core_editor_hidden_when_channel_owns_editor
   - gdpr_click_url_only_for_database_channel
-  # 7.1.0 전수 실측 영역 G 후속 — 방금 고른 역할·회원이 식별자·UUID 로 보이던 결함(게시판·코어 사본과 같은 결함)
+  # 7.1.0 전수 실측 후속 — 방금 고른 역할·회원이 식별자·UUID 로 보이던 결함(게시판·코어 사본과 같은 결함)
   - gdpr_recipient_picked_role_keeps_search_result_name
   - gdpr_recipient_picked_user_keeps_search_result_name
   # 7.1.0 칩 줄 통일 — 코어·이커머스와 같은 고른 역할·회원 칩, 열린 드롭다운에 가리지 않게 드롭다운 위에 둔다

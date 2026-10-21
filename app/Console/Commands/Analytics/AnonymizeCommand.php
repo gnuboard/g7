@@ -51,20 +51,20 @@ class AnonymizeCommand extends Command
         $hash = (bool) $this->option('hash');
 
         if ($maskOctets < 0 || $maskOctets > 3) {
-            $this->error('가릴 옥텟 수는 0 에서 3 사이여야 합니다.');
+            $this->error(__('analytics.console.anonymize.invalid_octets'));
 
             return self::FAILURE;
         }
 
         if ($maskOctets === 0 && ! $hash) {
-            $this->error('--mask-octets 또는 --hash 중 하나는 지정해야 합니다.');
+            $this->error(__('analytics.console.anonymize.option_required'));
 
             return self::FAILURE;
         }
 
         if (! $this->option('force')
-            && ! $this->unifiedConfirm('이미 쌓인 방문 기록을 되돌릴 수 없게 바꿉니다. 진행할까요?')) {
-            $this->info('취소했습니다.');
+            && ! $this->unifiedConfirm(__('analytics.console.anonymize.confirm'))) {
+            $this->info(__('analytics.console.anonymize.cancelled'));
 
             return self::SUCCESS;
         }
@@ -80,12 +80,12 @@ class AnonymizeCommand extends Command
         $status = $run->status instanceof ArchiveRunStatus ? $run->status->value : (string) $run->status;
 
         if ($status === ArchiveRunStatus::Failed->value) {
-            $this->error('소급 익명화 실패: '.$run->error);
+            $this->error(__('analytics.console.anonymize.failed', ['error' => $run->error]));
 
             return self::FAILURE;
         }
 
-        $this->info(sprintf('방문 %d건을 익명화했습니다.', $run->processed_visits));
+        $this->info(__('analytics.console.anonymize.done', ['count' => (int) $run->processed_visits]));
 
         return self::SUCCESS;
     }

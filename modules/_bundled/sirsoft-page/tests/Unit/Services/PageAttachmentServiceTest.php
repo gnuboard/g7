@@ -31,7 +31,7 @@ class PageAttachmentServiceTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // 페이지에 붙는 업로드·삭제는 서비스가 수정 권한을 직접 본다(7.1.0 abilities 게이트 page-hello N1·#4)
+        // 페이지에 붙는 업로드·삭제는 서비스가 수정 권한을 직접 본다(7.1.0 abilities 게이트)
         $this->adminUser = $this->createAdminUser(['sirsoft-page.pages.read', 'sirsoft-page.pages.create', 'sirsoft-page.pages.update']);
         $this->actingAs($this->adminUser);
 

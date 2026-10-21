@@ -15,20 +15,20 @@
     --tw-ring-color: oklch(70.7% 0.165 254.624); /* blue-400 */
 }
 
-/* 의미 색 — 관리자 템플릿의 text-warning-soft·text-info-soft 와 같은 값(글자 크기는 레이아웃의 text-xs·text-sm 이 정한다).
-   템플릿 의미 클래스는 템플릿마다 이름·값이 달라 다른 관리자 템플릿에서는 색이 사라지므로 빌려 쓰지 않는다. */
+/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
 .verification-nhnkcp-tone-warning {
-    color: oklch(55.4% 0.135 66.442); /* yellow-700 */
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
 }
 
 .dark .verification-nhnkcp-tone-warning {
-    color: oklch(90.5% 0.182 98.111); /* yellow-300 */
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
 }
 
+/* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
 .verification-nhnkcp-tone-info {
-    color: oklch(48.8% 0.243 264.376); /* blue-700 */
+    color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); /* blue-700 */
 }
 
 .dark .verification-nhnkcp-tone-info {
-    color: oklch(80.9% 0.105 251.813); /* blue-300 */
+    color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); /* blue-300 */
 }

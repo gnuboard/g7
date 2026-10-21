@@ -55,13 +55,13 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="btn btn-secondary" disabled="{{_global.isPluginRefreshingLayouts}}">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isPluginRefreshingLayouts}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginRefreshingLayouts}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginRefreshingLayouts}}">
         <on type="click">
           <!-- 끝나면 고른 플러그인을 비운다 — 이 값이 목록과 다른 창들이 함께 쓰는 자리라, 닫은 뒤에도 남겨 두면 다음에 연 창이 엉뚱한 플러그인을 가리킨다. -->
           <sequence>

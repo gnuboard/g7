@@ -60,6 +60,10 @@ effects:
   - edit_entry_copies_policy_conditions_into_form
   - signup_stage_change_writes_form_conditions_path
   - apicall_body_sends_conditions_from_form
+  # 진입 시 창 상태를 먼저 null 로 비운다(deep 병합은 conditions: {} 로 앞 조건을 못 지운다).
+  # 편집하다 「취소」 한 앞 정책의 conditions·user_overrides·id 가 다음 추가·편집 창에 남지 않는다(ActionDispatcher 실측).
+  - entry_resets_stale_form_before_seed
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-identity-policy-modal.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-identity-policy-modal-reset.test.ts

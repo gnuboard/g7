@@ -187,7 +187,7 @@
                             "handler": "setState",
                             "params": {
                                 "target": "global",
-                                "bulkStockCondition": "{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + '개' : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + '개'}}",
+                                "bulkStockCondition": "{{(_local.bulkStockMethod || 'increase') === 'set' ? (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit') : ((_local.bulkStockMethod || 'increase') === 'increase' ? '+' : '-') + (_local.bulkStockValue || 0) + $t('sirsoft-ecommerce.admin.product.modal.bulk_stock.quantity_unit')}}",
                                 "bulkStockMethod": "{{_local.bulkStockMethod || 'increase'}}",
                                 "bulkStockValue": "{{_local.bulkStockValue || 0}}"
                             }

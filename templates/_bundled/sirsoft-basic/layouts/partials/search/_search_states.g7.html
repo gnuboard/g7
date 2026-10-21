@@ -16,7 +16,7 @@
     </div>
     <!-- 검색어 없는 초기 상태 -->
     <div data-if="{{!query?.q}}" class="py-16 text-center">
-      <div class="mb-5 text-gray-300 dark:text-gray-600">
+      <div class="mb-5 text-gray-500 dark:text-gray-500">
         <icon name="search" size="4x"/>
       </div>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.initial.title</h3>
@@ -29,11 +29,11 @@
         </h4>
         <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
           <li class="flex items-center gap-2">
-            <icon name="check" size="sm" class="text-green-500 flex-shrink-0"/>
+            <icon name="check" size="sm" class="text-green-600 flex-shrink-0"/>
             <span>$t:search.initial.hint_1</span>
           </li>
           <li class="flex items-center gap-2">
-            <icon name="check" size="sm" class="text-green-500 flex-shrink-0"/>
+            <icon name="check" size="sm" class="text-green-600 flex-shrink-0"/>
             <span>$t:search.initial.hint_2</span>
           </li>
         </ul>
@@ -41,7 +41,7 @@
     </div>
     <!-- 전체 탭 검색 실패 — 결과가 0건이고 실패가 있으면 '결과 없음' 대신 오류 안내 (키 부재(구버전 코어)는 종전 렌더 유지) -->
     <div data-if="{{query?.q &amp;&amp; searchResults?.data &amp;&amp; (searchResults?.data?.total ?? 0) === 0 &amp;&amp; (query?.type ?? 'all') === 'all' &amp;&amp; (searchResults?.data?.search_failed ?? false)}}" class="py-16 text-center">
-      <div class="mb-5 text-red-300 dark:text-red-500/60">
+      <div class="mb-5 text-red-500 dark:text-red-500/60">
         <icon name="triangle-exclamation" size="4x"/>
       </div>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.failed.title</h3>
@@ -49,7 +49,7 @@
     </div>
     <!-- 검색 결과 없음 (전체 탭) -->
     <div data-if="{{query?.q &amp;&amp; searchResults?.data &amp;&amp; (searchResults?.data?.total ?? 0) === 0 &amp;&amp; (query?.type ?? 'all') === 'all' &amp;&amp; !(searchResults?.data?.search_failed ?? false)}}" class="py-16 text-center">
-      <div class="mb-5 text-gray-300 dark:text-gray-600">
+      <div class="mb-5 text-gray-500 dark:text-gray-500">
         <icon name="search" size="4x"/>
       </div>
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.empty.all</h3>

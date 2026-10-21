@@ -89,7 +89,7 @@
         <div data-ref="schedule_form_type_field">
           <label class="form-label">
             <span>$t:admin.schedules.form.type</span>
-            <span data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('type')}}" class="text-red-500 ml-1">*</span>
+            <span data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('type')}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <select name="type" class="{{_global.scheduleFormErrors?.type ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.type ?? 'artisan'}}" disabled="{{(_global.selectedSchedule?.locked_fields ?? []).includes('type')}}" options="{{[{value: 'artisan', label: $t('admin.schedules.type.artisan')}, {value: 'shell', label: $t('admin.schedules.type.shell'), disabled: schedule_status?.data?.shell_enabled === false}, {value: 'url', label: $t('admin.schedules.type.url')}, {value: 'job', label: $t('admin.schedules.type.job')}]}}">
             <on type="change">
@@ -112,7 +112,7 @@
       <div data-ref="schedule_form_command_field">
         <label class="form-label">
           <span>$t:admin.schedules.form.command</span>
-          <span data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="text-red-500 ml-1">*</span>
+          <span data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <textarea name="command" :rows="3" defaultValue="{{_global.selectedSchedule?.command ?? ''}}" placeholder="{{$t('admin.schedules.form.command_placeholder.' + (_global.scheduleForm?.type ?? 'artisan'))}}" class="{{_global.scheduleFormErrors?.command ? 'textarea w-full font-mono placeholder:font-sans input-error' : 'textarea w-full font-mono placeholder:font-sans'}}" disabled="{{(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}"/>
         <span data-if="{{_global.scheduleFormErrors?.command}}" class="form-error">{{_global.scheduleFormErrors?.command?.[0] ?? ''}}</span>
@@ -123,7 +123,7 @@
         <div data-ref="schedule_form_frequency_field">
           <label class="form-label">
             <span>$t:admin.schedules.form.frequency</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <select name="frequency" class="{{_global.scheduleFormErrors?.frequency ? 'w-full input-error' : 'w-full'}}" value="{{_global.scheduleForm?.frequency ?? 'daily'}}">
             <options>

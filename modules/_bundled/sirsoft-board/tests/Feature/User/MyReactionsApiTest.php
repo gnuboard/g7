@@ -51,6 +51,9 @@ class MyReactionsApiTest extends BoardTestCase
             'use_comment' => true,
             'active_reaction_types' => ['like', 'dislike'],
         ]);
+
+        // 반응 남기기 엔드포인트는 그 게시판 글 읽기 권한을 요구한다 — 회원 역할에 부여해 둔다 (ReactionApiTest 와 같은 준비)
+        $this->grantUserRolePermissions(['posts.read']);
     }
 
     /**
@@ -208,7 +211,7 @@ class MyReactionsApiTest extends BoardTestCase
 
     /**
      * 잘못된 검색 대상은 422 가 아니라 기본(제목+내용)으로 처리하고, 적용한 값을 data.query 로 되돌린다
-     * (게시판 목록·관리자 목록과 같은 처리, 7.1.0 실측 O-K3-3).
+     * (게시판 목록·관리자 목록과 같은 처리, 7.1.0 실측).
      *
      * @scenario case=unknown_search_field_falls_back
      *
@@ -317,6 +320,8 @@ class MyReactionsApiTest extends BoardTestCase
      */
     public function test_destroy_own_only_and_recalculates_counts(): void
     {
+        // 반응 등록 라우트는 회원에게도 게시글 열람 권한을 요구한다 — 공용 픽스처는 비회원 권한만 준다
+        $this->grantUserRolePermissions(['posts.read']);
         $author = $this->createUser();
         $other = $this->createUser();
         $postId = $this->createTestPost(['user_id' => $author->id]);

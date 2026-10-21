@@ -1,5 +1,5 @@
 {
-    "comment": "회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 «알고 있다» 체크를 받아야 버튼이 열린다.\n     성공하면 세션까지 끊어야 하므로 토스트 뒤에 로그아웃이 이어진다.",
+    "comment": "회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 «알고 있다» 체크를 받아야 버튼이 열린다. 상태는 창 고유 전역 이름 공간\n     `_global.profileWithdrawModal`(confirm·isWithdrawing)에 있고 여는 쪽이 매번 비운다(7.1.1).\n     성공하면 세션까지 끊어야 하므로 토스트 뒤에 로그아웃이 이어진다.",
     "meta": {
         "is_partial": true,
         "description": "회원탈퇴 확인 모달",
@@ -142,10 +142,11 @@
                     ]
                 },
                 {
+                    "comment": "체크박스와 동의 문장을 한 label 로 감싼다 — 문장을 눌러도 체크되고 낭독기가 문장을 이름으로 읽는다",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Label",
                     "props": {
-                        "className": "flex items-center gap-2 mb-4"
+                        "className": "flex items-center gap-2 mb-4 cursor-pointer"
                     },
                     "children": [
                         {
@@ -157,21 +158,19 @@
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
-                                        "target": "local",
-                                        "form": {
-                                            "confirmWithdraw": "{{$event.target.checked}}"
-                                        }
+                                        "target": "global",
+                                        "profileWithdrawModal.confirm": "{{$event.target.checked}}"
                                     }
                                 }
                             ],
                             "props": {
                                 "name": "confirmWithdraw",
-                                "checked": "{{_local.form?.confirmWithdraw ?? false}}"
+                                "checked": "{{_global.profileWithdrawModal?.confirm === true}}"
                             }
                         },
                         {
                             "type": "basic",
-                            "name": "Label",
+                            "name": "Span",
                             "props": {
                                 "className": "text-sm text-gray-700 dark:text-gray-300"
                             },
@@ -196,6 +195,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "text": "$t:common.cancel"
@@ -212,8 +212,8 @@
                                         {
                                             "handler": "setState",
                                             "params": {
-                                                "target": "local",
-                                                "isWithdrawing": true
+                                                "target": "global",
+                                                "profileWithdrawModal.isWithdrawing": true
                                             }
                                         },
                                         {
@@ -227,8 +227,8 @@
                                                 {
                                                     "handler": "setState",
                                                     "params": {
-                                                        "target": "local",
-                                                        "isWithdrawing": false
+                                                        "target": "global",
+                                                        "profileWithdrawModal.isWithdrawing": false
                                                     }
                                                 },
                                                 {
@@ -249,8 +249,8 @@
                                                 {
                                                     "handler": "setState",
                                                     "params": {
-                                                        "target": "local",
-                                                        "isWithdrawing": false
+                                                        "target": "global",
+                                                        "profileWithdrawModal.isWithdrawing": false
                                                     }
                                                 },
                                                 {
@@ -266,14 +266,15 @@
                                 }
                             ],
                             "props": {
-                                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{!_local.form?.confirmWithdraw || _local.isWithdrawing}}"
+                                "type": "button",
+                                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.profileWithdrawModal?.confirm !== true || _global.profileWithdrawModal?.isWithdrawing === true}}"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Icon",
-                                    "if": "{{_local.isWithdrawing}}",
+                                    "if": "{{_global.profileWithdrawModal?.isWithdrawing === true}}",
                                     "props": {
                                         "name": "spinner",
                                         "size": "sm",

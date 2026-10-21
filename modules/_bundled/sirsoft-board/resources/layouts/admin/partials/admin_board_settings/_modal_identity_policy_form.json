@@ -83,7 +83,7 @@
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "text-danger-soft"
+                                                                "className": "text-xs board-tone-danger"
                                                             },
                                                             "text": "{{msg}}"
                                                         }
@@ -656,7 +656,7 @@
                             "name": "Div",
                             "if": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
                             "props": {
-                                "className": "alert-warning text-warning-soft"
+                                "className": "alert-warning text-xs board-tone-warning"
                             },
                             "text": "$t:admin.identity.policies.form.declared_policy_notice"
                         }

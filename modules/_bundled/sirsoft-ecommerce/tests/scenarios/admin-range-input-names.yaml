@@ -6,7 +6,7 @@ feature: admin_range_input_names
 description: >-
   관리자 템플릿은 라벨 바로 뒤에 입력칸이 하나일 때만 그 라벨을 칸 이름으로 잇는다. 라벨 하나 뒤에
   「시작일 ~ 종료일」 처럼 칸이 둘 이상 오면 어느 칸에도 잇지 않는다(엉뚱한 칸에 잇던 결함을 막으려는
-  PO 승인 결정). 그래서 그런 칸은 레이아웃이 직접 이름을 달아야 한다.
+  승인 결정). 그래서 그런 칸은 레이아웃이 직접 이름을 달아야 한다.
 
   2026-10-09 브라우저 전수 실측에서 이름 없는 기간 칸이 적립금 내역·쿠폰 목록·주문 클레임 신청일·리뷰·
   찜·장바구니·문의·회원 배송지 목록과 쿠폰 등록·수정에서 나왔고, 정적 전수로 첫 화면에 안 보이는
@@ -36,6 +36,7 @@ exclusions:
 
 effects:
   - admin_range_inputs_have_own_names   # 같은 부모 아래 날짜·일시 칸 둘 이상이면 칸마다 aria-label·aria-labelledby·placeholder 중 하나가 있다
+  - admin_date_inputs_named_without_placeholder   # 날짜·일시 칸(type=date·datetime-local)은 placeholder 가 아니라 aria-label·aria-labelledby 로 이름이 있다 — 브라우저는 그 칸의 placeholder 를 그리지도 읽지도 않는다 (7.1.1 출시 전 수정 전 13칸 누락 red)
   - admin_value_unit_inputs_have_own_names   # 라벨 하나 뒤 숫자칸·선택칸 짝은 칸마다 자기 aria-label(적립값·적립 단위 / 적립 시점·적립 지연 일수)이 있다
   - admin_extension_selects_have_own_names   # 관리자 확장의 선택칸은 곁 라벨 없이도 자기 aria-label(카드 제목 문구)이 있다
   - admin_controls_after_shared_label_have_own_names   # 곁 라벨 하나 뒤 입력칸이 둘 이상이면 칸마다 aria-label·aria-labelledby·placeholder·label[for] 중 하나가 있다(날짜 기준·통화·단위·위치·은행·색 선택 칸 포함)

@@ -104,7 +104,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_member"
                                 },
@@ -126,7 +126,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_amount"
                                 },
@@ -148,7 +148,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_type"
                                 },
@@ -170,7 +170,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.info_earned_at"
                                 },
@@ -190,7 +190,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.readonly_hint"
                 },
@@ -267,6 +267,7 @@
                             ],
                             "props": {
                                 "type": "date",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_edit.expiry_date",
                                 "value": "{{_global.mileageEdit?.expiresAt ?? ''}}",
                                 "min": "{{_global.mileageEdit?.earnedAtDate ?? ''}}",
                                 "className": "{{_global.mileageEdit?.errors?.errors?.expires_at ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}"
@@ -277,7 +278,7 @@
                             "name": "Div",
                             "if": "{{_global.mileageEdit?.canEditExpiry !== true}}",
                             "props": {
-                                "className": "flex items-center gap-2 px-3 py-2 text-sm text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800"
+                                "className": "flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800"
                             },
                             "children": [
                                 {
@@ -285,7 +286,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "lock",
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-500"
                                     }
                                 },
                                 {

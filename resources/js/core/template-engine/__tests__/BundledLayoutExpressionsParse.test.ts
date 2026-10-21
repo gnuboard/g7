@@ -33,6 +33,23 @@ function collect(dir: string, out: string[]): void {
   }
 }
 
+/**
+ * 번들 전체 정적 검사의 시험 한도 — 번들 전체 식 해석은 동시 실행 부하에서 기본 5초를 넘긴 전례가 있다(7.0s).
+ * 전역 한도는 그대로 두고 이 시험에만 명시한다.
+ */
+const STATIC_SCAN_TIMEOUT_MS = 60_000;
+
+/** 검사 대상 JSON — 수집 단계에서 한 번 읽고 파싱한다(시험 한도 밖). 시험은 식 해석만 한다. */
+const BUNDLED_FILES: string[] = [];
+for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), BUNDLED_FILES);
+const BUNDLED_DOCS: Array<{ file: string; data: unknown }> = BUNDLED_FILES.flatMap((file) => {
+  try {
+    return [{ file, data: JSON.parse(readFileSync(file, 'utf-8')) as unknown }];
+  } catch {
+    return [];
+  }
+});
+
 /** 문자열 하나에서 바인딩 식을 뽑는다 — 통째로 `{{…}}` 인 값은 중첩 `}}` 가 있어도 한 식으로 본다. */
 function expressionsOf(value: string): string[] {
   const trimmed = value.trim();
@@ -46,19 +63,11 @@ describe('번들 레이아웃 바인딩 식 해석', () => {
   // @scenario scope=all_bundled_layouts
   // @effects every_bundled_expression_parses
   it('모든 식이 엔진 평가기로 해석된다(문법 오류 0건)', () => {
-    const files: string[] = [];
-    for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) collect(join(ROOT, base), files);
-    expect(files.length, '검사 대상 레이아웃이 없습니다(경로 해석 확인).').toBeGreaterThan(100);
+    expect(BUNDLED_FILES.length, '검사 대상 레이아웃이 없습니다(경로 해석 확인).').toBeGreaterThan(100);
 
     let scanned = 0;
     const failures: string[] = [];
-    for (const file of files) {
-      let data: unknown;
-      try {
-        data = JSON.parse(readFileSync(file, 'utf-8'));
-      } catch {
-        continue;
-      }
+    for (const { file, data } of BUNDLED_DOCS) {
       const visit = (node: unknown, key?: string): void => {
         if (typeof node === 'string') {
           if (key === 'comment') return;
@@ -85,5 +94,5 @@ describe('번들 레이아웃 바인딩 식 해석', () => {
 
     expect(scanned, '해석한 식이 없습니다.').toBeGreaterThan(1000);
     expect(failures).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 });

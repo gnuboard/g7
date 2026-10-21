@@ -16,7 +16,7 @@ return [
     // Cancelled order reactivation — coupon conflict (Q27)
     'reactivation' => [
         'coupon_unavailable' => 'Order :order_number cannot be revived because its coupon (:coupons) was already used by another order or revoked.',
-        'coupon_unavailable_bulk' => 'No orders were changed because :count order(s) cannot be revived due to coupon conflicts. (Order numbers: :order_numbers)',
+        'coupon_unavailable_bulk' => 'No orders were changed because some orders cannot be revived due to coupon conflicts. (Orders: :count, order numbers: :order_numbers)',
     ],
     'mileage' => [
         'insufficient_balance' => 'Insufficient mileage balance available.',
@@ -27,7 +27,7 @@ return [
         'exceeds_max_use' => 'Exceeds the maximum usable limit. (up to :amount point)|Exceeds the maximum usable limit. (up to :amount points)',
         'base_currency_rule_missing' => 'Mileage cannot be used because the mileage usage unit for the base currency is not configured.',
         'insufficient_for_payment_complete' => 'The member\'s mileage balance is too low to change order :order_number. :amount of mileage must be deducted for this order. Turn off "Deduct used mileage" to change it without deduction.',
-        'insufficient_for_payment_complete_bulk' => 'No orders were changed because :count order(s) lack enough member mileage balance. (Order numbers: :order_numbers)',
+        'insufficient_for_payment_complete_bulk' => 'No orders were changed because some orders lack enough member mileage balance. (Orders: :count, order numbers: :order_numbers)',
     ],
 
     'brand_not_found' => 'Brand not found.',

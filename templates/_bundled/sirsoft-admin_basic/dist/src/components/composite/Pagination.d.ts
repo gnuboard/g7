@@ -46,6 +46,13 @@ export interface PaginationProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
+    /**
+     * 페이지 주소 틀 — `{page}` 자리에 번호를 넣는다(예: `/admin/users?page={page}`). 주면 번호·이전·다음·처음·끝이
+     * `<a href>` 가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다. 보통 클릭은 지금처럼 onPageChange(#757).
+     */
+    pageHref?: string;
+    /** 페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다 — 새 탭도 같은 목록 조건으로 열린다 */
+    pageHrefMergeQuery?: boolean;
 }
 /**
  * Pagination 집합 컴포넌트

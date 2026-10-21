@@ -119,17 +119,18 @@
                                             "name": "Span",
                                             "if": "{{post?.data?.is_notice}}",
                                             "props": {
-                                                "className": "px-2 py-1 text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 rounded"
+                                                "className": "px-2 py-1 text-xs font-bold bg-blue-600 text-white dark:bg-blue-600 rounded"
                                             },
                                             "text": "$t:board.notice"
                                         },
                                         {
-                                            "comment": "카테고리 배지",
+                                            "comment": "카테고리 배지 — 줄지 않는 배지 묶음 안이라 폭 상한(max-w-32) + 한 줄 … . 상한이 없던 때 띄어쓰기 없는 긴 분류 이름이 카드 밖으로 나가 390px 에서 문서가 628px 로 넓어졌다(7.1.1).",
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{post?.data?.category}}",
                                             "props": {
-                                                "className": "px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                                "className": "px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded truncate max-w-32",
+                                                "title": "{{post.data.category}}"
                                             },
                                             "text": "{{post.data.category}}"
                                         },
@@ -152,7 +153,7 @@
                                             "props": {
                                                 "name": "eye-slash",
                                                 "size": "sm",
-                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                             }
                                         }
                                     ]
@@ -175,6 +176,19 @@
                                             "text": "{{post?.data?.title ?? ''}}"
                                         },
                                         {
+                                            "comment": "확장 자리 — 확장이 제목 옆에 배지를 붙인다(#149). 이 파일은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다",
+                                            "type": "extension_point",
+                                            "name": "board_post_header_badges",
+                                            "props": {
+                                                "className": "contents",
+                                                "data-extension-point": "board_post_header_badges",
+                                                "post": "{{post?.data}}",
+                                                "postId": "{{post?.data?.id}}",
+                                                "boardSlug": "{{route?.slug}}",
+                                                "context": "board_show"
+                                            }
+                                        },
+                                        {
                                             "comment": "삭제됨 배지",
                                             "type": "basic",
                                             "name": "Span",
@@ -190,7 +204,7 @@
                                             "name": "Span",
                                             "if": "{{post?.data?.is_new}}",
                                             "props": {
-                                                "className": "px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white dark:text-white rounded flex-shrink-0"
+                                                "className": "px-2 py-1 text-xs font-bold bg-red-600 dark:bg-red-600 text-white dark:text-white rounded flex-shrink-0"
                                             },
                                             "text": "N"
                                         }
@@ -368,7 +382,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500",
+                                                "className": "text-gray-500 dark:text-gray-400",
                                                 "title": "{{post?.data?.parent?.created_at ?? ''}}"
                                             },
                                             "text": "{{post?.data?.parent?.created_at_formatted ?? ''}}"
@@ -402,7 +416,8 @@
                                     "name": "Span",
                                     "if": "{{post?.data?.parent?.category}}",
                                     "props": {
-                                        "className": "px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                        "className": "shrink-0 truncate max-w-32 px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                                        "title": "{{post?.data?.parent?.category ?? ''}}"
                                     },
                                     "text": "{{post?.data?.parent?.category ?? ''}}"
                                 },
@@ -412,7 +427,7 @@
                                     "name": "A",
                                     "props": {
                                         "href": "/board/{{route.slug}}/{{post?.data?.parent?.id ?? ''}}",
-                                        "className": "font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                        "className": "min-w-0 wrap-anywhere font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                                     },
                                     "text": "{{post?.data?.parent?.title ?? ''}}"
                                 },
@@ -442,7 +457,7 @@
                                     "name": "Span",
                                     "if": "{{post?.data?.parent?.status === 'blinded'}}",
                                     "props": {
-                                        "className": "italic text-orange-500 dark:text-orange-400"
+                                        "className": "italic text-orange-700 dark:text-orange-400"
                                     },
                                     "text": "$t:board.blinded_post"
                                 },
@@ -505,6 +520,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "className": "text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1"
                                     },
                                     "children": [
@@ -592,6 +608,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "className": "mt-4 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center gap-2 mx-auto cursor-pointer"
                                     },
                                     "children": [
@@ -684,7 +701,7 @@
                                     "props": {
                                         "name": "lock",
                                         "size": "3x",
-                                        "className": "mx-auto text-gray-400 dark:text-gray-500 mb-4"
+                                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-4"
                                     }
                                 },
                                 {
@@ -727,7 +744,7 @@
                                     "props": {
                                         "name": "lock",
                                         "size": "3x",
-                                        "className": "mx-auto text-gray-400 dark:text-gray-500 mb-4"
+                                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-4"
                                     }
                                 },
                                 {
@@ -755,7 +772,7 @@
                                     "props": {
                                         "name": "lock",
                                         "size": "3x",
-                                        "className": "mx-auto text-gray-400 dark:text-gray-500 mb-4"
+                                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-4"
                                     }
                                 },
                                 {
@@ -1308,14 +1325,13 @@
                                 {
                                     "comment": "답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후 + 열 수 없는 비밀 조상이 없을 때). 남의 비밀글 아래 공개 답변에 답변을 달면 그 사람이 스레드의 앵커가 되어 비밀 조상이 열리므로, 서버가 막는 경우(reply_locked_by_secret_ancestor)를 미리 감춘다.",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.abilities?.can_write && post?.data?.status !== 'blinded' && !post?.data?.deleted_at && (!post?.data?.is_secret || post?.data?.content !== null) && !post?.data?.reply_locked_by_secret_ancestor}}",
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/board/{{route.slug}}/write",
                                                 "mergeQuery": true,
                                                 "query": {
                                                     "parent_id": "{{route.id}}"
@@ -1324,6 +1340,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "href": "/board/{{route.slug}}/write?parent_id={{route.id}}",
+                                        "mergeQuery": true,
                                         "className": "px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer"
                                     },
                                     "children": [
@@ -1353,7 +1371,14 @@
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "comment": "공용 신고 모달 설정",
+                                                    "comment": "공용 신고 모달 설정 — 앞서 연 댓글 신고의 대상 칸(댓글 내용·작성자)을 먼저 null 로 지운다(기본 deep 병합은 이번 객체에 없는 키를 남긴다, 7.1.1)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reportModal": null
+                                                    }
+                                                },
+                                                {
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
@@ -1368,6 +1393,7 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
+                                                        "reportErrors": null,
                                                         "reportForm": {
                                                             "reason_type": "",
                                                             "reason_detail": ""
@@ -1382,7 +1408,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "px-4 py-2 text-sm border border-orange-300 dark:border-orange-600 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center gap-1 cursor-pointer"
+                                        "type": "button",
+                                        "className": "px-4 py-2 text-sm border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center gap-1 cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -1406,6 +1433,7 @@
                                     "name": "Button",
                                     "if": "{{_global.currentUser?.uuid && post?.data?.board?.use_report && !post?.data?.is_author && post?.data?.status !== 'blinded' && (!post?.data?.is_secret || post?.data?.content !== null) && post?.data?.is_already_reported}}",
                                     "props": {
+                                        "type": "button",
                                         "disabled": true,
                                         "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60"
                                     },
@@ -1518,7 +1546,7 @@
                                         "type": "button",
                                         "disabled": "{{_local.scrapLoading ?? false}}",
                                         "aria-pressed": "{{!!(_local.isScraped ?? post?.data?.is_scraped)}}",
-                                        "className": "{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}"
+                                        "className": "{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}"
                                     },
                                     "children": [
                                         {
@@ -1541,7 +1569,7 @@
                                 {
                                     "comment": "수정 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "if": "{{!post?.data?.deleted_at && ((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}",
                                     "actions": [
                                         {
@@ -1549,13 +1577,14 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/board/{{route.slug}}/{{route.id}}/edit",
                                                 "mergeQuery": true,
                                                 "query": {}
                                             }
                                         }
                                     ],
                                     "props": {
+                                        "href": "/board/{{route.slug}}/{{route.id}}/edit",
+                                        "mergeQuery": true,
                                         "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
                                     },
                                     "children": [
@@ -1605,7 +1634,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "px-4 py-2 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1 cursor-pointer"
+                                        "type": "button",
+                                        "className": "px-4 py-2 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1 cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -1651,7 +1681,7 @@
                             "props": {
                                 "name": "lock",
                                 "size": "xl",
-                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                             }
                         },
                         {

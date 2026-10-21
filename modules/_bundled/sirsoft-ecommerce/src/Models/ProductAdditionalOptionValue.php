@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -62,7 +63,7 @@ class ProductAdditionalOptionValue extends Model
             return is_string($name) ? $name : '';
         }
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**

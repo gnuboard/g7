@@ -246,7 +246,7 @@ class OrderOptionRepository implements OrderOptionRepositoryInterface
      *
      * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다 — 집계 표(ecommerce_stats)는 모든 운영자가 함께 보는
      * 하루 1행이라 보는 사람마다 경계를 달리할 수 없고, UTC 자정으로 자르면 한국 시간 새벽 0~9시 주문이
-     * 전날로 묶인다(7.1.0 QE-O2). 하루 끝은 사이트 시간대에서 하루를 더한 직전까지다(일광절약시간 지역 대비).
+     * 전날로 묶인다(7.1.0). 하루 끝은 사이트 시간대에서 하루를 더한 직전까지다(일광절약시간 지역 대비).
      *
      * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return Builder<OrderOption> 쿼리 빌더

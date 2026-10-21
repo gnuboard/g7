@@ -8,7 +8,7 @@
   <modal data-type="composite" data-ref="default_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.set_default.title" size="sm">
     <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.set_default.message</p>
     <div class="modal-footer-buttons">
-      <button class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
         <on type="click">
           <!-- 취소 — 켜 놓은 기본값 체크를 되돌리고 닫는다. 되돌리지 않으면 확인을 거부했는데도 체크가 켜진 채 남아 저장 때 함께 나간다.
                부모 폼 커밋(docs/frontend/modal-usage.md)대로 **두 자리에** 쓴다 — 창의 `$parent._local` 쓰기는 저장이 읽는
@@ -22,7 +22,7 @@
         </on>
         $t:sirsoft-ecommerce.admin.common_info.button.cancel
       </button>
-      <button class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+      <button type="button" class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
         <on type="click">
           <close-modal/>
         </on>

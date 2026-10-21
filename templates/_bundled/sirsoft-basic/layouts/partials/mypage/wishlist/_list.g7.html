@@ -19,7 +19,7 @@
         <div data-each="item in {{wishlist.data.data ?? []}}" class="relative group">
           <product-card data-type="composite" product="{{item.product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
           <!-- 찜 해제 버튼 (카드 우상단 오버레이) -->
-          <button type="button" aria-label="$t:shop.product.remove_from_wishlist" class="absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-200 dark:border-gray-600 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:scale-110 transition-all cursor-pointer">
+          <button type="button" aria-label="$t:shop.product.remove_from_wishlist" class="absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-300 hover:text-red-700 dark:hover:text-red-300 hover:scale-110 transition-all cursor-pointer">
             <on type="click">
               <api-call :auth_required="true" auth_mode="required" target="/api/modules/sirsoft-ecommerce/wishlist/{{item.id}}" method="DELETE">
                 <success>
@@ -36,17 +36,17 @@
         </div>
       </grid>
       <!-- 찜 목록 없음 -->
-      <div data-if="{{!wishlist.data.data || wishlist.data.data.length === 0}}" class="p-8 text-center">
+      <div data-if="{{wishlist !== undefined &amp;&amp; (!wishlist.data.data || wishlist.data.data.length === 0)}}" class="p-8 text-center">
         <responsive on="portable" class="p-6 text-center"/>
-        <icon name="heart" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <icon name="heart" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <p class="text-gray-500 dark:text-gray-400">$t:mypage.wishlist.empty</p>
-        <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer">
+        <a href="{{_global.shopBase}}/products" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer">
           <on type="click">
             <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 찜 목록이 비었을 때 상품 목록으로 내보내는 이동이다. -->
-            <navigate path="{{_global.shopBase}}/products"/>
+            <navigate/>
           </on>
           $t:mypage.wishlist.go_shopping
-        </button>
+        </a>
       </div>
       <!-- 페이지네이션 -->
       <pagination data-type="composite" data-if="{{((wishlist.data.pagination.last_page ?? 0) > 1) || (wishlist.data.pagination.has_more_pages === true) || ((wishlist.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{wishlist.data.pagination.current_page}}" totalPages="{{wishlist.data.pagination.last_page ?? null}}" hasMorePages="{{wishlist.data.pagination.has_more_pages ?? false}}" class="pt-4 flex justify-center">

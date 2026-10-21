@@ -110,7 +110,7 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(identityPurposes?.data ?? []).length === 0}}",
+                            "if": "{{identityPurposes !== undefined && (identityPurposes?.data ?? []).length === 0}}",
                             "props": {
                                 "className": "text-label-subtle py-4 text-center"
                             },
@@ -196,7 +196,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-success-soft' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
+                                                "className": "{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-50 dark:bg-green-900 text-success-soft' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}}"
                                             },
                                             "text": "{{provider.is_available ? '$t:admin.settings.identity.providers.available' : '$t:admin.settings.identity.providers.unavailable'}}"
                                         }
@@ -230,7 +230,7 @@
                 {
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(identityProviders?.data ?? []).length === 0}}",
+                    "if": "{{identityProviders !== undefined && (identityProviders?.data ?? []).length === 0}}",
                     "props": {
                         "className": "text-label-subtle py-4 text-center"
                     },

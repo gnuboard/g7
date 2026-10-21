@@ -102,7 +102,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "globe",
-                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                "className": "text-base text-gray-500 dark:text-gray-500"
                             }
                         },
                         {
@@ -363,7 +363,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "globe",
-                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                "className": "text-base text-gray-500 dark:text-gray-500"
                             }
                         },
                         {
@@ -425,7 +425,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -464,7 +464,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -544,7 +544,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -603,7 +603,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-outline text-red-600 dark:text-red-400 flex-1"
+                        "className": "btn btn-outline text-red-600 dark:text-red-300 flex-1"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.main_banner.detail.actions.delete"
                 }

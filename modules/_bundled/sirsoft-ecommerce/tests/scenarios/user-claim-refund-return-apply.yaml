@@ -100,7 +100,7 @@ effects:
   - claim_refund_auto_approval_gate_declared_by_server
   # 자동 전이 분기가 구매자 첨부를 지우지 않는다
   - auto_branch_keeps_the_buyer_attachments
-  # T2-D5 (#599 3차 실측 L-8) — 계좌가 빈 채로는 신청 자체를 누를 수 없다
+  # (#599 실측) — 계좌가 빈 채로는 신청 자체를 누를 수 없다
   - claim_apply_submit_blocked_until_the_refund_account_is_filled
   - claim_apply_refund_account_never_prefills_masked_values
   - claim_refund_account_prefills_the_registered_account
@@ -174,7 +174,7 @@ notes: |
 
 validation:
   audit_rule: frontend-change-requires-e2e
-  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 주문·신청으로 재실측
+  browser_check: Playwright MCP   # #599 실측 — 실제 주문·신청으로 재실측
   note: |
     T2-D5(계좌가 비면 [환불 신청하기]가 잠긴다)의 브라우저 축은 Playwright MCP 재실측이 덮는다.
     Playwright spec 을 새로 두지 않는 이유는 이 축이 **주문 → 결제(무통장) → 배송완료 → 환불신청**

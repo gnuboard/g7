@@ -96,7 +96,20 @@
     "result_cancelled_amount": "キャンセル金額",
     "result_cancelled_at": "キャンセル日時",
     "result_refund_status": "返金ステータス",
-    "result_refund_number": "返金番号"
+    "result_refund_number": "返金番号",
+    "escrow_couriers": {
+      "kyungdong": "慶東宅配",
+      "ilyang": "一陽ロジス",
+      "hapdong": "合同宅配",
+      "dream": "ドリーム宅配",
+      "chunil": "天一宅配",
+      "kunyoung": "建栄宅配",
+      "cj": "CJ大韓通運",
+      "hanjin": "韓進宅配",
+      "logen": "ロジェン宅配",
+      "lotte_parcel": "ロッテ宅配",
+      "epost": "郵便局宅配"
+    }
   },
   "settings": {
     "title": "NHN KCP設定",

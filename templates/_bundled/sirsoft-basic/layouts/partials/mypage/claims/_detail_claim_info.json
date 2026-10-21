@@ -66,7 +66,7 @@
                     "name": "P",
                     "if": "{{!claim.data?.claim?.calculation_comparison?.original}}",
                     "props": {
-                        "className": "text-sm text-gray-400 dark:text-gray-500",
+                        "className": "text-sm text-gray-500 dark:text-gray-400",
                         "data-testid": "claim-detail-comparison-empty"
                     },
                     "text": "$t:claim.detail.comparison.empty"
@@ -170,7 +170,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -254,7 +254,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -268,7 +268,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -308,7 +308,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -374,7 +374,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -388,7 +388,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -428,7 +428,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -486,7 +486,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -562,7 +562,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -638,7 +638,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -714,7 +714,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -790,7 +790,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -866,7 +866,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -942,7 +942,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -1018,7 +1018,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -1094,7 +1094,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -1178,7 +1178,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -1192,7 +1192,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -1232,7 +1232,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -1290,7 +1290,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     },
@@ -1764,7 +1764,7 @@
                             ]
                         },
                         {
-                            "comment": "수단이 둘 이상이면 **다시 고를 수 있어야 한다.** 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이 모자라거나, 운영자가 그 수단을 `claim.charge_payment_methods` 에서 내리거나. 두 경우 모두 서버가 거절하는데 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다(#599 3차 실측 F-1·F-2). 선택지는 서버가 `available_payment_methods` 로 준다 — 화면 옵션 ⊆ 게이트 ⊆ 서비스라 고를 수 있는데 누르면 막히는 칸이 생기지 않는다.",
+                            "comment": "수단이 둘 이상이면 **다시 고를 수 있어야 한다.** 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이 모자라거나, 운영자가 그 수단을 `claim.charge_payment_methods` 에서 내리거나. 두 경우 모두 서버가 거절하는데 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다(#599 실측). 선택지는 서버가 `available_payment_methods` 로 준다 — 화면 옵션 ⊆ 게이트 ⊆ 서비스라 고를 수 있는데 누르면 막히는 칸이 생기지 않는다.",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{(claim.data?.claim?.available_payment_methods ?? []).length >= 2}}",
@@ -1851,7 +1851,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                                "className": "w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                                 "disabled": "{{_local.isPayingClaim === true || claim.data?.claim?.can_pay !== true}}"
                             },
                             "children": [
@@ -2021,7 +2021,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:claim.detail.refund_mileage_credit_hint"
                         }
@@ -2119,7 +2119,44 @@
                         },
                         {
                             "type": "basic",
+                            "name": "A",
+                            "if": "{{!_local.isGuest}}",
+                            "actions": [
+                                {
+                                    "comment": "앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "claimPayError": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{claim.data.linked_claims.source.detail_url}}",
+                                                "mergeQuery": true,
+                                                "query": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "href": "{{claim.data.linked_claims.source.detail_url}}",
+                                "mergeQuery": true,
+                                "className": "inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                            },
+                            "text": "{{(claim.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim.data?.linked_claims?.source?.claim_number ?? '')}}"
+                        },
+                        {
+                            "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                            "type": "basic",
                             "name": "Button",
+                            "if": "{{_local.isGuest}}",
                             "actions": [
                                 {
                                     "comment": "앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다",
@@ -2182,7 +2219,44 @@
                             "children": [
                                 {
                                     "type": "basic",
+                                    "name": "A",
+                                    "if": "{{!_local.isGuest}}",
+                                    "actions": [
+                                        {
+                                            "comment": "앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "claimPayError": ""
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{linkedRefund.detail_url}}",
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "href": "{{linkedRefund.detail_url}}",
+                                        "mergeQuery": true,
+                                        "className": "inline-flex items-center justify-center text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                    },
+                                    "text": "{{linkedRefund.claim_number}}"
+                                },
+                                {
+                                    "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                                    "type": "basic",
                                     "name": "Button",
+                                    "if": "{{_local.isGuest}}",
                                     "actions": [
                                         {
                                             "comment": "앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다",
@@ -2224,7 +2298,7 @@
                                             "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
                                             "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
                                             "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                                            "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                            "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
                                             "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
                                             "dark": "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                                         },

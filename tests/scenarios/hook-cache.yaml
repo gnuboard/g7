@@ -46,7 +46,7 @@ effects:
   - absent_cache_falls_back_to_scan_registration
   - corrupted_cache_returns_null_and_falls_back_to_scan
   - testing_env_always_scans_ignoring_cache_file
-  # 형식 표지 (7.1.0 출시 점검 U1-1 — 7.0.x 가 옛 리스너로 구운 캐시 자동 무효화)
+  # 형식 표지 (7.1.0 출시 점검 — 7.0.x 가 옛 리스너로 구운 캐시 자동 무효화)
   - unmarked_legacy_cache_falls_back_to_scan
   - cache_from_other_core_version_falls_back_to_scan
   - generate_records_format_and_core_version_markers

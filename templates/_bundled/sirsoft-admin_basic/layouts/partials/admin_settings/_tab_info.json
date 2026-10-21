@@ -1220,7 +1220,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "{{ext[1] ? 'check' : 'x'}}",
-                                                        "className": "{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
+                                                        "className": "{{ext[1] ? 'text-base text-green-600 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
                                                     }
                                                 },
                                                 {
@@ -1272,7 +1272,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "{{ext[1] ? 'check' : 'x'}}",
-                                                        "className": "{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
+                                                        "className": "{{ext[1] ? 'text-base text-green-600 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
                                                     }
                                                 },
                                                 {

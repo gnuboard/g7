@@ -869,7 +869,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
-| user_uuids | body | array | 예 | min 1 | 쿠폰을 직접 발급할 대상 회원 UUID 배열 (내부 회원 ID 로 해석 후 발급) |
+| user_uuids | body | array | 예 | min 1 | 쿠폰을 직접 발급할 대상 회원 UUID 배열 (내부 회원 ID 로 해석 후 발급). 탈퇴 회원이 하나라도 있으면 요청 전체가 422(`user_uuids.{n}`: 「탈퇴한 회원에게는 쿠폰을 발급할 수 없습니다.」) |
 
 **요청 예시**
 
@@ -935,7 +935,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 지정한 회원들에게 특정 쿠폰을 즉시 직접 발급합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하고 대상 회원은 `user_uuids`(uuid 배열)로 지정하며, FormRequest 가 uuid 를 내부 회원 ID 로 해석한 뒤 `CouponService::issueDirectly()`가 발급합니다. 응답에는 실제 발급 건수(`issued`)와 이미 보유/한도 초과 등으로 건너뛴 목록(`skipped`)이 포함되고, 건너뛴 건이 있으면 별도 안내 메시지 키가 사용됩니다.
+**설명** 관리자가 지정한 회원들에게 특정 쿠폰을 즉시 직접 발급합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하고 대상 회원은 `user_uuids`(uuid 배열)로 지정하며, FormRequest 가 uuid 를 내부 회원 ID 로 해석한 뒤 `CouponService::issueDirectly()`가 발급합니다. 응답에는 실제 발급 건수(`issued`)와 이미 보유/한도 초과 등으로 건너뛴 목록(`skipped`)이 포함되고, 건너뛴 건이 있으면 별도 안내 메시지 키가 사용됩니다. 탈퇴 회원에게는 발급하지 않습니다(7.1.1) — 요청 검증이 422 로 막고, 서비스를 바로 부르는 경로는 `UserCouponService::issueDirectlyToUser()` 가 사유 `user_withdrawn` 으로 거절합니다(배치에서는 `skipped[].reason`).
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/promotion-coupons/{id}/issues

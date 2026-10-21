@@ -375,9 +375,11 @@ hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키�
 
 ## 8. 액션
 
-top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액션에서는 **무접두** `if="{{…}}"` — 노드의 `data-if` 와 다르다. 액션에 `data-if` 를 달면 `params` 로 들어가 조건이 무시된 채 항상 실행된다) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce`(진입점만 — 다른 액션 안쪽의 debounce 는 적용되지 않고 lint `nested_action_debounce_ignored` 경고) `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
+top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액션에서는 **무접두** `if="{{…}}"` — 노드의 `data-if` 와 다르다. 액션에 `data-if` 를 달면 `params` 로 들어가 조건이 무시된 채 항상 실행된다) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce`(진입점만 — 다른 액션 안쪽의 debounce 는 적용되지 않고 lint `nested_action_debounce_ignored` 경고) `actionRef` `render` `onLoad` `stopPropagation`(진입점만) `preventDefault`(진입점만, engine-v1.80.1). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
 
 > `:stopPropagation="true"` 는 engine-v1.68.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
+
+> `:preventDefault` 도 같은 형식의 **액션 키**다(engine-v1.80.1). 생략하면 엔진이 자동 판정한다 — 실제 주소 `<a href>` 를 Ctrl·Cmd·Shift·Alt+클릭하거나 `target`·`download` 링크면 막지도 실행하지도 않아 새 탭·새 창으로 열린다. `true` 는 언제나 막고 실행, `false` 는 막지 않고 실행. 화면 이동 링크는 `<a href="…" :mergeQuery="true"><on type="click"><navigate :mergeQuery="true"><query/></navigate></on>…</a>` 처럼 **path 를 생략**하면 그 href 로 이동한다(목록 문맥을 넘기는 링크는 A 와 navigate 양쪽에 `:mergeQuery="true"` — 보통 클릭과 새 탭이 같은 주소로 간다)([actions-handlers-navigation.md 「화면 이동을 링크로 쓰는 법」](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801)).
 >
 > **같은 이름의 컴포넌트 prop 과 혼동하지 않는다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation` 을 갖는다(구현 [UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`, 작성 4파일). **자리가 둘을 가른다** — 노드 태그 속성(`<user-info :stopPropagation="true"/>`)이면 컴포넌트 prop, `<on>` 아래 핸들러 태그 속성이면 액션 키다.
 

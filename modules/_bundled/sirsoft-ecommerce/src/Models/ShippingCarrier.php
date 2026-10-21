@@ -3,6 +3,9 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\Concerns\HasUserOverrides;
+use App\Models\User;
+use App\Support\LocalizedValue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -74,7 +77,7 @@ class ShippingCarrier extends Model
      */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
@@ -84,7 +87,7 @@ class ShippingCarrier extends Model
      */
     public function updater(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**
@@ -102,7 +105,7 @@ class ShippingCarrier extends Model
             return '';
         }
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**
@@ -143,8 +146,8 @@ class ShippingCarrier extends Model
     /**
      * 활성 배송사만 조회 스코프
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeActive($query)
     {
@@ -154,8 +157,8 @@ class ShippingCarrier extends Model
     /**
      * 정렬 순서대로 조회 스코프
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeOrdered($query)
     {
@@ -165,9 +168,9 @@ class ShippingCarrier extends Model
     /**
      * 유형별 조회 스코프
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Builder  $query
      * @param  string  $type  배송사 유형 (domestic, international)
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return Builder
      */
     public function scopeOfType($query, string $type)
     {

@@ -26,7 +26,7 @@ import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from
 import { t } from './utils';
 
 // 생략된 배열 속성의 기본값 — 렌더마다 새 배열을 만들면 그 값을 의존성으로 쓰는 동기화 effect·콜백이
-// 렌더마다 다시 돌아 상태 갱신이 끝없이 이어진다(7.1.0 O-PD-2). 얼려 두어 공유 상수가 바뀌지 않게 한다.
+// 렌더마다 다시 돌아 상태 갱신이 끝없이 이어진다(7.1.0). 얼려 두어 공유 상수가 바뀌지 않게 한다.
 const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
 const EMPTY_ROLE_IDS = Object.freeze([]) as unknown as number[];
 

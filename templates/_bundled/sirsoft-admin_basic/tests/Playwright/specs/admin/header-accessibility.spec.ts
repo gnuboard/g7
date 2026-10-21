@@ -1,13 +1,13 @@
 /**
  * E2E: 관리자 머리글 접근성 회귀 — 7.1.0 종합 단계에서 고친 프론트 동작을 브라우저로 고정한다.
  *
- * - 언어 메뉴(`#language_selector_desktop`)는 이름 있는 listbox 이고 키보드로 다룬다(종합 3 ⑬, O-PF-1).
+ * - 언어 메뉴(`#language_selector_desktop`)는 이름 있는 listbox 이고 키보드로 다룬다.
  *   단추에서 ↓ 로 열면 현재 언어 항목에 초점이 가고, ↓ 로 옮겨 Enter 로 고르면 회원 언어 저장
- *   `PATCH /api/admin/users/me/language` 가 **한 번만** 나간다(종합 3 O-C3-3, R1 ⑫). Esc 는 닫고 단추로 초점을 돌린다.
- * - 테마 단추 이름이 화면 언어를 따른다 — ko 「화면 테마」, en 「Theme」(종합 3b O-C3-1, 종전 영문 고정 「Toggle theme」).
- * - 대표 화면(대시보드, 회원 목록, 환경설정)에 이름 없는 단추와 링크가 0 이다(종합 3c O-C3b-3, 아이콘 꾸밈화 뒤 아이콘만
+ *   `PATCH /api/admin/users/me/language` 가 **한 번만** 나간다. Esc 는 닫고 단추로 초점을 돌린다.
+ * - 테마 단추 이름이 화면 언어를 따른다 — ko 「화면 테마」, en 「Theme」(종전 영문 고정 「Toggle theme」).
+ * - 대표 화면(대시보드, 회원 목록, 환경설정)에 이름 없는 단추와 링크가 0 이다(아이콘 꾸밈화 뒤 아이콘만
  *   있는 단추가 이름을 잃지 않는다).
- * - FileUploader 를 `initialFiles` 없이 놓아도 렌더가 멈춘다(종합 3 ⑪, O-PD-2). 번들 레이아웃은 모두 값을 넘기므로
+ * - FileUploader 를 `initialFiles` 없이 놓아도 렌더가 멈춘다. 번들 레이아웃은 모두 값을 넘기므로
  *   대시보드 레이아웃 응답에 업로더 하나를 덧붙여 재현한다. 수정 전 번들(HEAD 의 dist)을 끼운 같은 조작에서는
  *   업로더 아래 DOM 변이가 5초에 수십만 건이었다.
  *
@@ -131,7 +131,7 @@ test.describe('관리자 머리글 언어 메뉴와 테마 단추', () => {
     expect((await saved).status()).toBe(200);
 
     await expect(page.getByRole('button', { name: 'Theme', exact: true }).first()).toBeVisible({ timeout: 30_000 });
-    // 저장이 두 번(컴포넌트 + 엔진) 나가던 회귀(O-C3-3)를 잡는다 — 화면이 다시 그려질 시간을 둔 뒤 센다.
+    // 저장이 두 번(컴포넌트 + 엔진) 나가던 회귀를 잡는다 — 화면이 다시 그려질 시간을 둔 뒤 센다.
     await page.waitForTimeout(3_000);
     expect(patches).toHaveLength(1);
     expect(JSON.parse(patches[0])).toEqual({ language: 'en' });

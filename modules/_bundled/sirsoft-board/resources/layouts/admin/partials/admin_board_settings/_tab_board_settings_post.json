@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "type": "basic",
@@ -118,6 +111,7 @@
                                                             "type": "basic",
                                                             "name": "Input",
                                                             "props": {
+                                                                "aria-label": "$t:sirsoft-board.admin.settings.fields.min_title_length",
                                                                 "type": "number",
                                                                 "name": "basic_defaults.min_title_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}",
@@ -216,6 +210,7 @@
                                                             "type": "basic",
                                                             "name": "Input",
                                                             "props": {
+                                                                "aria-label": "$t:sirsoft-board.admin.settings.fields.max_title_length",
                                                                 "type": "number",
                                                                 "name": "basic_defaults.max_title_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}",
@@ -314,6 +309,7 @@
                                                             "type": "basic",
                                                             "name": "Input",
                                                             "props": {
+                                                                "aria-label": "$t:sirsoft-board.admin.settings.fields.min_content_length",
                                                                 "type": "number",
                                                                 "name": "basic_defaults.min_content_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}",
@@ -412,6 +408,7 @@
                                                             "type": "basic",
                                                             "name": "Input",
                                                             "props": {
+                                                                "aria-label": "$t:sirsoft-board.admin.settings.fields.max_content_length",
                                                                 "type": "number",
                                                                 "name": "basic_defaults.max_content_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}",
@@ -503,6 +500,7 @@
                                                     "type": "composite",
                                                     "name": "TagInput",
                                                     "props": {
+                                                        "aria-label": "$t:sirsoft-board.admin.settings.fields.blocked_keywords",
                                                         "name": "basic_defaults.blocked_keywords",
                                                         "placeholder": "$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder",
                                                         "creatable": true,
@@ -589,6 +587,7 @@
                                                             "type": "basic",
                                                             "name": "Input",
                                                             "props": {
+                                                                "aria-label": "$t:sirsoft-board.admin.settings.fields.new_display_hours",
                                                                 "type": "number",
                                                                 "name": "basic_defaults.new_display_hours",
                                                                 "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 1}}",

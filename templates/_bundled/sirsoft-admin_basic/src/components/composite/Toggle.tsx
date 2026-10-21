@@ -71,7 +71,7 @@ export const Toggle: React.FC<ToggleProps> = ({
   const [checked, setChecked] = useState(() => checkedProp ?? valueProp ?? false);
 
   // 이름: ariaLabel → 옆 라벨(label) → 행 제목(곁 라벨, aria-labelledby) → 마지막 수단으로 name.
-  // 종전에는 곁 제목을 보지 않고 곧장 name(「security.force_https」 같은 필드 키)을 이름으로 달았다(7.1.0 J D-J7, O-G2).
+  // 종전에는 곁 제목을 보지 않고 곧장 name(「security.force_https」 같은 필드 키)을 이름으로 달았다(7.1.0 실측).
   const switchRef = useRef<HTMLDivElement>(null);
   const [useNameFallback, setUseNameFallback] = useState(false);
   useEffect(() => {
@@ -185,7 +185,7 @@ export const Toggle: React.FC<ToggleProps> = ({
           className="sr-only peer"
           tabIndex={-1}
           // 스위치 역할은 바깥 래퍼(role=switch)가 맡는다 — 안쪽 체크박스가 접근성 트리에 남으면
-          // 이름 없는 「체크박스」 가 스위치마다 하나씩 더 읽혔다(7.1.0 J D-J7).
+          // 이름 없는 「체크박스」 가 스위치마다 하나씩 더 읽혔다(7.1.0 실측).
           aria-hidden="true"
         />
         <div className={`toggle-switch-track ${currentSize.track} ${currentSize.thumb}`} />

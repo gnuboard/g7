@@ -25,6 +25,10 @@ class ComposerInstallPluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
+     *
+     * @param  PluginManager  $pluginManager  플러그인 관리자 (플러그인 적재·조회)
+     * @param  ExtensionManager  $extensionManager  Composer 의존성 확인·설치·오토로드 갱신을 맡는 확장 관리자
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
@@ -35,7 +39,9 @@ class ComposerInstallPluginCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 커맨드를 실행합니다.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -44,9 +50,9 @@ class ComposerInstallPluginCommand extends Command
         $noDev = $this->option('no-dev');
 
         if (! $identifier && ! $installAll) {
-            $this->error('❌ 플러그인 식별자를 지정하거나 --all 옵션을 사용하세요.');
+            $this->error('❌ '.__('plugins.commands.composer_install.missing_identifier'));
             $this->line('');
-            $this->line('사용법:');
+            $this->line(__('plugins.commands.composer_install.usage'));
             $this->line('  php artisan plugin:composer-install sirsoft-payment');
             $this->line('  php artisan plugin:composer-install --all');
             $this->line('  php artisan plugin:composer-install --all --no-dev');
@@ -107,7 +113,7 @@ class ComposerInstallPluginCommand extends Command
 
             // 오토로드 갱신
             $this->extensionManager->updateComposerAutoload();
-            $this->line('   오토로드 캐시 갱신 완료');
+            $this->line('   '.__('plugins.commands.composer_install.autoload_refreshed'));
 
             return Command::SUCCESS;
         }
@@ -128,7 +134,7 @@ class ComposerInstallPluginCommand extends Command
         $plugins = $this->pluginManager->getAllPlugins();
 
         if (empty($plugins)) {
-            $this->warn('⚠️  설치된 플러그인이 없습니다.');
+            $this->warn('⚠️  '.__('plugins.commands.composer_install.none_installed'));
 
             return Command::SUCCESS;
         }
@@ -136,14 +142,14 @@ class ComposerInstallPluginCommand extends Command
         // 중복 패키지 감지
         $duplicates = $this->extensionManager->detectDuplicatePackages();
         if (! empty($duplicates)) {
-            $this->warn('⚠️  중복 패키지 감지:');
+            $this->warn('⚠️  '.__('plugins.commands.composer_install.duplicate_packages'));
             foreach ($duplicates as $package => $users) {
                 $this->warn("   - {$package}: ".implode(', ', $users));
             }
             $this->line('');
         }
 
-        $this->info('📦 모든 플러그인의 Composer 의존성 설치 시작');
+        $this->info('📦 '.__('plugins.commands.composer_install.start_all'));
 
         $successCount = 0;
         $skipCount = 0;
@@ -161,10 +167,10 @@ class ComposerInstallPluginCommand extends Command
 
             if ($result) {
                 $successCount++;
-                $this->info("   ✅ 완료: {$identifier}");
+                $this->info('   ✅ '.__('plugins.commands.composer_install.item_done', ['identifier' => $identifier]));
             } else {
                 $failCount++;
-                $this->error("   ❌ 실패: {$identifier}");
+                $this->error('   ❌ '.__('plugins.commands.composer_install.item_failed', ['identifier' => $identifier]));
             }
 
             $this->line('');

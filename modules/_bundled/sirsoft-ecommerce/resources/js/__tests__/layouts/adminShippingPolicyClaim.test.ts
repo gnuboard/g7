@@ -60,6 +60,8 @@ const partials = collect(shell, (n) => typeof n.partial === 'string').map((n) =>
  *   shipping_policy_claim_fee_block_is_placed_in_country_tab
  */
 describe('배송정책 폼 — 클레임 블록 배치', () => {
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_block_is_placed_after_basic_info
   it('회수지는 기본정보 바로 아래에 놓인다', () => {
     const basic = partials.indexOf('partials/admin_ecommerce_shipping_policy_form/_partial_basic_info.json');
     const claim = partials.indexOf('partials/admin_ecommerce_shipping_policy_form/_partial_claim_addresses.json');
@@ -68,6 +70,8 @@ describe('배송정책 폼 — 클레임 블록 배치', () => {
     expect(claim).toBe(basic + 1);
   });
 
+  // @scenario claim_scope=country_fee
+  // @effects shipping_policy_claim_fee_block_is_placed_in_country_tab
   it('국가별 클레임 배송비는 부과 설정 다음, 추가배송비 앞에 놓인다', () => {
     const charge = partials.indexOf('partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.json');
     const claimFee = partials.indexOf('partials/admin_ecommerce_shipping_policy_form/_partial_claim_country_fee.json');
@@ -96,12 +100,16 @@ describe('배송정책 폼 — 클레임 블록 배치', () => {
 describe('회수지 — 조회와 저장', () => {
   const source = (shell as any).data_sources.find((d: any) => d.id === 'claim_settings');
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_loads_only_in_edit_mode
   it('수정 모드에서만 회수지를 조회한다 (등록 모드에는 정책 id 가 없다)', () => {
     expect(source).toBeDefined();
     expect(source.if).toBe('{{!!route.id}}');
     expect(source.endpoint).toContain('/claim-settings');
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_loads_only_in_edit_mode
   it('편집 버퍼의 시드는 initLocal 이 아니라 응답 시점의 setState 다', () => {
     // `initLocal` 은 응답 시점 한 번으로 끝나지 않는다 — 마운트 뒤 한 번 더 적용되며, 그
     // 재적용이 **명시적 setState 로 기록한 편집만** 되돌린다(같은 화면의 Form 자동바인딩
@@ -114,7 +122,7 @@ describe('회수지 — 조회와 저장', () => {
       .filter((a: any) => a?.handler === 'setState');
 
     // 시드 하나가 편집 버퍼와 로딩 표식을 함께 쓴다 — 편집이 먼저 일어났으면(dirty) 편집값을 보존하고
-    // `_loaded` 만 합친다. 표식을 별도 키·별도 setState 로 두면 입력 change 뒤에 붙지 않는다(10차 실측).
+    // `_loaded` 만 합친다. 표식을 별도 키·별도 setState 로 두면 입력 change 뒤에 붙지 않는다(실측).
     expect(seeds).toHaveLength(1);
     expect(seeds[0].params.target).toBe('local');
     expect(seeds[0].params.claimAddresses).toContain('response.data');
@@ -123,8 +131,10 @@ describe('회수지 — 조회와 저장', () => {
     expect(seeds[0].if).toBeUndefined();
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_loads_only_in_edit_mode
   it('조회가 끝나기 전에는 회수지 입력이 잠기고 안내가 선다 (수정 화면만)', () => {
-    // 로딩 표식은 데이터소스 onSuccess 가 세우는데 편집이 먼저 일어나면 그 쓰기가 붙지 않는다(10차 실측).
+    // 로딩 표식은 데이터소스 onSuccess 가 세우는데 편집이 먼저 일어나면 그 쓰기가 붙지 않는다(실측).
     // 그래서 편집 자체를 조회 완료 뒤로 미룬다 — 신규 등록은 init_actions 가 표식을 먼저 세운다.
     const gated = collect(claimAddresses, (n) => typeof n.props?.disabled === 'string');
     // 대조 모집단은 형제 검사(adminEcommerceSettingsClaim: '읽기 전용 운영자에게는 모든 입력이
@@ -150,6 +160,8 @@ describe('회수지 — 조회와 저장', () => {
     expect(notice.text).toContain('claim_addresses_loading_notice');
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_saves_only_when_touched
   it('조회가 성공하기 전에는 회수지 저장을 보내지 않는다 — 폴백 null 이 삭제 계약을 타지 않게', () => {
     // 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 `{exchange:null, return:null}` 이라 "못 받았다" 와
     // "비어 있다" 가 값으로 구분되지 않는다. 저장은 두 회수지를 항상 함께 실으므로 조회가 실패한 채
@@ -169,10 +181,14 @@ describe('회수지 — 조회와 저장', () => {
     expect(warn.if).toBe('{{_local.claimAddressesDirty === true && _local.claimAddresses?._loaded !== true}}');
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_load_failure_does_not_break_screen
   it('조회 실패는 화면을 막지 않는다 — 빈 회수지로 떨어진다', () => {
     expect(source.fallback?.data?.addresses).toEqual({ exchange: null, return: null });
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_has_all_fields_per_type
   it('교환·반품 회수지가 각각 5개 필드를 갖는다', () => {
     for (const type of ['exchange', 'return']) {
       const inputs = collect(claimAddresses, (n) => typeof n.id === 'string' && n.id.startsWith(`claim_address_${type}_`) && n.name === 'Input');
@@ -187,6 +203,8 @@ describe('회수지 — 조회와 저장', () => {
     }
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_saves_only_when_touched
   it('회수지를 손댄 경우에만 이어지는 요청이 나간다', () => {
     const call = collect(shell, (n) => n.handler === 'apiCall' && String(n.target ?? '').includes('claim-settings'))[0];
 
@@ -195,6 +213,8 @@ describe('회수지 — 조회와 저장', () => {
     expect(call.params.method).toBe('PUT');
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_empty_sends_null_to_delete
   it('비어 있는 회수지는 null 로 보내 삭제 계약을 탄다', () => {
     const call = collect(shell, (n) => n.handler === 'apiCall' && String(n.target ?? '').includes('claim-settings'))[0];
 
@@ -203,6 +223,8 @@ describe('회수지 — 조회와 저장', () => {
     }
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_failure_keeps_the_screen
   it('회수지 저장이 실패하면 목록으로 나가지 않는다', () => {
     const call = collect(shell, (n) => n.handler === 'apiCall' && String(n.target ?? '').includes('claim-settings'))[0];
 
@@ -210,6 +232,8 @@ describe('회수지 — 조회와 저장', () => {
     expect(JSON.stringify(call.onError)).toContain('error.errors');
   });
 
+  // @scenario claim_scope=pickup_address
+  // @effects shipping_policy_claim_address_navigates_once_on_success
   it('저장 성공 경로는 손댔든 아니든 한 번만 이동한다', () => {
     const policyCall = collect(shell, (n) => n.handler === 'apiCall' && String(n.target ?? '').includes('shipping-policies') && !String(n.target ?? '').includes('claim-settings'))[0];
     const outer = policyCall.onSuccess.filter((a: any) => a.handler === 'navigate');
@@ -234,6 +258,8 @@ describe('회수지 — 조회와 저장', () => {
 describe('국가별 클레임 배송비', () => {
   const text = JSON.stringify(claimCountryFee);
 
+  // @scenario claim_scope=country_fee
+  // @effects shipping_policy_claim_fee_axes_bound_to_active_country
   it('산정 방식 2종과 고정액 2종이 활성 국가 탭에 붙는다', () => {
     for (const field of ['claim_fee_mode', 'return_fixed_fee', 'exchange_fixed_fee']) {
       // `JSON.stringify` 는 콜론 뒤에 공백을 넣지 않으므로 바늘도 공백 없는 형태여야 한다.
@@ -245,18 +271,24 @@ describe('국가별 클레임 배송비', () => {
     expect(text).toContain('_computed.activeCountrySetting');
   });
 
+  // @scenario claim_scope=country_fee
+  // @effects shipping_policy_claim_fixed_inputs_only_in_fixed_mode
   it('고정액 입력은 고정 금액 모드에서만 보인다', () => {
     const fixedBlock = collect(claimCountryFee, (n) => n.id === 'claim_fixed_fee_fields')[0];
 
     expect(fixedBlock.if).toContain("=== 'fixed'");
   });
 
+  // @scenario claim_scope=country_fee
+  // @effects shipping_policy_claim_original_policy_mode_explains_itself
   it('원 정책 재계산 모드는 무엇이 계산되는지 화면이 밝힌다', () => {
     const notice = collect(claimCountryFee, (n) => n.id === 'claim_fee_original_policy_notice')[0];
 
     expect(notice.if).toContain("=== 'original_policy'");
   });
 
+  // @scenario claim_scope=country_fee
+  // @effects shipping_policy_claim_fee_updates_go_through_country_field_handler
   it('배열 인덱스 필드 갱신은 전용 핸들러를 거친다 (setState 키에 표현식 금지)', () => {
     const actions = collect(claimCountryFee, (n) => Array.isArray(n.actions)).flatMap((n) => n.actions);
 

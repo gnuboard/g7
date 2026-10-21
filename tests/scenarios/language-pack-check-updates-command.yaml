@@ -1,0 +1,17 @@
+feature: 언어팩 업데이트 확인 콘솔 커맨드
+
+description: |
+  language-pack:check-updates 는 LanguagePackService::checkUpdates() 에 위임한다.
+  확인할 언어팩이 없을 때의 안내, 언어팩별 상세 줄 출력, --identifier 옵션 전달이
+  회귀 없이 유지되는지 잠근다.
+
+axes:
+  case: [no_packs, with_details, identifier_option]   # 서비스 결과·옵션 상황
+
+effects:
+  - language_pack_check_updates_prints_none_message_when_no_packs      # 대상이 없으면 「없음」 안내 + 성공 종료
+  - language_pack_check_updates_lists_each_pack_detail                 # 언어팩마다 상세 줄 출력
+  - language_pack_check_updates_passes_identifier_option_to_service    # --identifier 값을 서비스에 그대로 전달
+
+test_files:
+  - tests/Unit/Console/CheckLanguagePackUpdatesCommandTest.php

@@ -13,9 +13,23 @@
     },
     "children": [
         {
+            "comment": "받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「저장된 프리셋이 없습니다」를 보이면 프리셋이 지워진 줄 안다",
+            "id": "preset_load_failed",
+            "type": "basic",
+            "name": "P",
+            "if": "{{presets === null}}",
+            "props": {
+                "role": "alert",
+                "className": "py-8 text-center text-sm text-red-600 dark:text-red-400"
+            },
+            "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
+        },
+        {
+            "comment": "빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다",
+            "id": "preset_empty_message",
             "type": "basic",
             "name": "Div",
-            "if": "{{!presets.data || presets.data.length === 0}}",
+            "if": "{{presets !== undefined && presets !== null && (!presets.data || presets.data.length === 0)}}",
             "props": {
                 "className": "text-center py-8 text-gray-500 dark:text-gray-400"
             },
@@ -82,7 +96,7 @@
                                     "props": {
                                         "aria-label": "$t:common.edit",
                                         "type": "button",
-                                        "className": "p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                                        "className": "p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                                     },
                                     "children": [
                                         {
@@ -122,7 +136,7 @@
                                     "props": {
                                         "aria-label": "$t:common.delete",
                                         "type": "button",
-                                        "className": "p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                        "className": "p-1.5 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                                     },
                                     "children": [
                                         {
@@ -160,7 +174,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "w-full px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
+                        "className": "w-full px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.modal.preset_manage.add_new"
                 }

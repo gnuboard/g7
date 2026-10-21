@@ -12,6 +12,18 @@ return [
     ],
 
     'commands' => [
+        // `module:refresh-layout` 명령 출력
+        'refresh_layout' => [
+            'refreshing' => 'Refreshing layouts of module \':module\'...',
+            'success' => 'Module \':module\' layouts refreshed',
+            'failed' => 'Failed to refresh layouts of module \':module\'',
+            'none_active' => 'No active modules.',
+            'refreshing_all' => 'Refreshing layouts of all active modules...',
+            'item_refreshing' => ':identifier refreshing...',
+            'item_done' => ':identifier done',
+            'item_failed' => ':identifier failed',
+            'summary' => 'Total: :success succeeded, :failed failed',
+        ],
         'list' => [
             'headers' => [
                 'identifier' => 'Identifier',
@@ -48,6 +60,14 @@ return [
             'not_installed' => 'Module ":module" is not installed.',
             'already_active' => 'Module ":module" is already active.',
             'layouts_registered' => ':count layout registered|:count layouts registered',
+            // `module:activate` unmet dependency notice
+            'required_modules' => 'Required modules:',
+            'required_plugins' => 'Required plugins:',
+            'missing_status' => [
+                'not_installed' => 'not installed',
+                'inactive' => 'inactive',
+            ],
+            'force_hint' => 'Use the --force option to activate anyway.',
         ],
         'deactivate' => [
             'success' => 'Module ":module" deactivated successfully',
@@ -55,6 +75,11 @@ return [
             'not_active' => 'Module ":module" is not active.',
             'warning' => 'Module routes and features have been deactivated.',
             'layouts_deleted' => ':count layout deleted|:count layouts deleted',
+            // `module:deactivate` dependent extension notice
+            'dependent_templates' => 'Dependent templates:',
+            'dependent_modules' => 'Dependent modules:',
+            'dependent_plugins' => 'Dependent plugins:',
+            'force_hint' => 'Use the --force option to deactivate anyway.',
         ],
         'uninstall' => [
             'success' => 'Module ":module" uninstalled successfully',
@@ -74,6 +99,8 @@ return [
             'confirm_question' => 'Do you really want to delete?',
             'aborted' => 'Module uninstallation cancelled.',
             'not_installed' => 'Module ":module" is not installed.',
+            // `module:uninstall` --delete-data warning
+            'delete_data_warning' => '--delete-data: migrations will be rolled back and the settings file will be deleted as well.',
         ],
         'cache_clear' => [
             'clearing_all' => 'Clearing all module caches...',
@@ -112,6 +139,67 @@ return [
             'layout_strategy' => 'Layout strategy: :strategy',
             'modified_layouts_warning' => ':count operator-modified layout/extension fragment will be overwritten:|:count operator-modified layouts/extension fragments will be overwritten:',
             'modified_layout_item' => '  - :name (modified: :date)',
+        ],
+        // `module:build`, `module:seed`, `module:composer-install`, `module:vendor-bundle`, `module:vendor-verify` command output
+        'build' => [
+            'missing_identifier' => 'Specify a module identifier or use the --all option.',
+            'usage' => 'Usage:',
+            'not_found' => 'Module not found: :identifier',
+            'not_found_detail' => 'Neither the _bundled nor the active directory exists.',
+            'source' => 'Build source: :source (:path)',
+            'source_active' => 'active',
+            'package_json_missing' => 'package.json not found: :path',
+            'package_json_hint' => 'Create the module frontend structure first.',
+            'no_assets' => 'The module has no assets to build: :identifier',
+            'installing_dependencies' => 'Installing dependencies...',
+            'npm_install_failed' => 'npm install failed',
+            'watch_start' => 'Starting build in watch mode: :identifier',
+            'watch_hint' => 'Press Ctrl+C to stop.',
+            'start' => 'Starting build: :identifier',
+            'start_production' => 'Starting build: :identifier (production)',
+            'pruned' => 'Cleaned up previous output: :files',
+            'done' => 'Build completed: :identifier',
+            'components_manifest_written' => 'components.json generated (:count components)',
+            'components_manifest_failed' => 'Failed to generate components.json (edit mode controls will be limited)',
+            'cache_version_bumped' => 'Cache version updated',
+            'apply_hint' => 'To apply it to the active directory: php artisan module:update :identifier',
+            'no_targets' => 'No modules to build.',
+            'start_all' => 'Starting build of all modules (:source)',
+            'start_all_production' => 'Starting build of all modules (:source) (production)',
+            'targets' => 'Target modules: :list',
+            'summary' => 'Build result: :success succeeded, :failed failed',
+        ],
+        'seed' => [
+            'production_requires_force' => 'The --force option is required in production.',
+            'not_active' => 'The module is not active: :identifier',
+            'activate_hint' => 'Run php artisan module:activate :identifier first.',
+            'no_seeder_directory' => 'The module has no seeder directory: :identifier',
+            'seeder_class_not_found' => 'Seeder class not found: :class',
+            'start' => 'Running seeders: :identifier',
+            'class' => 'Class: :class',
+            'done' => 'Seeders completed: :identifier',
+            'no_active' => 'No active modules.',
+            'no_seedable' => 'No active modules have seeders.',
+            'start_all' => 'Running seeders for all active modules',
+            'targets' => 'Target modules: :list',
+            'summary' => 'Seeder result: :success succeeded, :failed failed',
+        ],
+        'composer_install' => [
+            'missing_identifier' => 'Specify a module identifier or use the --all option.',
+            'usage' => 'Usage:',
+            'autoload_refreshed' => 'Autoload cache refreshed',
+            'none_installed' => 'No modules are installed.',
+            'duplicate_packages' => 'Duplicate packages detected:',
+            'start_all' => 'Installing Composer dependencies for all modules',
+            'item_done' => 'Done: :identifier',
+            'item_failed' => 'Failed: :identifier',
+        ],
+        'vendor_bundle' => [
+            'missing_identifier' => 'You must specify an identifier or the --all option.',
+            'usage' => 'Usage:',
+        ],
+        'vendor_verify' => [
+            'missing_identifier' => 'You must specify an identifier or the --all option.',
         ],
     ],
 

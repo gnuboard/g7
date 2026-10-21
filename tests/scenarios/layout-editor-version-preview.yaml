@@ -70,5 +70,5 @@ notes:
   - 백엔드 변경량 측정(CalculatesJsonContentDiff)을 상세 비교 diff 와 동일한 라인 단위 LCS 로 통일 + changes_summary 를 라인 원문 배열 → 카운트(정수)로 축소(레이아웃 버전 저장소 한정, page 모듈 불변). 측정/복원/재계산 정합은 LayoutVersionRepositoryTest.php · LayoutVersionIntegrationTest.php 가 커버. 기타 versions/showVersion/restoreVersion/storePreview API 가드는 LayoutControllerTest.php 가 기존 커버.
   - 미리보기 임시 데이터는 디스크 파일이 아니라 template_layout_previews 테이블(30분 TTL, 관리자×레이아웃당 1건, layout-previews:cleanup 스케줄이 만료분 삭제)에 저장됨.
   - 복원은 restoreVersion 이 새 버전을 적재 → 호출자(LayoutEditorChrome.handleShowVersions)가 onRestored 로 useLayoutDocument.reload() 를 호출해 캔버스를 서버 최신(복원본)으로 재로드 + dirty/lock_version 재동기화.
- - edit_mode=extension(layout_name absent) 분기는 버튼 비활성으로 자연 디그레이드 — extension 버전/미리보기 API(LayoutExtensionController) 분기는 S9 의존으로 보류 표기.
+  - edit_mode=extension(layout_name absent) 분기는 버튼 비활성으로 자연 디그레이드 — extension 버전/미리보기 API(LayoutExtensionController) 분기는 S9 의존으로 보류 표기.
   - preview_result/restore_action 축은 상호 배타적 버튼에만 적용 — exclusions 로 cross 차단.

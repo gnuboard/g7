@@ -10,9 +10,9 @@ use Plugins\Sirsoft\Koreaexim\Tests\PluginTestCase;
 use Tests\Support\Concerns\AssertsExtensionScheduleDeclarations;
 
 /**
- * 스케줄 선언과 설정 검증 (1.0.1 — 갱신 시각은 스케줄 관리로 이동)
+ * 스케줄 선언과 설정 검증 (1.0.2 — 갱신 시각은 스케줄 관리로 이동)
  *
- * 1.0.0 은 설정 `update_time`(한국시간)을 읽어 사이트 시간대 cron 으로 바꿔 선언했다. 1.0.1 부터 선언은
+ * 1.0.0 은 설정 `update_time`(한국시간)을 읽어 사이트 시간대 cron 으로 바꿔 선언했다. 1.0.2 부터 선언은
  * 한국시간 11:30 고정(cron + Asia/Seoul)이고 운영자는 관리자 > 스케줄 관리의 행에서 시각을 바꾼다.
  */
 class PluginScheduleTest extends PluginTestCase

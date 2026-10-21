@@ -176,12 +176,12 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
           />
         ) : (
           /* 파일 아이콘 */
-          <I className={`fa-solid ${getFileIcon(file.mime_type)} text-4xl text-gray-400 dark:text-gray-500`} />
+          <I className={`fa-solid ${getFileIcon(file.mime_type)} text-4xl text-gray-500 dark:text-gray-500`} />
         )}
 
         {/* 업로드/압축 진행률 오버레이 */}
         {(isUploading || isCompressing) && (
-          <Div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+          <Div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
             <Div className="w-3/4 h-2 bg-gray-700 dark:bg-gray-600 rounded-full overflow-hidden">
               <Div
                 className="h-full bg-blue-500 dark:bg-blue-400 transition-all"
@@ -194,7 +194,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
 
         {/* 에러 오버레이 */}
         {hasError && (
-          <Div className="absolute inset-0 bg-red-500/50 dark:bg-red-600/50 flex items-center justify-center">
+          <Div className="absolute inset-0 bg-red-600/70 dark:bg-red-600/70 flex items-center justify-center">
             <I className="fa-solid fa-exclamation-triangle text-2xl text-white" />
           </Div>
         )}
@@ -213,10 +213,10 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             }}
             className={`absolute top-1.5 left-1.5 z-10 p-1 rounded-full transition-colors disabled:cursor-not-allowed ${
               isPrimary
-                ? 'bg-yellow-500 text-white'
+                ? 'bg-amber-700 text-white'
                 : disabled
                   ? 'hidden'
-                  : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                  : 'bg-gray-800/70 text-gray-300 hover:bg-amber-700 hover:text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
             }`}
             title={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
             aria-label={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
@@ -233,7 +233,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             data-uploader-action="drag"
             {...attributes}
             {...listeners}
-            className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-gray-600 dark:text-gray-300 hover:bg-white cursor-grab active:cursor-grabbing"
+            className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 cursor-grab active:cursor-grabbing"
             title={t('attachment.drag_to_reorder')}
             aria-label={t('attachment.drag_to_reorder')}
             onClick={(e) => e.stopPropagation()}
@@ -251,7 +251,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
                 e.stopPropagation();
                 onDownload();
               }}
-              className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-blue-500 hover:bg-white"
+              className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-blue-700 dark:text-blue-300 hover:bg-white dark:hover:bg-gray-700"
               title={t('common.download')}
               aria-label={t('common.download')}
             >
@@ -268,7 +268,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
                 e.stopPropagation();
                 onRetry();
               }}
-              className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-orange-500 hover:bg-white"
+              className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-orange-800 dark:text-orange-300 hover:bg-white dark:hover:bg-gray-700"
               title={t('common.retry')}
               aria-label={t('common.retry')}
             >
@@ -285,7 +285,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
               onRemove();
             }}
             disabled={isUploading || isCompressing}
-            className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-red-500 hover:bg-white disabled:opacity-50"
+            className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-red-700 dark:text-red-300 hover:bg-white dark:hover:bg-gray-700 disabled:opacity-50"
             title={t('common.delete')}
             aria-label={t('common.delete')}
           >

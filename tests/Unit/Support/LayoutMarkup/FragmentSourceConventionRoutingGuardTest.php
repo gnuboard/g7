@@ -257,7 +257,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
     /**
      * 선택만 규약을 타고 읽기는 자기가 하는 자리가 없다.
      *
-     * 사본은 반드시 원본보다 약해진다 — 30차 실측: `TemplateManager` 사본은 `is_array` 검사가
+     * 사본은 반드시 원본보다 약해진다 — 실측: `TemplateManager` 사본은 `is_array` 검사가
      * 없어 스칼라 JSON 이 등록에 닿았고, 포착이 `\Exception` 이라 거기서 나는 `TypeError` 를
      * 못 잡아 나머지 확장점까지 함께 사라졌다.
      *
@@ -317,7 +317,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * layouts 밖 거부" 라는 규약을 갖는다. 이 규약을 자기 코드로 다시 쓰면 사본이 되고, 사본은
      * 반드시 원본보다 약해진다(28~30차가 fragment 축에서 세 번 확인한 사실).
      *
-     * 31차 실측으로 **`app/` 에 사본 한 벌이 실재**한다 —
+     * 실측으로 **`app/` 에 사본 한 벌이 실재**한다 —
      * `TemplateService::resolveModalPartial()`. 독블록이 스스로 "경로 규약은 레이아웃 partial 해석과
      * 동형" 이라 적어 두고 `.json` 만 읽으며 실패는 조용히 `null` 이다. 다만 이 자리는 **레이아웃
      * 편집기 표면**이고, 계획서 잔여 대장 R1 이 같은 표면의 `.json` 결합을 "사용자 가시 동작 변경"
@@ -380,7 +380,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      *
      * 종전 두 명제는 **fragment 축**(확장점 정의)과 **조각 경로 규약 축**만 봤다. 그런데 작성
      * SSoT 를 무너뜨리는 자리는 그 둘만이 아니다 — 레이아웃 파일을 열거하거나 읽으면서 `.json`
-     * 을 하드코딩하면, 그 소비처에서만 소스가 없는 것처럼 보인다. 32차 실측으로 `app/` 에
+     * 을 하드코딩하면, 그 소비처에서만 소스가 없는 것처럼 보인다. 실측으로 `app/` 에
      * 그런 자리가 넷 있었고 어느 가드의 모집단에도 없었다.
      *
      * 짝이 전건 병존하는 지금은 화면 결함이 0 이지만, S18 P2 가 `.json` 을 **기계 산출**로

@@ -10,6 +10,7 @@ use App\Services\Core\BundledSourcePlanner;
 use App\Services\CoreUpdateService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Mockery;
 use Tests\TestCase;
 
@@ -127,6 +128,79 @@ class CoreBundledSourcesCommandTest extends TestCase
         $this->artisan('core:bundled-sources', ['action' => 'list'])
             ->expectsOutputToContain('배포본을 읽지 못해 기록 파일')
             ->expectsOutputToContain('g7test-bundled_probe')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * 배포본도 기록도 없을 때 디스크 표는 각 `_bundled` 폴더 manifest 의 판·샘플 표시·의존 대상을 채웁니다.
+     *
+     * 종전에는 이 갈래의 버전·의존 대상 열이 전부 `-` 였다(7.1.1 출시 전 실측 — GitHub 에 그 판 태그가 아직 없을 때).
+     * manifest 가 없는 사용자 폴더는 종전대로 `-` 다.
+     *
+     * @scenario action=list,source_kind=github_unavailable
+     *
+     * @effects list_disk_fallback_reads_disk_manifests
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_disk_fallback_shows_disk_manifest_versions(): void
+    {
+        $service = Mockery::mock(CoreUpdateService::class);
+        $service->shouldReceive('downloadUpdate')->andThrow(new \RuntimeException('offline'));
+        $this->app->instance(CoreUpdateService::class, $service);
+        $this->copyFromRelease('modules/_bundled/sirsoft-board');
+        $this->copyFromRelease('plugins/_bundled/g7test-bundled_hidden');
+        $this->placeOnDisk('plugins/_bundled/acme-custom');
+
+        $this->artisan('core:bundled-sources', ['action' => 'list'])
+            ->expectsOutputToContain('배포본도 기록 파일도 없어 디스크와 설치 상태만 표시합니다')
+            ->expectsOutputToContain('1.2.0')
+            ->expectsOutputToContain('g7test-bundled_hidden (샘플)')
+            ->expectsOutputToContain('acme-custom')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * 배포본을 못 읽고 기록 파일로 표시할 때도 디스크의 번들 전체를 판과 함께 보여 주고, 미배치 수를 알린다.
+     *
+     * 종전 기록 파일 갈래는 미배치 항목만 나열해, 전부 배치된 상태(미배치 0 — 예: `core:update --bundled-sources=none`
+     * 직후 출시 태그에 닿지 못할 때)에는 머리글만 남은 빈 표가 나왔고 의존 대상 열은 늘 `-` 였다. 이제 디스크 폴백과
+     * 같은 표(디스크 `_bundled` 전체 + 디스크에 없는 미배치)를 쓰고 「기록 파일 기준 미배치 N개」 를 알린다.
+     *
+     * @scenario action=list,source_kind=github_unavailable
+     *
+     * @effects list_record_fallback_lists_disk_bundles_and_unplaced_count
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_record_fallback_lists_disk_bundles_when_nothing_unplaced(): void
+    {
+        $service = Mockery::mock(CoreUpdateService::class);
+        $service->shouldReceive('downloadUpdate')->andThrow(new \RuntimeException('offline'));
+        $this->app->instance(CoreUpdateService::class, $service);
+
+        foreach ([
+            'modules/_bundled/sirsoft-board',
+            'modules/_bundled/g7test-bundled_probe_module',
+            'plugins/_bundled/g7test-bundled_probe',
+            'plugins/_bundled/g7test-bundled_hidden',
+            'templates/_bundled/g7test-bundled_probe_tpl',
+            'lang-packs/_bundled/g7-plugin-g7test-bundled_probe-ja',
+        ] as $relative) {
+            $this->copyFromRelease($relative);
+        }
+        $planner = $this->planner();
+        $record = $planner->writeRecord($planner->plan($planner->readInventoryFromDirectory($this->release)), '7.1.1', 'core:update');
+        $this->assertSame([], $record['unplaced'], '픽스처 전제: 전부 배치돼 미배치가 0이어야 한다');
+
+        // 출력 한 줄(doWrite 한 번)은 맞는 기대 하나만 지운다 — 같은 표 행에 든 식별자와 판을 따로 기대하면 앞 기대가 그 줄을 먹어
+        // 뒤 기대가 남는다. sirsoft-board 행은 그 판(1.2.0 — 디스크 manifest 값)으로만 확인한다.
+        $this->artisan('core:bundled-sources', ['action' => 'list'])
+            ->expectsOutputToContain('배포본을 읽지 못해 기록 파일')
+            ->expectsOutputToContain('1.2.0')
+            ->expectsOutputToContain('g7test-bundled_probe_module')
+            ->expectsOutputToContain('g7test-bundled_hidden (샘플)')
+            ->expectsOutputToContain('기록 파일 기준 미배치 0개')
             ->assertExitCode(0);
     }
 
@@ -257,6 +331,34 @@ class CoreBundledSourcesCommandTest extends TestCase
     }
 
     /**
+     * 배포본에 없는 파일만 다른 폴더는 「수정됨」과 따로 「배포본에 없는 파일만 다름」으로 알리고 보존합니다(7.1.1 출시 전).
+     *
+     * 기본(비-prune) 업데이트는 새 판에서 지워진 파일을 지우지 않는다. 그 남은 파일 때문에 운영자가 손대지 않은 번들이
+     * 「수정됨, 보존」으로 보여 원인을 알 수 없었다. 지우는 동작은 그대로(보존)이고 안내만 가른다.
+     *
+     * @scenario action=prune,modified=true
+     *
+     * @effects prune_keeps_modified_and_their_dependencies
+     *
+     * @return void 반환값 없음
+     */
+    public function test_prune_reports_extra_only_folders_separately(): void
+    {
+        $this->copyFromRelease('modules/_bundled/g7test-bundled_probe_module');
+        File::ensureDirectoryExists($this->fakeBase.'/modules/_bundled/g7test-bundled_probe_module/resources');
+        File::put($this->fakeBase.'/modules/_bundled/g7test-bundled_probe_module/resources/routes.json', '{}');
+
+        $this->artisan('core:bundled-sources', ['action' => 'prune', '--source' => $this->release, '--force' => true])
+            ->expectsOutputToContain('배포본에 없는 파일만 다름, 보존: module:g7test-bundled_probe_module (배포본에 없는 파일 1개)')
+            ->expectsOutputToContain('resources/routes.json')
+            ->expectsOutputToContain('이전 판에서 남은 파일일 수 있습니다')
+            ->doesntExpectOutputToContain('수정됨, 보존: module:g7test-bundled_probe_module')
+            ->assertExitCode(0);
+
+        $this->assertDirectoryExists($this->fakeBase.'/modules/_bundled/g7test-bundled_probe_module', '보존 동작은 그대로');
+    }
+
+    /**
      * 설치된 확장(번들 밖 포함)의 의존 대상은 정리하지 않습니다.
      *
      * @scenario action=prune,dependency=installed
@@ -276,6 +378,35 @@ class CoreBundledSourcesCommandTest extends TestCase
             ->expectsOutputToContain('정리할 번들이 없습니다')
             ->assertExitCode(0);
         $this->assertDirectoryExists($this->fakeBase.'/modules/_bundled/g7test-bundled_probe_module');
+    }
+
+    /**
+     * GitHub 에 이 버전의 배포본(태그)이 아직 없으면 「추출 실패」가 아니라 「배포본을 찾지 못함」으로 알리고,
+     * prune 은 「배치」가 아니라 정리 판정을 못 한다고 끝냅니다(7.1.1 출시 전②).
+     *
+     * @scenario action=prune,source_kind=github_unavailable
+     *
+     * @effects github_missing_release_is_reported_as_not_found, prune_without_release_speaks_of_pruning
+     *
+     * @return void 반환값 없음
+     */
+    public function test_prune_without_github_release_reports_not_found_in_prune_terms(): void
+    {
+        config([
+            'app.update.github_url' => 'https://github.com/acme/g7',
+            'app.update.github_token' => '',
+            'app.update.pending_path' => $this->root.DIRECTORY_SEPARATOR.'pending',
+        ]);
+        Http::fake(['api.github.com/*' => Http::response(['message' => 'Not Found'], 404)]);
+
+        $this->artisan('core:bundled-sources', ['action' => 'prune'])
+            ->expectsOutputToContain('GitHub 에서 코어 7.1.1 배포본을 찾지 못했습니다')
+            ->doesntExpectOutputToContain('추출 방법이 실패')
+            ->expectsOutputToContain('배포본을 읽지 못해 정리 대상을 판정할 수 없습니다')
+            ->doesntExpectOutputToContain('배치할 수 없습니다')
+            ->assertExitCode(1);
+
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/zipball/') || str_contains($request->url(), '/tarball/'));
     }
 
     /**

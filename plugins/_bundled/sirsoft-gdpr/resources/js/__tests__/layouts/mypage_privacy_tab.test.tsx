@@ -32,16 +32,22 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     ) as AnyNode | undefined;
 
     describe('Extension 메타데이터', () => {
+        // @scenario area=card_setup
+        // @effects mypage_card_injected_into_profile
         it('target_layout 이 mypage/profile 이다', () => {
             expect(root.target_layout).toBe('mypage/profile');
         });
 
+        // @scenario area=card_setup
+        // @effects mypage_card_injected_into_profile
         it('priority 는 90 (sirsoft-marketing 의 100 보다 앞서 처리되어 마케팅 카드 뒤에 배치)', () => {
             expect(root.priority).toBe(90);
         });
     });
 
     describe('데이터 소스', () => {
+        // @scenario area=card_setup
+        // @effects mypage_card_data_sources_declared
         it('데이터소스 3종 포함 (gdprMyConsents / gdprMeConsents / gdprPublicSettings)', () => {
             // gdprPublicSettings 는 GDPR Art.13(1)(a)(f) 의무 고지를 카드 헤더 메타 라인으로 보강하기 위함.
             const ids = (root.data_sources ?? []).map((d) => d.id);
@@ -50,6 +56,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(ids).toContain('gdprPublicSettings');
         });
 
+        // @scenario area=card_setup
+        // @effects mypage_card_data_sources_declared
         it('gdprPublicSettings 는 게스트 응답이 가능해야 한다 (auth_required:false)', () => {
             // 마이페이지 카드 자체는 회원 한정이지만, 데이터소스 자체는 공개 API. /api/plugins/sirsoft-gdpr/settings.
             const ds = (root.data_sources ?? []).find((d) => d.id === 'gdprPublicSettings');
@@ -57,11 +65,15 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect((ds as { endpoint?: string } | undefined)?.endpoint).toBe('/api/plugins/sirsoft-gdpr/settings');
         });
 
+        // @scenario area=card_setup
+        // @effects mypage_card_data_sources_declared
         it('제거된 gdprMyRequests 데이터소스는 존재하지 않는다', () => {
             const ids = (root.data_sources ?? []).map((d) => d.id);
             expect(ids).not.toContain('gdprMyRequests');
         });
 
+        // @scenario area=card_setup
+        // @effects mypage_card_data_sources_declared
         it('마이페이지 카드 노출 토글 제거 — gdprPublicSettingsForMypage 데이터소스 미사용 (GDPR Art.7(3) 대칭성 의무: 카드는 플러그인 활성 시 항상 노출)', () => {
             const ids = (root.data_sources ?? []).map((d) => d.id);
             expect(ids).not.toContain('gdprPublicSettingsForMypage');
@@ -71,6 +83,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     describe('운영 주체·저장 위치 메타 라인 (GDPR Art.13(1)(a)(f))', () => {
         const meta = findById(card ?? null, 'gdpr_card_operator_meta');
 
+        // @scenario area=operator_meta
+        // @effects mypage_card_operator_meta_line
         it('gdpr_card_operator_meta 메타 라인이 카드 안에 존재한다', () => {
             // GDPR Art.13(1)(a) 컨트롤러 신원 + Art.13(1)(f) 저장 위치 의무 고지를 마이페이지에서도
             // 접근 가능하도록 보강. EDPB 권고: 동의 1차 화면 외에도 사용자가 자기 정보의 행방을
@@ -78,6 +92,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(meta).toBeTruthy();
         });
 
+        // @scenario area=operator_meta
+        // @effects mypage_card_operator_meta_line
         it('카드 헤더(타이틀 + 구분선) 다음 형제 위치에 배치 (헤더 내부 X)', () => {
             // UX 결정: 메타 라인은 H2 타이틀 + 구분선 다음에 자연어 문장으로 노출.
             // 헤더 내부(border-b 위)에 두면 타이틀과 같은 영역으로 보여 시각적 혼잡 → 헤더 외부로 분리.
@@ -94,12 +110,16 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(metaIdx).toBe(headerIdx + 1);
         });
 
+        // @scenario area=operator_meta
+        // @effects mypage_card_operator_meta_line
         it('두 값 중 하나라도 있으면 노출, 둘 다 비면 블록 전체 숨김', () => {
             expect(meta?.if).toBe(
                 '{{!!gdprPublicSettings?.data?.legal_entity_name || !!gdprPublicSettings?.data?.data_storage_location}}'
             );
         });
 
+        // @scenario area=operator_meta
+        // @effects mypage_card_operator_meta_line
         it('3-case 자연어 분기 — 한국어 조사 회피를 위해 둘 다 / 운영자만 / 저장위치만 각각 별도 P 태그', () => {
             const children = (meta?.children ?? []) as AnyNode[];
             const both = children.find((c) =>
@@ -128,6 +148,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(storageOnly?.name).toBe('P');
         });
 
+        // @scenario area=operator_meta
+        // @effects mypage_card_operator_meta_line
         it('가운데 점(·) 구분자 미사용 (자연어 한 줄 패턴이라 구분자 불필요)', () => {
             // 회귀 가드: 이전 디자인은 가로 인라인 + · 구분자였으나, 설계 결정으로 자연어 한 줄로 재설계.
             const children = (meta?.children ?? []) as AnyNode[];
@@ -135,6 +157,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(separator).toBeUndefined();
         });
 
+        // @scenario area=operator_meta
+        // @effects mypage_card_operator_meta_line
         it('다국어 키 + 토큰 보간 사용 (operator_and_storage / operator_only / storage_only)', () => {
             const text = serializeForSearch(meta);
             expect(text).toContain('sirsoft-gdpr.mypage.privacy.operator_and_storage_meta|entity=');
@@ -143,6 +167,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('sirsoft-gdpr.mypage.privacy.storage_only_meta|location=');
         });
 
+        // @scenario area=operator_meta
+        // @effects mypage_card_operator_meta_line
         it('시각적 무게 최소화 — 작은 보조 텍스트 (공통 Tailwind 코어 클래스)', () => {
             // 이슈 #430 — 이 카드는 user 페이지(sirsoft-basic)에 렌더되므로 admin 전용 시맨틱(.text-tertiary)은
             // CSS 미해석. 동등한 공통 Tailwind 코어 클래스로 치환 (회귀 수정).
@@ -154,12 +180,16 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     });
 
     describe('모달', () => {
+        // @scenario area=modals
+        // @effects mypage_card_confirm_modals_registered
         it('revoke_confirm_modal 이 modals 배열에 포함', () => {
             const modal = (root.modals ?? []).find((m) => m.id === 'revoke_confirm_modal');
             expect(modal).toBeTruthy();
             expect(modal?.name).toBe('Modal');
         });
 
+        // @scenario area=modals
+        // @effects mypage_card_confirm_modals_registered
         it('이슈 #430 — grant_confirm_modal(동의 확인 모달)이 modals 배열에 포함', () => {
             const modal = (root.modals ?? []).find((m) => m.id === 'grant_confirm_modal');
             expect(modal).toBeTruthy();
@@ -175,6 +205,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('"handler": "closeModal"');
         });
 
+        // @scenario area=modals
+        // @effects mypage_card_confirm_modals_registered
         it('제거된 데이터 요청·자가 취소 모달은 존재하지 않는다', () => {
             const ids = (root.modals ?? []).map((m) => m.id);
             expect(ids).not.toContain('gdpr_data_request_modal');
@@ -183,18 +215,24 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     });
 
     describe('주입 위치 (Injection)', () => {
+        // @scenario area=card_setup
+        // @effects mypage_card_injected_into_profile
         it('profile_view_bio_card 에 append 로 주입', () => {
             const inj = root.injections?.[0];
             expect(inj?.target_id).toBe('profile_view_bio_card');
             expect(inj?.position).toBe('append');
         });
 
+        // @scenario area=card_setup
+        // @effects mypage_card_injected_into_profile
         it('주입 컴포넌트의 첫 컴포넌트가 gdpr_mypage_privacy_card', () => {
             expect(card).toBeTruthy();
         });
     });
 
     describe('카드 표시 조건', () => {
+        // @scenario area=card_setup
+        // @effects mypage_card_shown_only_with_consent_data
         it('데이터 기반 가드 — 회원에게 동의 데이터가 있을 때만 노출. Art.7(3) 보장 (기존 동의자 철회권) + UX 노이즈 제거 (빈 카드 미노출)', () => {
             const guard = (card as { if?: string }).if;
             expect(guard).toBe(
@@ -206,14 +244,20 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     describe('내 동의 현황 섹션 (gdpr_section_consents)', () => {
         const section = card ? findById(card, 'gdpr_section_consents') : null;
 
+        // @scenario area=consents_section
+        // @effects mypage_consents_section_rows_labelled
         it('섹션이 존재한다', () => {
             expect(section).toBeTruthy();
         });
 
+        // @scenario area=consents_section
+        // @effects mypage_consents_section_rows_labelled
         it('제거된 「내 요청 내역」 섹션 (gdpr_section_my_requests) 미존재', () => {
             expect(card ? findById(card, 'gdpr_section_my_requests') : null).toBeNull();
         });
 
+        // @scenario area=consents_section
+        // @effects mypage_revoke_opens_confirm_with_target
         it('철회 버튼 클릭 시 _global 에 키+라벨+설명 세팅 후 revoke_confirm_modal 오픈', () => {
             const text = serializeForSearch(section);
             expect(text).toContain('"target": "revoke_confirm_modal"');
@@ -225,11 +269,15 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('"gdprRevokeTargetDate": "{{consent?.status_at_formatted ?? \'\'}}"');
         });
 
+        // @scenario area=consents_section
+        // @effects mypage_consents_section_rows_labelled
         it('동의 항목 컬럼이 라벨 우선 표시 (consent_label fallback consent_key)', () => {
             const text = serializeForSearch(section);
             expect(text).toContain('consent?.consent_label ?? consent?.consent_key');
         });
 
+        // @scenario area=consents_section
+        // @effects mypage_consents_section_rows_labelled
         it('동의 항목 컬럼에 카탈로그 description 1줄 노출 (회원이 영문 식별자 대신 카테고리 의미를 즉시 인지)', () => {
             const text = serializeForSearch(section);
             // GdprUserConsentResource 가 consent_description 필드 노출 + layout 이 그 값을 보조 Span 으로 표시.
@@ -242,6 +290,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
     describe('동의 철회 모달 (revoke_confirm_modal)', () => {
         const modal = (root.modals ?? []).find((m) => m.id === 'revoke_confirm_modal');
 
+        // @scenario area=revoke_modal
+        // @effects mypage_revoke_modal_confirms_and_posts
         it('모달 본문에 raw key (cookie_functional 등) 대신 사용자 친화 description 노출', () => {
             // 피드백 — raw key 는 사용자에게 무의미하여 모달 본문에서 제거.
             // 라벨 + description 2줄 구조로 변경됨.
@@ -253,6 +303,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).not.toContain('font-mono break-all');
         });
 
+        // @scenario area=revoke_modal
+        // @effects mypage_revoke_modal_confirms_and_posts
         it('이슈 #430 — 모달에 철회 대상의 마지막 동의일 노출 (gdprRevokeTargetDate 있을 때만)', () => {
             const text = serializeForSearch(modal);
             // 사용자가 언제 동의한 것을 철회하는지 인지하도록 마지막 동의일을 표시.
@@ -260,6 +312,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date=');
         });
 
+        // @scenario area=revoke_modal
+        // @effects mypage_revoke_modal_confirms_and_posts
         it('확인 버튼 → POST /consent/revoke + onSuccess 에 refetch + closeModal + toast', () => {
             const text = serializeForSearch(modal);
             expect(text).toContain('"target": "/api/plugins/sirsoft-gdpr/consent/revoke"');
@@ -268,11 +322,15 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('"handler": "closeModal"');
         });
 
+        // @scenario area=revoke_modal
+        // @effects mypage_revoke_modal_confirms_and_posts
         it('철회 대상 + 확인 버튼 disabled 조건 모두 _global 참조 (모달 컨텍스트 분리)', () => {
             const text = serializeForSearch(modal);
             expect(text).toContain('_global.gdprRevokeTargetKey');
         });
 
+        // @scenario area=revoke_modal
+        // @effects mypage_consent_changes_refresh_runtime
         it('철회 onSuccess 에서 코어 refreshConsent 핸들러를 호출한다', () => {
             // 회귀 가드: 마이페이지 철회 후 functional 카테고리 cleanup 이 즉시 동작하려면
             // refreshConsent 가 코어 동의 런타임을 다시 읽어 consent:changed 를 내야 함 (storage/cookie
@@ -282,6 +340,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('"handler": "refreshConsent"');
         });
 
+        // @scenario area=revoke_modal
+        // @effects mypage_revoke_modal_confirms_and_posts
         it('확인 버튼에 isRevoking 동안 spinner 아이콘 + "철회 중" 라벨 노출', () => {
             // 회귀 가드: 사용자가 클릭 후 "클릭이 먹혔는지" 의심하지 않도록 시각 피드백 제공.
             // admin 저장 버튼과 동일 패턴 (Icon spinner spin=true + 텍스트 분기).
@@ -329,12 +389,14 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
          */
         it('이슈 #509 16번 — 동의·철회 날짜 줄을 서로 다른 색으로 균형있게 강조 (동의=초록/철회=빨강, 배지·관리자 이력 화면과 동일 톤)', () => {
             // 철회만 강조되고 동의는 밋밋해 보인다는 사용성 피드백 반영 — 동의도 철회와 대등하게 강조한다.
-            // status === 'revoked' 면 text-red-600/dark:text-red-400, 그 외(동의)는 text-green-600/dark:text-green-400.
+            // status === 'revoked' 면 text-red-600/dark:text-red-400, 그 외(동의)는 text-green-700/dark:text-green-400.
+            // 초록은 흰 바탕 대비 4.5 를 넘기려고 600 → 700 으로 짙게 했다(600 은 3.22).
             const text = serializeForSearch(section);
             expect(text).toContain("consent?.status === 'revoked'");
             expect(text).toContain('text-red-600');
             expect(text).toContain('dark:text-red-400');
-            expect(text).toContain('text-green-600');
+            expect(text).toContain('text-green-700');
+            expect(text).not.toContain('text-green-600');
             expect(text).toContain('dark:text-green-400');
         });
 
@@ -381,6 +443,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('gdprGrantTargetKey');
         });
 
+        // @scenario area=consent_rows
+        // @effects mypage_consent_row_badge_on_label_line
         it('이슈 #430 (3안) — 상태 배지는 라벨 줄에, 날짜 줄은 날짜+동의 순서 (배지↔날짜 동의 중복 제거)', () => {
             const text = serializeForSearch(section);
             // 배지가 라벨 옆 flex-wrap 줄에 위치 (라벨 label_suffix 와 같은 컨테이너)
@@ -393,6 +457,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(idxLabelAfter).toBeGreaterThan(idxDate);
         });
 
+        // @scenario area=consent_rows
+        // @effects mypage_removed_toggle_ui_not_revived
         it('「켜짐/꺼짐」 토글 표현 및 스위치 마크업이 부활하지 않는다 (회귀 가드)', () => {
             // 토글 제거 회귀 가드: user 템플릿 w-11 safelist 붕괴 + '켜짐/꺼짐' 표현 어색함으로 버튼 전환.
             const text = serializeForSearch(section);
@@ -418,6 +484,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('mypage.privacy.enable_all_success');
         });
 
+        // @scenario area=consent_rows
+        // @effects mypage_consent_changes_refresh_runtime
         it('grant/revoke onSuccess 에서 refetch + refreshConsent 호출 (동의 즉시성)', () => {
             // 회귀 가드: 동의/철회 시 interceptor 즉시 갱신 — 모달의 sequence onSuccess 에 refreshConsent 존재.
             const text = serializeForSearch(root);
@@ -426,6 +494,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).not.toContain('sirsoft-gdpr.syncConsent');
         });
 
+        // @scenario area=consent_rows
+        // @effects mypage_removed_toggle_ui_not_revived
         it('제거된 amber 갱신 분기 / rejected_label 이 부활하지 않는다 (회귀 가드)', () => {
             const text = serializeForSearch(section);
             expect(text).not.toContain('mypage.privacy.rejected_label');
@@ -439,16 +509,22 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         // 본문: 현 정책 버전 안내 (#23 informed consent) + 필수 쿠키 면제 hint
         // 액션: 「전체 항목 다시 동의」 (POST /consent/renew-all)
         // 제거된 acknowledge-policy 흐름은 본 박스에 부활하지 않음.
+        // @scenario area=renewal_banner
+        // @effects mypage_renewal_banner_renews_all
         it('마이페이지 카드 안에 amber 박스 (gdpr_needs_renewal_banner) 가 존재한다', () => {
             const banner = card ? findById(card, 'gdpr_needs_renewal_banner') : null;
             expect(banner).not.toBeNull();
         });
 
+        // @scenario area=renewal_banner
+        // @effects mypage_renewal_banner_renews_all
         it('amber 박스는 gdprMeConsents.data.needs_renewal === true 조건으로만 노출된다', () => {
             const banner = card ? findById(card, 'gdpr_needs_renewal_banner') : null;
             expect(banner?.if).toBe('{{gdprMeConsents?.data?.needs_renewal === true}}');
         });
 
+        // @scenario area=renewal_banner
+        // @effects mypage_renewal_banner_renews_all
         it('amber 박스가 현 정책 버전 + 필수 쿠키 면제 hint 를 노출한다', () => {
             const banner = card ? findById(card, 'gdpr_needs_renewal_banner') : null;
             const text = serializeForSearch(banner);
@@ -457,6 +533,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('sirsoft-gdpr.mypage.privacy.needs_renewal_hint');
         });
 
+        // @scenario area=renewal_banner
+        // @effects mypage_renewal_banner_renews_all
         it('amber 박스의 「전체 항목 다시 동의」 버튼이 POST /consent/renew-all 을 호출한다', () => {
             const banner = card ? findById(card, 'gdpr_needs_renewal_banner') : null;
             const text = serializeForSearch(banner);
@@ -465,6 +543,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('renew_all_success');
         });
 
+        // @scenario area=renewal_banner
+        // @effects mypage_consent_changes_refresh_runtime
         it('renew-all onSuccess 에서 코어 refreshConsent 핸들러를 호출한다', () => {
             // 회귀 가드: renew-all 직후 functional 동의가 갱신되거나 신규 카테고리 (cookie_functional)
             // 가 활성 동의 매트릭스에 추가되는 경우, interceptor config 와 blocker 캐시를
@@ -474,6 +554,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('"handler": "refreshConsent"');
         });
 
+        // @scenario area=renewal_banner
+        // @effects mypage_renewal_banner_renews_all
         it('「전체 다시 동의」 버튼에 isRenewingAll 동안 spinner + "갱신 중" 라벨 노출', () => {
             // 회귀 가드: 클릭 즉시 시각 피드백 + 중복 클릭 차단. admin 저장 버튼 패턴 재사용.
             const banner = card ? findById(card, 'gdpr_needs_renewal_banner') : null;
@@ -483,6 +565,8 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
             expect(text).toContain('sirsoft-gdpr.consent.renewing');
         });
 
+        // @scenario area=renewal_banner
+        // @effects mypage_renewal_banner_renews_all
         it('제거된 acknowledge-policy 흐름은 amber 박스에 부활하지 않는다 (회귀 가드)', () => {
             const text = serializeForSearch(card);
             expect(text).not.toContain('btn_acknowledge_policy');

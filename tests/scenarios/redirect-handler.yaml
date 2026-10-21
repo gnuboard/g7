@@ -37,9 +37,10 @@ sub_flows:
   - id: unsafe_target_policy
     description: |
       안전하지 않은 대상(외부 origin·protocol-relative·백슬래시 우회·실행 스킴)은 sink 에 닿지 않고
-      기본 경로로 떨어진다. 이력 모드(assign/replace) 양쪽 모두 같은 판정을 거친다.
+      아무 데도 가지 않는다(결정 2026-10-15 — 종전에는 기본 경로 `/` 로 문서 전체 이동). 이력 모드(assign/replace)
+      양쪽 모두 같은 판정을 거친다. 빈 주소는 거부가 아니라 「할 일 없음」이다(redirect_with_empty_url_does_nothing).
     effects:
-      - redirect_offsite_target_falls_back_to_root
+      - redirect_offsite_target_is_not_followed
       - redirect_script_scheme_never_executes
 
 test_files:

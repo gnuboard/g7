@@ -21,7 +21,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 출처는 전역 모듈 설정(`claim.charge_payment_methods`)이고, 신청 화면이 `claimable` 응답에서
  * 읽는 것은 그 설정의 사본이다 — 상세가 데이터소스를 더 들 필요가 없다.
  *
- * 회귀 배경 (#599 3차 실측 F-1·F-2, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
+ * 회귀 배경 (#599 실측, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
  * 만들어진 대기 건이 「미수납 4,000원 + 결제하기」를 계속 안내하면서 누를 때마다 422 를 냈다.
  * 서버는 `{"payment_method":"card"}` 를 받아 주는데 화면에 그 버튼이 없었다.
  */

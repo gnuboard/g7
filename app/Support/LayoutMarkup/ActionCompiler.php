@@ -241,7 +241,18 @@ final class ActionCompiler
      */
     private function applySubscription(MarkupElement $on, string $eventName, array &$node, ?string $path): void
     {
-        $action = $this->compileBlockBody($on, ['event' => $eventName], false, $path);
+        $trigger = ['event' => $eventName];
+
+        // 키 한정자는 이벤트 받기에서 효과가 없다(엔진은 사용자가 직접 누르는 진입점에서만 읽는다). 종전에는 이
+        // 갈래가 `key` 를 읽지 않아 경고 없이 사라졌다 — 산출에 남겨 저장 검사(⑭ entry_only_key_ignored)가 알리게 한다.
+        // 실행에는 영향이 없다(구독 콜백은 key 필터를 거치지 않는다).
+        $keyValue = $on->attribute('key')?->value;
+
+        if ($keyValue !== null) {
+            $trigger['key'] = $keyValue;
+        }
+
+        $action = $this->compileBlockBody($on, $trigger, false, $path);
         $node['onComponentEvent'][] = $action;
     }
 
@@ -753,15 +764,17 @@ final class ActionCompiler
      * 규칙은 `StructuredValueCompiler` 가 단일 SSoT 다 — `<prop>`·데이터소스 자식과 같은 문법을
      * 쓴다(중첩 `<field>` 객체 / `<item>` 리스트 / 문자열 `<item>` 본문).
      *
+     * 자식이 없으면 리프 값(`:value`·`value`)을 쓴다 — `<field name="x" :value="null"/>` 이 `[]` 로 굽히던 결함.
+     *
      * @param  MarkupElement  $element  `<field>` 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return array<array-key, mixed> 구조값
+     * @return mixed 구조값 또는 리프 값
      *
      * @throws CompileError 자식 표기가 규칙을 벗어난 경우
      */
-    private function compileParamValue(MarkupElement $element, ?string $path): array
+    private function compileParamValue(MarkupElement $element, ?string $path): mixed
     {
-        return $this->values->compileChildren($element, $path);
+        return $this->values->compileFieldValue($element, $path);
     }
 
     /**

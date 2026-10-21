@@ -17,7 +17,7 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * 목록·요약·상세 조회, 알림톡 분류·발신 프로필 조회, 발송 결과 조회의 성공 응답과 없는 행의 404 가
  * 원문 키(`messages.success`, `messages.not_found`)를 그대로 내보냈다. 코어에는 `messages` 번역 묶음이
- * 없어 어느 언어에서도 번역되지 않는다(2026-10-07 실측 O-M2-5). 이 플러그인의 번역 문구가 관리자 언어로
+ * 없어 어느 언어에서도 번역되지 않는다(2026-10-07 실측). 이 플러그인의 번역 문구가 관리자 언어로
  * 나가는지 본다.
  */
 class ResponseMessageTranslationTest extends PluginTestCase

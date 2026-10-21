@@ -347,7 +347,11 @@ class ManagerSyncFilterTest extends TestCase
     #[DataProvider('manifestScopeProvider')]
     public function test_manifest_translations_filter_auto_registered_and_injects_ja(string $scope, string $target): void
     {
-        $packRoot = base_path("lang-packs/g7-{$scope}-{$target}-ja");
+        // 팩 식별자는 실제 설치 팩(`g7-{scope}-{target}-ja`)과 겹치지 않는 가짜 벤더(`g7test`)로 둔다. 이 폴더는 끝에
+        // 통째로 지우므로 실제 이름을 쓰면 개발 환경의 설치 ja 팩이 사라진다(2026-10-18 — gdpr·ecommerce·basic
+        // 설치본 소실). 필터 이름은 target_identifier 로 정해지므로 대상 확장 식별자는 그대로 둔다.
+        $identifier = "g7test-{$scope}-{$target}-ja";
+        $packRoot = base_path('lang-packs/'.$identifier);
         File::ensureDirectoryExists($packRoot.'/seed');
         File::put($packRoot.'/seed/manifest.json', json_encode([
             'name' => 'ジャパニーズ名',
@@ -356,8 +360,8 @@ class ManagerSyncFilterTest extends TestCase
 
         try {
             LanguagePack::query()->create([
-                'identifier' => "g7-{$scope}-{$target}-ja",
-                'vendor' => 'g7',
+                'identifier' => $identifier,
+                'vendor' => 'g7test',
                 'scope' => $scope,
                 'target_identifier' => $target,
                 'locale' => 'ja',

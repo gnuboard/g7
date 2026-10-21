@@ -1,0 +1,15 @@
+feature: 폼 자동바인딩 칸의 change 동작이 받는 $event.target 에 선택 항목·data-* 가 실린다 (engine-v1.81.1, 7.1.1)
+
+description: |
+  자동바인딩 칸(name + 폼 data-key)의 change 는 엔진이 상태를 쓴 뒤 레이아웃 동작을 부르는데, 그 이벤트 사본이 value·name·type·checked
+  만 실어 `$event.target.selectedOptions[0]?.dataset?.url` 같은 식이 늘 비었다(관리자 메뉴 관리 「사용자 정의 메뉴」 → 주소 칸 미채움).
+  엔진이 자동바인딩 없는 칸과 같은 표현식용 요소 스냅샷으로 사본을 만든다. 축 store 는 폼 저장소다.
+
+axes:
+  store: [global, local]
+
+effects:
+  - autobinding_change_action_sees_selected_option_dataset
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.autoBindingChangeEventTarget.test.tsx

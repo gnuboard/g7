@@ -14,7 +14,7 @@ use Tests\Concerns\FakesConsentProviders;
 use Tests\TestCase;
 
 /**
- * 환경설정 개인정보 탭 — 동의 관리 제공자 선택 (#639, 결정 P4·P5·D9)
+ * 환경설정 개인정보 탭 — 동의 관리 제공자 선택 (#639, 결정)
  *
  * 선택값은 `privacy.consent_provider` 하나다. 빈 문자열은 「자동」이고, 전역 `ConvertEmptyStringsToNull`
  * 이 null 로 바꾸므로 요청 정규화가 되돌린다. 고른 제공자가 비활성화된(missing) 상태에서 다른 칸만 고쳐

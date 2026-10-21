@@ -128,6 +128,9 @@ function setupTestRegistry(): ComponentRegistry {
 import mainLayout from '../../../layouts/admin/admin_ecommerce_product_common_info_index.json';
 
 describe('공통정보 - 메인 레이아웃 구조 검증', () => {
+  /**
+   * @effects admin_notice_info_source_error_handling
+   */
   it('commonInfos 데이터 소스에 errorHandling이 정의되어 있다', () => {
     const ds = mainLayout.data_sources.find((d: any) => d.id === 'commonInfos');
     expect(ds).toBeDefined();
@@ -136,10 +139,12 @@ describe('공통정보 - 메인 레이아웃 구조 검증', () => {
       handler: 'showErrorPage',
       params: { target: 'content' },
     });
-    expect(ds!.errorHandling['default']).toEqual({
-      handler: 'showErrorPage',
-      params: { target: 'content' },
-    });
+    // 처음 받기 실패는 본문 오류 화면(실제 상태 코드), 다시 받기 실패(`error.refetch`)는 토스트로 받아 둔 목록을 지킨다 (engine-v1.82.0 문맥)
+    expect(ds!.errorHandling['default'].handler).toBe('conditions');
+    expect(ds!.errorHandling['default'].conditions).toEqual([
+      { if: '{{error.refetch}}', then: { handler: 'toast', params: { type: 'error', message: '$t:core.errors.refresh_failed' } } },
+      { then: { handler: 'showErrorPage', params: { errorCode: '{{error.status}}', target: 'content' } } },
+    ]);
   });
 });
 
@@ -182,6 +187,10 @@ describe('공통정보 - 추가 버튼 권한 제어', () => {
     registry = setupTestRegistry();
   });
 
+  /**
+   * @scenario surface=admin, permission=granted
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('can_create=true → 버튼 활성화', async () => {
     const testUtils = createLayoutTest(createAddButtonLayout(true));
     await testUtils.render();
@@ -189,6 +198,10 @@ describe('공통정보 - 추가 버튼 권한 제어', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * @scenario surface=admin, permission=missing
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('can_create=false → 버튼 비활성화', async () => {
     const testUtils = createLayoutTest(createAddButtonLayout(false));
     await testUtils.render();
@@ -279,6 +292,10 @@ describe('공통정보 - 뷰 패널 버튼 권한 제어', () => {
     registry = setupTestRegistry();
   });
 
+  /**
+   * @scenario surface=admin, permission=granted
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('모든 권한 있음 → 모든 버튼 활성화/표시', async () => {
     const testUtils = createLayoutTest(createViewPanelLayout(true, true, true));
     await testUtils.render();
@@ -291,6 +308,10 @@ describe('공통정보 - 뷰 패널 버튼 권한 제어', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * @scenario surface=admin, permission=missing
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('can_update=false → 복사/편집/기본값 버튼 비활성화', async () => {
     const testUtils = createLayoutTest(createViewPanelLayout(false, true, false));
     await testUtils.render();
@@ -302,6 +323,10 @@ describe('공통정보 - 뷰 패널 버튼 권한 제어', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * @scenario surface=admin, permission=missing
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('can_delete=false → 삭제 버튼 숨김', async () => {
     const testUtils = createLayoutTest(createViewPanelLayout(true, false, true));
     await testUtils.render();
@@ -412,6 +437,10 @@ describe('공통정보 - 폼 패널 수정 모드 권한 제어', () => {
     registry = setupTestRegistry();
   });
 
+  /**
+   * @scenario surface=admin, permission=missing
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('edit 모드 + can_update=false → 모든 입력 필드 비활성화', async () => {
     const testUtils = createLayoutTest(formPanelLayout);
     await testUtils.render();
@@ -426,6 +455,10 @@ describe('공통정보 - 폼 패널 수정 모드 권한 제어', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * @scenario surface=admin, permission=granted
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('edit 모드 + can_update=true → 모든 입력 필드 활성화', async () => {
     const layout = {
       ...formPanelLayout,
@@ -452,6 +485,10 @@ describe('공통정보 - 폼 패널 수정 모드 권한 제어', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * @scenario surface=admin, permission=missing
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('create 모드 → can_update 무관하게 활성화', async () => {
     const layout = {
       ...formPanelLayout,
@@ -504,6 +541,10 @@ describe('공통정보 - 폼 패널 수정 모드 권한 제어', () => {
     ],
   };
 
+  /**
+   * @scenario surface=admin, permission=missing
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('per-item can_update=false → 리스트 Toggle 비활성화', async () => {
     const testUtils = createLayoutTest(listToggleLayout);
     await testUtils.render();
@@ -512,6 +553,10 @@ describe('공통정보 - 폼 패널 수정 모드 권한 제어', () => {
     testUtils.cleanup();
   });
 
+  /**
+   * @scenario surface=admin, permission=granted
+   * @effects admin_common_info_write_controls_follow_abilities
+   */
   it('per-item can_update=true → 리스트 Toggle 활성화', async () => {
     const layout = {
       ...listToggleLayout,

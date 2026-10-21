@@ -16,6 +16,8 @@
  * - onError 체인은 그대로 (isWithdrawing 복구 + 에러 토스트)
  *
  * @vitest-environment jsdom
+ *
+ * @scenario-manifest tests/scenarios/checkout-address-modal-real-structure.yaml
  */
 
 import { describe, it, expect } from 'vitest';
@@ -73,18 +75,24 @@ function findConfirmButton(node: any): any | undefined {
 describe('_modal_withdraw.json (마이페이지 탈퇴 모달)', () => {
   const layout = loadLayout();
 
+  // @scenario close=cancel_button
+  // @effects withdraw_submit_chain_intact
   it('Modal 타입의 partial 레이아웃이다', () => {
     expect(layout.meta?.is_partial).toBe(true);
     expect(layout.type).toBe('composite');
     expect(layout.name).toBe('Modal');
   });
 
+  // @scenario close=cancel_button
+  // @effects withdraw_submit_chain_intact
   it('탈퇴 확인 버튼이 sequence 액션을 가진다', () => {
     const btn = findConfirmButton(layout);
     expect(btn).toBeDefined();
     expect(btn.actions[0].handler).toBe('sequence');
   });
 
+  // @scenario close=cancel_button
+  // @effects withdraw_submit_chain_intact
   it('sequence 안에 DELETE /api/me apiCall 이 정의되어 있다', () => {
     const btn = findConfirmButton(layout);
     const apiCall = findApiCall(btn.actions);
@@ -93,6 +101,8 @@ describe('_modal_withdraw.json (마이페이지 탈퇴 모달)', () => {
     expect((apiCall!.params as any)?.method).toBe('DELETE');
   });
 
+  // @scenario close=cancel_button
+  // @effects withdraw_submit_chain_intact
   it('onSuccess 체인에 logout 핸들러가 포함된다 (토큰+state+redirect 원자적 처리)', () => {
     const btn = findConfirmButton(layout);
     const apiCall = findApiCall(btn.actions);
@@ -101,6 +111,8 @@ describe('_modal_withdraw.json (마이페이지 탈퇴 모달)', () => {
     expect(logoutAction).toBeDefined();
   });
 
+  // @scenario close=cancel_button
+  // @effects withdraw_submit_chain_intact
   it('onSuccess 체인에 navigate / setState global currentUser 가 직접 포함되지 않는다 (logout 위임 회귀 차단)', () => {
     const btn = findConfirmButton(layout);
     const apiCall = findApiCall(btn.actions);
@@ -120,6 +132,8 @@ describe('_modal_withdraw.json (마이페이지 탈퇴 모달)', () => {
     expect(directClearUser).toBeUndefined();
   });
 
+  // @scenario close=cancel_button
+  // @effects withdraw_submit_chain_intact
   it('onSuccess 체인이 closeModal → toast → logout 순서를 따른다', () => {
     const btn = findConfirmButton(layout);
     const apiCall = findApiCall(btn.actions);
@@ -134,6 +148,8 @@ describe('_modal_withdraw.json (마이페이지 탈퇴 모달)', () => {
     expect(logoutIdx).toBeGreaterThan(toastIdx);
   });
 
+  // @scenario close=cancel_button
+  // @effects withdraw_submit_chain_intact
   it('onError 체인에 isWithdrawing=false 복구 + 에러 토스트가 포함된다', () => {
     const btn = findConfirmButton(layout);
     const apiCall = findApiCall(btn.actions);
@@ -142,8 +158,9 @@ describe('_modal_withdraw.json (마이페이지 탈퇴 모달)', () => {
     const resetState = errorChain.find(
       (a) =>
         a.handler === 'setState' &&
-        (a.params as any)?.target === 'local' &&
-        (a.params as any)?.isWithdrawing === false
+        (a.params as any)?.target === 'global' &&
+        // 7.1.1: 탈퇴 창 상태는 창 고유 전역 이름 공간(_global.profileWithdrawModal)에 있다
+        (a.params as any)?.['profileWithdrawModal.isWithdrawing'] === false
     );
     const errorToast = errorChain.find(
       (a) => a.handler === 'toast' && (a.params as any)?.type === 'error'

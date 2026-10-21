@@ -1,4 +1,4 @@
-// e2e:allow 레이아웃 조건식·문구 수정의 단위 검증 — 같은 화면은 Playwright 브라우저로 ko/en 재실측해 이력(20261007_1905_710_KLM_M1)에 남김
+// e2e:allow 레이아웃 조건식·문구 수정의 단위 검증 — 같은 화면은 Playwright 브라우저로 ko/en 재실측해 작업 이력에 남김
 /**
  * @file settings-card-feedback.test.ts
  * @description GDPR 설정 화면이 「없음」과 「볼 수 없음」, 저장 오류의 자리를 구분해 알리는지

@@ -55,7 +55,7 @@
                 {
                     "comment": "전체보기 버튼",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{(searchResults?.data?.products_count ?? 0) > 0}}",
                     "actions": [
                         {
@@ -63,7 +63,6 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/search",
                                 "mergeQuery": true,
                                 "query": {
                                     "type": "products",
@@ -75,6 +74,8 @@
                         }
                     ],
                     "props": {
+                        "href": "/search?type=products&board_slug=&page=&cursor=",
+                        "mergeQuery": true,
                         "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                     },
                     "children": [
@@ -171,7 +172,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-400 dark:text-gray-500"
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:search.failed.suggestion"
                 }

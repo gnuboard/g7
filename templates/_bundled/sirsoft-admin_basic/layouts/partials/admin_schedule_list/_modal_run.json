@@ -185,7 +185,7 @@
                             "if": "{{_global.runResult?.status === 'success'}}",
                             "props": {
                                 "name": "check-circle",
-                                "className": "text-xl text-green-600 dark:text-green-400"
+                                "className": "text-xl text-green-700 dark:text-green-400"
                             }
                         },
                         {

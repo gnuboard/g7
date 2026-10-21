@@ -24,14 +24,20 @@ async function readResultCap(page: import('@playwright/test').Page, token: strin
 }
 
 async function writeResultCap(page: import('@playwright/test').Page, token: string, cap: number): Promise<void> {
+  // 저장 검증은 `_tab` 이 가리키는 탭 전체를 본다(없으면 general — 일반 탭 필수 항목에 걸려 422). 설정 화면처럼
+  // 고급 탭 값을 통째로 읽어 상한만 바꿔 보낸다(2026-10-15 실측: `{ advanced: { cap } }` 만 보내 422).
+  const current = await page.request.get(SETTINGS_URL, { headers: { Authorization: `Bearer ${token}` } });
+  expect(current.ok()).toBeTruthy();
+  const advanced = (await current.json())?.data?.advanced ?? {};
   const res = await page.request.post(SETTINGS_URL, {
     headers: { Authorization: `Bearer ${token}` },
-    data: { advanced: { pagination_result_cap: cap } },
+    data: { _tab: 'advanced', advanced: { ...advanced, pagination_result_cap: cap } },
   });
   expect(res.ok(), `설정 저장 실패: ${res.status()}`).toBeTruthy();
 }
 
 // @scenario link=activity_log_unbounded_pager_numbers, permitted=na
+// @scenario link=activity_log_unbounded_pager_no_last, permitted=na
 // @effects page_numbers_visible, last_page_jump_hidden
 test('#519 후속 - 총 건수를 모르는 활동 로그에서도 페이지 번호가 그려지고 마지막 페이지 버튼만 감춰진다', async ({ page }) => {
   const token = issueToken('core.settings.update');
@@ -55,12 +61,13 @@ test('#519 후속 - 총 건수를 모르는 활동 로그에서도 페이지 번
     const nav = page.getByRole('navigation', { name: '페이지네이션' }).first();
     await expect(nav).toBeVisible({ timeout: 15_000 });
 
-    const pageButton = (n: number) => nav.locator('button', { hasText: new RegExp(`^${n}$`) });
+    // 쪽 번호는 링크(<a href>, pageHref — #757). 갈 수 없는 이전·다음은 href 없는 aria-disabled 링크라 a·button 을 함께 본다
+    const pageButton = (n: number) => nav.locator(':is(a, button)', { hasText: new RegExp(`^${n}$`) });
     await expect(pageButton(1)).toBeVisible();
     await expect(pageButton(1)).toHaveAttribute('aria-current', 'page');
     await expect(pageButton(2)).toBeVisible();
-    await expect(nav.locator('button[aria-label="마지막 페이지"]')).toHaveCount(0);
-    await expect(nav.locator('button[aria-label="다음 페이지"]')).toBeEnabled();
+    await expect(nav.locator(':is(a, button)[aria-label="마지막 페이지"]')).toHaveCount(0);
+    await expect(nav.locator(':is(a, button)[aria-label="다음 페이지"]')).toHaveAttribute('href', /[?&]page=2\b/);
 
     await pageButton(2).click();
     await expect(pageButton(2)).toHaveAttribute('aria-current', 'page', { timeout: 15_000 });

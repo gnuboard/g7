@@ -76,7 +76,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-warning-soft"
+                                "className": "text-xs board-tone-warning"
                             },
                             "text": "$t:sirsoft-board.admin.settings.identity.read_only_notice"
                         }
@@ -133,6 +133,16 @@
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
+                                                {
+                                                    "comment": "직전에 연 정책의 폼을 먼저 null 로 비운다 — 기본(deep) 병합은 빈 객체 `{}`(조건)로 기존 값을 지우지 못하고, 이번 객체에 없는 키(user_overrides)도 남긴다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal": {
+                                                            "form": null
+                                                        }
+                                                    }
+                                                },
                                                 {
                                                     "handler": "setState",
                                                     "params": {
@@ -236,7 +246,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{(boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board').length === 0}}",
+                                    "if": "{{boardIdentityPurposes !== undefined && ((boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board').length === 0)}}",
                                     "props": {
                                         "className": "text-tertiary italic"
                                     },
@@ -255,7 +265,7 @@
                     },
                     "children": [
                         {
-                            "comment": "필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다.",
+                            "comment": "필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다.",
                             "type": "basic",
                             "name": "Select",
                             "actions": [
@@ -285,6 +295,7 @@
                             ],
                             "props": {
                                 "name": "filter.scope",
+                                "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
@@ -686,6 +697,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) ? ((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) + ' (' + (policy.key ?? '') + ')' : (policy.key ?? '')}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     }
@@ -703,7 +715,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}"
+                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning'}}"
                                                                     },
                                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                                 }
@@ -725,6 +737,16 @@
                                                                             "type": "click",
                                                                             "handler": "sequence",
                                                                             "actions": [
+                                                                                {
+                                                                                    "comment": "직전에 연 정책의 폼을 먼저 null 로 비운다 — 기본(deep) 병합은 빈 객체 `{}`(조건)로 기존 값을 지우지 못하고, 이번 객체에 없는 키(user_overrides)도 남긴다",
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "identity_policy_form_modal": {
+                                                                                            "form": null
+                                                                                        }
+                                                                                    }
+                                                                                },
                                                                                 {
                                                                                     "handler": "setState",
                                                                                     "params": {
@@ -875,7 +897,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "mx-1.5 text-gray-300 dark:text-gray-600"
+                                                                        "className": "mx-1.5 text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "·"
                                                                 },
@@ -895,7 +917,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}"
+                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info flex-shrink-0' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning flex-shrink-0'}}"
                                                     },
                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                 }
@@ -924,7 +946,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-300 dark:text-gray-600"
+                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "·"
                                                         },
@@ -945,7 +967,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-300 dark:text-gray-600"
+                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "·"
                                                         },
@@ -1020,6 +1042,7 @@
                                                     ],
                                                     "props": {
                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                        "ariaLabel": "$t:common.row_cell|row={{((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) ? ((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) + ' (' + (policy.key ?? '') + ')' : (policy.key ?? '')}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                         "size": "sm",
                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     }
@@ -1042,6 +1065,16 @@
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
+                                                                {
+                                                                    "comment": "직전에 연 정책의 폼을 먼저 null 로 비운다 — 기본(deep) 병합은 빈 객체 `{}`(조건)로 기존 값을 지우지 못하고, 이번 객체에 없는 키(user_overrides)도 남긴다",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "identity_policy_form_modal": {
+                                                                            "form": null
+                                                                        }
+                                                                    }
+                                                                },
                                                                 {
                                                                     "handler": "setState",
                                                                     "params": {
@@ -1128,7 +1161,7 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(boardIdentityPolicies?.data?.data ?? []).length === 0}}",
+                            "if": "{{boardIdentityPolicies !== undefined && ((boardIdentityPolicies?.data?.data ?? []).length === 0)}}",
                             "props": {
                                 "className": "py-10 text-center text-label-subtle"
                             },
@@ -1159,14 +1192,13 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "이전 쪽 — 1 밑으로 내려가지 않게 바닥을 잡아 둔다(버튼 자체도 첫 쪽에서는 잠긴다). 쪽수만 URL 에 다시 적으므로 걸어 둔 범위·검색은 그대로 남는다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/admin/boards/settings",
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
@@ -1185,9 +1217,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/boards/settings?tab=identity_policies&page={{Math.max(1, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{(boardIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {
@@ -1207,14 +1240,13 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "다음 쪽 — 마지막 쪽을 넘지 않게 천장을 잡아 둔다. 이전 쪽 버튼과 대칭이다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/admin/boards/settings",
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
@@ -1233,9 +1265,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/boards/settings?tab=identity_policies&page={{boardIdentityPolicies?.data?.meta?.last_page ? Math.min(boardIdentityPolicies?.data?.meta?.last_page, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{boardIdentityPolicies?.data?.meta?.last_page ? ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) >= boardIdentityPolicies?.data?.meta?.last_page) : (boardIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {

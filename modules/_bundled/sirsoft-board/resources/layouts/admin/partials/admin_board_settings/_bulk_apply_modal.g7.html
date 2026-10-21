@@ -5,12 +5,12 @@
       <!-- 저장/되돌릴수없음 경고 배너 -->
       <div class="alert-warning">
         <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0" size="sm"/>
-        <p class="text-warning-soft">$t:sirsoft-board.admin.settings.bulk_apply_modal.message</p>
+        <p class="text-xs board-tone-warning">$t:sirsoft-board.admin.settings.bulk_apply_modal.message</p>
       </div>
       <!-- 권한 항목 선택 시 안내 배너 -->
       <div data-if="{{(function() { const fields = _global.bulkApplySnapshot?.fields ?? []; return fields.some(f => f.includes('.') || f === 'manager'); })()}}" class="alert-info">
         <icon name="circle-info" class="text-blue-600 dark:text-blue-400 flex-shrink-0" size="sm"/>
-        <p class="text-info-soft">$t:sirsoft-board.admin.settings.bulk_apply_modal.permission_notice</p>
+        <p class="text-xs board-tone-info">$t:sirsoft-board.admin.settings.bulk_apply_modal.permission_notice</p>
       </div>
       <!-- 선택된 항목 목록 (섹션별 그루핑) -->
       <div class="toggle-group">
@@ -20,7 +20,7 @@
           <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-full">{{(_global.bulkApplySnapshot?.fields ?? []).length}}</span>
         </div>
         <div class="max-h-48 overflow-y-auto">
-          <span data-if="{{!(_global.bulkApplySnapshot?.fields ?? []).length}}" class="block p-3 text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.no_fields</span>
+          <span data-if="{{!(_global.bulkApplySnapshot?.fields ?? []).length}}" class="block p-3 text-sm text-gray-500 dark:text-gray-400 italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.no_fields</span>
           <!-- 섹션별 그루핑 iteration. 표현식 평가기는 콜백 안의 멤버 대입(grouped[sk] = [] / .push())을 허용하지 않는다 — 쓰면 식 전체가 평가에 실패해 iteration source 가 배열이 아니게 되고, 이 목록이 오류 없이 통째로 렌더되지 않는다. 누산기 없이 map + filter 로만 구성한다. -->
           <div data-each="sectionGroup in (function() { const fields = _global.bulkApplySnapshot?.fields ?? []; const sectionMap = { type:'basic', show_view_count:'basic', secret_mode:'basic', use_comment:'basic', use_reply:'basic', use_report:'basic', use_reaction:'basic', use_comment_reaction:'basic', use_scrap:'basic', per_page:'list', per_page_mobile:'list', order_by:'list', order_direction:'list', min_title_length:'post', max_title_length:'post', min_content_length:'post', max_content_length:'post', max_reply_depth:'post', secret_reply_visibility:'post', blocked_keywords:'post', new_display_hours:'post', comment_order:'comment', min_comment_length:'comment', max_comment_length:'comment', max_comment_depth:'comment', use_file_upload:'attachment', max_file_size:'attachment', max_file_count:'attachment', allowed_extensions:'attachment', notify_admin_on_post:'notification', notify_author:'notification', manager:'permissions' }; const sectionOrder = ['basic','list','post','comment','attachment','notification','permissions']; return sectionOrder.map(sk => ({ sectionKey: sk, items: fields.filter(k => (k.includes('.') ? 'permissions' : (sectionMap[k] ?? 'basic')) === sk) })).filter(g => g.items.length > 0); })()" class="border-b board-bulk-apply-group last:border-b-0">
             <div class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700">
@@ -45,14 +45,14 @@
         </div>
         <div class="p-3 flex flex-wrap gap-1.5 min-h-12">
           <span data-if="{{_global.bulkApplySnapshot?.applyAll !== false}}" class="text-label-subtle italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.all_boards</span>
-          <span data-if="{{_global.bulkApplySnapshot?.applyAll === false &amp;&amp; !(_global.bulkApplySnapshot?.boardIds ?? []).length}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.no_boards</span>
+          <span data-if="{{_global.bulkApplySnapshot?.applyAll === false &amp;&amp; !(_global.bulkApplySnapshot?.boardIds ?? []).length}}" class="text-sm text-gray-500 dark:text-gray-400 italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.no_boards</span>
           <div data-if="{{_global.bulkApplySnapshot?.applyAll === false}}" data-each="boardName in (_global.bulkApplySnapshot?.boardIds ?? []).map(id => { const opt = ($parent._computed.boardOptions ?? []).find(o => o.value == id); return opt ? opt.label : id; })" class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-full">
             <span>{{boardName}}</span>
           </div>
         </div>
       </div>
       <!-- 저장 실패 에러 표시 -->
-      <div data-if="{{$parent._local.bulkApplySaveError}}" class="alert-danger text-red-600 dark:text-red-400">
+      <div data-if="{{$parent._local.bulkApplySaveError}}" class="alert-danger text-red-700 dark:text-red-400">
         <icon name="circle-exclamation" class="flex-shrink-0" size="sm"/>
         <span>$t:sirsoft-board.admin.settings.bulk_apply_modal.save_error</span>
       </div>
@@ -74,7 +74,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="bulk_apply_confirm_button" type="button" disabled="{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false &amp;&amp; !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}" class="flex-center gap-1.5 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_apply_confirm_button" type="button" disabled="{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false &amp;&amp; !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}" class="flex-center gap-1.5 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 적용 실행 — 뿌리기는 전부-아니면-전무다. 한 게시판에서 막히면 서버가 통째로 되돌리고(`rolled_back`) 그때는 창을 닫지 않은 채 어디서 막혔는지 알린다. 성공했을 때만 스냅숏을 지우고 창을 닫는다 -->
             <sequence>

@@ -18,6 +18,33 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게"
         }
     ],
@@ -72,7 +99,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
                                 },
                                 "text": "$t:gnuboard7-hello_plugin.plugin_read_only"
                             }
@@ -107,6 +134,7 @@
                                                 "name": "Input",
                                                 "props": {
                                                     "type": "checkbox",
+                                                    "id": "hello_plugin_log_enabled",
                                                     "name": "log_enabled",
                                                     "className": "mt-1 h-4 w-4 rounded text-blue-600",
                                                     "disabled": "{{_computed.isPluginReadOnly}}"
@@ -120,7 +148,8 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "form-label cursor-pointer",
+                                                            "htmlFor": "hello_plugin_log_enabled"
                                                         },
                                                         "text": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label"
                                                     },
@@ -151,19 +180,16 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

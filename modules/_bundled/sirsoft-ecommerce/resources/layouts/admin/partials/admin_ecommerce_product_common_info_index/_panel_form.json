@@ -101,7 +101,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                                "type": "button",
+                                "className": "px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.common_info.button.cancel"
                         },
@@ -209,6 +210,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_local.isSaving || (_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true)}}"
                             },
@@ -422,6 +424,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-ecommerce.admin.common_info.form.status_default",
                                                 "checked": "{{_local.form.is_default}}",
                                                 "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
                                             }
@@ -459,6 +462,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-ecommerce.admin.common_info.form.status_active",
                                                 "checked": "{{_local.form.is_active}}",
                                                 "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
                                             }

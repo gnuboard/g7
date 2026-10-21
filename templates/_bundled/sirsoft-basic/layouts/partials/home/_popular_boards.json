@@ -22,7 +22,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "flame",
-                        "className": "text-xl text-orange-500"
+                        "className": "text-xl text-orange-600"
                     }
                 },
                 {
@@ -47,17 +47,15 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{board.slug}}"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
+                        "href": "/board/{{board.slug}}",
                         "className": "w-full text-left flex items-center justify-between py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer"
                     },
                     "children": [
@@ -101,9 +99,9 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{!popular_boards.data || popular_boards.data.length === 0}}",
+            "if": "{{popular_boards !== undefined && (!popular_boards.data || popular_boards.data.length === 0)}}",
             "props": {
-                "className": "text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center min-h-[200px]"
+                "className": "text-center py-8 text-gray-800 dark:text-gray-300 flex-grow flex flex-col items-center justify-center min-h-[200px]"
             },
             "children": [
                 {

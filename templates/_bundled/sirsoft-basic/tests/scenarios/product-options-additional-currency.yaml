@@ -1,0 +1,20 @@
+feature: 상품 상세 추가옵션 추가금 통화 환산 — 기본통화와 표시통화가 다를 때 합계에 통화가 섞이지 않는다
+
+description: |
+  추가옵션 추가금은 쇼핑몰 기본 통화 기준으로 저장된다. 총액 재계산이 그 값을 KRW 로 간주해 표시통화가 KRW 이면 환산 없이
+  더하던 결함(기본통화가 KRW 인 쇼핑몰에서만 우연히 맞음)을 막는다. 서버가 선택지마다 내려주는
+  `multi_currency_price_adjustment` 맵의 표시통화 값을 쓴다.
+
+# axis 의미:
+#   step — 합계를 다시 계산하는 계기: 수량 변경 핸들러의 합계 / 수량 증가 / 추가옵션 미선택 / 선택 항목 생성
+axes:
+  step: [quantity_total, quantity_increase, no_additional_option, selected_item_created]
+
+effects:
+  - additional_price_converted_to_display_currency_in_total   # 표시통화 합계에 환산된 추가금이 더해지고 기준통화 값이 섞이지 않는다
+  - additional_price_scales_with_quantity                     # 수량만큼 환산된 추가금이 곱해진다
+  - total_without_additional_option_is_converted_product_price # 추가옵션이 없으면 환산된 상품가만 합계가 된다
+  - selected_item_carries_multi_currency_additional_total     # 선택 항목 생성 시 통화별 추가금 합계가 항목에 실린다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/productOptionsAdditionalCurrency.test.ts

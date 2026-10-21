@@ -123,11 +123,11 @@ class SeoProductCacheListener implements HookListenerInterface
         try {
             $cache = app(SeoCacheManagerInterface::class);
 
-            // 상품 상세 페이지 캐시 무효화
+            // 상품 상세 페이지 캐시 무효화 — 상세 라우트는 번호와 상품 코드를 모두 받는다(Product::resolveRouteBinding).
+            // 화면 주소·사이트맵은 상품 코드 주소(#792 W12)를, 이전에 공유·색인된 링크는 번호 주소를 쓰므로 두 주소를 함께 비운다.
             $cache->invalidateByUrl("*/products/{$product->id}");
-            // 화면 주소는 상품 코드다(#792 W12) — 그 주소의 캐시도 비운다
-            if (! empty($product->product_code)) {
-                $cache->invalidateByUrl("*/products/{$product->product_code}");
+            foreach ($this->productCodesToInvalidate($product, $args[1] ?? null) as $productCode) {
+                $cache->invalidateByUrl("*/products/{$productCode}");
             }
 
             // 쇼핑몰 목록/카테고리 페이지 캐시 무효화
@@ -152,6 +152,29 @@ class SeoProductCacheListener implements HookListenerInterface
                 'product_id' => $product->id ?? null,
             ]);
         }
+    }
+
+    /**
+     * 캐시를 비울 상품 코드 주소 목록을 만듭니다 (현재 코드 + 수정으로 바뀐 옛 코드).
+     *
+     * 수정 훅은 수정 전 스냅샷(`ProductService::update` 의 `$product->toArray()`)을 두 번째 인자로 넘긴다.
+     * 상품 코드를 바꾼 저장이면 이미 공유·색인된 옛 코드 주소의 화면도 옛 내용으로 남지 않게 함께 비운다.
+     * 생성·삭제 훅은 두 번째 인자가 없어 현재 코드만 돌려준다.
+     *
+     * @param  object  $product  변경된 상품
+     * @param  mixed  $before  수정 전 스냅샷 (배열 또는 객체, 없으면 null)
+     * @return array<int, string> 상품 코드 목록 (중복 없음)
+     */
+    private function productCodesToInvalidate(object $product, mixed $before): array
+    {
+        $previous = is_array($before) ? ($before['product_code'] ?? null) : (is_object($before) ? ($before->product_code ?? null) : null);
+
+        $codes = array_filter(
+            [(string) ($product->product_code ?? ''), (string) ($previous ?? '')],
+            fn (string $code) => $code !== '',
+        );
+
+        return array_values(array_unique($codes));
     }
 
     /**

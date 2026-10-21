@@ -70,6 +70,7 @@
 | 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
 | 화면 주소 | `app/Support/ScreenUrl.php` (필터 `core.screen_url.filter_path`) | 게시판, 페이지, 이커머스, gdpr, 결제 4종, 본인인증 2종 |
 | 개발자 화면(custom) | `app/Services/Screen/ScreenAuth.php`, `app/Services/Screen/InternalApiClient.php`, `app/Services/Screen/InternalApiResponse.php`, `app/Http/Middleware/Custom/RequireScreenUser.php`(`custom.auth`), `app/Http/Middleware/Custom/RequireScreenAdmin.php`(`custom.admin`) | 번들 확장 없음 — routes/custom.php 와 app/Custom 의 개발자 코드, custom:example 견본이 쓴다 |
+| 언어 코드·다국어 값 | `app/Support/LocaleTag.php`(BCP 47 판정·정규화·협상), `app/Support/LocalizedValue.php`(다국어 값 대체 순서) | 게시판, 이커머스, 페이지, 마케팅, gdpr, 결제 2종, 비즈뿌리오 |
 
 ### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
 

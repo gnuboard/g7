@@ -37,6 +37,10 @@ function jsonText(node: any): string {
 }
 
 describe('A14 — 할인값 min 정합', () => {
+    /**
+     * @scenario surface=coupon_form
+     * @effects discount_value_min_is_one
+     */
     it('discount_value Input 의 min 이 1 (정액 0 미사용)', () => {
         const inputs = findAll(benefitSettings, (n) => n?.name === 'Input' && n?.props?.name === 'discount_value');
         expect(inputs.length).toBeGreaterThan(0);
@@ -45,6 +49,10 @@ describe('A14 — 할인값 min 정합', () => {
 });
 
 describe('A16② — 상품검색 query 키', () => {
+    /**
+     * @scenario surface=coupon_form
+     * @effects product_search_uses_search_keyword
+     */
     it('상품검색 apiCall query 가 search_keyword 를 사용하고 keyword 를 쓰지 않는다', () => {
         const text = jsonText(usageConditions);
         // 잘못된 keyword 파라미터가 query 키로 남아있지 않아야 한다
@@ -56,23 +64,39 @@ describe('A16② — 상품검색 query 키', () => {
 });
 
 describe('A16③ — 직접발급 행 액션 + 모달', () => {
+    /**
+     * @scenario surface=coupon_list
+     * @effects row_actions_reach_issue_history_and_direct_issue
+     */
     it('행 액션 메뉴에 direct_issue 항목이 있다', () => {
         const items = findAll(couponDatagrid, (n) => n?.id === 'direct_issue' && typeof n?.label === 'string');
         expect(items.length).toBeGreaterThan(0);
     });
 
+    /**
+     * @scenario surface=coupon_list
+     * @effects row_actions_reach_issue_history_and_direct_issue
+     */
     it('direct_issue 케이스가 modal_direct_issue 를 연다', () => {
         const text = jsonText(couponDatagrid);
         expect(text).toContain('modal_direct_issue');
         expect(text).toContain('directIssueCoupon');
     });
 
+    /**
+     * @scenario surface=coupon_list
+     * @effects row_actions_reach_issue_history_and_direct_issue
+     */
     it('목록 레이아웃 modals 에 _modal_direct_issue 가 등록되어 있다', () => {
         const text = jsonText(couponList);
         expect(text).toContain('_modal_direct_issue.json');
         expect((couponList as any).initGlobal.directIssueCoupon).toBeNull();
     });
 
+    /**
+     * @scenario surface=direct_issue_modal
+     * @effects direct_issue_posts_user_uuids
+     */
     it('직접발급 모달이 user_uuids 를 POST 하고 issue-direct 엔드포인트를 호출한다', () => {
         const text = jsonText(directIssueModal);
         expect(text).toContain('/issue-direct');
@@ -82,6 +106,10 @@ describe('A16③ — 직접발급 행 액션 + 모달', () => {
         expect(text).toContain('"keyword":"{{$event.target.value}}"');
     });
 
+    /**
+     * @scenario surface=direct_issue_modal
+     * @effects direct_issue_submit_shows_progress
+     */
     it('발급 버튼이 제출 중 스피너 + 텍스트 변경 + 비활성화 처리한다 (다른 모달과 일관)', () => {
         // 발급 버튼: disabled 에 directIssueSubmitting, 스피너 Icon(if), 텍스트 삼항
         const issueBtn = findAll(
@@ -99,6 +127,10 @@ describe('A16③ — 직접발급 행 액션 + 모달', () => {
         expect(jsonText(issueBtn.children)).toContain('directIssueSubmitting ?');
     });
 
+    /**
+     * @scenario surface=direct_issue_modal
+     * @effects direct_issue_refreshes_coupon_list
+     */
     it('발급 onSuccess 가 coupons 데이터그리드를 refetch 하여 발급건수를 갱신한다', () => {
         const text = jsonText(directIssueModal);
         // onSuccess 에서 부모 목록(coupons) refetch — 발급수량 컬럼 갱신
@@ -116,6 +148,10 @@ describe('A16③ 회귀 — 데스크탑(PC) DataGrid rowActions 에도 발급�
         )[0];
     }
 
+    /**
+     * @scenario surface=coupon_list
+     * @effects row_actions_reach_issue_history_and_direct_issue
+     */
     it('PC DataGrid 의 rowActions 에 issue_history 와 direct_issue 가 포함된다', () => {
         const grid = pcDataGrid();
         expect(grid).toBeTruthy();
@@ -126,6 +162,10 @@ describe('A16③ 회귀 — 데스크탑(PC) DataGrid rowActions 에도 발급�
         expect(ids).toContain('delete');
     });
 
+    /**
+     * @scenario surface=coupon_list
+     * @effects row_actions_reach_issue_history_and_direct_issue
+     */
     it('PC DataGrid 의 onRowAction switch 가 issue_history/direct_issue 케이스를 처리한다', () => {
         const grid = pcDataGrid();
         const onRowAction = (grid.actions || []).find((a: any) => a.event === 'onRowAction');
@@ -140,6 +180,10 @@ describe('A16③ 회귀 — 데스크탑(PC) DataGrid rowActions 에도 발급�
 describe('발급내역 회귀 — refetch 핸들러/파라미터/그리드 바인딩', () => {
     // 배경: 발급내역 트리거/모달이 등록되지 않은 핸들러 fetchDataSource + 잘못된 param id 를 써서
     // 데이터를 한 번도 못 불러왔고, DataGrid data 바인딩도 한 단계 얕아 렌더 실패하던 결함.
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_history_refetches_by_data_source_id
+     */
     it('couponIssues 재조회는 refetchDataSource + dataSourceId 를 쓴다 (fetchDataSource/id 금지)', () => {
         const dgText = jsonText(couponDatagrid);
         const modalText = jsonText(issueHistoryModal);
@@ -153,6 +197,10 @@ describe('발급내역 회귀 — refetch 핸들러/파라미터/그리드 바�
         expect(modalText).toContain('"dataSourceId":"couponIssues"');
     });
 
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_history_binds_paginated_rows
+     */
     it('발급내역 모달 DataGrid 가 couponIssues.data.data 배열을 바인딩한다', () => {
         const grid = findAll(
             issueHistoryModal,
@@ -165,6 +213,10 @@ describe('발급내역 회귀 — refetch 핸들러/파라미터/그리드 바�
 });
 
 describe('A18② — 상세필터 자동 펼침', () => {
+    /**
+     * @scenario surface=coupon_list
+     * @effects detail_filter_restored_from_query
+     */
     it('init_actions setState 가 상세필터 쿼리 존재 시 showDetailFilter 를 복원한다', () => {
         const text = jsonText(couponList.init_actions);
         expect(text).toContain('showDetailFilter');
@@ -177,6 +229,10 @@ describe('A18② — 상세필터 자동 펼침', () => {
 });
 
 describe('직접발급 모달 — 실시간 검색(디바운스) 전환', () => {
+    /**
+     * @scenario surface=direct_issue_modal
+     * @effects direct_issue_member_search_is_live
+     */
     it('회원 검색 Input 이 debounce + onChange(type:input) 로 실시간 검색한다', () => {
         const input = findAll(
             directIssueModal,
@@ -191,6 +247,10 @@ describe('직접발급 모달 — 실시간 검색(디바운스) 전환', () => 
         expect(actionText).toContain('/api/admin/users/search');
     });
 
+    /**
+     * @scenario surface=direct_issue_modal
+     * @effects direct_issue_member_search_is_live
+     */
     it('별도 검색 버튼(search_btn 텍스트)이 제거되었다', () => {
         const text = jsonText(directIssueModal);
         // 검색 버튼 라벨 키가 더 이상 모달에 존재하지 않음
@@ -199,17 +259,29 @@ describe('직접발급 모달 — 실시간 검색(디바운스) 전환', () => 
 });
 
 describe('발급내역 모달 — 크기/중복/배지/사용처/취소', () => {
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_history_modal_layout_tidy
+     */
     it('모달이 size 대신 width(px) 로 확대된다', () => {
         expect((issueHistoryModal as any).props.width).toBeTruthy();
         // size prop 은 Modal 컴포넌트가 무시하므로 width 로 제어
         expect(String((issueHistoryModal as any).props.width)).toMatch(/px$/);
     });
 
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_history_modal_layout_tidy
+     */
     it('중복된 subtitle("총 N건의 발급 이력") 텍스트가 제거되었다', () => {
         const text = jsonText(issueHistoryModal);
         expect(text).not.toContain('modal.issue_history.subtitle');
     });
 
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_history_modal_layout_tidy
+     */
     it('상태 컬럼 배지 래퍼가 items-start 로 셀 100% 점유를 방지한다', () => {
         const statusCol = findAll(
             issueHistoryModal,
@@ -219,6 +291,10 @@ describe('발급내역 모달 — 크기/중복/배지/사용처/취소', () => 
         expect(jsonText(statusCol.cellChildren)).toContain('items-start');
     });
 
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_history_order_column_links_order
+     */
     it('사용처(order_number) 컬럼이 주문번호 링크로 노출된다', () => {
         const col = findAll(
             issueHistoryModal,
@@ -230,6 +306,10 @@ describe('발급내역 모달 — 크기/중복/배지/사용처/취소', () => 
         expect(text).toContain('/admin/ecommerce/orders/');
     });
 
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_cancel_opens_confirm_modal
+     */
     it('작업 컬럼의 발급취소 버튼은 is_cancellable 건만 노출하고 확인 모달을 연다', () => {
         const col = findAll(
             issueHistoryModal,
@@ -251,12 +331,20 @@ describe('발급내역 모달 — 크기/중복/배지/사용처/취소', () => 
         expect(openModalAction.params?.id).toBeUndefined();
     });
 
+    /**
+     * @scenario surface=coupon_list
+     * @effects issue_cancel_opens_confirm_modal
+     */
     it('목록 modals 에 _modal_cancel_issue_confirm 이 등록되어 있다', () => {
         expect(jsonText(couponList)).toContain('_modal_cancel_issue_confirm.json');
     });
 });
 
 describe('발급취소 확인 모달 — DELETE 호출/refetch', () => {
+    /**
+     * @scenario surface=cancel_issue_modal
+     * @effects issue_cancel_deletes_and_refetches
+     */
     it('확인 버튼이 issues/{issueId} 로 DELETE 하고 couponIssues 를 refetch 한다', () => {
         const text = jsonText(cancelIssueModal);
         expect(text).toContain('"method":"DELETE"');
@@ -266,6 +354,10 @@ describe('발급취소 확인 모달 — DELETE 호출/refetch', () => {
 });
 
 describe('발급수량 컬럼 — 숫자 클릭 시 발급내역 모달', () => {
+    /**
+     * @scenario surface=coupon_list
+     * @effects issue_count_opens_issue_history
+     */
     it('issue_count_formatted 컬럼이 클릭 가능한 링크 외형 버튼으로 발급내역 모달을 연다', () => {
         const col = findAll(
             couponDatagrid,
@@ -287,6 +379,10 @@ describe('발급수량 컬럼 — 숫자 클릭 시 발급내역 모달', () => 
 });
 
 describe('쿠폰 폼 — 직접발급 안내 문구', () => {
+    /**
+     * @scenario surface=coupon_form
+     * @effects direct_issue_guide_only_for_direct_method
+     */
     it('issue_method=direct 일 때만 안내 Div 가 표시된다', () => {
         const guide = findAll(
             basicInfo,
@@ -295,5 +391,21 @@ describe('쿠폰 폼 — 직접발급 안내 문구', () => {
         expect(guide).toBeTruthy();
         expect(guide.if).toContain("issue_method === 'direct'");
         expect(jsonText(guide)).toContain('form.hint.direct_issue_guide');
+    });
+});
+
+describe('발급내역 모달 — 사용 주문 링크 (7.1.1 출시 전 실측)', () => {
+    // 관리자 주문 상세 라우트는 주문번호(`/admin/ecommerce/orders/:orderNumber`)를 받는다. 주문 id 로 가면
+    // 본문은 우연히 뜨지만 그 화면이 주소의 값을 주문번호로 쓰는 하위 호출(결제 플러그인 패널 등)이 404 로 깨진다.
+    /**
+     * @scenario surface=issue_history_modal
+     * @effects issue_history_order_link_uses_order_number
+     */
+    it('주문번호 링크는 order_id 가 아니라 order_number 로 간다', () => {
+        const links = findAll(issueHistoryModal, (n) => typeof n?.props?.href === 'string' && n.props.href.includes('/admin/ecommerce/orders/'));
+        expect(links.length).toBeGreaterThanOrEqual(1);
+        links.forEach((link) => {
+            expect(link.props.href).toBe('/admin/ecommerce/orders/{{row.order_number}}');
+        });
     });
 });

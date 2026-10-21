@@ -1,0 +1,42 @@
+feature: 템플릿 엔진 데이터 바인딩·표현식·파이프 (DataBindingEngine · PipeRegistry)
+
+description: |
+  레이아웃의 `{{…}}` 바인딩이 경로·표현식·번역 토큰·파이프를 어떻게 풀어 값을 만드는지 잠근다.
+  `$localized`·`localized` 파이프는 요청 언어 → 사이트 기본 언어 → 영어 순으로 값을 고른다(engine-v1.81.0, 7.1.1 #148 —
+  그 전에는 요청 언어 다음이 한국어 고정). 그 대체 순서를 바꾸면서 기존 케이스 기대값을 고쳐야 했고, 매핑이 없던
+  기존 케이스를 같은 감사 정리에서 describe 묶음 단위로 선언했다. 룩비하인드 제거 회귀 묶음은
+  `bootstrap-parse-failure.yaml`(variable_extraction_contract_unchanged)이 함께 소유한다.
+
+axes:
+  surface: [binding, expression, localized, translation, cache, pipe_registry, pipe_integration]
+
+effects:
+  - path_resolves_nested_values                  # 점·배열 인덱스 경로, 복잡한 구조
+  - nested_path_supports_array_index
+  - bindings_interpolate_into_strings            # resolveBindings(문자열 보간·표현식 포함)
+  - expression_evaluates_js_operators            # evaluateExpression(삼항·논리·옵셔널 체이닝 등)
+  - binding_errors_return_safe_fallback          # 평가 오류는 예외 대신 안전한 기본값
+  - resolve_object_skips_iteration_blocks        # resolveObject 가 반복 블록을 건너뜀
+  - raw_binding_skips_translation                # {{raw:…}} 는 번역 면제
+  - localized_helper_picks_locale_value          # $localized — 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값, fallbackKey
+  - localized_helper_reads_app_locale_when_not_injected  # $locale 미주입 시 window.__templateApp 로케일
+  - t_helper_translates_with_params              # $t() 헬퍼
+  - t_token_preprocessed_in_expressions          # $t: 토큰 전처리
+  - cache_reuses_evaluated_results               # 렌더 사이클 캐시
+  - skip_cache_option_bypasses_cache
+  - array_values_not_coalesced                   # Array.isArray 판정(?? 로 배열을 덮지 않음)
+  - cache_invalidation_clears_entries
+  - pipe_expression_parsing                      # splitPipes·hasPipes·parsePipeExpression·executePipeChain
+  - builtin_pipes_transform_values               # date·number·default·filterBy·join·truncate 등 내장 파이프
+  - localized_pipe_picks_locale_value            # localized 파이프 — 인자 → 화면 언어 → 사이트 기본 언어 → 영어
+  - localized_pipe_follows_render_context_locale # 인자 없는 localized 는 렌더 문맥 $locale(편집기 미리보기 콘텐츠 언어)이 호스트 화면 언어보다 먼저
+  - custom_pipes_registered_and_listed
+  - pipes_apply_in_bindings                      # 바인딩·resolveObject·레이아웃 실사용 패턴에서 파이프 적용
+  - pipe_expression_preserves_raw_type           # 단일 바인딩+파이프는 원본 타입 유지
+  - pipe_edge_cases_safe
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.test.ts
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.pipe.test.ts
+  - resources/js/core/template-engine/__tests__/PipeRegistry.test.ts
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.pipeRenderLocale.test.ts

@@ -1,0 +1,19 @@
+feature: 레이아웃 최상위(루트급) slot 노드의 슬롯 내용은 그 노드의 화면 문맥을 받는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  루트급 렌더러는 늦은 B 사본에만 남은 키를 화면 문맥에서 뺀다(setState 사례 50). 루트급 노드가 slot 이면 등록 문맥이 받은 prop(늦은 사본)이라
+  슬롯 내용이 그 사본과 노드의 상태를 다시 깊게 병합해 뺀 키가 슬롯 안에서만 되살아났다. 대조군은 슬롯 안에서 고른 값이 그대로 보이는 경우다.
+
+axes:
+  case: [root_slot_shallow_clear_after_root_render, root_slot_pick_control]
+
+effects:
+  - slot_content_matches_owner_screen  # 슬롯 내용 표시가 slot 노드의 화면 문맥과 같다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.slotRootContext.test.tsx
+
+validation:
+  browser_check: 재실측 — 두 템플릿의 슬롯 화면(머리글 통화 선택 등) 표시·조작
+  note: |
+    fail-first: 루트급 등록 문맥을 받은 prop 으로 되돌리면 root_slot_shallow_clear_after_root_render 가 red(슬롯 안 {"color":"navy"}). 대조군은 회귀 잠금.

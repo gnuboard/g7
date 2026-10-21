@@ -56,7 +56,7 @@
                             "comment": "상태 칸은 셀렉트와 같은 필터다 — 누르면 셀렉트가 읽는 값과 목록이 읽는 주소 쿼리를 함께 그 상태로 바꾸고 쪽수를 1로 되돌린다. 같은 칸을 다시 눌러도 전체 보기로 돌아가지 않으므로 해제는 셀렉트의 '전체'로 한다.",
                             "id": "order_summary_step_{{stepIdx}}",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "A",
                             "iteration": {
                                 "source": "{{orders.data?.status_summary ?? []}}",
                                 "item_var": "step",
@@ -91,8 +91,9 @@
                                 }
                             ],
                             "props": {
+                                "href": "/mypage/orders?status={{step.key}}&page=1",
+                                "mergeQuery": true,
                                 "className": "relative flex flex-col items-center gap-2 min-w-0 cursor-pointer",
-                                "role": "button",
                                 "data-summary-key": "{{step.key ?? ''}}",
                                 "data-summary-count": "{{step.count ?? 0}}"
                             },
@@ -120,29 +121,29 @@
                                                 "base": "flex items-center justify-center w-full h-full rounded-full border-2 transition-colors",
                                                 "key": "{{((_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')) + ':' + (step.variant ?? 'secondary')}}",
                                                 "variants": {
-                                                    "done:success": "border-transparent bg-green-600 text-white dark:bg-green-500",
+                                                    "done:success": "border-transparent bg-green-700 text-white dark:bg-green-700",
                                                     "current:success": "border-green-600 bg-green-100 text-green-800 shadow-md dark:bg-green-900/30 dark:text-green-400",
-                                                    "off_path:success": "border-transparent bg-red-500 text-white dark:bg-red-600",
-                                                    "done:warning": "border-transparent bg-yellow-600 text-white dark:bg-yellow-500",
+                                                    "off_path:success": "border-transparent bg-red-600 text-white dark:bg-red-600",
+                                                    "done:warning": "border-transparent bg-yellow-700 text-white dark:bg-yellow-700",
                                                     "current:warning": "border-yellow-600 bg-yellow-100 text-yellow-800 shadow-md dark:bg-yellow-900/30 dark:text-yellow-400",
-                                                    "off_path:warning": "border-transparent bg-red-500 text-white dark:bg-red-600",
-                                                    "done:info": "border-transparent bg-blue-600 text-white dark:bg-blue-500",
+                                                    "off_path:warning": "border-transparent bg-red-600 text-white dark:bg-red-600",
+                                                    "done:info": "border-transparent bg-blue-600 text-white dark:bg-blue-600",
                                                     "current:info": "border-blue-600 bg-blue-100 text-blue-800 shadow-md dark:bg-blue-900/30 dark:text-blue-400",
-                                                    "off_path:info": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "off_path:info": "border-transparent bg-red-600 text-white dark:bg-red-600",
                                                     "done:primary": "border-transparent bg-indigo-600 text-white dark:bg-indigo-500",
-                                                    "current:primary": "border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-400",
-                                                    "off_path:primary": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "current:primary": "border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-300",
+                                                    "off_path:primary": "border-transparent bg-red-600 text-white dark:bg-red-600",
                                                     "done:secondary": "border-transparent bg-gray-600 text-white dark:bg-gray-500",
                                                     "current:secondary": "border-gray-600 bg-gray-100 text-gray-700 shadow-md dark:bg-gray-700 dark:text-gray-300",
-                                                    "off_path:secondary": "border-transparent bg-red-500 text-white dark:bg-red-600",
-                                                    "done:danger": "border-transparent bg-red-600 text-white dark:bg-red-500",
+                                                    "off_path:secondary": "border-transparent bg-red-600 text-white dark:bg-red-600",
+                                                    "done:danger": "border-transparent bg-red-600 text-white dark:bg-red-600",
                                                     "current:danger": "border-red-500 bg-red-100 text-red-800 shadow-md dark:bg-red-900/30 dark:text-red-400",
-                                                    "off_path:danger": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "off_path:danger": "border-transparent bg-red-600 text-white dark:bg-red-600",
                                                     "done:dark": "border-transparent bg-slate-600 text-white dark:bg-slate-500",
                                                     "current:dark": "border-slate-600 bg-slate-200 text-slate-800 shadow-md dark:bg-slate-800 dark:text-slate-200",
-                                                    "off_path:dark": "border-transparent bg-red-500 text-white dark:bg-red-600"
+                                                    "off_path:dark": "border-transparent bg-red-600 text-white dark:bg-red-600"
                                                 },
-                                                "default": "border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500"
+                                                "default": "border-gray-300 bg-white text-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500"
                                             },
                                             "children": [
                                                 {
@@ -160,7 +161,7 @@
                                             "name": "Span",
                                             "if": "{{(step.count ?? 0) > 0}}",
                                             "props": {
-                                                "className": "absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white dark:bg-red-600 dark:text-white text-xs font-bold leading-none flex items-center justify-center ring-2 ring-white dark:ring-gray-800",
+                                                "className": "absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white dark:bg-red-600 dark:text-white text-xs font-bold leading-none flex items-center justify-center ring-2 ring-white dark:ring-gray-800",
                                                 "data-summary-badge": "{{step.key ?? ''}}"
                                             },
                                             "text": "{{step.count ?? 0}}"
@@ -177,9 +178,9 @@
                                         "variants": {
                                             "done": "text-gray-700 dark:text-gray-300",
                                             "current": "font-bold text-gray-900 dark:text-gray-100",
-                                            "upcoming": "text-gray-400 dark:text-gray-500"
+                                            "upcoming": "text-gray-500 dark:text-gray-400"
                                         },
-                                        "default": "text-gray-400 dark:text-gray-500"
+                                        "default": "text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "{{step.label ?? ''}}"
                                 },
@@ -197,7 +198,7 @@
                                         }
                                     },
                                     "props": {
-                                        "className": "absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-300 dark:text-gray-600",
+                                        "className": "absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-500 dark:text-gray-500",
                                         "data-step-chevron": "pc"
                                     },
                                     "children": [
@@ -218,7 +219,7 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600",
+                                                "className": "absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-500 dark:text-gray-500",
                                                 "data-step-chevron": "mobile"
                                             }
                                         }
@@ -300,6 +301,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:mypage.orders.status_filter_label",
                         "value": "{{_local.ordersStatus || ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -483,7 +485,7 @@
                                                             "payment_complete": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
                                                             "preparing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
                                                             "shipping_ready": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                                                            "shipping": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                            "shipping": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
                                                             "delivered": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
                                                             "confirmed": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
                                                             "cancelled": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
@@ -542,11 +544,11 @@
                                                                     "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
                                                                     "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
                                                                     "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                                                                    "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                                    "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
                                                                     "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
                                                                     "dark": "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                                                                 },
-                                                                "default": "bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                                                                "default": "bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                                                             },
                                                             "children": [
                                                                 {
@@ -559,9 +561,6 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "if": "{{(claim.count ?? 0) > 1}}",
-                                                                    "props": {
-                                                                        "className": "opacity-70"
-                                                                    },
                                                                     "text": "{{'(' + claim.count + ')'}}"
                                                                 }
                                                             ]
@@ -660,7 +659,7 @@
                                                                     "props": {
                                                                         "name": "image",
                                                                         "size": "lg",
-                                                                        "className": "text-gray-400 dark:text-gray-500"
+                                                                        "className": "text-gray-500 dark:text-gray-400"
                                                                     }
                                                                 }
                                                             ]
@@ -704,7 +703,7 @@
                                                             "name": "P",
                                                             "if": "{{item.additional_options_summary}}",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500 mt-0.5"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
                                                             },
                                                             "children": [
                                                                 {
@@ -832,7 +831,7 @@
                                                             "name": "Span",
                                                             "if": "{{!order.total_shipping_amount || order.total_shipping_amount == 0}}",
                                                             "props": {
-                                                                "className": "text-xs text-green-600 dark:text-green-400"
+                                                                "className": "text-xs text-green-700 dark:text-green-400"
                                                             },
                                                             "text": "$t:mypage.orders.free_shipping"
                                                         }
@@ -889,7 +888,7 @@
                                                     "name": "P",
                                                     "if": "{{(order.total_points_used_amount ?? 0) > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-500 dark:text-red-400 mt-0.5"
+                                                        "className": "text-xs text-red-600 dark:text-red-400 mt-0.5"
                                                     },
                                                     "text": "$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}"
                                                 },
@@ -907,11 +906,10 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "type": "button",
                                                         "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                                                     }
                                                 }
@@ -922,14 +920,14 @@
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/mypage/orders/{{order.order_number}}",
                                                         "mergeQuery": true,
                                                         "query": {}
                                                     }
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/mypage/orders/{{order.order_number}}",
+                                                "mergeQuery": true,
                                                 "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                                             },
                                             "children": [
@@ -958,7 +956,7 @@
                     "comment": "주문 없음",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!orders.data.data || orders.data.data.length === 0}}",
+                    "if": "{{orders !== undefined && (!orders.data.data || orders.data.data.length === 0)}}",
                     "responsive": {
                         "portable": {
                             "props": {
@@ -978,14 +976,14 @@
                                     "props": {
                                         "name": "package",
                                         "size": "2x",
-                                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-2"
+                                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-2"
                                     }
                                 }
                             },
                             "props": {
                                 "name": "package",
                                 "size": "3x",
-                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                             }
                         },
                         {
@@ -1005,12 +1003,11 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "type": "button",
-                                        "className": "inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"
+                                        "className": "text-center inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"
                                     }
                                 }
                             },
@@ -1018,15 +1015,12 @@
                                 {
                                     "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다.",
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "{{_global.shopBase}}/products"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"
+                                "href": "{{_global.shopBase}}/products",
+                                "className": "text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"
                             },
                             "text": "$t:mypage.orders.go_shopping"
                         }
@@ -1074,6 +1068,8 @@
                         }
                     ],
                     "props": {
+                        "pageHref": "/mypage/orders?page={page}",
+                        "pageHrefMergeQuery": true,
                         "currentPage": "{{orders.data.pagination.current_page}}",
                         "totalPages": "{{orders.data.pagination.last_page ?? null}}",
                         "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",

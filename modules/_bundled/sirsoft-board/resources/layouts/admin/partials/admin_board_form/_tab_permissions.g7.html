@@ -1,10 +1,6 @@
 <!-- 게시판 폼 「권한」 탭 — 두 층으로 갈린다. 위는 «사람»을 지목하는 자리(운영자·단계 승인자)라 회원 검색으로 고르고, 아래는 «역할»에 기능을 여는 자리라 역할 목록에서 고른다. 역할 쪽은 관리자용 권한과 사용자용 권한을 키 접두어(`admin`)로 갈라 두 아코디언에 나눠 담는다 -->
 <partial description="Board Form - Permissions Tab Content">
   <div data-ref="section_permissions_card" class="admin-card">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <h3 data-ref="section_permissions_header" class="card-title">$t:sirsoft-board.admin.form.tabs.permissions</h3>
     <div data-ref="section_permissions_fields" class="row-stack">
       <div data-ref="permissions_section_managers" class="">
@@ -12,10 +8,10 @@
           <span>$t:sirsoft-board.admin.form.permissions.managers_title</span>
         </label>
         <p data-ref="permissions_managers_description" class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.managers_description</p>
-        <!-- 다른 담당자를 지정할 수 없는 액터(새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 위임 관리자)에게는 서버가 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고 스텝을 비워 보내며 `_meta.can_assign_board_members=false` 를 준다(K4F-2). 그대로 저장하면 본인이 관리자가 되므로, 이유를 보이고 두 명단 칸을 잠가 값이 바뀌지 않게 한다 -->
+        <!-- 다른 담당자를 지정할 수 없는 액터(새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 위임 관리자)에게는 서버가 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고 스텝을 비워 보내며 `_meta.can_assign_board_members=false` 를 준다. 그대로 저장하면 본인이 관리자가 되므로, 이유를 보이고 두 명단 칸을 잠가 값이 바뀌지 않게 한다 -->
         <div data-ref="permissions_members_assign_denied" data-if="{{_local.form?._meta?.can_assign_board_members === false}}" class="alert-warning mb-3">
           <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-          <span class="text-warning-soft">$t:sirsoft-board.admin.form.permissions.members_assign_denied</span>
+          <span class="text-xs board-tone-warning">$t:sirsoft-board.admin.form.permissions.members_assign_denied</span>
         </div>
         <tag-input data-type="composite" data-ref="permissions_managers_taginput" value="{{_local.form?.board_manager_ids ?? []}}" options="{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}" placeholder="$t:sirsoft-board.admin.form.permissions.search_placeholder" noOptionsMessage="$t:sirsoft-board.admin.form.permissions.no_search_results" class="w-full" defaultVariant="blue" :isSearchable="true" disabled="{{_computed.isReadOnly || _local.form?._meta?.can_assign_board_members === false}}">
           <on event="onInputChange">
@@ -84,7 +80,7 @@
         </div>
         <div data-ref="permissions_create_mode_notice" data-if="{{ !route?.slug }}" class="alert-info">
           <icon name="info-circle" size="lg" class="text-blue-500 dark:text-blue-400 flex-shrink-0"/>
-          <p class="text-info-soft">$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice</p>
+          <p class="text-xs board-tone-info">$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice</p>
         </div>
         <div data-ref="permissions_error_alert" data-if="{{ !!route?.slug &amp;&amp; (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}" class="alert-danger items-start mb-6">
           <div class="flex-start gap-3">
@@ -100,7 +96,7 @@
             <div slot="trigger" class="flex-center gap-2 w-full px-2 py-1">
               <icon name="shield" size="lg" class="text-purple-500 dark:text-purple-400"/>
               <h4 class="text-primary font-medium">$t:sirsoft-board.admin.form.permissions.admin_permissions_title</h4>
-              <icon name="chevron-down" size="sm" class="text-gray-400 dark:text-gray-500 ml-auto"/>
+              <icon name="chevron-down" size="sm" class="text-gray-500 dark:text-gray-500 ml-auto"/>
             </div>
             <div slot="content" class="px-4 py-4">
               <p class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.admin_permissions_description</p>
@@ -133,7 +129,7 @@
             <div slot="trigger" class="flex-center gap-2 w-full px-2 py-1">
               <icon name="users" size="lg" class="text-blue-500 dark:text-blue-400"/>
               <h4 class="text-primary font-medium">$t:sirsoft-board.admin.form.permissions.user_permissions_title</h4>
-              <icon name="chevron-down" size="sm" class="text-gray-400 dark:text-gray-500 ml-auto"/>
+              <icon name="chevron-down" size="sm" class="text-gray-500 dark:text-gray-500 ml-auto"/>
             </div>
             <div slot="content" class="px-4 py-4">
               <p class="text-tertiary mb-3">$t:sirsoft-board.admin.form.permissions.user_permissions_description</p>

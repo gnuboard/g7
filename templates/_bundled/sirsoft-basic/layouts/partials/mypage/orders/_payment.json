@@ -144,12 +144,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-red-500 dark:text-red-400 font-medium text-sm"
+                                                "className": "text-red-600 dark:text-red-400 font-medium text-sm"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "text-red-500 dark:text-red-400 font-medium"
+                                        "className": "text-red-600 dark:text-red-400 font-medium"
                                     },
                                     "text": "-{{order.data.total_discount_amount_formatted ?? ''}}"
                                 }
@@ -184,7 +184,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "ticket",
-                                                        "className": "text-sm text-red-400 dark:text-red-500"
+                                                        "className": "text-sm text-red-500 dark:text-red-500"
                                                     }
                                                 },
                                                 {
@@ -201,7 +201,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-red-500 dark:text-red-400"
+                                                "className": "text-sm text-red-600 dark:text-red-400"
                                             },
                                             "text": "-{{order.data.total_product_coupon_discount_amount_formatted ?? ''}}"
                                         }
@@ -239,14 +239,14 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "ticket",
-                                                                "className": "text-xs text-red-400 dark:text-red-500"
+                                                                "className": "text-xs text-red-500 dark:text-red-500"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "{{pCoupon.name ?? ''}}"
                                                         }
@@ -256,7 +256,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "-{{pCoupon.total_discount_formatted ?? ''}}"
                                                 }
@@ -285,7 +285,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "ticket",
-                                                        "className": "text-sm text-red-400 dark:text-red-500"
+                                                        "className": "text-sm text-red-500 dark:text-red-500"
                                                     }
                                                 },
                                                 {
@@ -302,7 +302,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-red-500 dark:text-red-400"
+                                                "className": "text-sm text-red-600 dark:text-red-400"
                                             },
                                             "text": "-{{order.data.total_order_coupon_discount_amount_formatted ?? ''}}"
                                         }
@@ -340,14 +340,14 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "ticket",
-                                                                "className": "text-xs text-red-400 dark:text-red-500"
+                                                                "className": "text-xs text-red-500 dark:text-red-500"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "{{oCoupon.name ?? ''}}"
                                                         }
@@ -357,7 +357,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "-{{oCoupon.total_discount_formatted ?? ''}}"
                                                 }
@@ -386,7 +386,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "tag",
-                                                        "className": "text-sm text-orange-400 dark:text-orange-500"
+                                                        "className": "text-sm text-orange-600 dark:text-orange-500"
                                                     }
                                                 },
                                                 {
@@ -403,7 +403,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-red-500 dark:text-red-400"
+                                                "className": "text-sm text-red-600 dark:text-red-400"
                                             },
                                             "text": "-{{order.data.total_code_discount_amount_formatted ?? ''}}"
                                         }
@@ -441,14 +441,14 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "tag",
-                                                                "className": "text-xs text-orange-400 dark:text-orange-500"
+                                                                "className": "text-xs text-orange-600 dark:text-orange-500"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "{{dCode.code ?? ''}} ({{dCode.name ?? ''}})"
                                                         }
@@ -458,7 +458,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "-{{dCode.total_discount_formatted ?? ''}}"
                                                 }
@@ -497,16 +497,16 @@
                             "comment": "무료배송 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false → Number() 캐스팅으로 안전 비교 (유료 분기도 동일).",
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{Number(order.data.total_shipping_amount ?? 0) === 0}}",
+                            "if": "{{!!order?.data && Number(order.data.total_shipping_amount ?? 0) === 0}}",
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-green-600 dark:text-green-400 font-medium text-sm"
+                                        "className": "text-green-700 dark:text-green-400 font-medium text-sm"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-green-600 dark:text-green-400 font-medium"
+                                "className": "text-green-700 dark:text-green-400 font-medium"
                             },
                             "text": "$t:mypage.order_detail.free_shipping"
                         },
@@ -561,14 +561,14 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "ticket",
-                                                "className": "text-sm text-red-400 dark:text-red-500"
+                                                "className": "text-sm text-red-500 dark:text-red-500"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{sCoupon.name ?? ''}}"
                                         }
@@ -578,7 +578,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-red-400 dark:text-red-500"
+                                        "className": "text-xs text-red-600 dark:text-red-400"
                                     },
                                     "text": "-{{sCoupon.total_discount_formatted ?? ''}}"
                                 }
@@ -616,12 +616,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-red-500 dark:text-red-400 font-medium text-sm"
+                                        "className": "text-red-600 dark:text-red-400 font-medium text-sm"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-red-500 dark:text-red-400 font-medium"
+                                "className": "text-red-600 dark:text-red-400 font-medium"
                             },
                             "text": "-{{order.data.total_points_used_amount_formatted ?? ''}}"
                         }
@@ -657,12 +657,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-red-500 dark:text-red-400 font-medium text-sm"
+                                        "className": "text-red-600 dark:text-red-400 font-medium text-sm"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-red-500 dark:text-red-400 font-medium"
+                                "className": "text-red-600 dark:text-red-400 font-medium"
                             },
                             "text": "-{{order.data.total_deposit_used_amount_formatted ?? ''}}"
                         }
@@ -731,7 +731,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{claimPaidCurrency[1]?.formatted ?? ''}}"
                                         }
@@ -851,7 +851,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{currency[1]?.formatted ?? ''}}"
                                         }

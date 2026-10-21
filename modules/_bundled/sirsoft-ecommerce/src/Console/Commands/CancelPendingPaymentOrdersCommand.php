@@ -44,6 +44,12 @@ class CancelPendingPaymentOrdersCommand extends Command
      */
     protected $description = '입금 기한 만료된 결제대기 주문을 자동 취소합니다.';
 
+    /**
+     * 커맨드를 생성합니다.
+     *
+     * @param  OrderRepositoryInterface  $orderRepository  입금 기한이 지난 결제대기 주문을 조회하는 저장소
+     * @param  OrderProcessingService  $orderProcessingService  주문 취소를 수행하는 서비스
+     */
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
         protected OrderProcessingService $orderProcessingService
@@ -60,7 +66,7 @@ class CancelPendingPaymentOrdersCommand extends Command
     {
         // 자동 취소 설정 확인
         if (! module_setting('sirsoft-ecommerce', 'order_settings.auto_cancel_expired', true)) {
-            $this->info('자동 취소 기능이 비활성화되어 있습니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.disabled'));
 
             return Command::SUCCESS;
         }
@@ -69,8 +75,8 @@ class CancelPendingPaymentOrdersCommand extends Command
         $limit = (int) $this->option('limit');
 
         $this->info($isDryRun
-            ? '[DRY RUN] 입금 기한 만료 주문 확인 중...'
-            : '입금 기한 만료 주문 취소 처리 시작...'
+            ? '[DRY RUN] '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.dry_run_start')
+            : __('sirsoft-ecommerce::messages.console.cancel_pending_orders.start')
         );
 
         try {
@@ -89,12 +95,12 @@ class CancelPendingPaymentOrdersCommand extends Command
             );
 
             if ($expiredOrders->isEmpty()) {
-                $this->info('처리할 만료 주문이 없습니다.');
+                $this->info(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.no_targets'));
 
                 return Command::SUCCESS;
             }
 
-            $this->info("대상 주문 수: {$expiredOrders->count()}건");
+            $this->info(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.target_count', ['count' => $expiredOrders->count()]));
 
             $successCount = 0;
             $failCount = 0;
@@ -113,7 +119,11 @@ class CancelPendingPaymentOrdersCommand extends Command
                     default => $order->ordered_at,
                 };
 
-                $this->line("- 주문번호: {$order->order_number} ({$paymentMethodValue}, 기한: {$dueAt})");
+                $this->line('- '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.order_line', [
+                    'order_number' => $order->order_number,
+                    'payment_method' => $paymentMethodValue,
+                    'due_at' => (string) $dueAt,
+                ]));
 
                 if ($isDryRun) {
                     $successCount++;
@@ -143,7 +153,7 @@ class CancelPendingPaymentOrdersCommand extends Command
                 } catch (\Exception $e) {
                     $failCount++;
 
-                    $this->error("  취소 실패: {$e->getMessage()}");
+                    $this->error('  '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.cancel_failed', ['error' => $e->getMessage()]));
 
                     Log::error('CancelPendingPaymentOrdersCommand: 주문 자동 취소 실패', [
                         'order_id' => $order->id,
@@ -155,14 +165,14 @@ class CancelPendingPaymentOrdersCommand extends Command
 
             $this->newLine();
             $this->info($isDryRun
-                ? "[DRY RUN] 취소 대상: {$successCount}건"
-                : "처리 완료 - 성공: {$successCount}건, 실패: {$failCount}건"
+                ? '[DRY RUN] '.__('sirsoft-ecommerce::messages.console.cancel_pending_orders.dry_run_summary', ['count' => $successCount])
+                : __('sirsoft-ecommerce::messages.console.cancel_pending_orders.summary', ['success' => $successCount, 'failed' => $failCount])
             );
 
             return $failCount > 0 ? Command::FAILURE : Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error("오류 발생: {$e->getMessage()}");
+            $this->error(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.error', ['error' => $e->getMessage()]));
 
             Log::error('CancelPendingPaymentOrdersCommand: 커맨드 실행 실패', [
                 'error' => $e->getMessage(),

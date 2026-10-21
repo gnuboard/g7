@@ -57,7 +57,7 @@
         </button>
       </div>
       <!-- 적용된 마일리지 정보 -->
-      <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+      <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" class="text-base"/>
         <span>-{{checkoutData.data.calculation?.summary?.points_used_formatted}}</span>
       </div>

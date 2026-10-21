@@ -16,9 +16,9 @@
           </checkbox>
           <label for="selectAll" class="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">$t:shop.cart.select_all</label>
           <!-- 선택 개수는 선택 상태의 SSoT 인 selectedItems 에서 파생한다 (주문 요약 _cart_summary.json 과 동일 표현식) -->
-          <span class="text-sm text-gray-500 dark:text-gray-400">({{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}})</span>
+          <span class="text-sm text-gray-600 dark:text-gray-300">({{_local.selectedItems?.length ?? 0}}/{{cartItems.data.item_count ?? 0}})</span>
         </div>
-        <button class="flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0}}">
+        <button type="button" class="flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0}}">
           <on type="click">
             <!-- 지울 대상을 먼저 담고 창을 연다 — 순서가 뒤집히면 창이 빈 목록을 읽은 채 뜬다 -->
             <sequence>
@@ -44,16 +44,16 @@
         </div>
       </div>
       <!-- 장바구니 비어있음 -->
-      <div data-if="{{!cartItems.data.items || cartItems.data.items.length === 0}}" class="text-center py-16">
-        <icon name="shopping-cart" class="text-[4rem] mx-auto mb-4 text-gray-300 dark:text-gray-600"/>
+      <div data-if="{{cartItems !== undefined &amp;&amp; (!cartItems.data.items || cartItems.data.items.length === 0)}}" class="text-center py-16">
+        <icon name="shopping-cart" class="text-[4rem] mx-auto mb-4 text-gray-500 dark:text-gray-500"/>
         <p class="text-gray-500 dark:text-gray-400 mb-4">$t:shop.cart.empty</p>
-        <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer">
+        <a href="{{_global.shopBase}}/products" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer">
           <on type="click">
-            <navigate path="{{_global.shopBase}}/products"/>
+            <navigate/>
           </on>
           <icon name="arrow-left" class="text-base"/>
           <span>$t:shop.cart.continue_shopping</span>
-        </button>
+        </a>
       </div>
     </div>
   </div>

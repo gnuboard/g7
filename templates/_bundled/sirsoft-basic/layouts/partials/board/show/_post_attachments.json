@@ -12,66 +12,78 @@
     },
     "children": [
         {
-            "comment": "첨부파일 토글 헤더",
+            "comment": "첨부파일 토글 헤더 — 제목(h3) 안의 펼침 단추라 Tab 으로 닿고 Enter·Space 로 접고 편다(7.1.1 — 종전 클릭만 받는 div). 단추 안에는 블록 요소를 두지 않아 제목·개수는 span 이다",
             "type": "basic",
-            "name": "Div",
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "showAttachments": "{{_local.showAttachments === false ? true : false}}"
-                    }
-                }
-            ],
+            "name": "H3",
             "props": {
-                "className": "flex items-center justify-between cursor-pointer mb-3"
+                "className": "mb-3"
             },
             "children": [
                 {
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "누를 때마다 첨부파일 목록을 접고 편다(처음은 펼침)",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "showAttachments": "{{_local.showAttachments === false ? true : false}}"
+                            }
+                        }
+                    ],
                     "props": {
-                        "className": "flex items-center gap-2"
+                        "type": "button",
+                        "className": "flex w-full items-center justify-between cursor-pointer text-left",
+                        "aria-expanded": "{{_local.showAttachments !== false}}"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "paperclip",
-                                "size": "lg",
-                                "className": "text-gray-600 dark:text-gray-400"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "H3",
-                            "props": {
-                                "className": "text-sm font-semibold text-gray-900 dark:text-white"
-                            },
-                            "text": "$t:board.attachments.title"
-                        },
-                        {
-                            "comment": "첨부파일 개수",
-                            "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
+                                "className": "flex items-center gap-2"
                             },
-                            "text": "{{post?.data?.attachment_count ?? 0}}"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "paperclip",
+                                        "size": "lg",
+                                        "className": "text-gray-600 dark:text-gray-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:board.attachments.title"
+                                },
+                                {
+                                    "comment": "첨부파일 개수",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
+                                    },
+                                    "text": "{{post?.data?.attachment_count ?? 0}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}",
+                                "size": "lg",
+                                "className": "text-gray-500 dark:text-gray-400"
+                            }
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                        "name": "{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}",
-                        "size": "lg",
-                        "className": "text-gray-500 dark:text-gray-400"
-                    }
                 }
             ]
         },
@@ -89,9 +101,9 @@
             },
             "children": [
                 {
-                    "comment": "첨부파일 카드 - 권한 있을 때 (토큰 동반 핸들러로 다운로드, #413 item 58b)",
+                    "comment": "첨부파일 카드 - 권한 있을 때 (토큰 동반 핸들러로 다운로드, #413 item 58b). 링크가 아니라 단추다 — 내려받기에 로그인 토큰을 실어야 해서 핸들러가 받는다. 단추라 Tab·Enter 로도 받는다(7.1.1)",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "if": "{{post?.data?.abilities?.can_download === true}}",
                     "actions": [
                         {
@@ -104,14 +116,15 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "data-testid": "attachment-download-card",
-                        "className": "group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer"
+                        "className": "group flex w-full justify-start items-center gap-3 p-3 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer"
                     },
                     "children": [
                         {
                             "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "if": "{{attachment?.is_image}}",
                             "props": {
                                 "className": "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"
@@ -131,7 +144,7 @@
                         {
                             "comment": "파일 아이콘 (일반 파일인 경우)",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "if": "{{!attachment?.is_image}}",
                             "props": {
                                 "className": "flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
@@ -142,7 +155,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file",
-                                        "className": "text-3xl text-gray-400 dark:text-gray-500"
+                                        "className": "text-3xl text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
@@ -150,24 +163,24 @@
                         {
                             "comment": "파일 정보",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-gray-900 dark:text-white truncate mb-1"
+                                        "className": "block text-sm font-medium text-gray-900 dark:text-white truncate mb-1"
                                     },
                                     "text": "{{attachment?.original_filename}}"
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "{{attachment?.size_formatted}}"
                                 }
@@ -176,7 +189,7 @@
                         {
                             "comment": "다운로드 아이콘",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-shrink-0"
                             },
@@ -187,7 +200,7 @@
                                     "props": {
                                         "name": "download",
                                         "size": "lg",
-                                        "className": "text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                                        "className": "text-gray-500 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
                                     }
                                 }
                             ]
@@ -195,9 +208,9 @@
                     ]
                 },
                 {
-                    "comment": "첨부파일 카드 - 권한 없을 때 (클릭 시 토스트 표시)",
+                    "comment": "첨부파일 카드 - 권한 없을 때 (클릭 시 토스트 표시). 누르면 안내가 뜨는 단추다 — Enter·Space 로도 같은 안내를 받는다",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "if": "{{post?.data?.abilities?.can_download !== true}}",
                     "actions": [
                         {
@@ -229,13 +242,14 @@
                         }
                     ],
                     "props": {
-                        "className": "group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
+                        "type": "button",
+                        "className": "group flex w-full justify-start items-center gap-3 p-3 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
                     },
                     "children": [
                         {
                             "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "if": "{{attachment?.is_image}}",
                             "props": {
                                 "className": "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"
@@ -255,7 +269,7 @@
                         {
                             "comment": "파일 아이콘 (일반 파일인 경우)",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "if": "{{!attachment?.is_image}}",
                             "props": {
                                 "className": "flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
@@ -266,7 +280,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "file",
-                                        "className": "text-3xl text-gray-400 dark:text-gray-500"
+                                        "className": "text-3xl text-gray-500 dark:text-gray-400"
                                     }
                                 }
                             ]
@@ -274,24 +288,24 @@
                         {
                             "comment": "파일 정보",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-gray-900 dark:text-white truncate mb-1"
+                                        "className": "block text-sm font-medium text-gray-900 dark:text-white truncate mb-1"
                                     },
                                     "text": "{{attachment?.original_filename}}"
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "{{attachment?.size_formatted}}"
                                 }
@@ -300,7 +314,7 @@
                         {
                             "comment": "다운로드 아이콘 (비활성화 스타일)",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-shrink-0"
                             },
@@ -311,7 +325,7 @@
                                     "props": {
                                         "name": "download",
                                         "size": "lg",
-                                        "className": "text-gray-300 dark:text-gray-600"
+                                        "className": "text-gray-500 dark:text-gray-500"
                                     }
                                 }
                             ]

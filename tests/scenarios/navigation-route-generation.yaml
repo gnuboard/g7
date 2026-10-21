@@ -1,0 +1,19 @@
+feature: 확장 핸들러가 비동기 응답 뒤 출처 화면을 알아보는 공개 API — G7Core.navigation.getRouteGeneration() (engine-v1.81.1, 7.1.1 확장 보완)
+
+description: |
+  엔진은 늦은 showErrorPage 를 경로 전환 세대(TemplateApp.getRouteChangeId)로 거른다. 확장 핸들러는 그 세대를 읽을 공개 수단이 없어
+  「경로+쿼리」 표식만으로는 나갔다가 같은 주소로 돌아온 경우(A → B → A)를 가르지 못했다. 공개 getter 는 엔진과 같은 값을 돌려주고
+  같은 주소 재진입에도 는다. 축 source 는 값 출처(실 TemplateApp·주입·없음), flow 는 경로 흐름이다.
+
+axes:
+  source: [template_app, injected, none]
+  flow: [a_b_a, same_route]
+
+exclusions:
+  - { source: [injected, none], flow: a_b_a, reason: "경로 전환은 실 TemplateApp 의 handleRouteChange 로만 밟는다 — 주입·없음은 값 출처 판정만 본다" }
+
+effects:
+  - route_generation_matches_engine_and_advances_on_reentry
+
+test_files:
+  - resources/js/core/__tests__/G7CoreGlobals.routeGeneration.test.ts

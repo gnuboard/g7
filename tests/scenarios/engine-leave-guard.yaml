@@ -1,0 +1,37 @@
+feature: 편집 중 화면 이탈 확인 — 레이아웃 meta.leave_guard 엔진 판정 (engine-v1.82.0)
+
+description: |
+  레이아웃 `meta.leave_guard` 식이 참인 화면을 떠날 때 엔진이 확인을 묻는 경로를 실물 Router·ActionDispatcher·G7CoreGlobals·
+  TemplateApp 으로 잠근다. navigate 는 pushState 전에, popstate 는 확정 주소로 되돌려, beforeunload 는 취소로 머무른다.
+  가드 거짓·미선언·같은 경로·식 평가 실패는 묻지 않는다. `bypassLeaveGuard`(navigate·navigateBack·openWindow·redirect)와
+  동기 우회 범위·1회용 무장은 묻지 않고 소비·만료된다. 판정은 상태를 쓰지 않고, 디바운스 대기 입력은 실행·정리 없이
+  「변경 있음」으로 본다. 화면별 선언은 템플릿 매니페스트(leave-guard-unsaved-changes.yaml)가 따로 잠근다.
+
+axes:
+  exit_path:
+    - navigate           # Router.navigate · navigate 액션
+    - popstate           # 브라우저 뒤로·앞으로 · navigateBack 액션
+    - beforeunload       # 새로고침·닫기 · openWindow _self
+    - guard_value        # isLeaveGuarded 값 · 판정 근거 · 판정 전후 상태
+    - bypass             # bypassLeaveGuard 액션 옵션
+    - intentional_leave  # 세션 만료 로그인 이동(markDocumentLeaving)과 이탈 표지
+    - pending_debounce   # 자동바인딩·디스패처 디바운스 대기 입력
+
+effects:
+  - dirty_leave_asks_and_cancel_keeps_screen  # 가드 참 → 1회 묻고, 취소면 pushState 0·routeChange 0·확정 주소 유지·beforeunload 취소
+  - approved_leave_moves_and_rearms           # 승인하면 이동, 같은 이동의 리다이렉트는 다시 묻지 않고 새 화면 커밋 뒤 다시 묻는다
+  - clean_leave_does_not_ask                  # 가드 거짓(저장 성공 등) → 묻지 않고 종전대로 이동
+  - undeclared_guard_keeps_previous_behavior  # leave_guard 미선언 화면은 변경·대기 입력이 있어도 묻지 않는다
+  - same_path_move_does_not_ask               # 쿼리·해시만 다른 이동·popstate 는 묻지 않는다
+  - guard_failure_does_not_trap_user          # 식 평가 실패·{{식}} 아님·confirm 미구현 환경은 막지 않는다
+  - leave_message_translated                  # leave_message 의 $t: 문구를 번역해 묻는다
+  - bypass_skips_ask_once                     # 우회 옵션·동기 범위·무장은 묻지 않고 1회 소비, 오지 않으면 제한 시간 뒤 만료
+  - single_unload_listener                    # Router 를 여러 번 만들어도 beforeunload 리스너는 하나
+  - guard_reads_state_without_writing         # 판정은 실제 writer 가 쓴 값(pending 포함)을 읽고, 전후 상태 저장소가 같다
+  - pending_debounce_counts_as_dirty          # 디바운스 대기 입력만으로 묻고, 대기분은 실행·정리하지 않는다
+  - intentional_leave_not_asked               # 세션 만료 이동은 묻지 않고, 머무르면 이탈 표지를 되돌린다
+
+test_files:
+  - resources/js/core/routing/__tests__/Router.leaveGuard.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.leaveGuard.test.tsx
+  - resources/js/core/template-engine/__tests__/LeaveGuard.autoBindingDebounce.test.tsx

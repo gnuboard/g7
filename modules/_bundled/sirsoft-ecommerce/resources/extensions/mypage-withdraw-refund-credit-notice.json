@@ -18,7 +18,7 @@
                     "props": {
                         "name": "triangle-exclamation",
                         "size": "sm",
-                        "className": "text-amber-500"
+                        "className": "text-amber-600"
                     }
                 },
                 {

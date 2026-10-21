@@ -21,7 +21,7 @@
       <!-- 사용자 화면은 어느 사용자 템플릿에서나 있는 유틸리티 클래스로 쓴다(관리자 템플릿의 의미 클래스는 사용자 템플릿에 정의가 없다). -->
       <h1 data-ref="user_memo_title" class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:gnuboard7-hello_module.user.memos.index.title</h1>
       <!-- 메모가 0건이면 빈 화면 대신 안내 문구를 보인다 -->
-      <span data-ref="user_memo_empty" data-if="{{(memos?.data?.data ?? []).length === 0}}" class="block py-8 text-center text-sm text-gray-500 dark:text-gray-400">$t:gnuboard7-hello_module.user.memos.index.empty</span>
+      <span data-ref="user_memo_empty" data-if="{{memos !== undefined &amp;&amp; ((memos?.data?.data ?? []).length === 0)}}" class="block py-8 text-center text-sm text-gray-500 dark:text-gray-400">$t:gnuboard7-hello_module.user.memos.index.empty</span>
       <!-- 반복은 카드에 둔다 — 묶음(space-y-3)에 두면 메모마다 묶음이 새로 생겨 카드 사이 간격이 사라진다. -->
       <div data-ref="user_memo_items" class="space-y-3">
         <div data-ref="user_memo_item_{{idx}}" data-each="memo, idx in {{memos?.data?.data ?? []}}" class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">

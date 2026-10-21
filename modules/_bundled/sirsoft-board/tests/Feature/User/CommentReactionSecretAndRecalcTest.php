@@ -49,7 +49,7 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
             'active_reaction_types' => ['like', 'dislike'],
         ]);
 
-        // 반응 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트 S7) — 회원 역할에 부여해 둔다.
+        // 반응 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트) — 회원 역할에 부여해 둔다.
         // 없으면 라우트 미들웨어가 403 으로 먼저 막아 아래 비밀글 판정(422)에 닿지 못한다(ReactionApiTest 와 같은 준비).
         $this->grantUserRolePermissions(['posts.read', 'comments.read']);
     }

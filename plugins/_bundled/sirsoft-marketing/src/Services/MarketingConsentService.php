@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Marketing\Services;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use App\Support\LocalizedValue;
 use Illuminate\Support\Collection;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsent;
 use Plugins\Sirsoft\Marketing\Models\MarketingConsentHistory;
@@ -204,7 +205,7 @@ class MarketingConsentService
      * 채널 라벨을 주어진 로케일로 해석합니다.
      *
      * `label_key` 가 SSoT 다 — 저장된 `label` 맵은 언어팩 미설치 환경 보호용 폴백이고, 저장 시점의
-     * 지원 로케일만 담는다. 그 로케일에 번역이 있으면 번역을, 없으면 저장 맵(→ 폴백 로케일 → ko → 키)을 쓴다.
+     * 지원 로케일만 담는다. 그 로케일에 번역이 있으면 번역을, 없으면 저장 맵(→ 사이트 기본 언어 → 영어 → 키)을 쓴다.
      *
      * @param  array<string, mixed>  $channel  채널 정의
      * @param  string  $locale  로케일
@@ -229,7 +230,7 @@ class MarketingConsentService
             return $label;
         }
 
-        return $label[$locale] ?? $label[config('app.fallback_locale', 'ko')] ?? $label['ko'] ?? (string) ($channel['key'] ?? '');
+        return LocalizedValue::pick($label, $locale, anyAsLast: false) ?? (string) ($channel['key'] ?? '');
     }
 
     /**

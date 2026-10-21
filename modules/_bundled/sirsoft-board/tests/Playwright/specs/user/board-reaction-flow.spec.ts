@@ -120,7 +120,7 @@ test.describe('게시판 반응 등록→전환→해제 흐름 (#525)', () => {
 
     // disabled 버튼은 클릭 이벤트 자체가 발생하지 않아 안내를 줄 수 없으므로, 본인 글에서는
     // 버튼을 시각적으로만 비활성 톤으로 두고 클릭은 받아 switch 분기에서 토스트로 안내한다
-    // (트러블슈팅: PO 피드백 — disabled 버튼은 "왜 안 눌리는지" 사용자가 알 수 없음).
+    // (트러블슈팅: 사용성 피드백 — disabled 버튼은 "왜 안 눌리는지" 사용자가 알 수 없음).
     let reactCalled = false;
     await page.route(OWN_POST_REACT_API, async (route) => {
       reactCalled = true;

@@ -23,6 +23,8 @@ use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
 use App\Support\Filesystem\PathGuard;
 use App\Support\LayoutMarkup\EmptyMap;
+use App\Support\LocaleTag;
+use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -311,10 +313,8 @@ class TemplateService
 
         // 다국어 필드인 경우 (name, description)
         if (is_array($value)) {
-            // 현재 로케일 우선, 없으면 ko, 그 다음 en
-            $locale = app()->getLocale();
-
-            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            return LocalizedValue::pick($value);
         }
 
         return (string) $value;
@@ -825,8 +825,8 @@ class TemplateService
      */
     public function getLanguageFilePath(string $identifier, string $locale): array
     {
-        // 1. 로케일 형식 검증 (ISO 639-1: 2자리 소문자)
-        if (! preg_match('/^[a-z]{2}(-[A-Z]{2})?$/', $locale)) {
+        // 1. 로케일 형식 검증 — 언어팩 설치 규칙(BCP 47, 20자 이하)과 같은 기준
+        if (! LocaleTag::isValid($locale)) {
             return [
                 'success' => false,
                 'langPath' => null,

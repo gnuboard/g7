@@ -1,0 +1,71 @@
+feature: 화면 전환 때 데이터소스 값 이어 쓰기 — 같은 화면·같은 요청만 이어 쓰고 다시 받기 실패는 처음 받기와 같은 계약 (engine-v1.81.2)
+
+description: |
+  화면을 옮길 때 앞 화면의 같은 id 데이터소스 값이 새 화면 첫 렌더에 심기지 않게 잠근다. 이어 쓰는 것은 같은 화면(경로·레이아웃
+  이름이 같고 쿼리만 다름)과 같은 요청(같은 정의 · 같은 route/query 의존 값 — 베이스 레이아웃의 메뉴 등)뿐이고, `_local` 을 읽는
+  정의와 앞앞 화면이 받은 누적 값은 이어 쓰지 않는다. 다시 받기(refetchDataSource)를 다른 대상으로 시작하거나 실패하면 앞 대상
+  값을 남기지 않고(값 null·오류 기록), 같은 대상 실패는 마지막 값을 지킨다. 레이아웃을 받는 동안에도 전환 덮개가 뜬다.
+  실물 TemplateApp 경로 전환과 이어 쓰기 판정(순수 함수)의 입력 모양 전수 두 겹으로 잰다.
+
+axes:
+  case:
+    # 실물 경로 전환 (TemplateApp.routeDataCarryOver)
+    - other_layout_same_id_different_shape
+    - back_navigation_reverse_direction
+    - same_screen_query_change
+    - plugin_settings_a_to_b
+    - accumulated_fetched_data_two_screens_back
+    - same_layout_other_path
+    - refetch_other_target_5xx
+    - refetch_first_open_failure
+    - refetch_failure_then_success
+    - refetch_same_request_5xx
+    - refetch_other_target_with_fallback
+    - refetch_auth_error_without_fallback
+    - refetch_same_path_param_variant_5xx
+    - refetch_and_progressive_errors_coexist
+    - init_actions_refetch_failure_after_spa
+    - same_layout_edit_to_write
+    - other_layout_blocking_initlocal_merge
+    - same_screen_query_change_no_remount
+    - slow_layout_load_spinner
+    - fast_layout_load_no_spinner
+    - slow_layout_load_to_no_overlay_screen
+    - refetch_other_target_in_flight
+    - refetch_same_target_in_flight
+    - refetch_same_path_param_change_in_flight
+    - refetch_overlap_out_of_order
+    # 이어 쓰기 판정 입력 모양 (dataContextCarryOver)
+    - decide_same_screen_identity
+    - decide_no_previous_source
+    - decide_different_definition
+    - decide_same_definition_no_dependency
+    - decide_route_dependency
+    - decide_query_dependency
+    - decide_local_dependency
+    - build_init_other_screen
+    - build_init_same_screen
+
+effects:
+  - other_screen_same_id_not_carried                    # 다른 화면의 같은 id(정의 다름) 값은 첫 렌더에 심지 않는다 — 받기 전은 「받는 중」
+  - base_source_carried                                 # 같은 정의·의존 없는 베이스 소스(메뉴)는 이어 쓴다
+  - same_screen_query_change_carried                    # 같은 화면의 쿼리 변경은 앞 값을 이어 쓰고 다시 마운트하지 않는다
+  - plugin_settings_a_to_b_not_carried                  # route 를 읽는 정의는 경로 파라미터가 다르면 이어 쓰지 않는다
+  - accumulated_fetched_data_not_injected               # 앞앞 화면이 받은 누적 값이 init_actions 뒤 병합으로 심기지 않는다
+  - same_layout_other_path_route_source_not_carried     # 같은 레이아웃 다른 경로는 경로를 읽는 소스·blocking initLocal 폼을 이어 쓰지 않는다
+  - same_screen_requires_path_and_layout                # 같은 화면 판정은 경로와 레이아웃 이름이 모두 같을 때뿐
+  - missing_previous_source_not_carried                 # 앞 화면이 없거나 그 id 를 선언하지 않았으면 이어 쓰지 않는다
+  - query_dependent_source_carried_only_on_equal_query  # query 를 읽는 정의는 쿼리가 같을 때만(키 순서 무관) 이어 쓴다
+  - local_dependent_source_not_carried                  # `_local` 을 읽는 정의는 다른 화면으로 이어 쓰지 않는다
+  - progressive_init_keys_every_source                  # 초기값은 모든 id 의 키를 만들고 이어 쓰지 않는 id 는 undefined
+  - refetch_failure_null_and_error_recorded             # 다시 받기 실패는 값 null·오류 기록(처음 받기와 같은 계약)
+  - refetch_other_target_failure_no_previous_value      # 다른 대상 다시 받기 실패에 앞 대상 값이 남지 않는다(fallback 선언 시 fallback)
+  - refetch_same_request_failure_keeps_last             # 같은 대상(파라미터만 다름 포함) 서버 오류는 마지막 값을 지킨다
+  - refetch_success_clears_error                        # 실패 뒤 성공하면 오류 기록이 지워지고 새 값이 보인다
+  - refetch_other_target_starts_unreceived              # 다른 대상으로 다시 받는 동안은 받기 전 — 늦게 온 앞 대상 응답은 버린다
+  - refetch_same_target_keeps_value_in_flight           # 같은 대상(파라미터만 다름 포함)을 다시 받는 동안은 앞 값을 그대로 둔다
+  - early_spinner_during_layout_load                    # 레이아웃을 받는 동안 전환 덮개 스피너가 뜨고, 바로 받거나 덮개 없는 화면이면 걷는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/TemplateApp.routeDataCarryOver.test.tsx
+  - resources/js/core/template-engine/helpers/__tests__/dataContextCarryOver.test.ts

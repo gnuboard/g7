@@ -45,6 +45,7 @@ Filter 리스너 하나.
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
+| `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update gnuboard7-hello_plugin --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update gnuboard7-hello_plugin --force` |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
@@ -64,6 +65,10 @@ Filter 리스너 하나.
 
 로그 기록 여부는 설정(`log_enabled`)이 정합니다. **설정으로 끌 수 있게 만드는 것**이 부가
 동작의 규약입니다 — 리스너가 무조건 동작하면 그 확장을 설치한 사이트는 끌 방법이 없습니다.
+
+설정 화면(`plugin_settings.g7.html`)의 `settings` 데이터소스는 받기 실패를 `error-handling` 으로 나눕니다 — 처음
+받기 실패는 실제 상태 코드의 본문 오류 화면을 띄워 빈 폼·기본값이 저장되지 않게 하고, 다시 받기 실패(`error.refetch`)는
+받아 둔 값을 그대로 둔 채 오류 토스트만 띄웁니다.
 
 **Filter 구독** — 값 가공: `gnuboard7-hello_module.memo.title.filter` 가 발행되면
 `FilterMemoTitleListener::prependHelloPrefix()` 가 그 값을 받아 접두사를 붙여 **반환**합니다.
@@ -149,15 +154,18 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 2개 | `plugins/_bundled/gnuboard7-hello_plugin/tests` |
-| Vitest | 0개 | — |
+| Vitest | 2개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
 # PHPUnit (변경 범위만) (Bash)
 php vendor/bin/phpunit plugins/_bundled/gnuboard7-hello_plugin/tests --filter='<대상클래스>'
+
+# Vitest (저장소 루트에서) (PowerShell)
+powershell -Command "npm run test:run -- plugins/_bundled/gnuboard7-hello_plugin/<대상>"
 
 ```
 

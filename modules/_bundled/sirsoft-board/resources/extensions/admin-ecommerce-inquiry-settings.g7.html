@@ -7,7 +7,7 @@
         <label data-ref="inquiry_board_label" class="block text-sm font-medium text-gray-900 mb-1 dark:text-white">$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label</label>
         <select data-ref="inquiry_board_select" name="inquiry.board_slug" value="{{_local.form?.inquiry?.board_slug ?? ''}}" options="{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}" class="{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
       </div>
-      <span data-ref="inquiry_board_select_error" data-if="{{_local.errors?.['inquiry.board_slug']}}" class="block text-xs text-red-500 mt-1 dark:text-red-400">{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}</span>
+      <span data-ref="inquiry_board_select_error" data-if="{{_local.errors?.['inquiry.board_slug']}}" class="block text-xs text-red-600 mt-1 dark:text-red-400">{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}</span>
     </div>
     <div data-ref="inquiry_board_hints" class="space-y-3">
       <p data-ref="inquiry_board_hint_secret" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret</p>
@@ -18,13 +18,13 @@
             <icon name="gear" class="text-xs shrink-0 mt-0.5"/>
             <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit_desc</span>
           </p>
-          <button data-ref="inquiry_board_go_edit" type="button" class="self-start inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <a href="/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit" data-ref="inquiry_board_go_edit" class="button self-start inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <on type="click">
-              <navigate path="/admin/boards/{{settings?.data?.inquiry?.board_slug ?? ''}}/edit"/>
+              <navigate/>
             </on>
             <icon name="pen-to-square" class="text-xs"/>
             <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_board_edit</span>
-          </button>
+          </a>
         </div>
         <div data-ref="inquiry_board_go_posts_card" class="flex flex-col justify-between gap-3 flex-1 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
           <p class="flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -32,13 +32,13 @@
             <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts_desc</span>
           </p>
           <div class="flex gap-2">
-            <button data-ref="inquiry_board_go_posts" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <a href="/admin/board/{{settings?.data?.inquiry?.board_slug}}" data-ref="inquiry_board_go_posts" class="button inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <on type="click">
-                <navigate path="/admin/board/{{settings?.data?.inquiry?.board_slug}}"/>
+                <navigate/>
               </on>
               <icon name="list" class="text-xs"/>
               <span>$t:sirsoft-board.admin.ecommerce_settings.inquiry.go_to_posts</span>
-            </button>
+            </a>
             <!-- 메뉴 추가 API 는 그 게시판의 수정 권한(boards.update)을 요구한다 — 고른 게시판 행의 abilities.can_update 가 true 일 때만 연다(행이 아직 없으면 잠금) -->
             <button data-ref="inquiry_board_add_menu" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-900 border border-blue-500 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update === true ? '' : '$t:sirsoft-board.admin.ecommerce_settings.inquiry.add_to_admin_menu_no_permission'}}" disabled="{{(board_list_for_inquiry?.data?.data ?? []).find(b => b.slug === (settings?.data?.inquiry?.board_slug ?? ''))?.abilities?.can_update !== true}}">
               <on type="click">

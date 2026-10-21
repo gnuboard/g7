@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * - 관리자 영역 경로 → ActivityLogType::Admin — 코어 관리자 API(`api/admin/*`)뿐 아니라 확장 관리자 API
  *   (`api/{modules|plugins}/{id}/admin/*`)·관리자 로그인 API(`api/auth/admin/*`)·관리자 셸(`admin/*`)까지.
  *   판정은 IP 제한의 관리자 영역 정의(`IpAccessMatcher::isAdminArea`)를 그대로 쓴다 — 기준을 두 벌 두면
- *   확장 관리자 동작(예: 인증 앱 강제 해제)이 「사용자」로 남는다(7.1.0 실측 O-B2).
+ *   확장 관리자 동작(예: 인증 앱 강제 해제)이 「사용자」로 남는다(7.1.0 실측).
  * - 그 외 HTTP 요청 → ActivityLogType::User
  * - CLI/스케줄러(request 없음) → ActivityLogType::System
  */

@@ -42,7 +42,7 @@ function basicLayout(relative: string): string {
 describe.each([
     ['회원 주문 상세', 'mypage/orders/show.json'],
     ['비회원 주문 조회', 'shop/guest_order_show.json'],
-])('R3 — %s 의 클레임 신청 버튼', (_label, file) => {
+])('%s 의 클레임 신청 버튼', (_label, file) => {
     const source = basicLayout(file);
 
     /**
@@ -71,7 +71,7 @@ describe.each([
     });
 });
 
-describe('G08 — 다음 우편번호 [주소 검색] 버튼은 호스트의 읽기 전용 상태로 잠긴다', () => {
+describe('다음 우편번호 [주소 검색] 버튼은 호스트의 읽기 전용 상태로 잠긴다', () => {
     const read = (relative: string): string => fs.readFileSync(path.join(repoRoot(), relative), 'utf-8');
 
     /**
@@ -107,7 +107,7 @@ describe('G08 — 다음 우편번호 [주소 검색] 버튼은 호스트의 읽
     });
 });
 
-describe('G31 — 회원 클레임 [결제하기]는 결제 권한(can_pay)으로 잠긴다', () => {
+describe('회원 클레임 [결제하기]는 결제 권한(can_pay)으로 잠긴다', () => {
     /**
      * @scenario surface=user, permission=missing
      * @effects user_claim_pay_button_locked
@@ -117,7 +117,7 @@ describe('G31 — 회원 클레임 [결제하기]는 결제 권한(can_pay)으�
     });
 });
 
-describe('basic-shop#3 — 구매 버튼은 주문 권한(can_order)으로 잠긴다', () => {
+describe('구매 버튼은 주문 권한(can_order)으로 잠긴다', () => {
     /**
      * @scenario surface=user, permission=missing
      * @effects user_purchase_buttons_locked
@@ -133,7 +133,7 @@ describe('basic-shop#3 — 구매 버튼은 주문 권한(can_order)으로 잠�
     });
 });
 
-describe('basic-shop#5 — 주문서 배송지 모달의 수정·삭제는 서버 abilities 를 본다', () => {
+describe('주문서 배송지 모달의 수정·삭제는 서버 abilities 를 본다', () => {
     /**
      * @scenario surface=user, permission=missing
      * @effects checkout_address_modal_follows_abilities

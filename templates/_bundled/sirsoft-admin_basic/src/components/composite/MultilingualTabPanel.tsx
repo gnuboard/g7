@@ -14,19 +14,13 @@ import { Nav } from '../basic/Nav';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { MultilingualLocaleContext } from './MultilingualLocaleContext';
+import { getLocaleDisplayName } from '../../support/localeName';
 
 // G7Core 로케일 API
 const getG7Core = () => (window as any).G7Core;
 const getSupportedLocales = (): string[] => getG7Core()?.locale?.supported?.() ?? ['ko', 'en'];
 const getCurrentLocale = (): string => getG7Core()?.locale?.current?.() ?? 'ko';
 
-// 로케일 표시명
-const LOCALE_NAMES: Record<string, string> = {
-  ko: '한국어',
-  en: 'English',
-  ja: '日本語',
-  zh: '中文',
-};
 
 /**
  * MultilingualTabPanel Props
@@ -123,7 +117,7 @@ export const MultilingualTabPanel: React.FC<MultilingualTabPanelProps> = ({
     if (variant === 'pills') {
       return isActive
         ? `${baseClasses} bg-blue-600 text-white rounded-lg`
-        : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
+        : `${baseClasses} text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
     }
 
     if (variant === 'underline') {
@@ -135,7 +129,7 @@ export const MultilingualTabPanel: React.FC<MultilingualTabPanelProps> = ({
     // default
     return isActive
       ? `${baseClasses} text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600`
-      : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border-b-2 border-transparent`;
+      : `${baseClasses} text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-b-2 border-transparent`;
   };
 
   return (
@@ -149,7 +143,7 @@ export const MultilingualTabPanel: React.FC<MultilingualTabPanelProps> = ({
             onClick={() => handleTabClick(locale)}
             className={getTabClasses(locale)}
           >
-            <Span>{LOCALE_NAMES[locale] || locale}</Span>
+            <Span>{getLocaleDisplayName(locale)}</Span>
           </Button>
         ))}
       </Nav>

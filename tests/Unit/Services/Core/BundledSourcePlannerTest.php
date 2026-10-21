@@ -312,6 +312,63 @@ class BundledSourcePlannerTest extends TestCase
     }
 
     /**
+     * 숨김 확장(샘플)을 대상으로 하는 언어팩도 숨김으로 기록됩니다 — 본체는 숨기면서 언어팩만 안내하던 결함(7.1.1 출시 전).
+     *
+     * @scenario hidden=true
+     *
+     * @effects hidden_bundle_recorded_with_flag
+     *
+     * @return void 반환값 없음
+     */
+    public function test_language_pack_of_hidden_extension_is_hidden(): void
+    {
+        $this->writeRelease();
+        $this->writeJson($this->release, 'lang-packs/_bundled/g7-module-gnuboard7-hello_module-ja/language-pack.json', [
+            'identifier' => 'g7-module-gnuboard7-hello_module-ja', 'version' => '1.1.0', 'scope' => 'module',
+            'target_identifier' => 'gnuboard7-hello_module', 'locale' => 'ja', 'name' => ['ko' => 'hello ja'],
+        ]);
+
+        $planner = $this->planner();
+        $inventory = $planner->readInventoryFromDirectory($this->release);
+        $record = $planner->writeRecord($planner->plan($inventory), '7.1.2', 'core:update');
+
+        $this->assertTrue($inventory->get('language_pack:g7-module-gnuboard7-hello_module-ja')['hidden']);
+        $pack = collect($record['unplaced'])->firstWhere('identifier', 'g7-module-gnuboard7-hello_module-ja');
+        $this->assertTrue($pack['hidden'], '숨김 확장의 언어팩이 안내에 나온다');
+        $this->assertFalse($inventory->get('language_pack:g7-plugin-sirsoft-gdpr-ja')['hidden'], '보이는 확장의 언어팩은 그대로 보인다');
+    }
+
+    /**
+     * 확장 언어팩만 골라 배치하면 디스크에 없는 대상 확장(본체)을 함께 배치합니다 — 본체 없는 언어팩만 남던 결함(7.1.1 출시 전).
+     *
+     * @scenario action=place,dependency=direct
+     *
+     * @effects selection_places_chosen_bundles_and_their_dependencies
+     *
+     * @return void 반환값 없음
+     */
+    public function test_placing_extension_language_pack_brings_its_target(): void
+    {
+        $this->writeRelease();
+
+        $planner = $this->planner();
+        $inventory = $planner->readInventoryFromDirectory($this->release);
+        $closure = $planner->placementClosure($inventory, ['language_pack:g7-plugin-sirsoft-gdpr-ja']);
+
+        $this->assertArrayHasKey('plugin:sirsoft-gdpr', $closure, '언어팩의 대상 확장이 함께 배치돼야 한다');
+        $this->assertSame(['language_pack:g7-plugin-sirsoft-gdpr-ja'], $closure['plugin:sirsoft-gdpr']['required_by']);
+
+        // core:update 의 골라서 배치(plan)도 같은 규칙이다.
+        $plan = $planner->plan($inventory, ['language_pack:g7-plugin-sirsoft-gdpr-ja']);
+        $this->assertArrayHasKey('plugin:sirsoft-gdpr', $plan->placed);
+        $this->assertSame('pack_target', $plan->placed['plugin:sirsoft-gdpr']['reason']);
+
+        // 코어 언어팩·배포본에 없는 대상은 덧붙일 것이 없다.
+        $this->assertSame(['language_pack:g7-core-ja'], array_keys($planner->placementClosure($inventory, ['language_pack:g7-core-ja'])));
+        $this->assertSame(['language_pack:g7-plugin-sirsoft-ckeditor5-ja'], array_keys($planner->placementClosure($inventory, ['language_pack:g7-plugin-sirsoft-ckeditor5-ja'])));
+    }
+
+    /**
      * zip 인벤토리는 래퍼 폴더 접두사를 config/app.php 위치로 판정하고 평탄한 zip 도 읽습니다.
      *
      * @scenario source_kind=zip

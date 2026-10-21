@@ -43,6 +43,6 @@ return [
         'refund_acct_nm' => 'refund account holder',
     ],
     'settings' => [
-        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, / or http(s):// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+        'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
     ],
 ];

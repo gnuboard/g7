@@ -1,5 +1,5 @@
 /**
- * ErrorDisplay — 엔진 공통 오류 화면 문구의 화면 언어 (engine-v1.78.5, 7.1.0 영역 J)
+ * ErrorDisplay — 엔진 공통 오류 화면 문구의 화면 언어 (engine-v1.78.5, 7.1.0)
  *
  * 권한 없는 화면을 열면 엔진 공통 오류 화면이 뜨는데, 제목 「페이지 로딩 실패」·버튼 「새로고침」 이 영어 화면에서도
  * 한국어로 박혀 있었고, 본문은 개발자용 원문 「Failed to fetch layout: 403 Forbidden」 이었다.
@@ -86,5 +86,21 @@ describe('ErrorDisplay 화면 언어', () => {
       }
       expect(ErrorDisplay.text(key, 'en')).not.toMatch(/[가-힣]/);
     }
+  });
+
+  /**
+   * 내장 문구는 앞 두 글자가 아니라 주 언어 하위 태그로 고른다 (engine-v1.81.0, #148 F2).
+   * 종전 `.slice(0, 2)` 는 콘칸어(`kok`)를 한국어로, 자메이카 크리올(`jam`)을 일본어로 잘못 골랐다.
+   *
+   * @scenario case=error_primary_subtag
+   * @effects error_screen_builtin_text_uses_primary_subtag
+   */
+  it('주 언어 하위 태그로 내장 문구를 고른다 (kok→영어, ja_JP→일본어, ko-KR→한국어)', () => {
+    expect(ErrorDisplay.text('core.errors.reload', 'kok')).toBe('Reload');
+    expect(ErrorDisplay.text('core.errors.reload', 'jam')).toBe('Reload');
+    expect(ErrorDisplay.text('core.errors.page_load_failed', 'ja_JP')).toBe('ページの読み込みに失敗しました');
+    expect(ErrorDisplay.text('core.errors.reload', 'ko-KR')).toBe('새로고침');
+    document.documentElement.lang = 'fil-PH';
+    expect(ErrorDisplay.text('core.errors.reload')).toBe('Reload');
   });
 });

@@ -4,6 +4,7 @@
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-pay_kginicis.settings.title",
         "description": "$t:sirsoft-pay_kginicis.settings.description"
     },
@@ -18,6 +19,33 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         },
         {
@@ -459,7 +487,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
                                                                     "aria-label": "{{_local._show_live_sign_key ? '$t:common.hide_value' : '$t:common.show_value'}}",
                                                                     "aria-pressed": "{{!!_local._show_live_sign_key}}"
                                                                 },
@@ -564,7 +592,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
                                                                     "aria-label": "{{_local._show_live_iniapi_key ? '$t:common.hide_value' : '$t:common.show_value'}}",
                                                                     "aria-pressed": "{{!!_local._show_live_iniapi_key}}"
                                                                 },
@@ -669,7 +697,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
                                                                     "aria-label": "{{_local._show_live_iniapi_iv ? '$t:common.hide_value' : '$t:common.show_value'}}",
                                                                     "aria-pressed": "{{!!_local._show_live_iniapi_iv}}"
                                                                 },
@@ -774,7 +802,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                                    "className": "absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
                                                                     "aria-label": "{{_local._show_live_mobile_hash_key ? '$t:common.hide_value' : '$t:common.show_value'}}",
                                                                     "aria-pressed": "{{!!_local._show_live_mobile_hash_key}}"
                                                                 },
@@ -1029,7 +1057,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-amber-600 dark:text-amber-400"
+                                                            "className": "mt-1 text-xs text-amber-700 dark:text-amber-400"
                                                         },
                                                         "text": "$t:sirsoft-pay_kginicis.settings.easy_pay_kakaopay_hint"
                                                     }
@@ -1346,7 +1374,7 @@
                                                                 "props": {
                                                                     "type": "button",
                                                                     "disabled": "{{_computed.isPluginReadOnly || vbank_info?.data?.abilities?.can_create_cbt_test_product !== true || (_local.cbtTestProductCreating)}}",
-                                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1421,7 +1449,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex flex-wrap gap-3 pay-kginicis-tone-success"
+                                                                    "className": "flex flex-wrap gap-3 pay-kginicis-tone-success-strong"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1564,7 +1592,7 @@
                                                                 "props": {
                                                                     "type": "button",
                                                                     "disabled": "{{_local.cbtConnCheckRunning}}",
-                                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-700 dark:bg-amber-700 pay-kginicis-btn-amber text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -2607,6 +2635,7 @@
                                                         "props": {
                                                             "type": "text",
                                                             "readOnly": true,
+                                                            "aria-label": "$t:sirsoft-pay_kginicis.settings.section_vbank_notify",
                                                             "value": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}",
                                                             "className": "input-readonly flex-1 font-mono",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
@@ -2638,6 +2667,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "type": "button",
                                                             "className": "flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap"
                                                         },
                                                         "children": [
@@ -2680,18 +2710,19 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/plugins"
+                                            "bypassLeaveGuard": true
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -2782,6 +2813,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },

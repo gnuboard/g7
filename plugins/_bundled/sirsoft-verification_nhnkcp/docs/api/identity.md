@@ -31,7 +31,7 @@ _요청 파라미터 없음._
 
 ```http
 GET /api/plugins/sirsoft-verification_nhnkcp/me/identity/nhnkcp HTTP/1.1
-Host: g7_3.dev
+Host: example.com
 Accept: application/json
 Authorization: Bearer {token}
 ```

@@ -1,10 +1,6 @@
 <!-- 게시판 폼 「글」 탭 — 글·댓글에 걸리는 한도를 모아 둔다(제목·본문·댓글 길이의 최소와 최대, 답글·댓글 깊이, 첨부 개수·크기·확장자, 금지어, 「새 글」 표시가 유지되는 시간). 이 게시판에 글을 쓰는 쪽이 지켜야 할 규칙을 한자리에 모은 탭이다 -->
 <partial description="Board Form - Post Tab Content">
   <div data-ref="section_post_card" class="admin-card">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <h3 data-ref="section_post" class="card-title">$t:sirsoft-board.admin.form.tabs.post</h3>
     <div data-ref="section_post_fields" class="row-stack">
       <div data-ref="post_title_length_group" class="grid-2col">

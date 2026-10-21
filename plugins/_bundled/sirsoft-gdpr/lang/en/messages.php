@@ -347,6 +347,8 @@ return [
             'privacy_policy_url' => 'Privacy policy URL',
             'privacy_policy_link' => 'Privacy policy link line (empty if there is no address)',
             'notice_sections' => 'Processing details contributed by extensions',
+            'introduction_text' => 'Operator introduction (plain text — for in-site notifications and SMS)',
+            'notice_sections_text' => 'Processing details contributed by extensions (plain text — for in-site notifications and SMS)',
         ],
     ],
     'validation' => [
@@ -362,6 +364,16 @@ return [
             'required_without' => 'The :attribute field is required when :values is not set.',
             'same' => 'The :attribute must match :other.',
             'different' => 'The :attribute must be different from :other.',
+        ],
+    ],
+    // Console command output
+    'console' => [
+        'playwright_seed' => [
+            'cli_only' => 'This command can only be run from the CLI.',
+            'bypass_required' => 'The G7_PLAYWRIGHT_BYPASS=1 environment variable is required.',
+        ],
+        'seed_gdpr_guest_login' => [
+            'done' => 'GDPR guest→login scenario seed complete: :email',
         ],
     ],
 ];

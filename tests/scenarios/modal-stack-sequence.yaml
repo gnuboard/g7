@@ -23,7 +23,7 @@ effects:
   - single_open_close_unchanged                       # 회귀 축 — 단일 액션의 쌓기·중복 무시·빼기
 
 notes: |
-  브라우저 실측(2026-10-02, 이력 `20261001_1624_legacy_json_extension_compat.md` 「엔진 회귀 검사 3회차」):
+  브라우저 실측(2026-10-02, 엔진 회귀 검사):
   수정 전 스택 `[force]` → `[force, lp]`(언어팩 창을 닫으면 끝난 강제 활성 창이 다시 보임),
   수정 후 `[force]` → `[lp]` → `[]`. `G7Core.modal.isOpen()`·`getStack()` 은
   `resources/js/core/__tests__/G7CoreGlobals.test.ts` 와 `g7core-globals-surface.yaml` 이 잠근다.

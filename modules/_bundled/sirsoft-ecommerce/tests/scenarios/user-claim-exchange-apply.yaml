@@ -154,7 +154,7 @@ effects:
   - claim_apply_change_product_modal_reads_page_local_state
   # 적용 버튼은 옵션변경인데 옵션이 없거나 품절이면 잠긴다
   - claim_apply_change_product_apply_locked_without_a_valid_option
-  # T2-D10 (#599 3차 실측 L-4) — 고른 조합을 지금 살 수 없으면 재고 0 처럼 이유를 말한다
+  # (#599 실측) — 고른 조합을 지금 살 수 없으면 재고 0 처럼 이유를 말한다
   - claim_apply_change_product_explains_an_unavailable_combination
   # 주문상품 공유 조각은 로그인 여부를 스스로 판단하지 않는다 — 회원·비회원 셸이 함께 쓰므로 판단은 셸의 몫이다
   - order_items_partial_does_not_decide_authentication

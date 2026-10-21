@@ -48,22 +48,22 @@
         {
             "id": "realtime_link",
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "comment": "실시간 화면으로 — 이 한 줄은 상위 3개만 보이므로 접속자 목록과 페이지 전체는 그 화면에서 본다. 질의는 다른 통계 화면\n             이동과 같은 규칙으로 병합해 넘긴다.",
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                        "path": "/admin/analytics/realtime",
                         "mergeQuery": true,
                         "query": {}
                     }
                 }
             ],
             "props": {
-                "type": "button",
-                "className": "text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
+                "href": "/admin/analytics/realtime",
+                "mergeQuery": true,
+                "className": "button text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
             },
             "text": "$t:admin.analytics.overview.realtime_link"
         }

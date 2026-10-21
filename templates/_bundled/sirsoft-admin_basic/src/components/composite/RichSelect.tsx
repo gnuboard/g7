@@ -202,7 +202,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
   // 트리거에 표시할 내용 결정
   const renderTriggerContent = () => {
     if (!selectedOption) {
-      return <Span className="text-gray-400 dark:text-gray-500">{resolvedPlaceholder}</Span>;
+      return <Span className="text-gray-500 dark:text-gray-400">{resolvedPlaceholder}</Span>;
     }
 
     // 1. component_layout.selected가 있으면 사용

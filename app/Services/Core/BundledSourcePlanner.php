@@ -89,6 +89,7 @@ class BundledSourcePlanner
             $entries[BundledInventory::key('language_pack', (string) $identifier)] = $this->makeEntry('language_pack', (string) $identifier, $manifest);
         }
 
+        $entries = self::inheritHiddenFromTargets($entries);
         ksort($entries, SORT_STRING);
 
         $configPath = $root.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
@@ -156,6 +157,7 @@ class BundledSourcePlanner
                 $entries[BundledInventory::key($type, $m[2])] = $this->makeEntry($type, $m[2], $data);
             }
 
+            $entries = self::inheritHiddenFromTargets($entries);
             ksort($entries, SORT_STRING);
 
             $config = $zip->getFromName($prefix.'config/app.php');
@@ -246,6 +248,47 @@ class BundledSourcePlanner
         }
 
         return $entry;
+    }
+
+    /**
+     * 숨김 확장(샘플 등)을 대상으로 하는 확장 언어팩도 숨김으로 표시합니다.
+     *
+     * 언어팩 manifest 에는 `hidden` 이 없어 본체(hello 샘플)는 숨기면서 그 언어팩만 미배치 안내에 나왔다(7.1.1 출시 전).
+     * 대상이 같은 배포본에 있고 숨김일 때만 따른다 — 코어 팩·대상이 배포본에 없는 팩은 그대로 둔다.
+     *
+     * @param  array<string, array<string, mixed>>  $entries  인벤토리 항목
+     * @return array<string, array<string, mixed>> 언어팩 숨김을 보정한 항목
+     */
+    private static function inheritHiddenFromTargets(array $entries): array
+    {
+        foreach ($entries as $key => $entry) {
+            $targetKey = self::languagePackTargetKey($entry);
+            if ($targetKey !== null && ! $entry['hidden'] && ! empty($entries[$targetKey]['hidden'])) {
+                $entries[$key]['hidden'] = true;
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * 확장 언어팩 항목의 대상 확장 키를 돌려줍니다.
+     *
+     * @param  array<string, mixed>  $entry  인벤토리 항목
+     * @return string|null `{type}:{identifier}` (확장 언어팩이 아니거나 대상이 없으면 null — 코어 팩 포함)
+     */
+    private static function languagePackTargetKey(array $entry): ?string
+    {
+        if (($entry['type'] ?? null) !== 'language_pack' || ($entry['target_identifier'] ?? null) === null) {
+            return null;
+        }
+
+        $targetType = self::normalizeType((string) ($entry['scope'] ?? ''));
+        if ($targetType === null || $targetType === 'language_pack') {
+            return null;
+        }
+
+        return BundledInventory::key($targetType, (string) $entry['target_identifier']);
     }
 
     /**
@@ -421,6 +464,13 @@ class BundledSourcePlanner
         }
         foreach ($selectedKeys as $key) {
             $add($key, 'selected');
+        }
+        // 고른 확장 언어팩의 대상 확장(본체)이 배치·설치되지 않았으면 함께 배치한다(7.1.1 출시 전 — place 와 같은 규칙)
+        foreach ($selectedKeys as $key) {
+            $targetKey = self::languagePackTargetKey((array) $inventory->get($key));
+            if ($targetKey !== null && $inventory->has($targetKey) && ! isset($installed[$targetKey]) && $add($targetKey, 'pack_target', $key)) {
+                $selectedKeys[] = $targetKey;
+            }
         }
         $this->closeDependencies($inventory, array_values(array_filter($selectedKeys, fn ($k) => ! str_starts_with($k, 'language_pack:'))), $add);
 
@@ -677,6 +727,20 @@ class BundledSourcePlanner
                 $add($key, 'selected');
             }
         }
+
+        // 확장 언어팩만 골랐으면 디스크에 없는 대상 확장(본체)도 함께 배치한다 — 종전에는 본체 없이 언어팩만 남아
+        // 설치할 수 없는 팩이 생겼다(7.1.1 출시 전). 본체의 의존 번들은 아래 의존 폐포가 이어 붙인다.
+        foreach (array_keys($out) as $key) {
+            $targetKey = self::languagePackTargetKey((array) $inventory->get($key));
+            if ($targetKey === null || ! $inventory->has($targetKey)) {
+                continue;
+            }
+            $target = (array) $inventory->get($targetKey);
+            if (! $this->isOnDisk((string) $target['type'], (string) $target['identifier'])) {
+                $add($targetKey, 'pack_target', $key);
+            }
+        }
+
         $this->closeDependencies($inventory, array_values(array_filter(array_keys($out), fn ($k) => ! str_starts_with($k, 'language_pack:'))), $add);
 
         foreach ($inventory->all() as $key => $entry) {
@@ -891,6 +955,32 @@ class BundledSourcePlanner
         sort($diff, SORT_STRING);
 
         return $diff;
+    }
+
+    /**
+     * 다른 파일 목록 중 배포본에 아예 없는 파일만 골라 돌려줍니다.
+     *
+     * 기본(비-prune) 업데이트는 새 판에서 지워진 파일을 지우지 않는다. 그래서 운영자가 손대지 않은 번들도 이전 판의 남은
+     * 파일 때문에 「수정됨」으로 보인다 — prune 안내가 「내용이 다른 파일」과 「배포본에 없는 파일만」을 가르는 데 쓴다
+     * (7.1.1 출시 전). 보존 판정은 바꾸지 않는다.
+     *
+     * @param  BundledInventory  $inventory  릴리스 인벤토리 (root 가 있어야 비교 가능)
+     * @param  array<string, mixed>  $entry  인벤토리 항목
+     * @param  array<int, string>  $files  {@see modifiedFiles()} 가 돌려준 번들 폴더 기준 상대경로
+     * @return array<int, string> 배포본에 없는 파일 (비교할 배포본이 없으면 빈 배열)
+     */
+    public function filesMissingFromRelease(BundledInventory $inventory, array $entry, array $files): array
+    {
+        if ($inventory->root === null) {
+            return [];
+        }
+
+        $releaseDir = $inventory->root.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, (string) $entry['path']);
+
+        return array_values(array_filter(
+            $files,
+            fn (string $relative): bool => ! is_file($releaseDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative)),
+        ));
     }
 
     // ────────────────────────────────────────────────────────────────

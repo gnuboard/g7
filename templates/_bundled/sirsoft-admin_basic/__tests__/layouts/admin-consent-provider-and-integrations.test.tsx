@@ -250,7 +250,11 @@ describe('방문자 통계 설정 — 동의 출처 배지 (#639 §4.2)', () => 
     // 선택이 필요한 상태는 감싸는 요소가, 목적지를 열 권한(core.settings.read)은 링크 자신이 가린다.
     expect(wrapper?.if).toContain("['ambiguous', 'missing']");
     expect(link.if).toBe('{{_computed.canReadDefinitions}}');
-    expect(JSON.stringify(link.actions)).toContain('/admin/settings?tab=privacy');
+    // 링크(#757) — 주소는 href 한 곳, 보통 클릭은 path 없는 navigate 가 그 href 로 SPA 이동
+    expect(link.name).toBe('A');
+    expect(link.props.href).toBe('/admin/settings?tab=privacy');
+    expect(link.actions?.[0]).toMatchObject({ handler: 'navigate' });
+    expect(link.actions?.[0]?.params?.path).toBeUndefined();
   });
 });
 

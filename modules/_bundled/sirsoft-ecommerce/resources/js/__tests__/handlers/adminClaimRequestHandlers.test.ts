@@ -737,7 +737,7 @@ describe('직권 접수 실행 (submitAdminClaimRequest)', () => {
 
     /**
      * 상태 변경 권한이 없는 운영자(화면이 `canApprove=false` 로 넘김)는 「접수와 함께 승인」 이 켜진 상태값이어도
-     * 승인을 싣지 않는다 — 서버가 승인 요청을 403 으로 거절하므로, 접수까지는 되게 꺼진 값을 보낸다. (7.1.0 S3)
+     * 승인을 싣지 않는다 — 서버가 승인 요청을 403 으로 거절하므로, 접수까지는 되게 꺼진 값을 보낸다. (7.1.0 abilities 게이트)
      * @scenario claim_type=return, gate_side=shipped
      * @effects admin_request_submit_omits_approval_without_permission
      */

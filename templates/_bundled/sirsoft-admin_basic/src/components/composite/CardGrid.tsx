@@ -1,9 +1,11 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useId, useMemo, useState, useCallback } from 'react';
 import { Div } from '../basic/Div';
 import { P } from '../basic/P';
+import { A } from '../basic/A';
 import { ActionMenuItem } from './ActionMenu';
 import { Pagination } from './Pagination';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:CardGrid')) ?? {
@@ -69,6 +71,20 @@ export interface CardGridProps {
   // 카드 스타일
   cardClassName?: string;
 
+  /**
+   * 카드 이동 주소(행 표현식) — 있으면 카드 전체를 덮는 `<a href>` 를 깔아 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가
+   * 된다(#757). 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) 카드마다 그 행으로 푼다.
+   * 예: `cardHref="/admin/boards/{{row.slug}}/edit"`. 보통 클릭은 SPA 이동, 수정키 클릭은 브라우저 기본 동작,
+   * 바깥 주소는 새 탭. 카드 내용은 링크 밖 위층이라(링크 안 단추 없음) 안쪽 단추·스위치·메뉴는 그 요소만 동작한다.
+   * 카드는 쌓임 맥락을 만들므로 카드 안 펼침 요소는 포털로 그린다(ActionMenu 는 이미 포털).
+   */
+  cardHref?: string;
+
+  /**
+   * 카드 덮는 링크의 이름(행 표현식) — 예: `cardLinkLabel="{{row.name}} 편집"`. 없으면 카드 글자 전체가 링크 이름이다.
+   */
+  cardLinkLabel?: string;
+
   // 행 ID 필드
   idField?: string;
 
@@ -80,6 +96,12 @@ export interface CardGridProps {
   serverTotalPages?: number;
   alwaysShowPagination?: boolean;
   onPageChange?: (page: number) => void;
+  /**
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/boards?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   */
+  pageHref?: string;
+  /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
+  pageHrefMergeQuery?: boolean;
 
   // 행 액션 메뉴 (DataGrid 패턴)
   rowActions?: ActionMenuItem[];
@@ -150,6 +172,35 @@ const evaluateCondition = (condition: string, row: any): boolean => {
 
   logger.warn('G7Core.evaluateCondition 미노출 — 조건을 평가할 수 없습니다:', condition);
   return true;
+};
+
+/**
+ * 카드 행 표현식(cardHref·cardLinkLabel)을 그 카드의 행 기준으로 풉니다.
+ *
+ * DataGrid 의 rowClassName 과 같은 방식이다 — skipBindingKeys 로 원문을 받아 엔진의 바인딩 해석기
+ * (`G7Core.getDataBindingEngine`)로 푼다. 식이 없는 고정 문자열은 그대로 쓴다.
+ *
+ * @param cardHref 카드 문자열 또는 행 표현식
+ * @param row 현재 행 데이터
+ * @returns 그 카드의 값 (풀 수 없으면 null)
+ */
+const resolveCardHref = (cardHref: string | undefined, row: any): string | null => {
+  if (typeof cardHref !== 'string' || cardHref === '') return null;
+  if (!cardHref.includes('{{')) return cardHref;
+
+  const engine = (window as any).G7Core?.getDataBindingEngine?.();
+  if (!engine?.resolveBindings) {
+    logger.warn('G7Core.getDataBindingEngine 미노출 — 카드 주소를 풀 수 없습니다:', cardHref);
+    return null;
+  }
+
+  try {
+    const resolved = engine.resolveBindings(cardHref, { row, item: row, $item: row }, { skipCache: true });
+    return typeof resolved === 'string' ? resolved : null;
+  } catch (error) {
+    logger.warn('카드 주소 해석 실패:', error);
+    return null;
+  }
 };
 
 /**
@@ -403,6 +454,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   gap = 4,
   responsiveColumns,
   cardClassName = '',
+  cardHref,
+  cardLinkLabel,
   idField = 'id',
   pagination = true,
   pageSize = 12,
@@ -411,6 +464,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   serverTotalPages,
   alwaysShowPagination = false,
   onPageChange,
+  pageHref,
+  pageHrefMergeQuery,
   paginationInfoText,
   rowActions,
   onRowAction,
@@ -426,6 +481,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   editorAttrs,
   __componentContext,
 }) => {
+  // 덮는 링크의 이름을 카드 글자에서 가져올 때 쓰는 카드 id 접두
+  const cardIdPrefix = useId();
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedEmptyMessage = emptyMessage ?? t('common.no_data');
 
@@ -579,11 +636,35 @@ export const CardGrid: React.FC<CardGridProps> = ({
     <Div className={className} style={style} id={id} {...editorAttrs}>
       {/* 카드 그리드 */}
       <Div className={`grid ${gridClasses} gap-${gap}`}>
-        {paginatedData.map((row, index) => (
-          <Div key={row[idField] || index} className={cardClassName}>
-            {renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction, renderEnv)}
-          </Div>
-        ))}
+        {paginatedData.map((row, index) => {
+          const cardContent = renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction, renderEnv);
+          // 카드 주소가 있으면 카드 전체를 덮는 링크를 깐다(#757) — 없거나 링크로 그릴 수 없는 주소면 종전 그대로.
+          // 카드는 div 그대로이고 링크는 내용 아래층의 마지막 자식이다(링크 안에 단추·스위치를 넣지 않는다 — main.css .card-link-card).
+          const link = cardHref ? resolveLinkHref(resolveCardHref(cardHref, row)) : null;
+          if (link) {
+            const cardId = `${cardIdPrefix}card-${index}`;
+            const label = cardLinkLabel ? resolveCardHref(cardLinkLabel, row) : null;
+            return (
+              <Div key={row[idField] || index} id={cardId} className={`card-link-card relative isolate ${cardClassName}`}>
+                {cardContent}
+                <A
+                  href={link.href}
+                  {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  {...(label ? { 'aria-label': label } : { 'aria-labelledby': cardId })}
+                  data-ref="card_link"
+                  className="absolute inset-0 -z-10 rounded-[inherit] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  onClick={(event) => handleLinkClick(event, () => navigateTo(link.href))}
+                />
+              </Div>
+            );
+          }
+
+          return (
+            <Div key={row[idField] || index} className={cardClassName}>
+              {cardContent}
+            </Div>
+          );
+        })}
       </Div>
 
       {/* 페이지네이션 */}
@@ -593,6 +674,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
             currentPage={effectiveCurrentPage}
             totalPages={effectiveTotalPages}
             onPageChange={handlePageChange}
+            pageHref={pageHref}
+            pageHrefMergeQuery={pageHrefMergeQuery}
             showFirstLast={false}
             maxVisiblePages={5}
             prevText={prevText}

@@ -50,4 +50,50 @@ return [
         'validation_failed' => 'Validation failed.',
         'attachment_limit_exceeded' => 'You can attach up to :limit file. (requested: :attempted)|You can attach up to :limit files. (requested: :attempted)',
     ],
+    // Console command output
+    'console' => [
+        'playwright_seed' => [
+            'cli_only' => 'This command can only be run from the CLI.',
+            'bypass_required' => 'The G7_PLAYWRIGHT_BYPASS=1 environment variable is required.',
+        ],
+        'seed_page' => [
+            'done' => 'Page seed complete: unpublished=:unpublished / published=:published',
+        ],
+        'prune_temp_attachments' => [
+            'retention_disabled' => 'Cleanup was skipped because the temporary attachment retention period is less than 1 day.',
+            'dry_run' => 'Unlinked temporary page attachments past retention (days: :days): :count',
+            'done' => 'Deleted :deleted of :scanned temporary page attachments past retention (days: :days). (Failed: :failed)',
+        ],
+    ],
+    // Page module seeder console output
+    'seeders' => [
+        'activity_log_sample' => [
+            'skip_no_admin' => 'No admin user found; skipping the page activity log seeder.',
+            'unmarked_kept' => 'Unmarked page activity logs kept as production logs: :count (samples created by earlier seeder versions have no marker either, so they are not cleaned up).',
+            'skip_no_pages' => 'No pages were newly created in this run; skipping page activity logs.',
+            'done' => 'Page activity logs created: :count',
+        ],
+        'database' => [
+            'start' => 'Running page module seeders',
+            'sample_start' => 'Running page sample seeders',
+            'done' => 'Page module seeders finished',
+        ],
+        'page_sample' => [
+            'start' => 'Creating page demo samples...',
+            'done' => 'Page demo samples created: :count',
+            'no_gd' => 'The GD extension is not available, so no attachment images were created.',
+            'created' => '[:slug] created',
+            'exists_skip' => '[:slug] already exists. Skipping.',
+        ],
+        'page' => [
+            'start' => 'Creating page data...',
+            'exists_skip' => '[:slug] already exists. Skipping.',
+            'status' => [
+                'published' => 'published',
+                'unpublished' => 'unpublished',
+            ],
+            'created' => '[:slug] created (:status)',
+            'done' => 'Page data created: :count',
+        ],
+    ],
 ];

@@ -154,6 +154,10 @@ function collectModalScopeGroups(): Array<{ spec: string; match: string }> {
 
 const REGISTERED = collectRegisteredModalIds();
 const MODAL_GROUPS = collectModalScopeGroups();
+/** 템플릿이 그리는 화면의 창 id — 레이아웃 전수 읽기라 수집 단계에서 한 번 한다(시험 한도 밖) */
+const HOSTED_BY_TEMPLATE = new Map(['sirsoft-basic', 'sirsoft-admin_basic'].map((t) => [t, collectTemplateHostedModalIds(t)] as const));
+/** 번들 전체 정적 검사의 시험 한도 — 동시 실행 부하 대비. 전역 한도는 그대로 두고 이 시험에만 명시한다. */
+const STATIC_SCAN_TIMEOUT_MS = 60_000;
 
 describe('창 범위 상태 묶음 — 모집단', () => {
   /**
@@ -181,12 +185,12 @@ describe('창 범위 상태 묶음 — 대상 창', () => {
   it('템플릿 스펙의 창 묶음은 그 템플릿이 그리는 화면(자신 + 같은 쪽 확장 레이아웃)의 창을 가리킨다', () => {
     const offenders: string[] = [];
     for (const template of ['sirsoft-basic', 'sirsoft-admin_basic']) {
-      const hosted = collectTemplateHostedModalIds(template);
+      const hosted = HOSTED_BY_TEMPLATE.get(template)!;
       expect(hosted.size).toBeGreaterThanOrEqual(10);
       for (const g of MODAL_GROUPS.filter((one) => one.spec.startsWith(`templates/_bundled/${template}/`))) {
         if (!hosted.has(g.match)) offenders.push(`${g.match} (${g.spec})`);
       }
     }
     expect([...new Set(offenders)].sort()).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 });

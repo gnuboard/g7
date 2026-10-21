@@ -6,9 +6,10 @@ import { Button } from '../basic/Button';
 import { I } from '../basic/I';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
+import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -92,7 +93,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const logoAlt = logoAltProp ?? tOr('common.logo', 'Logo');
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
   const [locale, setLocale] = useState<string>(currentLocaleProp || G7Core()?.locale?.current?.() || 'ko');
@@ -270,9 +271,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
    * 모바일에서는 페이지 로드 완료 후 사이드바를 닫음
    */
   const handleNavigate = (event: React.MouseEvent, url: string) => {
+    // 메뉴는 `<a href>` 다 — 보통 클릭만 SPA 로 옮기고, Ctrl·가운데·Shift 클릭은 브라우저가 새 탭·새 창으로 연다(#757)
     if (G7Core()?.dispatch) {
+      if (!handleLinkClick(event, () => {})) return;
       // G7Core.dispatch가 있으면 SPA 방식 네비게이션
-      event.preventDefault();
 
       // 페이지 전환 완료 후 사이드바 닫기
       G7Core().navigation?.onComplete(() => {
@@ -290,7 +292,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         params: { path: url },
       });
     } else if (isSameOriginNavPath(url)) {
-      // fallback: 전체 페이지 리로드 — 보안: 같은 출처 경로로만(메뉴 데이터의 외부 주소 차단)
+      // fallback: 전체 페이지 리로드 — 보안: 같은 출처 경로로만(메뉴 데이터의 외부 주소 차단).
+      // 보통 클릭만 옮긴다 — 수정키 클릭까지 옮기면 브라우저가 연 새 탭과 지금 탭이 함께 이동한다.
+      // 엔진이 없으면 보통 클릭 판정(G7Core.navigation)도 없으므로 여기서 직접 본다
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
       window.location.href = url;
     }
   };
@@ -340,9 +346,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${collapsed ? 'justify-center' : ''}
             `}
           >
-            <Button
+            <a
+              href={resolveLinkHref(item.url)?.href}
+              {...(resolveLinkHref(item.url)?.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              aria-current={isActive ? 'page' : undefined}
               onClick={(event) => handleNavigate(event, item.url!)}
-              className="flex items-center justify-start flex-1 min-w-0"
+              className="button flex items-center justify-start flex-1 min-w-0"
             >
               {item.icon && (
                 <I
@@ -350,7 +359,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 />
               )}
               {!collapsed && <Span className="truncate">{label}</Span>}
-            </Button>
+            </a>
             {!collapsed && (
               <Div className="admin-sidebar-chevron-trail">
                 {item.module_id && (
@@ -392,16 +401,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
                 )}
                 <I
-                  className={`fas fa-chevron-right w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                  className={`fas fa-chevron-right w-4 h-4 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                 />
               </Div>
             )}
           </Button>
         ) : item.url ? (
-          // 하위 메뉴가 없고 URL이 있는 경우: 네비게이션 버튼
-          <Button
+          // 하위 메뉴가 없고 URL이 있는 경우: 링크(가운데 클릭·Ctrl+클릭 새 탭)
+          <a
+            href={resolveLinkHref(item.url)?.href}
+            {...(resolveLinkHref(item.url)?.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            aria-current={isActive ? 'page' : undefined}
             onClick={(event) => handleNavigate(event, item.url!)}
             className={`
+              button
               ${baseClass}
               ${isActive ? activeClass : defaultClass}
               ${collapsed ? 'justify-center' : ''}
@@ -419,7 +432,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {!collapsed && item.module_id && (
               <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
             )}
-          </Button>
+          </a>
         ) : (
           // 하위 메뉴도 없고 URL도 없는 경우: 비활성 버튼
           <Button

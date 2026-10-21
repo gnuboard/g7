@@ -88,7 +88,7 @@ class BenchCommand extends Command
         }
 
         if ($profiles === []) {
-            $this->error('계측할 프로파일이 없습니다. --profile / --axis / --all 중 하나를 지정하세요.');
+            $this->error(__('common.console.g7_bench.no_profiles'));
 
             return self::FAILURE;
         }
@@ -121,6 +121,8 @@ class BenchCommand extends Command
      * 계측은 대량 시딩을 동반하므로 개발 DB 대신 폐기 가능한 DB 를 지정할 수 있어야 합니다.
      * config 가 캐시된 환경에서는 `.env` / `--env` 로 연결을 바꿀 수 없어 런타임 치환이
      * 유일한 수단입니다.
+     *
+     * @return void
      */
     private function applyDatabaseOverride(): void
     {
@@ -160,7 +162,7 @@ class BenchCommand extends Command
         }
 
         $this->table(
-            ['프로파일', '축', '출처', '설명'],
+            [__('common.console.g7_bench.headers.profile'), __('common.console.g7_bench.headers.axis'), __('common.console.g7_bench.headers.source'), __('common.console.g7_bench.headers.description')],
             array_map(fn (BenchmarkProfile $profile) => [
                 $profile->qualifiedKey(),
                 $profile->axis->value,
@@ -205,7 +207,7 @@ class BenchCommand extends Command
             $axis = BenchmarkAxis::tryFrom($axisOption);
 
             if ($axis === null) {
-                return [[], "알 수 없는 축: {$axisOption} (허용: ".implode('|', BenchmarkAxis::values()).')'];
+                return [[], __('common.console.g7_bench.unknown_axis', ['axis' => $axisOption, 'allowed' => implode('|', BenchmarkAxis::values())])];
             }
 
             return [array_values($this->registry->byAxis($axis)), null];
@@ -260,7 +262,7 @@ class BenchCommand extends Command
         $runner = $this->runnerFor($profile->axis);
 
         if ($runner === null) {
-            return BenchmarkResult::skipped($profile, "축 실행기가 없습니다: {$profile->axis->value}");
+            return BenchmarkResult::skipped($profile, __('common.console.g7_bench.no_runner', ['axis' => $profile->axis->value]));
         }
 
         if (! $this->option('json')) {
@@ -295,6 +297,8 @@ class BenchCommand extends Command
      * 무시된 프로파일 선언을 알립니다.
      *
      * 선언 오류를 조용히 버리면 그 대상이 계측 사각으로 남으므로 매 실행에 드러냅니다.
+     *
+     * @return void
      */
     private function reportCollectionWarnings(): void
     {
@@ -303,7 +307,7 @@ class BenchCommand extends Command
         }
 
         foreach ($this->registry->warnings() as $warning) {
-            $this->warn('무시된 프로파일 선언 — '.$warning);
+            $this->warn(__('common.console.g7_bench.ignored_declaration', ['warning' => $warning]));
         }
     }
 
@@ -326,7 +330,7 @@ class BenchCommand extends Command
                 $this->line(sprintf('%s (%s)', $result->profile->qualifiedKey(), $result->profile->axis->label()));
 
                 if ($result->skipped) {
-                    $this->warn('  측정하지 않음: '.$result->skipReason);
+                    $this->warn('  '.__('common.console.g7_bench.skipped', ['reason' => $result->skipReason]));
 
                     continue;
                 }
@@ -342,7 +346,7 @@ class BenchCommand extends Command
         if ($this->wantsReport()) {
             $path = $this->writeReport($results, $options, $warnings);
             $this->newLine();
-            $this->info('리포트 저장: '.$path);
+            $this->info(__('common.console.g7_bench.report_saved', ['path' => $path]));
         }
 
         // 전부 건너뛴 실행을 성공으로 보고하면 "측정했다"로 읽히므로 실패로 돌려준다

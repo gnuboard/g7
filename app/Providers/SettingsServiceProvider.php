@@ -6,6 +6,7 @@ use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
 use App\Support\WorkerSettingsRefresher;
 use Illuminate\Queue\Events\JobProcessing;
@@ -272,22 +273,8 @@ class SettingsServiceProvider extends ServiceProvider
         }
 
         if (is_array($value)) {
-            $locale = config('app.locale', 'ko');
-            if (isset($value[$locale]) && is_string($value[$locale])) {
-                return $value[$locale];
-            }
-            $fallback = config('app.fallback_locale', 'en');
-            if (isset($value[$fallback]) && is_string($value[$fallback])) {
-                return $value[$fallback];
-            }
-            // 첫 string 값 폴백
-            foreach ($value as $candidate) {
-                if (is_string($candidate)) {
-                    return $candidate;
-                }
-            }
-
-            return '';
+            // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — SEO resolveLocalizedValue 와 같은 SSoT)
+            return LocalizedValue::pick($value, (string) config('app.locale', 'ko')) ?? '';
         }
 
         return (string) ($value ?? '');

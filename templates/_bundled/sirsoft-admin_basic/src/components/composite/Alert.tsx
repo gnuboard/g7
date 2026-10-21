@@ -126,7 +126,7 @@ export const Alert: React.FC<AlertProps> = ({
       aria-live="polite"
       id={id} {...editorAttrs}
     >
-      {/* 아이콘 — 유형은 색과 문구가 전하므로 꾸밈으로 숨긴다(종전 영문 이름 「warning icon」 이 읽혔다, 7.1.0 O-C3b-3) */}
+      {/* 아이콘 — 유형은 색과 문구가 전하므로 꾸밈으로 숨긴다(종전 영문 이름 「warning icon」 이 읽혔다, 7.1.0) */}
       <Icon
         name={config.icon}
         className={config.iconClass}

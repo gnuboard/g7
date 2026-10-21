@@ -149,7 +149,7 @@ class LayoutCheckInstalledCommand extends Command
         $templates = $this->targetTemplates();
 
         if ($templates === []) {
-            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'include_warnings' => [], 'include_skipped' => [], 'unrouted_plugin_user_layouts' => [], 'ok' => true]) : '점검할 템플릿이 없습니다.');
+            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'include_warnings' => [], 'include_skipped' => [], 'unrouted_plugin_user_layouts' => [], 'ok' => true]) : __('layouts.console.check_no_templates'));
 
             return self::SUCCESS;
         }
@@ -522,7 +522,7 @@ class LayoutCheckInstalledCommand extends Command
         }
 
         $this->table(
-            ['종류', '템플릿', '이름', '판정', 'escape', '경고', 'ms'],
+            array_values(__('layouts.console.check_headers')),
             array_map(static fn (array $r): array => [$r['kind'], $r['template'], $r['name'], $r['verdict'], $r['escapes'], $r['warnings'], $r['ms']], $this->rows),
         );
 
@@ -551,20 +551,19 @@ class LayoutCheckInstalledCommand extends Command
         $registrationCounts = array_count_values(array_column($this->registration, 'kind'));
 
         $this->newLine();
-        $this->info(sprintf(
-            '설치본 점검 — 템플릿 %d개, 행 %d개 (ok %d · fail %d · mismatch %d), 등록 정합성 — 부적합 %d · 소실 %d · 고아 %d · 읽기 실패 %d, JSON 조각 참조 누락 %d, 라우트 미연결 플러그인 사용자 화면 %d.',
-            count($templates),
-            count($this->rows),
-            $counts['ok'] ?? 0,
-            $counts['fail'] ?? 0,
-            $counts['mismatch'] ?? 0,
-            $registrationCounts['inapplicable'] ?? 0,
-            $registrationCounts['missing'] ?? 0,
-            $registrationCounts['orphan'] ?? 0,
-            $registrationCounts['unreadable'] ?? 0,
-            count($this->includeWarnings),
-            count($this->unroutedPluginUserLayouts),
-        ));
+        $this->info(__('layouts.console.check_summary', [
+            'templates' => count($templates),
+            'rows' => count($this->rows),
+            'ok' => $counts['ok'] ?? 0,
+            'fail' => $counts['fail'] ?? 0,
+            'mismatch' => $counts['mismatch'] ?? 0,
+            'inapplicable' => $registrationCounts['inapplicable'] ?? 0,
+            'missing' => $registrationCounts['missing'] ?? 0,
+            'orphan' => $registrationCounts['orphan'] ?? 0,
+            'unreadable' => $registrationCounts['unreadable'] ?? 0,
+            'include_warnings' => count($this->includeWarnings),
+            'unrouted' => count($this->unroutedPluginUserLayouts),
+        ]));
 
         return $ok ? self::SUCCESS : self::FAILURE;
     }
@@ -577,7 +576,7 @@ class LayoutCheckInstalledCommand extends Command
     private function reportIncludeWarnings(): void
     {
         foreach ($this->includeSkipped as $skipped) {
-            $this->warn(sprintf('조각 참조 점검 건너뜀 — %s %s: %s', $skipped['source'], $skipped['identifier'], $skipped['error']));
+            $this->warn(__('layouts.console.include_skipped', ['source' => $skipped['source'], 'identifier' => $skipped['identifier'], 'error' => $skipped['error']]));
         }
 
         if ($this->includeWarnings === []) {
@@ -585,9 +584,9 @@ class LayoutCheckInstalledCommand extends Command
         }
 
         $this->newLine();
-        $this->line('<comment>=== JSON 조각 참조 누락 (빈 자리로 등록됨) ===</comment>');
+        $this->line('<comment>'.__('layouts.console.include_header').'</comment>');
         $this->table(
-            ['출처', '식별자', '파일', '조각', '사유'],
+            array_values(__('layouts.console.include_headers')),
             array_map(static fn (array $w): array => [$w['source'], $w['identifier'], $w['file'], $w['partial'], $w['reason']], $this->includeWarnings),
         );
     }
@@ -604,12 +603,12 @@ class LayoutCheckInstalledCommand extends Command
         }
 
         $this->newLine();
-        $this->line('<comment>=== 라우트에 연결되지 않은 플러그인 사용자 화면 ===</comment>');
+        $this->line('<comment>'.__('layouts.console.unrouted_header').'</comment>');
         $this->table(
-            ['플러그인', '화면'],
+            array_values(__('layouts.console.unrouted_headers')),
             array_map(static fn (array $item): array => [$item['plugin'], $item['layout']], $this->unroutedPluginUserLayouts),
         );
-        $this->line('  고객이 이 화면에 들어가려면 플러그인이 `core.routes.filter_merged` 필터로 사용자 라우트를 주입해야 합니다. 모달·부분 화면으로만 쓰면 무시해도 됩니다.');
+        $this->line('  '.__('layouts.console.unrouted_hint'));
     }
 
     /**
@@ -620,19 +619,19 @@ class LayoutCheckInstalledCommand extends Command
     private function reportBudget(): void
     {
         if ($this->budget === []) {
-            $this->info('<json> 탈출구 방출 0건 — 전 행이 첫 급부 문법으로 왕복.');
+            $this->info(__('layouts.console.budget_none_rows'));
 
             return;
         }
 
         arsort($this->budget);
         $this->newLine();
-        $this->line('<comment>=== &lt;json&gt; 탈출구 예산 ===</comment>');
+        $this->line('<comment>'.__('layouts.console.budget_header').'</comment>');
 
         foreach ($this->budget as $key => $count) {
-            $this->line(sprintf('  %-24s %d건', $key, $count));
+            $this->line(sprintf('  %-24s %s', $key, __('layouts.console.budget_count', ['count' => $count])));
         }
 
-        $this->line(sprintf('  총 %d건', array_sum($this->budget)));
+        $this->line('  '.__('layouts.console.budget_total', ['count' => array_sum($this->budget)]));
     }
 }

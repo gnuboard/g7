@@ -29,7 +29,7 @@
                     },
                     "children": [
                         {
-                            "comment": "할인 혜택",
+                            "comment": "할인 혜택 — 칩과 같은 선택 통화 혜택 문구, 통화 맵이 없으면 기본 문구",
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -42,7 +42,7 @@
                                     "props": {
                                         "className": "text-2xl font-bold text-blue-600 dark:text-blue-400"
                                     },
-                                    "text": "{{$parent._local.selectedCouponForDownload?.benefit_formatted ?? ''}}"
+                                    "text": "{{$parent._local.selectedCouponForDownload?.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? $parent._local.selectedCouponForDownload?.benefit_formatted ?? ''}}"
                                 }
                             ]
                         },
@@ -159,7 +159,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                                "className": "px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors"
                             },
                             "text": "$t:shop.coupon_download.download_btn"
                         },

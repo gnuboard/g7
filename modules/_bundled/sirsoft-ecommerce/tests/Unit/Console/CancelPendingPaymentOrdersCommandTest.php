@@ -410,7 +410,7 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
     public function test_outputs_no_orders_message_when_empty(): void
     {
         $this->artisan('sirsoft-ecommerce:cancel-pending-orders')
-            ->expectsOutput('처리할 만료 주문이 없습니다.')
+            ->expectsOutput(__('sirsoft-ecommerce::messages.console.cancel_pending_orders.no_targets'))
             ->assertSuccessful();
     }
 

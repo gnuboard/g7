@@ -247,6 +247,91 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
+     * 같은 파일이 유형별 갈래 세 곳에 include 되고 그 안의 반복 행에 놓인 확장점도 모든 자리가 채워지는지 검증한다.
+     *
+     * 사용자 게시판은 글쓰기·상세 화면이 같은 조각을 basic·gallery·card 갈래에 세 번 넣고, 목록은 세 유형 파일을
+     * 한 레이아웃에 함께 둔다. overlay(target_id)는 첫 일치 노드 하나에만 들어가 basic 에만 닿으므로 템플릿이 확장점을
+     * 연다(#149). 확장점은 갈래·행마다 채워져야 하고, 각 자리의 props 가 그 자리의 주입 조각 `extensionPointProps` 로
+     * 복사되어(행 문맥 표현식 그대로) 조각이 행마다 그 행의 글을 읽는다. 조각의 데이터 소스는 자리 수와 무관하게
+     * 레이아웃에 한 번만 병합된다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects extension_point_in_repeated_include_branches_and_iteration_is_filled_everywhere
+     *
+     * @return void 없음
+     */
+    public function test_extension_point_in_repeated_include_branches_and_iteration_is_filled_everywhere(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'board_post_row_badges',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-test',
+            'content' => [
+                'extension_point' => 'board_post_row_badges',
+                'components' => [
+                    ['type' => 'basic', 'name' => 'Span', 'text' => '{{post_locales.data?.[extensionPointProps.postId] ?? ""}}'],
+                ],
+                'data_sources' => [
+                    ['id' => 'post_locales', 'endpoint' => '/api/test/post-locales'],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $slot = static fn (string $context): array => [
+            'type' => 'extension_point',
+            'name' => 'board_post_row_badges',
+            'props' => ['className' => 'contents', 'post' => '{{post}}', 'postId' => '{{post?.id}}', 'boardSlug' => '{{route?.slug}}', 'context' => $context],
+        ];
+        // 한 갈래 = 유형 조건 블록 안의 반복 행(PC·모바일 두 자리)
+        $branch = static fn (string $type): array => [
+            'type' => 'basic',
+            'name' => 'Div',
+            'if' => "{{posts?.data?.board?.type === '{$type}'}}",
+            'children' => [[
+                'type' => 'basic',
+                'name' => 'Div',
+                'iteration' => ['source' => '{{posts?.data?.data ?? []}}', 'item_var' => 'post'],
+                'children' => [
+                    ['type' => 'basic', 'name' => 'Div', 'children' => [$slot('board_list')]],
+                    ['type' => 'basic', 'name' => 'Div', 'children' => [$slot('board_list')]],
+                ],
+            ]],
+        ];
+
+        $layout = [
+            'layout_name' => 'board_index',
+            'components' => [$branch('basic'), $branch('gallery'), $branch('card')],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $filled = [];
+        foreach ($result['components'] as $index => $branchNode) {
+            foreach ($branchNode['children'][0]['children'] as $cell) {
+                $host = $cell['children'][0];
+                $this->assertSame('extension_point', $host['type']);
+                $this->assertCount(1, $host['children'] ?? [], "갈래 {$index} 의 자리에 조각이 주입되어야 한다");
+                $injected = $host['children'][0];
+                // 자리의 props 가 조각의 extensionPointProps 로 그대로(행 문맥 표현식) 복사된다
+                $this->assertSame('{{post?.id}}', $injected['extensionPointProps']['postId'] ?? null);
+                $this->assertSame('board_list', $injected['extensionPointProps']['context'] ?? null);
+                $filled[] = $index;
+            }
+        }
+
+        // 세 갈래 × 두 자리 = 6 — overlay 처럼 첫 일치에서 멈추지 않는다
+        $this->assertSame([0, 0, 1, 1, 2, 2], $filled);
+        // 조각의 데이터 소스는 자리 수와 무관하게 한 번만 병합된다
+        $this->assertSame(['post_locales'], array_column($result['data_sources'], 'id'));
+    }
+
+    /**
      * 편집 모드(withSourceMeta=true)에서 주입 노드의 __source 가 출처 타입/식별자를
      * 함께 담아, 편집기 오버레이가 "어느 확장인지" 표시할 수 있게 하는지 검증한다.
      *

@@ -2,10 +2,6 @@
 <partial description="게시판 메일 템플릿 편집 모달">
   <modal data-type="composite" data-ref="modal_board_mail_template_edit" title="$t:sirsoft-board.admin.settings.mail_templates.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="board_edit_form_container" data-blur-until-loaded="{{$parent._local.isSaving}}" class="flex flex-col max-h-[70vh]">
-      <class-map key="{{$parent._computed.isReadOnly ? 'readonly' : 'normal'}}">
-        <variant when="readonly">opacity-60</variant>
-        <variant when="normal"></variant>
-      </class-map>
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="board_validation_error_banner" data-if="{{$parent._local.templateErrors}}" class="alert-danger items-start">
           <div class="flex items-start gap-3">
@@ -21,7 +17,7 @@
         <div class="flex-center gap-2 mb-2">
           <span class="text-label-subtle font-medium">$t:sirsoft-board.admin.settings.mail_templates.edit_modal.type_label</span>
           <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.settings.mail_templates.types.{{$parent._local.editingTemplate?.type ?? ''}}</span>
-          <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{$parent._local.editingTemplate?.type ?? ''}}</span>
+          <span class="text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{$parent._local.editingTemplate?.type ?? ''}}</span>
         </div>
         <div class="flex border-b border-gray-200 dark:border-gray-700">
           <button type="button" class="{{($parent._local.editLang ?? $locale) === 'ko' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none">

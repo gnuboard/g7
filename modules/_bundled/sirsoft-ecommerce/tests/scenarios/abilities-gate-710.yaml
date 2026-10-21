@@ -96,6 +96,9 @@ effects:
   - identity_provider_options_need_no_core_permission
   - identity_tab_shows_no_permission_notice
   - identity_tab_read_only_locks_writes
+  - admin_common_info_write_controls_follow_abilities   # 공통정보 관리: [추가]는 can_create, 목록 사용 토글·뷰 [복사/편집/기본값]·수정 모드 입력은 can_update, [삭제]는 can_delete 로 잠긴다(등록 모드는 can_update 와 무관)
+  - admin_product_notice_write_controls_follow_abilities   # 상품정보제공고시: [템플릿 추가]는 can_create, 뷰 [편집]·수정 모드 저장/입력은 can_update, [삭제]는 can_delete 로 잠긴다(등록 모드는 can_update 와 무관)
+  - admin_notice_info_source_error_handling   # 두 화면 목록 데이터소스: 처음 받기 실패는 실제 상태 코드의 본문 오류 화면, 다시 받기 실패는 토스트로 받아 둔 목록을 지킨다
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminClaimGatePermissionTest.php
@@ -114,3 +117,5 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/user-template-abilities-gate-710.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/EcommerceIdentityPolicyPermissionGateTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-identity-policy-gate.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/commonInfoAbilities.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productNoticeAbilities.test.tsx

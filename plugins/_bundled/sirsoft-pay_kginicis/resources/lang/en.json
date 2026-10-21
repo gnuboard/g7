@@ -230,7 +230,21 @@
         "escrow_deny_confirm_status_label": "Purchase Status",
         "escrow_deny_confirm_buyer_denied": "Denied by Buyer",
         "escrow_deny_confirm_buyer_denied_at": "Date",
-        "easy_pay_provider": "Easy pay: {{provider}}"
+        "easy_pay_provider": "Easy pay: {{provider}}",
+        "escrow_couriers": {
+            "hanjin": "Hanjin Express",
+            "cj": "CJ Logistics",
+            "lotte_parcel": "Lotte Parcel",
+            "epost": "Korea Post Parcel",
+            "lotte_global": "Lotte Global Logistics",
+            "kyungdong": "Kyungdong Express",
+            "cvs": "Convenience Store Parcel",
+            "ilyang": "Ilyang Logis",
+            "chunil": "Chunil Express",
+            "cvsnet": "CVSnet Convenience Store",
+            "daesin": "Daesin Express",
+            "kunyoung": "Kunyoung Express"
+        }
     },
     "settings": {
         "title": "KG Inicis Settings",

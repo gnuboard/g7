@@ -1,4 +1,4 @@
-// e2e:allow 선택지 문구·클래스 이름 교정의 구조 검증 — 같은 화면은 Playwright 브라우저로 ko/en 선택지와 칸 배치를 재실측해 이력(20261007_1905_710_KLM_M1)에 남김
+// e2e:allow 선택지 문구·클래스 이름 교정의 구조 검증 — 같은 화면은 Playwright 브라우저로 ko/en 선택지와 칸 배치를 재실측해 작업 이력에 남김
 /**
  * @file pluginSettingsDisplay.test.ts
  * @description 우편번호 환경설정 화면의 표시 방식 선택지 문구와 의미 클래스 위치
@@ -65,10 +65,14 @@ const nodes = flatten(pluginSettingsLayout);
 describe('우편번호 환경설정 — 표시 방식 선택지', () => {
     const options = nodes.filter((n) => n.name === 'Option');
 
+    // @scenario target=display_mode_options
+    // @effects postcode_display_mode_options_use_translation_keys
     it('선택지 2개가 popup·layer 값을 가진다', () => {
         expect(options.map((o) => o.props?.value).sort()).toEqual(['layer', 'popup']);
     });
 
+    // @scenario target=display_mode_options
+    // @effects postcode_display_mode_options_use_translation_keys
     it('선택지 문구는 값 원문이 아니라 번역 키이고, ko/en 번역이 있다', () => {
         for (const option of options) {
             expect(option.text).toBe(`$t:sirsoft-daum_postcode.settings.fields.display_mode.${option.props?.value}`);
@@ -80,6 +84,8 @@ describe('우편번호 환경설정 — 표시 방식 선택지', () => {
 });
 
 describe('우편번호 환경설정 — 의미 클래스 위치', () => {
+    // @scenario target=field_rows
+    // @effects postcode_settings_semantic_classes_on_their_rows
     it('입력 칸 줄(field_*)은 3열 그리드 클래스를 쓴다', () => {
         const fields = nodes.filter((n) => typeof n.id === 'string' && n.id.startsWith('field_'));
         expect(fields.length).toBeGreaterThanOrEqual(4);
@@ -91,6 +97,8 @@ describe('우편번호 환경설정 — 의미 클래스 위치', () => {
         }
     });
 
+    // @scenario target=error_rows
+    // @effects postcode_settings_semantic_classes_on_their_rows
     it('저장 오류 목록 줄은 옅은 오류색을 쓰고, 3열 그리드는 입력 칸 줄에만 쓴다', () => {
         const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
         expect(item?.props?.className).toBe('text-error-soft');

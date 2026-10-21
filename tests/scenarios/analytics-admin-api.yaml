@@ -42,7 +42,7 @@ exclusions:
   - { format: csv, endpoint: referrer_urls, reason: "도메인 아래를 펼쳐 보는 목록이다 — 내려받기는 사이트 목록(reports)이 맡는다" }
 
 effects:
-  # 7.1.0 전수 실측 영역 E 후속 — 관측 O-E3·E4·E5·E8·E10·E11
+  # 7.1.0 전수 실측 통계 화면 후속 관측
   - skipped_run_carries_its_reason_in_the_viewers_language
   - ledger_created_at_is_stamped_in_utc
   - visitor_csv_times_use_the_site_timezone
@@ -114,6 +114,8 @@ effects:
   - report_search_matches_what_the_screen_shows
   - report_rows_carry_dimension_extra_values
   - report_rows_without_extra_stay_shaped
+  # 응답 원문에서도 빈 맵 `{}` — 신선도 미들웨어·봇 화면이 다시 인코딩하며 `[]` 로 바꾸지 않는다(7.1.1 출시 전)
+  - empty_extra_stays_an_empty_map_in_raw_response
   # 표의 「부가」 칸은 CSV 헤더 이름이 아니라 JSON extra 의 원래 키를 읽는다(매출 = revenue_cents)
   - report_grid_reads_the_extra_keys_the_api_sends
   - bot_reports_read_bot_typed_rows

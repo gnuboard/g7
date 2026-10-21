@@ -108,7 +108,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const autoText = autoTextProp ?? tOr('admin.theme.auto', 'System');
   const lightText = lightTextProp ?? tOr('admin.theme.light', 'Light');
   const darkText = darkTextProp ?? tOr('admin.theme.dark', 'Dark');

@@ -5,9 +5,9 @@
     <div class="py-2">
       <!-- 쿠폰 정보 카드 -->
       <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
-        <!-- 할인 혜택 -->
+        <!-- 할인 혜택 — 칩과 같은 선택 통화 혜택 문구, 통화 맵이 없으면 기본 문구 -->
         <div class="text-center mb-2">
-          <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{$parent._local.selectedCouponForDownload?.benefit_formatted ?? ''}}</span>
+          <span class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{$parent._local.selectedCouponForDownload?.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? $parent._local.selectedCouponForDownload?.benefit_formatted ?? ''}}</span>
         </div>
         <p class="text-sm text-center text-gray-700 dark:text-gray-300 font-medium">{{$parent._local.selectedCouponForDownload?.localized_name ?? ''}}</p>
       </div>
@@ -20,7 +20,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button data-if="{{!_local.isDownloading}}" type="button" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
+        <button data-if="{{!_local.isDownloading}}" type="button" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors">
           <on type="click">
             <!-- 받기 확정. 버튼을 감추는 대신 «받는 중» 버튼으로 갈아 끼우는 방식이라 진행 표시를 먼저 켠다 -->
             <sequence>

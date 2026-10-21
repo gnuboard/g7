@@ -7,6 +7,7 @@ use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\PluginManager;
@@ -20,10 +21,11 @@ class UpdatePluginCommand extends Command
     use HasUnifiedConfirm;
     use RebuildsSearchIndex;
     use RendersLayoutSyncResult;
+    use ReportsStuckUpdateRecovery;
     use SelectsLayoutInstallSource;
 
     /**
-     * The name and signature of the console command.
+     * 커맨드 이름 및 시그니처
      */
     protected $signature = 'plugin:update
         {identifier : 업데이트할 플러그인 식별자}
@@ -36,7 +38,7 @@ class UpdatePluginCommand extends Command
         {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
     /**
-     * The console command description.
+     * 커맨드 설명
      */
     protected $description = '플러그인을 최신 버전으로 업데이트합니다';
 
@@ -54,7 +56,7 @@ class UpdatePluginCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 커맨드를 실행합니다.
      *
      * @return int 명령 실행 결과 코드 (Command::SUCCESS|Command::FAILURE)
      */
@@ -110,6 +112,11 @@ class UpdatePluginCommand extends Command
             if (! $plugin) {
                 $this->error('❌ '.__('plugins.commands.update.not_installed', ['plugin' => $identifier]));
 
+                return Command::FAILURE;
+            }
+
+            // 멈춘·진행 중 업데이트는 업데이트 확인(「업데이트 없음」)보다 먼저 안내한다(7.1.1 출시 전)
+            if ($this->refuseInProgressUpdate($plugin, $identifier, (bool) $force)) {
                 return Command::FAILURE;
             }
 
@@ -181,8 +188,16 @@ class UpdatePluginCommand extends Command
                     $zipPath,
                 );
                 $this->finishProgress();
+                $this->reportStuckUpdateRecovery(suggestActivate: true);
             } catch (\Exception $e) {
+                // 아무것도 바꾸기 전에 거절됐으면(다른 업데이트 진행 중·상태 가드·소스 없음) 진행 표시줄을 끝까지 채우지 않고 지운다 —
+                // 종전에는 「11/11」로 다 된 것처럼 끝났다. 업데이트 도중 실패는 Manager 가 ExtensionUpdateFailedException 으로 감싼다.
+                if (! $e instanceof ExtensionUpdateFailedException && $this->progressBar) {
+                    $this->progressBar->clear();
+                    $this->progressBar = null;
+                }
                 $this->finishProgress();
+                $this->reportStuckUpdateRecovery(suggestActivate: true, updateFailed: true);
                 throw $e;
             }
 
@@ -216,10 +231,13 @@ class UpdatePluginCommand extends Command
         } catch (\Exception $e) {
             $this->error('❌ '.$e->getMessage());
             // 실패 뒤 실제 상태로 안내한다 — 종전에는 원인과 무관하게 「복원되었습니다」를 냈다(새 판이 남은 경우에도).
-            $outcome = $e instanceof ExtensionUpdateFailedException ? $e->outcome : 'restored';
-            $this->warn('💡 '.($outcome === 'restored'
-                ? __('plugins.commands.update.backup_restored')
-                : __('extensions.commands.update.failure_outcome.'.$outcome)));
+            // 실패 뒤 상태 안내는 업데이트를 시작한 뒤의 실패(ExtensionUpdateFailedException)에만 붙인다 — 시작 전에 거절된 경우
+            // (다른 업데이트 진행 중 등)는 아무것도 바꾸지 않았으므로 거절 사유만 남긴다. 종전에는 「복원되었습니다」가 붙었다.
+            if ($e instanceof ExtensionUpdateFailedException) {
+                $this->warn('💡 '.($e->outcome === 'restored'
+                    ? __('plugins.commands.update.backup_restored')
+                    : __('extensions.commands.update.failure_outcome.'.$e->outcome)));
+            }
 
             Log::error('플러그인 업데이트 실패', [
                 'plugin' => $identifier,

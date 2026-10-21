@@ -76,14 +76,14 @@ class PlaywrightSeedSiteDayOrders extends Command
     {
         // ① CLI 한정
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다.');
+            $this->error(__('sirsoft-ecommerce::playwright.guard.cli_only'));
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
+            $this->error(__('sirsoft-ecommerce::playwright.guard.bypass_required'));
 
             return self::FAILURE;
         }
@@ -97,7 +97,7 @@ class PlaywrightSeedSiteDayOrders extends Command
             $this->purge($retention);
             $option = ProductOption::query()->whereHas('product')->orderBy('id')->first();
             if (! $option) {
-                $this->error('상품 옵션이 하나도 없어 주문 옵션을 붙일 수 없습니다.');
+                $this->error(__('sirsoft-ecommerce::playwright.seed_site_day_orders.no_product_options'));
 
                 return self::FAILURE;
             }

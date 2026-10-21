@@ -1,6 +1,6 @@
 /**
  * @file mypage-board-search-enter.test.tsx
- * @description 마이페이지 게시판 활동 검색칸 Enter 검색 (7.1.0 실측 O-K3-10)
+ * @description 마이페이지 게시판 활동 검색칸 Enter 검색 (7.1.0 실측)
  *
  * 「내 글」「내 댓글」「내 반응」「내 신고」 검색칸에서 Enter 를 쳐도 아무 일이 없고 옆 「검색」 버튼만
  * 동작했다(스크랩 목록은 이미 Enter 로 검색한다). 네 탭의 검색칸이 Enter 에서 검색 버튼과 같은 순서
@@ -42,7 +42,7 @@ function searchButtonSequenceOf(layout: unknown, prefix: string): any {
             && callbacksOf(a, 'actions').some((s: any) => (s.params ?? {})[`${prefix}SearchApplied`] !== undefined));
 }
 
-describe('마이페이지 게시판 활동 검색칸 Enter 검색 (O-K3-10)', () => {
+describe('마이페이지 게시판 활동 검색칸 Enter 검색', () => {
     for (const tab of tabs) {
         // @scenario tab=posts
         // @effects mypage_activity_enter_runs_search_button_sequence

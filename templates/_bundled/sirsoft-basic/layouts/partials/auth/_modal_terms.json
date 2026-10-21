@@ -23,28 +23,10 @@
             },
             "children": [
                 {
-                    "comment": "로딩 상태",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{termsContent?.loading}}",
-                    "props": {
-                        "className": "flex justify-center items-center py-12"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin"
-                            }
-                        }
-                    ]
-                },
-                {
                     "comment": "발행일 (고정)",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!termsContent?.loading && termsContent?.data?.published_at}}",
+                    "if": "{{termsContent?.data?.published_at}}",
                     "props": {
                         "className": "flex-shrink-0 flex items-center gap-2 mb-3"
                     },
@@ -63,7 +45,7 @@
                     "comment": "약관 내용 (스크롤)",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!termsContent?.loading && termsContent?.data}}",
+                    "if": "{{termsContent?.data}}",
                     "props": {
                         "className": "flex-1 overflow-y-auto min-h-0 max-h-96"
                     },
@@ -92,10 +74,10 @@
                     ]
                 },
                 {
-                    "comment": "내용 없음",
+                    "comment": "내용 없음 — 이 창은 본문을 받은 뒤에 열린다(여는 시퀀스가 refetch 를 기다린다). 열렸는데 값이 없으면 받기 실패다.",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!termsContent?.loading && !termsContent?.data}}",
+                    "if": "{{!termsContent?.data}}",
                     "props": {
                         "className": "py-8 text-center text-gray-500 dark:text-gray-400"
                     },
@@ -119,6 +101,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
                             },
                             "text": "$t:common.close"

@@ -49,7 +49,8 @@ test.describe('알림톡 템플릿 초안·검수 신청·삭제 안내', () => 
       await authenticatePage(page, messagingManageToken);
       await page.goto(SETTINGS_URL);
       await page.waitForLoadState('networkidle', { timeout: 30_000 });
-      await page.locator('#channel_sub_tabs button', { hasText: '비즈뿌리오' }).first().click();
+      // 채널 탭은 링크(#757) — 단추로 되돌아가도 찾도록 둘 다 본다
+      await page.locator('#channel_sub_tabs :is(a, button)', { hasText: '비즈뿌리오' }).first().click();
       await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
       const openEdit = async () => {

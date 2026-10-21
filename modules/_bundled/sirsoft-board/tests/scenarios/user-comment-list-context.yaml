@@ -1,0 +1,19 @@
+feature: user_comment_list_context
+
+description: |
+  사용자 댓글 목록 API(`GET boards/{slug}/posts/{postId}/comments`)가 Service 를 기본 맥락('admin')으로 불러
+  댓글 범위 권한을 관리자용 `admin.comments.read` 로 판정하던 결함을 고친다(#142, W9). 이제 상세 화면 댓글과 같이
+  사용자 맥락(`sirsoft-board.{slug}.comments.read`)으로 판정하고, 삭제 댓글은 게시판 매니저가 `del_cmt=1` 을 줄 때만 나온다.
+
+axes:
+  viewer: [guest, self_scope_member, manager]
+  del_cmt: [0, 1]
+
+effects:
+  - user_scope_permission_applied
+  - self_scope_member_sees_only_own_comments
+  - deleted_comments_only_for_manager_with_del_cmt
+  - guest_sees_all_visible_comments
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/CommentListContextTest.php

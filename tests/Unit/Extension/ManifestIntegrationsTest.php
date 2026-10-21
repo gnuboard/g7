@@ -6,7 +6,7 @@ use App\Support\ExtensionIntegrations;
 use PHPUnit\Framework\TestCase;
 
 /**
- * manifest 선택 연동 선언(`integrations`) 정규화 (#639 ⑥, 결정 P10)
+ * manifest 선택 연동 선언(`integrations`) 정규화 (#639 ⑥, 결정)
  *
  * `dependencies` 는 「없으면 설치·활성화 불가」, `integrations` 는 「있으면 연동, 없어도 동작」이다. 관리자 확장
  * 상세 「함께 쓰면 연동되는 확장」과 정적 검사가 같은 정규화 결과를 쓴다.

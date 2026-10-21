@@ -66,4 +66,13 @@ return [
     'access_denied' => 'You do not have permission to access this attachment.',
     'update_denied' => 'You do not have permission to update this attachment.',
     'delete_denied' => 'You do not have permission to delete this attachment.',
+    // `attachments:prune-orphans` command output
+    'console' => [
+        'prune_orphans' => [
+            'disabled' => 'Skipped because automatic orphan attachment cleanup is turned off. (upload.orphan_cleanup_enabled = false)',
+            'retention_below_minimum' => 'Skipped cleanup because the orphan attachment retention period is less than 1 day.',
+            'dry_run' => 'Orphan attachments past retention (:days days): :count',
+            'done' => 'Deleted :deleted of :scanned orphan attachments past retention (:days days). (:failed failed)',
+        ],
+    ],
 ];

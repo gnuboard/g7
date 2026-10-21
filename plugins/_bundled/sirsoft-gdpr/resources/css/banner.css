@@ -84,7 +84,11 @@
     border-left-color: oklch(82.8% 0.189 84.429); /* amber-400 */
 }
 
-/* 검증 오류가 있는 묶음 상자 — 다크 모드 배경 */
+/* 검증 오류가 있는 묶음 상자 — 라이트·다크 배경 */
+.gdpr-error-panel {
+    background-color: color-mix(in oklab, oklch(97.1% 0.013 17.38) 30%, transparent); /* red-50/30 — 관리자 템플릿 CSS 에 규칙이 없어 자기 CSS 가 싣는다 */
+}
+
 .dark .gdpr-error-panel {
     background-color: color-mix(in oklab, oklch(39.6% 0.141 25.723) 10%, transparent); /* red-900/10 */
 }
@@ -106,4 +110,49 @@
 .dark .gdpr-locked-chip {
     color: oklch(82.8% 0.111 230.318); /* sky-300 */
     background-color: color-mix(in oklab, oklch(39.1% 0.09 240.876) 40%, transparent); /* sky-900/40 */
+}
+
+/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.gdpr-tone-warning {
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+}
+
+.dark .gdpr-tone-warning {
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
+}
+
+/* 진한 경고 글자색 — 연한 노랑·호박색 바탕(bg-amber-100 등) 위의 작은 배지 글자. 기본 경고색(yellow-700)은 그 바탕에서 4.5:1 에 못 미친다 */
+.gdpr-tone-warning-strong {
+    color: var(--color-yellow-800, oklch(47.6% 0.114 61.907)); /* yellow-800 */
+}
+
+.dark .gdpr-tone-warning-strong {
+    color: var(--color-yellow-200, oklch(94.5% 0.129 101.54)); /* yellow-200 */
+}
+
+/* 성공 글자색 — 관리자 템플릿 의미 클래스(text-success-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.gdpr-tone-success {
+    color: var(--color-green-700, oklch(52.7% 0.154 150.069)); /* green-700 */
+}
+
+.dark .gdpr-tone-success {
+    color: var(--color-green-300, oklch(87.1% 0.15 154.449)); /* green-300 */
+}
+
+/* 위험 글자색 — 관리자 템플릿 의미 클래스(text-danger-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.gdpr-tone-danger {
+    color: var(--color-red-700, oklch(50.5% 0.213 27.518)); /* red-700 */
+}
+
+.dark .gdpr-tone-danger {
+    color: var(--color-red-300, oklch(80.8% 0.114 19.571)); /* red-300 */
+}
+
+/* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.gdpr-tone-info {
+    color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); /* blue-700 */
+}
+
+.dark .gdpr-tone-info {
+    color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); /* blue-300 */
 }

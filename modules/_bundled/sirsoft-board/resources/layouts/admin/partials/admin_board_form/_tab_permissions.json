@@ -7,13 +7,6 @@
     "id": "section_permissions_card",
     "type": "basic",
     "name": "Div",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "props": {
         "className": "admin-card"
     },
@@ -68,7 +61,7 @@
                             "text": "$t:sirsoft-board.admin.form.permissions.managers_description"
                         },
                         {
-                            "comment": "다른 담당자를 지정할 수 없는 액터(새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 위임 관리자)에게는 서버가 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고 스텝을 비워 보내며 `_meta.can_assign_board_members=false` 를 준다(K4F-2). 그대로 저장하면 본인이 관리자가 되므로, 이유를 보이고 두 명단 칸을 잠가 값이 바뀌지 않게 한다",
+                            "comment": "다른 담당자를 지정할 수 없는 액터(새 게시판의 기본 ACL 로 게시판 권한을 받지 못하는 위임 관리자)에게는 서버가 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고 스텝을 비워 보내며 `_meta.can_assign_board_members=false` 를 준다. 그대로 저장하면 본인이 관리자가 되므로, 이유를 보이고 두 명단 칸을 잠가 값이 바뀌지 않게 한다",
                             "id": "permissions_members_assign_denied",
                             "type": "basic",
                             "name": "Div",
@@ -89,7 +82,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.permissions.members_assign_denied"
                                 }
@@ -350,7 +343,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs board-tone-info"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice"
                                 }
@@ -454,7 +447,7 @@
                                                     "props": {
                                                         "name": "chevron-down",
                                                         "size": "sm",
-                                                        "className": "text-gray-400 dark:text-gray-500 ml-auto"
+                                                        "className": "text-gray-500 dark:text-gray-500 ml-auto"
                                                     }
                                                 }
                                             ]
@@ -621,7 +614,7 @@
                                                     "props": {
                                                         "name": "chevron-down",
                                                         "size": "sm",
-                                                        "className": "text-gray-400 dark:text-gray-500 ml-auto"
+                                                        "className": "text-gray-500 dark:text-gray-500 ml-auto"
                                                     }
                                                 }
                                             ]

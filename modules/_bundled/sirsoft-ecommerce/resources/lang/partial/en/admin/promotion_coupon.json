@@ -300,7 +300,8 @@
       "issue_period": "Issue Period",
       "reissue": "Reissue (Duplicate Download)",
       "coupon_overlap": "Coupon Stacking",
-      "apply_target": "Apply Target"
+      "apply_target": "Apply Target",
+      "per_user_limit_label": "Issue limit per member"
     },
     "option": {
       "target_type_product_amount": "Product Amount",

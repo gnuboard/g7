@@ -3,6 +3,7 @@
 namespace Tests\Feature\LayoutMarkup;
 
 use App\Console\Commands\GenerateLayoutTestFixture;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -139,6 +140,7 @@ class LayoutFixtureCommandSourceTest extends TestCase
      */
     public function test_missing_partial_in_json_layout_is_tolerated_with_warning(): void
     {
+        app()->setLocale('ko');
         File::put($this->layouts.'/json_broken.json', json_encode([
             'layout_name' => 'json_broken',
             'components' => [
@@ -151,12 +153,42 @@ class LayoutFixtureCommandSourceTest extends TestCase
             'layout' => $this->layouts.'/json_broken.json',
             '--dir' => $this->out,
         ])
-            ->expectsOutputToContain('partials/_absent.json')
+            // 경고가 어느 레이아웃의 참조인지 말해야 한다 — 종전에는 이름이 비어 「JSON 레이아웃  에서」로 찍혔다(7.1.1 출시 전).
+            ->expectsOutputToContain('layouts/json_broken.json 에서 조각 partials/_absent.json')
+            ->doesntExpectOutputToContain('JSON 레이아웃  에서')
             ->assertSuccessful();
 
         $data = json_decode((string) File::get($this->out.'/json_broken.json'), true);
         $this->assertCount(1, $data['components'], '없는 조각 자리가 빠지지 않았습니다');
         $this->assertSame('KEPT', $data['components'][0]['props']['text'] ?? null);
+    }
+
+    /**
+     * 없는 `.json` 조각 경고의 「해석된 경로」가 찾아본 후보(`.g7.html`·`.json`)를 모두 보여 준다 (7.1.1 출시 전 보강).
+     *
+     * 종전에는 1순위 후보(소스 `.g7.html`)만 적어 `.json` 참조인데 `.g7.html` 경로만 보였다.
+     *
+     * @scenario compile_unit=install,source_health=invalid
+     *
+     * @effects fixture_command_tolerates_missing_partial_in_json_layout
+     *
+     * @return void 반환값 없음
+     */
+    public function test_missing_partial_warning_lists_every_tried_path(): void
+    {
+        app()->setLocale('ko');
+        File::put($this->layouts.'/json_broken.json', json_encode([
+            'layout_name' => 'json_broken',
+            'components' => [['partial' => 'partials/_absent.json']],
+        ]));
+
+        Artisan::call('layout:generate-fixture', [
+            'layout' => $this->layouts.'/json_broken.json',
+            '--dir' => $this->out,
+        ]);
+        $output = Artisan::output();
+
+        $this->assertMatchesRegularExpression('#해석된 경로: [^)]*partials/_absent\.g7\.html, [^)]*partials/_absent\.json\)#', $output);
     }
 
     /**

@@ -84,7 +84,7 @@ class PlaywrightSeedDormant extends Command
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
+            $this->error(__('common.console.playwright_guard.cli_only', ['sapi' => php_sapi_name()]));
 
             return self::FAILURE;
         }
@@ -92,7 +92,7 @@ class PlaywrightSeedDormant extends Command
         // ② 명시 옵트인 — 환경변수 없이는 production 호출 실수 차단.
         // 여기의 `env()` 는 호출자가 그 자리에서 넘기는 프로세스 환경변수라 config:cache 무관.
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
+            $this->error(__('common.console.playwright_guard.bypass_required'));
 
             return self::FAILURE;
         }
@@ -109,7 +109,7 @@ class PlaywrightSeedDormant extends Command
         $stage = (string) $this->option('stage');
 
         if (! in_array($stage, self::STAGES, true)) {
-            $this->error("알 수 없는 단계입니다: {$stage} (".implode('|', self::STAGES).')');
+            $this->error(__('common.console.playwright_seed_dormant.unknown_stage', ['stage' => $stage, 'stages' => implode('|', self::STAGES)]));
 
             return self::FAILURE;
         }
@@ -220,6 +220,6 @@ class PlaywrightSeedDormant extends Command
             ->orWhere('admin_memo', self::TEST_MEMO_MARKER)
             ->delete();
 
-        $this->info("휴면 실측 테스트 계정 {$deleted}건을 제거했습니다.");
+        $this->info(__('common.console.playwright_seed_dormant.users_purged', ['count' => $deleted]));
     }
 }

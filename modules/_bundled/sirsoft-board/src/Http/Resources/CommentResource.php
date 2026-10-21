@@ -161,6 +161,8 @@ class CommentResource extends BaseApiResource
             ];
         }
 
+        // 회원 번호가 남았는데 계정이 없으면(하드 삭제) 비회원이 아니다 — 비회원 배지 없이 이름(없으면
+        // 화면이 「알 수 없음」)만 보인다. 게시글 작성자(PostResource)와 같은 판정이다.
         return [
             'uuid' => null,
             'name' => $this->author_name,
@@ -168,7 +170,7 @@ class CommentResource extends BaseApiResource
             'avatar' => null,
             'status' => null,
             'status_label' => null,
-            'is_guest' => true,
+            'is_guest' => $this->user_id === null,
         ];
     }
 

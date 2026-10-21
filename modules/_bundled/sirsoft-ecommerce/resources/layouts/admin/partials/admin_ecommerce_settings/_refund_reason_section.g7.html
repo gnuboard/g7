@@ -37,7 +37,7 @@
         </div>
         <div>
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name</label>
-          <multilingual-input data-type="composite" value="{{_local.refundReasonForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.refundReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input data-type="composite" value="{{_local.refundReasonForm?.name ?? {}}}" ariaLabel="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.refundReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 사유 문구(언어별). -->
               <set-state target="local" refundReasonForm.name="{{$event.target.value}}"/>
@@ -99,7 +99,7 @@
         </button>
       </div>
     </div>
-    <div data-if="{{(_local.form?.claim?.refund_reasons ?? []).length === 0 &amp;&amp; !_local.isAddingRefundReason}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.empty</div>
+    <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.claim?.refund_reasons ?? []).length === 0 &amp;&amp; !_local.isAddingRefundReason)}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.empty</div>
     <div data-ref="refund_reason_list" data-if="{{(_local.form?.claim?.refund_reasons ?? []).length > 0}}" class="overflow-x-clip">
       <responsive on="portable" class="">
         <include src="_refund_reason_cards.g7.html"/>
@@ -123,7 +123,7 @@
               <span data-if="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']}}" class="form-error">{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']?.[0] ?? ''}}</span>
             </td>
             <td class="px-4 py-2">
-              <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" ariaLabel="$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.name')}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 기존 줄 — 사유 문구(언어별). -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
@@ -131,7 +131,7 @@
               </multilingual-input>
             </td>
             <td class="px-4 py-2">
-              <select value="{{reason.fault_type ?? 'customer'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <select value="{{reason.fault_type ?? 'customer'}}" aria-label="$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.fault_type')}}" class="w-full" disabled="{{_computed.isReadOnly}}">
                 <options>
                   <option value="customer">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.customer</option>
                   <option value="seller">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.seller</option>
@@ -144,7 +144,7 @@
               </select>
             </td>
             <td class="px-4 py-2 text-center">
-              <input type="checkbox" checked="{{reason.is_user_selectable ?? false}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
+              <input type="checkbox" checked="{{reason.is_user_selectable ?? false}}" aria-label="$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_user_selectable')}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 기존 줄 — 고객이 직접 고를 수 있는 사유인지. -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_user_selectable: !(r.is_user_selectable)} : r)}}" :hasChanges="true"/>
@@ -152,7 +152,7 @@
               </input>
             </td>
             <td class="px-4 py-2 text-center">
-              <toggle data-type="composite" checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+              <toggle data-type="composite" checked="{{reason.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_active')}}" size="sm" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 기존 줄 — 사용 여부. -->
                   <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
@@ -160,7 +160,7 @@
               </toggle>
             </td>
             <td class="px-4 py-2 text-center">
-              <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+              <button type="button" class="p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
                 <on type="click">
                   <!-- 기존 줄 — 삭제. -->
                   <set-state confirm="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.confirm_delete" target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).filter((_, i) => i !== reason._idx)}}" form.claim.refund_reasons_deleted="{{[...(_local.form?.claim?.refund_reasons_deleted ?? []), ...(reason?.id ? [reason.id] : [])]}}" :hasChanges="true"/>

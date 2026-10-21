@@ -1,0 +1,22 @@
+feature: 관리자 이커머스 디바운스 폼에서 입력 직후(디바운스 300ms 안) 「저장」 해도 요청 본문에 마지막 입력이 실리고 칸이 되돌아가지 않는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  data-key="form" data-debounce="300" 폼(상품 수정·쿠폰 수정·배송 정책)에서 값을 빠르게 친 뒤 0.1초 안에 「저장」 하면 본문이 옛 값이었고,
+  서버가 옛 값을 저장해 칸까지 옛 값으로 돌아갔다(7.1.0 에도 있음). 엔진 원인(자동바인딩 디바운스가 액션 직전 flush 밖)은
+  tests/scenarios/autobinding-debounce-flush.yaml 이 잠근다. 이 매니페스트는 실물 레이아웃 JSON 의 폼 감싸개 속성과 「저장」 단추 동작을
+  그대로 올린 표본이다. 축 specimen 은 화면·칸이다(주문 상세 주문정보 폼은 브라우저 재실측으로 본다).
+
+axes:
+  specimen: [product_list_price, coupon_min_order_amount, shipping_policy_base_fee]
+
+effects:
+  - quick_save_body_has_last_input   # 입력 직후 저장의 요청 본문과 저장소 B 가 마지막 입력이다
+  - input_not_reverted_after_save    # 저장 뒤 늦게 끝나는 디바운스가 칸·상태를 옛 값으로 되돌리지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminDebounceFormQuickSave.test.tsx
+
+validation:
+  browser_check: 재실측 — 상품 수정 정가·쿠폰 수정 최소주문금액·배송 정책 수정 기본 배송비·주문 상세 주문정보 칸을 빠르게 친 뒤 +100ms 「저장」 — 본문·저장 뒤 칸 표시
+  note: |
+    fail-first: 엔진의 디스패처 예약·flush 뒤 `_local` 최신화를 끄면 3 failed / 3(본문이 옛 값).

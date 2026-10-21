@@ -23,7 +23,7 @@ effects:
   - recent_posts_includes_secret_posts_with_is_secret_field
   - secret_post_title_is_visible_in_recent_posts
   - recent_posts_includes_created_at_and_created_at_formatted
-  # 최근글·인기글 캐시는 언어별로 나누고 날짜 표기·New 는 응답 시점에 다시 센다(2026-10-07 실측 O-K1-14·O-N4, K4-D8)
+  # 최근글·인기글 캐시는 언어별로 나누고 날짜 표기·New 는 응답 시점에 다시 센다(2026-10-07 실측)
   - recent_and_popular_cache_follow_request_locale_and_time
   - guest_can_fetch_user_public_posts
   - secret_posts_are_listed_without_content_for_other_viewers

@@ -122,7 +122,8 @@
         "title": "キャンセル理由",
         "reason": "理由",
         "detail": "詳細理由"
-      }
+      },
+      "quantity_value": "{{count}}個"
     },
     "tabs": {
       "order_info": "注文情報",
@@ -880,7 +881,8 @@
     "error": "受け取ることができませんでした。",
     "reason_required": "理由を選択してください。",
     "preview_error": "請求額を計算できませんでした。",
-    "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。"
+    "context_load_failed": "受付可否を読み込めませんでした。ページを再読み込みしてください。",
+    "exchange_option_label": "交換するオプション"
   },
   "manual_paid": {
     "title": "決済処理項目",

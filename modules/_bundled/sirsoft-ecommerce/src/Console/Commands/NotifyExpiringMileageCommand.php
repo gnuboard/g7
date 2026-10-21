@@ -46,13 +46,13 @@ class NotifyExpiringMileageCommand extends Command
     public function handle(): int
     {
         if (! module_setting('sirsoft-ecommerce', 'mileage.enabled', false)) {
-            $this->info('마일리지 기능이 비활성화되어 있습니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.mileage.disabled'));
 
             return Command::SUCCESS;
         }
 
         if (! module_setting('sirsoft-ecommerce', 'mileage.expiry_notification_enabled', true)) {
-            $this->info('소멸 예정 알림 기능이 비활성화되어 있습니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.notification_disabled'));
 
             return Command::SUCCESS;
         }
@@ -67,12 +67,12 @@ class NotifyExpiringMileageCommand extends Command
         $targets = $this->cache->getExpiringTargets($limit);
 
         if ($targets->isEmpty()) {
-            $this->info('소멸 예정 알림 대상이 없습니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.no_targets'));
 
             return Command::SUCCESS;
         }
 
-        $this->info(sprintf('소멸 예정 알림 대상 %d건%s', $targets->count(), $isDryRun ? ' [DRY-RUN]' : ''));
+        $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.targets', ['count' => $targets->count()]).($isDryRun ? ' [DRY-RUN]' : ''));
 
         if ($isDryRun) {
             return Command::SUCCESS;
@@ -96,7 +96,7 @@ class NotifyExpiringMileageCommand extends Command
             $sent++;
         }
 
-        $this->info(sprintf('발송 완료: %d건', $sent));
+        $this->info(__('sirsoft-ecommerce::messages.console.notify_expiring_mileage.done', ['count' => $sent]));
 
         return Command::SUCCESS;
     }

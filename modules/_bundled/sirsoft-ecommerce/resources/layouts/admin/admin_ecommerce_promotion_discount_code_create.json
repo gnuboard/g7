@@ -77,20 +77,17 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/promotion-discount-codes"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/ecommerce/promotion-discount-codes",
                                             "aria-label": "$t:common.back",
-                                            "type": "button",
-                                            "className": "btn btn-icon"
+                                            "className": "button btn btn-icon"
                                         },
                                         "children": [
                                             {
@@ -137,19 +134,16 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/promotion-discount-codes"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-outline"
+                                            "href": "/admin/ecommerce/promotion-discount-codes",
+                                            "className": "button btn btn-outline"
                                         },
                                         "text": "$t:sirsoft-ecommerce.common.cancel"
                                     },
@@ -243,39 +237,7 @@
                                                 "props": {
                                                     "className": "text-sm"
                                                 },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "발급 "
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "font-semibold"
-                                                        },
-                                                        "text": "8"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "건 / 사용 "
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "font-semibold"
-                                                        },
-                                                        "text": "8"
-                                                    },
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "text": "건"
-                                                    }
-                                                ]
+                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.issued_used|issued=8|used=8"
                                             },
                                             {
                                                 "type": "basic",
@@ -649,7 +611,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "circle-question",
-                                            "className": "text-base text-gray-400 dark:text-gray-500 ml-auto cursor-pointer"
+                                            "className": "text-base text-gray-500 dark:text-gray-500 ml-auto cursor-pointer"
                                         }
                                     }
                                 ]
@@ -719,7 +681,7 @@
                                                             "options": [
                                                                 {
                                                                     "value": "won",
-                                                                    "label": "원"
+                                                                    "label": "$t:sirsoft-ecommerce.admin.sample.misc.won_unit"
                                                                 }
                                                             ]
                                                         }
@@ -765,7 +727,7 @@
                                                         "props": {
                                                             "className": "text-secondary text-sm ml-2"
                                                         },
-                                                        "text": "최대"
+                                                        "text": "$t:sirsoft-ecommerce.admin.sample.misc.max_label"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -882,7 +844,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                            "className": "text-base text-gray-500 dark:text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -917,7 +879,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                            "className": "text-base text-gray-500 dark:text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -1087,19 +1049,19 @@
                                                     "options": [
                                                         {
                                                             "value": "6",
-                                                            "label": "6자리"
+                                                            "label": "$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=6"
                                                         },
                                                         {
                                                             "value": "8",
-                                                            "label": "8자리"
+                                                            "label": "$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=8"
                                                         },
                                                         {
                                                             "value": "10",
-                                                            "label": "10자리"
+                                                            "label": "$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=10"
                                                         },
                                                         {
                                                             "value": "12",
-                                                            "label": "12자리"
+                                                            "label": "$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=12"
                                                         }
                                                     ]
                                                 }
@@ -1396,19 +1358,16 @@
                                     {
                                         "id": "cancel_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/promotion-discount-codes"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary"
+                                            "href": "/admin/ecommerce/promotion-discount-codes",
+                                            "className": "button btn btn-secondary"
                                         },
                                         "children": [
                                             {

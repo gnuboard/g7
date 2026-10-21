@@ -8,7 +8,7 @@
         <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
           <img data-if="{{$parent._local.confirmTarget?.thumbnail_url}}" src="{{$parent._local.confirmTarget?.thumbnail_url ?? ''}}" alt="{{$parent._local.confirmTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
           <div data-if="{{!$parent._local.confirmTarget?.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-            <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+            <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
           </div>
         </div>
         <div class="flex-1 min-w-0">
@@ -26,7 +26,7 @@
       </div>
       <!-- 경고 문구 -->
       <div class="flex items-start gap-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
-        <icon name="triangle-exclamation" class="text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+        <icon name="triangle-exclamation" class="text-base text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
         <span class="text-sm text-yellow-700 dark:text-yellow-300">$t:mypage.order_detail.confirm_modal.warning</span>
       </div>
       <!-- 버튼 영역 -->
@@ -37,7 +37,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isConfirming === true}}">
+        <button type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isConfirming === true}}">
           <on type="click">
             <!-- 확정 실행 — 대상 주문·항목 id 는 창을 연 쪽이 부모 상태에 세워 준 값을 읽는다 -->
             <action handler="sirsoft-ecommerce.confirmOrderOption" orderId="{{$parent._local.confirmTarget?.orderId ?? ''}}" optionId="{{$parent._local.confirmTarget?.id ?? ''}}"/>

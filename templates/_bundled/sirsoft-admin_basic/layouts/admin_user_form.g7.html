@@ -5,7 +5,7 @@
   저장은 코어 회원 API 한 번뿐이다 — 모듈이 주입한 칸(예: 이커머스 통화·배송국가)도 `_local.form` 에
   실려 같은 요청으로 가고, 그 모듈이 코어 훅으로 검증·저장한다. 검증 오류도 같은 `_local.errors` 로 돌아온다. -->
 <layout name="admin_user_form" version="1.0.0" extends="_admin_base">
-  <meta title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
   <!-- 수정할 회원. 응답을 `_local.form` 으로 바로 풀어 폼 초기값을 만든다(`initLocal`).
        권한을 **응답 뒤에 한 번 더 본다** — 조회는 되지만 수정 권한이 없는 경우가 있어
        `abilities.can_update` 가 false 면 스스로 403 으로 접는다(응답에 abilities 가 아예 없으면 접지 않고 저장 때 서버가 막는다). 어떤 실패든 화면을 에러로 갈아끼우는
@@ -23,7 +23,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <fallback :data="null"/>
@@ -42,7 +50,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <fallback :data="null"/>
@@ -129,6 +145,8 @@
     <wait-for>roles</wait-for>
   </transition-overlay>
   <init>
+    <!-- 들어올 때마다 「고친 것 있음」 을 끈다 — 이탈 확인(meta.leave_guard)이 읽는 값이라, 같은 레이아웃의 다른 회원으로 넘어와도 직전 표시가 남지 않게 한다 -->
+    <set-state target="local" :hasChanges="false"/>
     <!-- 생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다. -->
     <set-state if="{{!route?.id}}" target="local" :form="null" :hasChanges="false"/>
     <!-- 생성 모드 기본값 — 비밀번호 만료 개별 설정은 「역할·사이트 설정 따름」에서 시작한다(#736). 위에서 form 을 비운 뒤라
@@ -140,7 +158,7 @@
     <set-state if="{{!!route?.id}}" target="local" form.password="" form.password_confirmation="" form.current_password=""/>
   </init>
   <slot name="content">
-    <div data-ref="user_form_content" data-key="form" class="admin-page-content-responsive">
+    <div data-ref="user_form_content" data-key="form" data-track-changes class="admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
         <tab-navigation-scroll data-type="composite" data-ref="user_form_tabs" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="" class="tab-nav-default">
@@ -196,10 +214,10 @@
               <div data-ref="field_name">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.name</span>
-                  <span class="text-red-500 ml-1">*</span>
+                  <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </label>
                 <input type="text" name="name" placeholder="$t:admin.users.form.fields.name" class=""/>
-                <span data-if="{{_local.errors?.name}}" class="text-red-500 text-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
+                <span data-if="{{_local.errors?.name}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
               </div>
               <div data-ref="field_nickname">
                 <label class="form-label">$t:admin.users.form.fields.nickname</label>
@@ -213,7 +231,7 @@
             <div data-ref="field_roles">
               <label class="form-label">
                 <span>$t:admin.users.form.fields.role</span>
-                <span data-if="{{!!route?.id}}" class="text-red-500 ml-1">*</span>
+                <span data-if="{{!!route?.id}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <tag-input data-type="composite" name="role_ids" value="{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}" placeholder="$t:admin.users.form.fields.role_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue" disabled="{{route?.id ? user?.data?.abilities?.can_assign_roles !== true : roles?.data?.abilities?.can_assign_roles !== true}}">
                 <on type="change">
@@ -226,7 +244,7 @@
                   </set-state>
                 </on>
               </tag-input>
-              <span data-if="{{_local.errors?.role_ids || _local.errors?.roles}}" class="text-red-500 text-xs mt-1">{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}</span>
+              <span data-if="{{_local.errors?.role_ids || _local.errors?.roles}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}</span>
               <p data-if="{{!route?.id}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.fields.role_default_hint</p>
             </div>
             <div data-ref="field_status">
@@ -243,11 +261,11 @@
                  것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에
                  세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.
                  `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,
-                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 영역 C 실측). 새 회원은 늘 미인증으로 시작한다. -->
+                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 실측). 새 회원은 늘 미인증으로 시작한다. -->
             <div data-ref="field_email_verified">
               <label class="form-label">$t:admin.users.detail.email_verification</label>
               <div class="flex-center gap-1">
-                <icon data-if="{{!!route?.id &amp;&amp; user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-500"/>
+                <icon data-if="{{!!route?.id &amp;&amp; user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-600"/>
                 <span class="text-primary text-sm">{{route?.id &amp;&amp; user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}</span>
               </div>
             </div>
@@ -255,15 +273,15 @@
               <div data-ref="field_password">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.password</span>
-                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+                  <span data-if="{{!route?.id}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </label>
                 <input type="password" name="password" placeholder="{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}" class=""/>
-                <span data-if="{{_local.errors?.password}}" class="text-red-500 text-xs mt-1">{{_local.errors?.password?.[0] ?? ''}}</span>
+                <span data-if="{{_local.errors?.password}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.password?.[0] ?? ''}}</span>
               </div>
               <div data-ref="field_password_confirmation">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.password_confirmation</span>
-                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+                  <span data-if="{{!route?.id}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </label>
                 <input type="password" name="password_confirmation" placeholder="$t:admin.users.form.fields.password_confirmation" class=""/>
               </div>
@@ -289,10 +307,10 @@
             <div data-ref="field_current_password" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password}}">
               <label class="form-label">
                 <span>$t:admin.users.form.password_policy.current_password</span>
-                <span class="text-red-500 dark:text-red-400 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <input type="password" name="current_password" autoComplete="current-password" placeholder="$t:admin.users.form.password_policy.current_password" class="{{_local.errors?.current_password ? 'input-error' : ''}}"/>
-              <span data-if="{{_local.errors?.current_password}}" class="text-red-500 dark:text-red-400 text-xs mt-1">{{_local.errors?.current_password?.[0] ?? ''}}</span>
+              <span data-if="{{_local.errors?.current_password}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.current_password?.[0] ?? ''}}</span>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.password_policy.current_password_hint</p>
             </div>
           </div>
@@ -304,10 +322,10 @@
               <div data-ref="field_email">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.email</span>
-                  <span class="text-red-500 ml-1">*</span>
+                  <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </label>
                 <input type="email" name="email" placeholder="$t:admin.users.form.fields.email" disabled="{{!!route?.id}}" class=""/>
-                <span data-if="{{_local.errors?.email}}" class="text-red-500 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
+                <span data-if="{{_local.errors?.email}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
               </div>
               <div data-ref="field_homepage">
                 <label class="form-label">$t:admin.users.form.fields.homepage</label>
@@ -331,7 +349,7 @@
           <div class="row-stack">
             <div data-ref="field_country">
               <label class="form-label">$t:admin.users.form.fields.country</label>
-              <searchable-dropdown data-type="composite" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
+              <searchable-dropdown data-type="composite" aria-label="$t:admin.users.form.fields.country" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
                 <on type="change" event="onChange">
                   <!-- 국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가
                        이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다. -->
@@ -516,15 +534,13 @@
             <!-- 회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.
                회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다. -->
             <div data-ref="notifications_inbox_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.member-notifications.read'))}}">
-              <button type="button" class="btn btn-secondary">
+              <a href="/admin/member-notifications?user_uuid={{user?.data?.uuid}}" class="button btn btn-secondary">
                 <on type="click">
                   <!-- 이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다 -->
-                  <navigate path="/admin/member-notifications">
-                    <query user_uuid="{{user?.data?.uuid}}"/>
-                  </navigate>
+                  <navigate/>
                 </on>
                 <span>$t:admin.users.detail.notifications.view_inbox</span>
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -532,14 +548,14 @@
         <div data-ref="extension_form_content" class="mt-6"/>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="footer_cancel_button" class="btn btn-secondary">
+        <button type="button" data-ref="footer_cancel_button" class="btn btn-secondary">
           <on type="click">
-            <navigate-back/>
+            <navigate-back :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </button>
         <!-- 수정 모드에서는 회원 정보가 폼에 채워지기 전까지 저장을 막는다 — 시드 전에 누르면 빈 본문이 나가 화면에는 값이 보이는데 "이름은 필수입니다" 로 거절된다. -->
-        <button data-ref="footer_save_button" disabled="{{_global.isSaving || (route?.id &amp;&amp; !_local.form?.email)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="footer_save_button" disabled="{{_global.isSaving || (route?.id &amp;&amp; !_local.form?.email)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <conditions>
               <!-- 상태를 탈퇴로 바꾸는 저장은 비가역 파기라 확인을 먼저 받는다 (공개이슈 #112). -->
@@ -557,7 +573,7 @@
                     <success>
                       <set-state target="global" :isSaving="false"/>
                       <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
-                      <navigate path="/admin/users" :mergeQuery="true">
+                      <navigate :bypassLeaveGuard="true" path="/admin/users" :mergeQuery="true">
                         <query/>
                       </navigate>
                     </success>
@@ -610,7 +626,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="withdraw_confirm_submit_button" type="button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="withdraw_confirm_submit_button" type="button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 탈퇴 실행. 확인 문구를 먼저 접는 것은 요청이 끝난 뒤 화면이 바뀌어도 확인 창이 남지 않게 하기 위해서다 -->
             <sequence>
@@ -620,7 +636,7 @@
                 <success>
                   <set-state target="global" :isSaving="false"/>
                   <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
-                  <navigate path="/admin/users" :mergeQuery="true">
+                  <navigate :bypassLeaveGuard="true" path="/admin/users" :mergeQuery="true">
                     <query/>
                   </navigate>
                 </success>

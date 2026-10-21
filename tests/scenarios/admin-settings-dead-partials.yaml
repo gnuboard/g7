@@ -1,4 +1,4 @@
-feature: 관리자 환경설정 화면 죽은 조각 0 (7.1.0 전수 실측 validate R3)
+feature: 관리자 환경설정 화면 죽은 조각 0 (7.1.0 전수 실측)
 
 description: |
   환경설정 화면(`admin_settings`)의 partial 가운데 어느 레이아웃도 include 하지 않는 조각은

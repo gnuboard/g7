@@ -421,7 +421,7 @@ describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §1
 
         for (const b of saveButtons) {
             const disabled = String((b.props as { disabled?: string } | undefined)?.disabled ?? '');
-            // 저장 계열은 메시징 관리 권한(isMessagingReadOnly)으로도 잠긴다(7.1.0 G19) — 권한 있는 관리자 맥락으로 본다
+            // 저장 계열은 메시징 관리 권한(isMessagingReadOnly)으로도 잠긴다(7.1.0 abilities 게이트) — 권한 있는 관리자 맥락으로 본다
             expect(evalBinding(disabled, { _computed: { isMessagingReadOnly: false }, _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: true } } }),
                 '업로드 중 저장이 열려 있으면 빈 이미지 URL 로 저장된다').toBe(true);
             expect(evalBinding(disabled, { _computed: { isMessagingReadOnly: false }, _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: false } } }),

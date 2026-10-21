@@ -430,7 +430,7 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 | `first` | 배열 첫 요소 | `{{items \| first}}` |
 | `last` | 배열 마지막 요소 | `{{items \| last}}` |
 | `join(separator)` | 배열 문자열 결합 | `{{tags \| join(', ')}}` |
-| `localized` | 다국어 객체 → 현재 로케일 값 | `{{title \| localized}}` |
+| `localized` | 다국어 객체 → 렌더 문맥의 언어(`$locale`, 없으면 화면 언어) 값. 비면 사이트 기본 언어 → 영어 → 첫 값(`$localized()` 와 같은 순서, engine-v1.81.0). 인자로 언어를 주면 그 언어가 먼저 | `{{title \| localized}}` · `{{title \| localized('en')}}` |
 
 ### 파이프 체이닝
 
@@ -501,19 +501,19 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 **다국어 객체 접근**:
 
 ```html
-<div>{{$get(product.name, $locale, product.name.ko)}}</div>
+<div>{{$get(product.name, $locale, $localized(product.name))}}</div>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
-  "text": "{{$get(product.name, $locale, product.name.ko)}}"
+  "text": "{{$get(product.name, $locale, $localized(product.name))}}"
 }
 ```
 
 현재 로케일은 컨텍스트 변수 `$locale` 이 든다. `_global.locale` 은 어디서도 세워지지 않으므로
-그 자리에 쓰면 언제나 `undefined` 로 평가되어 조용히 fallback(대개 한국어)으로 고정된다.
+그 자리에 쓰면 언제나 `undefined` 로 평가되어 조용히 fallback 으로 고정된다. 세 번째 인자(fallback)에 `product.name.ko` 처럼 특정 언어를 고정하지 않는다 — `$localized()` 가 사이트 기본 언어 → en 순으로 대신한다.
 다국어 객체 하나를 그대로 표시하는 것이 목적이라면 `$localized(product.name)` 이 정본이다
 ([$localized() 헬퍼](data-binding-i18n.md#localized-헬퍼-함수-v140)).
 

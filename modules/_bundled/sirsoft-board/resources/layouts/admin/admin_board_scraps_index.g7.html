@@ -52,7 +52,7 @@
       <div data-ref="member_filter_banner" data-if="{{!!(query.user_id || query.user_uuid)}}" class="admin-card flex-center gap-2">
         <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
         <span class="text-body flex-1">$t:sirsoft-board.admin.scraps.filters.member_filter_notice</span>
-        <button data-ref="member_filter_clear" class="px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+        <button type="button" data-ref="member_filter_clear" class="px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
           <on type="click">
             <!-- 회원 필터만 떼고 검색어·기간은 유지한다 — 배너가 말하는 것이 회원 한정뿐이므로 그것만 되돌린다.
                  쪽수를 건드리는 이동이라 목록을 다시 세우는 셈이다 — 표 본문만 대기 표시로 덮고 이력에는 쌓지 않는다(쪽 이동·정렬과 같은 규칙) -->
@@ -71,7 +71,7 @@
       <div data-ref="bulk_actions_area" data-if="{{scraps?.data?.abilities?.can_manage === true}}" class="bulk-actions-bar">
         <span data-ref="selected_count" class="text-body font-medium">$t:sirsoft-board.admin.scraps.selected_count|count={{(_global.selectedIds || []).length}}</span>
         <div data-ref="bulk_buttons" class="flex gap-2 ml-auto">
-          <button data-ref="bulk_delete" data-testid="admin-scrap-bulk-delete" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{scraps?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
+          <button type="button" data-ref="bulk_delete" data-testid="admin-scrap-bulk-delete" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{scraps?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
             <on type="click">
               <!-- 선택 삭제 — 확인 모달로 넘긴다. 삭제 권한이 없으면 버튼 자체가 잠겨 있어 여기까지 오지 않는다 -->
               <open-modal target="bulk_delete_modal"/>
@@ -84,7 +84,7 @@
       <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
         <span class="text-label">$t:sirsoft-board.admin.scraps.total_count|count={{scraps?.data?.pagination?.total ?? 0}}</span>
       </div>
-      <data-grid data-type="composite" data-ref="scraps_data_grid" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-board.admin.scraps.table_empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/boards/scraps?page={page}" data-type="composite" data-ref="scraps_data_grid" rowLabelField="post_title" :data-blur-until-loaded="true" data="{{scraps?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{scraps?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{scraps?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{scraps?.data?.pagination?.has_more_pages ?? false}}" selectable="{{scraps?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="{{scraps === undefined ? '' : (scraps === null ? $t('sirsoft-board.common.list_load_failed') : $t('sirsoft-board.admin.scraps.table_empty'))}}" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.scraps.columns.scrapped_at" :sortable="true">
           <cell>
             <!-- 스크랩 시각도 반응 관리와 같은 규약으로 초까지 밝힌다 — 「2시간 전」 상대 표기는 정리 대상을
@@ -92,22 +92,19 @@
             <span class="text-sm text-gray-900 dark:text-white whitespace-nowrap">{{row.created_at}}</span>
           </cell>
         </column>
-        <column field="member" header="$t:sirsoft-board.admin.scraps.columns.member">
+        <column field="member" :sortable="false" header="$t:sirsoft-board.admin.scraps.columns.member">
           <cell>
             <div class="flex flex-col">
               <div class="flex-center gap-2">
                 <action-menu data-type="composite" data-if="{{!!row.member?.uuid}}" position="right">
                   <prop name="items">
-                    <item id="view_member" label="$t:sirsoft-board.admin.scraps.cell.view_member" iconName="user"/>
+                    <item href="/admin/users/{{row.member?.uuid}}" target="_blank" id="view_member" label="$t:sirsoft-board.admin.scraps.cell.view_member" iconName="user"/>
                     <item id="search_member" label="$t:sirsoft-board.admin.scraps.cell.search_member" iconName="magnifying-glass"/>
                   </prop>
                   <on event="onItemClick">
-                    <!-- 반응 관리와 같은 두 갈래 — 상세는 새 창(이 목록의 검색 조건 보존), 「이 회원으로 검색」은
-                         같은 창에서 회원 조건만 갈아끼운다(user_uuid — 목록이 이미 읽는 필터). -->
+                    <!-- 반응 관리와 같다 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank, #757)라 갈래가 없고,
+                         「이 회원으로 검색」만 같은 창에서 회원 조건을 갈아끼운다(user_uuid — 목록이 이미 읽는 필터). -->
                     <switch>
-                      <case when="view_member">
-                        <open-window path="/admin/users/{{row.member?.uuid}}"/>
-                      </case>
                       <case when="search_member">
                         <navigate path="/admin/boards/scraps" :mergeQuery="true" :replace="true">
                           <query user_uuid="{{row.member?.uuid}}" :page="1"/>
@@ -124,7 +121,7 @@
             </div>
           </cell>
         </column>
-        <column field="board" header="$t:sirsoft-board.admin.scraps.columns.board_name">
+        <column field="board" :sortable="false" header="$t:sirsoft-board.admin.scraps.columns.board_name">
           <cell>
             <div class="flex-center gap-2 flex-wrap">
               <span data-if="{{!!row.board}}" class="text-sm">{{row.board?.name}}</span>
@@ -133,34 +130,34 @@
             </div>
           </cell>
         </column>
-        <column field="post_title" header="$t:sirsoft-board.admin.scraps.columns.post_title" cellClassName="max-w-xs">
+        <column field="post_title" :sortable="false" header="$t:sirsoft-board.admin.scraps.columns.post_title" cellClassName="max-w-xs">
           <cell>
             <div class="flex-center gap-2">
-              <span data-if="{{!row.is_deleted &amp;&amp; !!row.board}}" class="font-medium truncate cursor-pointer hover:underline">
+              <a href="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}" data-if="{{!row.is_deleted &amp;&amp; !!row.board}}" class="font-medium truncate cursor-pointer hover:underline">
                 <on type="click">
                   <!-- 살아 있는 글이고 게시판도 남아 있을 때만 원글로 건너뛴다 — 삭제글·게시판 삭제 행은 갈 곳이 없다 -->
-                  <navigate path="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}"/>
+                  <navigate/>
                 </on>
                 {{row.post_title}}
-              </span>
-              <span data-if="{{row.is_deleted || !row.board}}" class="font-medium truncate line-through text-gray-400 dark:text-gray-500">{{row.post_title}}</span>
+              </a>
+              <span data-if="{{row.is_deleted || !row.board}}" class="font-medium truncate line-through text-gray-500 dark:text-gray-400">{{row.post_title}}</span>
               <badge data-type="composite" data-if="{{row.is_deleted}}" color="red" size="sm">$t:sirsoft-board.admin.scraps.badges.deleted_post</badge>
             </div>
           </cell>
         </column>
-        <column field="author_name" header="$t:sirsoft-board.admin.scraps.columns.author_name">
+        <column field="author_name" :sortable="false" header="$t:sirsoft-board.admin.scraps.columns.author_name">
           <cell>
             <span class="text-heading">{{row.author_name ?? ''}}</span>
           </cell>
         </column>
-        <column field="post_status" header="$t:sirsoft-board.admin.scraps.columns.post_status">
+        <column field="post_status" :sortable="false" header="$t:sirsoft-board.admin.scraps.columns.post_status">
           <cell>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{row.post_status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.post_status === 'blinded' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : row.post_status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{row.post_status_label}}</span>
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="go_to_post" label="$t:sirsoft-board.admin.scraps.actions.go_to_post" iconName="file-lines" disabledField="board.slug"/>
-          <item id="go_to_member" label="$t:sirsoft-board.admin.scraps.actions.go_to_member" iconName="user"/>
+          <item href="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}" id="go_to_post" label="$t:sirsoft-board.admin.scraps.actions.go_to_post" iconName="file-lines" disabledField="board.slug"/>
+          <item href="/admin/users/{{row.member?.uuid}}" id="go_to_member" label="$t:sirsoft-board.admin.scraps.actions.go_to_member" iconName="user" disabledField="member.uuid"/>
           <item id="delete" label="$t:sirsoft-board.admin.scraps.actions.delete" iconName="trash" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onSelectionChange">
@@ -168,7 +165,7 @@
           <set-state target="global" selectedIds="{{$args[0]}}"/>
         </on>
         <on type="change" event="onSortChange">
-          <!-- 정렬 변경. 정렬 축이 스크랩일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다 -->
+          <!-- 정렬 변경. 정렬 축이 스크랩일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다. 다른 열은 서버가 정렬하지 못해 :sortable="false" 다(7.1.1 — 종전에는 어느 머리든 날짜 방향만 뒤집혔다) -->
           <sequence>
             <!-- 순서가 달라지면 같은 체크가 다른 행을 가리키게 되므로 선택을 먼저 비운다 -->
             <set-state target="global" :selectedIds="[]"/>
@@ -218,13 +215,13 @@
         <p class="text-body">$t:sirsoft-board.admin.scraps.modals.delete_confirm</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapDeleteLoading}}">
+        <button type="button" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapDeleteLoading}}">
           <on type="click">
             <!-- 확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다 -->
             <set-state target="global" :scrapDeleteLoading="true"/>
@@ -263,13 +260,13 @@
         <p class="text-body">$t:sirsoft-board.admin.scraps.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-testid="admin-scrap-bulk-delete-confirm" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapBulkDeleteLoading}}">
+        <button type="button" data-testid="admin-scrap-bulk-delete-confirm" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.scrapBulkDeleteLoading}}">
           <on type="click">
             <!-- 실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 지우므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다 -->
             <set-state target="global" :scrapBulkDeleteLoading="true"/>
@@ -306,7 +303,7 @@
         <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>
       <div class="flex justify-end mt-6">
-        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
           <on type="click">
             <close-modal/>
           </on>

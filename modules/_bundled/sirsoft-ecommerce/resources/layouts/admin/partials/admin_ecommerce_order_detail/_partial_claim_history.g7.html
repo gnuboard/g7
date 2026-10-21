@@ -13,7 +13,7 @@
         <!-- 운영자가 고른 유형을 고정한다 — 고른 뒤로는 화면에 다시 들어올 때까지 '접수 건이 있는 첫 유형' 자동 선택이 끼어들지 않는다. -->
         <button data-ref="claim_history_subtab_{{claimType.value}}" data-each="claimType in {{_computed.claimHistoryTypes ?? []}}" type="button">
           <class-map base="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors" key="{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}" default="border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-            <variant when="active">border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500 font-medium</variant>
+            <variant when="active">border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-600 font-medium</variant>
             <variant when="idle">border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700</variant>
           </class-map>
           <on type="click">
@@ -22,7 +22,7 @@
           <span>{{claimType.label}}</span>
           <span>
             <class-map base="inline-flex items-center justify-center min-w-5 px-1.5 text-xs rounded-full" key="{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}" default="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-              <variant when="active">bg-white/25 text-white</variant>
+              <variant when="active">bg-blue-800 dark:bg-blue-800 text-white</variant>
               <variant when="idle">bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300</variant>
             </class-map>
             {{claimType.count}}
@@ -34,7 +34,7 @@
         <icon name="circle-exclamation" class="text-base"/>
         <span>$t:sirsoft-ecommerce.admin.order.detail.claim_history.unavailable</span>
       </div>
-      <div data-ref="claim_history_empty" data-if="{{orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length === 0}}" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.empty</div>
+      <div data-ref="claim_history_empty" data-if="{{orderClaims !== undefined &amp;&amp; (orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length === 0)}}" class="py-10 text-center text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.empty</div>
       <!-- PC 는 표, 모바일(<768)은 신청서 단위 카드다 (D20) — 같은 응답의 다른 표현이며 데이터소스를 따로 두지 않는다. 표의 1열은 신청서 단위 병합이라 카드에서는 그 셀이 곧 카드 헤더가 된다. -->
       <div data-ref="claim_history_body" data-if="{{orderClaims?.data?.unavailable !== true &amp;&amp; (_computed.claimHistoryRows ?? []).length > 0}}" class="overflow-x-auto">
         <responsive on="mobile" class="space-y-4">
@@ -59,7 +59,7 @@
               <div data-if="{{!!claim.source_claim_number}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.source_claim|number={{claim.source_claim_number ?? ''}}</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">{{claim.requested_at_formatted ?? ''}} · {{claim.requester_name ?? ''}}</div>
               <div data-if="{{!!claim.reason_label}}" class="text-xs text-gray-600 dark:text-gray-300">{{claim.reason_label ?? ''}}{{claim.fault_type_label ? ' · ' + claim.fault_type_label : ''}}</div>
-              <div data-if="{{!!claim.reject_reason}}" class="text-xs text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>
+              <div data-if="{{!!claim.reject_reason}}" class="text-xs text-red-600 dark:text-red-300">$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}</div>
               <!-- 배송비·총 청구액은 신청서 단위 축이라 상품 행에 안분하지 않는다 (S6c 판정 ②) — 카드에서는 헤더가, 표에서는 병합셀이 그 자리다. -->
               <div data-if="{{(claim.claim_shipping_fee ?? 0) > 0 || (claim.total_charge_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300 space-y-0.5 pt-1">
                 <div data-if="{{(claim.claim_shipping_fee ?? 0) > 0}}">$t:sirsoft-ecommerce.admin.order.detail.claim_history.shipping_fee: {{claim.claim_shipping_fee_formatted ?? ''}}</div>
@@ -71,7 +71,7 @@
                 <!-- PC 표의 썸네일 자리와 같은 규칙 — 이미지가 없어도 자리는 남는다. -->
                 <div data-ref="claim_history_card_item_thumb_{{claim.claim_number}}_{{cardItemIndex}}" class="w-12 h-12 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center">
                   <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
-                  <icon data-if="{{!item.thumbnail_url}}" name="image" class="text-base text-gray-400 dark:text-gray-500" data-thumb-placeholder="true"/>
+                  <icon data-if="{{!item.thumbnail_url}}" name="image" class="text-base text-gray-500 dark:text-gray-400" data-thumb-placeholder="true"/>
                 </div>
                 <div class="min-w-0 flex-1 space-y-0.5">
                   <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{item.product_name ?? ''}}</div>
@@ -140,7 +140,7 @@
                   <!-- 이미지가 없는 상품도 같은 크기의 자리를 차지한다 — 자리표시 없이 Img 만 조건부로 두면 이미지 유무에 따라 줄의 시작점이 흔들린다(구매자 신청내역 카드와 같은 규칙). -->
                   <div data-ref="claim_history_item_thumb_{{claim.claim_number}}_{{itemIndex}}" class="w-12 h-12 rounded overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center">
                     <img data-if="{{!!item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
-                    <icon data-if="{{!item.thumbnail_url}}" name="image" class="text-base text-gray-400 dark:text-gray-500" data-thumb-placeholder="true"/>
+                    <icon data-if="{{!item.thumbnail_url}}" name="image" class="text-base text-gray-500 dark:text-gray-400" data-thumb-placeholder="true"/>
                   </div>
                   <div class="min-w-0 space-y-0.5">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{item.product_name ?? ''}}</div>

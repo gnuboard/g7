@@ -79,7 +79,7 @@ describe('상품 상세 — 직접입력 조건부 Input + payload', () => {
     expect(purchaseCard).toContain('shop.additional_option_custom_text_label');
     // Input 에 테두리/배경 스타일 (placeholder 만 떠서 설명처럼 보이는 결함 회피)
     expect(purchaseCard).toContain('border border-gray-300');
-    expect(purchaseCard).toContain('placeholder-gray-400');
+    expect(purchaseCard).toContain('placeholder-gray-500'); // placeholder 글자도 대비 4.5 — gray-400 은 2.6
   });
 });
 

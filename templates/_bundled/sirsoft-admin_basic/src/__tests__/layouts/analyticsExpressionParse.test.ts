@@ -86,7 +86,9 @@ describe('방문자 통계 레이아웃 식의 구문', () => {
 
   // @scenario screen=settings, state=normal
   // @effects translation_params_are_substituted
-  it('번역 인자는 `$t:key|param={{식}}` 으로만 넘긴다 — 식 안의 `$t()` 는 키만 받아 인자를 버린다', () => {
+  it('분석 화면은 번역 인자를 `$t:key|param={{식}}` 형식으로 통일한다 — 식 안 `$t(키, 인자)` 를 섞지 않는다', () => {
+    // engine-v1.80.1 부터 식 안 `$t('키', {이름: 값})` 도 인자를 치환한다. 그래도 분석 화면은 속성 전체가 번역인
+    // `$t:key|param=` 한 형식으로 맞춰 두었고(그 이전 엔진은 식 안 인자를 버렸다), 이 시험은 그 통일을 지킨다.
     const files = analyticsLayoutFiles();
     // 모집단이 비면 아래 비교는 빈 배열끼리라 조용히 통과한다 — 훑은 파일과 식 안 `$t(` 호출 자리를 먼저 센다.
     expect(files.length, '훑은 레이아웃·조각').toBeGreaterThan(20);

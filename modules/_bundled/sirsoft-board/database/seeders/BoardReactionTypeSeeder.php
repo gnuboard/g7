@@ -69,9 +69,9 @@ class BoardReactionTypeSeeder extends Seeder implements TranslatableSeederInterf
             );
 
             if ($existing) {
-                $this->command->info("  반응 유형 '{$reactionType['code']}' 동기화 (사용자 수정 보존).");
+                $this->command->info('  '.__('sirsoft-board::messages.seeders.board_reaction_type.synced', ['code' => $reactionType['code']]));
             } else {
-                $this->command->info("  반응 유형 '{$reactionType['code']}' 생성 완료.");
+                $this->command->info('  '.__('sirsoft-board::messages.seeders.board_reaction_type.created', ['code' => $reactionType['code']]));
             }
         }
     }

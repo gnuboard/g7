@@ -1095,7 +1095,7 @@ class UserClaimService
             'payment_entry' => $pending ? $this->paymentService->buildPaymentPayload($pending) : null,
             // 대기 건의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액
             // 부족, 운영자가 그 수단을 내림. 그때 화면이 다른 수단을 고를 수 있어야 사용자가
-            // 신청서를 철회하지 않고 빠져나간다(#599 3차 실측 F-1·F-2). 대기 건이 없으면 고를
+            // 신청서를 철회하지 않고 빠져나간다(#599 실측). 대기 건이 없으면 고를
             // 것도 없으므로 빈 배열이다.
             'available_payment_methods' => $availableMethods,
             'available_payment_method_labels' => $this->paymentMethodLabels($availableMethods),

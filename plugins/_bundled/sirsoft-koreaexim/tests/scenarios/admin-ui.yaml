@@ -15,6 +15,7 @@ effects:
   - admin_ui_contract
   - connection_test_reports_failure_without_applying
   - invalid_date_range_explained
+  - history_spinner_only_while_fetching   # 이력 「조회 중」은 받기 전(값 undefined)에만 — 데이터소스 값에는 loading 이 없다
   - recipient_user_search_skips_empty_keyword
 test_files:
   - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/exchangeRateSettings.test.tsx

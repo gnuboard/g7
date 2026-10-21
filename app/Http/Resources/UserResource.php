@@ -435,7 +435,7 @@ class UserResource extends BaseApiResource
             'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
-            // 마이페이지 「내 정보」 가 이름을 보인다 — 코드만 실으면 「ko」 가 그대로 보인다(7.1.0 N O-N7).
+            // 마이페이지 「내 정보」 가 이름을 보인다 — 코드만 실으면 「ko」 가 그대로 보인다(7.1.0 실측).
             'language_label' => $this->languageLabel($this->getValue('language')),
             'timezone' => $this->getValue('timezone'),
             'country' => $this->getValue('country'),

@@ -1,0 +1,28 @@
+feature: GDPR 관리자 동의 이력 화면 — 필터 · 주체 열 · 정책 버전 · 카테고리 스냅샷 · 액션 배지
+
+description: |
+  관리자 동의 이력 레이아웃(gdpr_consent_log.g7.html)이 지키는 화면 계약. 검색은 named_actions.searchConsentLogs
+  (navigate) 한 곳에서 _local.filter 의 모든 키를 query 로 넘긴다. 체크박스 필터는 setState 뒤 검색을 잇는
+  sequence 로 즉시 적용되고, 이메일·세션 ID 텍스트 입력은 검색 버튼·Enter 로만 적용된다. 회원 행은 회원 상세로
+  이동하고 게스트 행은 이동하지 않는다. 정책 버전은 평문으로 보이고 값이 있을 때만 본문 보기 버튼이 스냅샷 창을 연다.
+  카테고리 스냅샷은 배열 순회 표(동의/거부 배지·라벨 번역·안내 문구)로 그리고, 액션 배지 문구는 action 값으로 번역한다.
+
+# axis 의미:
+#   area — 화면 영역. filter 는 검색·체크박스·텍스트 입력, subject_column 은 주체 열, policy_version 은 정책 버전 열과
+#          스냅샷 창, categories_snapshot 은 카테고리 스냅샷 표, action_badge 는 액션 배지.
+axes:
+  area: [filter, subject_column, policy_version, categories_snapshot, action_badge]
+
+effects:
+  - consent_log_search_carries_all_filters            # searchConsentLogs 는 navigate 이고 검색어·동의 항목·액션·출처를 모두 query 로 넘긴다
+  - consent_log_checkbox_filters_apply_immediately    # 동의 항목·액션·출처 체크박스가 모두 setState → searchConsentLogs sequence 다
+  - consent_log_text_search_waits_for_submit          # 텍스트 입력의 변경 액션은 검색을 직접 부르지 않는다
+  - consent_log_member_row_links_to_user_detail       # 회원 행은 회원 상세 경로로 이동한다
+  - consent_log_guest_row_has_no_link                 # 게스트 행에는 이동 액션이 없다
+  - consent_log_policy_version_snapshot_viewable      # 정책 버전 평문 표시, 값이 있을 때 본문 보기 버튼이 스냅샷을 받아 창을 연다
+  - consent_log_categories_snapshot_table             # 카테고리 스냅샷은 Pre·JSON 문자열 없이 배열 순회 표(빈 값 가드·동의/거부 배지·라벨 번역·안내)로 그린다
+  - consent_log_snapshot_badges_have_dark_pair        # 동의/거부 배지가 라이트/다크 색 쌍을 갖는다
+  - consent_log_action_badge_label_follows_action     # 액션 배지 문구는 action 값으로 번역 키를 고른다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/gdpr_consent_log.test.tsx

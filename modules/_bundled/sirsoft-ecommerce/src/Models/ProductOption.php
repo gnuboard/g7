@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -214,7 +215,7 @@ class ProductOption extends Model
                 $parts = [];
                 foreach ($values as $item) {
                     $value = $item['value'] ?? [];
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? '') : $value;
+                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale, anyAsLast: false) ?? '') : $value;
                     if ($localizedValue !== '') {
                         $parts[] = $localizedValue;
                     }

@@ -80,6 +80,10 @@ SEO 설정 · 확장 오버라이드. `sirsoft-basic` 이 컴포넌트 79개와 
 레이아웃을 부릅니다. 여섯 모두 `_user_base` 를 상속하므로 오류 화면에서도 공통 뼈대가
 유지됩니다. `401` 에서 **로그인 리다이렉트를 직접 구현하지 않습니다** — 코어
 `TemplateApp.showRouteError` 가드가 처리합니다.
+
+**글자 대비**: 홈의 환영 카드·메모 카드 글자는 다크 모드 색(`dark:text-white`·`dark:text-gray-300`)을 짝으로 지정하고,
+오류 화면 5종(401·403·404·500·503)의 큰 상태 코드 숫자는 `text-gray-500`, [홈으로] 버튼은 라이트·다크 모두
+`bg-blue-600`/`hover:bg-blue-700` 으로 두어 흰 글자와 바탕의 대비를 지킵니다. 새 글자를 넣을 때도 다크 바탕 색을 함께 지정합니다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -151,9 +155,9 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 4개 | `vitest.config.ts` |
+| Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

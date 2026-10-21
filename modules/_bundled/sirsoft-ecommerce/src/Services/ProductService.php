@@ -6,6 +6,7 @@ use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Search\SearchPagePolicy;
 use App\Support\ExtensionStoragePath;
+use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -1041,7 +1042,7 @@ class ProductService
                 $parts = [];
                 foreach ($optionValues as $item) {
                     $value = $item['value'] ?? [];
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? '') : $value;
+                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale, anyAsLast: false) ?? '') : $value;
                     if ($localizedValue !== '') {
                         $parts[] = $localizedValue;
                     }
@@ -1607,21 +1608,8 @@ class ProductService
             return '';
         }
 
-        $primary = config('app.locale', 'ko');
-        $fallback = config('app.fallback_locale', 'ko');
-
-        $resolved = $value[$primary] ?? $value[$fallback] ?? null;
-        if ($resolved === null) {
-            // 첫 번째 비어있지 않은 로케일 값
-            foreach ($value as $localized) {
-                if (is_string($localized) && $localized !== '') {
-                    $resolved = $localized;
-                    break;
-                }
-            }
-        }
-
-        return is_string($resolved) ? $resolved : '';
+        // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 비어 있지 않은 값 (#148)
+        return LocalizedValue::pick($value, (string) config('app.locale', 'ko')) ?? '';
     }
 
     /**

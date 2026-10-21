@@ -115,7 +115,8 @@ describe('ActionMenu', () => {
     await user.click(trigger);
 
     const menuItem = screen.getByText('삭제');
-    expect(menuItem.closest('[role="menuitem"]')).toHaveClass('text-red-600');
+    // 위험 항목 글자 red-700 — red-600 은 hover 바탕 red-50 위 4.36 으로 대비 4.5 미달
+    expect(menuItem.closest('[role="menuitem"]')).toHaveClass('text-red-700');
   });
 
   // @scenario space_below=enough

@@ -80,7 +80,7 @@
           <!-- 사유 라벨 + 취소일시 -->
           <div class="flex items-center justify-between gap-2">
             <span class="text-sm text-gray-900 dark:text-white font-medium">{{cancel.cancel_reason_label ?? ''}}</span>
-            <span data-if="{{cancel.cancelled_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{cancel.cancelled_at_formatted ?? ''}}</span>
+            <span data-if="{{cancel.cancelled_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-300 shrink-0">{{cancel.cancelled_at_formatted ?? ''}}</span>
           </div>
           <!-- 상세 사유 (기타 입력 시) -->
           <p data-if="{{cancel.cancel_reason_detail}}" class="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-line">{{cancel.cancel_reason_detail ?? ''}}</p>

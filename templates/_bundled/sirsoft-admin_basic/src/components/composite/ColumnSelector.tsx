@@ -471,7 +471,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                   }`}
                 >
                   {/* 체크박스에 열 이름을 달고 직접 켜고 끈다 — 종전에는 readOnly·pointer-events 없음이라 이름 없는
-                      체크박스로만 읽히고 키보드(Space)로는 조작할 수 없었다(7.1.0 J D-J13). 행 클릭과 겹치지 않게 전파를 막는다. */}
+                      체크박스로만 읽히고 키보드(Space)로는 조작할 수 없었다(7.1.0 실측). 행 클릭과 겹치지 않게 전파를 막는다. */}
                   <Checkbox
                     checked={isVisible}
                     disabled={isRequired}
@@ -484,7 +484,7 @@ export const ColumnSelector: React.FC<ColumnSelectorProps> = ({
                     {col.header}
                   </Span>
                   {isRequired && resolvedRequiredText && (
-                    <Span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
+                    <Span className="ml-auto text-xs text-gray-500 dark:text-gray-300">
                       {resolvedRequiredText}
                     </Span>
                   )}

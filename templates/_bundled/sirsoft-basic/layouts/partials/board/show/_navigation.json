@@ -21,19 +21,20 @@
         {
             "comment": "목록으로 버튼 — 상세 URL 에 실린 목록 상태(category/search/page/del/filters)를 그대로 목록으로 복귀 (45-1). shrink-0: 게시판명이 길어도 눌리지 않는다.",
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                        "path": "/board/{{route.slug}}",
                         "mergeQuery": true,
                         "query": {}
                     }
                 }
             ],
             "props": {
+                "href": "/board/{{route.slug}}",
+                "mergeQuery": true,
                 "className": "shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
             },
             "children": [
@@ -80,7 +81,7 @@
                 {
                     "comment": "이전글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{navigation?.data?.prev?.id}}",
                     "actions": [
                         {
@@ -117,6 +118,8 @@
                         }
                     ],
                     "props": {
+                        "href": "/board/{{route.slug}}/{{navigation.data.prev.id}}",
+                        "mergeQuery": true,
                         "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
                     },
                     "children": [
@@ -138,7 +141,7 @@
                 {
                     "comment": "다음글 버튼 - 아이콘 + 텍스트. 목록 상태(page/search/category/del/filters)를 형제 상세로 그대로 승계한다 (#75).",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{navigation?.data?.next?.id}}",
                     "actions": [
                         {
@@ -175,6 +178,8 @@
                         }
                     ],
                     "props": {
+                        "href": "/board/{{route.slug}}/{{navigation.data.next.id}}",
+                        "mergeQuery": true,
                         "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all shadow-sm cursor-pointer"
                     },
                     "children": [

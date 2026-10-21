@@ -16,7 +16,7 @@ description: |
   기존 키 → updateCustomKeyValue 현재 로케일만) / select(options) / boolean / icon(아이콘명 문자열).
   primary 필드(미지정 시 첫 필드)는 행 주 입력. 원시 string[] 항목은 primary 필드로 값 자체 편집.
 
- 정적-바인딩 가드: props[arrayProp] 가 `{{...}}` 데이터바인딩이거나 비-배열이면 편집
+  정적-바인딩 가드: props[arrayProp] 가 `{{...}}` 데이터바인딩이거나 비-배열이면 편집
   비대상 → "바인딩됨(코드 편집)" 디그레이드(덮어쓰기 위험 차단). 항목 텍스트 다국어는
   children/table 항목과 공용 모델(createCustomKey) SSoT.
 

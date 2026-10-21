@@ -3,15 +3,15 @@
   저장할지도 함께 기억한다. -->
 <partial description="Product Form - Description Section">
   <div data-ref="description" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.descriptionExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다 -->
         <set-state target="local" ui.descriptionExpanded="{{!_local.ui.descriptionExpanded}}"/>
       </on>
       <icon name="file-lines" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.description</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="description_body" data-if="{{_local.ui.descriptionExpanded !== false}}" class="row-stack">
       <div data-ref="description_editor_wrapper" class="{{_local.errors?.description ? 'border border-red-500 dark:border-red-500 rounded-lg overflow-hidden' : ''}}">
         <extension-point name="html_editor" data-ref="description_editor" :multilingual="true" value="{{_local.form?.description ?? ''}}" :rows="15" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.description" label="$t:sirsoft-ecommerce.admin.product.fields.description" disabled="{{_computed.isReadOnly}}" :showHtmlModeToggle="true" isHtml="{{(_local.form?.description_mode ?? 'text') === 'html'}}">

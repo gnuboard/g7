@@ -122,6 +122,10 @@ final class ActionHandlerManifest
         // engine-v1.68.0 — 진입점 액션에서 `event.stopPropagation()` 을 부른다.
         // 종전에는 엔진 소비처가 없어 죽은 키였고(S16 F4), 그래서 매니페스트에도 없었다.
         'stopPropagation',
+        // engine-v1.80.1 — 진입점 액션의 기본 동작 차단 방식. 생략 = 자동(실제 주소 `<a href>` 를
+        // 수정키·가운데 버튼 등 보통 클릭이 아니게 누르면 막지도 실행하지도 않아 새 탭으로 열린다),
+        // `true` = 언제나 막고 실행, `false` = 막지 않고 실행. 소비처: ActionDispatcher::createHandler.
+        'preventDefault',
     ];
 
     /**

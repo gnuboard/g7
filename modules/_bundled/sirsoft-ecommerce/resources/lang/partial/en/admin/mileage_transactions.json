@@ -39,6 +39,7 @@
   "sort": {
     "label": "Sort",
     "created_at_desc": "Newest",
+    "created_at_asc": "Oldest",
     "amount_desc": "Amount High",
     "amount_asc": "Amount Low"
   },

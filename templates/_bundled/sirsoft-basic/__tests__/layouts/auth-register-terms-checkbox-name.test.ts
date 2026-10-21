@@ -1,6 +1,6 @@
 /**
  * @file auth-register-terms-checkbox-name.test.ts
- * @description 가입 화면 필수 약관 체크박스의 접근 가능한 이름 (7.1.0 N O-N6)
+ * @description 가입 화면 필수 약관 체크박스의 접근 가능한 이름 (7.1.0 실측)
  *
  * 결함: 「이용약관」「개인정보처리방침」 필수 동의 체크박스가 이름 없이 읽혔다(스냅샷 `checkbox` 이름 공백).
  * 곁의 `<label>` 은 for/감싸기 연결이 없고, 안에 전문 보기 버튼이 있어 체크박스를 감쌀 수도 없다.

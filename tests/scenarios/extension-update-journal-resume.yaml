@@ -1,0 +1,71 @@
+# 시나리오 매니페스트 — 끊긴 확장 업데이트의 진행 기록(journal)과 중간 판 스텝 이어받기 (7.1.1 출시 전)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 고착 행 정리 판정 자체는 tests/scenarios/extension-stuck-update-recovery.yaml
+
+feature: extension_update_journal_resume
+
+description: |
+  업데이트는 DB 판을 새 판으로 적은 뒤 업그레이드 스텝을 돈다. 1.0.0 → 1.0.4 업데이트가 1.0.2 스텝 도중 죽으면 DB 판은 1.0.4 라
+  `--force` 재업데이트가 `from == to` 로 1.0.4 스텝만 돌았다 — 1.0.2·1.0.3 은 다시 돌 길이 없었다. 예외로 실패하면 반대로 판을
+  1.0.0 으로 되돌려 다음 시도가 이미 끝낸 1.0.1 부터 다시 돌았다. 파일을 바꾼 직후 죽으면 정리(활성화)가 파일 판·DB 판 불일치를
+  알리지 않았다.
+
+  고침: 업데이트마다 진행 기록(`ExtensionUpdateJournal` — 시작 판·목표 판·끝낸 스텝·파일 교체 여부)을 남긴다. 끝나지 않은 기록을
+  이어받으면 시작 판은 낮은 쪽, 끝낸 스텝은 그대로 두고, 멈춘 업데이트 정리(`StuckUpdateRecovery::recover`)는 기록의 시작 판으로
+  DB 판을 되돌린다. 판 전환을 끝내지 못한 확장의 정보는 DB 판과 「업데이트 있음」을 말하고, 다른 업데이트가 진행 중이라
+  거절된 명령은 복원 안내를 붙이지 않는다.
+
+  축 source 는 확장 종류, path 는 끊김·정리·조회가 일어나는 갈래다. 단위 갈래(journal_*·stuck_listing_judgement·
+  command_output_unfinished_hint)는 종류를 인자로만 받는 공용 도우미를 module 하나로 잰다.
+
+test_files:
+  - tests/Unit/Extension/ExtensionUpdateJournalTest.php
+  - tests/Feature/Extension/UnfinishedUpdateStepsResumeTest.php
+
+axes:
+  source: [module, plugin, template]
+  path:
+    # 단위 — 진행 기록·멈춤 판정·명령 출력 도우미
+    - journal_resume                              # 끝나지 않은 기록 이어받기
+    - journal_failure_settle                      # 예외 실패 뒤 기록 정리
+    - stuck_listing_judgement                     # 목록의 멈춤 판정(시간 조건 + 잠금)
+    - command_output_unfinished_hint              # 정리 뒤 명령 출력 안내
+    # 실제 업데이트 경로(가짜 확장 testmerge-*)
+    - update_failed_mid_steps_then_retry          # 스텝 예외 실패 → 재업데이트
+    - update_killed_mid_steps_then_force_update   # 스텝 도중 죽음 → --force 재업데이트
+    - update_killed_after_files_before_version    # 파일 교체 뒤·DB 판 기록 전 죽음 → 정리
+    - update_killed_before_files                  # 파일 교체 전 죽음 → 정리
+    - unfinished_version_change_info              # 판 전환 미완 확장의 정보·활성화 응답
+    - update_rejected_in_progress                 # 다른 업데이트 진행 중 거절된 명령 출력
+
+exclusions:
+  - { source: [plugin, template], path: [journal_resume, journal_failure_settle, stuck_listing_judgement, command_output_unfinished_hint],
+      reason: "진행 기록·멈춤 판정·출력 트레이트는 확장 종류를 문자열 인자로만 받는 공용 도우미 — 단위 시험은 module 하나로 잰다" }
+  - { source: [plugin, template], path: update_failed_mid_steps_then_retry,
+      reason: "미측정 — 스텝 예외 실패 뒤 재시도는 모듈 Manager 로만 잰다(플러그인·템플릿 같은 갈래는 이 시험 밖)" }
+  - { source: template, path: update_killed_mid_steps_then_force_update,
+      reason: "미측정 — 스텝 도중 죽음 뒤 --force 재업데이트는 모듈·플러그인 Manager 로 잰다(템플릿 같은 갈래는 이 시험 밖)" }
+  - { source: [module, plugin], path: [update_killed_after_files_before_version, update_killed_before_files],
+      reason: "정리 판정(StuckUpdateRecovery::recover)은 세 종류 공용 함수 — 템플릿 포함을 확인하려고 템플릿으로 잰다" }
+
+effects:
+  # 진행 기록(단위)
+  - resumed_journal_keeps_lowest_start_and_completed_steps   # 이어받으면 시작 판은 낮은 쪽, 끝낸 스텝 유지, 끝나면 기록 삭제
+  - failure_without_steps_discards_journal                   # 끝낸 스텝 없이 실패하면 기록을 지운다
+  - failure_with_steps_keeps_journal                         # 끝낸 스텝이 있으면 기록을 남긴다(파일은 되돌렸다고 표시)
+  - listing_stuck_flag_requires_stale_and_free_lock          # 멈춤 판정은 updating·600초 초과·잠금 비어 있음이 모두 필요
+  - activate_command_tells_to_finish_unfinished_update       # 판 전환 미완 정리는 활성화 명령에서 「업데이트를 다시 실행」을 안내
+  # 실제 업데이트 경로
+  - failed_update_keeps_completed_steps                      # 스텝 예외 실패 뒤 판은 시작 판, 기록에 끝낸 스텝이 남는다
+  - retry_runs_each_intermediate_step_exactly_once_in_order  # 재업데이트는 남은 스텝만 순서대로 한 번씩
+  - stuck_recovery_reverts_recorded_version_to_journal_start # 정리가 DB 판을 끊긴 업데이트의 시작 판으로 되돌린다
+  - force_update_runs_remaining_intermediate_steps_once_in_order  # --force 재업데이트가 못 끝낸 중간 판 스텝을 순서대로 한 번씩 돈다
+  - recovery_reports_unfinished_version_change               # 파일 교체 뒤 죽은 업데이트 정리는 판 전환 미완을 기록한다
+  - recovery_marks_update_available                          # 그 정리는 「업데이트 있음」으로 남겨 다음 업데이트가 판 전환을 마치게 한다
+  - recovery_discards_untouched_journal                      # 파일 교체 전 죽은 업데이트 정리는 판을 건드리지 않고 기록만 지운다
+  - extension_info_reports_recorded_version_and_update_available  # 정보·활성화 응답의 판은 DB 판, 파일 판은 file_version, update_available=true
+  - rejected_update_has_no_restore_hint                      # 진행 중 거절된 업데이트 명령은 거절 사유만, 복원 안내·꽉 찬 진행 표시줄 없음
+
+notes: |
+  두 시험 파일은 다른 작업자가 리팩터링 중인 `app/Extension/Helpers/ExtensionUpdateJournal.php`·`StuckUpdateRecovery.php` 를 잰다 —
+  이 매니페스트는 시험이 지금 단언하는 동작만 적었다. 종전 마커의 `source=module|plugin` 대안 표기(파서가 펼치지 않는다)는
+  docblock 1건 + 라인 주석 `// @scenario` 로 풀었다.

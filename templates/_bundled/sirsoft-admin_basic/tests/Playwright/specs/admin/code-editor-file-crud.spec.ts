@@ -129,7 +129,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일 조작', () => {
   });
 
   /**
-   * 새 폴더는 **서버를 부르지 않는다** — 폴더는 파일 이름의 `/` 일 뿐이다(PO 결정 D-2).
+   * 새 폴더는 **서버를 부르지 않는다** — 폴더는 파일 이름의 `/` 일 뿐이다.
    *
    * @scenario promise=virtual_folders, surface=browser
    *

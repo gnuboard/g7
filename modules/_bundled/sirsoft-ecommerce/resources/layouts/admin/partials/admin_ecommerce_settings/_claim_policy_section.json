@@ -365,6 +365,7 @@
                                     "props": {
                                         "type": "number",
                                         "min": "{{_local?.form?._meta?.limits?.claim_request_period_days_min ?? 1}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_label",
                                         "max": "{{_local?.form?._meta?.limits?.claim_request_period_days_max ?? 365}}",
                                         "step": "1",
                                         "className": "input w-20",
@@ -651,6 +652,7 @@
                                     "props": {
                                         "type": "number",
                                         "min": "{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_min ?? 1}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label",
                                         "max": "{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_max ?? 90}}",
                                         "step": "1",
                                         "className": "input w-20",
@@ -1027,6 +1029,7 @@
                                     "props": {
                                         "type": "number",
                                         "min": "{{_local?.form?._meta?.limits?.claim_max_images_min ?? 1}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_label",
                                         "max": "{{_local?.form?._meta?.limits?.claim_max_images_max ?? 20}}",
                                         "step": "1",
                                         "className": "input w-20",
@@ -1095,6 +1098,7 @@
                                     "props": {
                                         "type": "number",
                                         "min": "{{_local?.form?._meta?.limits?.claim_image_max_size_kb_min ?? 128}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label",
                                         "max": "{{_local?.form?._meta?.limits?.claim_image_max_size_kb_max ?? 20480}}",
                                         "step": "1",
                                         "className": "input w-28",
@@ -1177,7 +1181,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-info-soft"
+                                "className": "ecommerce-tone-info-soft text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.notice"
                         }

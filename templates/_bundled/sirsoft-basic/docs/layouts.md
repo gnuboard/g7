@@ -7,7 +7,7 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 194개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 193개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -17,7 +17,7 @@
 | `errors` | 6개 |
 | `mypage` | 15개 |
 | `page` | 1개 |
-| `partials` | 145개 |
+| `partials` | 144개 |
 | `search` | 1개 |
 | `shop` | 11개 |
 | `users` | 2개 |
@@ -179,7 +179,6 @@
 | `_modal_cart_option_change` | `partials` | partial | - |
 | `_modal_cart_unavailable` | `partials` | partial | - |
 | `_modal_coupon_download` | `partials` | partial | - |
-| `_modal_exclusive_coupon_confirm` | `partials` | partial | - |
 | `_modal_temp_order_not_found` | `partials` | partial | - |
 | `_admin_edit_link` | `partials` | partial | - |
 | `_header` | `partials` | partial | - |
@@ -233,6 +232,11 @@
 있으므로, `extends` 없이 독립 레이아웃을 새로 만들면 그 화면에서는 `toast` 나 `openModal` 이
 성공으로 기록되지만 **화면에는 아무것도 나타나지 않습니다**(호스트 컴포넌트가 마운트되지 않아서).
 새 화면은 특별한 이유가 없는 한 `_user_base` 를 상속합니다.
+
+게시판 API(`/api/modules/sirsoft-board/…`)를 부르는 데이터소스는 `auth_mode="optional"`(로그인했으면 토큰 전송)로 둡니다.
+게시판 메뉴·목록·최근/인기 글은 보는 사람의 열람 권한으로 결과를 거르므로, 토큰이 빠지면 로그인한 회원에게도
+비회원 기준 메뉴(회원용 게시판이 빠진 목록)가 나옵니다 — `_user_base` 의 `boards`(헤더·모바일 메뉴·마이페이지 게시판
+선택칸이 함께 읽는다)가 그 예입니다.
 
 `errors/` 6종(401·403·404·500·503·maintenance)은 코어가 오류 상황에서 직접 부릅니다. 401 은
 **로그인 리다이렉트를 여기서 구현하지 않습니다** — 코어 `TemplateApp.showRouteError` 가드가
@@ -399,6 +403,28 @@ id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 �
 지우거나 바꾸지 않는다. KG이니시스 엔화 결제수단 제한이 이미 그려진 버튼을 숨길 때 이것으로만 찾는다 — 사라지면 오류 없이
 화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md`
 「PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속」.
+
+### 게시판 확장 자리 (1.2.1+)
+
+확장이 템플릿을 고치지 않고 게시판 화면에 표시·입력칸을 붙이는 자리다. 이름은 바꾸지 않는다 — 확장은 이름으로만 찾는다.
+글쓰기·상세는 같은 조각을 게시판 유형별 갈래(basic·gallery·card) 세 곳에 include 하고, 목록은 세 유형 파일을 한 화면에 함께
+두므로 노드 id 를 겨냥하는 overlay 는 첫 갈래(basic)에만 들어간다. 그래서 이 자리들은 모두 확장점이고, 호스트에 `data-ref` 를
+달지 않는다(행·갈래마다 DOM id 가 중복된다). 호스트는 `class="contents"` + `data-extension-point="이름"` 이다.
+
+| 확장점 | 파일(`layouts/` 기준) | `context` |
+| --- | --- | --- |
+| `board_post_row_badges` | `partials/board/types/{basic(PC·모바일),card,gallery}/index` · `partials/board/popular/_popular_item` · `partials/home/{_recent_posts,_board_summary}` · `users/{posts,show}` · `partials/mypage/board/_my_posts` · `partials/mypage/scrap/_list`(PC·모바일) · `partials/search/posts/{_section,_list}` | `board_list` · `popular` · `home_recent` · `home_board_summary` · `user_posts` · `user_profile_recent` · `mypage_posts` · `mypage_scrap` · `search_all` · `search_posts` |
+| `board_post_header_badges` | `partials/board/types/basic/show`(제목 `h1` 바로 뒤) | `board_show` |
+| `board_comment_row_badges` | `partials/board/show/_comment_item` · `partials/mypage/board/_my_comments` | `board_show_comment` · `mypage_comments` |
+| `board_post_form_top` · `board_post_form_bottom` | `partials/board/form/_post_form`(오류 상자 다음 · 단추 줄 앞) | — (`mode`) |
+
+- 같은 파일의 기존 id `parent_post_card`·`content_section`·`parent_post_html_content` 는 세 갈래에 중복되므로 overlay 로 겨냥하면
+  basic 게시판에만 닿는다(구조는 유지한다). 그 자리 대신 위 확장점을 쓴다.
+- 목록 검색 줄의 `board_search_field_select` 도 세 유형 파일(`partials/board/types/{basic,card,gallery}/index`)에 같은 이름으로
+  있어 overlay 로 겨냥하면 basic 목록에만 닿는다. 검색 줄에는 확장 자리를 따로 열지 않았다.
+- 목록 행에 자리를 더 둘 때는 제목 `span`(`truncate`) **밖 뒤**에 둔다 — 안에 두면 배지가 잘린다.
+- props 계약·`context` 의미는 코어 `docs/extension/layout-extensions.md` 「게시판 확장 자리 5종의 props」 와
+  `modules/_bundled/sirsoft-board/docs/extension-points.md` 「사용자 화면 자리」 가 원문이다.
 
 ## 이관 원문 상세
 
@@ -568,8 +594,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _checkout_payment.g7.html (결제 수단)
 │   │       ├── _checkout_summary.g7.html (주문 요약)
 │   │       ├── _modal_address_manage.g7.html (배송지 관리)
-│   │       ├── _modal_coupon_download.g7.html (쿠폰 다운로드)
-│   │       └── _modal_exclusive_coupon_confirm.g7.html (전용 쿠폰 확인)
+│   │       └── _modal_coupon_download.g7.html (쿠폰 다운로드)
 │   ├── order_complete.g7.html (주문 완료)
 │   ├── guest_order_form.g7.html (비회원 주문 조회 폼)
 │   ├── guest_order_show.g7.html (비회원 주문 상세)

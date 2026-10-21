@@ -3,7 +3,10 @@
 namespace App\Extension\Cache;
 
 use App\Contracts\Extension\CacheInterface;
+use Illuminate\Cache\Lock;
 use Illuminate\Cache\Repository;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -337,9 +340,10 @@ abstract class AbstractCacheDriver implements CacheInterface
      *
      * 로그 폭주 방지: 같은 (연산, 예외 메시지) 조합은 프로세스당 1회만 기록한다.
      *
-     * @param  string  $operation  실패한 연산 (put/forget/putMany/remember/index)
+     * @param  string  $operation  실패한 연산 (put/forget/putMany/remember/index/index-lock)
      * @param  string  $key  대상 키 (진단용)
      * @param  \Throwable  $e  원인 예외
+     * @return void 반환값 없음
      */
     protected function warnWriteFailure(string $operation, string $key, \Throwable $e): void
     {
@@ -375,12 +379,79 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     private function recordKeyTags(string $resolvedKey, array $tags): void
     {
-        $indexKey = $this->getIndexKey();
-        $index = $this->store()->get($indexKey, []);
-        $index[$resolvedKey] = array_values(array_unique(
-            array_merge($index[$resolvedKey] ?? [], $tags)
-        ));
-        $this->store()->put($indexKey, $index, 86400 * 30); // 30일
+        $this->withIndexLock(function () use ($resolvedKey, $tags): void {
+            $indexKey = $this->getIndexKey();
+            $index = $this->store()->get($indexKey, []);
+            $index[$resolvedKey] = array_values(array_unique(
+                array_merge($index[$resolvedKey] ?? [], $tags)
+            ));
+            $this->store()->put($indexKey, $index, 86400 * 30); // 30일
+        });
+    }
+
+    /**
+     * 키 인덱스를 고치는 동안 잠금을 겁니다.
+     *
+     * 인덱스 갱신은 「읽기 → 고치기 → 쓰기」라 여러 요청이 동시에 고치면 서로의 기록을 덮어써
+     * 일부 키가 인덱스에서 빠진다. 빠진 키는 태그 비우기로 지워지지 않아, 게시판을 만들어도 메뉴
+     * 캐시가 TTL(최대 하루) 동안 예전 값으로 남았다(실측: 8 프로세스 동시 저장 → 인덱스 1~3개).
+     *
+     * 저장소가 잠금을 지원할 때만 건다. 잠금을 2초 안에 얻지 못하거나 잠금 자체가 실패하면
+     * 경고를 남기고 잠금 없이 진행한다 — 캐시 쓰기 실패와 같은 fail-soft 태도다(잠금 장애가
+     * 화면 장애가 되면 안 된다).
+     *
+     * @param  callable  $mutate  인덱스를 읽고 고쳐 쓰는 콜백
+     * @return mixed 콜백 반환값
+     */
+    private function withIndexLock(callable $mutate): mixed
+    {
+        $store = $this->store()->getStore();
+
+        if (! $store instanceof LockProvider) {
+            return $mutate();
+        }
+
+        try {
+            $lock = $store->lock($this->getIndexKey().':lock', 5);
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('index-lock', $this->getIndexKey(), $e);
+
+            return $mutate();
+        }
+
+        // 콜백이 시작됐는지·끝났는지로 예외의 출처를 가른다 — 잠금을 얻는 중의 오류는 잠금 없이 다시 고치고,
+        // 콜백 자체의 오류는 그대로 올려 보내고(두 번 고치지 않는다), 고친 뒤 잠금 해제 오류는 결과를 살린다.
+        $started = false;
+        $done = false;
+        $result = null;
+        $guarded = function () use ($mutate, &$started, &$done, &$result) {
+            $started = true;
+            $result = $mutate();
+            $done = true;
+
+            return $result;
+        };
+
+        try {
+            // 기본 재시도 간격(250ms)은 2초 대기에 8번뿐이다 — 인덱스 갱신은 짧으니 촘촘히 다시 묻는다
+            if ($lock instanceof Lock) {
+                $lock->betweenBlockedAttemptsSleepFor(10);
+            }
+
+            return $lock->block(2, $guarded);
+        } catch (LockTimeoutException $e) {
+            $this->warnWriteFailure('index-lock', $this->getIndexKey(), $e);
+
+            return $mutate();
+        } catch (\Throwable $e) {
+            if ($started && ! $done) {
+                throw $e;
+            }
+
+            $this->warnWriteFailure('index-lock', $this->getIndexKey(), $e);
+
+            return $done ? $result : $mutate();
+        }
     }
 
     /**
@@ -391,16 +462,18 @@ abstract class AbstractCacheDriver implements CacheInterface
     private function flushByIndex(): bool
     {
         try {
-            $indexKey = $this->getIndexKey();
-            $index = $this->store()->get($indexKey, []);
+            return $this->withIndexLock(function (): bool {
+                $indexKey = $this->getIndexKey();
+                $index = $this->store()->get($indexKey, []);
 
-            foreach (array_keys($index) as $key) {
-                $this->store()->forget($key);
-            }
+                foreach (array_keys($index) as $key) {
+                    $this->store()->forget($key);
+                }
 
-            $this->store()->forget($indexKey);
+                $this->store()->forget($indexKey);
 
-            return true;
+                return true;
+            });
         } catch (\Throwable $e) {
             $this->warnWriteFailure('flush', $this->getIndexKey(), $e);
 
@@ -417,20 +490,22 @@ abstract class AbstractCacheDriver implements CacheInterface
     private function flushTagsByIndex(array $tags): bool
     {
         try {
-            $indexKey = $this->getIndexKey();
-            $index = $this->store()->get($indexKey, []);
-            $tagsSet = array_flip($tags);
+            return $this->withIndexLock(function () use ($tags): bool {
+                $indexKey = $this->getIndexKey();
+                $index = $this->store()->get($indexKey, []);
+                $tagsSet = array_flip($tags);
 
-            foreach ($index as $key => $keyTags) {
-                if (array_intersect_key(array_flip($keyTags), $tagsSet)) {
-                    $this->store()->forget($key);
-                    unset($index[$key]);
+                foreach ($index as $key => $keyTags) {
+                    if (array_intersect_key(array_flip($keyTags), $tagsSet)) {
+                        $this->store()->forget($key);
+                        unset($index[$key]);
+                    }
                 }
-            }
 
-            $this->store()->put($indexKey, $index, 86400 * 30);
+                $this->store()->put($indexKey, $index, 86400 * 30);
 
-            return true;
+                return true;
+            });
         } catch (\Throwable $e) {
             $this->warnWriteFailure('flushTags', implode(',', $tags), $e);
 

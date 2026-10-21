@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * 관리자 헤더 알림 센터의 읽음·삭제 권한 (G21).
+ * 관리자 헤더 알림 센터의 읽음·삭제 권한 (7.1.0 abilities 게이트 점검).
  *
  * 알림 컬렉션은 회원 알림함과 공용이라 회원 알림 권한으로 abilities 를 싣는다. 관리자 알림 목록은
  * 관리자 알림 라우트(core.notifications.update/delete)와 같은 판정으로 덮어써야 헤더가 버튼을 잠근다.
@@ -67,7 +67,7 @@ class AdminNotificationAbilitiesTest extends TestCase
     }
 
     /**
-     * 목록 응답에 읽음·삭제 권한(abilities)이 실린다 — 읽기만 가진 관리자는 둘 다 false (G21)
+     * 목록 응답에 읽음·삭제 권한(abilities)이 실린다 — 읽기만 가진 관리자는 둘 다 false
      *
      * 헤더 알림 센터는 이 값으로 「모두 읽음」·삭제 버튼과 닫을 때의 자동 읽음 처리를 끈다.
      * 서버 쓰기 라우트는 같은 권한(core.notifications.update/delete)으로 403 을 낸다.

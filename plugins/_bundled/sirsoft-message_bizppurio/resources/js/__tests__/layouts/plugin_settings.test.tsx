@@ -30,18 +30,22 @@ import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtil
 const root = layout as unknown as AnyNode;
 
 describe('plugin_settings.json — 레이아웃 메타/권한', () => {
+    /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */
     it('layout_name 이 plugin_settings 이다', () => {
         expect((root as { layout_name?: string }).layout_name).toBe('plugin_settings');
     });
 
+    /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */
     it('_admin_base 를 상속한다', () => {
         expect((root as { extends?: string }).extends).toBe('_admin_base');
     });
 
+    /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */
     it('core.plugins.update 권한을 요구한다', () => {
         expect((root as { permissions?: string[] }).permissions).toContain('core.plugins.update');
     });
 
+    /** @effects layout_meta_extends_admin_base_with_plugins_update_permission */
     it('settings 데이터소스가 코어 플러그인 설정 API 를 조회한다', () => {
         const sources = (root as { data_sources?: AnyNode[] }).data_sources ?? [];
         const settings = sources.find((s) => s.id === 'settings');
@@ -52,6 +56,7 @@ describe('plugin_settings.json — 레이아웃 메타/권한', () => {
 });
 
 describe('plugin_settings.json — 자동바인딩', () => {
+    /** @effects settings_form_auto_binds_with_track_changes */
     it('환경설정 탭 패널이 dataKey=form + trackChanges 로 자동바인딩한다', () => {
         const container = findById(root, 'connection_tab_panel');
         expect(container).toBeTruthy();
@@ -61,6 +66,7 @@ describe('plugin_settings.json — 자동바인딩', () => {
 });
 
 describe('plugin_settings.json — 섹션', () => {
+/** @effects info_panel_test_mode_api_sending_report_sections_present */
     it.each([
         ['preparation_notice', '사용 전 준비 안내(상단)'],
         ['section_api', 'API 연동'],
@@ -70,6 +76,7 @@ describe('plugin_settings.json — 섹션', () => {
         expect(findById(root, id)).toBeTruthy();
     });
 
+    /** @effects info_panel_test_mode_api_sending_report_sections_present */
     it('준비 안내 박스는 총괄 안내(intro)와 콘솔 링크를 구분선 위에 먼저 노출한다', () => {
         const notice = findById(root, 'preparation_notice');
         const raw = JSON.stringify(notice);
@@ -84,6 +91,7 @@ describe('plugin_settings.json — 섹션', () => {
         expect(introIdx).toBeLessThan(smsIdx);
     });
 
+    /** @effects info_panel_test_mode_api_sending_report_sections_present */
     it('채널별 준비 목록은 PC(lg 이상) 2단, 모바일 1단 그리드로 배치된다', () => {
         // 문자·카카오 블록을 감싼 컨테이너가 grid grid-cols-1 lg:grid-cols-2 여야 한다.
         // sms_label 을 담은 블록의 부모(구분선 아래 컨테이너)에서 grid 클래스를 확인.
@@ -94,6 +102,7 @@ describe('plugin_settings.json — 섹션', () => {
         expect(raw).toContain('lg:grid-cols-2');
     });
 
+    /** @effects info_panel_test_mode_api_sending_report_sections_present */
     it('문자·카카오 준비 블록은 카드(배경+테두리)로 감싸고 채널 아이콘을 라벨에 붙인다', () => {
         const notice = findById(root, 'preparation_notice');
         const raw = JSON.stringify(notice);
@@ -105,6 +114,7 @@ describe('plugin_settings.json — 섹션', () => {
         expect(raw).toContain('"comment-dots"');
     });
 
+    /** @effects test_mode_card_has_is_test_mode_toggle */
     it('검수 모드 카드에 is_test_mode Toggle 이 있다', () => {
         const card = findById(root, 'test_mode_card');
         expect(card).toBeTruthy();
@@ -113,6 +123,7 @@ describe('plugin_settings.json — 섹션', () => {
         expect(raw).toContain('is_test_mode');
     });
 
+    /** @effects test_mode_card_shows_separate_account_notice_always */
     it('검수 모드 카드에 검수/운영 계정 분리 권장 안내가 상시 노출된다', () => {
         // 검수 켜짐/꺼짐과 무관하게(if 조건 없이) 카드 안에 계정 분리 권장 문구가 있어야 한다.
         const card = findById(root, 'test_mode_card') as { if?: string } | null;
@@ -122,6 +133,7 @@ describe('plugin_settings.json — 섹션', () => {
         expect(raw).toContain('settings.test_mode.account_notice');
     });
 
+    /** @effects live_mode_warning_shown_when_test_mode_off */
     it('운영 모드(검수 off) 경고 박스가 조건부로 존재한다', () => {
         const warning = findById(root, 'live_mode_warning');
         expect(warning).toBeTruthy();
@@ -130,6 +142,7 @@ describe('plugin_settings.json — 섹션', () => {
 });
 
 describe('plugin_settings.json — 입력 필드 6종', () => {
+/** @effects five_input_fields_bound_by_name */
     it.each([
         'bizppurio_id',
         'password',
@@ -140,6 +153,7 @@ describe('plugin_settings.json — 입력 필드 6종', () => {
         expect(findInputByName(root, name)).toBeTruthy();
     });
 
+    /** @effects credential_fields_masked_as_password */
     it('크리덴셜(password/api_key/sender_key)은 type=password 로 마스킹된다', () => {
         for (const cred of ['password', 'api_key', 'sender_key']) {
             const input = findInputByName(root, cred);
@@ -147,6 +161,7 @@ describe('plugin_settings.json — 입력 필드 6종', () => {
         }
     });
 
+    /** @effects plain_fields_use_text_input */
     it('bizppurio_id/sender_number 는 일반 text 입력이다', () => {
         for (const field of ['bizppurio_id', 'sender_number']) {
             const input = findInputByName(root, field);
@@ -157,12 +172,14 @@ describe('plugin_settings.json — 입력 필드 6종', () => {
 });
 
 describe('plugin_settings.json — 연결 확인 (§529)', () => {
+    /** @effects connection_check_field_is_separate_node_from_password_field */
     it('field_connection_check 필드가 field_password 와 별개 노드로 존재한다', () => {
         const field = findById(root, 'field_connection_check');
         expect(field).toBeTruthy();
         expect(field).not.toBe(findById(root, 'field_password'));
     });
 
+    /** @effects connection_check_field_is_separate_node_from_password_field */
     it('연결 확인 버튼이 설정 행과 동일한 grid-cols-12(4/8) + 우측 정렬 패턴을 따른다', () => {
         const field = findById(root, 'field_connection_check');
         const raw = JSON.stringify(field);
@@ -173,6 +190,7 @@ describe('plugin_settings.json — 연결 확인 (§529)', () => {
         expect(raw).toContain('lg:justify-end');
     });
 
+    /** @effects connection_check_button_shows_plug_icon_idle_spinner_icon_loading */
     it('버튼은 대기 상태 plug, 로딩 상태 spinner(animate-spin) 아이콘을 조건부로 갖는다', () => {
         const btn = findById(root, 'connection_check_button');
         const raw = JSON.stringify(btn);
@@ -182,6 +200,7 @@ describe('plugin_settings.json — 연결 확인 (§529)', () => {
         expect(raw).toContain('_local.tokenChecking');
     });
 
+    /** @effects connection_check_calls_token_check_api_only_when_no_unsaved_changes */
     it('버튼 클릭은 hasChanges=false 일 때만 apiCall 로 /admin/token/check 를 POST 한다', () => {
         const btn = findById(root, 'connection_check_button');
         const raw = JSON.stringify(btn);
@@ -195,6 +214,7 @@ describe('plugin_settings.json — 연결 확인 (§529)', () => {
         expect(apiCallAction?.if).toContain('!_local.hasChanges');
     });
 
+    /** @effects connection_check_shows_unsaved_changes_toast_without_api_call_when_has_changes */
     it('hasChanges=true 일 때는 apiCall 없이 unsaved_changes toast 만 실행한다', () => {
         const btn = findById(root, 'connection_check_button');
         const actions = (btn as { actions?: AnyNode[] } | null)?.actions ?? [];
@@ -205,6 +225,7 @@ describe('plugin_settings.json — 연결 확인 (§529)', () => {
         expect(JSON.stringify(guardToast)).toContain('connection_check.unsaved_changes');
     });
 
+    /** @effects connection_check_result_shown_via_toast_only_no_persistent_indicator */
     it('성공/실패 결과는 화면 상시 표시 없이 toast 로만 안내한다', () => {
         const btn = findById(root, 'connection_check_button');
         const raw = JSON.stringify(btn);
@@ -253,6 +274,7 @@ describe('plugin_settings.json — 연결 확인 버튼의 hasChanges 초기 상
         return toasts.map((t) => t.message);
     }
 
+    /** @effects connection_check_calls_token_check_api_only_when_no_unsaved_changes */
     it('로드 직후(hasChanges 미설정) 클릭하면 hasChanges 가드를 통과해 실제 API 응답까지 도달한다', async () => {
         const registry = createMockComponentRegistryWithBasics();
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
@@ -275,6 +297,7 @@ describe('plugin_settings.json — 연결 확인 버튼의 hasChanges 초기 상
         utils.cleanup();
     });
 
+    /** @effects connection_check_shows_unsaved_changes_toast_without_api_call_when_has_changes */
     it('hasChanges=true 로 세팅된 뒤 클릭하면 API 호출 없이 미저장 경고 toast 만 뜬다', async () => {
         const registry = createMockComponentRegistryWithBasics();
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
@@ -292,6 +315,7 @@ describe('plugin_settings.json — 연결 확인 버튼의 hasChanges 초기 상
 });
 
 describe('plugin_settings.json — 비밀번호 필드 라벨 (§529)', () => {
+    /** @effects password_field_label_distinguishes_module_password_from_g7_login_password */
     it('비밀번호 필드 라벨이 "비즈뿌리오 모듈 비밀번호"로 G7 로그인 비밀번호와 구분된다', () => {
         expect((ko as Record<string, any>).settings.fields.password.label).toBe('비즈뿌리오 모듈 비밀번호');
         expect((en as Record<string, any>).settings.fields.password.label).toBe('Bizppurio Module Password');
@@ -299,6 +323,7 @@ describe('plugin_settings.json — 비밀번호 필드 라벨 (§529)', () => {
 });
 
 describe('plugin_settings.json — 리포트 수신 설정', () => {
+    /** @effects report_section_shows_readonly_url_with_copy_button */
     it('report_url 데이터소스가 조회 엔드포인트를 호출한다', () => {
         const sources = (root as { data_sources?: AnyNode[] }).data_sources ?? [];
         const reportUrl = sources.find((s) => s.id === 'report_url');
@@ -306,6 +331,7 @@ describe('plugin_settings.json — 리포트 수신 설정', () => {
         expect(reportUrl?.endpoint).toBe('/api/plugins/sirsoft-message_bizppurio/admin/report-url');
     });
 
+    /** @effects report_section_shows_readonly_url_with_copy_button */
     it('리포트 섹션에 조회값(fallback 웹훅 경로) readonly 표시 + 복사 버튼이 있다', () => {
         const section = findById(root, 'report_section');
         const raw = JSON.stringify(section);
@@ -319,6 +345,7 @@ describe('plugin_settings.json — 리포트 수신 설정', () => {
 });
 
 describe('plugin_settings.json — 필드 인라인 에러', () => {
+/** @effects inline_error_node_present_per_field */
     it.each([
         'bizppurio_id',
         'password',
@@ -333,11 +360,13 @@ describe('plugin_settings.json — 필드 인라인 에러', () => {
 });
 
 describe('plugin_settings.json — 저장 버튼', () => {
+    /** @effects save_button_disabled_without_changes */
     it('저장 버튼이 hasChanges 없으면 비활성화된다', () => {
         const save = findById(root, 'save_button');
         expect((save?.props as { disabled?: string } | undefined)?.disabled).toContain('!_local.hasChanges');
     });
 
+    /** @effects save_puts_to_core_plugin_settings_api */
     it('저장은 코어 설정 API 로 PUT 한다', () => {
         const text = JSON.stringify(findById(root, 'save_button'));
         expect(text).toContain('/api/admin/plugins/{{route.identifier}}/settings');
@@ -345,12 +374,17 @@ describe('plugin_settings.json — 저장 버튼', () => {
         expect(text).toContain('{{_local.form}}');
     });
 
+    /** @effects only_registered_handlers_used, settings_load_failure_shows_error_page */
     it('등록된 핸들러만 사용한다 (오탈자 핸들러 없음)', () => {
         const handlers = collectHandlers(layout);
         const allowed = [
             'apiCall', 'setState', 'toast', 'navigate', 'sequence', 'switch',
             'refetchDataSource', 'scrollIntoView',
             'openModal', 'closeModal', 'replaceUrl', 'suppress',
+            // 설정을 받지 못하면 본문 오류 화면(빈 폼 저장 차단) — 코어 등록 핸들러
+            'showErrorPage',
+            // 처음 받기/다시 받기 실패 가르기(`error.refetch`) — 코어 등록 핸들러
+            'conditions',
             'sirsoft-message_bizppurio.uploadTemplateImage',
             'sirsoft-message_bizppurio.insertVariable',
             'sirsoft-message_bizppurio.copyToClipboard',
@@ -362,6 +396,7 @@ describe('plugin_settings.json — 저장 버튼', () => {
 });
 
 describe('plugin_settings.json — i18n 키 정합', () => {
+    /** @effects all_referenced_i18n_keys_exist_in_ko_and_en */
     it('레이아웃이 참조하는 $t: 키가 ko/en 다국어 파일에 모두 존재한다', () => {
         const keys = collectI18nKeys(layout);
         expect(keys.length).toBeGreaterThan(0);
@@ -402,12 +437,14 @@ describe('plugin_settings.json — 탭 전환', () => {
         return handlers;
     };
 
+    /** @effects tab_buttons_use_navigate_not_replaceurl */
     it('환경설정 탭 버튼은 navigate 로 화면을 전환한다 (replaceUrl 금지)', () => {
         const handlers = tabButtonHandlers('tab_connection');
         expect(handlers).toContain('navigate');
         expect(handlers).not.toContain('replaceUrl');
     });
 
+    /** @effects tab_buttons_use_navigate_not_replaceurl */
     it('알림톡 템플릿 탭 버튼은 navigate 로 화면을 전환한다 (replaceUrl 금지)', () => {
         const handlers = tabButtonHandlers('tab_templates');
         expect(handlers).toContain('navigate');
@@ -419,6 +456,7 @@ describe('plugin_settings.json — templates 탭 readiness 게이트 (#597 재�
     // 구 조회 전용 목록(alimtalk_templates + templateListError 배너)은 #597 에서
     // DB 목록 관리 화면(bizppurio_templates_list)으로 교체됐다. 관리 화면 상세 배선은
     // plugin_settings_manage.test.tsx 가 담당하고, 여기서는 탭 골격만 잠근다.
+    /** @effects templates_tab_readiness_gate_mutually_exclusive */
     it('templates_readiness 데이터소스가 templates 탭에서만 조회된다', () => {
         const sources = (root as { data_sources?: AnyNode[] }).data_sources ?? [];
         const ds = sources.find((s) => s.id === 'templates_readiness') as
@@ -429,6 +467,7 @@ describe('plugin_settings.json — templates 탭 readiness 게이트 (#597 재�
         expect(ds?.if).toContain("query.tab ?? 'connection') === 'templates'");
     });
 
+    /** @effects templates_tab_readiness_gate_mutually_exclusive */
     it('readiness 안내(!ready)와 관리 뷰(ready)가 상호배타로 존재한다', () => {
         const notice = findById(layout, 'templates_readiness') as Record<string, unknown> | null;
         const manageView = findById(layout, 'templates_manage_view') as Record<string, unknown> | null;

@@ -112,7 +112,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{user.data?.marketing_consent_at}}",
                                                                     "props": {
-                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
                                                                     },
                                                                     "text": "{{user.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}"
                                                                 },
@@ -121,7 +121,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{!user.data?.marketing_consent_at}}",
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                        "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.not_agreed"
                                                                 }
@@ -187,7 +187,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{user.data?.[channel.key + '_at']}}",
                                                                     "props": {
-                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
                                                                     },
                                                                     "text": "{{user.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}"
                                                                 },
@@ -196,7 +196,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{!user.data?.[channel.key + '_at']}}",
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                        "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.not_agreed"
                                                                 }
@@ -259,7 +259,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{user.data?.third_party_consent_at}}",
                                                                     "props": {
-                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
                                                                     },
                                                                     "text": "{{user.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}"
                                                                 },
@@ -268,7 +268,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{!user.data?.third_party_consent_at}}",
                                                                     "props": {
-                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                        "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.not_agreed"
                                                                 }
@@ -337,7 +337,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{user.data?.info_disclosure_at}}",
                                                                             "props": {
-                                                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
                                                                             },
                                                                             "text": "{{user.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}"
                                                                         },
@@ -346,7 +346,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{!user.data?.info_disclosure_at}}",
                                                                             "props": {
-                                                                                "className": "text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                                "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.not_agreed"
                                                                         }
@@ -368,7 +368,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500 block ml-8"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 block ml-8"
                                                     },
                                                     "text": "$t:sirsoft-marketing.info_disclosure_warning"
                                                 }

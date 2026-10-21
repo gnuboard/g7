@@ -22,7 +22,7 @@
             <span class="text-primary font-medium">{{version.created_at}}</span>
             <span data-if="{{idx === 0}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:admin.templates.modals.version_history.latest</span>
           </div>
-          <button data-if="{{idx !== 0}}" class="flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoring || current_layout?.data?.abilities?.can_update !== true}}">
+          <button type="button" data-if="{{idx !== 0}}" class="flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoring || current_layout?.data?.abilities?.can_update !== true}}">
             <on type="click">
               <!-- 되돌린 뒤 **편집기 내용까지 갈아 끼운다** — 서버만 바꾸고 두면 화면의 편집기에는 되돌리기 전 글이 남아, 다음 저장이 방금 되돌린 것을 도로 덮는다. 판본 목록도 다시 받는다(되돌리기 자체가 새 판본을 만든다). -->
               <sequence>
@@ -53,7 +53,7 @@
           </button>
         </div>
         <div class="flex-center gap-4 mt-2 text-sm">
-          <span class="text-green-600 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
+          <span class="text-green-700 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
           <span class="text-red-600 dark:text-red-400">- {{version.changes_summary?.removed_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
           <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.version_history.chars)</span>
         </div>

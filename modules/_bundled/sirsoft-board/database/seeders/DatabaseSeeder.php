@@ -49,12 +49,12 @@ class DatabaseSeeder extends Seeder
     {
         $this->command->info('');
         $this->command->info('========================================');
-        $this->command->info(' 게시판 모듈 시더 시작');
+        $this->command->info(' '.__('sirsoft-board::messages.seeders.database.start'));
         $this->command->info('========================================');
         $this->command->info('');
 
         // 설치 필수 시더 (항상 실행)
-        $this->command->info('[설치] 게시판 타입 / 반응 유형 생성');
+        $this->command->info(__('sirsoft-board::messages.seeders.database.install_types'));
         $this->call([
             BoardTypeSeeder::class,
             BoardReactionTypeSeeder::class,
@@ -63,47 +63,47 @@ class DatabaseSeeder extends Seeder
 
         // 샘플 시더 (--sample 옵션 시에만 실행)
         if ($this->shouldIncludeSample()) {
-            $this->command->info('--- 게시판 샘플 시더 실행 ---');
+            $this->command->info('--- '.__('sirsoft-board::messages.seeders.database.sample_start').' ---');
             $this->command->info('');
 
             // 1. 게시판 샘플 생성 (테이블 + 권한 자동, count 불필요)
-            $this->command->info('[1/7] 게시판 샘플 생성');
+            $this->command->info('[1/7] '.__('sirsoft-board::messages.seeders.database.steps.boards'));
             $this->call(Sample\BoardSampleSeeder::class);
             $this->command->info('');
 
             // 2. 게시글/댓글 샘플 생성 (count-aware)
-            $this->command->info('[2/7] 게시글/댓글 샘플 생성');
+            $this->command->info('[2/7] '.__('sirsoft-board::messages.seeders.database.steps.posts'));
             $this->callWithCounts(Sample\PostSampleSeeder::class);
             $this->command->info('');
 
             // 3. 반응·스크랩 샘플 생성 (게시글·댓글 뒤)
-            $this->command->info('[3/7] 반응·스크랩 샘플 생성');
+            $this->command->info('[3/7] '.__('sirsoft-board::messages.seeders.database.steps.reactions_scraps'));
             $this->call(Sample\ReactionScrapSampleSeeder::class);
             $this->command->info('');
 
             // 4. 신고 샘플 생성 (count 불필요)
-            $this->command->info('[4/7] 신고 샘플 생성');
+            $this->command->info('[4/7] '.__('sirsoft-board::messages.seeders.database.steps.reports'));
             $this->call(Sample\ReportSampleSeeder::class);
             $this->command->info('');
 
             // 5. 알림 발송 이력 샘플 (count-aware)
-            $this->command->info('[5/7] 알림 발송 이력 샘플 생성');
+            $this->command->info('[5/7] '.__('sirsoft-board::messages.seeders.database.steps.notification_logs'));
             $this->callWithCounts(Sample\NotificationLogSeeder::class);
             $this->command->info('');
 
             // 6. 본인인증 이력 샘플 (count-aware)
-            $this->command->info('[6/7] 본인인증 이력 샘플 생성');
+            $this->command->info('[6/7] '.__('sirsoft-board::messages.seeders.database.steps.identity_logs'));
             $this->callWithCounts(Sample\IdentityVerificationLogSeeder::class);
             $this->command->info('');
 
             // 7. 활동 로그 샘플 (모든 샘플 데이터 생성 후 마지막에 실행)
-            $this->command->info('[7/7] 활동 로그 샘플 생성');
+            $this->command->info('[7/7] '.__('sirsoft-board::messages.seeders.database.steps.activity_logs'));
             $this->call(ActivityLogSampleSeeder::class);
             $this->command->info('');
         }
 
         $this->command->info('========================================');
-        $this->command->info(' 게시판 모듈 시더 완료!');
+        $this->command->info(' '.__('sirsoft-board::messages.seeders.database.done'));
         $this->command->info('========================================');
         $this->command->info('');
     }

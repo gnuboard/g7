@@ -69,6 +69,7 @@
     <field name="periodSource" value="analytics_report"/>
     <field name="showUnit" :value="false"/>
   </init-local>
+  <computed name="tabQuery">{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page'].filter(k =&gt; query[k]).map(k =&gt; '&amp;' + k + '=' + encodeURIComponent(query[k])).join('')}}</computed>
   <computed name="reportName">{{({popular: 'page_url', entry: 'entry_pages', exit: 'exit_pages', titles: 'page_title', durations: 'visit_duration', depths: 'visit_pages'})[query.tab || 'popular'] || 'page_url'}}</computed>
   <computed name="csvUrl">{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
   <computed name="csvFilename">{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
@@ -101,12 +102,12 @@
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
       <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'popular'}}" variant="underline">
         <prop name="tabs">
-          <item id="popular" label="$t:admin.analytics.pages.tabs.popular"/>
-          <item id="entry" label="$t:admin.analytics.pages.tabs.entry"/>
-          <item id="exit" label="$t:admin.analytics.pages.tabs.exit"/>
-          <item id="titles" label="$t:admin.analytics.pages.tabs.titles"/>
-          <item id="durations" label="$t:admin.analytics.pages.tabs.durations"/>
-          <item id="depths" label="$t:admin.analytics.pages.tabs.depths"/>
+          <item id="popular" href="/admin/analytics/pages?tab=popular{{_computed.tabQuery}}" label="$t:admin.analytics.pages.tabs.popular"/>
+          <item id="entry" href="/admin/analytics/pages?tab=entry{{_computed.tabQuery}}" label="$t:admin.analytics.pages.tabs.entry"/>
+          <item id="exit" href="/admin/analytics/pages?tab=exit{{_computed.tabQuery}}" label="$t:admin.analytics.pages.tabs.exit"/>
+          <item id="titles" href="/admin/analytics/pages?tab=titles{{_computed.tabQuery}}" label="$t:admin.analytics.pages.tabs.titles"/>
+          <item id="durations" href="/admin/analytics/pages?tab=durations{{_computed.tabQuery}}" label="$t:admin.analytics.pages.tabs.durations"/>
+          <item id="depths" href="/admin/analytics/pages?tab=depths{{_computed.tabQuery}}" label="$t:admin.analytics.pages.tabs.depths"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->

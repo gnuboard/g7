@@ -1,3 +1,5 @@
+// 설정 화면 경고 글자색(접두 의미 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 import { renderQrSvg } from './qr';
 import { handlerMap } from './handlers';
 

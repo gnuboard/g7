@@ -68,6 +68,9 @@ abstract class AbstractIdentityVerificationLogSampleSeeder extends Seeder
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0',
     ];
 
+    /**
+     * 본인인증 상태별 생성 가중치 표를 초기화합니다.
+     */
     public function __construct()
     {
         $this->statusBuckets = [
@@ -112,6 +115,8 @@ abstract class AbstractIdentityVerificationLogSampleSeeder extends Seeder
 
     /**
      * 시더 실행.
+     *
+     * @return void
      */
     public function run(): void
     {
@@ -120,7 +125,7 @@ abstract class AbstractIdentityVerificationLogSampleSeeder extends Seeder
 
         $users = User::query()->get(['id', 'name', 'email']);
         if ($users->isEmpty()) {
-            $this->command->warn("사용자 데이터가 없어 {$label} 본인인증 이력 시더를 건너뜁니다.");
+            $this->command->warn(__('common.console.seeders.identity_verification_log_sample.skip_no_users', ['label' => $label]));
 
             return;
         }
@@ -128,7 +133,7 @@ abstract class AbstractIdentityVerificationLogSampleSeeder extends Seeder
         $policies = $this->applyPolicyScope(IdentityPolicy::query())
             ->get(['key', 'purpose', 'source_type', 'source_identifier', 'provider_id']);
         if ($policies->isEmpty()) {
-            $this->command->warn("{$label} 영역 IdentityPolicy 가 없어 시더를 건너뜁니다.");
+            $this->command->warn(__('common.console.seeders.identity_verification_log_sample.skip_no_policy', ['label' => $label]));
 
             return;
         }
@@ -136,12 +141,12 @@ abstract class AbstractIdentityVerificationLogSampleSeeder extends Seeder
         $manager = app(IdentityVerificationManager::class);
         $providerIds = array_keys($manager->all());
         if (empty($providerIds)) {
-            $this->command->warn("등록된 본인인증 프로바이더가 없어 {$label} 시더를 건너뜁니다.");
+            $this->command->warn(__('common.console.seeders.identity_verification_log_sample.skip_no_provider', ['label' => $label]));
 
             return;
         }
 
-        $this->command->info("{$label} 본인인증 이력 시딩 시작... ({$count}건)");
+        $this->command->info(__('common.console.seeders.identity_verification_log_sample.start', ['label' => $label, 'count' => $count]));
 
         $ttlMinutes = (int) config('settings.identity.challenge_ttl_minutes', 15);
         $maxAttempts = (int) config('settings.identity.max_attempts', 5);
@@ -206,7 +211,7 @@ abstract class AbstractIdentityVerificationLogSampleSeeder extends Seeder
             IdentityVerificationLog::insert($chunk);
         }
 
-        $this->command->info("{$label} 본인인증 이력 시딩 완료 ({$count}건)");
+        $this->command->info(__('common.console.seeders.identity_verification_log_sample.done', ['label' => $label, 'count' => $count]));
     }
 
     /**
@@ -235,7 +240,7 @@ abstract class AbstractIdentityVerificationLogSampleSeeder extends Seeder
      * @param  Carbon  $createdAt  생성 시각
      * @param  int  $ttlMinutes  TTL (분)
      * @param  int  $maxAttempts  최대 시도 횟수
-     * @return array{0: Carbon|null, 1: Carbon|null, 2: Carbon|null, 3: int}  [expires_at, verified_at, consumed_at, attempts]
+     * @return array{0: Carbon|null, 1: Carbon|null, 2: Carbon|null, 3: int} [expires_at, verified_at, consumed_at, attempts]
      */
     protected function buildLifecycle(
         IdentityVerificationStatus $status,

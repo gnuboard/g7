@@ -5,6 +5,7 @@ namespace App\Console\Commands\Core\Concerns;
 use App\Services\Core\BundledInventory;
 use App\Services\Core\BundledPlacementPlan;
 use App\Services\Core\BundledSourcePlanner;
+use App\Support\LocalizedValue;
 
 /**
  * 코어 업데이트가 이 프로젝트에 없는 공식 번들 소스를 배치할지 묻고 결과를 요약하는 트레이트 (공개 #146).
@@ -244,7 +245,7 @@ trait BundledSourcePlacementPrompt
     }
 
     /**
-     * 다국어 이름에서 현재 로케일 값을 고릅니다(없으면 ko → en → 첫 값).
+     * 다국어 이름에서 현재 로케일 값을 고릅니다(없으면 사이트 기본 언어 → 영어 → 첫 값).
      *
      * @param  mixed  $name  manifest name (array 또는 string)
      * @return string 이름
@@ -258,8 +259,6 @@ trait BundledSourcePlacementPrompt
             return '';
         }
 
-        $locale = app()->getLocale();
-
-        return (string) ($name[$locale] ?? $name['ko'] ?? $name['en'] ?? reset($name));
+        return LocalizedValue::pick($name) ?? '';
     }
 }

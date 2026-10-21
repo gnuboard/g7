@@ -52,24 +52,24 @@ class UninstallLanguagePackCommand extends Command
 
         $pack = $this->service->findByIdentifier($identifier);
         if (! $pack) {
-            $this->error("언어팩을 찾을 수 없습니다: {$identifier}");
+            $this->error(__('language_packs.commands.uninstall.not_found', ['identifier' => $identifier]));
 
             return self::FAILURE;
         }
 
-        if (! $force && ! $this->unifiedConfirm("언어팩 '{$identifier}' 을(를) 제거하시겠습니까?", false)) {
-            $this->info('취소되었습니다.');
+        if (! $force && ! $this->unifiedConfirm(__('language_packs.commands.uninstall.confirm', ['identifier' => $identifier]), false)) {
+            $this->info(__('language_packs.commands.uninstall.cancelled'));
 
             return self::SUCCESS;
         }
 
         try {
             $this->service->uninstall($pack, $cascade);
-            $this->info("언어팩 제거 완료: {$identifier}");
+            $this->info(__('language_packs.commands.uninstall.done', ['identifier' => $identifier]));
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('언어팩 제거 실패: '.$e->getMessage());
+            $this->error(__('language_packs.commands.uninstall.failed', ['error' => $e->getMessage()]));
 
             return self::FAILURE;
         }

@@ -76,6 +76,13 @@
                     "params": {
                         "target": "content"
                     }
+                },
+                "404": {
+                    "comment": "없는 게시판 — 게시판 API 가 권한 판정보다 먼저 404 를 돌려준다. 글 보기·쓰기 화면과 같은 오류 화면을 그린다(7.1.1).",
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
                 }
             },
             "onError": [

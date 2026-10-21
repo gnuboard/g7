@@ -28,7 +28,7 @@ modals 배열에 등록된 모달의 _local 은 페이지 로컬이다($parent._
       </button>
       <!-- 철회를 실제로 보내는 버튼 — 성공하면 모달을 닫고 셸이 지정한 데이터소스를 다시 읽어 바뀐 상태를 보여 준다. 승인 뒤라 거절되면 사유를 이 모달 안에 남기고, 서버 장애만 토스트로 알린다.
            주문상세 셸(회원·비회원)은 withdrawRefreshClaimable 을 세운다 — 철회로 그 상품이 다시 신청 가능해지므로 claimable 을 다시 받아야 체크박스 잠금과 신청 버튼이 풀린다(받지 않으면 새로고침 전까지 잠긴 채 남는다). 신청서 목록·상세 셸에는 claimable 데이터소스가 없어 세우지 않는다. -->
-      <button type="button" class="flex-1 px-4 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isWithdrawingClaim === true || !_local.withdrawClaimNumber}}">
+      <button type="button" class="flex-1 px-4 py-2.5 bg-red-600 dark:bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isWithdrawingClaim === true || !_local.withdrawClaimNumber}}">
         <on type="click">
           <action handler="sirsoft-ecommerce.withdrawClaim" withdrawApiBase="{{_local.claimWithdrawApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}" refreshDataSourceId="{{_local.withdrawRefreshDataSourceId ?? ''}}"/>
           <conditions>

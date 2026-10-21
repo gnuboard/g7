@@ -6,6 +6,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\TotalRelation;
 use App\Search\SearchCategoryPayload;
 use App\Search\SearchHighlighter;
+use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Page\Services\PageService;
@@ -21,9 +22,9 @@ use Modules\Sirsoft\Page\Support\PageScreenUrl;
 class SearchPagesListener implements HookListenerInterface
 {
     /**
-     * 리스너를 생성합니다.
+     * 페이지 검색 리스너를 생성합니다.
      *
-     * @param  PageService  $pageService  페이지 검색을 수행하는 페이지 서비스
+     * @param  PageService  $pageService  페이지 서비스
      */
     public function __construct(
         private readonly PageService $pageService,
@@ -287,10 +288,7 @@ class SearchPagesListener implements HookListenerInterface
 
         // content가 배열(JSON 다국어)인 경우 현재 로케일 값 추출
         if (is_array($content)) {
-            $locale = app()->getLocale();
-            $text = $content[$locale]
-                ?? $content[config('app.fallback_locale')]
-                ?? (! empty($content) ? array_values($content)[0] : '');
+            $text = LocalizedValue::pick($content) ?? '';
         } else {
             $text = $content;
         }

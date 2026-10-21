@@ -1477,6 +1477,7 @@ PHP;
         }
 
         $lastError = null;
+        $resolvedAny = false;
 
         foreach ($strategies as $strategy) {
             $archiveType = $strategy['archive_type'];
@@ -1487,6 +1488,8 @@ PHP;
             if (! $archiveUrl) {
                 continue;
             }
+
+            $resolvedAny = true;
 
             $extension = $archiveType === 'zipball' ? '.zip' : '.tar.gz';
             $archivePath = $destDir.DIRECTORY_SEPARATOR.'download'.$extension;
@@ -1529,6 +1532,15 @@ PHP;
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+
+        // 어느 전략도 아카이브 주소를 얻지 못했다 = 한 번도 내려받지 않았다(태그 없음·GitHub 연결 실패).
+        // 「추출 실패」로 알리면 원인을 추출 도구로 잘못 짚는다(7.1.1 출시 전).
+        if (! $resolvedAny) {
+            throw new \RuntimeException(__('settings.core_update.extension_release_not_found', [
+                'repository' => $owner.'/'.$repo,
+                'version' => $version,
+            ]));
         }
 
         throw new \RuntimeException(

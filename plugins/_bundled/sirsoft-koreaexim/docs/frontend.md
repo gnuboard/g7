@@ -47,7 +47,7 @@ plugin_settings 하나에 상태·설정·알림·최근 이력과 전체 이력
 
 서버 쪽 `IndexRateRunRequest::attributes()` 는 검증 오류 문구의 필드 이름을 `lang/{locale}/validation.php` 의 `attributes` 에서 읽어(시작일·종료일 등) 파라미터 원문(`date to`·`date from`)이 문구에 드러나지 않게 합니다. 이력 조회 파라미터를 추가하면 이 목록과 언어 파일에 함께 넣습니다.
 
-알림 템플릿 편집 창(`resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html`)의 회원 검색은 코어 `GET /api/admin/users/search` 를 부르는데, 코어가 빈(공백뿐 포함) `keyword` 를 422 로 거절하므로 검색칸을 비울 때는 `if="{{String($args[0] ?? '').trim() !== ''}}"` 로 요청하지 않습니다.
+알림 템플릿 편집 창(`resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html`)의 회원 검색은 코어 `GET /api/admin/users/search` 를 부르는데, 코어가 빈(공백뿐 포함) `keyword` 를 422 로 거절하므로 검색칸을 비울 때는 `if="{{String($args[0] ?? '').trim() !== ''}}"` 로 요청하지 않습니다. 회원 검색은 `exclude_withdrawn=1` 을 실어 탈퇴 회원을 결과에서 뺍니다(7.1.1) — 탈퇴 회원은 연락처가 익명화되고 바깥 채널 발송이 막혀 수신자로 골라도 받지 못합니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

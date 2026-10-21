@@ -93,7 +93,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a26219fc-94a0-4f63-9404-04c2a6ac99e4","name":"최고…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
-| token | string | `380\|ZjZl46uRlhHt53MEhb7XAb0r5lYoDEsXF…` | 발급된 API 접근 토큰 평문 (Bearer 토큰으로 사용, 발급 시 1회만 노출) |
+| token | string | `{MASKED}`|ZjZl46uRlhHt53MEhb7XAb0r5lYoDEsXF…` | 발급된 API 접근 토큰 평문 (Bearer 토큰으로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (일반적으로 Bearer) |
 
 **응답 예시**
@@ -111,7 +111,7 @@ HTTP/1.1 200
             "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
             "name": "최고관리자",
             "nickname": "최고관리자",
-            "email": "heuristing@gmail.com",
+            "email": "admin@example.com",
             "avatar": null,
             "language": "ko",
             "language_label": "한국어",
@@ -192,7 +192,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `heuristing@gmail.com` | 이메일 주소 |
+| email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() — 아바타 미설정 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -234,7 +234,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "heuristing@gmail.com",
+        "email": "admin@example.com",
         "avatar": null,
         "...": "(25개 키 생략, 총 30개)"
     }
@@ -294,7 +294,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::login()` 이 반환한 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"관리자","is_admin":true, …}` | 로그인한 관리자 정보 (`UserResource` — 필드 전수는 `GET /api/admin/auth/user` 응답 필드 표와 동일) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer` — `AuthService::login()` 이 상수로 반환) |
 
 **응답 예시**
@@ -396,7 +396,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 
@@ -478,7 +478,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 | postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
@@ -560,7 +560,7 @@ _단건 응답: `POST /api/auth/admin/login` 의 성공 페이로드와 동일�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","is_admin":true, …}` | 로그인한 관리자 정보 (`UserResource`) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**
@@ -782,7 +782,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::login()` 이 반환한 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**
@@ -908,7 +908,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 
@@ -988,7 +988,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 | postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
@@ -1068,7 +1068,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::completeTwoFactor()` 가 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 > 위 문서의 실측이 `422` 로 관측된 것은 유효한 challenge 없이 프로브가 호출됐기 때문이다. 정상 흐름(비밀번호 단계가 돌려준 `challenge_id` + 올바른 코드)에서는 `200` 과 위 페이로드가 반환된다.
@@ -1317,7 +1317,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::register()` 이 반환한
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","status":"active", …}` | 생성된 사용자 정보 (`UserResource`. `status` 는 `active`, 가입 후 본인인증 정책이 걸린 경우 `pending_verification`) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 가입 즉시 발급되는 Sanctum 접근 토큰 평문 (가입 직후 로그인 상태로 이어짐) |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 가입 즉시 발급되는 Sanctum 접근 토큰 평문 (가입 직후 로그인 상태로 이어짐) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**
@@ -1462,7 +1462,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `heuristing@gmail.com` | 이메일 주소 |
+| email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (User::getAvatarUrl() — 아바타 미설정 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -1542,7 +1542,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "heuristing@gmail.com",
+        "email": "admin@example.com",
         "avatar": null,
         "...": "(63개 키 생략, 총 68개)"
     }
@@ -1760,7 +1760,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::refreshToken()` 반환 �
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 토큰을 갱신한 사용자 정보 (`UserResource`) |
-| token | string | `75\|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 새로 발급된 Sanctum 접근 토큰 평문 (기존 토큰은 폐기됨) |
+| token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 새로 발급된 Sanctum 접근 토큰 평문 (기존 토큰은 폐기됨) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
 
 **응답 예시**

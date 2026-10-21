@@ -10,7 +10,7 @@ use Tests\TestCase;
  * SEO 렌더 내부 호출 표식 테스트
  *
  * SEO 렌더러가 자기 자신에게 보내는 데이터 소스 호출을 받는 쪽이 알아볼 수 있게 붙이는 헤더다.
- * 값은 앱 키로 서명해 바깥에서 흉내 낼 수 없어야 한다(7.1.0 실측 O-K3-1).
+ * 값은 앱 키로 서명해 바깥에서 흉내 낼 수 없어야 한다(7.1.0 실측).
  */
 class SeoRenderRequestTest extends TestCase
 {

@@ -1,5 +1,5 @@
 /**
- * custom 주소(routes/custom.php) 전체 페이지 이동 테스트 (#792 W6 · engine-v1.81.0)
+ * custom 주소(routes/custom.php) 전체 페이지 이동 테스트 (#792 W6 · engine-v1.83.0)
  *
  * 엔진 화면 안에서 서버의 개발자 화면 주소로 이동하면 엔진이 `pushState` 로 직접 그리지 않고 `location.assign` 으로
  * 서버에 넘기는지, 뒤로·앞으로 가기(`popstate`)로 그 주소에 오면 `location.reload` 로 서버가 다시 그리는지,

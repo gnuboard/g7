@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 클레임 추가결제 실패 코드 변환 (#599 3차 실측 F-5)
+# 시나리오 매니페스트 — 클레임 추가결제 실패 코드 변환 (#599 실측)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: claim_payment_failure_code_conversion

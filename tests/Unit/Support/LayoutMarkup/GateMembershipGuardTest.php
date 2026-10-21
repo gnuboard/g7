@@ -519,7 +519,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * *파일* 등재만 잠근다(`test_every_gate_resident_test_is_declared_in_manifest`). 그래서
      * **파일은 등재됐는데 그 파일이 새로 선언한 effect 는 미등재** 인 상태가 통과했다.
      *
-     * 38차 실측 14건 중 하나가 37차 산출물이다(`fragment_helper_read_cache_is_keyed_by_path_mtime_size`
+     * 실측 14건 중 하나가 37차 산출물이다(`fragment_helper_read_cache_is_keyed_by_path_mtime_size`
      * — 37차 ⓕ 가 "조각 캐시 무관측" 을 고치며 신설). 즉 **직전 회차가 자기 산출물을 등재하지
      * 못한 채 종료**했고 아무도 알리지 않았다. 30차가 게이트 소속을 양방향으로 잠근 것과 같은
      * 처치를 effect 축에 적용한다.
@@ -579,7 +579,7 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
      * 잡아도, **파일 자체가 어느 매니페스트에도 없는** 경우는 구조적으로 보지 못한다 —
      * 그 파일의 마킹은 수집조차 되지 않으므로 차집합에 나타날 수 없다.
      *
-     * 39차 실측이 그 여집합에 실물 3건을 찾았다(`PluginPartialResolutionParityTest` ·
+     * 실측이 그 여집합에 실물 3건을 찾았다(`PluginPartialResolutionParityTest` ·
      * `LayoutPartialBaseDirectoryTest` · `GeneratesComponentManifestTest`). 셋 다 이 트랙의
      * 축(조각 경로 규약 · 컴포넌트 레지스트리)을 단언하면서 `@scenario`/`@effects` 까지 달아
      * 놓았는데, **커버리지 산정에는 한 번도 들어간 적이 없다.** 마킹은 "이 테스트가 어떤 축을

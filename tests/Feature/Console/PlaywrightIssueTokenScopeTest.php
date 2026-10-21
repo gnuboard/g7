@@ -70,7 +70,7 @@ class PlaywrightIssueTokenScopeTest extends TestCase
      */
     public function test_scope_suffix_grants_permission_with_that_scope(): void
     {
-        // 발급 커맨드는 없는 권한을 거절하고 만들지 않는다(7.1.0 O-D2) — 코어 정의 권한 두 개가 DB 에 있게 한다.
+        // 발급 커맨드는 없는 권한을 거절하고 만들지 않는다(7.1.0) — 코어 정의 권한 두 개가 DB 에 있게 한다.
         foreach (['core.users.read', 'core.dashboard.read'] as $identifier) {
             Permission::firstOrCreate(['identifier' => $identifier], [
                 'name' => ['ko' => $identifier, 'en' => $identifier],

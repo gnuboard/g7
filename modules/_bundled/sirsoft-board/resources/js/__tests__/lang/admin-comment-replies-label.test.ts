@@ -4,7 +4,7 @@
  *
  * 이 버튼은 댓글의 답글(대댓글)을 펼치고 접는다(`_comment.g7.html` 의 collapsedReplies 토글). 그런데
  * 문구가 「답변글 N개 보기」·「Hide reply posts」 라, 글의 답글(답변글)을 펼치는 것처럼 읽혔다
- * (7.1.0 실측 K3 관측 O-K3-8). 이 모듈은 「답변글」을 글의 답글(use_reply, 답변글 최대 깊이)에,
+ * (7.1.0 실측). 이 모듈은 「답변글」을 글의 답글(use_reply, 답변글 최대 깊이)에,
  * 「대댓글」을 댓글의 답글(max_comment_depth)에 쓰므로 버튼도 대댓글로 부른다. 일본어 언어팩은
  * 같은 구분을 「返信コメント」로 쓴다(max_comment_depth 문구).
  *
@@ -57,7 +57,7 @@ describe('관리자 상세 대댓글 펼침 버튼 문구', () => {
     // @effects admin_comment_replies_toggle_says_comment_replies
     it('영어는 comment replies 로 부른다 (reply posts 아님)', () => {
         for (const { file, prefix } of sources('en')) {
-            // 개수 문구는 단수·복수 갈래(`_one`)로 쓴다(PO 결정 「영어 개수 문구」 — `(s)`·괄호 수 표기 대신)
+            // 개수 문구는 단수·복수 갈래(`_one`)로 쓴다(결정 「영어 개수 문구」 — `(s)`·괄호 수 표기 대신)
             expect(read(file, `${prefix}.show_replies`), file).toBe('Show {{count}} comment replies');
             expect(read(file, `${prefix}.show_replies_one`), file).toBe('Show {{count}} comment reply');
             expect(read(file, `${prefix}.hide_replies`), file).toBe('Hide comment replies');

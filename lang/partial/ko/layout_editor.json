@@ -1257,6 +1257,7 @@
     "navigate": {
       "label": "다른 페이지로 이동",
       "param_path": "이동할 페이지",
+      "param_fallback_path": "주소가 안전하지 않거나 비었을 때 갈 페이지",
       "param_query": "쿼리 값",
       "param_merge_query": "기존 쿼리 유지",
       "param_scroll": "스크롤 위치",

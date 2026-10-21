@@ -1,5 +1,5 @@
 {
-    "comment": "메뉴 관리 화면 왼쪽의 트리 목록. 고르기·순서 바꾸기·켜고 끄기 셋을 여기서 하고, 오른쪽\n  패널은 여기서 고른 것을 따라간다.\n  **끌어 옮기기와 스위치는 수정 권한이 있을 때만 열린다** — 권한이 없으면 목록은 보이되 손댈 수 없다.\n  화면에 붙을 때 주소의 메뉴 값을 읽어 그 항목을 골라 두므로, 특정 메뉴를 가리키는 주소를\n  주고받으면 상대도 같은 항목을 편 채로 연다.\n  행마다 그 메뉴에 부여된 역할을 배지로 보인다 — 목록 응답은 역할 ID(role_ids)만 싣고, 이름은 이 화면의 활성 역할 목록에서 찾는다.",
+    "comment": "메뉴 관리 화면 왼쪽의 트리 목록. 고르기·순서 바꾸기·켜고 끄기 셋을 여기서 하고, 오른쪽\n  패널은 여기서 고른 것을 따라간다.\n  **끌어 옮기기와 스위치는 수정 권한이 있을 때만 열린다** — 권한이 없으면 목록은 보이되 손댈 수 없다.\n  화면에 붙을 때(목록의 mount → initMenuFromUrl 핸들러) 주소의 menu(slug)·mode 값을 읽어 그 항목을 골라 두므로, 특정\n  메뉴를 가리키는 주소를 주고받으면 상대도 같은 항목을 편 채로 연다(없는 slug 면 빈 패널 그대로).\n  항목 이름은 그 주소(?menu={slug}&mode=view)의 링크다 — 보통 클릭은 아래 onSelect 가 같은 주소를 남기고, 가운데\n  클릭·Ctrl+클릭은 새 탭에서 그 항목 패널을 연다(#757). 여러 개 선택 모드에서는 링크가 아니다.\n  행마다 그 메뉴에 부여된 역할을 배지로 보인다 — 목록 응답은 역할 ID(role_ids)만 싣고, 이름은 이 화면의 활성 역할 목록에서 찾는다.",
     "meta": {
         "is_partial": true
     },
@@ -42,48 +42,73 @@
             },
             "actions": [
                 {
-                    "comment": "고른 항목을 오른쪽 패널이 읽을 자리에 담고, 주소도 그 항목으로 맞춘다. 주소만 갈아 끼우고 **다시 받지는 않는다** — 목록은 이미 손에 있고 이동이 이력에 쌓이면 뒤로 가기가 항목 고른 횟수만큼 늘어난다.",
+                    "comment": "고른 항목을 오른쪽 패널이 읽을 자리에 담고, 주소도 그 항목으로 맞춘다. 주소만 갈아 끼우고 **다시 받지는 않는다** — 목록은 이미 손에 있고 이동이 이력에 쌓이면 뒤로 가기가 항목 고른 횟수만큼 늘어난다.\n          편집·등록 중이면 곧바로 넘어가지 않고 고른 메뉴를 대기 자리(_global.pendingMenu*)에 두고 이탈 확인 창을 연다 —\n          이동을 완결하는 것은 그 창이다(이커머스 브랜드·분류 목록과 같은 규칙, 7.1.1 출시 전).",
                     "type": "action",
                     "event": "onSelect",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "global",
-                                "selectedMenuId": "{{$args[0].id}}",
-                                "selectedMenu": "{{$args[0]}}",
-                                "panelMode": "view"
-                            }
-                        },
-                        {
-                            "comment": "목록 응답에는 하위 메뉴의 역할이 실려 있지 않다(#76 목록 하위 컬렉션 프루닝). 선택 즉시 단건을 조회해 역할 배지와 편집 폼 초기값이 실제 역할 제한을 반영하도록 보강한다 — 이 조회가 없으면 하위 메뉴 저장 시 역할이 전부 해제된다.",
-                            "handler": "apiCall",
-                            "target": "/api/admin/menus/{{$args[0].id}}",
-                            "auth_required": true,
-                            "params": {
-                                "method": "GET"
-                            },
-                            "onSuccess": {
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "selectedMenu": "{{response.data}}"
+                    "handler": "switch",
+                    "params": {
+                        "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}"
+                    },
+                    "cases": {
+                        "true": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingMenuId": "{{$args[0].id}}",
+                                        "pendingMenu": "{{$args[0]}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "menu_editing_confirm_modal"
                                 }
-                            }
+                            ]
                         },
-                        {
-                            "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
-                            "handler": "replaceUrl",
-                            "params": {
-                                "mergeQuery": true,
-                                "query": {
-                                    "menu": "{{$args[0].slug}}",
-                                    "mode": "view"
+                        "false": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedMenuId": "{{$args[0].id}}",
+                                        "selectedMenu": "{{$args[0]}}",
+                                        "panelMode": "view"
+                                    }
+                                },
+                                {
+                                    "comment": "목록 응답에는 하위 메뉴의 역할이 실려 있지 않다(#76 목록 하위 컬렉션 프루닝). 선택 즉시 단건을 조회해 역할 배지와 편집 폼 초기값이 실제 역할 제한을 반영하도록 보강한다 — 이 조회가 없으면 하위 메뉴 저장 시 역할이 전부 해제된다.",
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/menus/{{$args[0].id}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "GET"
+                                    },
+                                    "onSuccess": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedMenu": "{{response.data}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75).",
+                                    "handler": "replaceUrl",
+                                    "params": {
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "menu": "{{$args[0].slug}}",
+                                            "mode": "view"
+                                        }
+                                    }
                                 }
-                            }
+                            ]
                         }
-                    ]
+                    }
                 },
                 {
                     "comment": "끌어 놓은 결과를 그대로 실어 보낸다. 성공 갈래는 목록을 다시 받지 않는다 — 화면은 이미\n          옮겨진 모양이고 다시 받으면 눈에 띄게 다시 그려진다. 대신 사이드바 메뉴만 **차례를\n          지켜** 다시 받아, 새 순서가 적용되기 전에 다음 조작이 끼어들지 않게 한다.\n          실패했을 때만 목록을 다시 받아 서버 순서로 되돌린다.",
@@ -189,6 +214,8 @@
                 }
             ],
             "props": {
+                "itemHref": "/admin/menus?menu={{row.slug}}&mode=view",
+                "itemHrefMergeQuery": true,
                 "items": "{{menus?.data?.data ?? []}}",
                 "selectedId": "{{_global.selectedMenuId}}",
                 "enableDrag": "{{menus?.data?.abilities?.can_update ?? false}}",

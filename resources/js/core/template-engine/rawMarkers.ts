@@ -6,6 +6,7 @@
  *
  * @since engine-v1.27.0
  */
+import { stripTranslationParamMarkers } from './translationParamValues';
 
 /** raw: 바인딩 접두사 */
 export const RAW_PREFIX = 'raw:';
@@ -91,12 +92,15 @@ export function wrapRawDeep(value: any): any {
  */
 export function stripRawDeep(value: any): any {
   if (typeof value === 'string') {
-    if (isRawWrapped(value)) return unwrapRaw(value);
+    // `$t:` 인자 값 보호 표식(U+FDD3·U+FDD4)도 같은 내부 표식이다 — 번역 패스를 건너뛴 값에 남았으면 여기서 걷는다
+    // (화면으로 나가기 전 마지막 안전망, engine-v1.80.1)
+    const text = stripTranslationParamMarkers(value);
+    if (isRawWrapped(text)) return unwrapRaw(text);
     // 혼합 보간으로 문자열 중간에 마커가 박힌 경우
-    if (containsRawMarker(value) || value.includes(RAW_MARKER_END)) {
-      return value.split(RAW_MARKER_START).join('').split(RAW_MARKER_END).join('');
+    if (containsRawMarker(text) || text.includes(RAW_MARKER_END)) {
+      return text.split(RAW_MARKER_START).join('').split(RAW_MARKER_END).join('');
     }
-    return value;
+    return text;
   }
 
   if (Array.isArray(value)) {

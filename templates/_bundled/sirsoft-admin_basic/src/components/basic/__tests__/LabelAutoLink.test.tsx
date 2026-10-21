@@ -194,7 +194,8 @@ describe('라벨 자동 연결', () => {
         expect(screen.getByRole('textbox', { name: '검색어' })).toBeInTheDocument();
         expect(screen.getByRole('textbox', { name: '이메일' })).toBeInTheDocument();
         expect(screen.getByRole('checkbox', { name: '사용' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: '정책' })).toBeInTheDocument();
+        // 목록형은 「{이름} {현재 값}」 — aria-label 이 고른 값을 덮지 않는다(#757). 곁 라벨은 잇지 않는다
+        expect(screen.getByRole('button', { name: '정책 무료' })).toBeInTheDocument();
         expect(screen.getByRole('textbox', { name: '검색어' }).getAttribute('aria-labelledby')).toBeNull();
     });
 

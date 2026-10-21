@@ -43,7 +43,7 @@
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "- 이미지: {{_global.deleteProduct?.relatedData?.images ?? 0}}개"
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_images|count={{_global.deleteProduct?.relatedData?.images ?? 0}}"
                         },
                         {
                             "type": "basic",
@@ -51,7 +51,7 @@
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "- 옵션: {{_global.deleteProduct?.relatedData?.options ?? 0}}개"
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_options|count={{_global.deleteProduct?.relatedData?.options ?? 0}}"
                         },
                         {
                             "type": "basic",
@@ -59,7 +59,7 @@
                             "props": {
                                 "className": "text-label-subtle"
                             },
-                            "text": "- 추가옵션: {{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}개"
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_additional_options|count={{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}"
                         },
                         {
                             "type": "composite",
@@ -189,7 +189,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}"
                     },
                     "children": [

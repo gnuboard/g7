@@ -1,4 +1,4 @@
-// e2e:allow Vitest 레이아웃 계약 파일 — 일괄 지정 결과 줄의 「변화 없음」 수(unchanged_count)는 7.1.0 조치 G4 에서 Playwright 로 게시판 환경설정 카드를 열어 회원 고르기·확인 창·적용까지 처음부터 끝까지 ko/en/ja 재측정했다(R1~R6).
+// e2e:allow Vitest 레이아웃 계약 파일 — 일괄 지정 결과 줄의 「변화 없음」 수(unchanged_count)는 7.1.0 브라우저 실측 조치에서 Playwright 로 게시판 환경설정 카드를 열어 회원 고르기·확인 창·적용까지 처음부터 끝까지 ko/en/ja 재측정했다.
 /**
  * 게시판 환경설정 — 관리자·스텝 일괄 지정 카드가 설정 폼을 오염시키지 않는가 (#708)
  *
@@ -75,7 +75,7 @@ describe('게시판 관리자·스텝 일괄 지정 — 읽기 전용·요청 �
   });
 
   // 서버(bulk-members)는 게시판 수정 권한(boards.update)으로 허용하는데, 카드는 환경설정 수정 권한(settings.update)으로
-  // 잠겨 있었다(7.1.0 실측 O-K3-5, 결정 2026-10-08). 카드 잠금은 boards.update 만 따른다.
+  // 잠겨 있었다(7.1.0 실측, 결정 2026-10-08). 카드 잠금은 boards.update 만 따른다.
   // @scenario member_type=manager, mode=add, target=all
   // @effects bulk_members_card_lock_follows_boards_update
   it('환경설정 수정 권한과 무관하게 게시판 수정 권한만으로 카드를 쓴다', () => {
@@ -149,7 +149,7 @@ describe('게시판 관리자·스텝 일괄 지정 — 회원 검색칸과 결�
     expect(render({ board_id: 7, reason: 'scope' }, [])).toBe(7);
   });
 
-  // 결과 줄은 다섯 줄만 보인다(O-K3-12 유지). 「모든 게시판」 이면 범위 밖(scope) 줄이 수십 개라, 운영자가 알아야 할
+  // 결과 줄은 다섯 줄만 보인다(종전 그대로). 「모든 게시판」 이면 범위 밖(scope) 줄이 수십 개라, 운영자가 알아야 할
   // 사유(not_grantable·last_manager)가 그 뒤로 밀려 보이지 않았다(7.1.0 실측 G1a). 범위 밖이 아닌 사유를 앞에 세운다.
   // @scenario member_type=step, mode=add, target=all
   // @effects not_grantable_board_skipped_on_apply_all
@@ -222,9 +222,9 @@ describe('게시판 관리자·스텝 일괄 지정 — 회원 검색칸과 결�
 
 /**
  * 게시판 목록 조회 실패의 종류를 가른다 — 목록 조회가 서버 오류(5xx)로 실패해도 fallback(빈 목록)이 abilities 없이 그려져
- * 「게시판 수정 권한이 있어야…」 이유 문구가 떴다(7.1.0 S2 #8). 403 일 때만 권한 없음, 그 밖의 실패는 「불러오지 못함」.
+ * 「게시판 수정 권한이 있어야…」 이유 문구가 떴다(7.1.0 화면 검증). 403 일 때만 권한 없음, 그 밖의 실패는 「불러오지 못함」.
  */
-describe('게시판 관리자·스텝 일괄 지정 — 목록 조회 실패 이유 (S2 #8)', () => {
+describe('게시판 관리자·스텝 일괄 지정 — 목록 조회 실패 이유', () => {
   const page: any = settingsPage;
   const boardsList = page.data_sources.find((ds: any) => ds.id === 'boards_list');
   const computed = (name: string, ctx: Record<string, any>) => evaluate(page.computed[name], ctx);

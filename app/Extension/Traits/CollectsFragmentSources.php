@@ -200,10 +200,13 @@ trait CollectsFragmentSources
                 return null;
             }
 
-            if (! is_array($data)) {
+            // 목록(`[1,2]`·`[]`)도 PHP 배열이라 객체로 통과해 등록 단계에서 「대상 부재」 DEBUG 로만 남고 점검 보고의
+            // 「읽기 실패」에도 잡히지 않았다 — 객체가 아닌 것으로 같이 판정한다(7.1.1 출시 전).
+            if (! is_array($data) || array_is_list($data)) {
                 // 파싱은 됐는데 객체가 아니다 — 종전에는 `error: "No error"` 로 남아 원인을 알 수 없었다.
-                $this->reportFragmentReadFailure($key, $path, "{$jsonSubject} JSON 형식 오류 (객체가 아님): {$path}", '조각 JSON 은 객체여야 합니다 ('.get_debug_type($data).')', $logContext + [
-                    'type' => get_debug_type($data),
+                $type = is_array($data) ? 'list' : get_debug_type($data);
+                $this->reportFragmentReadFailure($key, $path, "{$jsonSubject} JSON 형식 오류 (객체가 아님): {$path}", '조각 JSON 은 객체여야 합니다 ('.$type.')', $logContext + [
+                    'type' => $type,
                 ]);
 
                 return null;

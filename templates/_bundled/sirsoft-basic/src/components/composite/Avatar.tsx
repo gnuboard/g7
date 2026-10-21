@@ -39,7 +39,7 @@ const WITHDRAWN_CLASSES = 'grayscale opacity-50';
  * 이니셜 배경 스타일
  */
 const INITIAL_BG_CLASSES = {
-  normal: 'bg-gradient-to-br from-blue-500 to-purple-600',
+  normal: 'bg-gradient-to-br from-blue-600 to-purple-600',
   withdrawn: 'bg-gray-300 dark:bg-gray-600',
   guest: 'bg-gray-200 dark:bg-gray-700',
 } as const;
@@ -171,14 +171,14 @@ export const Avatar: React.FC<AvatarProps> = ({
     if (actualIsGuest) {
       return (
         <Div className={`w-full h-full flex items-center justify-center ${initialBgClass}`}>
-          <Icon name="user" className="text-gray-400 dark:text-gray-500" />
+          <Icon name="user" className="text-gray-500 dark:text-gray-400" />
         </Div>
       );
     }
     if (actualIsWithdrawn) {
       return (
         <Div className={`w-full h-full flex items-center justify-center ${initialBgClass}`}>
-          <Icon name="user" className="text-gray-500 dark:text-gray-400" />
+          <Icon name="user" className="text-gray-600 dark:text-gray-300" />
         </Div>
       );
     }

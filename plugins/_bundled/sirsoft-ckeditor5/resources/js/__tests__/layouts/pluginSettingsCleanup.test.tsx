@@ -90,6 +90,8 @@ function manifestType(name: string): string {
 const cleanupCard = findNode(pluginSettings, (n) => n.id === 'section_cleanup_card');
 
 describe('미사용 이미지 정리 섹션 — 계약', () => {
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects settings_cleanup_keys_declared
      */
@@ -97,6 +99,8 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(cleanupCard).not.toBeNull();
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects settings_cleanup_keys_declared
      */
@@ -120,6 +124,8 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         }
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects settings_cleanup_keys_declared
      */
@@ -132,6 +138,8 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(input.props.min).toBe(1);
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects settings_cleanup_toggle_default_off
      */
@@ -144,6 +152,8 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(defaults.defaults.unusedImageRetentionDays).toBe(30);
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects settings_cleanup_keys_declared
      */
@@ -156,6 +166,8 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(defaults.frontend_schema.unusedImageRetentionDays.expose).toBe(false);
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects settings_cleanup_keys_declared
      */
@@ -167,6 +179,8 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(pluginSource).toContain("'default' => false");
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects schedule_gate_off_by_default
      */
@@ -178,13 +192,17 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(pluginSource).toContain('sirsoft-ckeditor5:prune-unused-images --scheduled');
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
     /**
      * @effects settings_cleanup_keys_declared
      */
     it('업로드 관리 화면으로 가는 링크가 있다', () => {
         const button = findNode(cleanupCard, (n) => n.id === 'open_uploads_button');
 
-        expect(actionsOf(button)[0].params.path).toBe('/admin/plugins/sirsoft-ckeditor5/uploads');
+        // 링크(#757) — 목적지는 href 한 곳, path 없는 navigate 가 클릭한 링크의 href 로 간다
+        expect(button.name).toBe('A');
+        expect(actionsOf(button)[0].params?.path ?? button.props.href).toBe('/admin/plugins/sirsoft-ckeditor5/uploads');
     });
 });
 
@@ -199,6 +217,7 @@ const TestH3: React.FC<any> = ({ className, children, text }) => <h3 className={
 const TestToggle: React.FC<any> = ({ name }) => <input type="checkbox" data-name={name} readOnly />;
 const TestInput: React.FC<any> = ({ name, type }) => <input type={type} data-name={name} readOnly />;
 const TestButton: React.FC<any> = ({ className, children }) => <button type="button" className={className}>{children}</button>;
+const TestA: React.FC<any> = ({ className, href, children }) => <a href={href} className={className}>{children}</a>;
 const TestSpan: React.FC<any> = ({ className, children, text }) => <span className={className}>{children || text}</span>;
 const TestFragment: React.FC<any> = ({ children }) => <>{children}</>;
 
@@ -216,6 +235,7 @@ describe('미사용 이미지 정리 섹션 — 렌더링', () => {
             Toggle: { component: TestToggle, metadata: { name: 'Toggle', type: 'composite' } },
             Input: { component: TestInput, metadata: { name: 'Input', type: 'basic' } },
             Button: { component: TestButton, metadata: { name: 'Button', type: 'basic' } },
+            A: { component: TestA, metadata: { name: 'A', type: 'basic' } },
             Span: { component: TestSpan, metadata: { name: 'Span', type: 'basic' } },
             Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
         };
@@ -227,6 +247,8 @@ describe('미사용 이미지 정리 섹션 — 렌더링', () => {
         (registry as any).registry = {};
     });
 
+    // @scenario case=render
+    // @effects cleanup_settings_render_translated
     /**
      * @effects settings_cleanup_keys_declared
      */

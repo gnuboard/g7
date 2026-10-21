@@ -18,6 +18,11 @@ export interface NotificationItem {
     read?: boolean;
     iconName?: IconName;
     data?: Record<string, unknown>;
+    /**
+     * 알림의 이동 주소(응답 `url`) — 이 사이트 주소면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+     * 바깥 주소·실행 주소는 링크로 그리지 않는다(줄 클릭 → `onNotificationClick` → 레이아웃의 `fallbackPath`).
+     */
+    url?: string;
     onClick?: () => void;
 }
 /**

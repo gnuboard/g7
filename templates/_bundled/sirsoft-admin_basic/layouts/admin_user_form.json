@@ -4,6 +4,7 @@
     "layout_name": "admin_user_form",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}",
         "description": "{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"
     },
@@ -37,10 +38,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "fallback": {
@@ -72,10 +92,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "fallback": {
@@ -326,6 +365,14 @@
     },
     "init_actions": [
         {
+            "comment": "들어올 때마다 「고친 것 있음」 을 끈다 — 이탈 확인(meta.leave_guard)이 읽는 값이라, 같은 레이아웃의 다른 회원으로 넘어와도 직전 표시가 남지 않게 한다",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "hasChanges": false
+            }
+        },
+        {
             "comment": "생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다.",
             "handler": "setState",
             "if": "{{!route?.id}}",
@@ -363,6 +410,7 @@
                 "type": "basic",
                 "name": "Div",
                 "dataKey": "form",
+                "trackChanges": true,
                 "props": {
                     "className": "admin-page-content-responsive"
                 },
@@ -655,7 +703,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-red-500 ml-1"
+                                                                            "className": "text-red-600 dark:text-red-400 ml-1"
                                                                         },
                                                                         "text": "*"
                                                                     }
@@ -676,7 +724,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.name}}",
                                                                 "props": {
-                                                                    "className": "text-red-500 text-xs mt-1"
+                                                                    "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                                                 },
                                                                 "text": "{{_local.errors?.name?.[0] ?? ''}}"
                                                             }
@@ -732,7 +780,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{!!route?.id}}",
                                                                 "props": {
-                                                                    "className": "text-red-500 ml-1"
+                                                                    "className": "text-red-600 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -770,7 +818,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.errors?.role_ids || _local.errors?.roles}}",
                                                         "props": {
-                                                            "className": "text-red-500 text-xs mt-1"
+                                                            "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                                         },
                                                         "text": "{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}"
                                                     },
@@ -822,7 +870,7 @@
                                                 ]
                                             },
                                             {
-                                                "comment": "이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는\n                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에\n                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.\n                 `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,\n                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 영역 C 실측). 새 회원은 늘 미인증으로 시작한다.",
+                                                "comment": "이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는\n                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에\n                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.\n                 `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,\n                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 실측). 새 회원은 늘 미인증으로 시작한다.",
                                                 "id": "field_email_verified",
                                                 "type": "basic",
                                                 "name": "Div",
@@ -848,7 +896,7 @@
                                                                 "if": "{{!!route?.id && user?.data?.email_verified_at}}",
                                                                 "props": {
                                                                     "name": "check-circle",
-                                                                    "className": "text-base text-green-500"
+                                                                    "className": "text-base text-green-600"
                                                                 }
                                                             },
                                                             {
@@ -893,7 +941,7 @@
                                                                         "name": "Span",
                                                                         "if": "{{!route?.id}}",
                                                                         "props": {
-                                                                            "className": "text-red-500 ml-1"
+                                                                            "className": "text-red-600 dark:text-red-400 ml-1"
                                                                         },
                                                                         "text": "*"
                                                                     }
@@ -914,7 +962,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.password}}",
                                                                 "props": {
-                                                                    "className": "text-red-500 text-xs mt-1"
+                                                                    "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                                                 },
                                                                 "text": "{{_local.errors?.password?.[0] ?? ''}}"
                                                             }
@@ -942,7 +990,7 @@
                                                                         "name": "Span",
                                                                         "if": "{{!route?.id}}",
                                                                         "props": {
-                                                                            "className": "text-red-500 ml-1"
+                                                                            "className": "text-red-600 dark:text-red-400 ml-1"
                                                                         },
                                                                         "text": "*"
                                                                     }
@@ -1057,7 +1105,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                                    "className": "text-red-600 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -1079,7 +1127,7 @@
                                                         "name": "Span",
                                                         "if": "{{_local.errors?.current_password}}",
                                                         "props": {
-                                                            "className": "text-red-500 dark:text-red-400 text-xs mt-1"
+                                                            "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                                         },
                                                         "text": "{{_local.errors?.current_password?.[0] ?? ''}}"
                                                     },
@@ -1149,7 +1197,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-red-500 ml-1"
+                                                                            "className": "text-red-600 dark:text-red-400 ml-1"
                                                                         },
                                                                         "text": "*"
                                                                     }
@@ -1171,7 +1219,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.email}}",
                                                                 "props": {
-                                                                    "className": "text-red-500 text-xs mt-1"
+                                                                    "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                                                 },
                                                                 "text": "{{_local.errors?.email?.[0] ?? ''}}"
                                                             }
@@ -1320,6 +1368,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:admin.users.form.fields.country",
                                                             "options": "{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}",
                                                             "value": "{{_local.form?.country ?? ''}}",
                                                             "triggerLabel": "$t:admin.users.form.fields.country_select",
@@ -2220,23 +2269,17 @@
                                                 "children": [
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "comment": "이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다",
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/member-notifications",
-                                                                    "query": {
-                                                                        "user_uuid": "{{user?.data?.uuid}}"
-                                                                    }
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-secondary"
+                                                            "href": "/admin/member-notifications?user_uuid={{user?.data?.uuid}}",
+                                                            "className": "button btn btn-secondary"
                                                         },
                                                         "children": [
                                                             {
@@ -2278,10 +2321,14 @@
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigateBack"
+                                        "handler": "navigateBack",
+                                        "params": {
+                                            "bypassLeaveGuard": true
+                                        }
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "btn btn-secondary"
                                 },
                                 "children": [
@@ -2351,6 +2398,7 @@
                                                                 {
                                                                     "handler": "navigate",
                                                                     "params": {
+                                                                        "bypassLeaveGuard": true,
                                                                         "path": "/admin/users",
                                                                         "mergeQuery": true,
                                                                         "query": {}
@@ -2428,8 +2476,9 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "disabled": "{{_global.isSaving || (route?.id && !_local.form?.email)}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -2619,6 +2668,7 @@
                                                     {
                                                         "handler": "navigate",
                                                         "params": {
+                                                            "bypassLeaveGuard": true,
                                                             "path": "/admin/users",
                                                             "mergeQuery": true,
                                                             "query": {}
@@ -2695,7 +2745,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_global.isSaving}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
