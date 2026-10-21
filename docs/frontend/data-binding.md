@@ -281,6 +281,8 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 
 같은 식 문자열은 전처리·구문 해석 결과를 재사용합니다. **값은 캐시하지 않으므로** 식은 매번 현재 데이터로 다시 평가되고, 데이터가 바뀌면 결과도 바로 바뀝니다. 해석에 실패한 식은 매번 같은 오류 메시지로 실패합니다. 확인용으로 재사용을 끄는 방법은 [G7Core.engineFlags](g7core-api-advanced.md#엔진-안전-스위치-g7coreengineflags) 를 참고하세요.
 
+이것과 별개로 반복 밖 props 의 **바인딩 값**은 캐시됩니다. 데이터 소스 단순 경로는 경로 글자를 키로 최대 30초, `_global`·`_local`·`_isolated`·`$parent`·`route`·`query` 는 한 렌더 사이클 동안만 재사용하고, 화면 전환은 첫 렌더 전에 둘 다 비웁니다. 컴포넌트마다 값이 다른 루트(`_computed`·`$computed`·`extensionPointProps`)와 `text`·`if`·반복·액션은 캐시하지 않습니다(engine-v1.82.1). 컴포넌트 코드에서 `bindingEngine.resolve` 로 문맥마다 값이 다른 경로를 직접 읽으면 `{ skipCache: true }` 를 넘깁니다([g7core-helpers.md 「캐싱 처리」](g7core-helpers.md#캐싱-처리)).
+
 ### `if` 표현식의 `{{}}` 위치 (CRITICAL, engine-v1.47.1 명문화)
 
 `if` 값은 `ConditionEvaluator.evaluateStringCondition` 이 평가한다. 평가 분기는 다음과 같다:
