@@ -313,6 +313,34 @@ describe('사용자 화면 확장 조각', () => {
   });
 
   /**
+   * @scenario surface=signup_modal, input=name|nickname|email|existing_password
+   * @effects signup_modal_inputs_have_labels
+   */
+  it('가입·기존 계정 모달의 입력칸은 라벨과 이어져 화면 낭독기가 이름을 읽는다', () => {
+    const nodes = flatten(load('auth_register_social_modals').modals);
+
+    for (const field of ['social_name', 'social_nickname', 'social_email', 'social_existing_password']) {
+      const input = nodes.find((n) => n.props?.name === field);
+      expect(input?.props?.id, field).toBeTruthy();
+      const label = nodes.find((n) => n.name === 'Label' && n.props?.htmlFor === input.props.id);
+      expect(label, field).toBeTruthy();
+    }
+  });
+
+  /**
+   * @scenario surface=mypage_card, intent=link
+   * @effects mypage_link_buttons_touch_size
+   */
+  it('마이페이지 「다른 계정 연결하기」 단추는 로그인 화면과 같은 기본 크기(44px)다', () => {
+    const buttons = flatten(load('mypage_social_accounts_card')).filter((n) => n.name === 'sirsoft-social_login.ProviderButtons' || String(n.name ?? '').endsWith('ProviderButtons'));
+
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const b of buttons) {
+      expect(b.props?.size ?? 'md').toBe('md');
+    }
+  });
+
+  /**
    * @scenario surface=mypage_card, response=409
    * @effects mypage_card_after_other_cards, unlink_409_shows_last_method
    */

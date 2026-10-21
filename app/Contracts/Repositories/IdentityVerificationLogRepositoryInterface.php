@@ -69,6 +69,18 @@ interface IdentityVerificationLogRepositoryInterface
     public function findVerifiedForToken(string $token, string $purpose): ?IdentityVerificationLog;
 
     /**
+     * 토큰으로 verified 상태의 challenge 를 소비·만료 여부와 무관하게 찾습니다.
+     *
+     * 가입 직후처럼 같은 요청에서 방금 소비한 토큰이 무엇을 확인했는지 다시 읽을 때 씁니다 — 통과 판정에는 쓰지 않는다
+     * (통과 판정은 소비 전 토큰만 보는 {@see self::findVerifiedForToken()}).
+     *
+     * @param  string  $token  verification_token
+     * @param  string  $purpose  IDV 목적 (예: signup)
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findVerifiedByToken(string $token, string $purpose): ?IdentityVerificationLog;
+
+    /**
      * 만료 경과 challenge 를 일괄 expire 처리합니다.
      *
      * @return int 처리된 행 수

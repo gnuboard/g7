@@ -123,6 +123,25 @@ describe('관리자 설정 화면', () => {
   });
 
   /**
+   * @scenario surface=provider_card, provider=kakao, locale=ko|en
+   * @effects kakao_notes_current_console_path_and_reconsent_limit
+   */
+  it('카카오 카드 주의사항은 지금 콘솔 메뉴(플랫폼 키 → REST API 키)로 안내하고, 이메일 동의 항목이 없는 앱의 재동의 한계(KOE205)를 알린다', () => {
+    const php = fs.readFileSync(path.join(ROOT, 'src/Services/ProviderAdminService.php'), 'utf8');
+    expect(php).toMatch(/'kakao' => \[[^\]]*'reconsent_needs_email_item'/);
+
+    const ko = lang('ko').admin.providers.notes.kakao;
+    const en = lang('en').admin.providers.notes.kakao;
+    expect(ko.client_secret_default_on).toContain('[플랫폼 키] > [REST API 키] > [클라이언트 시크릿]');
+    expect(ko.client_secret_default_on).not.toContain('[보안]');
+    expect(en.client_secret_default_on).toContain('[Platform Keys] > [REST API Key] > [Client Secret]');
+    expect(en.client_secret_default_on).not.toContain('[Security]');
+    expect(ko.reconsent_needs_email_item).toContain('KOE205');
+    expect(ko.reconsent_needs_email_item).toContain('직접 입력받기');
+    expect(en.reconsent_needs_email_item).toContain('KOE205');
+  });
+
+  /**
    * @scenario surface=settings, tab=providers|policy
    * @effects settings_sources_and_tabs
    */

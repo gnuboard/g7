@@ -444,8 +444,7 @@
                                     "name": "sirsoft-social_login.ProviderButtons",
                                     "props": {
                                         "providers": "{{socialAccounts?.data?.available ?? []}}",
-                                        "intent": "link",
-                                        "size": "sm"
+                                        "intent": "link"
                                     }
                                 }
                             ]

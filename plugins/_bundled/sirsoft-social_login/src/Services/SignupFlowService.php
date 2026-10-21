@@ -295,6 +295,9 @@ class SignupFlowService
         $tokens = is_array($data['tokens'] ?? null) ? TokenSet::fromArray($data['tokens']) : null;
 
         $email = $this->resolveSignupEmail($data, isset($input['email']) ? (string) $input['email'] : null);
+        // 인증번호로 확인한 이메일, 제공자가 검증했다고 한 이메일만 인증으로 기록한다 — 신뢰만 한 이메일·대체 이메일은 아니다.
+        $emailConfirmed = $data['email_mode'] === self::EMAIL_INPUT
+            || ($data['email_mode'] === self::EMAIL_LOCKED && $profile->emailVerified === true);
 
         $name = trim((string) ($input['name'] ?? '')) ?: ($profile->name ?? $profile->nickname ?? '');
         if ($name === '') {
@@ -324,8 +327,11 @@ class SignupFlowService
             $registration = array_merge($registration, $filtered);
         }
 
-        [$user, $account] = DB::transaction(function () use ($registration, $key, $profile, $tokens) {
+        [$user, $account] = DB::transaction(function () use ($registration, $key, $profile, $tokens, $emailConfirmed) {
             $user = $this->auth->register($registration, ['issue_token' => false])['user'];
+            if ($emailConfirmed && $user->email === $registration['email']) {
+                $this->users->markEmailVerified($user);
+            }
             $account = $this->links->attach($user, $key, $profile, $tokens, 'signup', loggedIn: true);
 
             return [$user, $account];

@@ -64,7 +64,7 @@ class ProviderAdminService
 
     /** 드라이버별 콜백 주소 등록 주의사항 키 (`resources/lang` 의 admin.providers.notes.*) */
     private const NOTES = [
-        'kakao' => ['client_secret_default_on', 'biz_app_email', 'redirect_koe006', 'webhook_https_443'],
+        'kakao' => ['client_secret_default_on', 'biz_app_email', 'reconsent_needs_email_item', 'redirect_koe006', 'webhook_https_443'],
         'naver' => ['review_no_test_account', 'redirect_exact'],
         'google' => ['redirect_exact_match', 'unverified_app'],
         'facebook' => ['strict_mode', 'email_app_review', 'data_deletion_callback'],

@@ -93,7 +93,7 @@ class SignupFlowTest extends PluginTestCase
      *
      * @scenario email=verified, policy=default
      *
-     * @effects signup_creates_passwordless_user, account_linked_on_signup, consents_recorded, handoff_after_signup, pending_deleted_after_signup, attempt_signup_recorded
+     * @effects signup_creates_passwordless_user, account_linked_on_signup, consents_recorded, handoff_after_signup, pending_deleted_after_signup, attempt_signup_recorded, confirmed_email_marked_verified
      *
      * @return void 반환값 없음
      */
@@ -114,6 +114,7 @@ class SignupFlowTest extends PluginTestCase
 
         $user = User::query()->where('email', $email)->firstOrFail();
         $this->assertFalse($user->hasPassword());
+        $this->assertNotNull($user->email_verified_at, '제공자가 검증했다고 한 이메일은 인증된 이메일로 기록한다');
         $this->assertSame('카카오닉', $user->name);
         $this->assertSame(1, SocialAccount::query()->where('user_id', $user->id)->where('provider_user_id', 'k-s1')->count());
         $this->assertSame(2, $user->consents()->count());
@@ -150,7 +151,7 @@ class SignupFlowTest extends PluginTestCase
      *
      * @scenario email=missing|unverified, email_missing_policy=ask|deny|placeholder, email_trust=flag|trust|verify
      *
-     * @effects email_policy_decides_signup_email
+     * @effects email_policy_decides_signup_email, unconfirmed_email_not_marked_verified
      *
      * @param  array<string, mixed>  $row  카카오 행 값
      * @param  bool  $hasEmail  제공자가 이메일을 주는지
@@ -182,7 +183,11 @@ class SignupFlowTest extends PluginTestCase
             $placeholder = 'kakao_'.substr(sha1($uid), 0, 12).'@social.invalid';
             $this->assertSame($placeholder, $view->json('data.email.value'));
             $this->complete($token)->assertOk();
-            $this->assertTrue(User::query()->where('email', $placeholder)->exists());
+            $this->assertNull(User::query()->where('email', $placeholder)->firstOrFail()->email_verified_at, '대체 이메일은 인증된 이메일이 아니다');
+        }
+        if ($expect === 'locked' && ! $verified) {
+            $this->complete($token)->assertOk();
+            $this->assertNull(User::query()->where('email', $email)->firstOrFail()->email_verified_at, '검증 표시 없이 신뢰만 한 이메일은 인증으로 기록하지 않는다');
         }
         if ($expect === 'input' && $hasEmail) {
             $this->assertSame($email, $view->json('data.email.value'), '미검증 이메일은 입력란에 채워 두고 인증번호로 확인한다');

@@ -49,6 +49,8 @@ effects:
   - name_required_422
   - signup_code_is_core_challenge
   - verified_email_used_for_signup
+  - confirmed_email_marked_verified
+  - unconfirmed_email_not_marked_verified
   - taken_email_refused
   - wrong_code_refused
   - challenge_mismatch_refused

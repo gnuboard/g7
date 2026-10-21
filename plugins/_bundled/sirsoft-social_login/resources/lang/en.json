@@ -341,8 +341,9 @@
             "add_submit": "Add",
             "notes": {
                 "kakao": {
-                    "client_secret_default_on": "Kakao turns Client Secret on by default. Issue the code under [Security] in the console and enter it (KOE010 otherwise).",
+                    "client_secret_default_on": "Kakao turns Client Secret on by default. Issue the code under [App] > [Platform Keys] > [REST API Key] > [Client Secret] in the console and enter it (KOE010 otherwise). The Redirect URI is registered on the same REST API Key screen.",
                     "biz_app_email": "Receiving emails requires switching to a business app and setting the email consent item.",
+                    "reconsent_needs_email_item": "If the app has no email consent item and \"When no email is given\" is set to \"Refuse sign-in\", the [Share your email again] button on the sign-in screen ends in a Kakao error (KOE205). Choose \"Ask for it\" for such apps.",
                     "redirect_koe006": "KOE006 occurs when the Redirect URI differs from the registered value.",
                     "webhook_https_443": "Kakao accepts only https on port 443 for the unlink webhook URL. If the site runs on another port, provide a separate address served on 443."
                 },

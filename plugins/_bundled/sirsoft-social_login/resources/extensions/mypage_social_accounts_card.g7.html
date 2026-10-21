@@ -58,7 +58,7 @@
       <!-- 연결할 수 있는 제공자 -->
       <div data-if="{{(socialAccounts?.data?.available ?? []).length > 0}}" data-ref="social_accounts_available" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-social_login.mypage.available</p>
-        <sirsoft-social_login.provider-buttons data-type="composite" providers="{{socialAccounts?.data?.available ?? []}}" intent="link" size="sm"/>
+        <sirsoft-social_login.provider-buttons data-type="composite" providers="{{socialAccounts?.data?.available ?? []}}" intent="link"/>
       </div>
     </div>
   </inject>

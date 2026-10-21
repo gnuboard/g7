@@ -37,6 +37,16 @@ interface UserRepositoryInterface
     public function update(User $user, array $data): bool;
 
     /**
+     * 회원 이메일을 인증된 것으로 기록합니다 (`email_verified_at` 은 일괄 대입 대상이 아니라 따로 둔다).
+     *
+     * 이미 기록돼 있으면 처음 시각을 유지합니다.
+     *
+     * @param  User  $user  회원
+     * @return void 반환값 없음
+     */
+    public function markEmailVerified(User $user): void;
+
+    /**
      * 사용자를 삭제합니다.
      *
      * @param  User  $user  삭제할 사용자 모델

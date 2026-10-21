@@ -185,6 +185,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
+                                                        "htmlFor": "social_signup_name",
                                                         "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.name"
@@ -204,6 +205,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "text",
+                                                        "id": "social_signup_name",
                                                         "name": "social_name",
                                                         "value": "{{_global.socialLoginForm?.name ?? ''}}",
                                                         "maxLength": "255",
@@ -221,6 +223,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
+                                                        "htmlFor": "social_signup_nickname",
                                                         "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.nickname"
@@ -240,6 +243,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "text",
+                                                        "id": "social_signup_nickname",
                                                         "name": "social_nickname",
                                                         "value": "{{_global.socialLoginForm?.nickname ?? ''}}",
                                                         "maxLength": "50",
@@ -298,6 +302,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
+                                                "htmlFor": "social_signup_email",
                                                 "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-social_login.signup.email"
@@ -325,6 +330,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "email",
+                                                        "id": "social_signup_email",
                                                         "name": "social_email",
                                                         "value": "{{_global.socialLoginForm?.email ?? ''}}",
                                                         "maxLength": "255",
@@ -827,6 +833,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
+                                        "htmlFor": "social_existing_password_input",
                                         "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-social_login.existing.by_password"
@@ -852,6 +859,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "id": "social_existing_password_input",
                                                 "name": "social_existing_password",
                                                 "value": "{{_global.socialLoginForm?.password ?? ''}}",
                                                 "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",

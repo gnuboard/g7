@@ -341,8 +341,9 @@
             "add_submit": "추가",
             "notes": {
                 "kakao": {
-                    "client_secret_default_on": "카카오는 Client Secret 을 기본으로 켭니다. 콘솔의 [보안] 에서 코드를 발급해 넣어 주세요(넣지 않으면 KOE010).",
+                    "client_secret_default_on": "카카오는 Client Secret 을 기본으로 켭니다. 콘솔의 [앱] > [플랫폼 키] > [REST API 키] > [클라이언트 시크릿] 에서 코드를 발급해 넣어 주세요(넣지 않으면 KOE010). Redirect URI 도 같은 REST API 키 화면에 등록합니다.",
                     "biz_app_email": "이메일을 받으려면 비즈 앱 전환과 이메일 동의 항목 설정이 필요합니다.",
+                    "reconsent_needs_email_item": "이메일 동의 항목이 없는 앱에서 「이메일을 주지 않을 때」를 「로그인 거부」로 두면, 로그인 화면의 [이메일 제공 다시 동의하기] 가 카카오 오류(KOE205)로 끝납니다. 이런 앱은 「직접 입력받기」를 고르세요.",
                     "redirect_koe006": "Redirect URI 가 콘솔 등록값과 다르면 KOE006 이 납니다.",
                     "webhook_https_443": "카카오는 연결 끊기 웹훅 주소로 https·443 포트만 받습니다. 다른 포트로 운영하면 443 으로 받는 주소를 따로 두세요."
                 },

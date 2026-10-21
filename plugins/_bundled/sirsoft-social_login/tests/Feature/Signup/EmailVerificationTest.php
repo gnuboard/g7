@@ -73,7 +73,7 @@ class EmailVerificationTest extends PluginTestCase
      *
      * @scenario email=input, code=correct
      *
-     * @effects signup_code_is_core_challenge, verified_email_used_for_signup
+     * @effects signup_code_is_core_challenge, verified_email_used_for_signup, confirmed_email_marked_verified
      *
      * @return void 반환값 없음
      */
@@ -93,7 +93,8 @@ class EmailVerificationTest extends PluginTestCase
         $this->postJson('/api/plugins/sirsoft-social_login/signup/complete', [
             'pending_token' => $this->token, 'email' => $email, 'agree_terms' => true, 'agree_privacy' => true,
         ])->assertOk();
-        $this->assertTrue(User::query()->where('email', $email)->exists());
+        $user = User::query()->where('email', $email)->firstOrFail();
+        $this->assertNotNull($user->email_verified_at, '인증번호로 확인한 이메일은 인증된 이메일로 기록한다');
     }
 
     /**
