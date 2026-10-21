@@ -9,6 +9,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -134,7 +135,10 @@ class BoardDashboardService
      */
     public function getRecentPosts(int $limit): Collection
     {
-        return $this->postRepository->getRecentAcrossBoards($limit);
+        return $this->postRepository->getRecentAcrossBoards(
+            $limit,
+            PostQueryExtensions::collect(['admin_dashboard'], ['audience' => 'admin'])
+        );
     }
 
     /**

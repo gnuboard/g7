@@ -243,6 +243,32 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 예제: 이커머스 `UserListMileageFilterListener`(마일리지 잔액 범위)·`UserListAddressFilterListener`(배송지 국가·등록 여부).
 화면 쪽 규약은 [관리자 목록 필터 컨벤션](../frontend/admin-list-filter-convention.md) 을 본다.
 
+### 목록 쿼리 확장 훅(`*.list_query_extensions`) 표준
+
+확장이 다른 확장·코어의 **목록 쿼리에 조건을 더하는** 표준 형태다. 이름은 `{vendor-module}.{entity}.list_query_extensions`
+(코어는 `core.{entity}.list_query_extensions`) 이고 filter 다. 리스너는 받은 배열에 **조건 함수**
+`fn (Builder $query, array $context): void` 를 더해 돌려준다. 발행하는 쪽은 자기 조건을 다 건 **뒤에** 조건 함수를
+붙이므로 확장은 결과를 좁히기만 한다. 구현 예: 코어 회원 목록(`core.user.list_query_extensions`, 위 절),
+게시판 목록(`sirsoft-board.post.list_query_extensions` — 목록·건수·공지·답글·상세의 답글 스레드·이전/다음·검색·통합검색·최근/인기·
+마이페이지·프로필·관리자 대시보드·사이트맵을 `$context['context']` 로 구분, 게시판 모듈의 확장 포인트 문서).
+
+발행하는 쪽 규칙:
+
+- 훅은 Service·리스너에서 발행하고, 저장소에는 모은 조건을 값 객체·인자로 넘겨 **적용만** 한다(저장소는 훅을 모른다).
+- 같은 목록의 행과 건수(페이지 수)는 같은 조건을 받아야 한다 — 건수 경로에도 같은 훅을 발행한다.
+- 리스너가 없으면 쿼리·결과·캐시 키가 지금과 같아야 한다.
+- 목록 캐시가 있으면 **캐시 축 훅**(`{vendor-module}.{entity}.filter_list_cache_variant`)을 짝으로 둔다. 리스너가 돌려준
+  축 값(스칼라 목록)으로 키 접미사를 만들고, 비면 키를 바꾸지 않는다. 조건을 사람·언어마다 다르게 거는 리스너는
+  같은 축을 이 훅으로 돌려줘야 한다 — 돌려주지 않으면 먼저 연 사람의 건수·위젯이 다른 사람에게 보인다.
+- 저장된 총계(글 수 컬럼·일별 통계)처럼 쿼리가 아닌 숫자는 조건으로 나눌 수 없다. 반영되지 않는 값을 문서에 적는다.
+
+리스너 규칙은 위 절과 같다 — 저장소 서브쿼리(`whereIn`)로 걸고, 조인이 있는 쿼리에서는 `$query->qualifyColumn()` 으로
+컬럼을 한정하고, 볼 권한이 없는 운영자에게는 걸지 않는다.
+
+> `*.filter_list_query`·`*.filter_list_params` 는 **검색 조건 배열**을 고치는 필터이며 쿼리 빌더가 아니다
+> (예: `sirsoft-page.page.filter_list_query`, `sirsoft-ecommerce.product.filter_public_list_params`). 쿼리에 조건을 더하려면
+> 이 절의 `*.list_query_extensions` 를 쓴다.
+
 ### 알림 추출의 선택 채널
 
 `{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면
@@ -377,13 +403,13 @@ sirsoft-ecommerce.product.after_update
 sirsoft-ecommerce.product.filter_create_data
 
 # 조회 작업
-sirsoft-ecommerce.product.before_list
-sirsoft-ecommerce.product.after_list
-sirsoft-ecommerce.product.filter_list_query
-sirsoft-ecommerce.product.filter_list_result
-sirsoft-ecommerce.product.before_show
-sirsoft-ecommerce.product.after_show
-sirsoft-ecommerce.product.filter_show_result
+sirsoft-ecommerce.product.before_public_list
+sirsoft-ecommerce.product.filter_public_list_params   # 검색 조건 배열 필터 — 쿼리 빌더가 아니다
+sirsoft-ecommerce.product.after_public_list
+sirsoft-ecommerce.product.filter_list_params          # 관리자 목록의 검색 조건 배열 필터
+sirsoft-ecommerce.product.filter_popular_list_result  # 결과 필터
+sirsoft-ecommerce.product.after_read
+sirsoft-board.post.list_query_extensions              # 목록 쿼리에 조건 함수를 더한다 — §목록 쿼리 확장 훅 표준
 
 # 이벤트/기타
 sirsoft-ecommerce.order.on_payment_success

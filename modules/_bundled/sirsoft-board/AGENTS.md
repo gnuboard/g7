@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 모듈 (sirsoft-board) — 게시판·게시글·댓글·신고·게시판별 알림설정 도메인. 관리자 CRUD + 공개 API 만 소유하고, 방문자 화면(목록/상세/글쓰기)은 템플릿이 그린다
-2. 확장 방식: 발행 훅 165개(전량 action/filter, 사용자 조회 19곳의 before·filter_*_result·after 포함) — 새 콘텐츠 타입 연동은 `EcommerceInquiryHookListener` 식 필터 훅 위임 패턴을 참고
+2. 확장 방식: 발행 훅 167개(전량 action/filter, 사용자 조회 19곳의 before·filter_*_result·after, 목록 쿼리 확장·목록 캐시 축 포함) — 새 콘텐츠 타입 연동은 `EcommerceInquiryHookListener` 식 필터 훅 위임 패턴을 참고
 3. 건드리면 안 되는 것: 비밀글 게이팅(`SecretContentGate`)을 우회하는 신규 조회 경로, `chunk()`(OFFSET) 로 삭제·갱신 순회, count 컬럼(posts_count 등) 직접 갱신
 4. 작업 위치: `modules/_bundled/sirsoft-board` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan module:update sirsoft-board --force`
@@ -135,7 +135,7 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 165개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 167개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 104개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 22개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -146,7 +146,7 @@
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
-발행 훅 165개는 전부 `action`/`filter` 이며 코어 브로드캐스트 채널은 쓰지 않습니다(구독 훅
+발행 훅 167개는 전부 `action`/`filter` 이며 코어 브로드캐스트 채널은 쓰지 않습니다(구독 훅
 목록의 이커머스 8개가 예로 보여주듯, **콘텐츠를 다른 도메인이 재사용하는 자리는 훅이지 상속이
 아닙니다**). 새 게시판 세부 검증 규칙을 추가하려면 `board.store_validation_rules`/
 `update_validation_rules` filter 를, 게시판 생성 후 부가 리소스를 함께 만들려면
@@ -154,7 +154,9 @@
 3단 패턴은 전 도메인(board/comment/report/attachment)에 동일하게 반복되므로, 하나를 배우면
 나머지에 그대로 적용됩니다. 훅 리스너 16개 중 `EcommerceInquiryHookListener` 는 이 모듈의
 CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 형태의 확장 사례입니다 — 새로운
-"게시판을 흉내 낸 도메인"을 만들 때 참고할 선례입니다.
+"게시판을 흉내 낸 도메인"을 만들 때 참고할 선례입니다. 목록을 **좁히는** 확장은 결과 훅이 아니라
+`post.list_query_extensions`(조건 함수 등록)와 그 짝인 `post.filter_list_cache_variant`(캐시 축)를 씁니다 —
+게시판 저장소 인터페이스를 감싸지 않습니다([목록 쿼리 확장 훅](docs/extension-points.md#목록-쿼리-확장-훅-121)).
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -204,10 +206,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 260개 | `modules/_bundled/sirsoft-board/tests` |
+| PHPUnit | 265개 | `modules/_bundled/sirsoft-board/tests` |
 | Vitest | 99개 | `vitest.config.ts` |
 | Playwright | 39개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 173개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 177개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

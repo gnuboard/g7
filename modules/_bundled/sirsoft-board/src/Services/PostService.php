@@ -32,6 +32,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardManageScope;
 use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -129,7 +130,13 @@ class PostService
             : "sirsoft-board.{$slug}.posts.read";
         $filters['scope_permission'] = $scopePermission;
 
-        $posts = $this->postRepository->paginate($slug, $filters, $perPage, $withTrashed, $board);
+        // 확장이 목록을 좁히는 조건(원글·공지·답글 줄). 건수(getTotalNormalPosts 의 count)와 같은 조건이어야 페이지 수가 맞는다
+        $extensions = PostQueryExtensions::collect(['list', 'notice', 'reply'], [
+            'audience' => $context,
+            'board' => $board ?? fn () => $this->boardService->getBoardBySlug($slug, checkScope: false),
+        ]);
+
+        $posts = $this->postRepository->paginate($slug, $filters, $perPage, $withTrashed, $board, $extensions);
 
         if ($hookContext !== null) {
             // 페이지네이터를 받아 페이지네이터로 돌려준다. 항목을 빼도 건수는 그대로다 — 목록을 좁히는 용도가 아니다
@@ -163,7 +170,12 @@ class PostService
             : "sirsoft-board.{$slug}.posts.read";
         $filters['scope_permission'] = $scopePermission;
 
-        return $this->postRepository->countNormalPosts($slug, $filters, $withTrashed);
+        $extensions = PostQueryExtensions::collect(['count', 'reply'], [
+            'audience' => $context,
+            'board' => fn () => $this->boardService->getBoardBySlug($slug, checkScope: false),
+        ]);
+
+        return $this->postRepository->countNormalPosts($slug, $filters, $withTrashed, $extensions);
     }
 
     /**
@@ -196,9 +208,18 @@ class PostService
         // 관리자 목록은 삭제글 포함(withTrashed=true)이 기본이라, 이 조건에서 캐시를 건너뛰면
         // 관리자가 목록을 열 때마다 전체 COUNT 가 실행된다. 포함 여부는 결과가 달라지는
         // 축이므로 캐시를 우회하는 대신 **키를 나눈다** — 두 값이 서로를 덮어쓰지 않는다.
-        $cacheKey = $withTrashed
-            ? "board_normal_count_{$boardId}_with_trashed"
-            : "board_normal_count_{$boardId}";
+        // 맥락(관리자·사용자 목록)과 읽기 범위도 결과가 달라지는 축이다. 범위가 걸린 열람자(본인만·소유역할)는
+        // 사람마다 건수가 달라 자기 키를 쓰고, 전체 범위 사용자·비회원은 공용 키를 쓴다 — 종전에는 먼저 목록을 연
+        // 사람의 건수가 다른 사람의 전체 건수·페이지 수로 보였다(#147). 확장 축(filter_list_cache_variant)이 끝에 붙는다.
+        $scopePermission = $context === 'admin'
+            ? "sirsoft-board.{$slug}.admin.posts.read"
+            : "sirsoft-board.{$slug}.posts.read";
+        $scope = PermissionHelper::getEffectiveScope($scopePermission);
+        $cacheKey = "board_normal_count_{$boardId}"
+            .($withTrashed ? '_with_trashed' : '')
+            ."_{$context}"
+            .($scope !== null ? "_{$scopePermission}_{$scope}_".Auth::id() : '')
+            .PostQueryExtensions::cacheSuffix('normal_count', ['board_id' => $boardId, 'audience' => $context]);
 
         // 캐시에는 값 객체가 아니라 원시 배열을 담는다. 드라이버마다 직렬화 방식이 달라
         // 객체를 그대로 넣으면 복원 시 클래스 정의에 묶이고, 정확도 필드가 하나라도
@@ -610,6 +631,10 @@ class PostService
         // 훅: after_blind
         HookManager::doAction('sirsoft-board.post.after_blind', $blindedPost, $slug);
 
+        // 캐시 무효화 — 비우지 않으면 블라인드한 글이 홈 최근·인기 게시글과 이웃 글의 이전/다음에 TTL 동안 남는다(#147).
+        // 단건·일괄·신고 처리·자동 숨김이 모두 이 지점을 지난다(executeDelete 와 같은 위치·방식)
+        $this->invalidatePostCaches($slug);
+
         return $blindedPost;
     }
 
@@ -694,6 +719,9 @@ class PostService
 
         // 훅: after_restore
         HookManager::doAction('sirsoft-board.post.after_restore', $restoredPost, $slug);
+
+        // 캐시 무효화 — 비우지 않으면 복원한 글이 TTL 동안 최근·인기 게시글과 이전/다음에 돌아오지 않는다(#147)
+        $this->invalidatePostCaches($slug);
 
         return $restoredPost;
     }
@@ -928,7 +956,13 @@ class PostService
             $this->validateBoardExists($slug);
         }
 
-        $post = $this->postRepository->findWithCounts($slug, $id, $boardId, $board);
+        // 상세의 답글 스레드도 목록 쿼리 확장 조건(구분값 thread)을 받는다 — 목록에서 숨긴 답글이 상세에서 보이지 않게
+        $extensions = PostQueryExtensions::collect(['thread'], [
+            'audience' => $context === 'admin' ? 'admin' : 'user',
+            'board' => $board ?? fn () => $this->boardService->getBoardBySlug($slug, checkScope: false),
+        ]);
+
+        $post = $this->postRepository->findWithCounts($slug, $id, $boardId, $board, $extensions);
 
         if (! $post) {
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.post_not_found'));
@@ -1042,11 +1076,14 @@ class PostService
             .($category ? "_{$category}" : '')
             ."_{$orderBy}_{$orderDirection}"
             .($withTrashed ? '_trashed' : '')
-            .($scope !== null ? "_{$filters['scope_permission']}_{$scope}_".Auth::id() : '');
+            .($scope !== null ? "_{$filters['scope_permission']}_{$scope}_".Auth::id() : '')
+            .PostQueryExtensions::cacheSuffix('adjacent', ['board_id' => $board->id, 'audience' => $context]);
+
+        $extensions = PostQueryExtensions::collect(['adjacent'], ['audience' => $context, 'board' => $board]);
 
         $adjacent = $this->cache->remember(
             $cacheKey,
-            fn () => $this->postRepository->getAdjacentPosts($slug, $id, $filters, $withTrashed, $board->id),
+            fn () => $this->postRepository->getAdjacentPosts($slug, $id, $filters, $withTrashed, $board->id, $extensions),
             $ttl,
             tags: ['board-posts']
         );
@@ -1522,7 +1559,8 @@ class PostService
         // 제외 게시판 집합이 바뀌면 건수도 바뀌므로 그 집합을 키에 싣는다.
         if (empty($boardSlug) && empty($search)) {
             $cacheKey = "user_activities_total_{$userId}_{$activityType}"
-                .($unreadableBoardIds === [] ? '' : '_x'.md5(implode(',', $unreadableBoardIds)));
+                .($unreadableBoardIds === [] ? '' : '_x'.md5(implode(',', $unreadableBoardIds)))
+                .PostQueryExtensions::cacheSuffix('user_activities_total');
             $cachedTotal = $this->cache->get($cacheKey);
 
             if ($cachedTotal !== null) {
@@ -1534,7 +1572,9 @@ class PostService
         // 저장소는 이 값이 없으면 타인 관점으로 보고 비밀글·미발행글을 걸러낸다(fail-closed).
         $filters['viewer_id'] = $userId;
 
-        $result = $this->postRepository->getUserActivities($userId, $filters, $perPage);
+        $extensions = PostQueryExtensions::collect(['user_activity'], ['audience' => 'user', 'subject_user_id' => $userId]);
+
+        $result = $this->postRepository->getUserActivities($userId, $filters, $perPage, $extensions);
 
         // 캐시 미적중 시 paginate 결과의 total을 캐시에 저장
         if (empty($boardSlug) && empty($search) && $cachedTotal === null) {
@@ -1566,9 +1606,12 @@ class PostService
         HookManager::doAction('sirsoft-board.post.before_user_activity_stats', $hookContext);
 
         $stats = $this->cache->remember(
-            "user_activity_stats_{$userId}",
+            "user_activity_stats_{$userId}".PostQueryExtensions::cacheSuffix('user_activity_stats'),
             function () use ($userId) {
-                $stats = $this->postRepository->getUserActivityStats($userId);
+                $stats = $this->postRepository->getUserActivityStats(
+                    $userId,
+                    PostQueryExtensions::collect(['user_stats'], ['audience' => 'user', 'subject_user_id' => $userId])
+                );
 
                 // 「작성한 댓글」은 내가 쓴 댓글 수다 — 내 글들에 달린 댓글 합(받은 댓글)이 아니라
                 // 「내가 쓴 댓글」 목록과 같은 조건으로 센다. 두 숫자가 어긋나면 탭 숫자와 목록 건수가 다르게 보인다.
@@ -1620,7 +1663,7 @@ class PostService
             'exclude_board_ids' => $viewerId !== null && $viewerId === $userId
                 ? []
                 : $this->publicProfileExcludedBoardIds($userId),
-        ]), $perPage);
+        ]), $perPage, PostQueryExtensions::collect(['user_activity'], ['audience' => 'user', 'subject_user_id' => $userId]));
 
         $posts = HookManager::applyFilters('sirsoft-board.post.filter_user_public_list_result', $posts, $hookContext);
 
@@ -1650,11 +1693,16 @@ class PostService
             ? []
             : $this->publicProfileExcludedBoardIds($userId);
         sort($excludeBoardIds);
-        $cacheKey = "user_public_stats_v2_{$userId}_".md5(implode(',', $excludeBoardIds));
+        $cacheKey = "user_public_stats_v2_{$userId}_".md5(implode(',', $excludeBoardIds))
+            .PostQueryExtensions::cacheSuffix('user_public_stats');
 
         $stats = $this->cache->remember(
             $cacheKey,
-            fn () => $this->postRepository->getUserPublicStats($userId, $excludeBoardIds),
+            fn () => $this->postRepository->getUserPublicStats(
+                $userId,
+                $excludeBoardIds,
+                PostQueryExtensions::collect(['user_stats'], ['audience' => 'user', 'subject_user_id' => $userId])
+            ),
             g7_core_settings('cache.default_ttl', 86400),
             tags: ['board-stats']
         );
@@ -1723,7 +1771,18 @@ class PostService
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
-        return $this->postRepository->searchByKeyword($slug, $keyword, $orderBy, $direction, $perPage, $page);
+        return $this->postRepository->searchByKeyword(
+            $slug,
+            $keyword,
+            $orderBy,
+            $direction,
+            $perPage,
+            $page,
+            PostQueryExtensions::collect(['search'], [
+                'audience' => 'user',
+                'board' => fn () => $this->boardService->getBoardBySlug($slug, checkScope: false),
+            ])
+        );
     }
 
     /**
@@ -1735,7 +1794,14 @@ class PostService
      */
     public function countByKeyword(string $slug, string $keyword): BoundedCount
     {
-        return $this->postRepository->countByKeyword($slug, $keyword);
+        return $this->postRepository->countByKeyword(
+            $slug,
+            $keyword,
+            PostQueryExtensions::collect(['search'], [
+                'audience' => 'user',
+                'board' => fn () => $this->boardService->getBoardBySlug($slug, checkScope: false),
+            ])
+        );
     }
 
     /**
@@ -1753,7 +1819,16 @@ class PostService
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
-        return $this->postRepository->searchAcrossBoards($boardIds, $keyword, $orderBy, $direction, $perPage, $page, $readScope);
+        return $this->postRepository->searchAcrossBoards(
+            $boardIds,
+            $keyword,
+            $orderBy,
+            $direction,
+            $perPage,
+            $page,
+            $readScope,
+            PostQueryExtensions::collect(['search_across'], ['audience' => 'user', 'board_ids' => $boardIds])
+        );
     }
 
     /**
@@ -1793,7 +1868,8 @@ class PostService
             $sortKeys,
             $perPage,
             $cursor,
-            $readScope
+            $readScope,
+            PostQueryExtensions::collect(['search_across'], ['audience' => 'user', 'board_ids' => $boardIds])
         );
     }
 
@@ -1807,7 +1883,12 @@ class PostService
      */
     public function countAcrossBoards(array $boardIds, string $keyword, array $readScope = []): BoundedCount
     {
-        return $this->postRepository->countAcrossBoards($boardIds, $keyword, $readScope);
+        return $this->postRepository->countAcrossBoards(
+            $boardIds,
+            $keyword,
+            $readScope,
+            PostQueryExtensions::collect(['search_across'], ['audience' => 'user', 'board_ids' => $boardIds])
+        );
     }
 
     // =========================================================================

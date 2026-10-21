@@ -1,0 +1,28 @@
+feature: 일반 글 수 캐시를 목록 맥락·권한 범위로 나눈다 (#147 같은 결함군)
+
+description: |
+  게시글 목록의 전체 건수·페이지 수는 `board_normal_count_{id}` 캐시에서 온다. 키에 권한 범위가 없어 「본인만」·
+  「소유역할」 범위 회원과 전체 범위 사용자가 같은 값을 썼다 — 먼저 목록을 연 사람의 건수가 다른 사람에게 보였다.
+  관리자 글 관리 목록과 사용자 목록도 같은 키를 썼다. 키에 맥락(admin/user)과, 범위가 걸린 열람자는
+  `{scopePermission}_{scope}_{userId}` 를 넣는다. 전체 범위 사용자·비회원은 지금처럼 공용 키를 쓴다.
+
+axis_notes:
+  case: |
+    캐시를 먼저 채우는 사람 → 나중에 읽는 사람 순서다. 열람자는 비회원(guest)·전체 범위 회원(full)·
+    본인만(self)·소유역할(role), 맥락은 사용자 목록(user)·관리자 목록(admin).
+
+axes:
+  case:
+    - self_then_full_then_guest   # 본인만 회원이 먼저 → 전체 범위 회원·비회원
+    - guest_then_full_then_self   # 비회원·전체 범위가 먼저 → 본인만 회원
+    - full_then_role              # 전체 범위가 먼저 → 소유역할 회원
+    - role_then_self_then_mate    # 소유역할 → 본인만 → 같은 역할 회원(사람마다 키)
+    - admin_then_user             # 같은 사람의 관리자 맥락 → 사용자 맥락
+
+effects:
+  - scoped_viewer_gets_own_count      # 범위 열람자는 자기 범위 건수를 받는다
+  - full_viewer_unaffected_by_order   # 범위 열람자가 먼저 열어도 전체 범위 사용자는 전체 건수
+  - admin_user_contexts_split         # admin / user 맥락 키가 다르다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/NormalPostCountScopeCacheTest.php

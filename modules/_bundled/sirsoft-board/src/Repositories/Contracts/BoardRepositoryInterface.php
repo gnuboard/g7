@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 
 /**
  * 게시판 Repository 인터페이스
@@ -128,27 +129,30 @@ interface BoardRepositoryInterface
      * 최근 게시글을 조회합니다. (여러 게시판 통합)
      *
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 recent — 게시판별 하위 쿼리마다)
      * @return array<int, array<string, mixed>>
      */
-    public function getRecentPosts(int $limit): array;
+    public function getRecentPosts(int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 특정 게시판의 최근 게시물을 조회합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPosts(string $slug, int $limit): array;
+    public function getBoardRecentPosts(string $slug, int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 게시판 ID로 최근 게시물을 조회합니다 (slug 재조회 없음).
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPostsById(int $boardId, int $limit): array;
+    public function getBoardRecentPostsById(int $boardId, int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 게시판의 게시글 개수를 조회합니다.
@@ -177,9 +181,10 @@ interface BoardRepositoryInterface
      *
      * @param  string  $period  기간 필터 (today, week, month, all)
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 popular — 작성자·첨부 조인이 있어 조건은 컬럼을 한정해야 한다)
      * @return array<int, array<string, mixed>>
      */
-    public function getPopularPosts(string $period, int $limit): array;
+    public function getPopularPosts(string $period, int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 활성화된 게시판 목록을 조회합니다.

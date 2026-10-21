@@ -1,0 +1,53 @@
+feature: 게시글 목록 쿼리 확장 훅 sirsoft-board.post.list_query_extensions (#147)
+
+description: |
+  확장이 게시판 목록 성격의 쿼리에 조건을 더할 수 있는 필터 훅이다. 리스너는 `fn (Builder $query, array $context)`
+  조건 함수 목록을 돌려주고, 게시판은 자기 조건(게시판·공지·원글·권한 범위·삭제·필터·검색)을 다 건 뒤에 붙인다.
+  그래서 확장은 결과를 좁히기만 한다. 발행은 Service·Listener·SEO 기여자에서 구분값마다 한 번이고, 저장소는
+  받은 값 객체(PostQueryExtensions)로 조건만 적용한다.
+
+  가장 복잡한 변종은 adjacent(빌더 팩토리 안 — MAX/MIN 서브쿼리까지 덮어야 함)와 user_activity 댓글 경로·popular
+  (조인이 있어 컬럼 한정이 필요)다.
+
+axis_notes:
+  case: |
+    목록 구분값($context['context']) 15개마다 「리스너가 category=EN 만 남긴다」를 확인하고, 계약 케이스를 더한다 —
+    리스너 없음(지금과 같은 결과·쿼리 수), 호출할 수 없는 반환(버리고 경고), 넘기는 맥락 값, 관리자 맥락 구분,
+    리스너 등록 경로(HookListenerRegistrar).
+
+axes:
+  case:
+    - list
+    - notice
+    - reply
+    - thread
+    - count
+    - adjacent
+    - search
+    - search_across
+    - recent
+    - popular
+    - board_recent
+    - user_activity
+    - user_stats
+    - admin_dashboard
+    - sitemap
+    - no_listener
+    - non_callable
+    - context_payload
+    - registrar
+
+effects:
+  - extension_narrows_each_list_context        # 구분값마다 리스너 조건이 결과를 좁힌다
+  - list_and_count_share_conditions            # list 와 count 의 total 이 같다
+  - adjacent_subquery_covered                  # 이전/다음 MAX/MIN 서브쿼리까지 조건이 걸린다
+  - joined_context_needs_qualified_columns     # 조인 맥락에서 qualifyColumn 조건이 동작한다
+  - context_payload_complete                   # context·audience·board·board_ids·user·locale·subject_user_id 를 넘긴다
+  - no_listener_keeps_current_result           # 리스너가 없으면 결과 id·순서가 지금과 같다
+  - non_callable_dropped_with_warning          # 호출할 수 없는 반환은 버리고 경고를 남긴다
+  - no_extra_queries_without_listener          # 리스너가 없으면 쿼리 수가 늘지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostListQueryExtensionsTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Support/PostQueryExtensionsTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/ListQueryCountRegressionTest.php
