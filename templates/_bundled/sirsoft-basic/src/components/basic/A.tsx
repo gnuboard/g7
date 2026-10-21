@@ -1,5 +1,5 @@
 import React from 'react';
-import { handleLinkClick, mergeQueryIntoHref, mergeRelForTarget, navigateTo, resolveLinkHref } from '../../support/navigationLink';
+import { handleLinkClick, mergeQueryIntoHref, mergeRelForTarget, navigateTo, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 export interface AProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   /**
@@ -51,6 +51,8 @@ export const A: React.FC<AProps> = ({
   rel,
   ...props
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(mergeQuery && !disabled && typeof href === 'string');
   const finalRel = mergeRelForTarget(target, rel);
   if (disabled) {
     return (

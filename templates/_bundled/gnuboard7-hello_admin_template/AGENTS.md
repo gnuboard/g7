@@ -151,7 +151,7 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 3개 | `vitest.config.ts` |
+| Vitest | 4개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 1개 | `tests/scenarios` |
 

@@ -67,6 +67,46 @@ function getDevTools(): G7DevToolsInterface | undefined {
 }
 
 /**
+ * 영구 캐시(키 = 경로 글자, 30초)에 담으면 안 되는 경로인지 판정한다.
+ *
+ * 상태 루트(`_global`·`_local`·`_isolated`·`$parent`)와 화면 주소 루트(`route`·`query`)는
+ * 값이 바뀌어도 같은 경로 글자로 남는다. 종전에는 `route`·`query` 가 영구 캐시를 타서
+ * 글 보기(`/board/notice/226`) → SPA 로 다른 게시판 목록 이동 시 `{{route.slug}}` 가
+ * 30초 동안 직전 화면 값(notice)으로 그려졌다. 렌더 사이클 캐시만 쓴다.
+ * `route`·`query` 는 루트 이름이 정확히 일치할 때만 해당한다(`routes` 같은 데이터소스는 제외).
+ *
+ * @since engine-v1.82.1
+ */
+function isDynamicCachePath(path: string): boolean {
+  return path.startsWith('_global') ||
+    path.startsWith('_local') ||
+    path.startsWith('_isolated') ||
+    path.startsWith('$parent') ||
+    isRootPath(path, 'route') ||
+    isRootPath(path, 'query');
+}
+
+/**
+ * 어떤 캐시에도 담으면 안 되는 식인지 판정한다 — 같은 렌더 사이클 안에서도 컴포넌트마다 값이 다른 루트를 읽는다.
+ *
+ * `_computed`·`$computed` 는 컴포넌트 범위로 다시 계산되고(트러블슈팅 cache 사례 13), `extensionPointProps` 는
+ * 확장 지점 인스턴스마다 다르다. 종전에는 단일 바인딩 prop 만 렌더러가 캐시를 건너뛰어, 문자열 보간·배열·중첩 객체
+ * props(예: 통계 화면 탭 `href="...?tab=x{{_computed.tabQuery}}"`)는 기간을 바꿔도 30초 동안 옛 값이었고, 형제 확장 지점은
+ * 먼저 그린 인스턴스 값을 받았다. 식 안 어디에 있든 해당한다.
+ *
+ * @since engine-v1.82.1
+ */
+function isUncacheablePath(expr: string): boolean {
+  return UNCACHEABLE_ROOT_PATTERN.test(expr);
+}
+
+const UNCACHEABLE_ROOT_PATTERN = /(^|[^\w$.])(_computed|\$computed|extensionPointProps)(?![\w$])/;
+
+function isRootPath(path: string, root: string): boolean {
+  return path === root || path.startsWith(`${root}.`) || path.startsWith(`${root}[`) || path.startsWith(`${root}?`);
+}
+
+/**
  * 바인딩 컨텍스트 인터페이스
  *
  * 데이터 바인딩 시 사용되는 컨텍스트 객체
@@ -395,8 +435,8 @@ export class DataBindingEngine {
           let value: any;
           let fromCache = false;
 
-          // skipCache가 아니면 렌더 사이클 캐시 사용
-          if (!opts.skipCache) {
+          // skipCache가 아니면 렌더 사이클 캐시 사용 (컴포넌트마다 값이 다른 루트를 읽는 식은 제외 — engine-v1.82.1)
+          if (!opts.skipCache && !isUncacheablePath(effectivePath)) {
             const exprCacheKey = `expr:${effectivePath}`;
             const exprCached = this.getFromRenderCycleCache(exprCacheKey);
             if (exprCached !== undefined) {
@@ -435,8 +475,8 @@ export class DataBindingEngine {
         }
       }
 
-      // skipCache 옵션이면 모든 캐시 사용 안 함
-      if (opts.skipCache) {
+      // skipCache 옵션이면 모든 캐시 사용 안 함 (컴포넌트마다 값이 다른 루트 포함 — engine-v1.82.1)
+      if (opts.skipCache || isUncacheablePath(effectivePath)) {
         const startTime = devTools?.isEnabled() ? performance.now() : 0;
         const value = this.resolvePath(effectivePath, extendedContext, opts);
 
@@ -462,10 +502,7 @@ export class DataBindingEngine {
       }
 
       // 동적 경로 여부 판단
-      const isDynamicPath = effectivePath.startsWith('_global') ||
-        effectivePath.startsWith('_local') ||
-        effectivePath.startsWith('_isolated') ||
-        effectivePath.startsWith('$parent');
+      const isDynamicPath = isDynamicCachePath(effectivePath);
 
       const startTime = devTools?.isEnabled() ? performance.now() : 0;
       let value: any;
@@ -585,12 +622,9 @@ export class DataBindingEngine {
     let fromCache = false;
     const isBaseExpression = isComplexExpression(baseExpr);
     // 동적 경로 여부 판단
-    const isDynamicPipeBase = baseExpr.startsWith('_global') ||
-      baseExpr.startsWith('_local') ||
-      baseExpr.startsWith('_isolated') ||
-      baseExpr.startsWith('$parent');
+    const isDynamicPipeBase = isDynamicCachePath(baseExpr);
 
-    if (opts.skipCache) {
+    if (opts.skipCache || isUncacheablePath(baseExpr)) {
       // skipCache: 모든 캐시 무시
       if (isBaseExpression) {
         value = this.evaluateExpression(baseExpr, extendedContext);
@@ -679,7 +713,8 @@ export class DataBindingEngine {
     const startTime = devTools?.isEnabled() ? performance.now() : 0;
 
     // skipCache 옵션이 true면 모든 캐시 사용 안 함 (반복 렌더링에서 같은 경로가 다른 값을 가져야 할 때)
-    if (opts.skipCache) {
+    // 컴포넌트마다 값이 다른 루트도 같다 (engine-v1.82.1)
+    if (opts.skipCache || isUncacheablePath(path)) {
       const value = this.resolvePath(path, context, opts);
 
       // DevTools: 표현식 평가 추적
@@ -702,9 +737,9 @@ export class DataBindingEngine {
     }
 
     // 동적 경로 여부 판단
-    // - _global, _local, _isolated, $parent: 동적으로 자주 변경되므로 영구 캐시 사용 안 함
+    // - _global, _local, _isolated, $parent, route, query: 동적으로 변경되므로 영구 캐시 사용 안 함
     // - 단, 같은 렌더 사이클 내에서는 렌더 사이클 캐시 사용 (성능 최적화)
-    const isDynamicPath = path.startsWith('_global') || path.startsWith('_local') || path.startsWith('_isolated') || path.startsWith('$parent');
+    const isDynamicPath = isDynamicCachePath(path);
     let fromCache = false;
 
     // 1. 렌더 사이클 캐시 확인 (동적 경로용)

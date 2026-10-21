@@ -21,6 +21,7 @@ import { DataSourceManager } from './template-engine/DataSourceManager';
 import { initTemplateEngine, renderTemplate, destroyTemplate, releaseTemplateRoot, getState, updateTemplateData } from './template-engine';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
 import { ErrorDisplay } from './template-engine/ErrorDisplay';
+import { notifyLocationReplaced } from './template-engine/navigationLinks';
 import { toTemplateEngineError, TemplateEngineError } from './template-engine/TemplateEngineError';
 import { ErrorPageHandler } from './template-engine/ErrorPageHandler';
 import { AuthManager, type AuthType } from './auth/AuthManager';
@@ -1768,6 +1769,13 @@ export class TemplateApp {
                 sources: dataSources,
             };
             this.renderedTransitionOverlay = layoutData.transition_overlay ?? null;
+
+            // 바인딩 값 캐시는 경로 글자가 키라 컨텍스트가 바뀌어도 그대로 맞는다 — 새 화면을 그리기 직전에 비운다.
+            // 종전에는 같은 레이아웃의 다른 대상(클레임 A → B)으로 가면 props 의 `{{claim.data.order_number}}` 가
+            // 30초 동안 앞 대상 값이었다. 받는 동안(blocking·init_actions 대기) 떠나는 화면이 전환 상태로 다시 그려지며
+            // 앞 값을 다시 채울 수 있어 대기 뒤인 이 자리에서 비우고, 렌더 사이클 캐시도 함께 비운다 (engine-v1.82.1)
+            getState().bindingEngine?.clearCache();
+            getState().bindingEngine?.startRenderCycle();
 
             await renderTemplate({
                 containerId: 'app',
@@ -5052,6 +5060,8 @@ export class TemplateApp {
 
         // 1. URL 업데이트 (히스토리 교체, 리로드 없음)
         window.history.replaceState(null, '', newPath);
+        // 주소를 읽어 href 를 만드는 `:mergeQuery` 링크가 props 변화 없이도 다시 그려지게 알린다 (engine-v1.82.1)
+        notifyLocationReplaced();
         logger.log('URL updated via replaceState');
 
         // 2. 내부 쿼리 컨텍스트 업데이트
@@ -5098,6 +5108,9 @@ export class TemplateApp {
 
         if (autoFetchDataSources.length === 0) {
             logger.log('No auto_fetch data sources to refetch');
+            // 다시 받을 소스가 없어도 화면의 `query` 는 새 주소 값이어야 한다 — 종전에는 여기서 돌아가
+            // `{{query.*}}`·query 에서 나온 `_computed` 가 옛 쿼리로 남았다 (engine-v1.82.1)
+            this.applyQueryContextToScreen({});
             return;
         }
 
@@ -5217,30 +5230,11 @@ export class TemplateApp {
                 updateData._localInit = localInit;
             }
 
-            // UI 업데이트
-            if (Object.keys(updateData).length > 0) {
-                // query 컨텍스트도 업데이트 (배열 쿼리 파라미터 지원)
-                updateData.query = parseQueryParams(this.currentQueryParams);
-
-                // computed 재계산: 현재 레이아웃에 computed 정의가 있으면 재계산
-                // (navigate replace: true 시 _local 상태가 변경되면 $computed도 갱신되어야 함)
-                if (state.currentLayoutJson?.computed && Object.keys(state.currentLayoutJson.computed).length > 0) {
-                    // 재계산에 필요한 컨텍스트 구성
-                    const computeContext = {
-                        ...state.currentDataContext,
-                        ...updateData,
-                        query: updateData.query,
-                    };
-                    const computedData = this.calculateComputed(state.currentLayoutJson.computed, computeContext);
-                    if (Object.keys(computedData).length > 0) {
-                        updateData._computed = computedData;
-                        this.globalState._computed = computedData;
-                        logger.log('Computed values recalculated in updateQueryParams:', Object.keys(computedData));
-                    }
-                }
-
-                updateTemplateData(updateData, { sync: true });
-                logger.log('Template data updated with new query params');
+            // UI 업데이트 — 다시 받기가 모두 실패해 바뀐 값이 없어도 `query` 는 새 주소 값으로 그린다.
+            // 종전에는 `updateData` 가 비면 건너뛰어 화면의 `query` 가 옛 쿼리로 남았다. 겹친 뒤 호출에 밀려 적용할
+            // 값이 없는 앞 호출은 그리지 않는다 — 뒤 호출이 새 쿼리를 그린다 (engine-v1.82.1)
+            if (Object.keys(updateData).length > 0 || queryUpdateId === this.queryUpdateSeq) {
+                this.applyQueryContextToScreen(updateData);
             }
         } catch (error) {
             logger.error('Error in updateQueryParams:', error);
@@ -5262,6 +5256,43 @@ export class TemplateApp {
                 this.hideTransitionOverlay();
             }
         }
+    }
+
+    /**
+     * 같은 화면 쿼리 갱신(`navigate replace`)의 결과를 화면에 반영한다 — 새 `query` 와 그로부터 다시 계산한
+     * `_computed` 를 다시 받은 값(`updateData`)과 함께 그린다.
+     *
+     * `route`·`query` 는 렌더 사이클 캐시만 쓰므로(engine-v1.82.1) 앞 커밋 뒤 자식만 다시 그려지며 채운 옛 쿼리
+     * 값이 남지 않게 렌더 사이클을 새로 시작한다.
+     *
+     * @param updateData 다시 받은 데이터 소스 값(`_localInit` 포함 가능). 이 함수가 `query`·`_computed` 를 채운다
+     * @since engine-v1.82.1
+     */
+    private applyQueryContextToScreen(updateData: Record<string, any>): void {
+        const state = getState();
+        // query 컨텍스트도 업데이트 (배열 쿼리 파라미터 지원)
+        updateData.query = parseQueryParams(this.currentQueryParams);
+
+        // computed 재계산: 현재 레이아웃에 computed 정의가 있으면 재계산
+        // (navigate replace: true 시 _local 상태가 변경되면 $computed도 갱신되어야 함)
+        if (state.currentLayoutJson?.computed && Object.keys(state.currentLayoutJson.computed).length > 0) {
+            // 재계산에 필요한 컨텍스트 구성
+            const computeContext = {
+                ...state.currentDataContext,
+                ...updateData,
+                query: updateData.query,
+            };
+            const computedData = this.calculateComputed(state.currentLayoutJson.computed, computeContext);
+            if (Object.keys(computedData).length > 0) {
+                updateData._computed = computedData;
+                this.globalState._computed = computedData;
+                logger.log('Computed values recalculated in updateQueryParams:', Object.keys(computedData));
+            }
+        }
+
+        state.bindingEngine?.startRenderCycle();
+        updateTemplateData(updateData, { sync: true });
+        logger.log('Template data updated with new query params');
     }
 
     /**

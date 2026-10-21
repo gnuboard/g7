@@ -7,7 +7,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import type { EditorAttrs } from '../../types';
-import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref } from '../../support/navigationLink';
+import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 export interface Tab {
   id: string | number;
@@ -91,6 +91,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(tabHrefMergeQuery && Array.isArray(tabs) && tabs.some((tab) => typeof tab?.href === 'string' && tab.href !== ''));
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
   const G7Core = (window as any).G7Core;
   const useResponsive = G7Core?.useResponsive;

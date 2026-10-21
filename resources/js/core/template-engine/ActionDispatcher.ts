@@ -48,6 +48,7 @@ import {
   mergeQueryIntoHref,
   toSameOriginPath,
   type LinkClickLike,
+  notifyLocationReplaced,
 } from './navigationLinks';
 import {
   toExpressionEvent,
@@ -3366,6 +3367,13 @@ export class ActionDispatcher {
     // 종전에는 라우트 매칭이 전체 주소를 몰라 미매칭 폴백 → 같은 탭 sink 가 스킴을 거부해 첫 화면 `/` 로 갔다.
     // 다른 출처·실행 스킴은 바꾸지 않아 종전 판정(폴백 sink 의 거부)을 그대로 받는다 (engine-v1.80.1)
     target = toSameOriginNavPath(target) ?? target;
+    // 다른 화면으로 가기 전에 대기 중인 디바운스 입력을 반영한다 — 이벤트 액션 경로는 이미 그렇게 하지만
+    // `G7Core.dispatch(navigate)`(관리자 사이드바·링크 `navigateTo`)는 그대로 이탈 가드 판정에 들어가, 폼 변경이
+    // 없는 화면(`leave_guard`)에서도 검색창·목록 스크롤 디바운스 대기만으로 확인 창이 떠 이동이 막혔다(engine-v1.82.0).
+    // 같은 화면 쿼리 갱신(replace)은 가드 대상이 아니라 종전대로 둔다 (engine-v1.82.1)
+    if (params.replace !== true) {
+      this.flushPendingDebounceTimers();
+    }
     let finalPath = target;
     // 링크 href 의 #해시는 쿼리 병합·교체 뒤에 다시 붙인다 (engine-v1.80.1)
     const hashAt = fromLink ? target.indexOf('#') : -1;
@@ -4044,6 +4052,8 @@ export class ActionDispatcher {
     // 경로가 바뀌어도 같은 화면이다 — 디바운스 칸의 경로 가드가 다른 화면으로 보지 않게 기록한다 (engine-v1.81.2)
     registerUrlOnlyPathChange(finalPath, (window as any).__templateApp);
     window.history.replaceState(null, '', finalPath);
+    // 주소만 바꾸고 다시 그리지 않으므로 `:mergeQuery` 링크에 알린다 (engine-v1.82.1)
+    notifyLocationReplaced();
 
     // 이동 후 스크롤 위치 적용 (기본: preserve — URL만 교체하는 용도이므로 유지)
     this.applyScrollOption(params.scroll, params.scrollBehavior, 'preserve');
