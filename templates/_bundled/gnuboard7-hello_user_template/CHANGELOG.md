@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [0.2.1] - 2026-10-12
+## [0.2.1] - 2026-10-21
 
 ### Added
 
