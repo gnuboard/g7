@@ -11,6 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\MapsBoardSettingAttributes;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
@@ -65,6 +66,7 @@ class StoreBoardRequest extends FormRequest
             'active_reaction_types' => $settings['active_reaction_types'] ?? [],
             'max_reply_depth' => $settings['max_reply_depth'] ?? 5,
             'reply_delete_policy' => $settings['reply_delete_policy'] ?? ReplyDeletePolicy::Cascade->value,
+            'secret_reply_visibility' => $settings['secret_reply_visibility'] ?? SecretReplyVisibility::ThreadPath->value,
             'max_comment_depth' => $settings['max_comment_depth'] ?? 10,
             'use_file_upload' => $settings['use_file_upload'] ?? false,
             'comment_order' => $settings['comment_order'] ?? 'ASC',
@@ -236,6 +238,7 @@ class StoreBoardRequest extends FormRequest
             // 답글/대댓글 깊이 제한
             'max_reply_depth' => ['nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
             'reply_delete_policy' => ['required', 'string', Rule::in(ReplyDeletePolicy::values())],
+            'secret_reply_visibility' => ['nullable', 'string', Rule::in(SecretReplyVisibility::values())],
             'max_comment_depth' => ['nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
 
             // 알림 설정

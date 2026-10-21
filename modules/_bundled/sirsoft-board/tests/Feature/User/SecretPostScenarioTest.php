@@ -389,4 +389,82 @@ class SecretPostScenarioTest extends BoardTestCase
         // 500이 아닌 200 또는 404여야 함
         $this->assertNotEquals(500, $response->status());
     }
+
+    /**
+     * 역할에 비밀글 조회 권한을 범위와 함께 줍니다 (권한 행에 게시글 스코프 메타를 싣는다).
+     *
+     * @param  User  $user  대상 회원
+     * @param  string  $scope  권한 범위 (self·role)
+     * @return void 반환값 없음
+     */
+    private function grantScopedReadSecret(User $user, string $scope): void
+    {
+        $perm = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$this->board->slug}.posts.read-secret"],
+            ['name' => ['ko' => '비밀글 조회', 'en' => 'Read Secret'], 'type' => 'user']
+        );
+        $perm->forceFill(['resource_route_key' => 'post', 'owner_key' => 'user_id'])->save();
+        $role = Role::create(['identifier' => "secret-scenario-{$scope}", 'name' => ['ko' => $scope, 'en' => $scope]]);
+        $role->permissions()->attach($perm->id, ['scope_type' => $scope, 'granted_at' => now()]);
+        $user->roles()->attach($role->id);
+    }
+
+    /**
+     * 비밀글 조회 「본인만」은 남의 비밀글 본문을 열지 않는다 (#789 제보 B · D9).
+     *
+     * 수정 전에는 스코프가 게시판 라우트에서 적용되지 않아 「본인만」을 준 역할이 남의 비밀글을 전부 열었다.
+     *
+     * @scenario concern=secret_post, condition=viewer_without_access
+     *
+     * @effects self_scoped_read_secret_masks_others_secret_post
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_read_secret_does_not_open_others_secret_post(): void
+    {
+        $postId = $this->createTestPost([
+            'user_id' => $this->authorUser->id,
+            'is_secret' => true,
+            'content' => '남의 비밀 내용',
+        ]);
+        $this->grantScopedReadSecret($this->otherUser, 'self');
+
+        $this->actingAs($this->otherUser)
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}")
+            ->assertOk()
+            ->assertJsonPath('data.content', null);
+    }
+
+    /**
+     * 비밀글 조회 「소유역할」은 역할을 공유하는 회원 글만 열고 비회원 글은 열지 않는다 (D9·D18).
+     *
+     * @scenario concern=secret_post, condition=viewer_with_access
+     *
+     * @effects role_scoped_read_secret_opens_member_posts_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_role_scoped_read_secret_opens_role_sharing_member_posts_only(): void
+    {
+        $memberPostId = $this->createTestPost([
+            'user_id' => $this->authorUser->id,
+            'is_secret' => true,
+            'content' => '회원 비밀 내용',
+        ]);
+        $guestPostId = $this->createTestPost([
+            'user_id' => null,
+            'password' => bcrypt('guest-pass'),
+            'is_secret' => true,
+            'content' => '비회원 비밀 내용',
+        ]);
+        $this->grantScopedReadSecret($this->otherUser, 'role');
+        $base = "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
+
+        // 기본 user 역할을 함께 가진 회원의 글 → 열림
+        $this->actingAs($this->otherUser)->getJson("{$base}/{$memberPostId}")
+            ->assertOk()->assertJsonPath('data.content', '회원 비밀 내용');
+        // 비회원 글 → 닫힘
+        $this->actingAs($this->otherUser)->getJson("{$base}/{$guestPostId}")
+            ->assertOk()->assertJsonPath('data.content', null);
+    }
 }

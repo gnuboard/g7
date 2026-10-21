@@ -1,0 +1,16 @@
+feature: 앞 세대 오류 화면이 그리는 중이어도 같은 주소로 다시 들어온 새 세대의 자기 오류 화면을 그린다 (engine-v1.81.1, 7.1.1)
+
+description: |
+  Router 는 이동 중 navigate 를 마지막 하나만 남겨, 로딩 중 「다른 메뉴 → 같은 주소」 가 같은 주소 재진입 하나가 된다. 첫 진입의 응답이
+  오류 화면을 그리는 사이 새 세대가 열리면, 세대를 가리지 않던 showErrorPage 중복 방지 표식이 새 세대 자기 404 를 버려 빈 화면이
+  남았다. 표식을 출처 세대별로 둔다(같은 세대만 중복, 새 세대는 넘겨받음, 지난 세대는 빼앗지 않음). 축 first_render 는 앞 세대
+  오류 화면 그리기의 길이다(짧으면 종전에도 정상).
+
+axes:
+  first_render: [slow]
+
+effects:
+  - reentry_own_error_page_drawn
+
+test_files:
+  - resources/js/core/__tests__/TemplateApp.reentryErrorPage.test.ts

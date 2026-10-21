@@ -115,4 +115,10 @@ return [
             'admin' => '관리자',
         ],
     ],
+    // `identity:expire-challenges` 명령 출력
+    'console' => [
+        'expire_challenges' => [
+            'done' => '본인인증 challenge :count건이 만료 처리되었습니다.',
+        ],
+    ],
 ];

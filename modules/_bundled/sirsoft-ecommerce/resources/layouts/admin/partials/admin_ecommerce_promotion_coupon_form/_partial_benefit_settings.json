@@ -121,6 +121,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "discount_max_amount",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.max_discount",
                                         "className": "input w-32",
                                         "min": 0
                                     }
@@ -160,6 +161,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "min_order_amount",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.min_order_amount",
                                         "className": "input w-40",
                                         "min": 0
                                     }
@@ -286,6 +288,7 @@
                                             "props": {
                                                 "type": "number",
                                                 "name": "valid_days",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period",
                                                 "className": "input w-24",
                                                 "min": 1
                                             }

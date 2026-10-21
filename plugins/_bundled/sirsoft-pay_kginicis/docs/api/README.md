@@ -17,3 +17,16 @@
 
 <!-- @generated:end -->
 
+## 관리자 경로의 주문 권한 범위
+
+관리자 주문 연동 경로는 이커머스 주문 권한(`sirsoft-ecommerce.orders.read`·`orders.update`·`claims.execute-refund`)을
+요구하고, 그 권한을 「본인만」·「소유역할」 범위로 받은 관리자에게는 범위 안 주문만 허용한다.
+
+| 경로 | 판정 대상 | 범위 밖일 때 |
+| --- | --- | --- |
+| `orders/{orderNumber}/*` (거래 상태·해외 결제 정산·환불 재시도·편의점 결제·에스크로 배송·구매거절 확인) | 주문번호의 주문 | 403 `auth.scope_denied` — PG 를 부르지 않는다 |
+| `transaction/query` | 거래번호(`tid`)의 주문. 범위가 좁혀진 관리자에게는 이 사이트 주문에 없는 거래번호도 거부 | 403 `auth.scope_denied` |
+| `orders/test-mode-map` | 주문번호마다 | 범위 밖 주문번호를 맵에서 뺀다 |
+
+주문이 없는 주문번호는 범위로 판정하지 않고 각 경로의 기존 응답(빈 결과·404·422)을 따른다.
+

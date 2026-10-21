@@ -10,6 +10,10 @@
 <partial description="마일리지 수동 지급/차감 모달 (회원 검색 부유 자동완성 + 지급/차감 분기 + G7 표준 검증 피드백 3종 + 로딩 상태). user_id 는 uuid 전송 (코어 UserResource 가 id 미노출).">
   <modal data-type="composite" data-ref="modal_manual_transaction" title="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.title" size="md" :closeOnOverlayClick="false">
     <div class="space-y-4">
+      <on event="unmount">
+        <!-- 창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1) -->
+        <set-state target="global" :mileageManual="null"/>
+      </on>
       <div data-ref="manual_error_banner" data-if="{{_global.mileageManual?.errors}}" class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
         <div class="flex gap-2">
           <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
@@ -32,32 +36,34 @@
               찾기는 코어의 회원 검색을 그대로 쓴다(이커머스 전용 검색이 따로 없다). -->
             <sequence>
               <set-state target="global" mileageManual.memberSearchKeyword="{{$event.target.value}}"/>
+              <!-- 받을 회원을 고르는 자리라 탈퇴 회원은 빼고 찾는다 — 서버는 탈퇴 회원에게도 그대로 지급·발급하지만 로그인할 수 없어 쓰지 못한다(7.1.1, 코어 exclude_withdrawn) -->
               <api-call :auth_required="true" if="{{String($event.target.value ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                 <success>
-                  <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이고, 값 식의 `_global` 만 평가 시점 최신 상태다)(덮어쓰면 정답 목록이 사라지고 다시 오지 않는다). -->
-                  <set-state target="global" mileageManual.memberSearchResults="{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.data ?? []) : (_global.mileageManual?.memberSearchResults ?? [])}}" mileageManual.memberSearchResultsKeyword="{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.mileageManual?.memberSearchResultsKeyword ?? null)}}"/>
+                  <!-- 결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 실측 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이고, 값 식의 `_global` 만 평가 시점 최신 상태다)(덮어쓰면 정답 목록이 사라지고 다시 오지 않는다). 창이 닫힌 뒤(이름 공간 null) 도착한 응답은 아무것도 쓰지 않는다 — 점 경로(`mileageManual.memberSearchResults`)로 쓰면 닫힌 창의 이름 공간이 다시 생겼다(7.1.1). -->
+                  <set-state target="global" mileageManual="{{_global.mileageManual == null ? null : ({ memberSearchResults: ((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.data ?? []) : (_global.mileageManual?.memberSearchResults ?? []), memberSearchResultsKeyword: ((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.mileageManual?.memberSearchResultsKeyword ?? null) })}}"/>
                 </success>
-                <query keyword="{{$event.target.value}}"/>
+                <query keyword="{{$event.target.value}}" exclude_withdrawn="1"/>
               </api-call>
             </sequence>
           </on>
         </input>
         <!-- 목록은 지금 입력값이 만든 결과일 때만 그린다 — 늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다. 입력값은 trim 해 견준다: 서버는 검색어를 trim 해 `meta.keyword` 로 돌려주므로 앞뒤 공백이 있는 입력(붙여넣은 이메일 등)과 그대로 견주면 결과가 영영 숨는다. -->
         <div data-ref="member_search_results" data-if="{{String(_global.mileageManual?.memberSearchKeyword ?? '').trim() !== '' &amp;&amp; (_global.mileageManual?.memberSearchResultsKeyword ?? null) === (_global.mileageManual?.memberSearchKeyword ?? '').trim()}}" class="absolute left-0 right-0 top-full z-50 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto">
-          <div data-each="member, memberIndex in _global.mileageManual?.memberSearchResults ?? []" class="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 결과 행은 단추다 — Tab 으로 닿고 Enter·Space 로 고른다(종전 클릭만 받는 DIV 는 키보드로 고를 수 없었다, 7.1.1 출시 전 실측). 단추 이름은 아래 회원 이름·이메일 글자이고, 단추 안이라 블록 상자 대신 span 으로 줄을 나눈다. -->
+          <button data-each="member, memberIndex in _global.mileageManual?.memberSearchResults ?? []" type="button" class="flex w-full justify-start items-center gap-2 p-2 text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
             <on type="click">
               <!-- 회원 확정 — 필요한 넷만 추려 담는다(회원 응답 전체를 들고 다니지 않는다). 잔액을 함께 담아 두는 것은 아래 차감 초과 경고가 그 값으로 판단하기 때문이고, 검색어·결과·오류를 한 번에 비워 목록이 남아 떠 있지 않게 한다. -->
               <set-state target="global" mileageManual.selectedMember="{{({ uuid: member.uuid, name: member.name, email: member.email, balance: member.ecommerce_mileage?.available ?? null })}}" :mileageManual.memberSearchResults="[]" :mileageManual.memberSearchResultsKeyword="null" mileageManual.memberSearchKeyword="" :mileageManual.errors="null"/>
             </on>
-            <div class="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <icon name="user" size="sm" class="text-gray-500 dark:text-gray-400"/>
-            </div>
-            <div class="min-w-0 flex-1">
+            <span class="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <icon name="user" size="sm" class="text-gray-500 dark:text-gray-300"/>
+            </span>
+            <span class="block min-w-0 flex-1">
               <span class="block font-medium text-sm text-gray-900 dark:text-white truncate">{{member.name}}</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{member.email}}</span>
-            </div>
-          </div>
-          <div data-if="{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}" class="p-3 text-sm text-center text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results</div>
+              <span class="block text-xs text-gray-500 dark:text-gray-300 truncate">{{member.email}}</span>
+            </span>
+          </button>
+          <div data-if="{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}" class="p-3 text-sm text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results</div>
         </div>
       </div>
       <div data-ref="selected_member_block" data-if="{{!!_global.mileageManual?.selectedMember}}" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -95,7 +101,7 @@
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <input type="number" value="{{_global.mileageManual?.amount ?? ''}}" min="1" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.amount" class="{{_global.mileageManual?.errors?.errors?.amount ? 'input flex-1 input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input flex-1'}}">
+          <input type="number" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.amount" value="{{_global.mileageManual?.amount ?? ''}}" min="1" placeholder="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.amount" class="{{_global.mileageManual?.errors?.errors?.amount ? 'input flex-1 input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input flex-1'}}">
             <on type="input">
               <!-- 금액. 글자 그대로 담고 숫자 변환은 읽는 쪽(경고 조건·버튼 잠금·전송 본문)이 각자 한다 — 입력 도중 빈 칸이 0 으로 굳는 것을 피한다. -->
               <set-state target="global" mileageManual.amount="{{$event.target.value}}"/>
@@ -131,7 +137,7 @@
             <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry_custom</span>
           </label>
         </div>
-        <input data-if="{{_global.mileageManual?.useDefaultExpiry === false}}" type="date" value="{{_global.mileageManual?.expiresAt ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+        <input data-if="{{_global.mileageManual?.useDefaultExpiry === false}}" type="date" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry" value="{{_global.mileageManual?.expiresAt ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
           <on type="change">
             <!-- 직접 정한 만료일. 하한이 걸려 있지 않아 과거 날짜도 고를 수 있고, 그 판단은 서버가 한다. -->
             <set-state target="global" mileageManual.expiresAt="{{$event.target.value}}"/>
@@ -152,11 +158,15 @@
     <div class="flex justify-end gap-2 mt-6">
       <button type="button" disabled="{{_global.mileageManual?.isSaving ?? false}}" class="btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
-          <close-modal/>
+          <!-- 취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다) -->
+          <sequence>
+            <close-modal/>
+            <set-state target="global" :mileageManual="null"/>
+          </sequence>
         </on>
         <span>$t:sirsoft-ecommerce.admin.mileage_transactions.cancel</span>
       </button>
-      <button data-ref="manual_submit_button" type="button" disabled="{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' &amp;&amp; _global.mileageManual?.selectedMember?.balance !== null &amp;&amp; Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}" class="flex items-center gap-2 btn text-sm bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
+      <button data-ref="manual_submit_button" type="button" disabled="{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' &amp;&amp; _global.mileageManual?.selectedMember?.balance !== null &amp;&amp; Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}" class="flex items-center gap-2 btn text-sm bg-red-600 dark:bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
           <!-- 지급·차감 실행. 화면에 흩어져 있던 값들을 여기서 서버 형태로 맞춘다 — 금액은 숫자로,
             사유는 `memo` 로, 만료일은 '직접 지정' 일 때만 실어 보내고 아니면 비운다.

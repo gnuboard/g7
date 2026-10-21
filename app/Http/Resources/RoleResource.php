@@ -39,6 +39,10 @@ class RoleResource extends BaseApiResource
             'is_active_locked' => $this->resource instanceof Role
                 ? $this->resource->isActiveStateLocked()
                 : $this->getValue('identifier') === 'admin',
+            // 비회원 역할은 권한 범위(본인·소유역할)를 고를 수 없다 — 역할 폼이 범위 드롭다운을 숨기는 값
+            'supports_permission_scope' => $this->resource instanceof Role
+                ? $this->resource->supportsPermissionScope()
+                : $this->getValue('identifier') !== Role::GUEST_IDENTIFIER,
             // 비밀번호 만료 (#736) — 역할 폼 선택칸이 읽는다(inherit·apply·exempt)
             'password_expiry_policy' => $this->passwordExpiryPolicyValue(),
             'users_count' => $this->when(

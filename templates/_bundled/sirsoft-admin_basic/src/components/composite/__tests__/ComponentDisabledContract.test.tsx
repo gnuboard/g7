@@ -1,6 +1,6 @@
 /**
  * @file ComponentDisabledContract.test.tsx
- * @description 컴포넌트 disabled 계약 (7.1.0 abilities 게이트 G09·G11·#6·#7·#16·N8)
+ * @description 컴포넌트 disabled 계약 (7.1.0 abilities 게이트)
  *
  * 레이아웃은 읽기 전용 화면에서 입력 컴포넌트에 `disabled` 를 넘긴다. 컴포넌트가 그 값을 무시하면
  * 권한 없는 운영자에게 편집·추가·삭제·대표 지정이 살아 있다(저장만 403). 여기서는 컴포넌트가

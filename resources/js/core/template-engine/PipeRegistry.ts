@@ -18,6 +18,7 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { pickLocalized } from '../support/localeTag';
 
 const logger = createLogger('PipeRegistry');
 
@@ -456,9 +457,9 @@ const builtInPipes: Record<string, PipeDefinition> = {
       if (typeof value === 'string') return value;
       if (typeof value !== 'object') return String(value);
 
-      // 로케일 우선순위: 인자 > ko > en > 첫 번째 값
-      const targetLocale = locale || 'ko';
-      return value[targetLocale] || value.ko || value.en || Object.values(value)[0] || '';
+      // 로케일 우선순위: 인자 > 화면 언어 → 사이트 기본 언어 → en → 첫 번째 값 (engine-v1.81.0 — 종전 인자 없으면 항상 ko)
+      const target = locale || (window as any).__templateApp?.getConfig?.()?.locale;
+      return pickLocalized(value, target) ?? '';
     },
     description: '다국어 객체에서 로케일에 맞는 값 추출',
   },
@@ -893,15 +894,19 @@ export function hasPipes(expr: string): boolean {
  *
  * @param value - 초기 값
  * @param pipes - 파이프 표현식 배열
+ * @param env - 렌더 환경 (선택) — `locale` 은 인자 없는 `localized` 의 기본 언어
  * @returns 최종 변환된 값
  */
-export function executePipeChain(value: any, pipes: string[]): any {
+export function executePipeChain(value: any, pipes: string[], env?: { locale?: string }): any {
   const registry = PipeRegistry.getInstance();
   let result = value;
 
   for (const pipeExpr of pipes) {
     const parsed = parsePipeExpression(pipeExpr);
-    result = registry.execute(parsed.name, result, parsed.args);
+    // 인자 없는 localized 는 렌더 문맥의 $locale 을 쓴다 — 편집기 미리보기의 콘텐츠 언어가 호스트 화면 언어보다
+    // 먼저다($localized 와 같은 순서, engine-v1.81.0)
+    const args = parsed.name === 'localized' && parsed.args.length === 0 && env?.locale ? [env.locale] : parsed.args;
+    result = registry.execute(parsed.name, result, args);
   }
 
   return result;

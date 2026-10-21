@@ -1,17 +1,23 @@
 <partial description="클레임 첨부 사진 확대 보기 모달" editor_label="$t:user.modal_label.mypage_claims.image_viewer_modal">
-  <!-- §5-4 의 모달 id 규약(claim_ 접두)을 따른다 — 다른 화면의 모달 id 와 충돌하지 않게. 대상은 여는 지점이 페이지 로컬(claimImageViewerUrl)에 세우고 여기서는 그것만 읽는다.
-첨부는 한시 서명 URL 로만 열린다. 화면이 해시로 주소를 조립하면 서명이 빠져 403 이 되므로 서버가 준 download_url 을 그대로 쓴다. -->
+  <!-- §5-4 의 모달 id 규약(claim_ 접두)을 따른다 — 다른 화면의 모달 id 와 충돌하지 않게. 대상은 여는 지점이 창 고유 전역 이름 공간(_global.claimImageViewer)에 세우고 여기서는 그것만 읽는다.
+첨부는 한시 서명 URL 로만 열린다. 화면이 해시로 주소를 조립하면 서명이 빠져 403 이 되므로 서버가 준 download_url 을 그대로 쓴다.
+그 서명 URL 이 전역에 남지 않도록 창을 닫으면 이름 공간을 비운다 — 닫기 단추는 직접, 창 머리 닫기·Esc·바깥 클릭(엔진 closeModal 로만 이어진다)은
+열려 있는 동안 내내 붙어 있는 그림 틀의 unmount 에서 비운다(7.1.1 security.md 「_global 민감 정보 금지」 의 창 이름 공간 예외). -->
   <modal data-type="composite" data-ref="modal_claim_image_viewer" title="$t:claim.detail.image_viewer_title" size="lg">
     <div class="p-4">
-      <img data-if="{{!!_local.claimImageViewerUrl}}" src="{{_local.claimImageViewerUrl}}" alt="{{_local.claimImageViewerName ?? ''}}" class="w-full h-auto rounded-lg object-contain bg-gray-100 dark:bg-gray-900"/>
-      <p data-if="{{!!_local.claimImageViewerName}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all">{{_local.claimImageViewerName}}</p>
+      <on event="unmount">
+        <!-- 창이 닫혀 본문이 내려갈 때(어느 갈래로 닫든) 한시 서명 URL 을 지운다 -->
+        <set-state target="global" :claimImageViewer="null"/>
+      </on>
+      <img data-if="{{!!_global.claimImageViewer?.url}}" src="{{_global.claimImageViewer?.url}}" alt="{{_global.claimImageViewer?.name ?? ''}}" class="w-full h-auto rounded-lg object-contain bg-gray-100 dark:bg-gray-900"/>
+      <p data-if="{{!!_global.claimImageViewer?.name}}" class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all">{{_global.claimImageViewer?.name}}</p>
     </div>
     <div class="flex justify-end px-4 pb-4">
       <!-- 닫으면서 대상도 지운다 — 남기면 다음에 다른 사진으로 열었을 때 잠깐 앞 사진이 보인다. -->
       <button type="button" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
         <on type="click">
-          <set-state target="local" :claimImageViewerUrl="null" :claimImageViewerName="null"/>
           <close-modal target="modal_claim_image_viewer"/>
+          <set-state target="global" :claimImageViewer="null"/>
         </on>
         $t:claim.detail.image_viewer_close
       </button>

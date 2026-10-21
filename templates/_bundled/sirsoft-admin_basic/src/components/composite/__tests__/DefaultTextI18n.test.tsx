@@ -1,7 +1,7 @@
 /**
  * 컴포넌트 기본 문구가 화면 언어를 따른다 — 레이아웃이 문구를 넘기지 않아도 영문이 보이지 않는다.
  *
- * 7.1.0 전수 실측(O-C3b-4): 관리자 컴포넌트의 화면 문구·접근 이름 기본값이 영문 고정이었다(LoginForm 「Email」·「Sign In」,
+ * 7.1.0 전수 실측: 관리자 컴포넌트의 화면 문구·접근 이름 기본값이 영문 고정이었다(LoginForm 「Email」·「Sign In」,
  * NotificationCenter 「Notifications」, UserProfile 「Logout」·「Logging out...」, SearchableDropdown 「Select」·
  * 「Type to search」, LanguageSelector 「Language」, EmptyState·AdminSidebar 이미지 대체 글, TagSelect 「No items selected」,
  * ThemeToggle 「System/Light/Dark」, FileInput 「Browse」·「No file selected」·「Clear file」, Select 검색칸, Alert 아이콘 이름).

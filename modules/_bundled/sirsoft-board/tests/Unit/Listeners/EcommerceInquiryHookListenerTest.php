@@ -458,6 +458,77 @@ class EcommerceInquiryHookListenerTest extends BoardTestCase
         $this->assertTrue($result[0]['can_view_secret'], '작성자 본인에게 can_view_secret 은 true 여야 합니다');
     }
 
+    /**
+     * getByIds: 공개 문의에 달린 비밀 답변은 외부인에게 본문이 가려진다 (#789 전수조사)
+     *
+     * 문의가 공개면 답변을 게이트 없이 그대로 실어, 비밀 답변 원문이 상품 문의 목록으로 누구에게나 나갔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario viewer=outsider
+     *
+     * @effects ecommerce_public_inquiry_secret_reply_masked_for_outsider
+     */
+    public function test_get_by_ids_masks_secret_reply_of_public_inquiry_for_outsider(): void
+    {
+        [$questionId] = $this->createPublicInquiryWithSecretReply();
+        $this->actingAs(User::factory()->create(), 'sanctum');
+
+        $result = $this->listener->getByIds([], ['ids' => [$questionId], 'slug' => $this->board->slug]);
+
+        $this->assertTrue($result[0]['can_view_secret'], '공개 문의 자체는 열린다');
+        $this->assertNotNull($result[0]['reply'], '답변이 있다는 사실은 남는다');
+        $this->assertNull($result[0]['reply']['content'], '비밀 답변 본문은 외부인에게 null 이어야 합니다');
+    }
+
+    /**
+     * getByIds: 문의 작성자는 자기 문의의 비밀 답변을 본다 (경로 규칙 — 원글 작성자는 하위를 연다)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario viewer=thread_anchor
+     *
+     * @effects ecommerce_secret_reply_visible_to_inquiry_author
+     */
+    public function test_get_by_ids_shows_secret_reply_to_inquiry_author(): void
+    {
+        [$questionId, $asker] = $this->createPublicInquiryWithSecretReply();
+        $this->actingAs($asker, 'sanctum');
+
+        $result = $this->listener->getByIds([], ['ids' => [$questionId], 'slug' => $this->board->slug]);
+
+        $this->assertSame('비밀 답변 본문', $result[0]['reply']['content']);
+    }
+
+    /**
+     * 공개 문의(회원 작성) + 관리자 비밀 답변을 만듭니다.
+     *
+     * @return array{0: int, 1: User} [문의 ID, 문의 작성자]
+     */
+    private function createPublicInquiryWithSecretReply(): array
+    {
+        $asker = User::factory()->create();
+        $answerer = User::factory()->create();
+        $questionId = $this->createTestPost([
+            'title' => '공개 문의',
+            'content' => '공개 문의 내용',
+            'is_secret' => false,
+            'user_id' => $asker->id,
+            'author_name' => 'asker',
+        ]);
+        $this->createTestPost([
+            'title' => 'Re: 공개 문의',
+            'content' => '비밀 답변 본문',
+            'is_secret' => true,
+            'user_id' => $answerer->id,
+            'author_name' => 'answerer',
+            'parent_id' => $questionId,
+            'depth' => 1,
+        ]);
+
+        return [$questionId, $asker];
+    }
+
     // 게시판 manager 의 비밀글 원문 열람은 HTTP 컨텍스트(라우트 slug)가 필요한
     // PermissionMiddleware 경로라, SecretPostAttachmentAccessTest·SecretPostCommentAccessTest
     // 에서 실제 요청으로 검증한다(여기서는 소유자/비열람자 마스킹만 단위 검증).

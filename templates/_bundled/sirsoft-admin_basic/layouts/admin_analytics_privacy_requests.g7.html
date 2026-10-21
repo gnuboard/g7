@@ -132,7 +132,7 @@
                   <set-state target="local" search.from="{{$event.target.value}}"/>
                 </on>
               </input>
-              <span class="text-gray-400 dark:text-gray-500">~</span>
+              <span class="text-gray-500 dark:text-gray-400">~</span>
               <input name="analytics_subject_to" type="date" aria-label="$t:common.range_end|label={{$t('admin.analytics.privacy_requests.search.period_label')}}" class="input w-40" value="{{_local.search?.to || ''}}">
                 <on type="change">
                   <!-- 기간 끝을 폼에 담는다. 시작과 마찬가지로 비워 두면 끝 키 없이 보낸다. -->
@@ -228,7 +228,7 @@
             <p class="text-info-soft">{{analytics_subjects?.data?.notice}}</p>
           </div>
         </div>
-        <empty-state data-type="composite" data-ref="subjects_empty" data-if="{{!analytics_subjects?.loading &amp;&amp; (analytics_subjects?.data?.visits ?? []).length === 0}}" iconName="user-shield" title="$t:admin.analytics.privacy_requests.no_results" class="py-8"/>
+        <empty-state data-type="composite" data-ref="subjects_empty" data-if="{{analytics_subjects !== undefined &amp;&amp; (analytics_subjects?.data?.visits ?? []).length === 0}}" iconName="user-shield" title="$t:admin.analytics.privacy_requests.no_results" class="py-8"/>
         <div class="overflow-x-auto" data-if="{{(analytics_subjects?.data?.visits ?? []).length > 0}}">
           <data-grid data-type="composite" data-ref="subjects_grid" data="{{analytics_subjects?.data?.visits ?? []}}" :pagination="true" :pageSize="25" idField="visit_id" :selectable="false" :sortable="false">
             <column field="first_action_at" header="$t:admin.analytics.privacy_requests.columns.visit_at" width="170px">
@@ -238,17 +238,15 @@
             </column>
             <column field="visitor_key" header="$t:admin.analytics.privacy_requests.columns.visitor_key" width="140px">
               <cell>
-                <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm">
+                <a href="/admin/analytics/visitors/{{row.visitor_key}}" :mergeQuery="true" class="button text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm">
                   <on type="click">
                     <!-- 이 화면은 검색 조건(대상·값·기간)을 주소에 싣는다. 병합하지 않고 이동하면
                          상세 화면이 기간 없이 열리고 그 화면의 단건 CSV 도 다른 기간을 내려준다 —
                          형제 화면(방문자 목록)의 같은 드릴다운과도 어긋난다(#682 S3 라운드 5). -->
-                    <navigate path="/admin/analytics/visitors/{{row.visitor_key}}" :mergeQuery="true">
-                      <query/>
-                    </navigate>
+                    <navigate :mergeQuery="true"><query/></navigate>
                   </on>
                   {{String(row.visitor_key ?? '').slice(0, 8)}}
-                </button>
+                </a>
               </cell>
             </column>
             <column field="visitor_type" header="$t:admin.analytics.visitors.columns.type" width="90px">
@@ -259,7 +257,7 @@
             <column field="ip" header="{{(analytics_subjects?.data?.ip_mask_octets ?? 0) > 0 ? $t('admin.analytics.privacy_requests.columns.ip_masked') : $t('admin.analytics.privacy_requests.columns.ip')}}" width="140px">
               <cell>
                 <!-- 열 이름은 설정을 따르지만 행마다 실제로 가려졌는지는 다르다 — 마스킹을 켜며 소급을 건너뛴 기존 행은
-                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측 O-E8). -->
+                     원래 주소라, 서버가 준 `ip_masked === false` 인 행에 그 사실을 붙인다(7.1.0 실측). -->
                 <div class="flex-center flex-wrap gap-1">
                   <span class="text-label font-mono">{{row.ip ?? '-'}}</span>
                   <badge data-type="composite" data-if="{{row.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>

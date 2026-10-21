@@ -79,7 +79,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
      */
     protected function scopeLabel(): string
     {
-        return '[이커머스]';
+        return '['.__('sirsoft-ecommerce::messages.seeders.notification_log.scope_label').']';
     }
 
     /**
@@ -98,7 +98,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
         $admins = User::query()->whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->get(['id', 'name', 'email']);
         $members = User::query()->whereDoesntHave('roles', fn ($q) => $q->where('identifier', 'admin'))->get(['id', 'name', 'email']);
         if ($members->isEmpty() && $admins->isEmpty()) {
-            $this->command->warn("사용자 데이터가 없어 {$label} 알림 발송 이력 시더를 건너뜁니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.notification_log.skip_no_users', ['label' => $label]));
 
             return;
         }
@@ -108,7 +108,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
         )->get(['id', 'type', 'extension_type', 'extension_identifier', 'channels']);
 
         if ($definitions->isEmpty()) {
-            $this->command->warn("{$label} 영역 활성 알림 정의가 없어 시더를 건너뜁니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.notification_log.skip_no_definitions', ['label' => $label]));
 
             return;
         }
@@ -116,7 +116,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
         $this->loadTemplates($definitions);
         $this->sampleOrders = Order::query()->with('options')->latest('id')->take(50)->get();
 
-        $this->command->info("{$label} 알림 발송 이력 시딩 시작... ({$count}건, 정의 {$definitions->count()}종)");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.notification_log.start', ['label' => $label, 'count' => $count, 'definitions' => $definitions->count()]));
 
         $now = Carbon::now();
         $adminId = $admins->first()?->id;
@@ -161,7 +161,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
             NotificationLog::insert($chunk);
         }
 
-        $this->command->info("{$label} 알림 발송 이력 시딩 완료 (".count($batch).'건)');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.notification_log.done', ['label' => $label, 'count' => count($batch)]));
     }
 
     /**

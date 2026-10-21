@@ -344,7 +344,7 @@ class ExpressionEvaluatorTest extends TestCase
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
-     * @effects localized_object_picks_current_then_fallback_locale
+     * @effects localized_object_picks_current_then_site_locale
      *
      * @return void 없음
      */
@@ -360,18 +360,20 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * 다국어 객체에서 현재 로케일이 없으면 fallback 로케일 값을 반환합니다.
+     * 다국어 객체에서 현재 로케일이 없으면 사이트 기본 언어 값을 반환합니다 (#148 D7).
+     *
+     * 대체 언어는 env 고정 `app.fallback_locale` 이 아니라 환경설정 「기본 언어」(`app.site_locale`)다.
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
-     * @effects localized_object_picks_current_then_fallback_locale
+     * @effects localized_object_picks_current_then_site_locale
      *
      * @return void 없음
      */
-    public function test_localized_object_falls_back_to_fallback_locale(): void
+    public function test_localized_object_falls_back_to_site_locale(): void
     {
         app()->setLocale('ja');
-        config(['app.fallback_locale' => 'en']);
+        config(['app.site_locale' => 'en', 'app.fallback_locale' => 'ko']);
 
         $context = ['product' => ['data' => ['name' => ['ko' => '무선 마우스', 'en' => 'Wireless Mouse']]]];
 
@@ -989,6 +991,42 @@ class ExpressionEvaluatorTest extends TestCase
         $result = $this->evaluator->evaluate('+{{someFunc()}}', []);
 
         $this->assertSame('', $result);
+    }
+
+    /**
+     * 바인딩이 없거나 바인딩이 비지 않았으면 `/`·`-` 같은 글자를 지우지 않습니다 — 사람 화면과 같은 값 (7.1.1).
+     *
+     * 고립 연산자 정리는 「빈 바인딩 치환 뒤 남은 부호」만 대상이다. 정적 `/`(홈 링크 href)·`-`(빈 칸 표시)와
+     * `/` 로 풀린 바인딩까지 지워 봇 화면에서만 홈 링크 href 와 표시 글자가 사라졌다.
+     *
+     * @scenario entry_point=evaluate, expression_form=plain_text
+     *
+     * @effects literal_operator_text_kept
+     *
+     * @return void 없음
+     */
+    public function test_literal_slash_and_dash_are_not_cleaned_up(): void
+    {
+        $this->assertSame('/', $this->evaluator->evaluate('/', []));
+        $this->assertSame('-', $this->evaluator->evaluate('-', []));
+        $this->assertSame('//', $this->evaluator->evaluate('//', []));
+        $this->assertSame('/', $this->evaluator->evaluate('{{home}}', ['home' => '/']));
+        $this->assertSame('-', $this->evaluator->evaluate('{{dash}}', ['dash' => '-']));
+    }
+
+    /**
+     * URL 자리는 빈 바인딩 뒤 남은 `/` 도 지우지 않습니다(`dropOrphanOperators=false`) — 사람 화면 href 와 같은 값.
+     *
+     * @scenario entry_point=evaluate, expression_form=embedded_binding
+     *
+     * @effects literal_operator_text_kept
+     *
+     * @return void 없음
+     */
+    public function test_url_mode_keeps_slash_left_by_empty_binding(): void
+    {
+        $this->assertSame('', $this->evaluator->evaluate('/{{missing}}', []));
+        $this->assertSame('/', $this->evaluator->evaluate('/{{missing}}', [], false));
     }
 
     // ==========================================
@@ -4086,6 +4124,77 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
+     * $t() 함수: 두 번째 인수(객체)를 번역 문구에 치환합니다 — 브라우저 엔진 engine-v1.80.1 과 같은 규칙.
+     *
+     * 종전에는 첫 인수만 읽어 봇 화면에 `{{n}}번째 행` 자리표시자가 그대로 남았다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects t_function_call_translates_key
+     *
+     * @return void 없음
+     */
+    public function test_t_function_substitutes_object_params(): void
+    {
+        $this->evaluator->setTranslations([
+            'common' => [
+                'row_n' => '{{n}}번째 행',
+                'row_cell' => '{{row}} {{column}}',
+            ],
+            'board' => ['post_count' => '{{count}} posts', 'post_count_one' => '{{count}} post'],
+        ]);
+
+        $this->assertSame('3번째 행', $this->evaluator->evaluate("{{\$t('common.row_n', {n: 3})}}", []));
+        $this->assertSame('5번째 행', $this->evaluator->evaluate("{{\$t('common.row_n', {n: i + 1})}}", ['i' => 4]));
+        // 행 이름이 비면 번호 대체(레이아웃 R3 형식)
+        $this->assertSame(
+            '1번째 행',
+            $this->evaluator->evaluate("{{row.name || \$t('common.row_n', {n: i + 1})}}", ['row' => ['name' => ''], 'i' => 0])
+        );
+        // 객체가 아닌 두 번째 인수는 인자 없는 호출과 같다
+        $this->assertSame('{{n}}번째 행', $this->evaluator->evaluate("{{\$t('common.row_n', 'n=3')}}", []));
+
+        app()->setLocale('en');
+        try {
+            $this->assertSame('1 post', $this->evaluator->evaluate("{{\$t('board.post_count', {count: 1})}}", []));
+        } finally {
+            app()->setLocale('ko');
+        }
+    }
+
+    /**
+     * 번역 인자 값은 글자 그대로 들어간다 — 앞 인자 값에 든 뒤 인자 자리표시자를 다시 치환하지 않는다.
+     *
+     * 운영자가 입력한 상품명·역할명이 `{{column}}`·`:name` 같은 글자를 담아도 봇 화면 문구가 바뀌지 않는다
+     * (브라우저 엔진 engine-v1.80.1 replaceParams 와 같은 규칙).
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects t_function_call_translates_key
+     *
+     * @return void 없음
+     */
+    public function test_translation_params_are_inserted_literally(): void
+    {
+        $this->evaluator->setTranslations([
+            'common' => ['row_cell' => '{{row}} {{column}}', 'select_item' => '{{name}} 선택'],
+        ]);
+
+        $this->assertSame(
+            '{{column}} 판매가',
+            $this->evaluator->evaluate("{{\$t('common.row_cell', {row: r, column: '판매가'})}}", ['r' => '{{column}}'])
+        );
+        $this->assertSame(
+            '{{column}} 판매가',
+            $this->evaluator->evaluate('$t:common.row_cell|row={{r}}|column=판매가', ['r' => '{{column}}'])
+        );
+        $this->assertSame(
+            'A|b=c&d 선택',
+            $this->evaluator->evaluate("{{\$t('common.select_item', {name: v})}}", ['v' => 'A|b=c&d'])
+        );
+    }
+
+    /**
      * $t() 함수: 큰따옴표 문자열 키를 지원합니다.
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
@@ -4148,7 +4257,7 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * $localized(): 현재 로케일이 없으면 ko fallback합니다.
+     * $localized(): 현재 로케일이 없으면 사이트 기본 언어(ko)로 대체합니다 (#148 D7).
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
@@ -4156,14 +4265,35 @@ class ExpressionEvaluatorTest extends TestCase
      *
      * @return void 없음
      */
-    public function test_localized_fallback_to_ko(): void
+    public function test_localized_falls_back_to_site_locale(): void
     {
         app()->setLocale('ja');
+        config(['app.site_locale' => 'ko']);
         $context = ['product' => ['name' => ['ko' => '운동화', 'en' => 'Sneakers']]];
 
         $result = $this->evaluator->evaluate('{{$localized(product.name)}}', $context);
 
         $this->assertSame('운동화', $result);
+    }
+
+    /**
+     * $localized(): 사이트 기본 언어가 영어면 한국어 값이 있어도 영어로 대체합니다 (#148 D7 — 종전 ko 고정).
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects localized_function_follows_locale_fallback_chain, localized_object_picks_current_then_site_locale
+     *
+     * @return void 없음
+     */
+    public function test_localized_site_locale_en_wins_over_ko(): void
+    {
+        app()->setLocale('fil');
+        config(['app.site_locale' => 'en', 'app.fallback_locale' => 'ko']);
+        $context = ['product' => ['name' => ['ko' => '운동화', 'en' => 'Sneakers', 'fil' => '']]];
+
+        $result = $this->evaluator->evaluate('{{$localized(product.name)}}', $context);
+
+        $this->assertSame('Sneakers', $result);
     }
 
     /**

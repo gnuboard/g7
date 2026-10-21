@@ -73,6 +73,13 @@
     "image_preview": {
       "title": "画像プレビュー",
       "close": "閉じる"
+    },
+    "editing": {
+      "title": "編集中です",
+      "message": "編集中の内容は保存されません。",
+      "confirm_message": "本当にキャンセルして別のカテゴリを選択しますか?",
+      "continue": "編集を続行",
+      "discard": "キャンセルして移動"
     }
   },
   "messages": {

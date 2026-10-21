@@ -1,0 +1,29 @@
+feature: 빈 객체로 비우는 화면 상태는 null 로 먼저 지운다 (7.1.1)
+
+description: |
+  상태 쓰기(setState)의 기본 병합(deep)은 중첩 객체를 보존하므로, 값으로 빈 객체 `{}` 를 넣어도
+  이전 값의 키가 지워지지 않는다. 7.1.0 부터 레이아웃의 `{}` 가 배열이 아니라 객체로 오면서
+  비우기가 아무 일도 하지 않게 됐다 — 상품평 옵션 필터 「블랙」 을 고른 뒤 다른 상품으로 SPA 이동하면
+  필터가 「블랙 (0)」 으로 남고, 같은 상품에서 「필터 초기화」 를 눌러도 필터와 요청이 그대로였다.
+  구매 옵션 선택·추가옵션·장바구니 옵션 변경 창의 선택·회원가입 폼도 같은 모양이다.
+  비우는 자리는 같은 액션 목록에서 그 키를 `null` 로 먼저 쓰고 `{}` 로 다시 쓴다(깊은 병합이 객체 대신
+  null 로 덮어써 완전히 지운다). 엔진 계약(deep = 중첩 보존)은 바꾸지 않는다.
+
+# axis 의미:
+#   context — 액션이 도는 자리: 레이아웃 init(렌더 전, 전역 갱신기) / 이벤트 처리기(컴포넌트 문맥) / 부모 문맥($parent._local)
+axes:
+  context: [init_actions, event_handler, parent_local]
+
+effects:
+  - empty_object_reset_preceded_by_null   # `{}` 로 비우는 setState 앞에 같은 키 null setState 가 있다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/empty-object-state-reset.test.ts
+
+validation:
+  browser_check: playwright 라이브러리 headless — 상품 상세 레이아웃 응답을 가로채 같은 변환을 넣고 실제 엔진으로 측정
+  note: |
+    정적 판정은 굽기 산출 JSON 전수에서 도출한다(새 화면도 자동 편입). 화면 동작은 브라우저 실측 결과를 보고에 남긴다.
+    브라우저 실측으로만 확인하는 화면 효과(자동 테스트 effects 가 아님 — 정적 테스트는 null 단계 존재만 단언한다):
+    ① 같은 레이아웃 다른 상품으로 이동한 뒤 필터가 비어 있다(stale_filter_cleared_on_same_layout_nav)
+    ② 「필터 초기화」 뒤 요청의 option_filters 가 {} 다(filter_reset_clears_request)

@@ -15,7 +15,7 @@ effects:
   - recipient_relation_select_shows_relation_names
   - recipient_relation_outside_declaration_warns
   - recipient_multi_select_count_label_is_translated
-  # 7.1.0 실측 후속(코어 영역 G-D5·G-D6 와 같은 결함) — 방금 고른 역할·회원이 식별자·UUID 로 보이고 칩이 없던 결함
+  # 7.1.0 실측 후속(코어 편집 창과 같은 결함) — 방금 고른 역할·회원이 식별자·UUID 로 보이고 칩이 없던 결함
   - recipient_picked_role_keeps_search_result_name
   - recipient_picked_user_keeps_search_result_name
   - role_chip_removes_value_and_name_together

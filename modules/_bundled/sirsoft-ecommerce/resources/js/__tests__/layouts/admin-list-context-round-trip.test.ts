@@ -99,21 +99,29 @@ type NavAction = {
  */
 function collectNavActions(node: unknown): NavAction[] {
     const out: NavAction[] = [];
-    const walk = (n: unknown): void => {
+    // 링크(`A`) 안의 path 없는 navigate 는 엔진이 그 링크의 href 로 옮긴다(#757 WP-L D12) — 시험도 같은 주소로 푼다
+    const walk = (n: unknown, href?: string): void => {
         if (Array.isArray(n)) {
-            n.forEach(walk);
+            n.forEach((x) => walk(x, href));
             return;
         }
         if (!n || typeof n !== 'object') return;
         const obj = n as Record<string, unknown>;
+        const props = obj.props as Record<string, unknown> | undefined;
+        const ownHref = obj.name === 'A' && typeof props?.href === 'string' ? (props.href as string) : href;
         if (
             (obj.handler === 'navigate' || obj.handler === 'replaceUrl') &&
             obj.params &&
             typeof obj.params === 'object'
         ) {
-            out.push(obj as unknown as NavAction);
+            const params = obj.params as Record<string, unknown>;
+            out.push(
+                (params.path === undefined && ownHref !== undefined
+                    ? { ...obj, params: { ...params, path: ownHref } }
+                    : obj) as unknown as NavAction
+            );
         }
-        Object.values(obj).forEach(walk);
+        Object.values(obj).forEach((x) => walk(x, ownHref));
     };
     walk(node);
     return out;
@@ -153,6 +161,10 @@ function readLayout(rel: string): unknown {
 }
 
 describe('#75 관리자 이커머스 목록 컨텍스트 왕복 — mergeQuery 전수', () => {
+    /**
+     * @scenario leg=entry
+     * @effects cluster_navigations_merge_query
+     */
     it.each(CLUSTER_FILES)('%s 의 클러스터 내 navigate 는 모두 mergeQuery: true', (rel) => {
         const offenders = collectNavActions(readLayout(rel))
             .filter((a) => {
@@ -169,6 +181,10 @@ describe('#75 관리자 이커머스 목록 컨텍스트 왕복 — mergeQuery �
 });
 
 describe('#75 목적지가 자기 자신인 액션도 목록 상태를 유지한다', () => {
+    /**
+     * @scenario leg=in_place
+     * @effects in_place_navigation_preserves_query
+     */
     it.each(SELF_QUERY_FILES)('%s 의 path 없는 navigate/replaceUrl 은 mergeQuery: true', (rel) => {
         const offenders = collectNavActions(readLayout(rel))
             .filter((a) => {
@@ -184,6 +200,10 @@ describe('#75 목적지가 자기 자신인 액션도 목록 상태를 유지한
         ).toEqual([]);
     });
 
+    /**
+     * @scenario leg=in_place
+     * @effects in_place_navigation_preserves_query
+     */
     it('브랜드를 선택해도 걸어둔 검색어와 정렬이 URL 에 남는다', async () => {
         window.history.replaceState({}, '', '/admin/ecommerce/brands?search=나이키&sort=name_desc');
 
@@ -213,6 +233,10 @@ describe('#75 주문자명 검색은 회원 지정 필터를 함께 비운다', 
         ['주문 상세 주문자 카드', 'partials/admin_ecommerce_order_detail/_partial_order_info.json'],
     ];
 
+    /**
+     * @scenario leg=in_place
+     * @effects orderer_search_clears_member_filter
+     */
     it.each(ORDERER_SEARCH_LEGS)('%s 의 주문자명 검색이 orderer_uuid 를 비운다', (_label, rel) => {
         const actions = collectNavActions(readLayout(rel)).filter(
             (a) =>
@@ -231,6 +255,10 @@ describe('#75 주문자명 검색은 회원 지정 필터를 함께 비운다', 
 });
 
 describe('#75 주문 목록 ↔ 상세 왕복 leg 고정', () => {
+    /**
+     * @scenario leg=entry
+     * @effects entry_carries_list_query
+     */
     it('주문 행 클릭이 필터/페이지를 상세로 나른다', () => {
         const actions = collectNavActions(
             readLayout('partials/admin_ecommerce_order_list/_partial_order_datagrid.json')
@@ -240,12 +268,30 @@ describe('#75 주문 목록 ↔ 상세 왕복 leg 고정', () => {
         actions.forEach((a) => expect(a.params.mergeQuery).toBe(true));
     });
 
+    /**
+     * @scenario leg=back
+     * @effects list_return_preserves_query
+     */
     it("주문 상세 '목록' 버튼이 필터/페이지를 복원한다", () => {
         const a = collectNavActions(readLayout('admin_ecommerce_order_detail.json')).find(
             (x) => x.params.path === '/admin/ecommerce/orders'
         );
         expect(a, "주문 상세의 '목록' navigate 를 찾지 못했습니다.").toBeTruthy();
         expect(a?.params.mergeQuery).toBe(true);
+
+        // 새 탭·가운데 클릭으로 열어도 같은 목록 조건이어야 한다 — 링크 자체가 현재 쿼리를 href 에 합친다(#757 WP-L W8)
+        let link: Record<string, any> | undefined;
+        const find = (n: unknown): void => {
+            if (link || !n || typeof n !== 'object') return;
+            if (Array.isArray(n)) return n.forEach(find);
+            const obj = n as Record<string, any>;
+            if (obj.id === 'list_button') link = obj;
+            else Object.values(obj).forEach(find);
+        };
+        find(readLayout('admin_ecommerce_order_detail.json'));
+        expect(link?.name).toBe('A');
+        expect(link?.props?.href).toBe('/admin/ecommerce/orders');
+        expect(link?.props?.mergeQuery).toBe(true);
     });
 });
 
@@ -309,6 +355,10 @@ describe('#75 주문 목록 ↔ 상세 왕복 — 실행 결과 URL', () => {
     const LIST_URL =
         '/admin/ecommerce/orders?page=2&per_page=20&search_field=orderer_name&search=홍길동&order_status=confirmed';
 
+    /**
+     * @scenario leg=entry
+     * @effects entry_carries_list_query
+     */
     it('주문 행 클릭이 필터 전부를 상세 URL 로 나른다', async () => {
         window.history.replaceState({}, '', LIST_URL);
 
@@ -326,6 +376,10 @@ describe('#75 주문 목록 ↔ 상세 왕복 — 실행 결과 URL', () => {
         expect(q.get('order_status')).toBe('confirmed');
     });
 
+    /**
+     * @scenario leg=back
+     * @effects list_return_preserves_query
+     */
     it("주문 상세 '목록' 버튼이 필터 전부를 목록으로 복원한다", async () => {
         window.history.replaceState(
             {},
@@ -343,5 +397,55 @@ describe('#75 주문 목록 ↔ 상세 왕복 — 실행 결과 URL', () => {
         expect(q.get('per_page')).toBe('20');
         expect(q.get('search')).toBe('홍길동');
         expect(q.get('order_status')).toBe('confirmed');
+    });
+});
+
+describe('행 메뉴 링크(href)도 목록 조건을 싣는다 (7.1.1 출시 전 실측)', () => {
+    /**
+     * 행 메뉴 항목의 href 는 가운데 클릭·Ctrl+클릭·주소 복사가 쓰는 주소다. 보통 클릭(onRowAction 의 navigate)은
+     * `mergeQuery: true` 로 목록 조건을 싣는데 항목에 `mergeQuery` 가 없으면 새 탭만 조건 없이 열린다
+     * (실측: 상품·쿠폰·배송정책 「수정」, 주문·클레임 「상세보기」). 관리자 템플릿 ActionMenu 는 항목의
+     * `mergeQuery` 가 참일 때만 href 에 현재 쿼리를 병합하므로, 이 확장 목록 화면으로 가는 항목에 켠다.
+     * 다른 화면으로 가는 항목(「회원 보기」 `/admin/users/…`)은 목록 조건을 실으면 안 되므로 모집단에서 뺀다.
+     */
+    function rowActionItems(node: any, file: string, acc: Array<[string, any]> = []): Array<[string, any]> {
+        if (Array.isArray(node)) {
+            node.forEach((child) => rowActionItems(child, file, acc));
+
+            return acc;
+        }
+        if (node === null || typeof node !== 'object') return acc;
+        if (Array.isArray(node.props?.rowActions)) {
+            node.props.rowActions.forEach((item: any) => acc.push([file, item]));
+        }
+        Object.entries(node).forEach(([k, v]) => {
+            if (k !== 'props' && v && typeof v === 'object') rowActionItems(v, file, acc);
+        });
+
+        return acc;
+    }
+
+    function jsonFiles(dir: string): string[] {
+        return fs.readdirSync(dir).flatMap((entry) => {
+            const full = path.join(dir, entry);
+            if (fs.statSync(full).isDirectory()) return jsonFiles(full);
+
+            return full.endsWith('.json') ? [full] : [];
+        });
+    }
+
+    /**
+     * @scenario leg=entry
+     * @effects row_menu_href_carries_list_query
+     */
+    it('이 확장 화면으로 가는 행 메뉴 링크는 mergeQuery 가 켜져 있다', () => {
+        const items = jsonFiles(LAYOUTS_ROOT).flatMap((full) =>
+            rowActionItems(JSON.parse(fs.readFileSync(full, 'utf-8')), path.relative(LAYOUTS_ROOT, full).split(path.sep).join('/')),
+        );
+        const targets = items.filter(([, item]) => typeof item?.href === 'string' && item.href.startsWith('/admin/ecommerce/'));
+        expect(targets.length).toBeGreaterThanOrEqual(5);
+
+        const missing = targets.filter(([, item]) => item.mergeQuery !== true).map(([file, item]) => `${file}: ${item.id} ${item.href}`);
+        expect(missing).toEqual([]);
     });
 });

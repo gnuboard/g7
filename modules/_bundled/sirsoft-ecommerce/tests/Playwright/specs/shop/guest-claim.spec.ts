@@ -83,7 +83,9 @@ function guestClaimDetail(
     status_variant: 'info',
     currency_code: 'KRW',
     requested_at_formatted: '2026-09-02 10:00',
-    is_editable: false,
+    // 승인 전(requested) 신청서는 구매자가 고칠 수 있다 — 서버가 그렇게 판정한다. `false` 로 두면 수정 진입이
+    // 안내 토스트와 함께 상세로 돌려보내져(initClaimEdit, 2026-09-23 T2-D7) 수정 화면 시험이 그 화면을 보지 못한다.
+    is_editable: true,
     is_withdrawable: false,
     reason_label: '사이즈가 맞지 않음',
     items,
@@ -163,6 +165,8 @@ async function mockGuestOrderScreens(
         ],
         reasons: {},
         settings: { allowed_charge_methods: ['pay_on_request'], charge_payment_methods: ['card'] },
+        // 신청 진입은 신청 권한이 있을 때만 열린다(7.1.0 — abilities.can_request). 토큰을 쥔 비회원은 신청할 수 있다.
+        abilities: { can_request: true, can_cancel: true },
         pending_images: [],
       });
 
@@ -286,6 +290,8 @@ test.describe('비회원 클레임 화면', () => {
     // 토큰이 탭(sessionStorage)에 묶여 새 창에 실리지 않으므로 같은 창에서 이동한다.
     await expect(page.locator('[id^="claim_list_number_button_"]')).toHaveCount(1);
     await expect(page.locator('a[target="_blank"]', { hasText: 'EX20260902-0900' })).toHaveCount(0);
+    // 푸터 [상세보기]는 링크로 그린다(#757 WP-L) — 단추·링크 어느 쪽으로도 서지 않아야 한다.
+    await expect(page.getByRole('link', { name: '상세보기' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '상세보기' })).toHaveCount(0);
   });
 

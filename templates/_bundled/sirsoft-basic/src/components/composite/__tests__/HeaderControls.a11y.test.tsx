@@ -1,6 +1,6 @@
 /**
  * @file HeaderControls.a11y.test.tsx
- * @description 사용자 머리말 단추 이름 (7.1.0 영역 J D-J5, admin_basic 대칭)
+ * @description 사용자 머리말 단추 이름 (7.1.0, admin_basic 대칭)
  *
  * 테마 단추가 언어와 무관하게 「Toggle theme」 였고, 모바일 장바구니 단추는 아이콘(꾸밈)과 개수 배지뿐이라
  * 이름이 없었다(아이콘 이름 「shopping cart」 로 읽히던 것이 아이콘을 숨긴 뒤 빈 이름이 됨).

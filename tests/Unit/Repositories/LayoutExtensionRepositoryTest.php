@@ -31,6 +31,11 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     private Template $template;
 
+    /**
+     * 저장소와 기본 템플릿을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +46,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * Extension Point 조회 테스트
+     *
+     * @effects repository_lists_active_rows_of_a_target_in_priority_order
+     *
+     * @return void 반환값 없음
      */
     public function test_get_by_extension_point(): void
     {
@@ -73,6 +82,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * Extension Point 우선순위 정렬 테스트
+     *
+     * @effects repository_lists_active_rows_of_a_target_in_priority_order
+     *
+     * @return void 반환값 없음
      */
     public function test_get_by_extension_point_ordered_by_priority(): void
     {
@@ -106,6 +119,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * 비활성 Extension Point 제외 테스트
+     *
+     * @effects repository_lists_active_rows_of_a_target_in_priority_order
+     *
+     * @return void 반환값 없음
      */
     public function test_get_by_extension_point_excludes_inactive(): void
     {
@@ -133,6 +150,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * Overlay 조회 테스트
+     *
+     * @effects repository_lists_active_rows_of_a_target_in_priority_order
+     *
+     * @return void 반환값 없음
      */
     public function test_get_overlays_by_layout(): void
     {
@@ -165,6 +186,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * 확장 생성 테스트
+     *
+     * @effects repository_creates_extension_row
+     *
+     * @return void 반환값 없음
      */
     public function test_create_extension(): void
     {
@@ -195,6 +220,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * 출처별 soft delete 테스트
+     *
+     * @effects repository_source_lifecycle_soft_delete_trashed_lookup_force_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_soft_delete_by_source(): void
     {
@@ -224,30 +253,37 @@ class LayoutExtensionRepositoryTest extends TestCase
     }
 
     /**
-     * 출처별 복원 테스트
+     * 출처의 지워진 행만, 조각 키로 걸러 조회한다 — 어느 행을 되살릴지는 서비스가 정한다(#725).
+     *
+     * @return void 반환값 없음
+     *
+     * @effects repository_source_lifecycle_soft_delete_trashed_lookup_force_delete
      */
-    public function test_restore_by_source(): void
+    public function test_get_trashed_by_source(): void
     {
-        // Arrange
-        LayoutExtension::factory()->count(2)->create([
-            'template_id' => $this->template->id,
-            'source_type' => LayoutSourceType::Module,
-            'source_identifier' => 'sirsoft-ecommerce',
-        ]);
+        // Arrange — 지울 행 둘(키 a·b) + 살아 있는 다른 출처 행 하나
+        LayoutExtension::factory()->create(['template_id' => $this->template->id, 'source_type' => LayoutSourceType::Module, 'source_identifier' => 'sirsoft-ecommerce', 'fragment_key' => 'a']);
+        LayoutExtension::factory()->create(['template_id' => $this->template->id, 'source_type' => LayoutSourceType::Module, 'source_identifier' => 'sirsoft-ecommerce', 'fragment_key' => 'b']);
+        LayoutExtension::factory()->create(['template_id' => $this->template->id, 'source_type' => LayoutSourceType::Module, 'source_identifier' => 'sirsoft-other', 'fragment_key' => 'a']);
 
         $this->repository->softDeleteBySource(LayoutSourceType::Module, 'sirsoft-ecommerce');
-        $this->assertEquals(0, LayoutExtension::count());
 
         // Act
-        $restored = $this->repository->restoreBySource(LayoutSourceType::Module, 'sirsoft-ecommerce');
+        $all = $this->repository->getTrashedBySource(LayoutSourceType::Module, 'sirsoft-ecommerce');
+        $onlyA = $this->repository->getTrashedBySource(LayoutSourceType::Module, 'sirsoft-ecommerce', ['a']);
 
-        // Assert
-        $this->assertEquals(2, $restored);
-        $this->assertEquals(2, LayoutExtension::count());
+        // Assert — 조회만 하고 되살리지 않는다
+        $this->assertSame(['a', 'b'], $all->pluck('fragment_key')->all());
+        $this->assertSame(['a'], $onlyA->pluck('fragment_key')->all());
+        $this->assertSame(1, LayoutExtension::count(), '조회가 행을 되살렸다');
     }
 
     /**
      * 출처별 영구 삭제 테스트
+     *
+     * @effects repository_source_lifecycle_soft_delete_trashed_lookup_force_delete
+     *
+     * @return void 반환값 없음
      */
     public function test_force_delete_by_source(): void
     {
@@ -271,6 +307,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * Extension Point 템플릿 오버라이드 조회 테스트
+     *
+     * @effects repository_finds_template_override_for_a_target
+     *
+     * @return void 반환값 없음
      */
     public function test_find_template_override_for_extension_point(): void
     {
@@ -300,6 +340,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * Extension Point 템플릿 오버라이드 없음 테스트
+     *
+     * @effects repository_finds_template_override_for_a_target
+     *
+     * @return void 반환값 없음
      */
     public function test_find_template_override_for_extension_point_returns_null_when_not_found(): void
     {
@@ -326,6 +370,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * Overlay 템플릿 오버라이드 조회 테스트
+     *
+     * @effects repository_finds_template_override_for_a_target
+     *
+     * @return void 반환값 없음
      */
     public function test_find_template_override_for_overlay(): void
     {
@@ -353,94 +401,11 @@ class LayoutExtensionRepositoryTest extends TestCase
     }
 
     /**
-     * 오버라이드 고려한 Extension Point 조회 테스트
-     */
-    public function test_get_resolved_extension_points(): void
-    {
-        // Arrange - 모듈 확장
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::ExtensionPoint,
-            'target_name' => 'sidebar-top',
-            'source_type' => LayoutSourceType::Module,
-            'source_identifier' => 'sirsoft-ecommerce',
-            'priority' => 50,
-            'is_active' => true,
-        ]);
-
-        // Arrange - 다른 모듈 확장
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::ExtensionPoint,
-            'target_name' => 'sidebar-top',
-            'source_type' => LayoutSourceType::Module,
-            'source_identifier' => 'sirsoft-other',
-            'priority' => 40,
-            'is_active' => true,
-        ]);
-
-        // Arrange - 템플릿 오버라이드 (sirsoft-ecommerce 확장을 오버라이드)
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::ExtensionPoint,
-            'target_name' => 'sidebar-top',
-            'source_type' => LayoutSourceType::Template,
-            'source_identifier' => 'sirsoft-admin_basic',
-            'override_target' => 'sirsoft-ecommerce',
-            'priority' => 10,
-            'is_active' => true,
-        ]);
-
-        // Act
-        $result = $this->repository->getResolvedExtensionPoints($this->template->id, 'sidebar-top');
-
-        // Assert - sirsoft-ecommerce 모듈 확장은 제외되고, 템플릿 오버라이드와 sirsoft-other만 남음
-        $this->assertCount(2, $result);
-
-        $identifiers = $result->pluck('source_identifier')->toArray();
-        $this->assertContains('sirsoft-admin_basic', $identifiers);
-        $this->assertContains('sirsoft-other', $identifiers);
-        $this->assertNotContains('sirsoft-ecommerce', $identifiers);
-    }
-
-    /**
-     * 오버라이드 고려한 Overlay 조회 테스트
-     */
-    public function test_get_resolved_overlays(): void
-    {
-        // Arrange - 모듈 오버레이
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::Overlay,
-            'target_name' => 'admin/dashboard',
-            'source_type' => LayoutSourceType::Module,
-            'source_identifier' => 'sirsoft-ecommerce',
-            'priority' => 50,
-            'is_active' => true,
-        ]);
-
-        // Arrange - 템플릿 오버라이드
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::Overlay,
-            'target_name' => 'admin/dashboard',
-            'source_type' => LayoutSourceType::Template,
-            'source_identifier' => 'sirsoft-admin_basic',
-            'override_target' => 'sirsoft-ecommerce',
-            'priority' => 10,
-            'is_active' => true,
-        ]);
-
-        // Act
-        $result = $this->repository->getResolvedOverlays($this->template->id, 'admin/dashboard');
-
-        // Assert
-        $this->assertCount(1, $result);
-        $this->assertEquals(LayoutSourceType::Template, $result->first()->source_type);
-    }
-
-    /**
      * 템플릿 ID로 모든 확장 조회 테스트
+     *
+     * @effects repository_scopes_rows_by_template
+     *
+     * @return void 반환값 없음
      */
     public function test_get_by_template_id(): void
     {
@@ -468,101 +433,11 @@ class LayoutExtensionRepositoryTest extends TestCase
     }
 
     /**
-     * 오버라이드 해석 조회 시 템플릿 오버라이드에 가려진 모듈/플러그인 확장은 제외됨
-     *
-     * 회귀: 레이아웃 편집 화면 좌측 트리(getResolvedByTemplateId 기반)가
-     * 화면에 실제 적용되지 않는 "가려진 행"을 노출하여, 관리자가 그 행을
-     * 편집해도 반영되지 않던 문제. 렌더링 경로(getResolvedExtensionPoints/
-     * getResolvedOverlays)와 동일한 오버라이드 해석을 적용해야 한다.
-     */
-    public function test_get_resolved_by_template_id_excludes_overridden_extensions(): void
-    {
-        // Arrange - 플러그인 Extension Point 확장
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::ExtensionPoint,
-            'target_name' => 'address_search_slot',
-            'source_type' => LayoutSourceType::Plugin,
-            'source_identifier' => 'sirsoft-daum_postcode',
-            'priority' => 100,
-            'is_active' => true,
-        ]);
-
-        // Arrange - 템플릿 오버라이드 (위 플러그인 확장을 가림)
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::ExtensionPoint,
-            'target_name' => 'address_search_slot',
-            'source_type' => LayoutSourceType::Template,
-            'source_identifier' => 'sirsoft-admin_basic',
-            'override_target' => 'sirsoft-daum_postcode',
-            'priority' => 50,
-            'is_active' => true,
-        ]);
-
-        // Arrange - 가려지지 않은 다른 모듈 확장 (다른 확장점)
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::Overlay,
-            'target_name' => 'admin/dashboard',
-            'source_type' => LayoutSourceType::Module,
-            'source_identifier' => 'sirsoft-ecommerce',
-            'priority' => 50,
-            'is_active' => true,
-        ]);
-
-        // Act
-        $result = $this->repository->getResolvedByTemplateId($this->template->id);
-
-        // Assert - 오버라이드된 플러그인 원본은 제외, 오버라이드 + 무관 확장만 남음
-        $this->assertCount(2, $result);
-
-        $identifiers = $result->pluck('source_identifier')->toArray();
-        $this->assertContains('sirsoft-admin_basic', $identifiers);
-        $this->assertContains('sirsoft-ecommerce', $identifiers);
-        $this->assertNotContains('sirsoft-daum_postcode', $identifiers);
-    }
-
-    /**
-     * 오버라이드가 없으면 오버라이드 해석 조회는 모든 확장을 그대로 반환함
-     */
-    public function test_get_resolved_by_template_id_returns_all_when_no_override(): void
-    {
-        // Arrange - 오버라이드 없는 확장 3개 (서로 다른 확장점/레이아웃)
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::ExtensionPoint,
-            'target_name' => 'address_search_slot',
-            'source_type' => LayoutSourceType::Plugin,
-            'source_identifier' => 'sirsoft-daum_postcode',
-            'is_active' => true,
-        ]);
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::Overlay,
-            'target_name' => 'admin/dashboard',
-            'source_type' => LayoutSourceType::Module,
-            'source_identifier' => 'sirsoft-ecommerce',
-            'is_active' => true,
-        ]);
-        LayoutExtension::factory()->create([
-            'template_id' => $this->template->id,
-            'extension_type' => LayoutExtensionType::ExtensionPoint,
-            'target_name' => 'sidebar-top',
-            'source_type' => LayoutSourceType::Module,
-            'source_identifier' => 'sirsoft-other',
-            'is_active' => true,
-        ]);
-
-        // Act
-        $result = $this->repository->getResolvedByTemplateId($this->template->id);
-
-        // Assert - 가림 대상이 없으므로 전부 반환
-        $this->assertCount(3, $result);
-    }
-
-    /**
      * 템플릿 ID로 모든 확장 삭제 테스트
+     *
+     * @effects repository_scopes_rows_by_template
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_by_template_id(): void
     {
@@ -588,6 +463,10 @@ class LayoutExtensionRepositoryTest extends TestCase
 
     /**
      * 삭제된 확장 포함하여 삭제 테스트
+     *
+     * @effects repository_scopes_rows_by_template
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_by_template_id_includes_trashed(): void
     {

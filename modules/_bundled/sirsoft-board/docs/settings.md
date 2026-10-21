@@ -82,7 +82,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 | `settings` | 환경설정 | `read`, `update` | - |
 | `identity.policies` | 게시판 본인인증 정책 | `read`, `update` | - |
 | `dashboard` | 게시판 대시보드 | `view` | - |
-| `reports` | 게시판 신고 관리 | `view`, `manage` | `report` |
+| `reports` | 게시판 신고 관리 | `view`, `manage` | - |
 | `scraps` | 게시글 스크랩 관리 | `view`, `manage` | `scrap` |
 | `reactions` | 게시글 반응 관리 | `view`, `manage` | `reaction` |
 <!-- @generated:permissions END -->
@@ -101,9 +101,19 @@ _`getSettingsSchema()` 선언이 없습니다._
 만들면 그 게시판 전용 권한이 `config/board.php` 의 `board_permission_definitions` 템플릿을
 기반으로 추가 생성됩니다(admin.posts.read/write, posts.read-secret 등 — 게시판마다 독립적인
 권한 묶음). 그 동적 권한은 이 표에 나타나지 않으며 `getDynamicPermissionIdentifiers()` 로만
-전수를 확인할 수 있습니다. `boards`/`reports` 카테고리에 `resource_route_key`/`owner_key` 가
-붙어 있는 것은 소유자 기반 스코프 판정(자기 글만 관리 가능한 `manager` 이하 역할 등)이 걸려
-있다는 뜻입니다.
+전수를 확인할 수 있습니다.
+`boards`/`scraps`/`reactions` 카테고리와 게시판별 `manager`·`admin.manage`·`posts.read`·`comments.read`·
+첨부 권한에는 `resource_route_key`/`owner_key` 가 붙어 있어 역할 화면에서 범위(전체·소유역할·본인만)를 고를 수 있습니다.
+게시판 라우트는 `{slug}`·`{id}` 를 써서 코어 미들웨어의 범위 검사(라우트가 그 모델을 바인딩할 때만 동작)가 돌지 않으므로,
+범위는 모두 코드 안에서 다시 판정합니다 — 게시판 관리 권한은 `ChecksBoardPermission`(게시판의 `created_by` 기준),
+블라인드·복원·일괄은 `Support\BoardManageScope`, 글·댓글 읽기의 부가 경로(신고·스크랩·반응·최근글·인기글·검색·프로필)는
+`Support\BoardReadScope`, 목록과 이전/다음 글은 저장소 쿼리 범위입니다. 이 강제 지점은 `Listeners\BoardScopeLedgerListener`
+원장에 적혀 있고 감사 테스트(`tests/Feature/Security/BoardScopedRouteLedgerTest`)가 바인딩도 원장 등록도 없는 새 라우트와
+낡은 원장을 잡습니다. 범위를 거는 새 라우트를 만들면 강제 코드와 원장 항목을 함께 더하세요. 신고 관리(`reports`) 권한에는 범위를 두지 않습니다 — 신고는 게시판을 가로지르는 운영 업무라 「본인만」의 뜻이 없고, 케이스 테이블에 신고자 컬럼도 없습니다. 권한 보유만으로 판정합니다.
+
+`posts.read-secret`(비밀글 조회)·`admin.posts.read-secret` 의 범위는 비밀글 판정(`SecretContentGate`)이 글 작성자로
+다시 판정합니다 — 「본인만」은 자기 글만, 「소유역할」은 글쓴이와 역할을 하나라도 함께 가진 회원의 글만 열고, 비회원 글은 두 범위
+모두에서 닫힙니다. 모든 회원이 기본 `user` 역할을 가지므로 「소유역할」은 사실상 「회원이 쓴 글 전체(비회원 글 제외)」입니다.
 
 게시판 동적 권한 중 `posts.write-notice`(공지 등록)는 **필드 설정 권한**입니다 — `posts.write` 를
 통과한 사용자 중 글을 공지로 등록·해제할 수 있는 사람을 가립니다. 사용자·관리자 글 작성·수정 컨트롤러가
@@ -158,7 +168,7 @@ board 의 라우트가 20개 안팎으로 한 파일에서 관리 가능한 규�
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `sirsoft-basic` | 템플릿 | `>=1.2.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 

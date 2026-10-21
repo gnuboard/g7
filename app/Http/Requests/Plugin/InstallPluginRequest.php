@@ -4,6 +4,7 @@ namespace App\Http\Requests\Plugin;
 
 use App\Extension\HookManager;
 use App\Rules\ValidExtensionIdentifier;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -29,7 +30,7 @@ class InstallPluginRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -42,6 +43,8 @@ class InstallPluginRequest extends FormRequest
             'dependencies.*.identifier' => ['required_with:dependencies', 'string', 'max:255'],
             'language_packs' => ['nullable', 'array'],
             'language_packs.*' => ['string', 'max:255'],
+            // 레이아웃 설치 소스(auto|json) — 이 요청 동안만 설정을 덮는다. 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따른다.
+            'layout_source' => ['nullable', 'string', 'in:auto,json'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -59,6 +62,7 @@ class InstallPluginRequest extends FormRequest
             'plugin_name.required' => __('plugins.validation.plugin_name_required'),
             'plugin_name.string' => __('plugins.validation.plugin_name_string'),
             'plugin_name.max' => __('plugins.validation.plugin_name_max', ['max' => 255]),
+            'layout_source.in' => __('plugins.errors.invalid_layout_source'),
         ];
     }
 }

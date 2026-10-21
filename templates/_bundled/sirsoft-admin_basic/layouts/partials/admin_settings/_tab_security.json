@@ -74,7 +74,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 }
@@ -200,7 +200,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 }
@@ -580,6 +580,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": "px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
                                     },

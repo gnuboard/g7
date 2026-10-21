@@ -537,7 +537,7 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
         } catch (loadError) {
           logger.error('레이아웃 편집기 번들 로드 실패', loadError);
           // 오류 화면이 컨테이너를 덮기 전에 React 루트를 내려놓는다 — SPA 로 들어왔으면 살아 있는 루트 위에
-          // 덮이게 된다 (engine-v1.79.0, O-K2-2 와 같은 규칙)
+          // 덮이게 된다 (engine-v1.79.0, 같은 규칙)
           releaseTemplateRoot();
           // 컨테이너에 직접 에러 화면 렌더 (CSS 의존성 없는 인라인 스타일)
           ErrorDisplay.render(options.containerId, {
@@ -970,7 +970,7 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
  *
  * 오류 화면(ErrorDisplay)은 컨테이너를 `innerHTML` 로 바꾼다. 루트를 그대로 두면 React 가 지워진 노드를
  * 계속 들고 있다가 다음 커밋(토스트 갱신 등)에서 `insertBefore`/`removeChild` NotFoundError 를 내고,
- * 렌더 오류 경계가 다시 그리기를 반복해 콘솔 오류가 수백 건 쌓인다(7.1.0 실측 O-K2-2 — 제한 관리자가
+ * 렌더 오류 경계가 다시 그리기를 반복해 콘솔 오류가 수백 건 쌓인다(7.1.0 실측 — 제한 관리자가
  * 403 화면으로 SPA 이동할 때 198건 + React #185). 레지스트리·번역·디스패처·현재 레이아웃 등 엔진 상태는
  * 그대로 두며, 대기 중인 업데이트는 버리고, 다음 `renderTemplate` 이 새 루트를 만든다.
  *
@@ -1091,6 +1091,9 @@ if (typeof window !== 'undefined') {
       bindingEngine: state.bindingEngine,
       actionDispatcher: state.actionDispatcher,
       templateMetadata: state.templateMetadata,
+      // 레이아웃 이탈 가드(meta.leave_guard)가 읽는다 (engine-v1.82.0)
+      currentLayoutJson: state.currentLayoutJson,
+      currentDataContext: state.currentDataContext,
     }),
     transitionManager,
     responsiveManager,

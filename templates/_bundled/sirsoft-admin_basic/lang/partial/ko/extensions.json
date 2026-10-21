@@ -30,6 +30,15 @@
     "guide_link": "코어 업그레이드 가이드",
     "dismiss": "닫기"
   },
+  "unplaced_bundled": {
+    "title_modules": "코어 {{version}} 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 모듈 {{count}}개",
+    "title_plugins": "코어 {{version}} 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 플러그인 {{count}}개",
+    "title_templates": "코어 {{version}} 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 템플릿 {{count}}개",
+    "title_language_packs": "코어 {{version}} 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 언어팩 {{count}}개",
+    "description": "코어 업데이트는 설치하지 않은 공식 번들을 묻고 배치하지 않습니다. 필요하면 서버에서 아래 명령으로 소스를 배치한 뒤 이 화면에서 설치하세요.",
+    "command_label": "배치 명령",
+    "dismiss": "이 안내 닫기"
+  },
   "update_modal": {
     "compat_warning_title": "코어 버전 호환성 경고",
     "compat_warning_message": "이 {{type}}에 필요한 코어 버전: {{required}} (현재: {{installed}})",

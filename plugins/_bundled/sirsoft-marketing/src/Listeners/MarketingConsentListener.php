@@ -74,15 +74,20 @@ class MarketingConsentListener implements HookListenerInterface
             ],
 
             // Action 훅: 생성 후 마케팅 동의 저장 ($originalData 직접 사용)
+            // sync: 저장 직후 다시 연 회원 상세에 새 동의값이 보여야 한다 — 큐로 가면 워커가 돌 때까지 옛 값이다(#724).
             'core.user.after_create' => [
                 'method' => 'afterCreate',
                 'priority' => 10,
+                'sync' => true,
             ],
 
             // Action 훅: 수정 후 마케팅 동의 저장 (filter_update_data에서 분리)
+            // sync: 출처 판정(detectSource)이 실제 요청 경로를 읽는다 — 워커에는 요청이 없어 관리자 수정이
+            // profile 로 기록된다. 훅 문서 계약(core.user.after_update 는 sync)도 이 실행을 전제한다(#724).
             'core.user.after_update' => [
                 'method' => 'afterUpdate',
                 'priority' => 10,
+                'sync' => true,
             ],
 
             // Action 훅: 회원가입 후 마케팅 동의 저장
@@ -94,9 +99,11 @@ class MarketingConsentListener implements HookListenerInterface
             ],
 
             // Action 훅: 사용자 삭제 전 마케팅 동의 데이터 명시적 삭제
+            // sync: 회원 삭제와 같은 트랜잭션에서 지운다 — 큐로 가면 커밋 뒤로 밀리고, 실패해도 삭제가 되돌려지지 않는다(#724).
             'core.user.before_delete' => [
                 'method' => 'beforeDelete',
                 'priority' => 10,
+                'sync' => true,
             ],
 
             // Filter 훅: API 응답에 마케팅 동의 데이터 병합

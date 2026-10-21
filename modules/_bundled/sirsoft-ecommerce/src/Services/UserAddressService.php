@@ -11,12 +11,15 @@ use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Exceptions\DuplicateAddressException;
 use Modules\Sirsoft\Ecommerce\Models\UserAddress;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 사용자 배송지 관리 서비스
  */
 class UserAddressService
 {
+    use ReappliesPermissionScope;
+
     /**
      * UserAddressService 생성자
      *
@@ -363,6 +366,14 @@ class UserAddressService
      */
     public function deleteByAdmin(int $id): bool
     {
+        $row = $this->addressRepository->find($id);
+        if ($row === null) {
+            return false;
+        }
+
+        // 라우트가 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다 — `user-addresses.manage` 범위를 재적용
+        $this->assertWithinScope($row, 'sirsoft-ecommerce.user-addresses.manage');
+
         return $this->addressRepository->deleteById($id);
     }
 
@@ -379,7 +390,12 @@ class UserAddressService
     {
         // 스냅샷은 삭제 «전» 에 뜬다 — 배송지는 소프트 삭제가 아니라 지우고 나면 행이
         // 사라져 활동 로그에 남은 id 로는 「누구의 무엇」을 되짚을 수 없다.
-        $snapshots = $this->addressRepository->findByIds($ids)
+        $rows = $this->addressRepository->findByIds($ids);
+
+        // 정적 경로라 미들웨어 스코프 검사가 돌지 않는다 — 대상 전량이 `user-addresses.manage` 범위 안이어야 한다(전량 거부)
+        $this->assertAllWithinScope($rows, 'sirsoft-ecommerce.user-addresses.manage');
+
+        $snapshots = $rows
             ->map(fn ($row) => [
                 'id' => (int) $row->id,
                 'user_id' => $row->user_id !== null ? (int) $row->user_id : null,

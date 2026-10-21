@@ -19,6 +19,8 @@ export interface FileTreePickerProps {
     /** 파일 조작 가능 여부 (권한) */
     canManage?: boolean;
     isLoading?: boolean;
+    /** 참이면 현재 주소의 쿼리를 파일 주소(`nodes[].href`)에 합친다(#757) */
+    hrefMergeQuery?: boolean;
     /**
      * 내용 검색이 걸린 파일 수 — 0 이면 요약을 보이지 않는다.
      *

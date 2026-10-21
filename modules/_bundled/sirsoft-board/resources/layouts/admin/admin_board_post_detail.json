@@ -145,21 +145,22 @@
                             {
                                 "id": "back_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "글 목록으로. 보던 검색·필터·페이지를 이고 간다 — 글 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/board/{{route.slug}}",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "className": "flex-center gap-2 btn btn-secondary"
+                                    "href": "/admin/board/{{route.slug}}",
+                                    "mergeQuery": true,
+                                    "className": "button flex-center gap-2 btn btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -332,6 +333,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -422,7 +424,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.deleteModalLoading}}"
                             },
                             "children": [
@@ -469,7 +472,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice"
                                 }
@@ -501,7 +504,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "text": "$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author}}"
+                                            "text": "$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author || $t('sirsoft-board.admin.posts.unknown_author')}}"
                                         }
                                     ]
                                 }
@@ -621,6 +624,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -730,7 +734,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.reportSubmitting}}"
                             },
                             "children": [
@@ -799,7 +804,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500 ml-1"
+                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
                                     },
                                     "text": "$t:sirsoft-board.common.optional"
                                 }
@@ -845,6 +850,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -927,7 +933,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.blindModalLoading}}"
                             },
                             "children": [
@@ -990,6 +997,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -1069,7 +1077,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "px-4 py-2 bg-green-700 dark:bg-green-700 text-white rounded-lg hover:bg-green-800 dark:hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.restoreModalLoading}}"
                             },
                             "children": [

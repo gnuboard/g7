@@ -35,8 +35,8 @@
             <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
             $t:mypage.order_detail.discount_amount
           </span>
-          <span class="text-red-500 dark:text-red-400 font-medium">
-            <responsive on="portable" class="text-red-500 dark:text-red-400 font-medium text-sm"/>
+          <span class="text-red-600 dark:text-red-400 font-medium">
+            <responsive on="portable" class="text-red-600 dark:text-red-400 font-medium text-sm"/>
             -{{order.data.total_discount_amount_formatted ?? ''}}
           </span>
         </div>
@@ -45,55 +45,55 @@
           <!-- 상품 쿠폰 할인 -->
           <div data-if="{{(order.data.total_product_coupon_discount_amount ?? 0) > 0}}" class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-              <icon name="ticket" class="text-sm text-red-400 dark:text-red-500"/>
+              <icon name="ticket" class="text-sm text-red-500 dark:text-red-500"/>
               <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.order_detail.product_coupon_discount</span>
             </div>
-            <span class="text-sm text-red-500 dark:text-red-400">-{{order.data.total_product_coupon_discount_amount_formatted ?? ''}}</span>
+            <span class="text-sm text-red-600 dark:text-red-400">-{{order.data.total_product_coupon_discount_amount_formatted ?? ''}}</span>
           </div>
           <!-- 적용 상품 쿠폰 상세 목록 -->
           <div data-if="{{(order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []).length > 0}}" data-each="pCoupon in {{order.data.promotions_applied_snapshot?.product_promotions?.coupons ?? []}}" class="ml-5 space-y-1">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1">
-                <icon name="ticket" class="text-xs text-red-400 dark:text-red-500"/>
-                <span class="text-xs text-gray-400 dark:text-gray-500">{{pCoupon.name ?? ''}}</span>
+                <icon name="ticket" class="text-xs text-red-500 dark:text-red-500"/>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{pCoupon.name ?? ''}}</span>
               </div>
-              <span class="text-xs text-red-400 dark:text-red-500">-{{pCoupon.total_discount_formatted ?? ''}}</span>
+              <span class="text-xs text-red-600 dark:text-red-400">-{{pCoupon.total_discount_formatted ?? ''}}</span>
             </div>
           </div>
           <!-- 주문 쿠폰 할인 -->
           <div data-if="{{(order.data.total_order_coupon_discount_amount ?? 0) > 0}}" class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-              <icon name="ticket" class="text-sm text-red-400 dark:text-red-500"/>
+              <icon name="ticket" class="text-sm text-red-500 dark:text-red-500"/>
               <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.order_detail.order_coupon_discount</span>
             </div>
-            <span class="text-sm text-red-500 dark:text-red-400">-{{order.data.total_order_coupon_discount_amount_formatted ?? ''}}</span>
+            <span class="text-sm text-red-600 dark:text-red-400">-{{order.data.total_order_coupon_discount_amount_formatted ?? ''}}</span>
           </div>
           <!-- 적용 주문 쿠폰 상세 목록 -->
           <div data-if="{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" data-each="oCoupon in {{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount')}}" class="ml-5 space-y-1">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1">
-                <icon name="ticket" class="text-xs text-red-400 dark:text-red-500"/>
-                <span class="text-xs text-gray-400 dark:text-gray-500">{{oCoupon.name ?? ''}}</span>
+                <icon name="ticket" class="text-xs text-red-500 dark:text-red-500"/>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{oCoupon.name ?? ''}}</span>
               </div>
-              <span class="text-xs text-red-400 dark:text-red-500">-{{oCoupon.total_discount_formatted ?? ''}}</span>
+              <span class="text-xs text-red-600 dark:text-red-400">-{{oCoupon.total_discount_formatted ?? ''}}</span>
             </div>
           </div>
           <!-- 할인코드 할인 -->
           <div data-if="{{(order.data.total_code_discount_amount ?? 0) > 0}}" class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-              <icon name="tag" class="text-sm text-orange-400 dark:text-orange-500"/>
+              <icon name="tag" class="text-sm text-orange-600 dark:text-orange-500"/>
               <span class="text-sm text-gray-500 dark:text-gray-400">$t:mypage.order_detail.code_discount</span>
             </div>
-            <span class="text-sm text-red-500 dark:text-red-400">-{{order.data.total_code_discount_amount_formatted ?? ''}}</span>
+            <span class="text-sm text-red-600 dark:text-red-400">-{{order.data.total_code_discount_amount_formatted ?? ''}}</span>
           </div>
           <!-- 적용 할인코드 상세 목록 -->
           <div data-if="{{(order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []).length > 0}}" data-each="dCode in {{order.data.promotions_applied_snapshot?.product_promotions?.discount_codes ?? []}}" class="ml-5 space-y-1">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1">
-                <icon name="tag" class="text-xs text-orange-400 dark:text-orange-500"/>
-                <span class="text-xs text-gray-400 dark:text-gray-500">{{dCode.code ?? ''}} ({{dCode.name ?? ''}})</span>
+                <icon name="tag" class="text-xs text-orange-600 dark:text-orange-500"/>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{dCode.code ?? ''}} ({{dCode.name ?? ''}})</span>
               </div>
-              <span class="text-xs text-red-400 dark:text-red-500">-{{dCode.total_discount_formatted ?? ''}}</span>
+              <span class="text-xs text-red-600 dark:text-red-400">-{{dCode.total_discount_formatted ?? ''}}</span>
             </div>
           </div>
         </div>
@@ -105,8 +105,8 @@
           $t:mypage.order_detail.shipping_fee
         </span>
         <!-- 무료배송 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false → Number() 캐스팅으로 안전 비교 (유료 분기도 동일). -->
-        <span data-if="{{Number(order.data.total_shipping_amount ?? 0) === 0}}" class="text-green-600 dark:text-green-400 font-medium">
-          <responsive on="portable" class="text-green-600 dark:text-green-400 font-medium text-sm"/>
+        <span data-if="{{!!order?.data &amp;&amp; Number(order.data.total_shipping_amount ?? 0) === 0}}" class="text-green-700 dark:text-green-400 font-medium">
+          <responsive on="portable" class="text-green-700 dark:text-green-400 font-medium text-sm"/>
           $t:mypage.order_detail.free_shipping
         </span>
         <!-- 유료배송 -->
@@ -119,10 +119,10 @@
       <div data-if="{{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" data-each="sCoupon in {{(order.data.promotions_applied_snapshot?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" class="ml-4 space-y-1">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-1.5">
-            <icon name="ticket" class="text-sm text-red-400 dark:text-red-500"/>
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{sCoupon.name ?? ''}}</span>
+            <icon name="ticket" class="text-sm text-red-500 dark:text-red-500"/>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{sCoupon.name ?? ''}}</span>
           </div>
-          <span class="text-xs text-red-400 dark:text-red-500">-{{sCoupon.total_discount_formatted ?? ''}}</span>
+          <span class="text-xs text-red-600 dark:text-red-400">-{{sCoupon.total_discount_formatted ?? ''}}</span>
         </div>
       </div>
       <!-- === 마일리지 사용 (있을 때만) === -->
@@ -131,8 +131,8 @@
           <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
           $t:mypage.order_detail.points_used
         </span>
-        <span class="text-red-500 dark:text-red-400 font-medium">
-          <responsive on="portable" class="text-red-500 dark:text-red-400 font-medium text-sm"/>
+        <span class="text-red-600 dark:text-red-400 font-medium">
+          <responsive on="portable" class="text-red-600 dark:text-red-400 font-medium text-sm"/>
           -{{order.data.total_points_used_amount_formatted ?? ''}}
         </span>
       </div>
@@ -142,8 +142,8 @@
           <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
           $t:mypage.order_detail.deposit_used
         </span>
-        <span class="text-red-500 dark:text-red-400 font-medium">
-          <responsive on="portable" class="text-red-500 dark:text-red-400 font-medium text-sm"/>
+        <span class="text-red-600 dark:text-red-400 font-medium">
+          <responsive on="portable" class="text-red-600 dark:text-red-400 font-medium text-sm"/>
           -{{order.data.total_deposit_used_amount_formatted ?? ''}}
         </span>
       </div>
@@ -161,7 +161,7 @@
           </span>
           <!-- 보조 통화들 -->
           <div data-each="claimPaidCurrency in {{Object.entries(order.data.mc_claim_additional_paid_total ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{claimPaidCurrency[1]?.formatted ?? ''}}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{claimPaidCurrency[1]?.formatted ?? ''}}</span>
           </div>
         </div>
       </div>
@@ -191,7 +191,7 @@
           </span>
           <!-- 보조 통화들 -->
           <div data-each="currency in {{Object.entries(order.data.mc_total_amount ?? {}).filter(([code]) => code !== (order.data.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{currency[1]?.formatted ?? ''}}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted ?? ''}}</span>
           </div>
           <!-- 결제 통화 실청구액 — base≠결제 통화일 때 유저가 실제 결제한 통화/금액 명시 -->
           <span data-if="{{order.data.payment?.is_cross_currency}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:mypage.order_detail.charged_in_payment_currency|currency={{order.data.payment?.payment_currency}}|amount={{order.data.payment?.paid_amount_formatted}}</span>

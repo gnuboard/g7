@@ -1,0 +1,161 @@
+{
+    "comment": "분류 편집·등록 중 다른 분류를 고르려 할 때 뜨는 이탈 확인 창(브랜드·공통정보·상품정보고시와 같은 규칙, 7.1.1 출시 전).\n  가려던 분류는 트리가 대기 자리(`_global.pendingCategory*`)에 잡아 두고, 이 창의 \"취소하고 이동\" 이 그 값을 실제 선택으로\n  옮긴다 — 이 창이 **이동을 완결하는 자리**이자 **입력을 버리는 유일한 경로**이고, 여기서 옮기지 않으면 클릭이 사라진다.\n  \"계속 편집\" 은 창만 닫는다. 이동 쪽은 폼 입력(`_local`)도 비우므로 창 닫기를 맨 뒤에 둔다(공통정보 창과 같은 순서).",
+    "meta": {
+        "is_partial": true,
+        "description": "Category Editing Discard Confirmation Modal"
+    },
+    "id": "editing_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.category.modal.editing.title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-shrink-0 mt-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "text-xl text-amber-600 dark:text-amber-400"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-primary text-base mb-2"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.category.modal.editing.message"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.category.modal.editing.confirm_message"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.category.modal.editing.continue"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "입력을 버리고 대기 중이던 분류로 이동 — 대기 값을 실제 선택으로 옮기고 주소도 그 분류로 갈아끼운 뒤(대기 값을 비우기 전에),\n            폼 입력·오류를 비우고 창을 닫는다. 대기 값이 없으면(트리 밖에서 열린 경우) 선택을 비운다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "replaceUrl",
+                                    "if": "{{!!_global.pendingCategoryId}}",
+                                    "params": {
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "id": "{{_global.pendingCategoryId}}",
+                                            "mode": "view"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedCategoryId": "{{_global.pendingCategoryId}}",
+                                        "selectedCategory": "{{_global.pendingCategory}}",
+                                        "panelMode": "view",
+                                        "pendingCategoryId": null,
+                                        "pendingCategory": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form": null,
+                                        "errors": null,
+                                        "isSaving": false
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.category.modal.editing.discard"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

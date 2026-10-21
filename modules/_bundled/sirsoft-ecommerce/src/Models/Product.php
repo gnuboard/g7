@@ -6,6 +6,7 @@ use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
 use App\Support\HtmlImageExtractor;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -480,7 +481,7 @@ class Product extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $desc = $this->description;
 
-        return $desc[$locale] ?? $desc[config('app.fallback_locale', 'ko')] ?? $desc[array_key_first($desc)] ?? null;
+        return LocalizedValue::pick($desc, $locale);
     }
 
     /**

@@ -1,0 +1,73 @@
+{
+    "id": "probe_listen",
+    "type": "basic",
+    "name": "Div",
+    "onComponentEvent": [
+        {
+            "event": "probe:seq",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "a": "1"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "b": "2"
+                    }
+                }
+            ]
+        },
+        {
+            "event": "probe:cond",
+            "handler": "conditions",
+            "conditions": [
+                {
+                    "if": "{{_eventData.kind === 'a'}}",
+                    "then": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "k": "a"
+                        }
+                    }
+                },
+                {
+                    "then": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "k": "b"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "event": "probe:switch",
+            "handler": "switch",
+            "params": {
+                "value": "{{_eventData.kind}}"
+            },
+            "cases": {
+                "a": {
+                    "handler": "toast",
+                    "params": {
+                        "message": "a"
+                    }
+                },
+                "default": {
+                    "handler": "toast",
+                    "params": {
+                        "message": "d"
+                    }
+                }
+            }
+        }
+    ]
+}

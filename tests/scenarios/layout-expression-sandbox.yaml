@@ -131,6 +131,17 @@ sub_flows:
       - nesting_depth_over_limit_rejected
       - combined_attack_rejected
       - valid_layout_passes_all_rules
+  - id: safe_layout_expressions_storage_rule
+    description: |
+      저장측 SafeLayoutExpressions 규칙의 통과·거부 경계. 런타임 평가기가 허용하는 정상 표현식(옵셔널 체이닝·
+      화살표 함수·템플릿 리터럴·안전한 Object 데이터 메서드·예약어 문자열 비교)은 저장도 통과해야 한다 — 저장측만
+      막으면 「런타임은 되는데 저장이 안 되는」 비대칭이 된다. 스크립트 src·데이터 소스 엔드포인트는 같은 출처와
+      확장이 선언한 신뢰 호스트만 통과하고, 외부·프로토콜 상대·userinfo 위장·백슬래시/탭 authority 우회는 거부한다.
+    effects:
+      - safe_expression_layout_saves
+      - same_origin_resource_url_saves
+      - trusted_host_resource_url_saves
+      - external_resource_url_rejected_at_storage
 
 test_files:
   # 배포 번들 종단 (축·효과 마커 보유)

@@ -5,10 +5,11 @@ namespace Modules\Sirsoft\Board\Support;
 use App\Enums\PermissionType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
-use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\SecretViewTokenService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -22,13 +23,20 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  * 열람 가능 조건 (우선순위 순):
  * 1. 작성자 본인 (회원 게시글)
  * 2. 비밀번호 검증 완료 (`password_verified` 플래그 — 상세 컨텍스트에서만 설정, 리스트 미적용)
- * 2-b. 비밀번호 검증 응답으로 받은 열람 확인 토큰 (`X-Board-Secret-View-Token` 헤더)
- * 3. 게시판별 비밀글 읽기 권한 (posts.read-secret)
- * 4. 게시판 관리자 권한 (Admin: admin.manage / User: manager)
+ * 2-b. 비밀번호 검증으로 받은 열람 토큰에 이 글의 grant 가 있음 (`X-Board-Secret-View-Token` 헤더)
+ * 3. 게시판별 비밀글 읽기 권한 (posts.read-secret) — 역할 스코프까지 적용(self=본인 글, role=역할을
+ *    공유하는 회원의 글, 비회원 글은 self/role 에서 닫힘)
+ * 4. 게시판 관리자 권한 (Admin: admin.manage / User: manager) — 게시판 스코프 포함
+ * 5. 스레드 경로 규칙 (SecretThreadAccess) — 요청자가 앵커(살아 있는 자기 글·grant 글)로 삼을 수 있는
+ *    조상이 있으면 그 하위를, 게시판 설정이 경로 규칙이면 자손 앵커의 조상 경로도 연다. 형제 가지는 닫힌다.
  *
  * 2 와 2-b 는 같은 사실("비밀번호를 맞혔다")의 두 표현입니다. 2 는 검증한 그 응답 안에서만
  * 살고, 2-b 는 그 사실을 다음 요청으로 넘깁니다 — 비회원 작성자가 자기 비밀글에 댓글을 다는
  * 흐름은 별도 요청이라 2-b 가 없으면 성립하지 않습니다.
+ *
+ * 5 는 답변을 쓰는 것만으로 조상 경로가 열리므로, 답변 작성은 canWriteReply() 로 부모의 모든
+ * 비밀 조상을 지금 열 수 있는 요청에만 허용합니다(남의 비밀글 아래 공개 답변에 답변을 달아
+ * 앵커가 되는 권한 상승을 막음).
  */
 class SecretContentGate
 {
@@ -37,7 +45,16 @@ class SecretContentGate
     /**
      * 열람 확인 토큰을 싣는 요청 헤더 이름.
      */
-    public const VIEW_TOKEN_HEADER = 'X-Board-Secret-View-Token';
+    public const VIEW_TOKEN_HEADER = SecretViewTokenService::HEADER;
+
+    /**
+     * @param  SecretViewTokenService  $tokens  열람 토큰 서비스
+     * @param  SecretThreadAccess  $threads  스레드 경로 판정
+     */
+    public function __construct(
+        private SecretViewTokenService $tokens,
+        private SecretThreadAccess $threads,
+    ) {}
 
     /**
      * 주어진 게시글의 비밀 원문을 현재 요청자가 열람할 수 있는지 판정합니다.
@@ -55,7 +72,7 @@ class SecretContentGate
 
         // 1. 작성자 본인 (회원 게시글)
         $user = Auth::user();
-        if ($user && $post->user_id && $post->user_id === $user->id) {
+        if ($user && $post->user_id && (int) $post->user_id === (int) $user->id) {
             return true;
         }
 
@@ -64,29 +81,76 @@ class SecretContentGate
             return true;
         }
 
-        // 3-4. 게시판별 권한 체크
         $slug = $this->resolveSlug($post, $request);
         if (! $slug) {
             return false;
         }
 
-        // 2-b. 직전 요청에서 비밀번호를 맞히고 받은 열람 확인 토큰.
+        // 2-b. 직전 요청에서 비밀번호를 맞히고 받은 열람 토큰의 grant.
         //
         // 위 2번 플래그는 비밀번호를 검증한 그 응답 안에서만 삽니다. 그런데 댓글·답글·신고는
         // 각각 별도 요청이라, 토큰이 없으면 원문을 연 사람도 그 사실을 증명할 방법이 없어
-        // 화면이 내준 버튼이 전부 거부됩니다. 토큰은 게시글 단위로 묶이고 유효기간이 있어
+        // 화면이 내준 버튼이 전부 거부됩니다. grant 는 글 단위로 묶이고 유효기간이 있어
         // 권한 범위는 비밀번호를 아는 것과 같습니다.
-        if ($this->hasSecretViewToken($post, $request, $slug)) {
+        if ($post->id && $this->tokens->hasGrant($request, $slug, (int) $post->id)) {
             return true;
         }
 
-        if ($this->isAdminRequest($request)) {
-            return $this->checkBoardPermission($slug, 'admin.posts.read-secret')
-                || $this->checkBoardPermission($slug, 'admin.manage');
+        // 3-4. 게시판 단위 권한 (비밀글 조회 + 스코프, 게시판 관리)
+        if ($this->hasBoardWideSecretAccess($post, $request, $slug)) {
+            return true;
         }
 
-        return $this->checkBoardPermission($slug, 'posts.read-secret', PermissionType::User)
-            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+        // 5. 스레드 경로 규칙 — 가장 비싸므로 마지막
+        return $this->threads->reachesThroughThread($post, $request, $slug);
+    }
+
+    /**
+     * 답변을 달 부모 글에 답변을 쓸 수 있는지 판정합니다.
+     *
+     * 경로 규칙(canView 5번)은 답변 작성자를 앵커로 삼아 조상을 열어 줍니다. 그래서 남의 비밀글
+     * 아래 공개 답변에 외부인이 답변을 달면 그 외부인이 비밀글을 보게 됩니다. 이를 막기 위해 답변은
+     * canWriteChild() 에 더해 부모의 **모든 비밀 조상**을 지금 열 수 있을 때만 허용합니다.
+     * 게시판 설정이 답변마다 따로(per_post)이면 경로가 열리지 않으므로 canWriteChild() 와 같습니다.
+     * 댓글·신고는 앵커를 만들지 않으므로 이 판정을 쓰지 않습니다.
+     *
+     * @param  Post  $parent  답변을 달 부모 게시글
+     * @param  Request|null  $request  HTTP 요청 (미지정 시 현재 요청)
+     * @return bool 답변 작성 가능 여부
+     */
+    public function canWriteReply(Post $parent, ?Request $request = null): bool
+    {
+        $request = $request ?? request();
+
+        if (! $this->canWriteChild($parent, $request)) {
+            return false;
+        }
+
+        if (! $parent->parent_id) {
+            return true;
+        }
+
+        $slug = $this->resolveSlug($parent, $request);
+        if (! $slug) {
+            return false;
+        }
+
+        if ($this->threads->modeFor($parent, $slug, $request) === SecretReplyVisibility::PerPost) {
+            return true;
+        }
+
+        $ancestors = $this->threads->secretAncestors($parent, $request);
+        if ($ancestors === null) {
+            return false;
+        }
+
+        foreach ($ancestors as $ancestor) {
+            if (! $this->canView($ancestor, $request)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -144,7 +208,7 @@ class SecretContentGate
      * 게이트가 한 건 조회로 폴백하게 한다 — null 을 실으면 "부모가 비회원 댓글" 로 읽혀 막힌다.
      *
      * @param  iterable<Comment>  $comments  같은 게시글의 댓글 목록
-     * @return void
+     * @return void 반환값 없음
      */
     public static function preloadParentCommentOwners(iterable $comments): void
     {
@@ -216,25 +280,39 @@ class SecretContentGate
     }
 
     /**
-     * 요청이 제시한 열람 확인 토큰이 이 게시글에 대해 유효한지 판정합니다.
+     * 게시판 단위 비밀글 열람 권한(규칙 3·4)을 판정합니다.
      *
-     * 토큰은 헤더로만 받습니다 — 본문으로 받으면 댓글·답글·신고 각각의 FormRequest 에
-     * 필드를 더해야 하고, 그 중 한 곳만 빠져도 그 경로에서만 조용히 거부됩니다.
+     * 규칙 3 은 보유 확인 뒤 역할 스코프를 곱합니다(checkBoardPermissionFor). 스코프 판정은 글
+     * 작성자에만 달려 있으므로 목록에서 같은 작성자 글이 반복될 때 다시 계산하지 않게
+     * (화면 종류·게시판·요청자·작성자) 단위로 요청 안에서 메모합니다.
      *
      * @param  Post  $post  대상 게시글
      * @param  Request  $request  HTTP 요청
      * @param  string  $slug  게시판 슬러그
-     * @return bool 유효한 토큰이 제시되었으면 true
+     * @return bool 열람 가능 여부
      */
-    private function hasSecretViewToken(Post $post, Request $request, string $slug): bool
+    private function hasBoardWideSecretAccess(Post $post, Request $request, string $slug): bool
     {
-        $token = $request->header(self::VIEW_TOKEN_HEADER);
+        $isAdmin = $this->isAdminRequest($request);
+        $memoKey = 'board-wide|'.($isAdmin ? 'admin' : 'user').'|'.$slug.'|'
+            .(Auth::id() ?? 'guest').'|'.($post->user_id ?? 'guest');
 
-        if (! is_string($token) || $token === '' || ! $post->id) {
-            return false;
+        $memo = $request->attributes->get(BoardPermissionCacheKeys::SECRET_THREAD_VERDICTS, []);
+        if (array_key_exists($memoKey, $memo)) {
+            return $memo[$memoKey];
         }
 
-        return app(PostService::class)->hasValidSecretViewToken($slug, (int) $post->id, $token);
+        $allowed = $isAdmin
+            ? $this->checkBoardPermissionFor($post, $slug, 'admin.posts.read-secret')
+                || $this->checkBoardPermission($slug, 'admin.manage')
+            : $this->checkBoardPermissionFor($post, $slug, 'posts.read-secret', PermissionType::User)
+                || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+
+        $memo = $request->attributes->get(BoardPermissionCacheKeys::SECRET_THREAD_VERDICTS, []);
+        $memo[$memoKey] = $allowed;
+        $request->attributes->set(BoardPermissionCacheKeys::SECRET_THREAD_VERDICTS, $memo);
+
+        return $allowed;
     }
 
     /**

@@ -45,9 +45,9 @@
         <!-- G7 설정 전역 변수 -->
         <script>
             window.G7Config = {
-                settings: @json($frontendSettings ?? []),
-                plugins: @json($pluginSettings ?? []),
-                modules: @json($moduleSettings ?? []),
+                settings: @json((object) ($frontendSettings ?? [])),
+                plugins: @json((object) ($pluginSettings ?? [])),
+                modules: @json((object) ($moduleSettings ?? [])),
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
                 bundleUrls: @json($bundleUrls ?? null),
@@ -62,7 +62,7 @@
                 stateContracts: @json((object) ($stateContracts ?? [])),
                 // 코어 동의 런타임 첫 값 (제공자 없음 none / 있음 unknown — 회원 판별 전이라 ready 를 싣지 않는다)
                 consentInitial: @json($consentInitial ?? null),
-                appConfig: @json($appConfig ?? []),
+                appConfig: @json((object) ($appConfig ?? [])),
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
                 // 미빌드 상태 대비 file_exists 가드.

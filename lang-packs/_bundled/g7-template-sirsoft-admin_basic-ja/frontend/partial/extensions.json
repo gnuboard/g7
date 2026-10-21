@@ -30,6 +30,15 @@
     "guide_link": "コアアップグレードガイド",
     "dismiss": "閉じる"
   },
+  "unplaced_bundled": {
+    "title_modules": "コア {{version}} の配布物にあり、このプロジェクトに配置していない公式モジュールが {{count}} 個あります",
+    "title_plugins": "コア {{version}} の配布物にあり、このプロジェクトに配置していない公式プラグインが {{count}} 個あります",
+    "title_templates": "コア {{version}} の配布物にあり、このプロジェクトに配置していない公式テンプレートが {{count}} 個あります",
+    "title_language_packs": "コア {{version}} の配布物にあり、このプロジェクトに配置していない公式言語パックが {{count}} 個あります",
+    "description": "コアアップデートは、インストールしていない公式バンドルを配置する前に確認し、既定では配置しません。必要な場合は、サーバーで下記のコマンドでソースを配置してから、この画面でインストールしてください。",
+    "command_label": "配置コマンド",
+    "dismiss": "この案内を閉じる"
+  },
   "update_modal": {
     "compat_warning_title": "コアバージョン互換性警告",
     "compat_warning_message": "この{{type}}に必要なコアバージョン: {{required}}(現在: {{installed}})",

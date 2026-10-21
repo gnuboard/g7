@@ -178,16 +178,18 @@ describe('설정 클레임 탭 — 구성', () => {
    * @effects settings_claim_reason_sub_tab_follows_url
    */
   it('상위 탭 전환은 고른 하위 탭을 비워, 다시 돌아오면 주소(sub_tab 없음)와 화면(교환)이 어긋나지 않는다', () => {
-    // 탭 전환은 「저장하지 않은 변경」 확인 창(S5-D41) 뒤로 갈렸다 — 정리는 변경이 없을 때의 갈래(if 없는 else)가 하고, 창 [이동] 은 같은 목록을 부모 폼에 한다(adminEcommerceSettingsUnsavedTabChange 가 키 일치를 단언)
+    // 탭 전환은 「저장하지 않은 변경」 확인 창(S5-D41) 뒤로 갈렸다 — 변경 없음 갈래(if 없는 else)와 창 [이동] 이 모두 같은
+    // 탭 전환 이벤트만 보내고, 정리는 탭 본문 틀의 이벤트 받기 한 곳이 한다(#753 — 두 곳에 복제했던 목록을 하나로)
+    const switchEvent = 'sirsoft-ecommerce:settings-switch-tab';
     const onTabChange = findNode(settingsShell, (n) => n?.id === 'tab_navigation').actions.find((a: any) => a.event === 'onTabChange');
-    // 고친 것이 없으면 바로 옮기는 갈래(conditions 의 else), 고친 것이 있으면 확인 창의 「저장하지 않고 이동」
-    // (페이지 상태는 `$parent._local`) — 두 길 모두 하위 탭을 비워야 한다(7.1.0 조치 G2 확인 창)
-    const directSwitch = onTabChange.conditions[1].then;
-    const direct = directSwitch.actions.find((a: any) => a.handler === 'setState' && a.params?.target === 'local');
-    expect(direct.params).toHaveProperty('claimReasonTab', null);
+    expect(onTabChange.conditions[1].then).toMatchObject({ handler: 'emitEvent', params: { event: switchEvent } });
     const leave = findNode(unsavedTabModal, (n) => n?.props?.['data-testid'] === 'ecommerce-settings-unsaved-tab-leave');
-    const confirmed = leave.actions[0].actions.find((a: any) => a.handler === 'setState' && a.params?.target === '$parent._local');
-    expect(confirmed.params).toHaveProperty('claimReasonTab', null);
+    expect(leave.actions[0].actions.some((a: any) => a.handler === 'emitEvent' && a.params?.event === switchEvent)).toBe(true);
+
+    const container = findNode(settingsShell, (n) => n?.id === 'ecommerce_settings_tab_content');
+    const listener = container.onComponentEvent.find((e: any) => e.event === switchEvent);
+    const clear = listener.actions.find((a: any) => a.handler === 'setState' && a.params?.target === 'local');
+    expect(clear.params).toHaveProperty('claimReasonTab', null);
   });
 
   /**

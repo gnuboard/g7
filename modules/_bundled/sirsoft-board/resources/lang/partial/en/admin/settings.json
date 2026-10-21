@@ -94,6 +94,7 @@
     "use_reply": "Enable Reply Posts",
     "max_reply_depth": "Max Reply Depth",
     "reply_delete_policy": "Reply Delete Policy",
+    "secret_reply_visibility": "Secret Reply Visibility",
     "use_comment": "Enable Comments",
     "comment_order": "Comment Sort Order",
     "min_comment_length": "Min Comment Length",
@@ -188,6 +189,7 @@
       "use_reply": "Must be ON to apply reply post feature to new boards.",
       "max_reply_depth": "Set the maximum nesting depth for replies ({{min}}–{{max}})",
       "reply_delete_policy": "Set what happens when deleting a post that has replies",
+      "secret_reply_visibility": "Set how far original post and reply authors, and password-verified visitors, can see each other's posts in a secret thread",
       "blocked_keywords": "Posts or comments containing registered keywords will be blocked",
       "use_comment": "Must be ON to apply comment feature to new boards. Comment detail settings below will also apply.",
       "comment_order": "Set the default sort direction for comments",
@@ -224,6 +226,16 @@
     "reply_delete_policy": {
       "block": "Block deletion",
       "cascade": "Delete together"
+    },
+    "secret_reply_visibility": {
+      "thread_path": "Thread path (default)",
+      "descendants_only": "Descendants only",
+      "per_post": "Per post"
+    },
+    "secret_reply_visibility_descriptions": {
+      "thread_path": "Anyone who can view the original post sees the replies under it, and reply authors see the original post above their reply. Other people's reply branches stay hidden.",
+      "descendants_only": "Anyone who can view the original post sees the replies under it. Reply authors see only their reply and the replies under it.",
+      "per_post": "A secret reply is visible only to its author and to users allowed to view secret posts. Even the original post author cannot see the reply."
     },
     "order_by": {
       "created_at": "Latest",
@@ -314,6 +326,7 @@
       "use_comment_reaction": "Enable Comment Reactions",
       "max_reply_depth": "Max Reply Depth",
       "reply_delete_policy": "Reply Delete Policy",
+      "secret_reply_visibility": "Secret Reply Visibility",
       "max_comment_depth": "Max Comment Depth",
       "comment_order": "Comment Sort Order",
       "show_view_count": "Show View Count",

@@ -1,0 +1,17 @@
+# audit:allow scenario-scale-axis-required reason: 일괄 핸들러의 기록 루프를 트랜잭션으로 감쌀 뿐 — 처리 규모 경로 무변경
+
+feature: ecommerce_activity_log_bulk_atomic
+
+description: |
+  이커머스 활동 로그 일괄 핸들러(주문·상품·쿠폰·관리자 엔티티)는 큐로 돌며 항목마다 로그 1행을 남긴다(#139).
+  잡이 중간에 끊겨 재실행되면 앞부분이 두 번 기록됐다. 기록 루프를 한 트랜잭션으로 감싸 끊긴 묶음은
+  커밋되지 않게 한다. 리스너 클래스마다 대표 핸들러 하나씩, 기록 순간의 트랜잭션 깊이로 확인한다.
+
+axes:
+  handler: [order_bulk_status, product_bulk_stock, coupon_bulk_status, cart_bulk_delete]
+
+effects:
+  - bulk_activity_log_atomic
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/BulkActivityLogAtomicTest.php

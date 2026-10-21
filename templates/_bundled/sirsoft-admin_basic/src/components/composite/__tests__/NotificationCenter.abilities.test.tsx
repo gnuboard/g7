@@ -1,6 +1,6 @@
 /**
  * @file NotificationCenter.abilities.test.tsx
- * @description 알림 센터 쓰기 권한 게이트(G21) — canUpdate/canDelete 가 false 면 읽음·삭제 동작을 내지 않는다
+ * @description 알림 센터 쓰기 권한 게이트 — canUpdate/canDelete 가 false 면 읽음·삭제 동작을 내지 않는다
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';

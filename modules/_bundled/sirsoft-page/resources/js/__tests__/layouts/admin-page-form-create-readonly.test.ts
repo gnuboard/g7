@@ -2,7 +2,7 @@
  * 관리자 페이지 작성 화면 — 등록 권한이 없을 때 읽기 전용
  *
  * 목록의 [페이지 추가]는 등록 권한이 없으면 비활성인데, 주소로 `/admin/pages/create` 에 바로
- * 들어오면 입력 가능한 폼이 열렸다(7.1.0 전수 실측 영역 L, O-L6). 서버가 중복 확인·저장을 403 으로
+ * 들어오면 입력 가능한 폼이 열렸다(7.1.0 전수 실측). 서버가 중복 확인·저장을 403 으로
  * 막아 데이터 영향은 없지만, 입력을 다 하고 나서야 거절을 받는다. 수정 화면처럼 안내 문구를 띄우고
  * 입력·저장·첨부를 잠그는지 고정한다.
  *
@@ -54,7 +54,7 @@ function readOnly(ctx: { route?: AnyNode; pageData?: AnyNode; createAbility?: An
     return Boolean(evaluate(isReadOnlyExpr, { route: {}, pageData: undefined, createAbility: undefined, ...ctx }));
 }
 
-describe('관리자 페이지 작성 화면 — 등록 권한 없을 때 읽기 전용 (O-L6)', () => {
+describe('관리자 페이지 작성 화면 — 등록 권한 없을 때 읽기 전용', () => {
     /**
      * @scenario mode=create,permission=denied
      * @effects create_form_read_only_without_create_permission

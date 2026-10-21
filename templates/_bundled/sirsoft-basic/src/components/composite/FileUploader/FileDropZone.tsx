@@ -93,12 +93,12 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
             inputRef.current?.click();
           }}
         >
-          <I className="fa-solid fa-cloud-arrow-up text-4xl text-gray-400 dark:text-gray-500 mb-4" aria-hidden="true" />
+          <I className="fa-solid fa-cloud-arrow-up text-4xl text-gray-500 dark:text-gray-500 mb-4" aria-hidden="true" />
           <P className="text-sm text-gray-600 dark:text-gray-400">
             {t('attachment.drop_or_click')}
           </P>
           {/* 허용 형식 목록은 쉼표로만 이어져 끊을 자리가 없다 — 좁은 화면에서 넘치지 않게 어디서든 끊는다 */}
-          <P className="text-xs text-gray-500 dark:text-gray-500 mt-2 wrap-anywhere">
+          <P className="text-xs text-gray-500 dark:text-gray-400 mt-2 wrap-anywhere">
             {maxSize != null
               ? t('attachment.upload_limit', { maxFiles, maxSize, count: maxFiles })
               : t('attachment.upload_limit_count', { maxFiles, count: maxFiles })}

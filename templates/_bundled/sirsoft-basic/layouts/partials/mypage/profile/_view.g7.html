@@ -15,10 +15,10 @@
     </div>
     <!-- 상태별 안내 메시지 - 탈퇴 (노란색 - warning) -->
     <div data-if="{{user.data?.status === 'withdrawn'}}" class="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-      <icon name="circle-xmark" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+      <icon name="circle-xmark" size="lg" class="text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
       <div class="flex flex-col gap-1">
         <p class="text-sm text-yellow-800 dark:text-yellow-200">$t:mypage.profile.status_withdrawn_notice</p>
-        <p data-if="{{user.data?.withdrawn_at}}" class="text-xs text-yellow-600 dark:text-yellow-300">$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}</p>
+        <p data-if="{{user.data?.withdrawn_at}}" class="text-xs text-yellow-700 dark:text-yellow-300">$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}</p>
       </div>
     </div>
     <!-- 섹션 헤더 - 내 정보 + 수정하기 버튼 (카드 외부) -->
@@ -30,21 +30,21 @@
       <!-- 버튼 그룹 - 수정하기 + 비밀번호 변경 -->
       <div class="flex items-center gap-2">
         <!-- 비밀번호 변경 버튼 -->
-        <button type="button" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <a href="/mypage/change-password" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
-            <navigate path="/mypage/change-password"/>
+            <navigate/>
           </on>
           <icon name="lock" size="sm"/>
           <span>$t:mypage.profile.change_password_button</span>
-        </button>
+        </a>
         <!-- 수정하기 버튼 - 편집 페이지로 이동 -->
-        <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <a href="/mypage/profile/edit" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
-            <navigate path="/mypage/profile/edit"/>
+            <navigate/>
           </on>
           <icon name="pen-to-square" size="sm"/>
           <span>$t:mypage.profile.edit_button</span>
-        </button>
+        </a>
       </div>
     </div>
     <!-- 프로필 카드 - 아바타 + 이름 + 이메일 + 가입일/마지막 로그인 -->
@@ -86,23 +86,23 @@
           </prop>
         </avatar-uploader>
         <!-- 기본 정보 - 데스크탑: 좌측 정렬, 모바일: 중앙 정렬 -->
-        <div class="flex-1 space-y-3 py-2">
-          <responsive on="portable" class="w-full space-y-3 text-center"/>
-          <!-- 이름 + 닉네임 (하단 정렬) -->
+        <div class="flex-1 min-w-0 space-y-3 py-2">
+          <responsive on="portable" class="w-full min-w-0 space-y-3 text-center"/>
+          <!-- 이름 + 닉네임 (하단 정렬). 이름·닉네임은 줄어들 수 있고 아무 데서나 줄을 바꾼다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143). -->
           <div class="flex items-end gap-2">
             <responsive on="portable" class="flex items-end justify-center gap-2"/>
-            <span class="text-2xl font-semibold text-gray-900 dark:text-white leading-none">
-              <responsive on="portable" class="text-xl font-semibold text-gray-900 dark:text-white leading-none"/>
+            <span class="text-2xl font-semibold text-gray-900 dark:text-white leading-none min-w-0 wrap-anywhere">
+              <responsive on="portable" class="text-xl font-semibold text-gray-900 dark:text-white leading-none min-w-0 wrap-anywhere"/>
               {{user.data?.name ?? '-'}}
             </span>
             <!-- 닉네임 (있는 경우만 표시) -->
-            <span data-if="{{user.data?.nickname}}" class="text-base text-gray-500 dark:text-gray-400 leading-none">({{user.data?.nickname}})</span>
+            <span data-if="{{user.data?.nickname}}" class="text-base text-gray-500 dark:text-gray-400 leading-none min-w-0 wrap-anywhere">({{user.data?.nickname}})</span>
             <!-- 상태 배지 (Active가 아닌 경우만 표시) -->
-            <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
+            <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center shrink-0 px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
           </div>
           <!-- 이메일 -->
-          <div class="text-base text-gray-600 dark:text-gray-300">
-            <responsive on="portable" class="text-sm text-gray-600 dark:text-gray-300"/>
+          <div class="text-base text-gray-600 dark:text-gray-300 break-all">
+            <responsive on="portable" class="text-sm text-gray-600 dark:text-gray-300 break-all"/>
             {{user.data?.email ?? '-'}}
           </div>
           <!-- 구분선 -->
@@ -175,7 +175,7 @@
           <!-- 주소 -->
           <div class="flex justify-between items-start">
             <span class="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">$t:mypage.profile.address</span>
-            <span class="text-sm text-gray-900 dark:text-white text-right max-w-[60%]">{{user.data?.zipcode || user.data?.address || user.data?.address_detail ? ((user.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user.data?.address ?? '') + (user.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}</span>
+            <span class="text-sm text-gray-900 dark:text-white text-right max-w-[60%] break-words">{{user.data?.zipcode || user.data?.address || user.data?.address_detail ? ((user.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user.data?.address ?? '') + (user.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}</span>
           </div>
         </div>
       </div>
@@ -235,28 +235,28 @@
       <div class="grid grid-cols-2 gap-4">
         <responsive on="portable" class="grid grid-cols-1 gap-3"/>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_post_complete" checked="{{!!user.data?.notify_post_complete}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_post_complete" aria-label="$t:mypage.notification_settings.post_complete" checked="{{!!user.data?.notify_post_complete}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_complete</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_complete_desc</span>
           </div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_post_reply" checked="{{!!user.data?.notify_post_reply}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_post_reply" aria-label="$t:mypage.notification_settings.post_reply" checked="{{!!user.data?.notify_post_reply}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_reply</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_reply_desc</span>
           </div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_comment" checked="{{!!user.data?.notify_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_comment" aria-label="$t:mypage.notification_settings.comment" checked="{{!!user.data?.notify_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.comment</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.comment_desc</span>
           </div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_reply_comment" checked="{{!!user.data?.notify_reply_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_reply_comment" aria-label="$t:mypage.notification_settings.reply_comment" checked="{{!!user.data?.notify_reply_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.reply_comment</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.reply_comment_desc</span>
@@ -270,8 +270,8 @@
       <!-- 제목 (아이콘 인라인) -->
       <div class="flex items-center gap-2 mb-4">
         <icon name="triangle-exclamation" size="lg" class="text-red-500"/>
-        <h3 class="text-lg font-semibold text-red-600 dark:text-red-400">
-          <responsive on="portable" class="text-base font-semibold text-red-600 dark:text-red-400"/>
+        <h3 class="text-lg font-semibold text-red-700 dark:text-red-400">
+          <responsive on="portable" class="text-base font-semibold text-red-700 dark:text-red-400"/>
           $t:mypage.profile.withdraw
         </h3>
       </div>
@@ -281,15 +281,19 @@
       </div>
       <!-- 슈퍼관리자 안내 메시지 -->
       <div data-if="{{user.data?.is_super}}" class="flex items-start gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-        <icon name="info" size="md" class="text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0"/>
+        <icon name="info" size="md" class="text-yellow-700 dark:text-yellow-400 mt-0.5 flex-shrink-0"/>
         <p class="text-sm text-yellow-800 dark:text-yellow-200">$t:mypage.profile.admin_cannot_withdraw</p>
       </div>
       <!-- 탈퇴 버튼 (슈퍼관리자 제외) -->
-      <button data-if="{{!user.data?.is_super}}" type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-red-500 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+      <button data-if="{{!user.data?.is_super}}" type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-red-500 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
         <on type="click">
-          <set-state target="local" :isWithdrawing="false">
-            <field name="form">
-              <field name="confirmWithdraw" :value="false"/>
+          <!-- 탈퇴 창 상태(«알고 있다» 체크·처리 중)는 창 고유 전역 이름 공간에 두고 열 때마다 비운 뒤 다시 쓴다 — 페이지 _local 에 쓰면
+               영구 마운트된 창이 쥔 앞 체크에 가려 닿지 않아, 체크 → 취소 → 다시 열기에서 체크된 채 탈퇴 단추가 열려 있었다(7.1.1) -->
+          <set-state target="global" :profileWithdrawModal="null"/>
+          <set-state target="global">
+            <field name="profileWithdrawModal">
+              <field name="confirm" :value="false"/>
+              <field name="isWithdrawing" :value="false"/>
             </field>
           </set-state>
           <open-modal target="withdrawModal"/>

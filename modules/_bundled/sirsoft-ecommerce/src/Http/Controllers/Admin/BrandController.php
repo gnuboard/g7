@@ -19,6 +19,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class BrandController extends AdminBaseController
 {
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  BrandService  $brandService  브랜드 조회·수정 서비스
+     */
     public function __construct(
         private BrandService $brandService
     ) {}
@@ -66,7 +71,11 @@ class BrandController extends AdminBaseController
      */
     public function show(int $id): JsonResponse
     {
-        $brand = $this->brandService->getBrand($id);
+        try {
+            $brand = $this->brandService->getBrand($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         if (! $brand) {
             return ResponseHelper::notFound(

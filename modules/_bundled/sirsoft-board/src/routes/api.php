@@ -251,6 +251,11 @@ Route::prefix('admin/boards')->middleware(['auth:sanctum', 'admin', 'throttle:60
         ->middleware('permission:admin,sirsoft-board.boards.update')
         ->name('bulk-members');
 
+    // 게시판 표시 순서 저장 (와일드카드 라우트보다 먼저 등록 — `order` 가 {board} 로 해석되지 않게)
+    Route::put('/order', [BoardController::class, 'reorder'])
+        ->middleware('permission:admin,sirsoft-board.boards.update')
+        ->name('order');
+
     // 게시판 단건 조회 (ID)
     Route::get('/{board}', [BoardController::class, 'show'])
         ->middleware('permission:admin,sirsoft-board.boards.read')
@@ -576,10 +581,15 @@ Route::prefix('boards/{slug}/posts')->middleware(['optional.sanctum', 'throttle:
         ->middleware('permission:user,sirsoft-board.{slug}.posts.write|sirsoft-board.{slug}.manager,false')
         ->name('destroy');
 
-    // 비밀글 조회용 비밀번호 검증 (posts.read 권한 필요)
+    // 비밀글 조회용 비밀번호 검증 (posts.read 권한 필요, 비밀번호 대입 제한)
     Route::post('/{id}/verify-password', [UserPostController::class, 'verifyPassword'])
-        ->middleware('permission:user,sirsoft-board.{slug}.posts.read')
+        ->middleware(['permission:user,sirsoft-board.{slug}.posts.read', 'throttle:sirsoft-board.secret-password-verify'])
         ->name('verify-password');
+
+    // 답변 화면에서 스레드 조상(비회원 글)의 비밀번호로 답변을 여는 검증 (posts.read 권한 필요, 비밀번호 대입 제한)
+    Route::post('/{id}/verify-thread-password', [UserPostController::class, 'verifyThreadPassword'])
+        ->middleware(['permission:user,sirsoft-board.{slug}.posts.read', 'throttle:sirsoft-board.secret-password-verify'])
+        ->name('verify-thread-password');
 
     // 수정/삭제용 비밀번호 검증 (posts.write 권한 필요)
     Route::post('/{id}/verify-password-for-modify', [UserPostController::class, 'verifyPasswordForModify'])

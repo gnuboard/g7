@@ -4,6 +4,7 @@ return [
     // Action labels (last segment).
     // ActivityLog::getActionLabelAttribute resolves module-origin labels from the module's lang first.
     'action' => [
+        'reorder' => 'Reordered',
         'add' => 'Reaction Added',
         'add_to_menu' => 'Added to Menu',
         'blind' => 'Blinded',
@@ -38,6 +39,7 @@ return [
         'board_copy' => 'Board copied (:board_name)',
         'board_add_to_menu' => 'Board added to menu (:board_name)',
         'board_remove_from_menu' => 'Board removed from menu (:board_name)',
+        'board_reorder' => 'Reordered boards (:count)',
 
         // Board type (Admin)
         'board_type_index' => 'Board type list viewed',
@@ -109,6 +111,7 @@ return [
         'use_reply' => 'Use Replies',
         'max_reply_depth' => 'Max Reply Depth',
         'reply_delete_policy' => 'Reply Delete Policy',
+        'secret_reply_visibility' => 'Secret Reply Visibility',
         'use_report' => 'Use Reports',
         'use_scrap' => 'Use Scrap',
         'use_comment_reaction' => 'Use Comment Reaction',

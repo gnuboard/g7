@@ -67,7 +67,9 @@ class UserReportApiTest extends BoardTestCase
         parent::setUp();
 
         $this->setGuestPermissions(['posts.read', 'posts.write', 'comments.write']);
-        $this->grantUserRolePermissions(['posts.read', 'posts.write', 'comments.write']);
+        // 댓글 신고 라우트는 글 읽기와 댓글 읽기를 함께 요구한다(읽을 수 없는 댓글은 신고하지 못한다) —
+        // 회원 역할에 댓글 읽기가 없으면 신고 판정 전에 권한 미들웨어가 403 으로 끝낸다.
+        $this->grantUserRolePermissions(['posts.read', 'posts.write', 'comments.read', 'comments.write']);
     }
 
     // ==========================================

@@ -31,6 +31,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
      *
      * @param  string  $code  kapi 결과코드
      * @param  array<string, mixed>  $extra  data 등 추가 필드
+     * @return array<string, mixed> kapi 응답 봉투
      */
     private function kapiResponse(string $code = '200', array $extra = []): array
     {
@@ -39,6 +40,9 @@ class BizppurioTemplateServiceTest extends PluginTestCase
 
     /**
      * 서비스를 조립합니다 (실 저장소 + 실 클라이언트 + mock 설정).
+     *
+     * @param  string  $senderKey  발신 프로필 키
+     * @return BizppurioTemplateService 조립된 서비스
      */
     private function makeService(string $senderKey = 'SK_TEST'): BizppurioTemplateService
     {
@@ -61,6 +65,7 @@ class BizppurioTemplateServiceTest extends PluginTestCase
      * 템플릿 행을 DB 에 만듭니다.
      *
      * @param  array<string, mixed>  $attrs  오버라이드
+     * @return BizppurioTemplate 생성된 템플릿 행
      */
     private function row(array $attrs = []): BizppurioTemplate
     {
@@ -71,6 +76,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         ], $attrs));
     }
 
+    /**
+     * create는 draft 상태로 생성한다.
+     *
+     * @effects create_starts_as_draft
+     *
+     * @return void 반환값 없음
+     */
     public function test_create는_draft_상태로_생성한다(): void
     {
         $template = $this->makeService()->create([
@@ -82,6 +94,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertDatabaseHas('bizppurio_templates', ['notification_type' => 'welcome']);
     }
 
+    /**
+     * draft에서 content를 수정할 수 있다.
+     *
+     * @effects content_edit_locked_outside_draft_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_draft에서_content를_수정할_수_있다(): void
     {
         $template = $this->row();
@@ -94,7 +113,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * requested 상태에서 content 변경은 거부된다.
+     *
      * @effects content_edit_locked_outside_draft_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_requested_상태에서_content_변경은_거부된다(): void
     {
@@ -108,7 +131,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * requested 상태라도 sms 설정은 수정할 수 있다.
+     *
      * @effects sms_delivery_fields_editable_in_any_status
+     *
+     * @return void 반환값 없음
      */
     public function test_requested_상태라도_sms_설정은_수정할_수_있다(): void
     {
@@ -124,7 +151,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * requested 상태에서는 동일 content 전달도 거부된다.
+     *
      * @effects content_edit_locked_outside_draft_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_requested_상태에서는_동일_content_전달도_거부된다(): void
     {
@@ -143,7 +174,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * approved 상태에서도 content 키가 없으면 수정된다.
+     *
      * @effects sms_delivery_fields_editable_in_any_status
+     *
+     * @return void 반환값 없음
      */
     public function test_approved_상태에서도_content_키가_없으면_수정된다(): void
     {
@@ -156,7 +191,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * approved 상태에서 content 변경은 거부된다.
+     *
      * @effects content_edit_locked_outside_draft_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_approved_상태에서_content_변경은_거부된다(): void
     {
@@ -169,6 +208,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * upsert delivery는 행이 없으면 draft로 생성한다.
+     *
+     * @effects delivery_upsert_creates_draft_row_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_upsert_delivery는_행이_없으면_draft로_생성한다(): void
     {
         $template = $this->makeService()->upsertDelivery('welcome', ['sms_only' => true, 'sms_body' => ['ko' => '본문']]);
@@ -178,6 +224,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertNull($template->content);
     }
 
+    /**
+     * upsert delivery는 기존 행의 발송 설정만 갱신한다.
+     *
+     * @effects sms_delivery_fields_editable_in_any_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_upsert_delivery는_기존_행의_발송_설정만_갱신한다(): void
     {
         $existing = $this->row(['status' => BizppurioTemplateStatus::Approved->value]);
@@ -190,9 +243,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * 최초 검수 신청은 채번 add request 순으로 호출하고 requested가 된다.
+     *
      * @scenario content_variant=ba_none, transition=draft_to_requested
      *
      * @effects request_generates_code_with_codecheck_retry_up_to_three_generations, first_request_calls_add_then_request_with_full_content_payload, request_snapshots_sender_key
+     *
+     * @return void 반환값 없음
      */
     public function test_최초_검수_신청은_채번_add_request_순으로_호출하고_requested가_된다(): void
     {
@@ -221,6 +278,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         ], $paths);
     }
 
+    /**
+     * 검수 신청의 add 요청 본문은 content와 채번 코드를 싣는다.
+     *
+     * @effects first_request_calls_add_then_request_with_full_content_payload
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수_신청의_add_요청_본문은_content와_채번_코드를_싣는다(): void
     {
         Http::fake([self::KAPI => Http::response($this->kapiResponse())]);
@@ -245,6 +309,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         });
     }
 
+    /**
+     * code check 충돌시 세대를 올려 재시도한다.
+     *
+     * @effects request_generates_code_with_codecheck_retry_up_to_three_generations
+     *
+     * @return void 반환값 없음
+     */
     public function test_code_check_충돌시_세대를_올려_재시도한다(): void
     {
         Http::fake([
@@ -260,6 +331,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertStringEndsWith('_2', (string) $updated->template_code, '충돌 시 세대 2 로 재시도해야 한다.');
     }
 
+    /**
+     * code check가 전부 충돌하면 예외를 던지고 코드를 확정하지 않는다.
+     *
+     * @effects request_generates_code_with_codecheck_retry_up_to_three_generations
+     *
+     * @return void 반환값 없음
+     */
     public function test_code_check가_전부_충돌하면_예외를_던지고_코드를_확정하지_않는다(): void
     {
         Http::fake([self::KAPI => Http::response($this->kapiResponse('504'))]);
@@ -275,7 +353,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * 재신청은 add가 아니라 update를 호출한다.
+     *
      * @effects rerequest_calls_update_not_add
+     *
+     * @return void 반환값 없음
      */
     public function test_재신청은_add가_아니라_update를_호출한다(): void
     {
@@ -298,6 +380,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertSame(['/v3/kakao/template/update', '/v3/kakao/template/request'], $paths);
     }
 
+    /**
+     * content 없이 검수 신청하면 거부된다.
+     *
+     * @effects request_without_content_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_content_없이_검수_신청하면_거부된다(): void
     {
         Http::fake();
@@ -312,6 +401,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * approved 상태에서 검수 신청은 거부된다.
+     *
+     * @effects request_rejected_outside_requestable_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_approved_상태에서_검수_신청은_거부된다(): void
     {
         Http::fake();
@@ -327,7 +423,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * 동시 중복 신청은 한 건만 kapi에 제출된다.
+     *
      * @effects concurrent_duplicate_request_claims_single_submission
+     *
+     * @return void 반환값 없음
      */
     public function test_동시_중복_신청은_한_건만_kapi에_제출된다(): void
     {
@@ -349,6 +449,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * kapi add 실패시 사유 원문을 보존하고 상태를 바꾸지 않는다.
+     *
+     * @effects kapi_failure_reason_surfaced_in_errors_bizppurio_message
+     *
+     * @return void 반환값 없음
+     */
     public function test_kapi_add_실패시_사유_원문을_보존하고_상태를_바꾸지_않는다(): void
     {
         Http::fake([
@@ -368,9 +475,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * 검수 신청 취소는 draft로 복귀한다.
+     *
      * @scenario content_variant=ba_none, transition=requested_cancel
      *
      * @effects cancel_request_returns_to_draft
+     *
+     * @return void 반환값 없음
      */
     public function test_검수_신청_취소는_draft로_복귀한다(): void
     {
@@ -388,6 +499,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
             && ($request->data()['senderKey'] ?? null) === 'SK_SNAP');
     }
 
+    /**
+     * 검수중이 아니면 신청 취소가 거부된다.
+     *
+     * @effects cancel_rejected_outside_matching_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수중이_아니면_신청_취소가_거부된다(): void
     {
         Http::fake();
@@ -399,9 +517,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * 승인 취소는 draft로 복귀하되 승인 스냅샷을 유지한다.
+     *
      * @scenario content_variant=ba_none, transition=approved_cancel
      *
      * @effects cancel_approval_returns_to_draft_keeping_snapshot, cancel_approval_immediately_blocks_dispatch_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_승인_취소는_draft로_복귀하되_승인_스냅샷을_유지한다(): void
     {
@@ -421,6 +543,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertFalse($updated->isAlimtalkSendable(), '스냅샷이 남아도 status 를 잃는 순간 발송 게이트가 차단돼야 한다.');
     }
 
+    /**
+     * 승인 상태가 아니면 승인 취소가 거부된다.
+     *
+     * @effects cancel_rejected_outside_matching_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_승인_상태가_아니면_승인_취소가_거부된다(): void
     {
         Http::fake();
@@ -432,9 +561,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * sync는 승인 전이시 content를 승인 스냅샷으로 동결한다.
+     *
      * @scenario content_variant=ba_none, transition=requested_to_approved
      *
      * @effects approval_transition_freezes_content_into_approved_content, manual_sync_updates_single_row
+     *
+     * @return void 반환값 없음
      */
     public function test_sync는_승인_전이시_content를_승인_스냅샷으로_동결한다(): void
     {
@@ -457,6 +590,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertNotNull($updated->last_synced_at);
     }
 
+    /**
+     * sync는 이미 승인이면 스냅샷을 다시 덮지 않는다.
+     *
+     * @effects approval_transition_freezes_content_into_approved_content
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync는_이미_승인이면_스냅샷을_다시_덮지_않는다(): void
     {
         Http::fake([
@@ -478,9 +618,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * sync는 반려 전이시 comments를 저장한다.
+     *
      * @scenario content_variant=ba_none, transition=requested_to_rejected
      *
      * @effects rejection_transition_stores_comments_detail
+     *
+     * @return void 반환값 없음
      */
     public function test_sync는_반려_전이시_comments를_저장한다(): void
     {
@@ -501,6 +645,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertSame($comments, $updated->inspection_detail, '반려 사유 원문(comments)이 저장돼야 한다.');
     }
 
+    /**
+     * sync는 코드가 없는 행을 kapi 호출 없이 그대로 반환한다.
+     *
+     * @effects manual_sync_updates_single_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync는_코드가_없는_행을_kapi_호출_없이_그대로_반환한다(): void
     {
         Http::fake();
@@ -512,6 +663,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * sync requested는 대상이 없으면 kapi를 호출하지 않는다.
+     *
+     * @effects scheduler_skips_kapi_when_no_requested_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync_requested는_대상이_없으면_kapi를_호출하지_않는다(): void
     {
         Http::fake();
@@ -523,6 +681,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * sync requested는 list 일괄 대조로 전이한다.
+     *
+     * @effects scheduler_uses_list_batch_not_per_row_detail
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync_requested는_list_일괄_대조로_전이한다(): void
     {
         Http::fake([
@@ -559,6 +724,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         Http::assertSentCount(1);
     }
 
+    /**
+     * sync requested는 반려 전이 행만 detail을 추가 호출해 사유를 확보한다.
+     *
+     * @effects scheduler_uses_list_batch_not_per_row_detail, rejection_transition_stores_comments_detail
+     *
+     * @return void 반환값 없음
+     */
     public function test_sync_requested는_반려_전이_행만_detail을_추가_호출해_사유를_확보한다(): void
     {
         $comments = [['status' => 'REJ', 'content' => '변수 규격 위반']];
@@ -585,7 +757,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * delete는 삭제 가능 상태면 카카오측도 함께 지운다.
+     *
      * @effects delete_removes_kakao_side_only_in_deletable_state
+     *
+     * @return void 반환값 없음
      */
     public function test_delete는_삭제_가능_상태면_카카오측도_함께_지운다(): void
     {
@@ -603,6 +779,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         Http::assertSent(fn ($request) => parse_url($request->url(), PHP_URL_PATH) === '/v3/kakao/template/delete');
     }
 
+    /**
+     * delete는 삭제 불가 상태면 db행만 지우고 사유를 명시한다.
+     *
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete는_삭제_불가_상태면_db행만_지우고_사유를_명시한다(): void
     {
         Http::fake();
@@ -619,6 +802,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * delete는 카카오측 실패에도 db행을 지운다.
+     *
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete는_카카오측_실패에도_db행을_지운다(): void
     {
         Http::fake([self::KAPI => Http::response(['code' => '509', 'message' => '처리 불가 상태'])]);
@@ -631,6 +821,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertDatabaseCount('bizppurio_templates', 0);
     }
 
+    /**
+     * 카카오 미등록 행 delete는 kapi를 호출하지 않는다.
+     *
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     *
+     * @return void 반환값 없음
+     */
     public function test_카카오_미등록_행_delete는_kapi를_호출하지_않는다(): void
     {
         Http::fake();
@@ -642,6 +839,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * 휴면 해제는 release 후 상태를 재동기화한다.
+     *
+     * @effects dormant_release_calls_kapi_and_restores_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_휴면_해제는_release_후_상태를_재동기화한다(): void
     {
         Http::fake([
@@ -662,6 +866,13 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         $this->assertSame(BizppurioTemplateStatus::Approved, $updated->status, '해제 후 카카오 실제 상태(ACT)로 재동기화돼야 한다.');
     }
 
+    /**
+     * 휴면 상태가 아니면 해제가 거부된다.
+     *
+     * @effects release_outside_dormant_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_휴면_상태가_아니면_해제가_거부된다(): void
     {
         Http::fake();
@@ -681,6 +892,8 @@ class BizppurioTemplateServiceTest extends PluginTestCase
      * 두 벌 두면 한쪽만 고쳐지고, 증상은 "화면엔 본문이 있는데 발송은 스킵" 뿐이다.
      *
      * @effects sms_body_presence_and_preview_resolved_by_server
+     *
+     * @return void 반환값 없음
      */
     public function test_요약맵이_sms_본문_유무와_미리보기를_서버_판정으로_내보낸다(): void
     {
@@ -715,6 +928,8 @@ class BizppurioTemplateServiceTest extends PluginTestCase
      * 미리보기 로케일 해석이 모델과 같은 체인을 탄다 (#597 라운드 5 R4).
      *
      * @effects sms_body_presence_and_preview_resolved_by_server
+     *
+     * @return void 반환값 없음
      */
     public function test_요약맵_미리보기가_현재_로케일과_폴백_체인을_따른다(): void
     {
@@ -726,8 +941,8 @@ class BizppurioTemplateServiceTest extends PluginTestCase
         app()->setLocale('en');
         $this->assertSame('English body', $this->makeService()->summaryMap()['welcome']['sms_body_preview']);
 
-        // 해당 로케일 본문이 없으면 fallback_locale 로 내려간다 (하드코딩 'ko' 가 아니다)
-        config(['app.fallback_locale' => 'en']);
+        // 해당 로케일 본문이 없으면 사이트 기본 언어로 내려간다 (하드코딩 'ko' 가 아니다, #148)
+        config(['app.site_locale' => 'en', 'app.fallback_locale' => 'ko']);
         app()->setLocale('ja');
         $this->assertSame('English body', $this->makeService()->summaryMap()['welcome']['sms_body_preview']);
 
@@ -741,6 +956,8 @@ class BizppurioTemplateServiceTest extends PluginTestCase
      * 등록(add) 페이로드에는 섞이지 않고, 행에도 남지 않는다.
      *
      * @effects inspection_request_carries_reviewer_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_검수_신청의_comment는_kapi_request에만_실린다(): void
     {
@@ -768,7 +985,11 @@ class BizppurioTemplateServiceTest extends PluginTestCase
     }
 
     /**
+     * 검수 신청의 comment가 공백이면 kapi request에 comment 키를 싣지 않는다.
+     *
      * @effects inspection_request_carries_reviewer_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_검수_신청의_comment가_공백이면_kapi_request에_comment_키를_싣지_않는다(): void
     {

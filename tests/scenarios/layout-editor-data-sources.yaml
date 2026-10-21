@@ -4,7 +4,7 @@ feature: 레이아웃 편집기 데이터 소스 편집기 — data_sources CRUD
 
 description: |
   페이지 설정(툴바 ⚙데이터 버튼) 모달에서 현재 레이아웃의 data_sources 를 추가·편집·삭제한다.
- 원 계획서 "data_sources 읽기전용(코드 편집 위임)" 결정을 로 갱신 —
+  원 계획서 "data_sources 읽기전용(코드 편집 위임)" 결정을 2026-06-05 결정으로 갱신 —
   편집기가 data_sources 신규 생성/편집을 지원한다.
 
   SSoT 분리:
@@ -21,13 +21,13 @@ description: |
   endpoint / method / auth_mode / loading_strategy / auto_fetch / params(JSON, 바인딩 표현식 허용) /
   fallback(JSON). 신규 소스는 즉시 검색형 데이터 피커(6-a/6-b) 후보로 노출되며 label_key 친화 명칭 표시.
 
- label_key 전수 부여 의무: 모든 번들 레이아웃(admin 27 + basic 29 = 56 레이아웃,
+  label_key 전수 부여 의무: 모든 번들 레이아웃(admin 27 + basic 29 = 56 레이아웃,
   134 data_source)의 data_source 가 label_key($t:editor.data_source.<id>) 를 갖는다(누락 0).
   audit data-source-label-key-coverage 가 신규 레이아웃의 누락도 차단. 친화 명칭은 편집기 i18n
   editor.data_source.<id>(admin 62 + basic 56 고유 키 × ko/en). 언어팩 동적 로케일 자동 대응.
 
   백엔드: content.data_sources 는 bare 'array' 규칙(하위 키 미명시) → validated() 가 배열 전체를
- 통과시켜 label_key 및 모든 필드가 별도 동기 없이 보존.
+  통과시켜 label_key 및 모든 필드가 별도 동기 없이 보존.
 
 # axes: 데이터 소스 편집의 직교 차원. field(개별 폼 필드)는 cross-product 가 아니라 effects 로
 # 커버한다(필드별 보존·검증은 항목 단위 동작이지 조합 폭발 대상이 아님). ds_type 은 add 전수,
@@ -52,6 +52,8 @@ exclusions:
   - { operation: remove, ds_type: websocket, reason: "동일" }
 
 effects:
+  - same_id_conditional_variant_editable   # 같은 id 판이 모두 조건부면 편집 저장 허용
+  - unconditional_same_id_still_rejected   # 조건 없는 판이 섞이면 종전대로 id_duplicate
   # CRUD + SSoT 분리
   - split_sources_own_from_editor_original_inherited_from_merged
   - add_source_appends_to_own_and_merged_preserves_inherited
@@ -76,6 +78,7 @@ effects:
   - missing_id_rejected_by_valid_data_source_merge
 
 test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/DataSourcesPanel.conditionalVariants.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/DataSourcesPanel.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/EditorToolbar.dataSources.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutDocument.patchDocumentRaw.test.tsx

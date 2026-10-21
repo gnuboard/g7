@@ -146,16 +146,19 @@
 **응답 메타**: `data.abilities{can_view,can_manage}` + `data.reaction_types[]`(비활성 포함) + `data.boards[]`(게시판 선택지).
 유형 옵션을 목록 응답에 싣는 이유는 `reactions.view` 만 가진 매니저가 `settings.read` 가 없어
 유형 API 를 부를 수 없기 때문입니다.
+권한 범위가 「본인만」·「소유역할」이면 그 범위의 글(항목)만 담깁니다(1.2.1+).
 
 ### DELETE /api/modules/sirsoft-board/admin/reactions/{id}
 
 - **권한**: `sirsoft-board.reactions.manage` (view 만 있으면 403)
+- 권한 범위가 「본인만」·「소유역할」이면 그 범위 밖 회원의 반응은 **403** `auth.scope_denied` (1.2.1+)
 - 소유자와 무관하게 삭제하고 대상의 `reaction_counts` 를 재집계합니다
 - 없는 ID → 404
 
 ### DELETE /api/modules/sirsoft-board/admin/reactions/bulk
 
 `/{id}` 보다 **먼저** 선언되어 `bulk` 가 id 로 잡히지 않습니다.
+범위 밖 반응이 하나라도 섞이면 아무것도 지우지 않고 **403** `auth.scope_denied` 입니다(1.2.1+).
 
 | 이름 | 타입 | 필수 | 허용값 |
 | --- | --- | --- | --- |

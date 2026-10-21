@@ -75,6 +75,19 @@ effects:
   - short_body_dispatched_as_sms
   - long_body_dispatched_as_lms_with_subject
   - send_message_job_dispatched_with_refkey
+  - sms_skipped_when_template_row_inactive
+  - member_sms_uses_the_member_mobile
+  - guest_sms_uses_the_phone_carried_in_the_payload
+  - member_without_mobile_never_borrows_the_customer_number
+  - sms_skipped_when_fallback_locale_body_missing
+  - sms_skipped_when_every_locale_body_is_empty
+  - member_dispatch_row_records_the_member_id
+  - guest_dispatch_row_has_no_member_id
+  - no_dispatch_row_when_nothing_is_sent
+  - sms_skipped_when_no_phone_number_resolves
+  - non_generic_notifications_are_ignored
+  - test_mode_flag_is_snapshotted_on_the_dispatch_row
+  - live_mode_flag_is_snapshotted_on_the_dispatch_row
   # 훅 위생
   - all_channel_hooks_declared_as_filter_type
 

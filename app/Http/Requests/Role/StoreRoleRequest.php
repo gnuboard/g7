@@ -5,6 +5,7 @@ namespace App\Http\Requests\Role;
 use App\Enums\PasswordExpiryPolicy;
 use App\Enums\ScopeType;
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\RejectsGuestPermissionScope;
 use App\Models\Menu;
 use App\Models\Permission;
 use App\Models\Role;
@@ -13,12 +14,15 @@ use App\Rules\TranslatableField;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * 역할 생성 요청 검증
  */
 class StoreRoleRequest extends FormRequest
 {
+    use RejectsGuestPermissionScope;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -127,5 +131,24 @@ class StoreRoleRequest extends FormRequest
         if (! $this->has('is_active')) {
             $this->merge(['is_active' => true]);
         }
+    }
+
+    /**
+     * 규칙 검증 뒤 교차 검사를 더합니다.
+     *
+     * 비회원 역할에는 권한 범위(본인·소유역할)를 줄 수 없다(7.1.1) — 실린 항목마다 422.
+     *
+     * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            // 새 역할의 식별자가 guest 면(고유 규칙과 별개로) 비회원 역할로 보고 스코프를 거부한다 — 방어
+            $this->rejectGuestPermissionScope(
+                $validator,
+                $this->input('identifier') !== Role::GUEST_IDENTIFIER
+            );
+        });
     }
 }

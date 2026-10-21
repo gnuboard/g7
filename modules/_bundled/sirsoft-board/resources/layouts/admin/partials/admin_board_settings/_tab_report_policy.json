@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'report_policy'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "type": "basic",
@@ -464,7 +457,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Span",
+                                            "name": "Label",
                                             "props": {
                                                 "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200"
                                             },
@@ -513,7 +506,7 @@
                                             "children": [
                                                 {
                                                     "type": "basic",
-                                                    "name": "Span",
+                                                    "name": "Label",
                                                     "props": {
                                                         "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200"
                                                     },
@@ -725,7 +718,7 @@
                                                                                     "props": {
                                                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                                                         "size": "sm",
-                                                                                        "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -739,7 +732,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Span",
                                                                                             "props": {
-                                                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-300"
                                                                                             },
                                                                                             "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}"
                                                                                         },
@@ -749,7 +742,7 @@
                                                                                             "props": {
                                                                                                 "className": "block text-sm text-gray-800 dark:text-gray-200 truncate"
                                                                                             },
-                                                                                            "text": "{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
+                                                                                            "text": "{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
                                                                                         }
                                                                                     ]
                                                                                 }
@@ -759,7 +752,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
                                                                             },
                                                                             "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}"
                                                                         }
@@ -768,9 +761,9 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
-                                                                    "if": "{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0}}",
+                                                                    "if": "{{boardNotificationDefinitions !== undefined && ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0)}}",
                                                                     "props": {
-                                                                        "className": "px-3 py-2 text-sm text-gray-400 dark:text-gray-500"
+                                                                        "className": "px-3 py-2 text-sm text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                                                 }
@@ -787,7 +780,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
                                                                 },
@@ -949,7 +942,7 @@
                                                                                     "props": {
                                                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                                                         "size": "sm",
-                                                                                        "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -963,7 +956,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Span",
                                                                                             "props": {
-                                                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-300"
                                                                                             },
                                                                                             "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}"
                                                                                         },
@@ -973,7 +966,7 @@
                                                                                             "props": {
                                                                                                 "className": "block text-sm text-gray-800 dark:text-gray-200 truncate"
                                                                                             },
-                                                                                            "text": "{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
+                                                                                            "text": "{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
                                                                                         }
                                                                                     ]
                                                                                 }
@@ -983,7 +976,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
                                                                             },
                                                                             "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}"
                                                                         }
@@ -992,9 +985,9 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
-                                                                    "if": "{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0}}",
+                                                                    "if": "{{boardNotificationDefinitions !== undefined && ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0)}}",
                                                                     "props": {
-                                                                        "className": "px-3 py-2 text-sm text-gray-400 dark:text-gray-500"
+                                                                        "className": "px-3 py-2 text-sm text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                                                 }
@@ -1011,7 +1004,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-xs text-gray-400 dark:text-gray-500"
+                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
                                                                 },

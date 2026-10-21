@@ -59,6 +59,8 @@ Schedule::command('schedules:prune-history')->dailyAt('04:35')->onOneServer();
 Schedule::command('identity:prune-logs')->dailyAt('04:40')->onOneServer();
 Schedule::command('activity-log:prune')->dailyAt('04:45')->onOneServer();
 Schedule::command('notification-log:prune')->dailyAt('04:50')->onOneServer();
+// 알림 수신자별 발송 기록(재시도·재예약 중복 방지, #139) — 재시도 창보다 오래된 행 정리
+Schedule::command('notification-delivery:prune')->dailyAt('04:52')->onOneServer();
 // 사용자 파일을 파기하므로 기본 꺼짐 — 커맨드가 `--scheduled` 에서 설정을 false 폴백으로 재확인한다.
 Schedule::command('attachments:prune-orphans --scheduled')->dailyAt('04:55')->onOneServer();
 // 중단된 업데이트·설치가 남긴 임시 산출물 + 오래된 백업본(최신 1개 보존) 정리

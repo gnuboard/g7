@@ -18,6 +18,8 @@ effects:
   - lint_warning_carries_source_line
   - security_violation_carries_source_line
   - returned_json_has_no_position_markers
+  # #725 — 위치를 찾는 2차 컴파일은 보조 단계다(`<init>` 조합 · 그 단계 실패 시 1차 결과로 선다)
+  - init_layout_with_unlocated_warning_compiles
 
 test_files:
   - tests/Feature/Api/Admin/LayoutMarkupIssueLocationTest.php

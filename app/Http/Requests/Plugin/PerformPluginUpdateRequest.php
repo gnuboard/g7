@@ -40,6 +40,8 @@ class PerformPluginUpdateRequest extends FormRequest
             'force' => ['nullable', 'boolean'],
             // 업데이트 후 검색 인덱스 재생성 여부 — 인덱스 잠금·재색인 비용이 있어 기본은 미수행
             'rebuild_search_index' => ['nullable', 'boolean'],
+            // 레이아웃 설치 소스(auto|json) — 이 요청 동안만 설정을 덮는다. 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따른다.
+            'layout_source' => ['nullable', 'string', 'in:auto,json'],
         ];
 
         return HookManager::applyFilters('core.plugin.perform_update_validation_rules', $rules, $this);
@@ -55,6 +57,7 @@ class PerformPluginUpdateRequest extends FormRequest
         return [
             'layout_strategy.in' => __('plugins.errors.invalid_layout_strategy'),
             'vendor_mode.in' => __('plugins.errors.invalid_vendor_mode'),
+            'layout_source.in' => __('plugins.errors.invalid_layout_source'),
         ];
     }
 }

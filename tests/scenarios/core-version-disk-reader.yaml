@@ -1,0 +1,17 @@
+feature: core_version_disk_reader
+
+description: |
+  디스크 config/app.php 의 `'version' => env('APP_VERSION', 'X')` 기본값(이 코드가 출시된 버전)을 읽는다(공개 #145 W3).
+  자동 비활성화 안전망과 beta.7 전용 복구 가드가 같은 정규식을 쓰도록 한 곳에 둔다. 읽지 못하면 null.
+
+coverage_strategy: full
+
+axes:
+  case: [repository_config, env_default_and_literal, unrecognized]
+
+effects:
+  - disk_reader_returns_env_default_version
+  - disk_reader_returns_null_on_mismatch
+
+test_files:
+  - tests/Unit/Support/CoreVersionDiskReaderTest.php

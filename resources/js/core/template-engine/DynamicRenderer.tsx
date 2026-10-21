@@ -22,7 +22,7 @@
  * - ErrorBoundary를 통한 컴포넌트 레벨 에러 처리
  */
 
-import React, { memo, useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef, Component, ErrorInfo } from 'react';
+import React, { memo, useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef, useContext, Component, ErrorInfo } from 'react';
 import { ComponentRegistry } from './ComponentRegistry';
 import { DataBindingEngine } from './DataBindingEngine';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
@@ -30,15 +30,18 @@ import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
 import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
 import { evaluateComputedDefinitions, isInheritableDefinitions } from './helpers/ComputedEvaluator';
+import { makeLayoutListenerResult } from './helpers/componentEventResult';
+import { toExpressionData } from './helpers/expressionData';
 import { getEngineFlags } from './EngineFlags';
 import {
   extractSingleBinding as canonicalExtractSingleBinding,
   isComplexExpression as canonicalIsComplexExpression,
 } from './BindingShape';
 import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep } from './rawMarkers';
+import { stripTranslationParamMarkers } from './translationParamValues';
 import type { ConditionsProperty } from './helpers/ConditionEvaluator';
 import type { RenderEnvironment } from './helpers/RenderEnvironment';
-import { useTransitionState } from './TransitionContext';
+import { useTransitionState, useIdleTransitionState } from './TransitionContext';
 import { getLocalInitTracking, markLocalInitConsumed, registerTrackChangesRoot, resolveLocalInitAction, shouldResetHasChanges } from './localInitSlot';
 import { useResponsive } from './ResponsiveContext';
 import { createLogger } from '../utils/Logger';
@@ -47,6 +50,12 @@ import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { isDangerousScheme, isScriptScheme } from '../support/navPolicy';
 
 const logger = createLogger('DynamicRenderer');
+
+/**
+ * `_global` 에 묶인 제어 입력의 표시용 대기 값을 버리는 시간 — 마지막 입력 뒤 이 시간 안에 상태가 따라오지 않으면 입력을 받아들이지
+ * 않는 onChange 로 보고 상태 값으로 돌아간다 (engine-v1.80.1). 미뤄진 전역 다시 그리기는 보통 수십 ms 안에 온다.
+ */
+const HELD_INPUT_EXPIRY_MS = 1000;
 
 /** 링크 대상 prop — 실행 스킴이면 `#` 로 무해화 (링크 모양은 유지) */
 const HREF_URL_PROPS = new Set(['href', 'xlinkHref', 'xlink:href']);
@@ -165,128 +174,253 @@ function resolveTranslationsInValue(
 }
 import { responsiveManager } from './ResponsiveManager';
 import { FormProvider, FormContextValue, useFormContext, getNestedValue, setNestedValue } from './FormContext';
-import { SlotProvider } from './SlotContext';
+import { SlotProvider, SlotContext } from './SlotContext';
 import { IsolatedStateProvider, useIsolatedState } from './IsolatedStateContext';
 import { SortableContainer, SortableItemWrapper, useSortableContext, type SortableStrategy } from './sortable';
 import { useParentContext } from './ParentContextProvider';
+import { deepMergeState } from './helpers/StateMerge';
+import { isUrlOnlyPathAlias } from './helpers/urlOnlyPathChange';
+
+// deepMergeState 는 helpers/StateMerge 로 옮겼다 (engine-v1.81.2) — ActionDispatcher(withFlushedLocal)가 렌더러와 같은 병합을 쓰려면
+// 순환 import 없이 가져와야 한다(이 파일이 ActionDispatcher 를 값으로 import 한다). 공개 이름·동작은 그대로다.
+export { deepMergeState };
+
+/** 자동바인딩 디바운스를 디스패처 debouncedCall 로 예약했다는 표식 (engine-v1.81.2) — clearTimeout 대상이 아니다 */
+const AUTOBINDING_DEBOUNCE_VIA_DISPATCHER = -1 as const;
+/** 자동바인딩 디바운스 예약 키 일련번호 — 입력칸 인스턴스마다 하나 (engine-v1.81.2) */
+let autoBindingDebounceKeySeq = 0;
 
 /**
- * 중첩 객체에 대해 깊은 병합을 수행하는 헬퍼 함수
+ * 자동바인딩 칸 다시 마운트 판정 (engine-v1.81.2, 7.1.1)
  *
- * replaceOnlyKeys에 포함된 키(예: 'errors')는 깊은 병합 대신 완전히 교체됩니다.
- * 이를 통해 validation 에러가 누적되지 않고 최신 에러로 갱신됩니다.
- *
- * @param target 기존 상태 객체
- * @param source 업데이트할 객체
- * @returns 깊은 병합된 새 객체
- *
- * @example 일반 객체는 깊은 병합
- * // target: { filter: { searchField: 'all', salesStatus: ['on_sale'] } }
- * // source: { filter: { dateQuick: 'today' } }
- * // result: { filter: { searchField: 'all', salesStatus: ['on_sale'], dateQuick: 'today' } }
- *
- * @example errors는 완전 교체
- * // target: { errors: { name: ["필수"], email: ["필수"] } }
- * // source: { errors: { email: ["필수"] } }
- * // result: { errors: { email: ["필수"] } }  -- name 에러 제거됨
+ * 렌더(`propsWithAutoBinding` useMemo)는 「버린 대기 값 기록을 보고 다시 마운트할지」 판정만 하고 ref 를 바꾸지 않는다. 판정은 그
+ * useMemo 가 돌려준 props 객체에 묶어 두고, **커밋된** 렌더의 판정만 useLayoutEffect 가 반영한다(차례 +1·기록 비움). 렌더 안에서 차례를
+ * 올리면 끊겨 버려지는 전환 렌더(startTransition)가 올린 차례가 남아, 그 사이 사용자가 새로 친 칸이 다음 커밋에서 다시 마운트됐다.
  */
-/**
- * 객체의 모든 키가 숫자인지 확인합니다.
- * convertDotNotationToObject가 배열 인덱스를 객체 키로 변환한 경우를 감지합니다.
- */
-function hasOnlyNumericKeys(obj: Record<string, any>): boolean {
-  const keys = Object.keys(obj);
-  return keys.length > 0 && keys.every((k) => /^\d+$/.test(k));
+interface AutoBindingRemountDecision {
+  /** 판정한 버린 값 기록(객체 동일성으로 같은 기록인지 가린다) */
+  record: { value: any };
+  /** 다시 마운트할지 */
+  remount: boolean;
 }
+const autoBindingRemountDecisions = new WeakMap<object, AutoBindingRemountDecision>();
 
-export const deepMergeState = (
-  target: Record<string, any>,
-  source: Record<string, any>
+/**
+ * 지금 IME 조합 중인 입력 요소의 name (engine-v1.81.2, 7.1.1)
+ *
+ * 입력칸 컴포넌트는 조합 중에는 onChange 를 부르지 않아(조합이 끝나야 부른다) 「새 경로에서 다시 쳤으면 버린 값 기록을 지운다」 가
+ * 조합 중에는 일어나지 않는다. 그 사이 늦은 새 화면 렌더가 칸을 다시 마운트하면 조합이 끊기고 친 글자가 사라졌다. 문서 단위 조합
+ * 이벤트로 조합 중인 칸의 name 을 들고 있다가, 같은 이름의 칸은 「다시 치는 중」 으로 보고 다시 마운트하지 않는다. 기록이 처음 생길
+ * 때 한 번만 단다.
+ */
+let composingFieldName: string | null = null;
+let compositionTrackerInstalled = false;
+const ensureCompositionTracker = (): void => {
+  if (compositionTrackerInstalled || typeof document === 'undefined') return;
+  compositionTrackerInstalled = true;
+  document.addEventListener('compositionstart', (event) => {
+    const target = event.target as { name?: unknown } | null;
+    composingFieldName = target && typeof target.name === 'string' && target.name !== '' ? target.name : null;
+  }, true);
+  document.addEventListener('compositionend', () => {
+    composingFieldName = null;
+  }, true);
+  // 조합 중에 칸이 사라지거나 포커스를 잃어 compositionend 가 오지 않으면 이름이 남는다 — 그 칸을 떠나면 지운다
+  document.addEventListener('focusout', (event) => {
+    const target = event.target as { name?: unknown } | null;
+    if (composingFieldName !== null && target && target.name === composingFieldName) {
+      composingFieldName = null;
+    }
+  }, true);
+};
+
+const isPlainStateObject = (value: unknown): value is Record<string, any> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const hasOwnKey = (obj: Record<string, any>, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(obj, key);
+
+/**
+ * 렌더 병합 결과에서 「늦은 B 사본에만 남은 키」 를 뺍니다 (engine-v1.81.2, 7.1.1).
+ *
+ * 루트급 렌더러의 화면 문맥은 `deepMergeState(dataContext._local, 저장소 A)` 다. `dataContext._local` 은 마지막 루트 다시 그리기
+ * (`updateTemplateData` 가 `state.currentDataContext` 를 그 순간 사본으로 싣는다) 때의 저장소 B 사본이고, 그 뒤의 B 쓰기(setState
+ * 미러·커스텀 핸들러 setLocal)는 render:false 라 이 사본은 **B 보다 늦다**. 깊은 병합은 A 의 `{}`·키를 줄인 객체로 사본의 키를 지우지
+ * 못해, 핸들러가 A·B 를 모두 비운 선택(`currentSelection: {}`)이 화면에 앞 값으로 남았다. 그 화면 문맥은 다음 동작의 입력
+ * (`componentContext.state`)이 되고 setLocal 의 잎 키 보충이 그 값을 B 에 되썼다(상품 상세 옵션 — 출시 전 실측 106회 중 6회 재현, 7.1.0 에도 있음).
+ *
+ * 그래서 **A 가 가진 객체 안에서**, 사본에는 있지만 A 의 그 객체에도 지금의 B(정본)의 그 객체에도 없는 키를 뺀다 — 정본과 A 가
+ * 모두 버린 키는 사본이 늦었을 뿐이다. 정본에 그 키가 있으면(서버 값·selfManaged 플러그인 값) 그대로 둔다 — 그래서 「A 쪽 `{}` 가
+ * B 의 서버 값을 지운다」 는 범용 `{}` 교체의 위험(engine-v1.81.1 금지 항목)이 생기지 않는다. A 에 없는 최상위 키·배열·`errors` 는
+ * 건드리지 않는다(종전 병합과 같다). 뺄 것이 없으면 `merged` 원본 참조를 돌려준다.
+ *
+ * @param merged `deepMergeState(base, written)` 결과
+ * @param base 렌더 사본(`dataContext._local`)
+ * @param written 저장소 A(`localDynamicState`)
+ * @param canonical 지금의 저장소 B(`__templateApp.getGlobalState()._local`). 객체가 아니면 아무것도 빼지 않는다
+ * @returns 늦은 사본 전용 키를 뺀 결과 (변경이 없으면 `merged` 그대로)
+ * @since engine-v1.81.2
+ */
+export const dropLaggingRenderBaseKeys = (
+  merged: Record<string, any>,
+  base: unknown,
+  written: unknown,
+  canonical: unknown
 ): Record<string, any> => {
-  // 깊은 병합에서 제외할 키 목록 (완전 교체되어야 하는 필드들)
-  // validation errors 등은 병합하면 이전 오류가 남아있게 됨
-  const replaceOnlyKeys = ['errors'];
+  if (!isPlainStateObject(merged) || !isPlainStateObject(base) || !isPlainStateObject(written) || !isPlainStateObject(canonical)) {
+    return merged;
+  }
 
-  const result: Record<string, any> = { ...target };
-
-  for (const key of Object.keys(source)) {
-    const sourceValue = source[key];
-    const targetValue = target[key];
-
-    // source 값이 null이면 그대로 설정
-    if (sourceValue === null) {
-      result[key] = null;
+  let result: Record<string, any> | null = null;
+  for (const key of Object.keys(written)) {
+    if (key === 'errors') continue;
+    const writtenValue = written[key];
+    const baseValue = base[key];
+    const canonicalValue = canonical[key];
+    const mergedValue = merged[key];
+    if (!isPlainStateObject(writtenValue) || !isPlainStateObject(baseValue)
+      || !isPlainStateObject(canonicalValue) || !isPlainStateObject(mergedValue)) {
       continue;
     }
 
-    // errors 등 특정 키는 항상 완전히 교체 (validation 에러 등은 병합하면 안됨)
-    if (replaceOnlyKeys.includes(key)) {
-      result[key] = sourceValue;
-      continue;
-    }
-
-    // source 값이 배열이면 배열로 교체 (배열은 병합하지 않음)
-    if (Array.isArray(sourceValue)) {
-      result[key] = sourceValue;
-      continue;
-    }
-
-    // 특수 케이스: target이 배열이고 source가 숫자 키만 가진 객체인 경우
-    // convertDotNotationToObject가 "optionInputs.0.values" 같은 경로를
-    // { optionInputs: { "0": { values: ... } } } 로 변환하므로,
-    // 이를 배열 인덱스로 해석하여 해당 위치의 요소를 병합
-    if (
-      Array.isArray(targetValue) &&
-      sourceValue !== null &&
-      typeof sourceValue === 'object' &&
-      !Array.isArray(sourceValue) &&
-      hasOnlyNumericKeys(sourceValue)
-    ) {
-      const numericKeys = Object.keys(sourceValue).map((k) => parseInt(k, 10));
-      const maxKey = numericKeys.length > 0 ? Math.max(...numericKeys) : 0;
-
-      // Sparse array 방지: source 키가 배열 범위를 크게 초과하면
-      // 배열 인덱스가 아닌 ID/키 매핑으로 간주하여 객체로 교체
-      if (maxKey >= targetValue.length + numericKeys.length + 10) {
-        result[key] = { ...sourceValue };
-      } else {
-        const arrResult = [...targetValue];
-        for (const [srcKey, srcVal] of Object.entries(sourceValue)) {
-          const index = parseInt(srcKey, 10);
-          if (index >= 0 && index < arrResult.length) {
-            if (
-              srcVal !== null &&
-              typeof srcVal === 'object' &&
-              !Array.isArray(srcVal) &&
-              arrResult[index] !== null &&
-              typeof arrResult[index] === 'object'
-            ) {
-              arrResult[index] = deepMergeState(arrResult[index], srcVal);
-            } else {
-              arrResult[index] = srcVal;
-            }
-          } else if (index >= arrResult.length) {
-            arrResult[index] = srcVal;
-          }
-        }
-        result[key] = arrResult;
+    let next: Record<string, any> = mergedValue;
+    for (const k of Object.keys(baseValue)) {
+      if (!hasOwnKey(writtenValue, k) && !hasOwnKey(canonicalValue, k) && hasOwnKey(next, k)) {
+        if (next === mergedValue) next = { ...mergedValue };
+        delete next[k];
       }
-    } else if (
-      // 둘 다 일반 객체인 경우 재귀적으로 깊은 병합
-      sourceValue !== null &&
-      typeof sourceValue === 'object' &&
-      targetValue !== null &&
-      typeof targetValue === 'object' &&
-      !Array.isArray(targetValue)
-    ) {
-      result[key] = deepMergeState(targetValue, sourceValue);
-    } else {
-      // 그 외의 경우 덮어쓰기
-      result[key] = sourceValue;
+    }
+    next = dropLaggingRenderBaseKeys(next, baseValue, writtenValue, canonicalValue);
+
+    if (next !== mergedValue) {
+      if (result === null) result = { ...merged };
+      result[key] = next;
     }
   }
 
-  return result;
+  return result ?? merged;
+};
+
+/** `G7Core.state.setLocal` 이 액션 밖에서 shallow·replace 로 교체한 최상위 키 표지 (`window.__g7SetLocalReplacedKeys`) */
+interface SetLocalReplacedKeysMarker {
+  all: boolean;
+  keys: string[];
+  /** 표지를 만든 경로 전환 세대 — 다른 화면으로 가면 무효 */
+  generation?: number;
+}
+
+const isSetLocalReplacedKeysMarker = (value: unknown): value is SetLocalReplacedKeysMarker =>
+  isPlainStateObject(value) && Array.isArray((value as any).keys);
+
+const isReplacedKey = (marker: SetLocalReplacedKeysMarker, key: string): boolean =>
+  marker.all || marker.keys.includes(key);
+
+/**
+ * 표지가 지금 경로 전환 세대의 것인지 (engine-v1.81.2) — 세대를 알 수 없으면 지금 것으로 본다
+ *
+ * @param marker 표지
+ * @returns 다른 화면에서 만든 표지면 false
+ */
+export const isCurrentSetLocalReplacedKeysMarker = (marker: unknown): boolean => {
+  if (!isSetLocalReplacedKeysMarker(marker)) return false;
+  const now = typeof window !== 'undefined' ? (window as any).__templateApp?.getRouteChangeId?.() : undefined;
+
+  return typeof marker.generation !== 'number' || typeof now !== 'number' || marker.generation === now;
+};
+
+/**
+ * 액션 밖 shallow·replace setLocal 이 교체한 최상위 키를 화면 문맥에서 정본 B 값으로 맞춥니다 (engine-v1.81.2, 7.1.1).
+ *
+ * `G7Core.state.setLocal(값, { merge: 'shallow' | 'replace' })` 는 액션 문맥(`__g7ActionContext`)이 있으면 저장소 A 도 같은 방식으로
+ * 고치지만, 컴포넌트 코드·타이머·웹소켓 콜백처럼 액션 밖에서 부르면 저장소 B 만 바뀐다. 그 키 아래에 저장소 A 가 setState 동작·
+ * 자동바인딩으로 쓴 하위 키가 있으면 렌더 병합(`deepMergeState(사본, A)` — A 우선)이 그 하위 키를 되살려 화면이 B 와 달라졌고,
+ * 다음 동작의 잎 키 보충(`addMissingLeafKeys`)이 그 값을 B 에까지 되썼다(7.1.0 에도 있음). 그래서 표지에 든 최상위 키 가운데
+ * **저장소 A 가 가진 키만** 화면 값을 지금의 B(정본) 값으로 바꾼다 — 정본에 없으면 뺀다. A 에 없는 키·표지 밖 키는 그대로다.
+ * 표지는 B 사본이 그 값을 따라온 뒤 {@link pruneSetLocalReplacedKeys} 가 A 를 정리하면서 지운다.
+ *
+ * @param merged 렌더 병합 결과(사본 ⊕ A, 늦은 사본 키 제거 뒤)
+ * @param written 저장소 A(`localDynamicState`)
+ * @param canonical 지금의 저장소 B(`__templateApp.getGlobalState()._local`) — 객체가 아니면 아무것도 하지 않는다
+ * @param marker `window.__g7SetLocalReplacedKeys`
+ * @returns 맞춘 결과 (바꿀 것이 없으면 `merged` 그대로)
+ * @since engine-v1.81.2
+ */
+export const applySetLocalReplacedKeys = (
+  merged: Record<string, any>,
+  written: unknown,
+  canonical: unknown,
+  marker: unknown
+): Record<string, any> => {
+  if (!isSetLocalReplacedKeysMarker(marker) || !isCurrentSetLocalReplacedKeysMarker(marker) || !isPlainStateObject(merged)
+    || !isPlainStateObject(written) || !isPlainStateObject(canonical)) {
+    return merged;
+  }
+
+  let result: Record<string, any> | null = null;
+  for (const key of Object.keys(written)) {
+    if (!isReplacedKey(marker, key)) continue;
+    if (hasOwnKey(canonical, key)) {
+      if (merged[key] === canonical[key]) continue;
+      if (result === null) result = { ...merged };
+      result[key] = canonical[key];
+    } else if (hasOwnKey(result ?? merged, key)) {
+      if (result === null) result = { ...merged };
+      delete result[key];
+    }
+  }
+
+  return result ?? merged;
+};
+
+/**
+ * 표지에 든 최상위 키를 저장소 A 에서 지웁니다 (engine-v1.81.2, {@link applySetLocalReplacedKeys} 의 뒷정리).
+ *
+ * B 사본이 교체된 값을 따라온 뒤에 부른다 — 그 뒤로는 화면이 사본(= B)에서 그 키를 읽는다. 지울 것이 없으면 원본 참조를 돌려준다.
+ *
+ * @param target 저장소 A
+ * @param marker `window.__g7SetLocalReplacedKeys`
+ * @returns 키를 지운 새 객체 (지울 것이 없으면 target 그대로)
+ * @since engine-v1.81.2
+ */
+export const pruneSetLocalReplacedKeys = (
+  target: Record<string, any>,
+  marker: unknown
+): Record<string, any> => {
+  if (!isSetLocalReplacedKeysMarker(marker) || !isPlainStateObject(target)) return target;
+  let result: Record<string, any> | null = null;
+  for (const key of Object.keys(target)) {
+    if (!isReplacedKey(marker, key)) continue;
+    if (result === null) result = { ...target };
+    delete result[key];
+  }
+
+  return result ?? target;
+};
+
+/**
+ * 렌더 사본이 표지에 든 키의 정본 값을 따라왔는지 판정합니다 (engine-v1.81.2).
+ *
+ * 사본(`dataContext._local`)은 루트 다시 그리기 때의 B 사본이다. 표지 키가 모두 정본과 같은 참조(또는 둘 다 없음)일 때만
+ * 저장소 A 를 정리하고 표지를 지운다 — 쓰기 전에 예약된 다시 그리기가 늦게 커밋돼 사본이 옛 값이면 정리를 미룬다(그동안 화면은
+ * {@link applySetLocalReplacedKeys} 가 정본 값으로 맞춘다).
+ *
+ * @param base 렌더 사본
+ * @param canonical 지금의 저장소 B
+ * @param marker 표지
+ * @returns 따라왔으면 true
+ * @since engine-v1.81.2
+ */
+export const renderBaseCaughtUpReplacedKeys = (
+  base: unknown,
+  canonical: unknown,
+  marker: unknown
+): boolean => {
+  if (!isSetLocalReplacedKeysMarker(marker) || !isPlainStateObject(base) || !isPlainStateObject(canonical)) return false;
+  const keys = marker.all
+    ? Array.from(new Set([...Object.keys(base), ...Object.keys(canonical)]))
+    : marker.keys;
+
+  return keys.every((key) => hasOwnKey(base, key) === hasOwnKey(canonical, key) && base[key] === canonical[key]);
 };
 
 /**
@@ -662,22 +796,36 @@ export interface ComponentDefinition {
    *         "target": "_local",
    *         "value": { "showSuccess": true }
    *       }
+   *     },
+   *     {
+   *       "event": "cart:changed",
+   *       "handler": "sequence",
+   *       "actions": [
+   *         { "handler": "setState", "params": { "target": "local", "cartDirty": true } },
+   *         { "handler": "refetchDataSource", "params": { "dataSourceId": "cart" } }
+   *       ]
+   *     },
+   *     {
+   *       "event": "order:status",
+   *       "handler": "conditions",
+   *       "conditions": [
+   *         { "if": "{{_eventData.status === 'paid'}}", "then": { "handler": "toast", "params": { "type": "success", "message": "$t:order.paid" } } }
+   *       ]
    *     }
    *   ]
    * }
    * ```
+   *
+   * 항목은 `event` + 일반 액션 키 전부다 — 버튼 클릭과 같이 sequence·conditions·switch·if·actionRef·
+   * target·resultTo·onSuccess·onError·errorHandling 이 동작한다(engine-v1.80.0). 처리 결과는 보낸 쪽
+   * `_local._eventResult` 에 담긴다. `debounce`·`key`·`stopPropagation` 은 사용자가 직접 누르는 진입점에서만
+   * 효과가 있어 이 자리에서는 무시된다.
    */
-  onComponentEvent?: Array<{
+  onComponentEvent?: Array<Omit<ActionDefinition, 'type'> & {
     /** 구독할 이벤트 이름 (예: "upload:site_logo", "form:submitted") */
     event: string;
-    /** 이벤트 발생 시 실행할 핸들러 */
-    handler: string;
-    /** 핸들러에 전달할 파라미터 */
-    params?: Record<string, any>;
-    /** 이벤트 핸들러 성공 시 실행할 액션 (선택적) */
-    onSuccess?: ActionDefinition | ActionDefinition[];
-    /** 이벤트 핸들러 실패 시 실행할 액션 (선택적) */
-    onError?: ActionDefinition | ActionDefinition[];
+    /** 형식 값 — 엔진이 `click` 으로 채운다 */
+    type?: ActionDefinition['type'];
   }>;
 
   /**
@@ -1173,6 +1321,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
   }) => {
     // 슬롯 컨텍스트는 window.__slotContextValue를 직접 사용
     // React Context 타이밍 이슈로 useSlotContext() 대신 전역 변수 사용
+    // 단, 첫 렌더 패스에는 전역 값이 아직 없다(SlotProvider 가 useLayoutEffect 로 연다) — 렌더 시점 「제자리 건너뛰기」 판정만
+    // React 문맥 값도 함께 본다(engine-v1.81.1, 7.1.1). 훅은 최상위에 무조건 둔다.
+    const slotContextForRender = useContext(SlotContext);
 
     // 컴포넌트 동적 상태 관리 (loadingActions, apiError, 기타 동적 속성)
     const [localDynamicState, setLocalDynamicState] = useState<Record<string, any>>({
@@ -1351,6 +1502,23 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             }
           });
         }
+
+        // engine-v1.81.2 (7.1.1): 액션 밖 shallow·replace setLocal 의 교체 키 — 사본이 정본 값을 따라왔으면 저장소 A 에서 그 키를 지우고
+        // 표지를 비운다(applySetLocalReplacedKeys 의 뒷정리). 따라오지 않았으면(쓰기 전에 예약된 다시 그리기가 늦게 커밋) 다음 사본까지 미룬다.
+        // 레이아웃 루트만 — 모달 렌더러의 저장소 A 는 건드리지 않는다. 표지 비우기는 위와 같이 같은 커밋의 다른 루트가 다 정리한 뒤(microtask)
+        const replacedKeysMarker = (window as any).__g7SetLocalReplacedKeys;
+        if (layoutKey && replacedKeysMarker && !isCurrentSetLocalReplacedKeysMarker(replacedKeysMarker)) {
+          // 다른 화면에서 만든 표지 — 이 화면의 저장소 A 는 건드리지 않고 비운다
+          (window as any).__g7SetLocalReplacedKeys = undefined;
+        } else if (layoutKey && replacedKeysMarker
+          && renderBaseCaughtUpReplacedKeys(dataContext._local, (window as any).__templateApp?.getGlobalState?.()?._local, replacedKeysMarker)) {
+          setLocalDynamicState(prev => pruneSetLocalReplacedKeys(prev, replacedKeysMarker));
+          queueMicrotask(() => {
+            if ((window as any).__g7SetLocalReplacedKeys === replacedKeysMarker) {
+              (window as any).__g7SetLocalReplacedKeys = undefined;
+            }
+          });
+        }
       }
     }, [dataContext._local]);
 
@@ -1449,6 +1617,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // 최신 부모 데이터 컨텍스트를 참조하는 ref ($parent 바인딩 stale closure 방지)
     // 모달 등에서 부모 상태 접근 시 항상 최신 값을 반환하도록 함
     const parentDataContextRef = useRef<Record<string, any> | undefined>(parentDataContext);
+
+    // onComponentEvent 리스너가 실행 시점에 읽는 최신 데이터·컴포넌트 문맥 (engine-v1.80.0)
+    const listenerContextRef = useRef<{ dataContext: Record<string, any>; componentContext: any } | null>(null);
 
     // 격리된 상태 컨텍스트 (IsolatedStateProvider 내부에서만 유효)
     const isolatedContext = useIsolatedState();
@@ -1655,8 +1826,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       }
     }, [dataContext._localInit, parentDataContext, bindingEngine]);
 
-    // 페이지 전환 상태 구독 (blur_until_loaded 지원)
-    const { isTransitioning } = useTransitionState();
+    // 페이지 전환 상태 구독 (blur_until_loaded 지원) — 흐림 판정이 있을 수 있는 렌더러만 구독한다(responsive 오버라이드가
+    // blur_until_loaded 를 더할 수 있어 함께 켠다). 나머지는 전환 상태가 바뀌어도 다시 그리지 않는다 (engine-v1.82.0)
+    // 두 훅 모두 문맥 읽기 하나뿐이라 렌더마다 골라 불러도 훅 순서가 같다
+    const readTransitionState = (componentDef as any).blur_until_loaded || (componentDef as any).responsive
+      ? useTransitionState
+      : useIdleTransitionState;
+    const { isTransitioning, refreshingSources } = readTransitionState();
 
     // 부모의 Form 컨텍스트 (자동 바인딩용)
     // prop으로 전달된 것이 있으면 우선 사용 (useMemo 타이밍 문제 해결)
@@ -1755,6 +1931,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // 함수 결과도 깊은 병합하여 기존 상태 보존 (Form 자동 바인딩 시 다른 필드 유지)
         if (typeof updates === 'function') {
           const funcResult = updates(effectivePrev);
+          // engine-v1.81.2 (7.1.1): 병합 방식을 밝힌 함수형 갱신(`__g7MergeMode` 표지 — setLocal 의 shallow·replace)은
+          // 함수가 이미 그 방식으로 만든 결과를 그대로 쓴다. 다시 깊게 병합하면 shallow 의 `{}`·키를 줄인 객체가 앞 값을 지우지 못해
+          // 저장소 A 에 앞 선택이 남았다(커스텀 핸들러 `currentSelection: {}` — B·getLocal 은 `{}`, 화면은 앞 선택). 표지가 없는
+          // 함수형 갱신(자동바인딩·플러그인)은 종전대로 깊게 병합한다.
+          const declaredMergeMode = (updates as any).__g7MergeMode;
+          if ((declaredMergeMode === 'shallow' || declaredMergeMode === 'replace') && funcResult && typeof funcResult === 'object') {
+            return funcResult;
+          }
           const merged = deepMergeState(effectivePrev, funcResult);
           return merged;
         }
@@ -1867,6 +2051,27 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         localState = dataContext._local
           ? deepMergeState(dataContext._local, dynamicState)
           : dynamicState;
+        // engine-v1.81.2 (7.1.1): 루트급 렌더러는 늦은 B 사본에만 남은 키(A·정본 B 가 모두 버린 키)를 뺀다 — dropLaggingRenderBaseKeys 참조.
+        // 자식 렌더러는 dataContext._local·dynamicState 가 모두 부모의 같은 화면 문맥이라 해당 없다.
+        if (!parentComponentContext && dataContext._local) {
+          const canonicalLocal = (window as any).__templateApp?.getGlobalState?.()?._local;
+          localState = dropLaggingRenderBaseKeys(
+            localState,
+            dataContext._local,
+            dynamicState,
+            canonicalLocal
+          );
+          // engine-v1.81.2 (7.1.1): 액션 밖 shallow·replace setLocal 이 교체한 키는 정본 B 값으로 그린다 — applySetLocalReplacedKeys 참조.
+          // 레이아웃 루트(layoutKey 를 받는 페이지 루트)만 — 모달 렌더러의 저장소 A 는 모달 자신의 상태라 페이지 B 로 덮지 않는다
+          if (layoutKey) {
+            localState = applySetLocalReplacedKeys(
+              localState,
+              dynamicState,
+              canonicalLocal,
+              (window as any).__g7SetLocalReplacedKeys
+            );
+          }
+        }
       }
 
       // __g7ForcedLocalFields가 있으면 해당 필드만 최우선으로 병합 (비동기 setLocal fallback 지원)
@@ -2196,6 +2401,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       parentDataContext: extendedDataContext,
     }), [extendedDataContext._local, handleSetState, localDynamicState, isolatedContext, extendedDataContext]);
 
+    // `<on listen>`(onComponentEvent) 리스너가 실행 시점에 읽을 최신 문맥 — 구독은 마운트 때 한 번이라
+    // 콜백이 마운트 시점 문맥을 붙잡으면 `{{_local.x}}` 가 옛 값으로 읽히고, 로컬 setState 가 그 옛 스냅샷을
+    // 기준으로 저장소 B 를 맞춘다(리스너가 sequence·conditions 를 실행하게 된 engine-v1.80.0 부터 드러남).
+    listenerContextRef.current = { dataContext: extendedDataContext, componentContext };
+
     /**
      * 조건부 렌더링 평가
      *
@@ -2362,7 +2572,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
       globalSlotContext.registerToSlot(resolvedSlotId, effectiveComponentDef.id, {
         componentDef: componentDefWithoutSlot,
-        dataContext: dataContext,
+        // 루트급 노드(parentComponentContext 없음)는 자기가 만든 화면 문맥을 넘긴다 (engine-v1.81.2, 7.1.1) — 받은 prop 은 마지막 루트
+        // 다시 그리기 때의 B 사본이라, 슬롯 내용(자식 렌더러)이 그 사본과 이 노드의 상태를 다시 깊게 병합하면 이 노드가 뺀 늦은 사본 키
+        // (dropLaggingRenderBaseKeys)·정본으로 맞춘 키(applySetLocalReplacedKeys)가 슬롯 안에서만 되살아났다. 자식 노드의 prop 은 이미
+        // 부모의 화면 문맥이라 종전과 같다
+        dataContext: parentComponentContext ? dataContext : extendedDataContext,
         order: effectiveComponentDef.slotOrder ?? 0,
         parentFormContext: parentFormContextProp ?? null,
         getParentComponentContext: () => componentContext,
@@ -2392,6 +2606,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       resolvedSlotId,
       effectiveComponentDef,
       dataContext,
+      // 루트급 노드의 등록 문맥 (engine-v1.81.2) — componentContext 가 이미 이것에 따라 바뀌므로 등록 횟수는 같다
+      extendedDataContext,
       parentFormContextProp,
       componentContext,
       translationContext,
@@ -2414,7 +2630,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // raw 마커: 번역 면제 — 마커 제거 후 원본 반환
         // @since engine-v1.27.0
         if (isRawWrapped(value)) {
-          return unwrapRaw(value);
+          return stripTranslationParamMarkers(unwrapRaw(value));
         }
 
         // 혼합 보간 시 raw 마커 영역 보호
@@ -2439,8 +2655,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               extendedDataContext
             );
           }
-          // 플레이스홀더를 원본으로 복원
-          return translated.replace(
+          // 플레이스홀더를 원본으로 복원 (번역하지 않은 경우의 `$t:` 인자 값 보호 표식도 걷는다 — engine-v1.80.1)
+          return stripTranslationParamMarkers(translated).replace(
             new RegExp(`${RAW_PLACEHOLDER_MARKER}(\\d+)${RAW_PLACEHOLDER_MARKER}`, 'g'),
             (_m: string, idx: string) => rawSegments[parseInt(idx)]
           );
@@ -2448,8 +2664,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
         // $t:defer: prefix가 있으면 번역하지 않고 원본 반환
         // renderItemChildren에서 올바른 컨텍스트와 함께 처리됨
+        // 번역하지 않고 돌려주는 자리는 `$t:` 인자 값 보호 표식을 걷는다(engine-v1.80.1 — 표식은 번역 엔진만 읽는다)
         if (value.startsWith('$t:defer:')) {
-          return value;
+          return stripTranslationParamMarkers(value);
         }
         // 문자열 내에 $t: 번역 패턴이 있는지 확인
         // $t: 뒤에 번역 키(알파벳, 숫자, 점, 대시, 언더스코어)가 오는 패턴만 매칭
@@ -2463,7 +2680,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
             (trimmed.startsWith('[') && trimmed.endsWith(']'))
           ) {
-            return value;
+            return stripTranslationParamMarkers(value);
           }
           return translationEngine.resolveTranslations(
             value,
@@ -2518,6 +2735,19 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     );
 
     /**
+     * `_global` 에 묶인 제어 입력의 표시용 대기 값 (engine-v1.80.1, 7.1.1 — 7.1.0 부터의 결함)
+     *
+     * `value="{{_global.…}}"` + `<on type="change"><set-state target="global">` 꼴의 입력칸은 키 입력마다 전역 상태를 쓰는데,
+     * 전역 상태의 다시 그리기는 미뤄진다(TemplateApp.setGlobalState → 동적 import → startTransition). 이벤트 안에 바로 반영되는
+     * React 갱신이 없으면 React 가 입력을 직전 렌더 값으로 되돌려, 다음 키가 미뤄진 렌더보다 먼저 오면 직전 글자가 빠졌다.
+     * onChange 에서 입력 값을 잡아 이 노드만 바로 다시 그리고, 상태가 그 값이 되면 확정한다(자동바인딩 칸의 같은 처리는
+     * globalAutoBindingPendingRef). 상태가 대기 전 값·이 칸이 쓴 값이 아닌 다른 값으로 바뀌거나(외부 초기화·값 가공), 마지막
+     * 입력 뒤 HELD_INPUT_EXPIRY_MS 동안 상태가 따라오지 않으면(입력을 받아들이지 않는 onChange) 대기 값을 버린다.
+     */
+    const heldInputPendingRef = useRef<{ value: string; baseline: string; written: Set<string> } | null>(null);
+    const [heldInputRenderTick, setHeldInputRenderTick] = useState(0);
+
+    /**
      * Props 처리
      *
      * 1. 데이터 바인딩 ({{variable}})
@@ -2547,7 +2777,10 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // "내가 직접 반복 렌더한다" 고 선언한 키가 중첩 위치에서는 선평가됐다 —
       // 그 시점에는 항목 컨텍스트가 없으므로 표현식이 stale 값으로 고정된다.
       // 저장소 전수 스캔 기준 현재 해당 위치 0건(예방 목적). @since engine-v1.55.1
-      const nestedBindingOptions = { ...(bindingOptions ?? {}), skipBindingKeys };
+      // 문자열 보간은 아래 2단계(resolveTranslationsDeep)가 곧바로 번역하므로 `$t:키|이름={{값}}` 의 인자 자리 값을
+      // 보호한다 — 값의 `&`·`|`·`=`·끝 ` /` 가 인자 구분자로 읽히지 않는다(engine-v1.80.1).
+      const interpolationOptions = { ...(bindingOptions ?? {}), protectTranslationParams: true };
+      const nestedBindingOptions = { ...interpolationOptions, skipBindingKeys };
 
       // _computed 참조 표현식의 캐시 스킵 여부를 판별하는 헬퍼
       // _computed는 컴포넌트마다 _local 기반으로 재계산되므로 컴포넌트 간 공유 캐시 사용 시
@@ -2634,12 +2867,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               componentName: effectiveComponentDef.name,
               propName: key,
             } : undefined;
-            props[key] = bindingEngine.resolveBindings(value, extendedDataContext, bindingOptions, trackingInfo);
+            props[key] = bindingEngine.resolveBindings(value, extendedDataContext, interpolationOptions, trackingInfo);
           }
         } else if (Array.isArray(value)) {
           props[key] = value.map((item) =>
             typeof item === 'string'
-              ? bindingEngine.resolveBindings(item, extendedDataContext, bindingOptions)
+              ? bindingEngine.resolveBindings(item, extendedDataContext, interpolationOptions)
               : typeof item === 'object' && item !== null
                 ? bindingEngine.resolveObject(item, extendedDataContext, nestedBindingOptions)
                 : item
@@ -2696,6 +2929,52 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         extendedDataContext,
         { componentContext, actionDispatcher }
       );
+
+      // 3.5 `_global` 에 묶인 제어 입력의 표시용 대기 값 (engine-v1.80.1 — 위 heldInputPendingRef 설명)
+      // 자동바인딩 칸(name + 폼 dataKey)은 아래 propsWithAutoBinding 이 값을 정하므로 여기서 다루지 않는다.
+      const rawValueProp = effectiveComponentDef.props?.value;
+      if (
+        typeof rawValueProp === 'string'
+        && rawValueProp.includes('{{')
+        && rawValueProp.includes('_global')
+        && typeof props.onChange === 'function'
+        && props.type !== 'checkbox'
+        && props.type !== 'radio'
+        && !(props.name && parentFormContext?.dataKey)
+      ) {
+        const boundOnChange = props.onChange;
+        const baselineText = String(props.value ?? '');
+        props.onChange = (...args: any[]) => {
+          const target = args[0]?.target;
+          if (target && typeof target.value === 'string') {
+            const pending = heldInputPendingRef.current;
+            const written = pending ? pending.written : new Set<string>();
+            written.add(target.value);
+            const next = { value: target.value, baseline: pending ? pending.baseline : baselineText, written };
+            heldInputPendingRef.current = next;
+            setHeldInputRenderTick((tick) => tick + 1);
+            setTimeout(() => {
+              if (heldInputPendingRef.current === next) {
+                heldInputPendingRef.current = null;
+                setHeldInputRenderTick((tick) => tick + 1);
+              }
+            }, HELD_INPUT_EXPIRY_MS);
+          }
+          return boundOnChange(...args);
+        };
+
+        const held = heldInputPendingRef.current;
+        if (held) {
+          const stateText = String(props.value ?? '');
+          if (stateText === held.value) {
+            heldInputPendingRef.current = null;
+          } else if (stateText === held.baseline || held.written.has(stateText)) {
+            props.value = held.value;
+          } else {
+            heldInputPendingRef.current = null;
+          }
+        }
+      }
 
       // 4. classMap 처리 (조건부 스타일 매핑)
       // classMap이 있으면 해석하여 기존 className과 병합
@@ -2781,6 +3060,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       isComplexExpression,
       extractSingleBinding,
       isInsideIteration,
+      heldInputRenderTick,
+      parentFormContext?.dataKey,
     ]);
 
     /**
@@ -3005,7 +3286,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             }
           } else if (text.includes('{{')) {
             // 문자열 보간
-            resolvedText = bindingEngine.resolveBindings(text, extendedDataContext, { skipCache: true }, textTrackingInfo);
+            // 바로 아래 2단계가 번역하므로 `$t:` 인자 자리 값을 보호한다 (engine-v1.80.1)
+            resolvedText = bindingEngine.resolveBindings(text, extendedDataContext, { skipCache: true, protectTranslationParams: true }, textTrackingInfo);
           }
 
           // 2단계: 다국어 번역 처리 (기존 헬퍼 재사용)
@@ -3544,36 +3826,42 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               continue;
             }
 
+            // 로그에 쓸 리스너 이름 — handler 가 없는 모양(actionRef 만)도 있다
+            const listenerLabel = eventDef.handler ?? eventDef.actionRef ?? '(sequence)';
+
             // 이벤트 콜백 함수 생성
             const eventCallback = async (eventData?: any) => {
               try {
+                // 실행 시점의 최신 문맥 — 마운트 시점 문맥(클로저)은 그 뒤의 상태 변경을 모른다
+                const latest = listenerContextRef.current;
+                const listenerDataContext = latest?.dataContext ?? extendedDataContext;
+                const listenerComponentContext = latest?.componentContext ?? componentContext;
+
                 // 이벤트 데이터를 포함한 확장 컨텍스트 생성
                 const eventContext = {
-                  ...extendedDataContext,
+                  ...listenerDataContext,
                   _eventData: eventData,
                 };
 
-                // 핸들러 생성 및 실행
+                // 액션 정의를 통째로 넘긴다(event 키만 뺀다) — 키를 골라 담으면 암묵 sequence·conditions·
+                // switch·if·actionRef·target·resultTo 가 경고 없이 버려졌다(engine-v1.80.0, #753).
+                const { event: _eventName, ...actionDef } = eventDef;
                 const handler = actionDispatcher.createHandler(
-                  {
-                    handler: eventDef.handler,
-                    params: eventDef.params,
-                    onSuccess: eventDef.onSuccess,
-                    onError: eventDef.onError,
-                  },
+                  { ...actionDef, type: 'click' } as ActionDefinition,
                   eventContext,
-                  componentContext
+                  listenerComponentContext
                 );
 
                 const result = await handler(new CustomEvent(eventDef.event, { detail: eventData }));
                 logger.log(
-                  `onComponentEvent "${eventDef.event}" handled: ${eventDef.handler} (Component: ${componentDef.id})`,
+                  `onComponentEvent "${eventDef.event}" handled: ${listenerLabel} (Component: ${componentDef.id})`,
                   { eventData, result }
                 );
-                return result;
+                // 보낸 쪽 `_local._eventResult` 가 받는 쪽의 성공·실패·결과를 알 수 있게 표식 결과로 돌려준다
+                return makeLayoutListenerResult(result, { sequence: actionDef.handler === 'sequence' });
               } catch (error) {
                 logger.error(
-                  `onComponentEvent "${eventDef.event}" failed: ${eventDef.handler} (Component: ${componentDef.id})`,
+                  `onComponentEvent "${eventDef.event}" failed: ${listenerLabel} (Component: ${componentDef.id})`,
                   error
                 );
                 throw error;
@@ -3741,13 +4029,51 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      *
      * 컴포넌트별로 debounce 타이머를 관리하여 빈번한 상태 업데이트를 최적화합니다.
      */
-    const autoBindingDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // 디스패처 예약(engine-v1.81.2)이면 표식 AUTOBINDING_DEBOUNCE_VIA_DISPATCHER — 「대기 중」 판정(!== null)은 종전과 같다
+    const autoBindingDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | typeof AUTOBINDING_DEBOUNCE_VIA_DISPATCHER | null>(null);
+    // 디스패처 flush 레지스트리 키 — 인스턴스 고유, 첫 예약 때 정한다 (engine-v1.81.2)
+    const autoBindingDebounceKeyRef = useRef<string>('');
     // debounce 대기 중 사용자 입력값 추적 (플리커 방지)
     // debounce 중 부모 리렌더링 시 stale state value 대신 pending value를 사용
     const autoBindingPendingValueRef = useRef<any>(undefined);
+    /**
+     * `_global` 자동바인딩 칸의 표시용 대기 값 (engine-v1.80.1, 7.1.1 — 7.1.0 부터의 결함)
+     *
+     * `_global.*` dataKey 칸은 입력을 `_globalSetState`(TemplateApp.setGlobalState)로 쓰는데, 이 함수는 상태만 바로 바꾸고 다시
+     * 그리기는 동적 import 뒤 `startTransition` 으로 미룬다. 이벤트 안에 바로 반영되는 React 갱신이 없으니 React 가 제어 입력을
+     * 직전 렌더 값으로 되돌리고, 다음 키가 미뤄진 렌더보다 먼저 오면 직전 글자가 빠졌다(12ms 입력에서 약 12%).
+     * 그 칸만 이 대기 값으로 바로 다시 그린다 — 상태 쓰기는 그대로다. `baseline` 은 대기를 시작할 때 화면이 보던 상태 값(미뤄진
+     * 렌더가 아직 오지 않음), `written` 은 이 칸이 대기 중에 쓴 값들(미뤄진 렌더가 중간 값을 가져와도 자기 값으로 알아본다).
+     * 상태가 대기 값이 되면 확정, 둘 중 어느 것도 아닌 값으로 바뀌면(단추 초기화 등) 대기 값을 버린다.
+     * 디바운스 대기 값(autoBindingPendingValueRef)과 섞지 않는다.
+     */
+    const globalAutoBindingPendingRef = useRef<{ value: any; baseline: string; written: Set<string> } | null>(null);
+    const [globalAutoBindingRenderTick, setGlobalAutoBindingRenderTick] = useState(0);
     // 대기 값을 만든 화면 경로 (@since engine-v1.79.0) — 같은 레이아웃의 다른 경로로 옮겨도 입력칸 인스턴스는 남으므로,
     // 경로가 바뀌었으면 이전 화면의 대기 값을 새 화면에 보이지 않게 버린다
     const autoBindingPendingPathRef = useRef<string>('');
+    /**
+     * 경로 이동으로 버린 디바운스 대기 값과 칸 다시 마운트 차례 (engine-v1.81.2, 7.1.1 — 디바운스 자동바인딩 `8951f1faf1` 부터·7.1.0 포함)
+     *
+     * 디바운스 대기 중에는 렌더러가 칸을 다시 그리지 않아 칸이 받은 `value` 는 치기 전 값에 멈춰 있고, 화면 글자는 칸 컴포넌트의
+     * 지역 표시값(Input·Textarea 의 localValue)이 들고 있다. 위에서 다른 경로의 대기 값을 버려도 그 지역 표시값은 남는다 — 새 화면
+     * 값이 치기 전 값과 같으면 `value` 가 안 바뀌어 컴포넌트가 따라오지 않고, 다르면 포커스 중 「내가 보낸 값의 메아리」 판정에
+     * 걸린다(관리자 상품 수정 → 등록 이동 뒤 정가 칸에 앞 입력이 남음). 버린 값이 새 화면 표시 값과 다를 때만 차례를 올려
+     * `<Component>` 를 다시 마운트한다. 차례가 0 이면 key 를 붙이지 않는다(종전과 같은 요소).
+     */
+    const autoBindingDroppedPendingRef = useRef<{ value: any } | null>(null);
+    const autoBindingRemountSeqRef = useRef(0);
+    // 커밋 효과가 이미 반영한 다시 마운트 판정의 기록 (engine-v1.81.2) — 같은 판정을 두 번 세지 않는다(autoBindingRemountDecisions 참조)
+    const autoBindingAppliedRemountRecordRef = useRef<{ value: any } | null>(null);
+    /**
+     * 대기 값이 생긴 뒤 이 칸이 본 「쓰기 전 상태 값」과 쓴 값 (engine-v1.81.2, 7.1.1 — 디바운스 자동바인딩 `8951f1faf1` 부터·7.1.0 포함)
+     *
+     * 타이머가 쓴 뒤에도 상태가 대기 값과 같아질 때까지는 대기 값을 보인다(쓰기 ~ 반영 사이 렌더의 옛 값 깜빡임 방지). 그런데 그 칸의
+     * change 동작이 같은 칸을 **다른 값으로 다시 쓰면**(대문자·숫자만·되돌리기) 상태가 대기 값이 되는 일이 없어, 칸은 친 글자를 계속
+     * 보이고 상태·저장 본문은 다시 쓴 값이었다(화면 ≠ 상태). 반영 전 렌더의 상태 값은 이 묶음 안의 값이고, 그 밖의 값이거나 정본 B 의
+     * 그 경로가 대기 값이 아니게 됐으면 「다시 쓰였다」 로 보고 대기 값을 버린다.
+     */
+    const autoBindingPendingSeenRef = useRef<Set<string> | null>(null);
 
     /**
      * 자동바인딩 경로 레지스트리 등록/해제 (engine-v1.43.0+)
@@ -3902,6 +4228,31 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
        *   반드시 관련 설계 검토 후 논의할 것.
        */
       const performStateUpdate = (newValue: any) => {
+        // `_global.xxx` dataKey 칸 (engine-v1.81.1, 7.1.1 — `_global.` 접두사 지원(d392dd42cd) 부터의 결함)
+        //
+        // 전역 폼의 parentFormContext.state 는 「마지막 렌더 때의 dataContext._global 스냅샷」이다. 종전에는 그 위에 이번 칸만
+        // 얹은 전역 전체 사본을 _globalSetState(TemplateApp.setGlobalState 의 `{...globalState, ...updates}`)로 넘겼다. 전역
+        // 다시 그리기는 동적 import 뒤 startTransition 으로 미뤄지므로, 다음 칸의 첫 글자가 그 렌더보다 먼저 오면 앞 칸 값이 없는
+        // 사본이 앞 칸을 지웠고(주문서 배송지 창 4칸 중 1칸만 남음), 사본에 든 `_local` 이 그사이 setLocal 로 쓴 저장소 B 도
+        // 되돌렸다. 또 그 전역 사본을 지역 상태 캐시(__g7PendingLocalState)에 실어, 그 칸의 지역 setState 가 전역 키 전부를
+        // `_local` 에 보충했다.
+        // → 쓰기 시점 전역(prev)을 받는 함수형 갱신으로 이 칸 경로만 쓰고, 지역 상태 캐시는 건드리지 않는다. 같은 파일
+        //   `_localInit` 동기화(engine-v1.54.5)와 같은 원칙이다. 전역 폼은 저장소 A/B 에 쓰지 않는다(종전과 같음).
+        if ((parentFormContext as any)._isGlobal) {
+          const trackGlobalChanges = parentFormContext.trackChanges;
+          // audit:allow local-store-write-must-mirror 전역 폼의 setState 는 _globalSetState(TemplateApp.setGlobalState)다 — `_local` 쓰기가 아니라 저장소 A/B 미러 대상이 아니다
+          parentFormContext.setState!((prev: Record<string, any>) => {
+            const next = setNestedValue(prev || {}, fullPath, newValue);
+            if (trackGlobalChanges) {
+              next.hasChanges = true;
+            }
+
+            return next;
+          });
+
+          return;
+        }
+
         // 중요: prev (localDynamicState) 대신 parentFormContext.state (extendedDataContext._local)를 기반으로 사용
         // 그래야 init_actions로 설정된 API 데이터가 손실되지 않음
         const baseState = parentFormContext.state || {};
@@ -3945,8 +4296,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // onComplete 콜백: 상태 업데이트 완료 후 실행 (액션 핸들러 등)
       const debouncedStateUpdate = (newValue: any, onComplete?: () => void) => {
         if (debounceMs && debounceMs > 0) {
-          // 기존 타이머 정리
-          if (autoBindingDebounceTimerRef.current) {
+          // 기존 타이머 정리 (디스패처 예약이면 같은 키의 다음 debouncedCall 이 앞 타이머를 취소한다)
+          if (autoBindingDebounceTimerRef.current && autoBindingDebounceTimerRef.current !== AUTOBINDING_DEBOUNCE_VIA_DISPATCHER) {
             clearTimeout(autoBindingDebounceTimerRef.current);
           }
           // 새 타이머 설정
@@ -3954,15 +4305,29 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // 같은 레이아웃의 다른 경로로 가도 입력칸 인스턴스는 남으므로 타이머가 새 화면에서 터지는데, 그 쓰기의
           // base 는 예약 때의 `_local` 전체(이전 레코드 id 등)라 비워 둔 상태 소유 루트의 저장소 A 를 다시 오염시킨다.
           const scheduledPath = typeof window !== 'undefined' ? window.location.pathname : '';
-          autoBindingDebounceTimerRef.current = setTimeout(() => {
-            if (typeof window !== 'undefined' && window.location.pathname !== scheduledPath) {
+          const runScheduledWrite = () => {
+            // engine-v1.81.2: 주소만 바꾼 같은 화면(navigate replace:true 로 경로가 바뀜 — 경로 전환 없음)은 다른 경로로 보지 않는다
+            if (typeof window !== 'undefined' && window.location.pathname !== scheduledPath
+              && !isUrlOnlyPathAlias(scheduledPath, window.location.pathname)) {
               autoBindingDebounceTimerRef.current = null;
-              // 표시용 대기 값도 버린다 — 남기면 새 화면 칸에 이전 화면 입력이 보인다
+              // 표시용 대기 값도 버린다 — 남기면 새 화면 칸에 이전 화면 입력이 보인다.
+              // 칸 컴포넌트의 지역 표시값은 다음 렌더에서 다시 마운트 여부를 정한다 (engine-v1.81.2)
+              if (autoBindingPendingValueRef.current !== undefined) {
+                autoBindingDroppedPendingRef.current = { value: autoBindingPendingValueRef.current };
+                ensureCompositionTracker();
+              }
               autoBindingPendingValueRef.current = undefined;
+              autoBindingPendingSeenRef.current = null;
+              // `_global` 칸의 표시용 대기 값(같은 입력)도 버린다 — 남기면 그 값이 다시 보여 다시 마운트 비교가 늘 같다 (engine-v1.81.2)
+              if ((parentFormContext as any)._isGlobal) {
+                globalAutoBindingPendingRef.current = null;
+              }
               return;
             }
             performStateUpdate(newValue);
             autoBindingDebounceTimerRef.current = null;
+            // 이 칸이 쓴 값 — 반영 전 렌더가 이 값을 보여도 「다시 쓰임」 이 아니다 (engine-v1.81.2, autoBindingPendingSeenRef 참조)
+            autoBindingPendingSeenRef.current?.add(String(newValue ?? ''));
             // pending ref는 여기서 클리어하지 않음!
             // React setState는 비동기 배치되므로, 이 시점에서 클리어하면
             // refs 클리어 후 ~ state 반영 전 사이 렌더에서 stale 값이 표시됨 (플리커)
@@ -3970,11 +4335,30 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
             // 상태 업데이트 후 콜백 실행
             // __g7PendingLocalState 캐시를 사용하여 액션 핸들러에서 즉시 최신 값을 읽을 수 있음
             if (onComplete) {
-              onComplete();
+              // engine-v1.81.2: 이 칸의 change 동작은 타이머가 낳은 것이라 다른 칸의 대기 쓰기를 앞당기지 않는다(runWithoutDebounceFlush) —
+              // 사용자가 아직 치고 있는 칸의 디바운스가 깨지지 않게 한다. 디스패처가 없으면 종전대로 부른다
+              if (typeof actionDispatcher?.runWithoutDebounceFlush === 'function') {
+                actionDispatcher.runWithoutDebounceFlush(onComplete);
+              } else {
+                onComplete();
+              }
               // 콜백 실행 후 캐시 정리
               (window as any).__g7PendingLocalState = null;
             }
-          }, debounceMs);
+          };
+          // engine-v1.81.2 (7.1.1 자동바인딩 디바운스 `8951f1faf1` 부터·7.1.0 포함): 예약을 디스패처의 debouncedCall 로 건다.
+          // 지역 setTimeout 은 「비디바운스 액션 직전 대기 중 디바운스 실행」(flushPendingDebounceTimers) 대상이 아니어서, 300ms 안에
+          // 누른 「저장」 이 마지막 입력 없이 나갔다(관리자 상품 정가·쿠폰 최소주문금액). 키는 인스턴스 고유라 컴포넌트 id 접두 정리
+          // (clearDebounceTimers(componentId)) 대상이 아니다 — 종전처럼 언마운트 뒤에도 실행된다. 실행 본문은 같다.
+          if (typeof actionDispatcher?.debouncedCall === 'function') {
+            if (!autoBindingDebounceKeyRef.current) {
+              autoBindingDebounceKeyRef.current = `__g7AutoBindingDebounce:${++autoBindingDebounceKeySeq}`;
+            }
+            autoBindingDebounceTimerRef.current = AUTOBINDING_DEBOUNCE_VIA_DISPATCHER;
+            actionDispatcher.debouncedCall(autoBindingDebounceKeyRef.current, debounceMs, runScheduledWrite);
+          } else {
+            autoBindingDebounceTimerRef.current = setTimeout(runScheduledWrite, debounceMs);
+          }
         } else {
           performStateUpdate(newValue);
           // debounce가 없어도 동일하게 처리
@@ -4015,16 +4399,52 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // debounce 활성 시 pending value 즉시 저장 (플리커 방지)
           // useMemo 재계산 시 stale state value 대신 이 값을 사용
           if (debounceMs && debounceMs > 0) {
+            // 대기가 새로 시작되면 지금 칸이 보던 상태 값부터 기록한다 (engine-v1.81.2, autoBindingPendingSeenRef 참조)
+            if (autoBindingPendingValueRef.current === undefined || autoBindingPendingSeenRef.current === null) {
+              autoBindingPendingSeenRef.current = new Set([String(currentValue ?? '')]);
+            }
             autoBindingPendingValueRef.current = newValue;
             autoBindingPendingPathRef.current = typeof window !== 'undefined' ? window.location.pathname : '';
+            // 새 경로에서 다시 쳤으면 지금 화면 글자가 사용자 입력이다 — 앞서 버린 값의 다시 마운트 기록은 버린다
+            // (늦은 새 화면 렌더가 입력 중인 칸을 다시 마운트해 포커스·조합을 끊지 않게, engine-v1.81.2)
+            // 기록이 있었으면 이 칸을 바로 다시 그린다 — 기록을 보고 「다시 마운트」 로 판정한 전환 렌더가 양보 중이면 그 렌더를 끊고
+            // 다시 판정하게 한다(디바운스 입력은 상태를 바꾸지 않아, 그대로 두면 끊김 없이 이어져 옛 판정으로 커밋된다)
+            if (autoBindingDroppedPendingRef.current !== null) {
+              autoBindingDroppedPendingRef.current = null;
+              setGlobalAutoBindingRenderTick((tick) => tick + 1);
+            }
+          }
+
+          // `_global` 칸: 표시용 대기 값을 잡고 이 칸만 바로 다시 그린다 — 전역 상태의 다시 그리기는 미뤄지므로, 그대로 두면
+          // React 가 이벤트 끝에 입력을 옛 값으로 되돌려 다음 키에서 글자가 빠진다 (engine-v1.80.1)
+          if ((parentFormContext as any)._isGlobal) {
+            const pending = globalAutoBindingPendingRef.current;
+            const written = pending ? pending.written : new Set<string>();
+            written.add(String(newValue ?? ''));
+            globalAutoBindingPendingRef.current = {
+              value: newValue,
+              baseline: pending ? pending.baseline : String(currentValue ?? ''),
+              written,
+            };
+            setGlobalAutoBindingRenderTick((tick) => tick + 1);
           }
 
           // debounce 콜백에서 사용할 이벤트 복사본 생성
           // React SyntheticEvent는 비동기적으로 접근하면 속성이 null이 되므로
           // 필요한 값을 미리 복사해둠 (300ms debounce 후에도 값에 접근 가능)
+          //
+          // engine-v1.81.1 (7.1.1): 동작이 붙은 칸이면 target 을 표현식용 요소 스냅샷(toExpressionData — 자동바인딩이 없는
+          // 칸의 `$event` 와 같은 변환기)으로 시작한다. 종전 사본은 value·name·type·checked 만 실어, change 동작의
+          // `$event.target.selectedOptions[0]?.dataset?.url`·`$event.target.dataset`·`files` 가 늘 비었다(관리자 메뉴 폼의
+          // 「사용자 정의 메뉴」 선택칸이 주소 칸을 못 채움). 아래 네 키는 종전 값 그대로 덮는다.
+          const targetSnapshot = propsWithoutFormConfig.onChange && eventOrValue?.target
+            && typeof eventOrValue.target === 'object'
+            ? toExpressionData(eventOrValue.target)
+            : null;
           const eventCopy = eventOrValue?.target
             ? {
                 target: {
+                  ...(targetSnapshot && typeof targetSnapshot === 'object' ? targetSnapshot as Record<string, unknown> : {}),
                   value: newValue,
                   name: eventOrValue.target.name,
                   type: eventOrValue.target.type,
@@ -4053,26 +4473,126 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         // @since engine-v1.79.0: 다른 경로에서 만든 대기 값은 이 화면의 값이 아니다 — 버리고 지금 상태를 쓴다
         if (autoBindingPendingValueRef.current !== undefined
           && typeof window !== 'undefined'
-          && autoBindingPendingPathRef.current !== window.location.pathname) {
+          && autoBindingPendingPathRef.current !== window.location.pathname
+          // engine-v1.81.2: 주소만 바꾼 같은 화면(navigate replace:true 로 경로가 바뀜)은 다른 경로로 보지 않는다
+          && !isUrlOnlyPathAlias(autoBindingPendingPathRef.current, window.location.pathname)) {
+          // 다시 마운트 기록은 타이머가 아직 실행되지 않은(쓰기가 실제로 버려지는) 대기 값만 한다 (engine-v1.81.2).
+          // 쓰기를 마친 대기 값은 확정 렌더 전까지 남아 있는데(위 runScheduledWrite 주석), 그 칸의 change 동작이 다른 경로로
+          // 옮기면 여기서 보인다 — 이미 옛 경로에서 실행된 쓰기라 버리기만 한다(engine-v1.79.0 과 같음). 기록하면 입력 중인 칸이
+          // 다시 마운트돼 포커스·조합이 끊긴다
+          if (autoBindingDebounceTimerRef.current !== null) {
+            autoBindingDroppedPendingRef.current = { value: autoBindingPendingValueRef.current };
+            ensureCompositionTracker();
+          }
           autoBindingPendingValueRef.current = undefined;
+          autoBindingPendingSeenRef.current = null;
+          // `_global` 칸의 표시용 대기 값(같은 입력)도 버린다 — 남기면 아래에서 그 값을 다시 보여 화면 ≠ 상태가 남는다 (engine-v1.81.2).
+          // 쓰기가 실제로 버려지는(타이머 대기 중) 때만 — 이미 전역에 쓴 값이면 그 표시 대기 값은 늦은 전역 렌더 전 깜빡임을 막는 그대로 둔다
+          if ((parentFormContext as any)._isGlobal && autoBindingDebounceTimerRef.current !== null) {
+            globalAutoBindingPendingRef.current = null;
+          }
         }
         if (autoBindingPendingValueRef.current !== undefined) {
           if (autoBindingDebounceTimerRef.current !== null) {
             // 타이머 실행 중 → 사용자 입력 중, pending value 사용
             effectiveValue = autoBindingPendingValueRef.current;
+            // 쓰기 전 렌더가 본 상태 값 — 쓰기 뒤 반영 전 렌더가 이 값을 보여도 「다시 쓰임」 이 아니다 (engine-v1.81.2)
+            autoBindingPendingSeenRef.current?.add(String(currentValue ?? ''));
           } else {
             // 타이머 완료 (null) → state 반영 대기 중
             // state가 pending 값과 일치하면 확정 → pending 클리어
-            if (String(currentValue ?? '') === String(autoBindingPendingValueRef.current)) {
+            const currentText = String(currentValue ?? '');
+            // null 대기 값(「전체」 같은 null 선택지)은 상태 쪽과 같은 규칙으로 빈 글자로 본다 (engine-v1.81.2)
+            const pendingText = String(autoBindingPendingValueRef.current ?? '');
+            if (currentText === pendingText) {
               autoBindingPendingValueRef.current = undefined;
+              autoBindingPendingSeenRef.current = null;
               effectiveValue = currentValue ?? '';
             } else {
-              // state가 아직 반영되지 않음 → pending value 유지 (플리커 방지)
-              effectiveValue = autoBindingPendingValueRef.current;
+              // engine-v1.81.2 (7.1.1): 그 칸의 change 동작 등이 같은 칸을 다른 값으로 다시 썼으면 대기 값을 버린다 — autoBindingPendingSeenRef 참조.
+              // ① 정본 B 의 그 경로가 대기 값이 아니다(이 칸의 쓰기는 B 에 동기로 들어가므로, 다르면 그 뒤 누가 다시 썼다 — 전역 칸·B 를 못 읽는
+              //    환경·경로가 없는 B 는 판정하지 않는다) ② 상태 값이 대기 중에 본 값·이 칸이 쓴 값 어느 것도 아니다(모달처럼 B 밖 저장소)
+              const seen = autoBindingPendingSeenRef.current;
+              const liveLocal = (parentFormContext as any)._isGlobal
+                ? undefined
+                : (window as any).__templateApp?.getGlobalState?.()?._local;
+              const liveValue = liveLocal && typeof liveLocal === 'object' ? getNestedValue(liveLocal, fullPath) : undefined;
+              const rewritten = (liveValue !== undefined && String(liveValue ?? '') !== pendingText)
+                || (seen !== null && !seen.has(currentText));
+              if (rewritten) {
+                autoBindingPendingValueRef.current = undefined;
+                autoBindingPendingSeenRef.current = null;
+                effectiveValue = currentValue ?? '';
+              } else {
+                // state가 아직 반영되지 않음 → pending value 유지 (플리커 방지)
+                effectiveValue = autoBindingPendingValueRef.current;
+              }
             }
           }
         } else {
           effectiveValue = currentValue ?? '';
+        }
+
+        // `_global` 칸의 표시용 대기 값: 상태가 대기 값이 되면 확정, 이 칸이 쓴 중간 값이면 대기 값 유지,
+        // 그 밖의 값으로 바뀌었으면(외부 초기화) 버리고 상태 값을 쓴다
+        const globalPending = (parentFormContext as any)._isGlobal ? globalAutoBindingPendingRef.current : null;
+        if (globalPending) {
+          const stateText = String(currentValue ?? '');
+          if (stateText === String(globalPending.value ?? '')) {
+            globalAutoBindingPendingRef.current = null;
+          } else if (stateText === globalPending.baseline || globalPending.written.has(stateText)) {
+            // 미뤄진 렌더가 아직 오지 않았거나(입력 전 값) 이 칸이 쓴 중간 값을 가져왔다 — 대기 값을 보인다.
+            // 디바운스 대기 값이 있으면 그쪽이 이미 더 새 값을 보이고 있으므로 그대로 둔다
+            //
+            // 단, 바깥이 이 칸을 **입력 전 값으로 되돌린** 경우도 상태가 baseline 과 같아 이 분기로 온다(engine-v1.81.1,
+            // 7.1.1 — 종전에는 대기 값이 시한 없이 남아 「화면 = 입력한 글자, 상태 = 빈 값」 이 계속됐다). 디바운스 없는
+            // 칸은 같은 이벤트 안에서 입력 값을 동기로 쓰므로, 쓰기 정본의 그 경로가 **입력 전 값(baseline)이나 이 칸이 쓴 중간
+            // 값으로 돌아가 있으면** 「마지막 입력 뒤 바깥이 되돌림」 이다. 정본이 대기 값이면 「렌더만 늦음」 이고, 정본이 그 밖의
+            // 값이면(같은 칸의 change 동작이 가공해 다시 씀 — 대문자·숫자만 등) 종전처럼 미뤄진 렌더를 기다린다 — 여기서 버리면
+            // 렌더 전 키 입력이 옛 값에 붙어 손실이 되살아난다. 정본(TemplateApp)을 못 읽는 환경이면 종전 판정을 쓴다.
+            const liveGlobal = !(debounceMs && debounceMs > 0)
+              ? (window as any).__templateApp?.getGlobalState?.()
+              : undefined;
+            const liveText = liveGlobal && typeof liveGlobal === 'object'
+              ? String(getNestedValue(liveGlobal, fullPath) ?? '')
+              : null;
+            if (liveText !== null
+              && liveText !== String(globalPending.value ?? '')
+              && (liveText === globalPending.baseline || globalPending.written.has(liveText))) {
+              globalAutoBindingPendingRef.current = null;
+            } else if (autoBindingPendingValueRef.current === undefined) {
+              effectiveValue = globalPending.value;
+            }
+          } else {
+            // 상태가 이 칸이 쓰지 않은 값으로 바뀌었다(외부 초기화 등) — 대기 값을 버리고 상태 값을 쓴다
+            globalAutoBindingPendingRef.current = null;
+          }
+        }
+
+        // 경로 이동으로 버린 대기 값이 이번 표시 값과 다르면 칸을 다시 마운트한다 — 칸 컴포넌트의 지역 표시값에 남은
+        // 이전 화면 입력을 새 화면 값으로 다시 잡게 한다 (engine-v1.81.2, 위 autoBindingDroppedPendingRef 설명)
+        if (autoBindingDroppedPendingRef.current) {
+          // 객체 값(다국어 칸 등)은 내용으로 비교한다 — String(객체) 는 늘 같은 글자라 다시 마운트하지 못한다
+          const displayText = (v: any): string => {
+            if (v !== null && typeof v === 'object') {
+              try { return JSON.stringify(v); } catch { return String(v); }
+            }
+
+            return String(v ?? '');
+          };
+          // 판정만 한다 — 차례 +1·기록 비움은 이 렌더가 커밋된 뒤 효과에서 (engine-v1.81.2, autoBindingRemountDecisions 참조).
+          // 같은 이름의 칸에서 IME 조합 중이면 사용자가 새 화면에서 다시 치는 중이다 — 다시 마운트하지 않는다(조합이 끊긴다)
+          const record = autoBindingDroppedPendingRef.current;
+          const remount = !(composingFieldName !== null && composingFieldName === name)
+            && displayText(record.value) !== displayText(effectiveValue);
+          const autoBoundProps: Record<string, any> = {
+            ...propsWithoutFormConfig,
+            value: effectiveValue,
+            onChange: autoOnChange,
+          };
+          autoBindingRemountDecisions.set(autoBoundProps, { record, remount });
+
+          return autoBoundProps;
         }
 
         return {
@@ -4081,7 +4601,48 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           onChange: autoOnChange,
         };
       }
-    }, [stableResolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce, registry, componentDef.name]);
+    }, [stableResolvedProps, parentFormContext, parentFormContext.state, parentFormContext.debounce, registry, componentDef.name, globalAutoBindingRenderTick, actionDispatcher]);
+
+    /**
+     * 커밋된 렌더의 다시 마운트 판정을 반영한다 (engine-v1.81.2, 7.1.1 — autoBindingRemountDecisions 참조)
+     *
+     * 효과는 커밋된 렌더의 props 만 본다. 다시 마운트였으면 차례를 올리고, 판정한 기록이 아직 그대로면 비운다. 끊겨 버려진 렌더의 판정은
+     * 여기 오지 않으므로, 그 사이 사용자가 다시 친 칸(기록이 지워짐)은 다음 렌더에서 다시 판정돼 다시 마운트되지 않는다. 무조건 호출 훅.
+     */
+    useLayoutEffect(() => {
+      const decision = autoBindingRemountDecisions.get(propsWithAutoBinding);
+      if (!decision || decision.record === autoBindingAppliedRemountRecordRef.current) return;
+      autoBindingAppliedRemountRecordRef.current = decision.record;
+      if (decision.remount) {
+        autoBindingRemountSeqRef.current += 1;
+      }
+      if (autoBindingDroppedPendingRef.current === decision.record) {
+        autoBindingDroppedPendingRef.current = null;
+      }
+    }, [propsWithAutoBinding]);
+
+    /**
+     * 같은 칸에서 IME 조합이 시작되면 버린 값 기록을 지운다 (engine-v1.81.2, 7.1.1 — composingFieldName 참조)
+     *
+     * 조합 중에는 입력칸이 onChange 를 부르지 않아 autoOnChange 의 기록 지움이 없다. 조합 시작 때 이 칸의 기록을 지우고 이 칸을 다시
+     * 그려, 기록을 보고 「다시 마운트」 로 판정한 전환 렌더가 있으면 끊고 다시 판정하게 한다. 디바운스 폼의 이름 있는 칸만 듣는다. 무조건 호출 훅.
+     */
+    const autoBindingFieldName = typeof stableResolvedProps?.name === 'string' ? stableResolvedProps.name : '';
+    const autoBindingFormDebounce = parentFormContext?.debounce;
+    useEffect(() => {
+      if (!autoBindingFieldName || !(autoBindingFormDebounce && autoBindingFormDebounce > 0) || typeof document === 'undefined') {
+        return undefined;
+      }
+      const onCompositionStart = (event: Event): void => {
+        const target = event.target as { name?: unknown } | null;
+        if (!target || target.name !== autoBindingFieldName || autoBindingDroppedPendingRef.current === null) return;
+        autoBindingDroppedPendingRef.current = null;
+        setGlobalAutoBindingRenderTick((tick) => tick + 1);
+      };
+      document.addEventListener('compositionstart', onCompositionStart, true);
+
+      return () => document.removeEventListener('compositionstart', onCompositionStart, true);
+    }, [autoBindingFieldName, autoBindingFormDebounce]);
 
     /**
      * 메인 렌더링 로직
@@ -4317,7 +4878,25 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           })()
         : finalProps;
 
-      let componentElement: React.ReactNode = <Component {...propsForRendering}>{renderChildren}</Component>;
+      // 경로 이동으로 디바운스 대기 값을 버린 칸만 key 를 바꿔 다시 마운트한다 — 차례가 0 이면 key 없음(종전과 같은 요소) (engine-v1.81.2)
+      // 차례 = 커밋된 차례 + 이 렌더의 판정(아직 효과가 반영하지 않은 판정만) — 버려진 렌더의 판정은 남지 않는다 (engine-v1.81.2)
+      const remountDecision = autoBindingRemountDecisions.get(propsWithAutoBinding);
+      const autoBindingRemountSeq = autoBindingRemountSeqRef.current
+        + (remountDecision?.remount && remountDecision.record !== autoBindingAppliedRemountRecordRef.current ? 1 : 0);
+      const autoBindingRemountKey = autoBindingRemountSeq > 0
+        ? `__g7AutoBindingRemount:${autoBindingRemountSeq}`
+        : undefined;
+      let componentElement: React.ReactNode;
+      if (autoBindingRemountKey !== undefined && Object.prototype.hasOwnProperty.call(propsForRendering, 'key')) {
+        // 레이아웃이 칸에 `key` prop 을 주었으면 펼친 props 의 key 가 다시 마운트 key 를 덮는다 — 둘을 합친다 (engine-v1.81.2).
+        // 차례가 0 이면 아래 종전 요소 그대로(레이아웃 key 만)
+        const { key: layoutComponentKey, ...propsWithoutKey } = propsForRendering as Record<string, any>;
+        componentElement = (
+          <Component key={`${String(layoutComponentKey)}::${autoBindingRemountKey}`} {...propsWithoutKey}>{renderChildren}</Component>
+        );
+      } else {
+        componentElement = <Component key={autoBindingRemountKey} {...propsForRendering}>{renderChildren}</Component>;
+      }
 
       // dataKey가 있으면 FormProvider로 감싸기
       // formContextForChildren은 effectiveComponentDef.dataKey를 사용 (componentDef 레벨)
@@ -4444,11 +5023,13 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         }
 
         // data_sources가 지정된 경우 해당 데이터 소스만 체크 (isTransitioning 무시)
+        // 받기 전(undefined)이거나, 앞 값을 둔 채 다시 받는 중(같은 화면 쪽 넘김·검색 — 엔진이 알림)이면 흐린다 (engine-v1.82.0).
+        // 종전에는 같은 목록의 쪽 넘김·검색 동안 앞 값이 그대로라 흐림이 서지 않아 받는 중 표시가 없었다.
         if (blurConfig.data_sources) {
           const targetSources = Array.isArray(blurConfig.data_sources)
             ? blurConfig.data_sources
             : [blurConfig.data_sources];
-          return targetSources.some((key: string) => dataContext[key] === undefined);
+          return targetSources.some((key: string) => dataContext[key] === undefined || refreshingSources?.has(key) === true);
         }
 
         // data_sources가 없으면 페이지 전환 상태 또는 모든 데이터 소스 체크
@@ -4476,7 +5057,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         key => !systemKeys.includes(key) && !key.startsWith('_')
       );
       return dataSourceKeys.some(key => dataContext[key] === undefined);
-    }, [effectiveComponentDef.blur_until_loaded, effectiveComponentDef.id, isTransitioning, dataContext, extendedDataContext, bindingEngine, extractSingleBinding]);
+    }, [effectiveComponentDef.blur_until_loaded, effectiveComponentDef.id, isTransitioning, refreshingSources, dataContext, extendedDataContext, bindingEngine, extractSingleBinding]);
 
     // DEBUG: blur 적용 시 로깅
     if (shouldApplyBlur) {
@@ -4560,8 +5141,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * 중요: React Context 대신 window.__slotContextValue를 직접 확인
      * - 타이밍 이슈로 slotContext.isEnabled가 false일 수 있음
      */
+    // engine-v1.81.1 (7.1.1): 전역 값은 SlotProvider 의 useLayoutEffect 가 첫 커밋 **뒤에** 열어, 첫 렌더 패스에서는
+    // 슬롯 노드가 제자리(관리자·사용자 _base 의 주입 앵커 — 문서 앞)에도 그려졌다. 등록(useEffect)은 정상이라 SlotContainer 에도
+    // 한 벌 — 다음 다시 그리기까지 같은 단추가 둘(Tab 순서 맨 앞 사본). SlotProvider 의 문맥 값은 첫 렌더부터 있으므로 OR 로 본다.
+    // 문맥이 기본값(SlotProvider 밖·잠시 기본값)이면 종전처럼 전역 값으로만 판정한다.
     const globalSlotContextForRender = (window as any).__slotContextValue;
-    if (resolvedSlotId && globalSlotContextForRender?.isEnabled) {
+    if (resolvedSlotId && (globalSlotContextForRender?.isEnabled || slotContextForRender?.isEnabled)) {
       return null;
     }
 

@@ -566,7 +566,8 @@ class ClaimResource extends BaseApiResource
                 // 취소도 형제 유형과 같이 보조 통화를 병기한다 — 이 키가 없으면 다통화 상점에서
                 // 취소 유형 상세만 외화 줄이 통째로 사라진다. 기준 줄이 현금분(`refund_amount_formatted`)
                 // 이므로 여기도 현금분이다(합계를 실으면 위아래 두 줄이 다른 금액이 된다).
-                'mc_refund_amount' => $refund ? $this->formatStoredMultiCurrency($refund->mc_refund_amount) : [],
+                // 환불 행이 없으면 빈 맵 — formatStoredMultiCurrency() 의 빈 값과 같은 모양 (코어 #758)
+                'mc_refund_amount' => $refund ? $this->formatStoredMultiCurrency($refund->mc_refund_amount) : new \stdClass,
                 'refund_status' => $refund?->refund_status?->value,
                 'refund_status_label' => $refund?->refund_status?->label(),
                 'cancelled_at_formatted' => $this->formatDateTimeStringForUser($claim->cancelled_at),
@@ -740,10 +741,28 @@ class ClaimResource extends BaseApiResource
         return [
             'original' => $original,
             'recalculated' => $recalculated,
-            'mc_original' => $order ? $presenter->mcOriginal($order, $frozenListPrice, $frozenSubtotal, $frozenPaid) : null,
-            'mc_recalculated' => $presenter->mcRecalculated($recalculated, $order?->currency_snapshot),
+            'mc_original' => $this->emptyMultiCurrencyMapsAsObjects($order ? $presenter->mcOriginal($order, $frozenListPrice, $frozenSubtotal, $frozenPaid) : null),
+            'mc_recalculated' => $this->emptyMultiCurrencyMapsAsObjects($presenter->mcRecalculated($recalculated, $order?->currency_snapshot)),
             'substituted_items' => $substitutedRows,
         ];
+    }
+
+    /**
+     * 계산 비교의 다통화 줄에서 비어 있는 `mc_*` 맵을 빈 맵(`{}`)으로 바꿉니다.
+     *
+     * 통화 코드를 이름표로 값을 꺼내는 맵이라 비면 `[]` 가 아니라 `{}` 다 — claims.md 의 약속, 신청서 최상위
+     * `mc_*` 와 같은 모양(코어 #758). 표시기 결과는 서비스가 PHP 배열로 읽으므로 응답에서만 바꾼다.
+     *
+     * @param  array<string, mixed>|null  $rows  표시기의 다통화 줄 (`mc_*` 키 → 통화 코드 맵), 통화 스냅샷이 없으면 null
+     * @return array<string, mixed>|null 빈 맵을 `\stdClass` 로 바꾼 줄 (입력이 null 이면 null)
+     */
+    private function emptyMultiCurrencyMapsAsObjects(?array $rows): ?array
+    {
+        if ($rows === null) {
+            return null;
+        }
+
+        return array_map(static fn ($map) => $map === [] ? new \stdClass : $map, $rows);
     }
 
     /**

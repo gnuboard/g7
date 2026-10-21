@@ -11,7 +11,7 @@ use App\Enums\LayoutMarkupLintCode;
  * 문제가 될 수 있다" 를 알린다. 강검증(`LayoutValidator`)이 "틀렸으니 못 만든다" 라면, lint 은
  * "만들 수는 있으나 권하지 않는다" 다. 그래서 예외가 아니라 `LintWarning` 목록을 모아 돌려준다.
  *
- * 아래 열세 가지를 본다:
+ * 아래 열네 가지를 본다:
  *  ① **미등록 핸들러** — 액션 handler 가 코어 49종·템플릿 등록·확장(`.`) 어디에도 없음(D30⑦).
  *  ② **플러그인 완전 레이아웃** — 플러그인은 layout_extensions·설정 화면만 두는 관례이나 완전
  *     레이아웃을 정의함(gdpr_consent_log·plugin_settings 예외, D15).
@@ -28,8 +28,10 @@ use App\Enums\LayoutMarkupLintCode;
  *  ⑨ **종류 불일치** — `data-type` 이 대상 템플릿 선언과 다름.
  *  ⑩ **설치되지 않은 확장 컴포넌트** — `식별자.이름` 이 설치된 어느 확장에도 없음(막지 않는다).
  *  ⑪ **저장본에 있던 목록 밖 템플릿 컴포넌트** — 편집기 전용, 막지 않는다(#712).
- *  ⑫ **안쪽 액션의 debounce** — 진입점이 아닌 액션의 debounce 는 엔진이 적용하지 않는다.
+ *  ⑫ **안쪽 액션의 debounce** — 진입점이 아닌 액션(다른 액션 안쪽·이벤트 받기·실패 처리·첫 진입 동작)의
+ *     debounce 는 엔진이 적용하지 않는다.
  *  ⑬ **debounce 혼재** — 같은 부품·같은 이벤트에 debounce 동작과 바로 실행하는 동작이 섞임.
+ *  ⑭ **진입점 전용 키** — `key`·`stopPropagation` 을 진입점이 아닌 액션에 적음(#753).
  *
  * lint 은 산출 JSON 을 대상으로 하므로 소스 좌표를 모른다. 위치 없는 경고가 나오면
  * `LayoutMarkupCompiler` 가 노드·액션에 소스 위치 표식({@see SOURCE_POSITION_KEY})을 붙여 한 번 더
@@ -82,6 +84,27 @@ final class LayoutLinter
         'id' => ['startInterval', 'stopInterval'],
     ];
 
+    /**
+     * ⑫·⑭ — 이 키 아래의 액션은 진입점이 아니다(이벤트 받기·첫 진입 동작·오류 처리 맵).
+     *
+     * @var array<int, string>
+     */
+    private const NON_ENTRY_SLOT_KEYS = ['onComponentEvent', 'init_actions', 'initActions', 'errorHandling'];
+
+    /**
+     * ⑫·⑭ — 데이터소스에서 진입점이 아닌 동작을 담는 키.
+     *
+     * @var array<int, string>
+     */
+    private const DATA_SOURCE_ACTION_KEYS = ['onSuccess', 'onError', 'onReceive'];
+
+    /**
+     * ⑭ — 진입점(사용자가 직접 누르는 액션)에서만 엔진이 읽는 키. debounce 는 ⑫, confirm 은 굽기 오류가 맡는다.
+     *
+     * @var array<int, string>
+     */
+    private const ENTRY_ONLY_KEYS = ['key', 'stopPropagation'];
+
     private readonly ActionHandlerManifest $handlers;
 
     /**
@@ -120,13 +143,16 @@ final class LayoutLinter
         $this->lintKeptTemplateComponents($json, $context, $path, $warnings);
         $this->lintNestedActionDebounce($json, $path, $warnings);
         $this->lintMixedDebounce($json, $path, $warnings);
+        $this->lintEntryOnlyKeys($json, $path, $warnings);
 
         return $warnings;
     }
 
     /**
-     * ⑫ 다른 액션 안쪽에 놓인 액션의 `debounce` 를 경고합니다 — 엔진은 진입점 액션의 debounce 만 적용한다.
+     * ⑫ 진입점이 아닌 액션의 `debounce` 를 경고합니다 — 엔진은 진입점 액션의 debounce 만 적용한다.
      *
+     * 대상은 다른 액션 안쪽(sequence·conditions·switch·결과 처리)과 진입점이 아닌 자리의 루트
+     * (이벤트 받기·init·errorHandling·데이터소스 결과·수신 동작)다 — `walkNonEntryActions` 가 판정한다.
      * 같은 핸들러는 한 번만 낸다(좌표 없는 경고라 반복해도 고칠 자리가 늘지 않는다).
      *
      * @param  array<string, mixed>  $json  산출 JSON
@@ -137,7 +163,48 @@ final class LayoutLinter
     private function lintNestedActionDebounce(array $json, ?string $path, array &$warnings): void
     {
         $seen = [];
-        $this->walkForNestedDebounce($json, false, $path, $warnings, $seen);
+        $this->walkNonEntryActions($json, false, false, function (array $action) use ($path, &$warnings, &$seen): void {
+            if (! array_key_exists('debounce', $action) || isset($seen[$action['handler']])) {
+                return;
+            }
+
+            $seen[$action['handler']] = true;
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::NestedActionDebounceIgnored, self::line($action), self::column($action), [
+                'handler' => $action['handler'],
+            ], $path);
+        });
+    }
+
+    /**
+     * ⑭ 진입점 전용 키(`key`·`stopPropagation`)를 진입점이 아닌 액션에 적은 자리를 경고합니다 (#753).
+     *
+     * 엔진은 사용자가 직접 누르는 진입점에서만 이 키를 읽는다(`key` 는 bindActionsToProps, `stopPropagation` 은
+     * createHandler 의 DOM 이벤트). 이벤트 받기·실패 처리·첫 진입 동작·다른 액션 안쪽에서는 효과가 없다.
+     * `debounce` 는 ⑫ 가, `confirm` 은 굽기 오류(confirm_not_at_root)가 맡는다. 같은 키·핸들러는 한 번만 낸다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function lintEntryOnlyKeys(array $json, ?string $path, array &$warnings): void
+    {
+        $seen = [];
+        $this->walkNonEntryActions($json, false, false, function (array $action) use ($path, &$warnings, &$seen): void {
+            foreach (self::ENTRY_ONLY_KEYS as $key) {
+                $marker = $key.'@'.$action['handler'];
+
+                if (! array_key_exists($key, $action) || isset($seen[$marker])) {
+                    continue;
+                }
+
+                $seen[$marker] = true;
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::EntryOnlyKeyIgnored, self::line($action), self::column($action), [
+                    'key' => $key,
+                    'handler' => $action['handler'],
+                ], $path);
+            }
+        });
     }
 
     /**
@@ -229,16 +296,20 @@ final class LayoutLinter
     }
 
     /**
-     * 액션 안쪽 여부를 들고 심층 순회하며 안쪽 액션의 debounce 를 찾습니다.
+     * 진입점이 아닌 자리의 액션을 찾아 심층 순회합니다 (⑫·⑭ 공용).
+     *
+     * 진입점이 아닌 자리: 다른 액션의 안쪽, 이벤트 받기(`onComponentEvent` 항목), 첫 진입 동작(`init_actions`),
+     * 오류 처리 맵(`errorHandling` 값 — 액션·데이터소스·레이아웃 단위), 데이터소스의 결과·수신 동작
+     * (`onSuccess`·`onError`·`onReceive`). 엔진은 이 자리의 액션을 통째로 실행하지만(engine-v1.80.0)
+     * 사용자가 누르는 순간이 없어 진입점 전용 키를 읽지 않는다.
      *
      * @param  mixed  $value  순회 대상
-     * @param  bool  $insideAction  상위에 액션이 있는지
-     * @param  string|null  $path  소스 파일 경로
-     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
-     * @param  array<string, bool>  $seen  이미 낸 핸들러 (참조)
+     * @param  bool  $insideAction  진입점이 아닌 자리 안인지
+     * @param  bool  $isDataSourceList  이 값이 `data_sources` 목록인지
+     * @param  callable(array<string, mixed>): void  $visit  진입점이 아닌 액션마다 부를 콜백
      * @return void 반환값 없음
      */
-    private function walkForNestedDebounce(mixed $value, bool $insideAction, ?string $path, array &$warnings, array &$seen): void
+    private function walkNonEntryActions(mixed $value, bool $insideAction, bool $isDataSourceList, callable $visit): void
     {
         if (! is_array($value)) {
             return;
@@ -246,15 +317,45 @@ final class LayoutLinter
 
         $isAction = isset($value['handler']) && is_string($value['handler']);
 
-        if ($isAction && $insideAction && array_key_exists('debounce', $value) && ! isset($seen[$value['handler']])) {
-            $seen[$value['handler']] = true;
-            $warnings[] = new LintWarning(LayoutMarkupLintCode::NestedActionDebounceIgnored, self::line($value), self::column($value), [
-                'handler' => $value['handler'],
-            ], $path);
+        if ($isAction && $insideAction) {
+            $visit($value);
         }
 
-        foreach ($value as $child) {
-            $this->walkForNestedDebounce($child, $insideAction || $isAction, $path, $warnings, $seen);
+        foreach ($value as $key => $child) {
+            if ($isDataSourceList) {
+                // 목록 항목은 데이터소스 — 결과·수신 동작 키만 진입점이 아닌 자리로 내려보낸다
+                $this->walkDataSource($child, $insideAction, $visit);
+
+                continue;
+            }
+
+            $childInside = $insideAction || $isAction
+                || (is_string($key) && in_array($key, self::NON_ENTRY_SLOT_KEYS, true));
+
+            $this->walkNonEntryActions($child, $childInside, $key === 'data_sources', $visit);
+        }
+    }
+
+    /**
+     * 데이터소스 하나를 순회합니다 — 결과·수신 동작(`onSuccess`·`onError`·`onReceive`)과 오류 처리 맵은
+     * 진입점이 아닌 자리다.
+     *
+     * @param  mixed  $source  데이터소스 정의
+     * @param  bool  $insideAction  진입점이 아닌 자리 안인지
+     * @param  callable(array<string, mixed>): void  $visit  진입점이 아닌 액션마다 부를 콜백
+     * @return void 반환값 없음
+     */
+    private function walkDataSource(mixed $source, bool $insideAction, callable $visit): void
+    {
+        if (! is_array($source)) {
+            return;
+        }
+
+        foreach ($source as $key => $child) {
+            $childInside = $insideAction
+                || (is_string($key) && (in_array($key, self::DATA_SOURCE_ACTION_KEYS, true) || in_array($key, self::NON_ENTRY_SLOT_KEYS, true)));
+
+            $this->walkNonEntryActions($child, $childInside, false, $visit);
         }
     }
 

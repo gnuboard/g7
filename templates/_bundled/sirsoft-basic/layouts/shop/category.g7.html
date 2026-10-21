@@ -46,25 +46,25 @@
       <div class="mb-4">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <!-- 뒤로가기: 상위 카테고리 있으면 상위로, 없으면 /shop으로 -->
-          <button type="button" aria-label="$t:common.back" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <a href="{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}" aria-label="$t:common.back" class="inline-flex items-center justify-center p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <on type="click">
-              <navigate path="{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}"/>
+              <navigate/>
             </on>
             <icon name="arrow-left" class="text-xl"/>
-          </button>
-          <span>{{category?.data?.name_localized ?? $t:shop.categories}}</span>
+          </a>
+          <span class="min-w-0 wrap-anywhere">{{category?.data?.name_localized ?? $t:shop.categories}}</span>
         </h1>
-        <!-- 설명 + 브레드크럼 한 줄 -->
+        <!-- 설명 + 브레드크럼 한 줄. 이름·설명은 줄어들며 줄을 바꾸고, 경로는 칸이 모자라면 다음 줄로 내리며 각 이름은 한 줄 … — 공백 없는 긴 카테고리 이름이 화면을 넘쳤다(#143). -->
         <div class="flex items-center justify-between mt-1">
-          <p data-if="{{!!category?.data?.description_localized}}" class="text-gray-600 dark:text-gray-400">{{category?.data?.description_localized ?? ''}}</p>
+          <p data-if="{{!!category?.data?.description_localized}}" class="text-gray-600 dark:text-gray-400 min-w-0 wrap-anywhere">{{category?.data?.description_localized ?? ''}}</p>
           <!-- 브레드크럼 (전체 > 경로 > 현재) -->
-          <div class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+          <div class="flex flex-wrap items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
             <a href="{{_global.shopBase}}/products" class="hover:text-gray-700 dark:hover:text-gray-300">$t:shop.category.all</a>
             <div data-each="crumb in {{category?.data?.breadcrumb ?? []}}">
               <span class="flex items-center gap-1">
                 <icon name="chevron-right" class="text-xs"/>
-                <a data-if="{{crumb.slug !== route.slug}}" href="{{_global.shopBase}}/category/{{crumb.slug}}" class="hover:text-gray-700 dark:hover:text-gray-300">{{crumb.name}}</a>
-                <span data-if="{{crumb.slug === route.slug}}" class="text-gray-900 dark:text-white font-medium">{{crumb.name}}</span>
+                <a data-if="{{crumb.slug !== route.slug}}" href="{{_global.shopBase}}/category/{{crumb.slug}}" class="truncate max-w-32 hover:text-gray-700 dark:hover:text-gray-300">{{crumb.name}}</a>
+                <span data-if="{{crumb.slug === route.slug}}" class="truncate max-w-32 text-gray-900 dark:text-white font-medium">{{crumb.name}}</span>
               </span>
             </div>
           </div>
@@ -76,7 +76,7 @@
       </div>
       <!-- 검색 바 -->
       <div class="flex gap-2 mb-4">
-        <input type="text" name="keyword" placeholder="$t:shop.search_placeholder" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" value="{{_local.keyword ?? query.keyword ?? ''}}">
+        <input type="text" name="keyword" placeholder="$t:shop.search_placeholder" class="flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" value="{{_local.keyword ?? query.keyword ?? ''}}">
           <on type="change">
             <!-- 타이핑은 로컬에만 담는다 — 글자마다 목록을 다시 받지 않기 위해서다. 실제 검색은 아래 Enter/버튼 -->
             <set-state target="local" keyword="{{$event.target.value}}"/>
@@ -88,7 +88,7 @@
             </navigate>
           </on>
         </input>
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium">
           <on type="click">
             <!-- 검색 버튼. 입력칸을 건드리지 않고 눌렀을 때를 대비해 로컬이 비면 URL 의 검색어를 그대로 다시 건다 -->
             <navigate path="{{route.path}}" :mergeQuery="true">
@@ -98,22 +98,22 @@
           $t:shop.search
         </button>
       </div>
-      <!-- 하위 카테고리 칩 (자식 카테고리가 있을 때만 표시) -->
+      <!-- 하위 카테고리 칩 (자식 카테고리가 있을 때만 표시). 칩 하나가 줄보다 넓어지지 않게 폭을 줄에 맞추고 이름은 한 줄 … (#143) -->
       <div data-if="{{(category?.data?.children ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
-        <div data-each="sub in {{category?.data?.children ?? []}}">
-          <button class="px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600">
+        <div data-each="sub in {{category?.data?.children ?? []}}" class="max-w-full">
+          <a href="{{_global.shopBase}}/category/{{sub?.slug}}" class="inline-flex items-center justify-center max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600">
             <on type="click">
               <!-- audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다 -->
-              <navigate path="{{_global.shopBase}}/category/{{sub?.slug}}"/>
+              <navigate/>
             </on>
-            {{sub?.name_localized}}
-          </button>
+            <span class="min-w-0 truncate">{{sub?.name_localized}}</span>
+          </a>
         </div>
       </div>
       <!-- 정렬 바 -->
       <div class="flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50">
         <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
-        <select name="sort" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
+        <select name="sort" aria-label="$t:common.sort_order" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
           <options>
             <option value="latest">$t:shop.sort.latest</option>
             <option value="sales">$t:shop.sort.sales</option>

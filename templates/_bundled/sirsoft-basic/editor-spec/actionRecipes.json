@@ -332,5 +332,30 @@
         "expiresAt": "{{expiresAt}}"
       }
     }
+  },
+  "saveSecretViewToken": {
+    "comment": "비밀글 열람 토큰 저장 — sirsoft-basic 템플릿 소유 핸들러(storageHandlers). 비밀번호 확인 응답의 secret_view_token·secret_view_expires_at 을 탭 세션(sessionStorage) + _global.secretViewToken 에 저장해 답변 링크·새로고침 뒤에도 열람이 유지되게 한다. 두 입력 모두 응답값(데이터 칩).",
+    "label": "$t:editor.action.save_secret_view_token.label",
+    "params": [
+      {
+        "key": "token",
+        "label": "$t:editor.action.save_secret_view_token.param_token",
+        "widget": "data-chip",
+        "required": true
+      },
+      {
+        "key": "expiresAt",
+        "label": "$t:editor.action.save_secret_view_token.param_expires_at",
+        "widget": "data-chip",
+        "required": true
+      }
+    ],
+    "build": {
+      "handler": "saveSecretViewToken",
+      "params": {
+        "token": "{{token}}",
+        "expiresAt": "{{expiresAt}}"
+      }
+    }
   }
 }

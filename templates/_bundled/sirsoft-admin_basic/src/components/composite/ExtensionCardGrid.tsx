@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { P } from '../basic/P';
+import { A } from '../basic/A';
 import { Span } from '../basic/Span';
 import { Img } from '../basic/Img';
 import { Icon } from '../basic/Icon';
@@ -9,6 +10,7 @@ import { Pagination } from './Pagination';
 import { ActionMenu, ActionMenuItem } from './ActionMenu';
 import { Toggle } from './Toggle';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 (부트 전에도 키를 그대로 돌려주는 폴백)
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -61,14 +63,35 @@ export interface ExtensionCardItem {
     variant?: 'solid' | 'outline';
     disabled?: boolean;
     title?: string;
+    /**
+     * 주 단추가 옮겨 가는 주소(예: 활성 템플릿의 시각 편집기) — 있으면 `<a href>` 로 그린다(#757). 보통 클릭은 onPrimaryAction,
+     * `target: '_blank'` 면 보통 클릭도 브라우저가 새 창으로 열고 onPrimaryAction 은 부르지 않는다(종전 openWindow 대체).
+     * 설치처럼 옮기지 않는 단추는 비워 둔다.
+     */
+    href?: string;
+    /** 링크를 여는 창 — `_blank` 면 새 창(`rel="noopener noreferrer"`) */
+    target?: string;
   };
   secondaryAction?: {
     label: string;
     icon?: IconName;
     disabled?: boolean;
     title?: string;
+    /**
+     * 보조 단추가 옮겨 가는 주소(예: 레이아웃 편집) — 있으면 `<a href>` 로 그려 새 탭으로 열 수 있다(#757).
+     * 보통 클릭은 지금처럼 onSecondaryAction. 비활성이면 종전 단추다.
+     */
+    href?: string;
+    /** 링크를 여는 창 — `_blank` 면 새 창(`rel="noopener noreferrer"`) */
+    target?: string;
   };
   actions?: ActionMenuItem[];
+  /**
+   * 카드 이동 주소 — 있으면 카드를 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+   * 보통 클릭은 종전처럼 onItemClick(없으면 SPA 이동), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
+   * 없으면 종전처럼 `role="button"` 카드다.
+   */
+  href?: string;
 }
 
 export interface ExtensionCardGridProps {
@@ -94,6 +117,12 @@ export interface ExtensionCardGridProps {
   alwaysShowPagination?: boolean;
   paginationInfoText?: string;
   onPageChange?: (page: number) => void;
+  /**
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/modules?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   */
+  pageHref?: string;
+  /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
+  pageHrefMergeQuery?: boolean;
 
   onItemClick?: (row: any) => void;
   onToggle?: (checked: boolean, row: any) => void;
@@ -122,7 +151,7 @@ const GRID_GAP_PX = 16;
 /** 배지 색조 → Tailwind 클래스. 정적 문자열이라 JIT 가 전부 수집한다. */
 const BADGE_TONE: Record<string, string> = {
   neutral: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
-  success: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+  success: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300',
   info: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
   warning: 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300',
   danger: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
@@ -227,8 +256,9 @@ const ExtensionIcon: React.FC<{
       )}
       {item.iconBadge && (
         <Span
-          className="absolute bottom-0 right-0 px-1 rounded-tl-md rounded-br-xl text-[10px] leading-4 font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white"
+          className={`absolute bottom-0 right-0 max-w-full truncate px-1 rounded-tl-md rounded-br-xl ${item.iconBadge.text.length > 3 ? 'text-[8px] tracking-tight' : 'text-[10px]'} leading-4 font-semibold uppercase bg-blue-600 dark:bg-blue-600 text-white`}
           aria-label={item.iconBadge.srLabel}
+          title={item.iconBadge.text}
           data-ref="ext_icon_badge"
         >
           {item.iconBadge.text}
@@ -254,9 +284,10 @@ const BadgeRow: React.FC<{ item: ExtensionCardItem }> = ({ item }) => {
         <Span
           key={`${badge.label}-${i}`}
           title={badge.title}
+          // 설명(title)이 있는 배지는 카드 덮는 링크 위층에 둬 마우스를 올리면 설명이 뜨게 한다(#757)
           className={`px-1.5 py-0.5 text-[11px] leading-4 rounded whitespace-nowrap inline-flex items-center gap-1 ${
-            BADGE_TONE[badge.tone ?? 'neutral'] ?? BADGE_TONE.neutral
-          }`}
+            badge.title ? 'relative z-10 ' : ''
+          }${BADGE_TONE[badge.tone ?? 'neutral'] ?? BADGE_TONE.neutral}`}
         >
           {badge.icon && <Icon name={badge.icon} size="xs" />}
           <Span>{badge.label}</Span>
@@ -299,7 +330,7 @@ const MetaBlock: React.FC<{ item: ExtensionCardItem; stacked: boolean }> = ({ it
               <Span key={`${dep.name}-${i}`} className="inline-flex items-center gap-1 min-w-0">
                 <Icon
                   name={dep.type === 'module' ? 'cube' : 'puzzle-piece'}
-                  className="text-xs text-gray-400 dark:text-gray-500 shrink-0"
+                  className="text-xs text-gray-500 dark:text-gray-500 shrink-0"
                 />
                 <Span className="truncate">{dep.name}</Span>
               </Span>
@@ -325,22 +356,41 @@ const ControlButton: React.FC<{
   disabled?: boolean;
   title?: string;
   onClick?: () => void;
-}> = ({ label, icon, outline = false, disabled, title, onClick }) => (
-  <button
-    type="button"
-    disabled={disabled}
-    title={title}
-    onClick={onClick}
-    className={`inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-      outline
-        ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-        : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
-    }`}
-  >
-    {icon && <Icon name={icon} size="sm" />}
-    <Span>{label}</Span>
-  </button>
-);
+  /** 옮겨 가는 주소 — 있으면 링크로 그린다(비활성이면 무시) */
+  href?: string;
+  /** 링크를 여는 창 — `_blank` 면 새 창. 보통 클릭도 브라우저가 열고 onClick 은 부르지 않는다 */
+  target?: string;
+}> = ({ label, icon, outline = false, disabled, title, onClick, href, target }) => {
+  const className = `inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-sm whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+    outline
+      ? 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+      : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
+  }`;
+  const link = disabled ? null : resolveLinkHref(href);
+  if (link) {
+    return (
+      <A
+        href={link.href}
+        title={title}
+        {...(link.external || target === '_blank' ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        onClick={(event) => {
+          if (!link.external) handleLinkClick(event, () => onClick?.());
+        }}
+        className={`button ${className}`}
+      >
+        {icon && <Icon name={icon} size="sm" />}
+        <Span>{label}</Span>
+      </A>
+    );
+  }
+
+  return (
+    <button type="button" disabled={disabled} title={title} onClick={onClick} className={className}>
+      {icon && <Icon name={icon} size="sm" />}
+      <Span>{label}</Span>
+    </button>
+  );
+};
 
 /**
  * 카드 하단 제어부.
@@ -372,7 +422,8 @@ const ControlRow: React.FC<{
 
   return (
     <Div
-      className={`flex items-center gap-2 ${className}`}
+      // 카드 덮는 링크(#757) 위층 — 제어 단추·스위치·메뉴는 링크 밖에 있고 그 위에서 클릭을 받는다
+      className={`relative z-10 flex items-center gap-2 ${className}`}
       onClick={stop}
       onKeyDown={stop}
       data-ref="ext_controls"
@@ -384,6 +435,8 @@ const ControlRow: React.FC<{
           outline={true}
           disabled={item.secondaryAction.disabled}
           title={item.secondaryAction.title}
+          href={item.secondaryAction.href}
+          target={item.secondaryAction.target}
           onClick={() => onSecondaryAction?.(payload)}
         />
       )}
@@ -394,6 +447,8 @@ const ControlRow: React.FC<{
           outline={item.primaryAction.variant === 'outline'}
           disabled={item.primaryAction.disabled}
           title={item.primaryAction.title}
+          href={item.primaryAction.href}
+          target={item.primaryAction.target}
           onClick={() => onPrimaryAction?.(payload)}
         />
       )}
@@ -402,7 +457,7 @@ const ControlRow: React.FC<{
           checked={pendingChecked ?? serverChecked}
           disabled={item.toggle.disabled}
           name={item.toggle.label ?? item.name}
-          // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다(O-Q2-1).
+          // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다.
           ariaLabel={item.toggle.label ?? item.name}
           onChange={(next: any) => {
             const value = typeof next === 'boolean' ? next : Boolean(next?.target?.checked);
@@ -432,6 +487,94 @@ const openOnKey = (handler?: () => void) => (e: React.KeyboardEvent) => {
   }
 };
 
+/** 카드 이동 링크 — 카드 껍데기가 이름 칸(CardName)에 넘긴다. 링크가 아닌 카드면 null. */
+const CardLinkContext = createContext<{
+  href: string;
+  external: boolean;
+  label: string;
+  onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void;
+} | null>(null);
+
+/**
+ * 카드 껍데기 — 이동 주소(`item.href`)가 있으면 덮는 링크 카드, 없으면 종전처럼 `role="button"` 영역.
+ *
+ * 링크 카드는 껍데기가 `div` 그대로이고 이름 칸(CardName)이 `<a href>` 다. 링크의 `after:` 덮개가 카드 전체를 덮어
+ * 카드 어디를 눌러도 링크이고, 제어부(단추·스위치·메뉴)는 덮개 위층(`relative z-10`)이라 링크 안에 들어가지 않는다(#757).
+ * 보통 클릭만 지금처럼 `open`(onItemClick)을 부르고 기본 이동을 막는다. 수정키 클릭은 브라우저가 새 탭·새 창으로 연다.
+ */
+const CardShell: React.FC<{
+  item: ExtensionCardItem;
+  onItemClick?: (row: any) => void;
+  className: string;
+  children: React.ReactNode;
+}> = ({ item, onItemClick, className, children }) => {
+  const link = resolveLinkHref(item.href);
+  const open = () => onItemClick?.(item.row ?? item);
+  const label = t('extensions.card.open_detail', { name: item.name });
+
+  if (link) {
+    const cardLink = {
+      href: link.href,
+      external: link.external,
+      label,
+      onClick: (event: React.MouseEvent<HTMLAnchorElement>) =>
+        handleLinkClick(event, () => (onItemClick ? open() : navigateTo(link.href))),
+    };
+
+    return (
+      <CardLinkContext.Provider value={cardLink}>
+        <Div data-ref="ext_card" className={`relative ${className}`}>
+          {children}
+        </Div>
+      </CardLinkContext.Provider>
+    );
+  }
+
+  return (
+    <Div
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      onClick={open}
+      onKeyDown={openOnKey(open)}
+      data-ref="ext_card"
+      className={className}
+    >
+      {children}
+    </Div>
+  );
+};
+
+/**
+ * 카드 이름 칸 — 링크 카드면 카드 전체를 덮는 링크(`after:absolute after:inset-0`), 아니면 글자.
+ */
+const CardName: React.FC<{ item: ExtensionCardItem }> = ({ item }) => {
+  const cardLink = useContext(CardLinkContext);
+  const className = 'font-semibold text-sm text-gray-900 dark:text-white truncate';
+
+  if (cardLink) {
+    return (
+      <A
+        href={cardLink.href}
+        {...(cardLink.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        aria-label={cardLink.label}
+        title={item.name}
+        onClick={cardLink.onClick}
+        data-ref="ext_card_link"
+        className={`${className} after:absolute after:inset-0 after:rounded-xl focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-blue-500`}
+      >
+        <Span data-ref="ext_name">{item.name}</Span>
+      </A>
+    );
+  }
+
+  return (
+    <Span className={className} title={item.name} data-ref="ext_name">
+      {item.name}
+    </Span>
+  );
+};
+
 /**
  * 갤러리 카드 — 세로 조판.
  *
@@ -448,28 +591,16 @@ const GalleryCard: React.FC<{
   onAction?: (actionId: string | number, row: any) => void;
   resyncKey?: string | number;
 }> = ({ item, onItemClick, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey }) => {
-  const open = () => onItemClick?.(item.row ?? item);
-
   return (
-    <Div
-      role="button"
-      tabIndex={0}
-      aria-label={t('extensions.card.open_detail', { name: item.name })}
-      onClick={open}
-      onKeyDown={openOnKey(open)}
-      data-ref="ext_card"
+    <CardShell
+      item={item}
+      onItemClick={onItemClick}
       className="h-full flex flex-col gap-3 p-4 text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
       <Div className="flex items-start gap-3 min-w-0">
         <ExtensionIcon item={item} sizeClass="w-14 max-w-[28%]" glyphClass="text-2xl" />
         <Div className="min-w-0 flex-1 flex flex-col gap-1.5">
-          <Span
-            className="font-semibold text-sm text-gray-900 dark:text-white truncate"
-            title={item.name}
-            data-ref="ext_name"
-          >
-            {item.name}
-          </Span>
+          <CardName item={item} />
           <BadgeRow item={item} />
         </Div>
       </Div>
@@ -492,7 +623,7 @@ const GalleryCard: React.FC<{
           />
         </Div>
       </Div>
-    </Div>
+    </CardShell>
   );
 };
 
@@ -511,29 +642,17 @@ const ListRow: React.FC<{
   onAction?: (actionId: string | number, row: any) => void;
   resyncKey?: string | number;
 }> = ({ item, onItemClick, onToggle, onPrimaryAction, onSecondaryAction, onAction, resyncKey }) => {
-  const open = () => onItemClick?.(item.row ?? item);
-
   return (
-    <Div
-      role="button"
-      tabIndex={0}
-      aria-label={t('extensions.card.open_detail', { name: item.name })}
-      onClick={open}
-      onKeyDown={openOnKey(open)}
-      data-ref="ext_card"
+    <CardShell
+      item={item}
+      onItemClick={onItemClick}
       className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
       <ExtensionIcon item={item} sizeClass="w-12" glyphClass="text-xl" />
 
       <Div className="flex-1 min-w-0 flex flex-col gap-1">
         <Div className="flex items-center gap-2 flex-wrap min-w-0">
-          <Span
-            className="font-semibold text-sm text-gray-900 dark:text-white truncate"
-            title={item.name}
-            data-ref="ext_name"
-          >
-            {item.name}
-          </Span>
+          <CardName item={item} />
           <BadgeRow item={item} />
         </Div>
         <P className="text-xs text-gray-600 dark:text-gray-400 truncate">{item.description}</P>
@@ -549,7 +668,7 @@ const ListRow: React.FC<{
         resyncKey={resyncKey}
         className="shrink-0"
       />
-    </Div>
+    </CardShell>
   );
 };
 
@@ -597,6 +716,8 @@ export const ExtensionCardGrid: React.FC<ExtensionCardGridProps> = ({
   alwaysShowPagination = false,
   paginationInfoText,
   onPageChange,
+  pageHref,
+  pageHrefMergeQuery,
   onItemClick,
   onToggle,
   onPrimaryAction,
@@ -698,6 +819,8 @@ export const ExtensionCardGrid: React.FC<ExtensionCardGridProps> = ({
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={(p: number) => onPageChange?.(p)}
+            pageHref={pageHref}
+            pageHrefMergeQuery={pageHrefMergeQuery}
             showFirstLast={false}
             maxVisiblePages={5}
           />

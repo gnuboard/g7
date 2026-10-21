@@ -178,7 +178,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         type="button"
         onClick={handleDecrease}
         disabled={isMinDisabled}
-        className={`${classes.button} flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg transition-colors`}
+        className={`${classes.button} flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg transition-colors`}
         aria-label={t('common.quantity_decrease')}
       >
         <Icon name="minus" className="text-base" />
@@ -204,7 +204,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         type="button"
         onClick={handleIncrease}
         disabled={isMaxDisabled}
-        className={`${classes.button} flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg transition-colors`}
+        className={`${classes.button} flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg transition-colors`}
         aria-label={t('common.quantity_increase')}
       >
         <Icon name="plus" className="text-base" />

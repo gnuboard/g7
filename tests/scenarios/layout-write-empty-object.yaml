@@ -1,0 +1,48 @@
+feature: 레이아웃 쓰기·복원·복구 경로 — 빈 객체 `{}` 를 DB 원문에서 `[]` 로 굳히지 않는다 (#758)
+
+description: |
+  서빙은 DB 원문을 읽는다. 그 원문을 편집기 저장(JSON 문자열·JSON 객체 본문)·첫 저장의 기준 버전·버전 복원·
+  이름 바꾸기·미리보기·`.json` 단독 조각 등록이 `json_decode(true)` 나 `array` 캐스트로 읽어 다시 쓰면 `{}` 가
+  `[]` 로 굳고, 이후 서빙도 `[]` 를 낸다(`shop/show` 를 위지윅으로 한 번 저장하면 상품 상세 옵션 선택·상품평
+  필터 상태가 목록으로 시작). 다시 쓰려고 읽는 자리는 원문 보존 디코드(`EmptyMap::decodePreserving`·
+  `LayoutEmptyObjects::rawPreserving`)로 바꾼다. 이미 굳은 행은 운영자가 `layout:repair-empty-objects` 로
+  원본(`original_content`) 기준 미리보기 → `--apply` 로 되돌린다 — 원본이 `{}`, 저장본이 `[]` 인 자리만 고친다.
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutEmptyObjectWritePathsTest.php
+  - tests/Unit/Support/LayoutEmptyObjectRepairTest.php
+  - tests/Feature/Console/LayoutRepairEmptyObjectsCommandTest.php
+  - tests/Feature/Extension/LayoutFragmentJsonEmptyObjectTest.php
+  - tests/Feature/Api/Admin/LayoutResourceEmptyObjectTest.php
+
+axes:
+  path:
+    - json_string
+    - json_object
+    - baseline
+    - restore
+    - rename
+    - preview
+    - fragment_json
+    - repair
+
+effects:
+  - write_path_keeps_empty_object_json_string
+  - write_path_keeps_empty_object_json_object
+  - empty_object_in_array_rule_position_accepted
+  - write_path_keeps_empty_object_baseline_version
+  - write_path_keeps_empty_object_restore
+  - write_path_keeps_empty_object_rename
+  - write_path_keeps_empty_object_preview
+  - write_path_keeps_empty_object_fragment_json
+  - admin_resource_keeps_empty_object
+  - repair_preview_writes_nothing
+  - repair_fixes_only_reference_empty_object_positions
+  - repair_preserves_operator_edits
+  - repair_matches_nodes_by_id
+  - repair_stops_on_type_mismatch
+  - repair_covers_version_tables
+  - repair_bumps_lock_version
+  - repair_is_idempotent
+  - repair_clears_layout_cache
+  - repair_skips_deleted_and_unreferenced_rows

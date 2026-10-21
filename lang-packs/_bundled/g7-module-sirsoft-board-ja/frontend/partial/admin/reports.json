@@ -17,7 +17,7 @@
     "reporter_name": "通報者(最初)",
     "reported_at": "通報日時",
     "last_reported_at": "最近：{{date}}",
-    "last_reported_at_label": "最近",
+    "first_reported_at_label": "初回",
     "target_status": "対象ステータス",
     "status": "処理ステータス",
     "current_status": "現在のステータス"

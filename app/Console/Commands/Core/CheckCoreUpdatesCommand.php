@@ -14,33 +14,35 @@ class CheckCoreUpdatesCommand extends Command
     /**
      * 커맨드를 실행합니다.
      *
-     * @param CoreUpdateService $service 코어 업데이트 서비스
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스
      * @return int 종료 코드
      */
     public function handle(CoreUpdateService $service): int
     {
-        $this->info('코어 업데이트를 확인 중...');
+        $this->info(__('common.console.core_check_updates.checking'));
 
         $result = $service->checkForUpdates();
 
         $this->newLine();
-        $this->info("현재 버전: {$result['current_version']}");
-        $this->info("최신 버전: {$result['latest_version']}");
+        $this->info(__('common.console.core_check_updates.current_version', ['version' => $result['current_version']]));
+        $this->info(__('common.console.core_check_updates.latest_version', ['version' => $result['latest_version']]));
 
         if (! empty($result['check_failed'])) {
             $this->newLine();
-            $this->error('업데이트 확인 실패: '.($result['error'] ?? '알 수 없는 오류'));
+            $this->error(__('common.console.core_check_updates.failed', [
+                'error' => $result['error'] ?? __('common.console.core_check_updates.unknown_error'),
+            ]));
 
             return Command::FAILURE;
         }
 
         if ($result['update_available']) {
             $this->newLine();
-            $this->warn('새로운 업데이트가 있습니다!');
-            $this->info('업데이트하려면: php artisan core:update');
+            $this->warn(__('common.console.core_check_updates.update_available'));
+            $this->info(__('common.console.core_check_updates.update_hint'));
         } else {
             $this->newLine();
-            $this->info('현재 최신 버전입니다.');
+            $this->info(__('common.console.core_check_updates.up_to_date'));
         }
 
         return Command::SUCCESS;

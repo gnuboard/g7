@@ -38,7 +38,7 @@
         </div>
         <div>
           <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name</label>
-          <multilingual-input data-type="composite" value="{{_local.shippingTypeForm?.name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+          <multilingual-input data-type="composite" value="{{_local.shippingTypeForm?.name ?? {}}}" ariaLabel="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 유형 이름(언어별). -->
               <set-state target="local" shippingTypeForm.name="{{$event.target.value}}"/>
@@ -89,7 +89,7 @@
         </button>
       </div>
     </div>
-    <div data-if="{{(_local.form?.shipping?.types ?? []).length === 0 &amp;&amp; !_local.isAddingShippingType}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.shipping.types.empty</div>
+    <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.shipping?.types ?? []).length === 0 &amp;&amp; !_local.isAddingShippingType)}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.shipping.types.empty</div>
     <div data-ref="shipping_type_list" data-if="{{(_local.form?.shipping?.types ?? []).length > 0}}" class="overflow-x-clip">
       <responsive on="portable" class="">
         <include src="_shipping_type_cards.g7.html"/>
@@ -111,7 +111,7 @@
             <div class="border-t border-gray-200 dark:border-gray-700 contents">
               <td class="px-2 py-2 text-center">
                 <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
-                <div data-ref="shipping_type_drag_handle" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                <div data-ref="shipping_type_drag_handle" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                   <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
                 </div>
               </td>
@@ -119,7 +119,7 @@
                 <span class="font-mono text-body">{{$type.code}}</span>
               </td>
               <td class="px-4 py-2">
-                <multilingual-input data-type="composite" value="{{$type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input data-type="composite" value="{{$type.name ?? {}}}" ariaLabel="$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.name')}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 이름(언어별). -->
                     <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>
@@ -127,7 +127,7 @@
                 </multilingual-input>
               </td>
               <td class="px-4 py-2">
-                <select value="{{$type.category ?? 'domestic'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+                <select value="{{$type.category ?? 'domestic'}}" aria-label="$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.category')}}" class="w-full" disabled="{{_computed.isReadOnly}}">
                   <options>
                     <option value="domestic">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic</option>
                     <option value="international">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international</option>
@@ -140,7 +140,7 @@
                 </select>
               </td>
               <td class="px-4 py-2 text-center">
-                <toggle data-type="composite" checked="{{$type.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <toggle data-type="composite" checked="{{$type.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.is_active')}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기존 줄 — 사용 여부. -->
                     <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, is_active: !(t.is_active)} : t)}}" :hasChanges="true"/>
@@ -148,7 +148,7 @@
                 </toggle>
               </td>
               <td class="px-4 py-2 text-center">
-                <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+                <button type="button" class="p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
                   <on type="click">
                     <!-- 기존 줄 — 삭제. -->
                     <set-state confirm="$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete" target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== $type._idx)}}" :hasChanges="true"/>

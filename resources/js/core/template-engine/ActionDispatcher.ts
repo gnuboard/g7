@@ -21,6 +21,7 @@ import { extractSingleBinding } from './BindingShape';
 import { hasPipes } from './PipeRegistry';
 import { resolveExpressionString } from './helpers/RenderHelpers';
 import { evaluateComputedDefinitions } from './helpers/ComputedEvaluator';
+import { registerUrlOnlyPathChange } from './helpers/urlOnlyPathChange';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { AuthManager, AuthType, LoginResult } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
@@ -30,13 +31,24 @@ import type { ErrorHandlerConfig, ErrorContext } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { evaluateConditionBranches } from './helpers/ConditionEvaluator';
-import { addMissingLeafKeys } from './helpers/StateMerge';
+import { addMissingLeafKeys, collectEmptyObjectNullTree, deepMergeState, isEmptyPlainObject } from './helpers/StateMerge';
+import { beginLoadingFlag, endLoadingFlag, makeLoadingFlagUpdater, pruneFinishedLoadingFlags } from './helpers/loadingFlags';
+import { isLayoutListenerResult } from './helpers/componentEventResult';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
-import { resolveSafeNavPath, isDangerousScheme, isSameOriginRequestUrl } from '../support/navPolicy';
+import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
+import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
+import {
+  applyQueryValues,
+  getEventAnchor,
+  isLinkClickForBrowser,
+  mergeQueryIntoHref,
+  toSameOriginPath,
+  type LinkClickLike,
+} from './navigationLinks';
 import {
   toExpressionEvent,
   toExpressionArgs,
@@ -47,10 +59,69 @@ import {
 const logger = createLogger('ActionDispatcher');
 
 /**
+ * setState 액션의 deep 병합 옵션 — 빈 일반 객체 `{}` 값이 기존 값을 비운다 (engine-v1.81.1, 7.1.1).
+ * `handleSetState`·`handleParentScopeSetState` 가 payload 를 상태에 병합하는 자리에서만 쓴다.
+ */
+const SETSTATE_DEEP_MERGE_OPTIONS = { emptyObjectReplaces: true } as const;
+
+/**
+ * setState 의 빈 객체 선행 쓰기 payload 를 만든다 (engine-v1.81.1, 7.1.1 — handleSetState 참고).
+ *
+ * - 점 경로 target(`_local.a.b`·`$parent._local.a.b`·`$parent._global.a.b`)은 그 자리에 쓰이는 값 하나(`value`, 없으면 첫 값)만
+ *   본다 — 다른 키의 `{}` 로 선행 쓰기가 그 경로를 잠깐 null 로 두지 않게 한다.
+ * - 펼침 키 `...` 는 deepMergeWithState 가 펼친 뒤(나머지 키가 이김) 병합하므로 같은 모양으로 펼쳐서 본다 — 펼친 값 속 `{}` 가
+ *   본 쓰기에서만 비워지고 저장소 A 는 옛 값으로 남는 갈림을 막는다.
+ *
+ * @param target setState target
+ * @param payload target·scope·merge·__render 를 뺀 payload
+ * @returns 비울 자리만 null 로 둔 payload, 없으면 null
+ */
+function collectSetStateEmptyObjectNullTree(target: unknown, payload: Record<string, any>): Record<string, any> | null {
+  const isDotPathTarget = typeof target === 'string'
+    && (target.startsWith('_local.') || /^\$(parent|root)\._(local|global)\./.test(target));
+  if (isDotPathTarget) {
+    const clean = Object.fromEntries(Object.entries(payload).filter(([k]) => !k.startsWith('__')));
+    const valueKey = 'value' in clean ? 'value' : Object.keys(clean)[0];
+    if (valueKey === undefined) return null;
+    const value = clean[valueKey];
+    if (isEmptyPlainObject(value)) return { [valueKey]: null };
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) return null;
+    const sub = collectEmptyObjectNullTree(value);
+
+    return sub ? { [valueKey]: sub } : null;
+  }
+
+  let effective = payload;
+  const spread = payload['...'];
+  if (spread && typeof spread === 'object' && !Array.isArray(spread)) {
+    const { '...': _spread, ...rest } = payload;
+    effective = { ...spread, ...rest };
+  }
+
+  return collectEmptyObjectNullTree(effective);
+}
+
+/**
  * 같은 종류·같은 문구 토스트를 겹쳐 쌓지 않는 시간(ms) — engine-v1.78.5.
  * 화면 공통 데이터소스 여러 개가 한꺼번에 같은 오류로 실패할 때 한 장만 띄운다.
  */
 const TOAST_DEDUPE_WINDOW_MS = 3000;
+
+/**
+ * params 의 `$t:키|이름={{값}}` 문구를 받자마자 번역 엔진으로 번역하는 핸들러 — 이 핸들러의 인자만 바인딩 값을
+ * 보호 표식으로 감싼다(값의 `&`·`|`·`=` 가 인자 구분자로 읽히지 않게). 다른 핸들러(setState·apiCall 등)의 인자는
+ * 상태·요청 본문으로 나가므로 표식을 넣지 않는다.
+ * @since engine-v1.80.1
+ */
+const TRANSLATED_PARAM_HANDLERS: ReadonlySet<string> = new Set(['toast']);
+
+/**
+ * target 의 `$t:` 문구를 곧바로 번역하는 핸들러 (handleSetError·handleShowAlert)
+ * @since engine-v1.80.1
+ */
+const TRANSLATED_TARGET_HANDLERS: ReadonlySet<string> = new Set(['setError', 'showAlert']);
 
 /**
  * 스크립트 로드가 미뤄졌음을 표시하는 코어 속성.
@@ -263,10 +334,31 @@ export interface ActionDefinition {
    * 진입점 액션에서만 의미가 있다 — 이벤트 객체를 쥐고 있는 것이 그 자리뿐이다.
    */
   stopPropagation?: boolean;
+  /**
+   * setState 의 리렌더 여부 (engine-v1.42.0)
+   *
+   * `false` 면 상태만 바꾸고 다시 그리지 않는다. executeAction 이 `__render` 메타데이터로 바꿔
+   * handleSetState 에 넘긴다.
+   */
+  render?: boolean;
+  /**
+   * 기본 동작 차단 방식 (engine-v1.80.1) — 진입점 액션에서만 의미가 있다.
+   *
+   * - 생략(자동): 실제 주소 `<a href>` 를 보통 클릭이 아니게(Ctrl·Cmd·Shift·Alt·가운데 버튼·`target`·`download`)
+   *   누르면 막지도 실행하지도 않는다 — 브라우저가 새 탭·새 창으로 연다. 그 밖은 막고 실행한다.
+   * - `true`: 언제나 막고 실행한다(종전 동작).
+   * - `false`: 막지 않고 실행한다.
+   *
+   * `change` 이벤트는 어느 경우에도 막지 않는다.
+   */
+  preventDefault?: boolean;
   /** 키보드 이벤트에서 특정 키 필터링 (예: "Enter", "Escape") */
   key?: string;
-  /** switch 핸들러용 케이스 정의 - $args[0] 값을 기준으로 분기 */
-  cases?: Record<string, ActionDefinition>;
+  /**
+   * switch 핸들러용 케이스 정의 - params.value(없으면 $args[0]) 값을 기준으로 분기.
+   * case 값이 배열이면 순서대로(sequence) 실행한다 (engine-v1.80.0).
+   */
+  cases?: Record<string, ActionDefinition | ActionDefinition[]>;
   /** sequence 핸들러용 순차 실행 액션 배열 */
   actions?: ActionDefinition[];
   /** 인증 필요 여부 (apiCall 핸들러에서 Bearer 토큰 포함 여부) - auth_mode 사용 권장 */
@@ -467,6 +559,8 @@ export interface NavigateOptions {
   replace?: boolean;
   /** 전달할 상태 데이터 */
   state?: any;
+  /** 레이아웃 이탈 가드(`meta.leave_guard`) 확인 생략 @since engine-v1.82.0 */
+  bypassLeaveGuard?: boolean;
 }
 
 /**
@@ -499,8 +593,8 @@ export interface ActionContext {
   state?: any;
   /** 상태 업데이트 함수 */
   setState?: (updates: any) => void;
-  /** React Router navigate 함수 */
-  navigate?: (path: string, options?: NavigateOptions) => void;
+  /** React Router navigate 함수 — 이탈 가드에서 머무르기를 고르면 false 를 돌려줄 수 있다(engine-v1.82.0) */
+  navigate?: (path: string, options?: NavigateOptions) => void | boolean;
   /**
    * 격리된 상태 컨텍스트
    *
@@ -508,6 +602,28 @@ export interface ActionContext {
    * target: "isolated"로 setState 핸들러 호출 시 사용됩니다.
    */
   isolatedContext?: IsolatedContextValue | null;
+  /**
+   * 이 실행(createHandler 한 번)에서 처음 실패로 끝난 동작의 오류(최대 1개) — 오류 처리기(`<fail>`·onError·
+   * errorHandling)가 처리한 실패도 담는다. 하위 동작은 컨텍스트를 펼쳐 받으므로 같은 목록을 공유한다.
+   * createHandler 가 분기(conditions·switch)·연속 실행(sequence·parallel) 안쪽의 실패를 실행 결과에 올리는 데
+   * 쓴다(engine-v1.80.0 — `<on listen>` 리스너의 `_eventResult.success`).
+   */
+  failures?: Error[];
+  /**
+   * 진입점 이벤트의 currentTarget 이 `<a href>` 일 때 그 href 속성 값.
+   *
+   * path 를 생략한 navigate 가 이 주소로 이동한다. currentTarget 은 디스패치 중에만 채워지므로
+   * createHandler 의 동기 구간에서 읽어 둔다(그 뒤 `await` 를 지나면 null 이다).
+   *
+   * @since engine-v1.80.1
+   */
+  linkHref?: string | null;
+  /**
+   * DevTools 상태 변경 추적에 붙이는 액션 식별자 (선택)
+   *
+   * setState 가 `startStateChange` 의 연관 키로 넘긴다. 엔진 안에서 채우는 곳은 없고 호출자가 줄 때만 실린다.
+   */
+  actionId?: string;
 }
 
 /**
@@ -646,6 +762,8 @@ export class ActionDispatcher {
    * Key 형식은 debounceTimers와 동일합니다.
    */
   private pendingDebounceFlushers: Map<string, () => void> = new Map();
+  /** {@link runWithoutDebounceFlush} 중첩 깊이 — 0 보다 크면 flushPendingDebounceTimers 가 아무것도 하지 않는다 (engine-v1.81.2) */
+  private debounceFlushSuppressDepth = 0;
 
   /**
    * 디바운스 대기 중 누적된 객체 값
@@ -938,22 +1056,24 @@ export class ActionDispatcher {
     const resolver = getErrorHandlingResolver();
 
     // ErrorHandlingResolver에서 핸들러 실행 시 dispatchAction 사용
-    resolver.setActionExecutor(async (handler: ErrorHandlerConfig, errorContext: { error: ErrorContext }) => {
-      // ErrorHandlerConfig를 ActionDefinition으로 변환
-      const action: ActionDefinition = {
-        type: 'click', // 이벤트 타입은 의미 없음 (dispatchAction에서 사용하지 않음)
-        handler: handler.handler as ActionType,
-        target: handler.target,
-        params: handler.params,
-        actions: handler.actions, // sequence 핸들러용 actions 배열 전달
-      };
+    resolver.setActionExecutor(async (
+      handler: ErrorHandlerConfig,
+      errorContext: { error: ErrorContext } & Record<string, unknown>
+    ) => {
+      // 오류 처리기 정의를 통째로 넘긴다 — 키를 골라 담으면 conditions·cases·if·actionRef·onSuccess 가
+      // 경고 없이 버려진다(engine-v1.80.0, #753). type 은 dispatchAction 이 쓰지 않는 형식 값이다.
+      const action = { ...handler, type: 'click' } as ActionDefinition;
 
       // 에러 컨텍스트를 data에 포함 — 기본 401 처리의 `{{auth.loginPath}}` 가 풀리도록 auth 도 싣는다.
+      // 데이터소스 오류 처리는 route·query 도 싣는다(engine-v1.80.0) — 추가 문맥이 auth·error 를 덮지 못하게
+      // 두 키를 뒤에 둔다.
+      const { error, ...extraData } = errorContext;
       const context: Partial<ActionContext> = {
         data: {
           ...this.defaultContext.data,
+          ...extraData,
           auth: this.buildErrorAuthContext(),
-          error: errorContext.error,
+          error,
         },
       };
 
@@ -1640,121 +1760,182 @@ export class ActionDispatcher {
 
     // showErrorPage: 에러 페이지 표시
     // ErrorPageHandler를 통해 에러 코드에 맞는 레이아웃을 로드하고 렌더링합니다.
-    let _showErrorPageActive = false;
-    this.registerHandler('showErrorPage', async (action: ActionDefinition, _context: ActionContext) => {
-      // 중복 호출 방지: 여러 데이터소스가 동시에 에러를 반환할 때
-      // 각각이 독립적으로 errorHandling을 트리거하여 showErrorPage가 복수 호출됨
-      // 첫 번째 호출만 처리하고 나머지는 무시
-      if (_showErrorPageActive) {
-        logger.log('showErrorPage: Already active, skipping duplicate call');
-        return;
-      }
-      _showErrorPageActive = true;
-
+    // 진행 중인 호출(출처 세대). 같은 세대의 호출만 중복으로 버린다 — engine-v1.81.1 (7.1.1) 전에는 세대를 가리지 않아,
+    // 앞 세대의 오류 화면 그리기가 끝나기 전에 같은 주소로 다시 들어온 새 세대의 자기 404 를 「중복」 으로 버렸다(앞 세대 호출은
+    // 그리기 직전 판정으로 그리지 않으므로 어느 쪽도 그리지 않아 빈 화면이 남았다).
+    let _showErrorPageActive: { generation: number | undefined } | null = null;
+    this.registerHandler('showErrorPage', async (action: ActionDefinition, context: ActionContext) => {
       if (typeof window === 'undefined') {
-        _showErrorPageActive = false;
         logger.warn('showErrorPage: window is not available');
         return;
       }
 
       const templateApp = (window as any).__templateApp;
       if (!templateApp) {
-        _showErrorPageActive = false;
         logger.warn('showErrorPage: TemplateApp not initialized');
         return;
       }
 
       const errorPageHandler = templateApp.getErrorPageHandler?.();
       if (!errorPageHandler) {
-        _showErrorPageActive = false;
         logger.warn('showErrorPage: ErrorPageHandler not available');
         return;
       }
 
-      // params에서 에러 코드 및 옵션 추출
-      const errorCode = action.params?.errorCode || 500;
-      const target = action.params?.target || 'content';
-      let containerId = action.params?.containerId;
+      // 부른 시점의 경로 세대 — 데이터 소스 오류 처리는 그 fetch 를 시작한 세대(`__routeGeneration`). 컨테이너 대기·오류 레이아웃
+      // 적재가 끝나기 전에 사용자가 다른 화면으로 옮기면 그 화면을 404 로 덮었다(7.1.1). 그리기 직전마다 세대를 다시 본다.
+      const routeGenerationNow = (): number | undefined => {
+        const generation = templateApp.getRouteChangeId?.();
+        return typeof generation === 'number' ? generation : undefined;
+      };
+      const declaredGeneration = (context?.data as Record<string, unknown> | undefined)?.__routeGeneration;
+      const originGeneration = typeof declaredGeneration === 'number' ? declaredGeneration : routeGenerationNow();
+      const routeChanged = (): boolean => {
+        const now = routeGenerationNow();
+        return originGeneration !== undefined && now !== undefined && now !== originGeneration;
+      };
 
-      // containerId가 지정되지 않은 경우 target에 따라 결정
-      if (!containerId) {
-        containerId = target === 'full' ? 'app' : 'main_content';
+      // 이미 지난 세대의 호출(늦게 온 앞 화면 오류)은 진행 중 표식을 건드리지 않고 끝낸다
+      if (routeChanged()) {
+        logger.log('showErrorPage: route already changed since the call — skipped');
+        return;
       }
 
-      // 레이아웃 경로가 지정된 경우 (향후 확장용)
-      // const layout = action.params?.layout;
+      // 중복 호출 방지: 여러 데이터소스가 동시에 에러를 반환할 때 각각이 독립적으로 errorHandling 을 트리거하여 showErrorPage 가
+      // 복수 호출된다 — 같은 세대의 첫 호출만 처리한다. 세대를 모르면(TemplateApp 세대 없음) 종전처럼 모두 같은 세대로 본다.
+      // 진행 중 호출보다 새 세대의 호출이면 표식을 넘겨받는다 — 앞 세대 호출은 그리기 직전 판정(routeChanged)으로 그리지 않는다.
+      if (_showErrorPageActive && (
+        _showErrorPageActive.generation === undefined
+        || originGeneration === undefined
+        || _showErrorPageActive.generation === originGeneration
+      )) {
+        logger.log('showErrorPage: Already active, skipping duplicate call');
+        return;
+      }
+      const owner = { generation: originGeneration };
+      _showErrorPageActive = owner;
+      // 자기가 소유한 표식만 푼다 — 앞 세대 호출의 정리가 새 세대의 표식을 풀면 같은 세대 중복이 다시 통과한다
+      const releaseActive = (): void => {
+        if (_showErrorPageActive === owner) {
+          _showErrorPageActive = null;
+        }
+      };
 
-      logger.log('showErrorPage:', {
-        errorCode,
-        target,
-        containerId,
-      });
+      // 렌더 전 init_actions 안에서 불렸으면 이 경로의 첫 렌더 뒤로 미룬다 (engine-v1.80.1).
+      // init 은 렌더 전에 끝까지 기다리고, 아래 컨테이너 대기는 렌더가 만들 `#main_content` 를 기다린다 — 기다리면
+      // 서로를 기다려 화면이 빈 채로 남는다(blocking 데이터 소스 오류 처리를 비동기로 돌리는 이유와 같다). 앞 화면의
+      // 컨테이너가 남아 있어도(SPA 이동) 곧 새 화면 렌더가 덮으므로 컨테이너 유무와 관계없이 미룬다. 미루는 동안에도
+      // 중복 호출 방지 표식은 유지하고, 경로가 바뀌어 버려지면 푼다.
+      if (templateApp.isRunningPreRenderInit?.() && typeof templateApp.deferUntilRendered === 'function') {
+        logger.log('showErrorPage: called during pre-render init_actions — deferred until the route renders');
+        templateApp.deferUntilRendered(
+          () => runShowErrorPage().catch((error) => logger.error('showErrorPage: deferred render failed:', error)),
+          () => {
+            releaseActive();
+          },
+        );
+        return;
+      }
+
+      await runShowErrorPage();
 
       /**
-       * 컨테이너가 DOM에 존재하는지 확인하고, 없으면 MutationObserver로 대기
-       * progressive 로딩 시 컨테이너가 아직 렌더링되지 않았을 수 있음
+       * 컨테이너를 기다려 오류 화면을 그립니다.
+       *
+       * @returns 그리기가 끝나면 이행되는 약속
        */
-      const waitForContainer = (id: string, timeout: number = 60000): Promise<Element> => {
-        return new Promise((resolve, reject) => {
-          // 이미 존재하면 즉시 반환
-          const existing = document.getElementById(id);
-          if (existing) {
-            resolve(existing);
+      async function runShowErrorPage(): Promise<void> {
+        // params에서 에러 코드 및 옵션 추출
+        const errorCode = action.params?.errorCode || 500;
+        const target = action.params?.target || 'content';
+        let containerId = action.params?.containerId;
+
+        // containerId가 지정되지 않은 경우 target에 따라 결정
+        if (!containerId) {
+          containerId = target === 'full' ? 'app' : 'main_content';
+        }
+
+        // 레이아웃 경로가 지정된 경우 (향후 확장용)
+        // const layout = action.params?.layout;
+
+        logger.log('showErrorPage:', {
+          errorCode,
+          target,
+          containerId,
+        });
+
+        /**
+         * 컨테이너가 DOM에 존재하는지 확인하고, 없으면 MutationObserver로 대기
+         * progressive 로딩 시 컨테이너가 아직 렌더링되지 않았을 수 있음
+         */
+        const waitForContainer = (id: string, timeout: number = 60000): Promise<Element> => {
+          return new Promise((resolve, reject) => {
+            // 이미 존재하면 즉시 반환
+            const existing = document.getElementById(id);
+            if (existing) {
+              resolve(existing);
+              return;
+            }
+
+            logger.log(`showErrorPage: Waiting for container #${id}...`);
+
+            // MutationObserver로 DOM 변화 감지
+            let timeoutId: ReturnType<typeof setTimeout>;
+            const observer = new MutationObserver((_mutations, obs) => {
+              const element = document.getElementById(id);
+              if (element) {
+                logger.log(`showErrorPage: Container #${id} found`);
+                obs.disconnect();
+                clearTimeout(timeoutId);
+                resolve(element);
+              }
+            });
+
+            observer.observe(document.body, {
+              childList: true,
+              subtree: true,
+            });
+
+            // 타임아웃 설정
+            timeoutId = setTimeout(() => {
+              observer.disconnect();
+              reject(new Error(`Container #${id} not found within ${timeout}ms`));
+            }, timeout);
+          });
+        };
+
+        try {
+          // 컨테이너가 준비될 때까지 대기
+          await waitForContainer(containerId);
+
+          // 기다리는 동안 다른 화면으로 옮겼으면 새 화면의 컨테이너에 그리지 않는다
+          if (routeChanged()) {
+            logger.log('showErrorPage: route changed while waiting for the container — skipped');
             return;
           }
 
-          logger.log(`showErrorPage: Waiting for container #${id}...`);
+          // 에러 페이지 렌더링 전 레이아웃 errorHandling 임시 해제
+          // 에러 페이지가 _user_base를 extends할 경우, 데이터소스 에러(예: user 401)가
+          // ErrorHandlingResolver 싱글톤의 레이아웃 errorHandling을 재트리거하여 무한 루프 발생 방지
+          const resolver = getErrorHandlingResolver();
+          const savedLayoutConfig = (resolver as any).layoutErrorHandling;
+          resolver.clearLayoutConfig();
 
-          // MutationObserver로 DOM 변화 감지
-          let timeoutId: ReturnType<typeof setTimeout>;
-          const observer = new MutationObserver((_mutations, obs) => {
-            const element = document.getElementById(id);
-            if (element) {
-              logger.log(`showErrorPage: Container #${id} found`);
-              obs.disconnect();
-              clearTimeout(timeoutId);
-              resolve(element);
+          try {
+            const success = await errorPageHandler.renderError(errorCode, containerId, () => !routeChanged());
+            if (!success) {
+              logger.warn(`showErrorPage: Failed to render error page for code ${errorCode}`);
             }
-          });
-
-          observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-          });
-
-          // 타임아웃 설정
-          timeoutId = setTimeout(() => {
-            observer.disconnect();
-            reject(new Error(`Container #${id} not found within ${timeout}ms`));
-          }, timeout);
-        });
-      };
-
-      try {
-        // 컨테이너가 준비될 때까지 대기
-        await waitForContainer(containerId);
-
-        // 에러 페이지 렌더링 전 레이아웃 errorHandling 임시 해제
-        // 에러 페이지가 _user_base를 extends할 경우, 데이터소스 에러(예: user 401)가
-        // ErrorHandlingResolver 싱글톤의 레이아웃 errorHandling을 재트리거하여 무한 루프 발생 방지
-        const resolver = getErrorHandlingResolver();
-        const savedLayoutConfig = (resolver as any).layoutErrorHandling;
-        resolver.clearLayoutConfig();
-
-        try {
-          const success = await errorPageHandler.renderError(errorCode, containerId);
-          if (!success) {
-            logger.warn(`showErrorPage: Failed to render error page for code ${errorCode}`);
+          } finally {
+            // 렌더링 완료 후 레이아웃 errorHandling 복원
+            resolver.setLayoutConfig(savedLayoutConfig);
           }
+        } catch (error) {
+          logger.error('showErrorPage: Error rendering error page:', error);
+          throw error;
         } finally {
-          // 렌더링 완료 후 레이아웃 errorHandling 복원
-          resolver.setLayoutConfig(savedLayoutConfig);
+          releaseActive();
         }
-      } catch (error) {
-        logger.error('showErrorPage: Error rendering error page:', error);
-        throw error;
-      } finally {
-        _showErrorPageActive = false;
       }
     });
 
@@ -1822,15 +2003,25 @@ export class ActionDispatcher {
           logger.log(`emitEvent: Event "${eventName}" completed with ${results.length} listener(s)`, results);
         }
 
+        // 레이아웃 리스너(`<on listen>`)는 표식 결과를 돌려준다 — 풀어서 data 는 결과 값만, 받는 쪽 동작이
+        // 실패했으면 success:false·error 를 싣는다. 보낸 쪽 예외로 바꾸지 않는다(받는 쪽이 자기 `<fail>` 로
+        // 이미 알렸다면 기본 오류 토스트가 한 번 더 뜬다). 컴포넌트 리스너 값은 그대로다(engine-v1.80.0).
+        const listenerResults: any[] = Array.isArray(results) ? results : [];
+        const unwrapped = listenerResults.map((r) => (isLayoutListenerResult(r) ? r.data : r));
+        const firstFailure = listenerResults.find((r) => isLayoutListenerResult(r) && !r.success);
+
         // 결과를 _local._eventResult에 저장하여 후속 액션에서 접근 가능하게 함
         if (this.globalStateUpdater) {
           const currentGlobalLocal = (G7Core?.state?.get() || {})._local || {};
-          const eventResult = {
+          const eventResult: Record<string, any> = {
             event: eventName,
-            success: true,
-            data: results.length === 1 ? results[0] : results,
-            listeners: results.length,
+            success: !firstFailure,
+            data: unwrapped.length === 1 ? unwrapped[0] : unwrapped,
+            listeners: listenerResults.length,
           };
+          if (firstFailure) {
+            eventResult.error = firstFailure.error;
+          }
           // 글로벌 _local 갱신 (기존 동작 유지: 글로벌 _local 기준 머지)
           this.globalStateUpdater({
             _local: { ...currentGlobalLocal, _eventResult: eventResult },
@@ -2123,7 +2314,7 @@ export class ActionDispatcher {
     action: ActionDefinition,
     dataContext?: any,
     componentContext?: { state?: any; setState?: (updates: any) => void; isolatedContext?: IsolatedContextValue | null }
-  ): (event?: Event) => void {
+  ): (event?: Event) => Promise<ActionResult | undefined> {
     logger.log('createHandler called for:', action.handler, action.type);
 
     // DevTools: 핸들러 생성 시점 상태 캡처 (stale closure 감지용)
@@ -2132,7 +2323,9 @@ export class ActionDispatcher {
     const capturedLocalState = componentContext?.state ? { ...componentContext.state } : null;
     const handlerId = `handler_${action.handler}_${handlerCreatedAt}`;
 
-    const run = async (event: Event) => {
+    // 실행 결과를 돌려준다(engine-v1.80.0) — `<on listen>` 리스너가 이 결과로 보낸 쪽 `_eventResult` 를 채운다.
+    // 확인 창에서 취소하면 undefined, 실행 중 예외로 onError 를 돌렸으면 `{ success: false, error }`.
+    const run = async (event: Event): Promise<ActionResult | undefined> => {
       logger.log('Handler invoked for:', action.handler, 'event:', event.type);
 
       // DevTools: 핸들러 실행 시점에 stale closure 감지
@@ -2169,12 +2362,29 @@ export class ActionDispatcher {
       // 보안: 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다
       const eventData = toExpressionEvent(event);
 
+      // 링크 클릭 판정은 동기 구간에서 — currentTarget 은 `await` 뒤에 null 이 된다 (engine-v1.80.1)
+      const anchor = getEventAnchor(event as unknown as LinkClickLike);
+      const linkHref = anchor ? anchor.getAttribute('href') : null;
+
+      // 실제 주소 링크를 보통 클릭이 아니게(Ctrl·Cmd·Shift·Alt·target·download) 누르면 브라우저에 맡긴다 —
+      // 막지도 실행하지도 않아 새 탭·새 창으로 열린다. `preventDefault` 키를 적으면 자동 판정을 끈다.
+      if (
+        event.type === 'click' &&
+        action.preventDefault === undefined &&
+        isLinkClickForBrowser(event as unknown as LinkClickLike & { target?: EventTarget | null })
+      ) {
+        // 링크 자신의 처리기뿐 아니라 링크를 감싼 클릭 가능한 부모(카드 등)도 여기서 비킨다 — 부모가 막으면 새 탭이 취소된다
+        logger.log('Modified link click left to the browser (new tab/window)');
+        return;
+      }
+
       try {
         // 기본 이벤트 동작 방지 (폼 제출 시 페이지 리로드 방지)
         // 단, change 이벤트에서는 preventDefault()를 호출하면 안됨
         // 체크박스/라디오/input의 change 이벤트에서 preventDefault() 호출 시
         // 네이티브 상태 변경이 취소되어 React 상태와 불일치 발생
-        if (event.type !== 'change') {
+        // `preventDefault: false` 면 막지 않는다 (engine-v1.80.1)
+        if (event.type !== 'change' && action.preventDefault !== false) {
           event.preventDefault();
         }
 
@@ -2223,6 +2433,10 @@ export class ActionDispatcher {
           }),
           // 격리된 상태 컨텍스트 (isolatedState 속성이 있는 컴포넌트에서 제공)
           isolatedContext: componentContext?.isolatedContext,
+          // 이 실행의 실패 목록 — 안쪽 동작의 실패를 결과에 올린다(아래 executeAction 뒤)
+          failures: [],
+          // 클릭한 링크의 href — path 없는 navigate 의 목적지 (engine-v1.80.1)
+          linkHref,
         };
 
         // 확인 메시지 표시
@@ -2239,7 +2453,7 @@ export class ActionDispatcher {
           }
 
           if (!confirm(message)) {
-            return;
+            return undefined;
           }
         }
 
@@ -2255,10 +2469,22 @@ export class ActionDispatcher {
 
         try {
           // 액션 실행
-          await this.executeAction(action, context);
+          const result = await this.executeAction(action, context);
+
+          // 분기·연속 실행 안쪽 동작의 실패를 결과에 올린다 — 분기는 고른 동작의 결과를 한 겹 감싸 돌려주고
+          // 연속 실행은 실패한 단계 뒤에도 이어져, 최상위 결과만 보면 안쪽 실패가 성공으로 보였다
+          // (engine-v1.80.0 — `<on listen>` 리스너의 보낸 쪽 `_eventResult.success`).
+          const [firstFailure] = context.failures ?? [];
+          if (firstFailure && result?.success !== false) {
+            return { ...result, success: false, error: firstFailure };
+          }
+
+          return result;
         } finally {
           // 액션 완료 후 이전 컨텍스트 복원
           (window as any).__g7ActionContext = previousActionContext;
+          // engine-v1.81.2 (7.1.1): 이 동작이 늦은 사본으로 되살린 끝난 apiCall 플래그를 뺀다(없으면 아무것도 쓰지 않는다)
+          this.sweepFinishedLoadingFlagsAfterAction(componentContext);
         }
       } catch (error) {
         logger.error('Action execution failed:', error);
@@ -2295,6 +2521,8 @@ export class ActionDispatcher {
             await this.executeAction(errorAction, errorContext);
           }
         }
+
+        return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
       }
     };
 
@@ -2326,7 +2554,10 @@ export class ActionDispatcher {
    * @param run 실제 핸들러
    * @returns 핸들러 완료 Promise
    */
-  private async runGuardingFormSubmit(event: Event, run: (event: Event) => Promise<void>): Promise<void> {
+  private async runGuardingFormSubmit(
+    event: Event,
+    run: (event: Event) => Promise<ActionResult | undefined>
+  ): Promise<ActionResult | undefined> {
     const form = event?.type === 'submit' && event.target instanceof HTMLFormElement ? event.target : null;
     if (!form) {
       return run(event);
@@ -2337,7 +2568,7 @@ export class ActionDispatcher {
       event.preventDefault();
       logger.log('Duplicate form submit ignored while the previous submit is in flight');
 
-      return;
+      return undefined;
     }
 
     const entry = inFlight ?? { event, running: 0 };
@@ -2345,7 +2576,7 @@ export class ActionDispatcher {
     ActionDispatcher.submitsInFlight.set(form, entry);
 
     try {
-      await run(event);
+      return await run(event);
     } finally {
       entry.running -= 1;
       if (entry.running === 0 && ActionDispatcher.submitsInFlight.get(form) === entry) {
@@ -2369,6 +2600,78 @@ export class ActionDispatcher {
     const random = Math.random().toString(36).substring(2, 9);
 
     return `${handlerPart}_${targetPart.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}_${random}`;
+  }
+
+  /**
+   * 정본 `_local`(저장소 B)·`__g7PendingLocalState`·setLocal 대체 스냅샷(`__g7LastSetLocalSnapshot`)의 `loadingActions` 에서 끝난 apiCall 플래그를 뺍니다.
+   *
+   * 로딩 플래그는 저장소 A 에만 쓰지만, 렌더 문맥 사본을 쓰는 쓰기(setState·setLocal 의 A 전용 키 보충)가 진행 중
+   * 플래그를 B·pending 에 옮겨 적을 수 있고 B 에는 해제 경로가 없었다. 그 키 하나만 고치며, 뺄 키가 없으면 쓰지 않는다.
+   * `render:false` — 화면은 같은 해제의 저장소 A 갱신이 다시 그린다. B 는 읽은 그 상태 객체(`window.__templateApp`)에 쓴다 —
+   * 레이아웃 편집기 미리보기가 그 자리를 격리 상태로 바꿔 둔 동안 호스트 상태에 미리보기 `_local` 을 쓰지 않게 한다.
+   *
+   * @return 하나라도 뺐으면 true
+   * @since engine-v1.81.2
+   */
+  private pruneFinishedLoadingFlagsInCanonicalLocal(): boolean {
+    let changed = false;
+    const templateApp = (window as any).__templateApp;
+    const canonicalLocal = templateApp?.getGlobalState?.()?._local;
+    if (typeof templateApp?.setGlobalState === 'function' && canonicalLocal && typeof canonicalLocal === 'object' && !Array.isArray(canonicalLocal)) {
+      const flags = canonicalLocal.loadingActions;
+      const pruned = pruneFinishedLoadingFlags(flags);
+      if (pruned !== flags) {
+        const nextLocal = { ...canonicalLocal, loadingActions: pruned };
+        // audit:allow local-store-write-must-mirror 끝난 로딩 플래그 정리 — 같은 해제가 저장소 A 에서도 뺀다
+        templateApp.setGlobalState({ _local: nextLocal }, { render: false });
+        changed = true;
+        // getLocal() 은 setLocal 대체 스냅샷이 B 와 다른 참조면 deepMerge(B, 스냅샷)을 돌려준다. 스냅샷이 방금 바꾼 B 그 자체였으면
+        // 새 B 를 가리키게 해 「이미 커밋됨」 판정을 지키고(그대로 두면 옛 B 의 플래그가 getLocal 에 되살아난다), 아래에서 스냅샷 쪽 플래그도 정리한다
+        if ((window as any).__g7LastSetLocalSnapshot === canonicalLocal) {
+          (window as any).__g7LastSetLocalSnapshot = nextLocal;
+        }
+      }
+    }
+
+    for (const slot of ['__g7LastSetLocalSnapshot', '__g7PendingLocalState'] as const) {
+      const value = (window as any)[slot];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const flags = value.loadingActions;
+        const pruned = pruneFinishedLoadingFlags(flags);
+        if (pruned !== flags) {
+          (window as any)[slot] = { ...value, loadingActions: pruned };
+          changed = true;
+        }
+      }
+    }
+
+    return changed;
+  }
+
+  /**
+   * 동작 하나가 끝난 뒤 끝난 apiCall 플래그가 다시 들어왔으면 뺍니다.
+   *
+   * 겹친 요청 중에 찍힌 렌더 문맥 사본으로 그 요청이 끝난 뒤 쓰는 동작(await 뒤 setState·setLocal — A 전용 키 보충·pending)은 끝난 플래그를
+   * A·B 에 되살릴 수 있다. apiCall 해제만 정리하면 그런 동작 뒤에 다른 apiCall 이 없을 때(「하나라도 true 면 잠금」 소비자가 잠겨 다음 요청을
+   * 못 낼 때) 계속 남는다. 그런 쓰기는 모두 B·pending 에도 플래그를 보충하므로 그쪽에서 끝난 플래그를 찾았을 때만 저장소 A 도 정리한다 —
+   * 끝난 플래그가 없으면(보통 — apiCall 자신의 해제가 이미 정리) 아무것도 쓰지 않아 렌더 수가 그대로다. 렌더 문맥(stateRef)은 보지 않는다 —
+   * 방금 해제한 플래그가 아직 커밋 전 문맥에 남아 있어 매 요청 A 쓰기를 한 번 더 부르게 된다.
+   *
+   * @param componentContext 동작을 발화한 컴포넌트 문맥(setState)
+   * @return 없음
+   * @since engine-v1.81.2
+   */
+  private sweepFinishedLoadingFlagsAfterAction(componentContext?: { setState?: (updates: any) => void }): void {
+    try {
+      const changed = this.pruneFinishedLoadingFlagsInCanonicalLocal();
+      const setState = componentContext?.setState;
+      if (changed && setState) {
+        // audit:allow local-store-write-must-mirror 끝난 로딩 플래그 정리 — B·pending 은 위에서 뺐다
+        setState(makeLoadingFlagUpdater(null, false));
+      }
+    } catch (error) {
+      logger.warn('[loadingFlags] 끝난 로딩 플래그 정리 실패:', error);
+    }
   }
 
   /**
@@ -2469,8 +2772,12 @@ export class ActionDispatcher {
     let actionId: string | undefined;
 
     try {
-      // 파라미터 바인딩
-      const resolvedParams = this.resolveParams(action.params, context.data);
+      // 파라미터 바인딩 — 번역해 보여 주는 인자(toast message)만 `$t:` 인자 자리 값을 보호한다 (engine-v1.80.1)
+      const resolvedParams = this.resolveParams(
+        action.params,
+        context.data,
+        TRANSLATED_PARAM_HANDLERS.has(action.handler)
+      );
 
       // DevTools: 해석된 params 저장
       if (devToolsActionId) {
@@ -2479,27 +2786,22 @@ export class ActionDispatcher {
 
       // 타겟 바인딩
       const resolvedTarget = action.target
-        ? this.resolveValue(action.target, context.data)
+        ? this.resolveValue(action.target, context.data, TRANSLATED_TARGET_HANDLERS.has(action.handler))
         : undefined;
 
       // API 호출 시 로딩 상태 시작 (컴포넌트별 개별 관리)
       if (action.handler === 'apiCall' && context.setState) {
         actionId = this.generateActionId(action, resolvedTarget);
+        beginLoadingFlag(actionId);
 
-        // 기존 loadingActions 상태 유지하면서 새 액션 추가
-        const currentLoadingActions = context.state?.loadingActions || {};
         // loadingActions 는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그다.
         // 저장소 B 는 페이지 단위 공유 슬롯이라 미러하면 ① 한 컴포넌트의 로딩 플래그가
-        // 다른 컴포넌트로 새고 ② __g7ForcedLocalFields 가 그 값을 모든 컴포넌트에 강제하는데,
-        // 해제는 키 생략으로 하므로 깊은 병합에서 지워지지 않아 스피너가 영구히 남는다.
+        // 다른 컴포넌트로 새고 ② __g7ForcedLocalFields 가 그 값을 모든 컴포넌트에 강제한다.
         // 소비자는 자기 렌더 컨텍스트로만 읽는다.
+        // engine-v1.81.2 (7.1.1): 클릭 시점 사본(context.state)이 아니라 최신 상태 위에 함수형 갱신으로 넣는다 —
+        // 끝난 플래그를 걸러 낸 뒤 자기 id 를 더한다(makeLoadingFlagUpdater 참조).
         // audit:allow local-store-write-must-mirror 컴포넌트별 일시 표시 플래그 (위 사유)
-        context.setState({
-          loadingActions: {
-            ...currentLoadingActions,
-            [actionId]: true
-          }
-        });
+        context.setState(makeLoadingFlagUpdater(actionId, true));
       }
 
       // 프리뷰 모드 억제 체크 (switch 진입 전)
@@ -2536,20 +2838,49 @@ export class ActionDispatcher {
           result = this.handleResolveIdentityChallenge(resolvedParams);
           break;
 
-        case 'navigate':
+        case 'navigate': {
           // navigate 액션의 경우 params.path를 우선적으로 사용 (동적 바인딩 지원)
-          const navigatePath = resolvedParams.path || resolvedTarget;
+          let navigatePath = resolvedParams.path || resolvedTarget;
+          // path·target 이 둘 다 비면 클릭한 `<a href>` 의 주소로 이동한다 — 주소는 href 한 곳.
+          // 같은 출처 주소만 쓴다: 저장 검사는 `<a href>` 에 외부 주소를 허용하므로 이동 대상으로 따라가면 안 된다.
+          // (engine-v1.80.1)
+          // path 키 자체가 없을 때만 — path 식이 빈 값으로 풀린 경우는 종전대로 건너뛴다(작성자가 주소를 적은 것)
+          let fromLink = false;
+          const pathOmitted = action.params?.path === undefined && action.target === undefined;
+          if (pathOmitted && (typeof navigatePath !== 'string' || navigatePath.trim() === '') && context.linkHref != null) {
+            const linkPath = toSameOriginPath(context.linkHref);
+            if (linkPath === null) {
+              logger.warn('navigate skipped — link href is not a same-origin address', { href: context.linkHref });
+              break;
+            }
+            navigatePath = linkPath;
+            fromLink = true;
+          }
+          // 대체 경로(`fallbackPath`): 주소가 비었거나 거부되면(실행 스킴·다른 출처·`//host`) 레이아웃이 적은 안전한 경로로,
+          // 그것도 거부면 이동하지 않는다. 기존 `params.fallback`(미등록 라우트 핸들러)과는 다른 인자다 (engine-v1.80.1, 결정)
+          if (resolvedParams.fallbackPath !== undefined) {
+            const chosenPath = resolveNavigatePathWithFallback(navigatePath, resolvedParams.fallbackPath);
+            if (chosenPath === null) {
+              logger.warn('navigate skipped — path and fallbackPath are both empty or rejected', {
+                path: navigatePath,
+                fallbackPath: resolvedParams.fallbackPath,
+              });
+              break;
+            }
+            navigatePath = chosenPath;
+          }
           // 빈 경로는 건너뛴다 — 그대로 넘기면 경로 처리에서 TypeError 가 나고, 그 TypeError 가
-          // 「네트워크 실패」 로 분류돼 엉뚱한 토스트가 뜬다(engine-v1.78.2, O-F1).
+          // 「네트워크 실패」 로 분류돼 엉뚱한 토스트가 뜬다(engine-v1.78.2).
           if (typeof navigatePath !== 'string' || navigatePath.trim() === '') {
             logger.warn('navigate skipped — empty path', { params: action.params, target: action.target });
             break;
           }
-          result = await this.handleNavigate(navigatePath, resolvedParams, context);
+          result = await this.handleNavigate(navigatePath, resolvedParams, context, fromLink);
           break;
+        }
 
         case 'navigateBack':
-          result = await this.handleNavigateBack();
+          result = await this.handleNavigateBack(resolvedParams);
           break;
 
         case 'navigateForward':
@@ -2859,6 +3190,12 @@ export class ActionDispatcher {
               error instanceof Error ? error : undefined
             );
 
+      // 이 실행의 첫 실패로 기록한다 — 아래 오류 처리기가 처리해도 동작은 실패다(createHandler 가 결과에 올린다).
+      // 첫 하나만 담는다: 반복 실행(startInterval)처럼 실행이 끝난 뒤에도 같은 컨텍스트를 쓰는 경로에서 목록이 자라지 않게.
+      if (context.failures && context.failures.length === 0) {
+        context.failures.push(actionError);
+      }
+
       // API 응답에서 에러 정보 추출
       const apiResponse = (actionError.originalError as any)?.response || {};
       const responseData = apiResponse.data || {};
@@ -2915,7 +3252,7 @@ export class ActionDispatcher {
       // 3. 레이아웃/템플릿/시스템 기본값 (ErrorHandlingResolver)
 
       // 떠나는 문서(세션 만료로 로그인 화면으로 옮기는 중 등)의 실패는 오류 처리를 돌리지 않는다 —
-      // 떠날 화면에 토스트가 남거나 진행 중인 이동과 겨룬다(engine-v1.78.2, O-F1).
+      // 떠날 화면에 토스트가 남거나 진행 중인 이동과 겨룬다(engine-v1.78.2).
       if (isDocumentUnloading()) {
         logger.log(`Document is leaving — error handling skipped for ${action.handler}`);
         return { success: false, error: actionError };
@@ -2960,14 +3297,9 @@ export class ActionDispatcher {
         };
 
         try {
-          // ErrorHandlerConfig를 ActionDefinition으로 변환하여 실행
-          const handlerAction: ActionDefinition = {
-            type: 'click',
-            handler: result.handler.handler as ActionType,
-            target: result.handler.target,
-            params: result.handler.params,
-            actions: result.handler.actions as ActionDefinition[],
-          };
+          // 오류 처리기 정의를 통째로 넘긴다 — 키를 골라 담으면 단일 `<fail>` 의 conditions·switch·if·
+          // actionRef·onSuccess 가 경고 없이 버려졌다(engine-v1.80.0, #753).
+          const handlerAction = { ...result.handler, type: 'click' } as ActionDefinition;
 
           await this.executeAction(handlerAction, errorContext);
           return { success: false, error: actionError };
@@ -3001,18 +3333,17 @@ export class ActionDispatcher {
     } finally {
       // API 호출 후 로딩 상태 해제 (컴포넌트별 개별 관리)
       if (action.handler === 'apiCall' && context.setState && actionId) {
-        const currentLoadingActions = context.state?.loadingActions || {};
-        const { [actionId]: _, ...remainingLoadingActions } = currentLoadingActions;
+        endLoadingFlag(actionId);
+        // engine-v1.81.2 (7.1.1): 끝난 플래그는 정본 B·pending 에서도 뺀다 — 렌더 문맥 사본을 쓰는 쓰기(A 전용 키 보충)가
+        // 진행 중 플래그를 B 에 옮겨 적었을 수 있다. A 쓰기보다 먼저 해, A 갱신으로 다시 그리는 루트가 정본 대조
+        // (dropLaggingRenderBaseKeys)로 늦은 B 사본의 플래그를 뺄 수 있게 한다.
+        this.pruneFinishedLoadingFlagsInCanonicalLocal();
 
-        // loadingActions 는 apiCall 을 발화한 컴포넌트 자신의 일시적 표시 플래그다.
-        // 저장소 B 는 페이지 단위 공유 슬롯이라 미러하면 ① 한 컴포넌트의 로딩 플래그가
-        // 다른 컴포넌트로 새고 ② __g7ForcedLocalFields 가 그 값을 모든 컴포넌트에 강제하는데,
-        // 해제는 키 생략으로 하므로 깊은 병합에서 지워지지 않아 스피너가 영구히 남는다.
-        // 소비자는 자기 렌더 컨텍스트로만 읽는다.
+        // 종전에는 클릭 시점 사본에서 자기 키를 생략한 객체를 썼는데, 렌더러 기본 깊은 병합은 키 생략을 「바꿀 키 없음」 으로
+        // 처리해 끝난 플래그가 호출마다 쌓였다(7.0.0-beta.1 부터). 최신 상태 위 함수형 갱신(shallow 표지)으로 자기 id 와
+        // 끝난 플래그를 뺀다 — 겹친 호출의 진행 중 키는 남는다.
         // audit:allow local-store-write-must-mirror 컴포넌트별 일시 표시 플래그 (위 사유)
-        context.setState({
-          loadingActions: remainingLoadingActions
-        });
+        context.setState(makeLoadingFlagUpdater(actionId, false));
       }
     }
   }
@@ -3023,13 +3354,23 @@ export class ActionDispatcher {
    * @param target 이동할 경로 (기본 경로)
    * @param params 파라미터 (mergeQuery, query, replace 등)
    * @param context 액션 컨텍스트
+   * @param fromLink 목적지를 클릭한 링크의 href 에서 얻었는지 — 그 href 의 쿼리를 병합 바탕에 넣는다 (engine-v1.80.1)
    */
   private async handleNavigate(
     target: string,
     params: Record<string, any>,
-    context: ActionContext
+    context: ActionContext,
+    fromLink: boolean = false
   ): Promise<void> {
+    // 같은 출처 전체 주소(`https://이 사이트/board/free/14` — 알림 이동 주소 등)는 경로로 바꿔 SPA 이동한다.
+    // 종전에는 라우트 매칭이 전체 주소를 몰라 미매칭 폴백 → 같은 탭 sink 가 스킴을 거부해 첫 화면 `/` 로 갔다.
+    // 다른 출처·실행 스킴은 바꾸지 않아 종전 판정(폴백 sink 의 거부)을 그대로 받는다 (engine-v1.80.1)
+    target = toSameOriginNavPath(target) ?? target;
     let finalPath = target;
+    // 링크 href 의 #해시는 쿼리 병합·교체 뒤에 다시 붙인다 (engine-v1.80.1)
+    const hashAt = fromLink ? target.indexOf('#') : -1;
+    const linkHash = hashAt >= 0 ? target.slice(hashAt) : '';
+    const linkTarget = hashAt >= 0 ? target.slice(0, hashAt) : target;
 
     // query 파라미터 처리
     // mergeQuery: true 는 query 키 없이도 병합을 수행한다 (@since engine-v1.54.2).
@@ -3038,8 +3379,12 @@ export class ActionDispatcher {
     // 정반대로 동작하던 함정이라 게이트를 넓힌다.
     if (params.query || params.mergeQuery === true) {
       if (params.mergeQuery === true) {
-        // mergeQuery가 true이면 기존 쿼리스트링과 병합
-        finalPath = this.buildMergedQueryPath(target, params.query ?? {});
+        // mergeQuery가 true이면 기존 쿼리스트링과 병합.
+        // 링크 href 에서 온 주소면 href 자신의 쿼리가 현재 쿼리를 이긴다 — 링크를 `:mergeQuery` 로 그린 href
+        // (`mergeQueryIntoHref`)와 같은 목적지가 되게 한다 (engine-v1.80.1)
+        finalPath = fromLink
+          ? this.buildMergedQueryPath(mergeQueryIntoHref(linkTarget), params.query ?? {}, true) + linkHash
+          : this.buildMergedQueryPath(target, params.query ?? {});
       } else {
         // mergeQuery가 false이거나 없으면 새 쿼리스트링으로 대체
         const queryString = new URLSearchParams();
@@ -3061,7 +3406,8 @@ export class ActionDispatcher {
         }
         const qs = queryString.toString();
         if (qs) {
-          finalPath = `${target}?${qs}`;
+          // 링크 href 에서 온 주소는 href 의 쿼리를 새 쿼리로 바꾸고 해시를 지킨다(종전 경로 명시 navigate 는 그대로)
+          finalPath = fromLink ? `${linkTarget.split('?')[0]}?${qs}${linkHash}` : `${target}?${qs}`;
         }
       }
     }
@@ -3119,10 +3465,12 @@ export class ActionDispatcher {
       logger.warn(
         `handleNavigate: No route matched, falling back to "${fallbackAction.handler}"`
       );
-      await this.dispatchAction(
-        { type: 'click', handler: fallbackAction.handler, params: fallbackAction.params } as ActionDefinition,
-        context
-      );
+      // 대체 동작 객체를 통째로 넘긴다 — sequence(actions)·conditions·cases·if 가 탈락하지 않게(engine-v1.80.0)
+      // 같은 탭 대체 이동(전체 이동)도 우회가 닿게 다음 beforeunload 1회를 무장한다 (engine-v1.82.0)
+      if (params.bypassLeaveGuard === true) {
+        armLeaveGuardBypass();
+      }
+      await this.dispatchAction({ ...fallbackAction, type: 'click' } as ActionDefinition, context);
       this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
       return;
     }
@@ -3135,7 +3483,18 @@ export class ActionDispatcher {
     }
 
     // 일반 navigate (페이지 전환) - React Router 사용
-    context.navigate(finalPath, { replace: params.replace === true });
+    // bypassLeaveGuard: 저장 성공 뒤 이동 등은 레이아웃 이탈 가드를 묻지 않는다 — 문맥의 navigate 래퍼가 옵션을
+    // 버려도 닿도록 동기 범위로 감싼다 (engine-v1.82.0)
+    const navigateFn = context.navigate;
+    const started = params.bypassLeaveGuard === true
+      ? runWithLeaveGuardBypass(() => navigateFn(finalPath, { replace: params.replace === true, bypassLeaveGuard: true }))
+      : navigateFn(finalPath, { replace: params.replace === true });
+
+    // 이탈 가드에서 머무르기를 골랐다 — 화면이 그대로이므로 스크롤도 옮기지 않는다 (engine-v1.82.0)
+    if (started === false) {
+      logger.log('handleNavigate: cancelled by leave guard', finalPath);
+      return;
+    }
 
     // 이동 후 스크롤 위치 적용 (기본: 상단)
     this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
@@ -3161,7 +3520,7 @@ export class ActionDispatcher {
   private resolveNavigateFallbackAction(
     finalPath: string,
     params: Record<string, any>
-  ): { handler: string; params: Record<string, any> } | null {
+  ): Omit<ActionDefinition, 'type'> | null {
     const fallbackOption = params.fallback;
 
     // 명시적 비활성화
@@ -3196,19 +3555,22 @@ export class ActionDispatcher {
   }
 
   /**
-   * navigate fallback 옵션을 정규화하여 { handler, params } 구조로 변환합니다.
+   * navigate fallback 옵션을 정규화하여 실행할 액션 정의로 변환합니다.
+   *
+   * 객체로 지정한 대체 동작은 통째로 돌려준다(params 에 path 만 채운다) — sequence(actions)·conditions·
+   * cases·if 를 골라 담지 않는다(engine-v1.80.0).
    *
    * @param fallbackOption params.fallback 원본 값 (undefined | string | object)
    * @param finalPath query 병합 완료된 경로
    * @param originalParams 원래 navigate params
-   * @returns fallback 핸들러 정의
+   * @returns fallback 액션 정의
    * @since engine-v1.40.0
    */
   private resolveNavigateFallback(
     fallbackOption: any,
     finalPath: string,
     _originalParams: Record<string, any>
-  ): { handler: string; params: Record<string, any> } {
+  ): Omit<ActionDefinition, 'type'> {
     // 기본값: openWindow with target '_self' — 같은 탭에서 이동.
     // 이전 기본값(`'_blank'`)은 admin↔user 교차 이동 시 새 탭이 열려 사용자 흐름이
     // 끊기는 결함을 유발. 명시적으로 새 탭이
@@ -3229,10 +3591,10 @@ export class ActionDispatcher {
       };
     }
 
-    // 객체: 상세 지정 { handler, params }
+    // 객체: 상세 지정 — 원본 그대로, params 에 path 를 채운다
     if (typeof fallbackOption === 'object' && typeof fallbackOption.handler === 'string') {
       return {
-        handler: fallbackOption.handler,
+        ...fallbackOption,
         params: {
           path: finalPath,
           ...(fallbackOption.params || {}),
@@ -3516,9 +3878,15 @@ export class ActionDispatcher {
     if (windowTarget === '_self') {
       // 같은 탭 이동은 same-origin 경로만 — navigate 미매칭 폴백도 이 자리로 온다.
       // 보안: `?redirect=javascript:…`·`//evil` 이 레이아웃을 거쳐 그대로 흘러드는 sink 다.
-      const safePath = resolveSafeNavPath(finalPath, '/');
-      if (safePath !== finalPath) {
-        logger.warn('[handleOpenWindow] same-origin 경로가 아니라 기본 경로로 이동합니다.', finalPath);
+      // 거부된 주소(실행 스킴·다른 출처)는 이동하지 않는다 — 빈 주소만 기본 경로 `/` (engine-v1.80.1, 결정)
+      const safePath = resolveSameTabNavPath(finalPath, '/');
+      if (safePath === null) {
+        logger.warn('[handleOpenWindow] same-origin 경로가 아니라 이동하지 않습니다.', finalPath);
+        return;
+      }
+      // bypassLeaveGuard: 저장 성공 뒤 같은 탭 전체 이동은 다음 beforeunload 1회를 묻지 않는다 (engine-v1.82.0)
+      if (params.bypassLeaveGuard === true) {
+        armLeaveGuardBypass();
       }
       window.location.assign(safePath);
     } else {
@@ -3529,7 +3897,8 @@ export class ActionDispatcher {
         return;
       }
       if (isSameOriginRequestUrl(finalPath)) {
-        window.open(finalPath, '_blank');
+        // 같은 출처 새 창도 이 창(opener)과 끊는다 — 템플릿의 새 탭 링크(`rel="noopener"`)와 같은 기준 (engine-v1.80.1)
+        window.open(finalPath, '_blank', 'noopener');
 
         return;
       }
@@ -3565,7 +3934,7 @@ export class ActionDispatcher {
    * 이동 대상은 same-origin 경로로 제한한다(engine-v1.73.0). 레이아웃은 이 주소를 `query` 에서
    * 채우기도 하므로(`identity_challenge` 의 `redirect_url`) 검증 없이 넘기면 `javascript:` 실행·
    * 오프사이트 이동 sink 가 된다. 본인인증 제공자의 외부 origin 이동은 명시
-   * 허용목록이 생기기 전까지 기본 경로(`/`)로 떨어진다.
+   * 허용목록이 생기기 전까지 이동하지 않는다(engine-v1.80.1 — 종전: 기본 경로 `/`).
    *
    * @param target 이동할 주소 (same-origin 절대 경로)
    * @param params `replace: true` 면 뒤로가기 이력을 남기지 않는다
@@ -3578,12 +3947,20 @@ export class ActionDispatcher {
       return;
     }
 
-    const safeTarget = resolveSafeNavPath(target, '/');
-    if (safeTarget !== target.trim()) {
-      logger.warn('[handleRedirect] same-origin 경로가 아니라 기본 경로로 이동합니다.', target);
+    // 거부된 주소(실행 스킴·다른 출처)는 이동하지 않는다 (engine-v1.80.1, 결정 — 종전: 기본 경로 `/`)
+    const safeTarget = resolveSameTabNavPath(target, '/');
+    if (safeTarget === null) {
+      logger.warn('[handleRedirect] same-origin 경로가 아니라 이동하지 않습니다.', target);
+
+      return;
     }
 
     logger.log('handleRedirect:', { target: safeTarget, replace: params.replace === true });
+
+    // bypassLeaveGuard: 저장 성공 뒤 전체 이동은 다음 beforeunload 1회를 묻지 않는다 (engine-v1.82.0)
+    if (params.bypassLeaveGuard === true) {
+      armLeaveGuardBypass();
+    }
 
     if (params.replace === true) {
       window.location.replace(safeTarget);
@@ -3596,9 +3973,16 @@ export class ActionDispatcher {
    * navigateBack 액션을 처리합니다.
    *
    * 브라우저 히스토리에서 뒤로 이동합니다.
+   *
+   * @param params `bypassLeaveGuard: true` 면 레이아웃 이탈 가드 확인 생략 (engine-v1.82.0)
    */
-  private async handleNavigateBack(): Promise<void> {
+  private async handleNavigateBack(params: Record<string, any> = {}): Promise<void> {
     logger.log('handleNavigateBack');
+    // bypassLeaveGuard: 취소 단추 등은 레이아웃 이탈 가드를 묻지 않는다 — 뒤로 가기는 비동기라 다음 popstate(또는
+    // 문서를 떠나면 beforeunload) 1회를 무장한다 (engine-v1.82.0)
+    if (params?.bypassLeaveGuard === true) {
+      armLeaveGuardBypass();
+    }
     window.history.back();
   }
 
@@ -3657,6 +4041,8 @@ export class ActionDispatcher {
     logger.log('handleReplaceUrl:', { target, params, finalPath });
 
     // URL만 변경 (데이터소스 refetch 없음, 컴포넌트 리마운트 없음)
+    // 경로가 바뀌어도 같은 화면이다 — 디바운스 칸의 경로 가드가 다른 화면으로 보지 않게 기록한다 (engine-v1.81.2)
+    registerUrlOnlyPathChange(finalPath, (window as any).__templateApp);
     window.history.replaceState(null, '', finalPath);
 
     // 이동 후 스크롤 위치 적용 (기본: preserve — URL만 교체하는 용도이므로 유지)
@@ -3668,40 +4054,24 @@ export class ActionDispatcher {
    *
    * @param basePath 기본 경로 (쿼리스트링 없이)
    * @param newParams 병합할 새 파라미터
+   * @param useBaseQuery basePath 자신의 쿼리를 바탕으로 쓸지 — 링크 href 에서 온 주소(이미 현재 쿼리를 합친 주소)일 때만 true.
+   *   false(기본)면 종전대로 basePath 의 쿼리를 버리고 현재 URL 쿼리를 바탕으로 쓴다.
    */
   private buildMergedQueryPath(
     basePath: string,
-    newParams: Record<string, any>
+    newParams: Record<string, any>,
+    useBaseQuery: boolean = false
   ): string {
-    // 현재 URL의 쿼리 파라미터 가져오기
-    const currentParams = new URLSearchParams(window.location.search);
+    const [pathWithoutQuery, baseQuery = ''] = basePath.split('?');
 
-    // 새 파라미터 병합 (기존 값 덮어쓰기)
-    for (const [key, value] of Object.entries(newParams)) {
-      if (value === null || value === undefined || value === '') {
-        // 빈 값이면 파라미터 제거
-        currentParams.delete(key);
-      } else if (Array.isArray(value)) {
-        // 배열인 경우 기존 값 제거 후 각 요소를 개별 파라미터로 추가
-        // 키에 []가 없으면 추가하여 Laravel이 배열로 인식하도록 함
-        const arrayKey = key.endsWith('[]') ? key : `${key}[]`;
-        currentParams.delete(key);
-        currentParams.delete(arrayKey);
-        for (const item of value) {
-          if (item !== undefined && item !== null && item !== '') {
-            currentParams.append(arrayKey, String(item));
-          }
-        }
-      } else {
-        currentParams.set(key, String(value));
-      }
-    }
+    // 바탕 쿼리 — 종전: 현재 URL 의 쿼리 / 링크 href: 그 href 의 쿼리(현재 쿼리를 이미 합친 값)
+    const currentParams = new URLSearchParams(useBaseQuery ? baseQuery.split('#')[0] : window.location.search);
+
+    // 새 파라미터 병합 (기존 값 덮어쓰기, 빈 값은 제거, 배열은 `키[]`) — 규칙 SSoT 는 navigationLinks
+    applyQueryValues(currentParams, newParams);
 
     // 쿼리스트링 생성
     const queryString = currentParams.toString();
-
-    // basePath에서 기존 쿼리스트링 제거
-    const pathWithoutQuery = basePath.split('?')[0];
 
     return queryString ? `${pathWithoutQuery}?${queryString}` : pathWithoutQuery;
   }
@@ -4470,11 +4840,33 @@ export class ActionDispatcher {
     context: ActionContext
   ): Promise<Record<string, any> | undefined> {
     logger.log('[handleSetState] START, params:', params);
-    const { target = 'component', scope, merge, __render, ...payload } = params;
+    const { target = 'component', scope, merge, __render, __g7EmptyObjectPrewrite: isEmptyObjectPrewrite, ...payload } = params;
 
-    // DevTools 추적 시작
-    const devTools = getDevTools();
+    // DevTools 추적 시작 (빈 객체 선행 쓰기는 사용자 동작이 아니라 기록하지 않는다)
+    const devTools = isEmptyObjectPrewrite ? undefined : getDevTools();
     const G7Core = (window as any).G7Core;
+
+    // 빈 객체 `{}` 값의 선행 비우기 (engine-v1.81.1, 7.1.1)
+    //
+    // deep 병합(기본)은 `{}` 를 「바꿀 키 없음」 으로 병합해 기존 값을 지우지 못했다 — 같은 레이아웃의 다른 상품으로 옮긴 뒤
+    // init 의 `reviewOptionFilters: {}` 가 앞 상품 필터를 남겼다(7.1.0 의 레이아웃 빈 객체 보존부터 드러남, 그 전에는 `[]` 로 와서
+    // 통째로 덮였다). 레이아웃은 그 키를 `null` 로 먼저 쓰고 `{}` 를 다시 쓰는 2단계로 피했다. 엔진이 같은 2단계를 대신한다:
+    // 그 자리들만 `null` 로 둔 payload 를 같은 target·scope 로 먼저 쓴다. `null` 은 저장소 A(handleLocalSetState)·B 미러·
+    // pending·forced·격리·레이아웃 스택 병합이 모두 「교체」 로 처리하므로 새 쓰기 경로 없이 두 저장소가 함께 비워진다.
+    // 이어지는 본 쓰기의 병합은 `emptyObjectReplaces` 로 `{}` 를 그대로 둔다(선행 쓰기가 닿지 않는 낡은 base — scope 스택
+    // 상태·기본 갈래의 context.state — 에서도 결과가 `{}`). 빈 객체 값이 없는 setState 는 이 블록을 타지 않아 종전과 같다.
+    // 점 경로 target(`_local.a.b`·`$parent._local.a.b`)도 대상이다 — 저장소 B 는 그 자리에 값을 통째로 두지만 저장소 A 는
+    // deep 병합이라(`{value: {}}` 가 A 의 옛 값을 못 지움) 같은 선행 쓰기(`{value: null}`)가 필요하다. 이 함수 본문에는 await 가
+    // 없어 선행 쓰기는 본 쓰기보다 먼저 동기로 끝나고, 같은 틱의 React 갱신은 하나로 묶인다(전역 선행 쓰기는 render:false).
+    if (!isEmptyObjectPrewrite && merge !== 'replace' && merge !== 'shallow') {
+      const emptyObjectNullTree = collectSetStateEmptyObjectNullTree(target, payload);
+      if (emptyObjectNullTree) {
+        this.handleSetState(
+          { target, scope, merge, __render: false, __g7EmptyObjectPrewrite: true, ...emptyObjectNullTree },
+          context
+        ).catch((error) => logger.warn('[handleSetState] 빈 객체 선행 비우기 실패 — 본 쓰기를 계속한다', error));
+      }
+    }
 
     // $parent 또는 $root 타겟 처리 (Phase 4: $parent 바인딩 컨텍스트)
     // 예: "$parent._local", "$parent._global", "$parent._local.form.name", "$root._local"
@@ -4539,7 +4931,7 @@ export class ActionDispatcher {
       // __setStateId, __mergeMode는 메타데이터이므로 병합에서 제외 후 다시 추가
       const { __setStateId: _setStateId, __mergeMode: _mergeMode, ...payloadWithoutMeta } = resolvedPayload as any;
       const mergedPayload = mergeMode === 'deep'
-        ? this.deepMergeWithState(payloadWithoutMeta, currentGlobal)
+        ? this.deepMergeWithState(payloadWithoutMeta, currentGlobal, SETSTATE_DEEP_MERGE_OPTIONS)
         : payloadWithoutMeta;  // replace, shallow: 병합 없이 payload 그대로
       const finalPayload = {
         ...mergedPayload,
@@ -4583,7 +4975,7 @@ export class ActionDispatcher {
           const pendingLocal = (window as any).__g7PendingLocalState;
           const currentState = pendingLocal || context.state || {};
           const finalPayload = mergeMode === 'deep'
-            ? this.deepMergeWithState(resolvedPayload, currentState)
+            ? this.deepMergeWithState(resolvedPayload, currentState, SETSTATE_DEEP_MERGE_OPTIONS)
             : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
           this.writeLocalState(context, finalPayload);
           if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
@@ -4616,7 +5008,7 @@ export class ActionDispatcher {
           if (targetContext?.setState) {
             const { __mergeMode, __setStateId, ...cleanPayload } = resolvedPayload as any;
             const finalPayload = mergeMode === 'deep'
-              ? this.deepMergeWithState(cleanPayload, targetContext.state || {})
+              ? this.deepMergeWithState(cleanPayload, targetContext.state || {}, SETSTATE_DEEP_MERGE_OPTIONS)
               : cleanPayload;  // replace, shallow: 병합 없이 payload 그대로
 
             logger.log(`[handleSetState] scope=${scope}: 타겟 컨텍스트에 상태 업데이트`, finalPayload);
@@ -4647,6 +5039,8 @@ export class ActionDispatcher {
       if (isRealComponentContext) {
         // 컴포넌트 컨텍스트가 있으면 직접 setState 호출
         logger.log('[handleSetState] Using COMPONENT setState path');
+        // 명시적 setState 가 쓰는 경로는 자동바인딩 setLocal 의 덮어쓰기 기록에서 지운다 (engine-v1.80.1)
+        this.releaseSetLocalOverrides(resolvedPayload, mergeMode);
         logger.log('[handleSetState] resolvedPayload:', resolvedPayload);
         logger.log('[handleSetState] context.state:', context.state);
         logger.log('[handleSetState] mergeMode:', mergeMode);
@@ -4670,7 +5064,7 @@ export class ActionDispatcher {
         // __g7PendingLocalState에는 전체 병합 결과 저장 (getLocal() 동기화용)
         // context.setState와 분리: setState는 변경분만, pending은 전체 상태
         const fullMergedState = mergeMode === 'deep'
-          ? this.deepMergeWithState(resolvedPayload, currentState)
+          ? this.deepMergeWithState(resolvedPayload, currentState, SETSTATE_DEEP_MERGE_OPTIONS)
           : mergeMode === 'shallow'
             ? { ...(context.state || {}), ...resolvedPayload }
             : resolvedPayload;  // replace
@@ -4752,7 +5146,7 @@ export class ActionDispatcher {
             // deepMergeInto 가 참조 동일성 가드(:4608)로 매 레벨 방어 복사하므로 live B 를
             // 변이하지 않는다.
             const merged = mergeMode === 'deep'
-              ? this.deepMergeWithState(resolvedPayload, canonicalLocal as Record<string, any>)
+              ? this.deepMergeWithState(resolvedPayload, canonicalLocal as Record<string, any>, SETSTATE_DEEP_MERGE_OPTIONS)
               : { ...(canonicalLocal as Record<string, any>), ...resolvedPayload };
             const { __mergeMode: _cmm, __setStateId: _cssid, ...rest } = merged as any;
             canonicalMerged = rest;
@@ -4769,6 +5163,12 @@ export class ActionDispatcher {
             : pendingExpected;
           this.globalStateUpdater({ _local: syncedLocal }, { render: false });
           logger.log('[handleSetState] _global._local synced (render:false):', syncedLocal);
+          // 저장소 B 를 live B 기반으로 막 썼다 — setLocal 의 getLocal 대체 스냅샷(__g7LastSetLocalSnapshot)은 이제 B 보다 낡았다.
+          // 남기면 getLocal() 이 deepMerge(B, 스냅샷)으로 방금 비운 값을 되살린다(통화 추가 → 이름 입력 → 취소 뒤 getLocal 에
+          // 앞 이름, engine-v1.81.1 — 7.1.1). live B 를 base 로 쓴 때만 지운다(폴백 전체 스냅샷 쓰기는 종전대로).
+          if (canonicalMerged) {
+            (window as any).__g7LastSetLocalSnapshot = undefined;
+          }
         }
 
         // engine-v1.17.5: dataKey 자동 바인딩이 있는 컴포넌트에서 setState 핸들러 호출 시
@@ -4787,7 +5187,11 @@ export class ActionDispatcher {
           (window as any).__g7ForcedLocalFields = cleanPayloadForForced;
         } else {
           const existingForced = (window as any).__g7ForcedLocalFields || {};
-          (window as any).__g7ForcedLocalFields = this.deepMergeWithState(cleanPayloadForForced, existingForced);
+          (window as any).__g7ForcedLocalFields = this.deepMergeWithState(
+            cleanPayloadForForced,
+            existingForced,
+            mergeMode === 'deep' ? SETSTATE_DEEP_MERGE_OPTIONS : undefined
+          );
         }
 
         logger.log('[handleSetState] __g7ForcedLocalFields updated:', cleanPayloadForForced);
@@ -4816,6 +5220,7 @@ export class ActionDispatcher {
       } else if (this.globalStateUpdater) {
         // init_actions 등에서 componentContext가 없는 경우 globalStateUpdater를 통해 _local 업데이트
         logger.log('[handleSetState] Using GLOBAL STATE UPDATER path for _local');
+        this.releaseSetLocalOverrides(resolvedPayload, mergeMode);
 
         // engine-v1.17.2: sequence 내 연속 setState 시 이전 setState 결과 참조 지원
         // globalStateUpdater는 비동기이므로 __g7PendingLocalState를 우선 사용
@@ -4824,7 +5229,7 @@ export class ActionDispatcher {
         logger.log('[handleSetState] currentLocal (with pending):', currentLocal);
 
         const finalLocal = mergeMode === 'deep'
-          ? this.deepMergeWithState(resolvedPayload, currentLocal)
+          ? this.deepMergeWithState(resolvedPayload, currentLocal, SETSTATE_DEEP_MERGE_OPTIONS)
           : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
         logger.log('[handleSetState] finalLocal (merged):', finalLocal);
         // engine-v1.42.0: __render 옵션 전파
@@ -4863,6 +5268,8 @@ export class ActionDispatcher {
         const currentState = pendingLocal || context.state || {};
         const update = this.createNestedUpdate(path, value, currentState);
         const mergedState = { ...currentState, ...update };
+        // 이 경로만 덮어쓰기 기록에서 지운다 — update 는 형제 값을 담은 하위 트리라 그대로 넘기면 형제 기록까지 지운다
+        this.releaseSetLocalOverrides({ [path]: value }, 'deep');
         context.setState(update);
 
         // engine-v1.58.2: dot notation 경로도 canonical source(_global._local)에 동기화한다.
@@ -4897,6 +5304,10 @@ export class ActionDispatcher {
             : mergedState;
           this.globalStateUpdater({ _local: syncedLocal }, { render: false });
           logger.log('[handleSetState] _global._local synced for dot notation (render:false):', syncedLocal);
+          // 위 COMPONENT 갈래와 같은 이유 — live B 기반으로 썼으면 setLocal 대체 스냅샷을 지운다 (engine-v1.81.1)
+          if (canonicalLocal && typeof canonicalLocal === 'object') {
+            (window as any).__g7LastSetLocalSnapshot = undefined;
+          }
         }
 
         if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
@@ -4920,7 +5331,7 @@ export class ActionDispatcher {
       const pendingLocal = (window as any).__g7PendingLocalState;
       const currentState = pendingLocal || context.state || {};
       const finalPayload = mergeMode === 'deep'
-        ? this.deepMergeWithState(resolvedPayload, currentState)
+        ? this.deepMergeWithState(resolvedPayload, currentState, SETSTATE_DEEP_MERGE_OPTIONS)
         : resolvedPayload;  // replace, shallow: DynamicRenderer에서 처리
       this.writeLocalState(context, finalPayload, undefined, { scope });
       // DevTools: 상태 변경 완료
@@ -5005,6 +5416,8 @@ export class ActionDispatcher {
     const targetContext = isParent
       ? layoutContextStack[layoutContextStack.length - 1]
       : layoutContextStack[0];
+    // 대상이 스택 맨 아래(첫 모달을 연 화면 = 페이지)면 그 쓰기는 페이지 `_local` 쓰기다 (engine-v1.81.2, mirrorPageScopeLocalWrite)
+    const targetsPage = targetContext === layoutContextStack[0];
 
     if (!targetContext) {
       logger.warn(`[handleParentScopeSetState] 타겟 컨텍스트를 찾을 수 없습니다. target=${target}`);
@@ -5050,7 +5463,7 @@ export class ActionDispatcher {
       } else {
         // $parent._global 형식 - 전체 병합
         const finalPayload = mergeMode === 'deep'
-          ? this.deepMergeWithState(cleanPayload, currentGlobal)
+          ? this.deepMergeWithState(cleanPayload, currentGlobal, SETSTATE_DEEP_MERGE_OPTIONS)
           : cleanPayload;  // replace, shallow: 병합 없이 payload 그대로
         logger.log(`[handleParentScopeSetState] ${target}: 전역 상태 업데이트 (mergeMode=${mergeMode})`, finalPayload);
         this.globalStateUpdater(mergeMode !== 'deep' ? { ...finalPayload, __mergeMode: mergeMode } : finalPayload);
@@ -5074,11 +5487,14 @@ export class ActionDispatcher {
         const update = this.createNestedUpdate(nestedPath, value, currentLocal);
         const mergedState = { ...currentLocal, ...update };
         logger.log(`[handleParentScopeSetState] ${target}: 로컬 상태 중첩 경로 업데이트`, update);
-        // $parent/$root 스코프는 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의 부모/루트
-        // 슬롯을 대상으로 한다. 저장소 B 를 함께 쓰면 모달의 setState 가 페이지 _local 을
-        // 오염시킨다(사례 29). 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
+        // $parent/$root 스코프는 레이아웃 컨텍스트 스택의 부모/루트 슬롯을 대상으로 한다. 모달 자신의 상태를 저장소 B 에
+        // 넣지 않는다(사례 29) — 대상이 페이지(스택 맨 아래)일 때만 쓴 키를 B 에 얹는다(mirrorPageScopeLocalWrite, engine-v1.81.2).
+        // 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
         // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
         targetContext.setState(update);
+        if (targetsPage) {
+          this.mirrorPageScopeLocalWrite(nestedPath, cleanPayload, mergeMode);
+        }
         // 스택의 state와 dataContext._local 모두 업데이트하여
         // 다음 setState 호출 시 currentLocal이 최신 값을 읽고,
         // 모달에서 $parent._local 바인딩이 최신 값을 읽도록 함
@@ -5102,13 +5518,16 @@ export class ActionDispatcher {
           ? cleanPayload
           : mergeMode === 'shallow'
             ? { ...currentLocal, ...cleanPayload }
-            : this.deepMergeWithState(cleanPayload, currentLocal);
+            : this.deepMergeWithState(cleanPayload, currentLocal, SETSTATE_DEEP_MERGE_OPTIONS);
         logger.log(`[handleParentScopeSetState] ${target}: 로컬 상태 업데이트 (mergeMode=${mergeMode})`, expectedState);
-        // $parent/$root 스코프는 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의 부모/루트
-        // 슬롯을 대상으로 한다. 저장소 B 를 함께 쓰면 모달의 setState 가 페이지 _local 을
-        // 오염시킨다(사례 29). 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
+        // $parent/$root 스코프는 레이아웃 컨텍스트 스택의 부모/루트 슬롯을 대상으로 한다. 모달 자신의 상태를 저장소 B 에
+        // 넣지 않는다(사례 29) — 대상이 페이지(스택 맨 아래)일 때만 쓴 키를 B 에 얹는다(mirrorPageScopeLocalWrite, engine-v1.81.2).
+        // 스택 state·dataContext 동기화는 바로 아래에서 직접 수행한다.
         // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
         targetContext.setState(setStatePayload);
+        if (targetsPage) {
+          this.mirrorPageScopeLocalWrite(undefined, cleanPayload, mergeMode);
+        }
         // 스택의 state와 dataContext._local 모두 업데이트하여
         // 다음 setState 호출 시 currentLocal이 최신 값을 읽고,
         // 모달에서 $parent._local 바인딩이 최신 값을 읽도록 함
@@ -5122,6 +5541,109 @@ export class ActionDispatcher {
         if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
         return expectedState;
       }
+    }
+  }
+
+  /**
+   * 모달이 페이지(스택 맨 아래)의 `_local` 에 쓴 값을 저장소 B 에도 얹습니다 (engine-v1.81.2, 7.1.1).
+   *
+   * `$parent._local`·`$root._local` 쓰기는 레이아웃 컨텍스트 스택의 setState(페이지 저장소 A)로만 갔다. 화면은 바뀌지만 저장소 B 를
+   * 읽는 `G7Core.state.getLocal()`·커스텀 핸들러·이탈 가드(`meta.leave_guard`)·저장소 B 기반 다음 쓰기가 옛 값을 봤다(트러블슈팅
+   * state-advanced 모달 사례 10 — 레이아웃의 이중 쓰기로 피해 왔다). 같은 화면의 `setParentLocal` 은 이미 B 를 쓴다. 여기서는 **쓴 키만**
+   * live B 에 얹는다 — 모달 자신의 상태(`modalDraft` 등)는 B 에 들어가지 않는다(setState 사례 29). 다시 그리기는 스택 setState 가 하므로
+   * render:false. 대상이 중첩 모달이면(스택 맨 아래가 아님) 부르지 않는다.
+   *
+   * @param nestedPath 점 경로 target 의 `_local.` 뒤 경로(없으면 전체 병합)
+   * @param cleanPayload 메타 키를 뺀 payload
+   * @param mergeMode 병합 방식
+   * @since engine-v1.81.2
+   */
+  private mirrorPageScopeLocalWrite(
+    nestedPath: string | undefined,
+    cleanPayload: Record<string, any>,
+    mergeMode: 'replace' | 'shallow' | 'deep'
+  ): void {
+    const canonical = (window as any).__templateApp?.getGlobalState?.()?._local;
+    if (!this.globalStateUpdater || !canonical || typeof canonical !== 'object' || Array.isArray(canonical)) return;
+
+    let next: Record<string, any>;
+    if (nestedPath) {
+      const value = cleanPayload.value !== undefined ? cleanPayload.value : Object.values(cleanPayload)[0];
+      next = { ...canonical, ...this.createNestedUpdate(nestedPath, value, canonical) };
+    } else if (mergeMode === 'replace') {
+      next = { ...cleanPayload };
+    } else if (mergeMode === 'shallow') {
+      next = { ...canonical, ...cleanPayload };
+    } else {
+      next = this.deepMergeWithState(cleanPayload, canonical, SETSTATE_DEEP_MERGE_OPTIONS);
+    }
+    const { __mergeMode: _mm, __setStateId: _sid, ...syncedLocal } = next as any;
+    this.globalStateUpdater({ _local: syncedLocal }, { render: false });
+    // live B 를 base 로 썼다 — getLocal 대체 스냅샷은 이제 B 보다 낡았다(handleSetState 의 같은 처리, engine-v1.81.1)
+    (window as any).__g7LastSetLocalSnapshot = undefined;
+  }
+
+  /**
+   * 명시적 setState 가 쓰는 `_local` 경로를 자동바인딩 setLocal 의 덮어쓰기 기록(`__g7SetLocalOverrideKeys`)에서 지웁니다.
+   *
+   * 자동바인딩 칸은 입력을 `setLocal(patch, { render: false })` 로 쓰고, setLocal 은 쓴 경로를 이 기록에 누적한다. 기록은
+   * `dataContext._local` 이 바뀌는 렌더에서만 지워지는데 render:false 라 그 렌더가 오지 않는다. 그래서 뒤따르는 명시적 setState
+   * 마다 `handleLocalSetState` 가 기록을 `effectivePrev` 에 다시 얹어, 단추가 `null`·다른 값으로 초기화한 경로에 앞 입력이
+   * 되살아났다(「입력 → 취소 → 다시 열기」, 7.1.1). 명시적 setState 가 그 경로를 쓰면 그 값이 더 새 값이므로 기록에서 뺀다.
+   *
+   * 지우는 범위는 payload 가 덮어쓰는 자리만이다: 값이 원시값·null·배열이면 그 경로(하위 포함), 비어 있지 않은 객체면 안으로
+   * 내려가 같은 규칙, 빈 객체 `{}` 는 deep 병합에서 아무것도 바꾸지 않으므로 지우지 않는다(단 setState 액션의 `{}` 는
+   * engine-v1.81.1 부터 그 자리를 `null` 로 먼저 쓰는 선행 쓰기가 이 함수를 먼저 불러 그 경로를 지운다 — handleSetState 참고). shallow 는 최상위 키 전체,
+   * replace 는 기록 전체. 자동바인딩 자신의 쓰기(함수형 갱신·setLocal)는 이 함수를 거치지 않으므로 그 보호는 그대로다.
+   * 기록에 남는 경로가 없으면 빈 객체로 둔다(전역 플래그 판정 시점을 바꾸지 않도록 undefined 로 바꾸지 않는다).
+   *
+   * @param payload setState 의 상태 인자 (메타 키 `__*` 포함 가능, 점 표기 허용)
+   * @param mergeMode 병합 모드
+   * @returns 없음
+   * @since engine-v1.80.1
+   */
+  private releaseSetLocalOverrides(payload: Record<string, any>, mergeMode: 'replace' | 'shallow' | 'deep'): void {
+    const overrides = (window as any).__g7SetLocalOverrideKeys;
+    if (!overrides || typeof overrides !== 'object') return;
+
+    if (mergeMode === 'replace') {
+      (window as any).__g7SetLocalOverrideKeys = {};
+      return;
+    }
+
+    const clean: Record<string, any> = {};
+    for (const [key, value] of Object.entries(payload ?? {})) {
+      if (key === 'target' || key === 'merge' || key === 'scope' || key.startsWith('__')) continue;
+      clean[key] = value;
+    }
+    const written = this.deepMergeWithState(clean, {});
+
+    const isPlainObject = (v: unknown): v is Record<string, any> =>
+      v !== null && typeof v === 'object' && !Array.isArray(v)
+      && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
+
+    const prune = (record: Record<string, any>, write: Record<string, any>, topOnly: boolean): Record<string, any> => {
+      let out: Record<string, any> | null = null;
+      for (const [key, value] of Object.entries(write)) {
+        if (!(key in record)) continue;
+        if (!topOnly && isPlainObject(value)) {
+          if (Object.keys(value).length === 0 || !isPlainObject(record[key])) continue;
+          const sub = prune(record[key], value, false);
+          if (sub === record[key]) continue;
+          out = out ?? { ...record };
+          if (Object.keys(sub).length > 0) out[key] = sub;
+          else delete out[key];
+          continue;
+        }
+        out = out ?? { ...record };
+        delete out[key];
+      }
+      return out ?? record;
+    };
+
+    const next = prune(overrides, written, mergeMode === 'shallow');
+    if (next !== overrides) {
+      (window as any).__g7SetLocalOverrideKeys = next;
     }
   }
 
@@ -5144,11 +5666,17 @@ export class ActionDispatcher {
    * // currentState: { errors: { name: ["필수"], email: ["필수"] } }
    * // payload: { errors: { email: ["필수"] } }
    * // result: { errors: { email: ["필수"] } }  -- name 에러 제거됨
+   *
+   * @param options.emptyObjectReplaces true 면 payload 의 빈 일반 객체 `{}` 값이 기존 값을 비운다(재귀 병합하지 않는다).
+   *   setState 액션의 deep 병합에서만 켠다 (engine-v1.81.1, 7.1.1 — `handleSetState` 의 선행 쓰기 설명).
+   *   폼 매핑·resultTo·dot 변환(base `{}`) 등 다른 호출은 종전대로 `{}` 를 「바꿀 키 없음」 으로 병합한다.
    */
   private deepMergeWithState(
     payload: Record<string, any>,
-    currentState: Record<string, any>
+    currentState: Record<string, any>,
+    options?: { emptyObjectReplaces?: boolean }
   ): Record<string, any> {
+    const emptyObjectReplaces = options?.emptyObjectReplaces === true;
     // 깊은 병합에서 제외할 키 목록 (완전 교체되어야 하는 필드들)
     const replaceOnlyKeys = ['errors'];
 
@@ -5184,7 +5712,13 @@ export class ActionDispatcher {
         // 이전 키의 변경사항이 유지되도록 result를 기준으로 nestedUpdate 생성
         const nestedUpdate = this.createNestedUpdate(key, value, result);
         // 결과를 깊은 병합
-        this.deepMergeInto(result, nestedUpdate, result);
+        this.deepMergeInto(result, nestedUpdate, result, emptyObjectReplaces);
+        continue;
+      }
+
+      // 빈 일반 객체는 기존 값을 비운다 (setState 액션의 deep 병합에서만 — 위 options 설명)
+      if (emptyObjectReplaces && isEmptyPlainObject(value)) {
+        result[key] = {};
         continue;
       }
 
@@ -5211,7 +5745,7 @@ export class ActionDispatcher {
         !Array.isArray(currentState[key])
       ) {
         // 중첩 객체: 재귀적으로 깊은 병합 수행
-        result[key] = this.deepMergeWithState(value, currentState[key]);
+        result[key] = this.deepMergeWithState(value, currentState[key], options);
       } else {
         // 기본값, 배열, null 등: 그대로 덮어쓰기
         result[key] = value;
@@ -5227,16 +5761,24 @@ export class ActionDispatcher {
    * @param target 병합 대상 객체
    * @param source 병합할 소스 객체
    * @param currentState 현재 상태 (깊은 병합 시 기존 값 참조용)
+   * @param emptyObjectReplaces true 면 빈 일반 객체 `{}` 값이 기존 값을 비운다 (deepMergeWithState 의 같은 옵션)
    */
   private deepMergeInto(
     target: Record<string, any>,
     source: Record<string, any>,
-    currentState: Record<string, any>
+    currentState: Record<string, any>,
+    emptyObjectReplaces = false
   ): void {
     for (const [key, value] of Object.entries(source)) {
       // value가 null이면 그대로 덮어쓰기 (null로 초기화하는 경우)
       if (value === null) {
         target[key] = value;
+        continue;
+      }
+
+      // 빈 일반 객체는 기존 값을 비운다 (setState 액션의 deep 병합에서만, engine-v1.81.1)
+      if (emptyObjectReplaces && isEmptyPlainObject(value)) {
+        target[key] = {};
         continue;
       }
 
@@ -5259,7 +5801,7 @@ export class ActionDispatcher {
           target[key] = { ...target[key] };
         }
         // 두 값이 모두 객체인 경우 재귀적으로 병합
-        this.deepMergeInto(target[key], value, currentState[key] || {});
+        this.deepMergeInto(target[key], value, currentState[key] || {}, emptyObjectReplaces);
       } else if (
         typeof value === 'object' &&
         !Array.isArray(value) &&
@@ -5480,7 +6022,12 @@ export class ActionDispatcher {
         : (updates: any) => {
             // DataSourceManager onSuccess 등에서 context.setState가 없는 경우
             // globalStateUpdater를 통해 _local 업데이트
-            this.globalStateUpdater!({ _local: updates });
+            // engine-v1.81.2 (7.1.1): 함수형 갱신(apiCall 로딩 플래그·setLocal scope parent 의 표지 함수)은 지금의 `_local` 로 풀어 쓴다 —
+            // 그대로 넘기면 `_local` 자리에 함수가 들어간다. 객체는 종전 그대로
+            const next = typeof updates === 'function'
+              ? updates((window as any).__templateApp?.getGlobalState?.()?._local ?? {})
+              : updates;
+            this.globalStateUpdater!({ _local: next });
           };
 
       layoutContextStack.push({
@@ -5704,7 +6251,7 @@ export class ActionDispatcher {
 
       // 같은 종류·같은 문구의 토스트가 잠깐 안에 이미 쌓였으면 새로 쌓지 않는다(engine-v1.78.5).
       // 권한이 좁은 운영자의 화면 공통 데이터소스 403 이 시스템 기본 처리로 같은 「해당 권한이 없습니다.」 를
-      // 한 화면에 13장 쌓았다(7.1.0 영역 J O-D3). 시간이 지나면(사용자가 다시 누른 저장 실패 등) 다시 쌓인다.
+      // 한 화면에 13장 쌓았다(7.1.0). 시간이 지나면(사용자가 다시 누른 저장 실패 등) 다시 쌓인다.
       const now = Date.now();
       const duplicate = currentToasts.some(
         (t: { type?: string; message?: unknown; createdAt?: number }) =>
@@ -5801,7 +6348,7 @@ export class ActionDispatcher {
       // default 케이스 확인
       if (cases['default']) {
         logger.log('switch handler: case key is undefined, using default case');
-        return await this.executeAction(cases['default'], context);
+        return await this.runSwitchCase(action, cases['default'], context);
       }
       logger.warn('switch handler: case key is not defined and no default case');
       return;
@@ -5825,6 +6372,29 @@ export class ActionDispatcher {
     }
 
     // 케이스 액션 실행
+    return await this.runSwitchCase(action, caseAction, context);
+  }
+
+  /**
+   * switch 가 고른 case 를 실행합니다.
+   *
+   * case 값이 배열이면 conditions 의 `then` 배열과 같이 순서대로(sequence) 실행한다 — 종전에는 배열을
+   * 액션 하나로 넘겨 handler 가 없어 실패했다(engine-v1.80.0).
+   *
+   * @param action switch 액션 정의
+   * @param caseAction 고른 case 의 액션(단일 또는 배열)
+   * @param context 액션 컨텍스트
+   * @returns 실행 결과
+   */
+  private async runSwitchCase(
+    action: ActionDefinition,
+    caseAction: ActionDefinition | ActionDefinition[],
+    context: ActionContext
+  ): Promise<any> {
+    if (Array.isArray(caseAction)) {
+      return await this.handleSequence({ ...action, handler: 'sequence', actions: caseAction }, context);
+    }
+
     return await this.executeAction(caseAction, context);
   }
 
@@ -7098,7 +7668,7 @@ export class ActionDispatcher {
    */
   private async handleSaveToLocalStorage(
     params: Record<string, any>,
-    context: ActionContext
+    _context: ActionContext
   ): Promise<boolean> {
     const { key, value } = params;
 
@@ -7141,7 +7711,8 @@ export class ActionDispatcher {
     params: Record<string, any>,
     context: ActionContext
   ): Promise<any> {
-    const { key, target, stateKey, defaultValue } = params;
+    // `target` 은 문서 예시에 남은 키다 — 쓰기 대상은 언제나 `_local` 이다(writeLocalState).
+    const { key, target: _target, stateKey, defaultValue } = params;
 
     if (!key) {
       logger.error('loadFromLocalStorage: key parameter is required');
@@ -7414,10 +7985,12 @@ export class ActionDispatcher {
    *
    * @param params 원본 파라미터
    * @param dataContext 데이터 컨텍스트
+   * @param protectTranslationParams `$t:키|이름={{값}}` 인자 자리 값 보호 — 받는 핸들러가 그 문구를 곧바로 번역할 때만 (engine-v1.80.1)
    */
   private resolveParams(
     params: Record<string, any> | undefined,
-    dataContext?: any
+    dataContext?: any,
+    protectTranslationParams = false
   ): Record<string, any> {
     if (!params) return {};
 
@@ -7432,14 +8005,14 @@ export class ActionDispatcher {
       }
       if (typeof value === 'string' && value.includes('{{')) {
         // {{}} 표현식인 경우 evaluateExpression 사용 (타입 보존)
-        resolved[key] = this.evaluateExpression(value, dataContext);
+        resolved[key] = this.evaluateExpression(value, dataContext, protectTranslationParams);
       } else if (typeof value === 'string') {
         // 일반 문자열은 그대로 반환
         resolved[key] = value;
       } else if (Array.isArray(value)) {
         resolved[key] = value.map((item) =>
           typeof item === 'string' && item.includes('{{')
-            ? this.evaluateExpression(item, dataContext)
+            ? this.evaluateExpression(item, dataContext, protectTranslationParams)
             : item
         );
       } else if (
@@ -7452,7 +8025,7 @@ export class ActionDispatcher {
         // File, Blob, Date 등 non-plain 객체는 재귀 해석하지 않고 직접 전달
         resolved[key] = value;
       } else if (typeof value === 'object' && value !== null) {
-        resolved[key] = this.resolveParams(value, dataContext);
+        resolved[key] = this.resolveParams(value, dataContext, protectTranslationParams);
       } else {
         resolved[key] = value;
       }
@@ -7466,15 +8039,20 @@ export class ActionDispatcher {
    *
    * @param value 원본 값
    * @param dataContext 데이터 컨텍스트
+   * @param protectTranslationParams `$t:` 인자 자리 값 보호 — 호출부가 결과를 곧바로 번역할 때만(확인 창·setError·showAlert)
    */
-  private resolveValue(value: string, dataContext?: any): string {
+  private resolveValue(value: string, dataContext?: any, protectTranslationParams = true): string {
     if (!dataContext) return value;
 
     // 액션 실행 시점에서는 항상 캐시를 사용하지 않음
     // - 이벤트마다 컨텍스트가 다름 (iteration 변수: item, index 등)
     // - $args, $event는 매번 새로운 값
     // - 트러블슈팅 가이드: "액션 실행 시점 (ActionDispatcher) | X 사용 안 함"
-    return this.bindingEngine.resolveBindings(value, dataContext, { skipCache: true });
+    // `$t:` 로 시작하는 문구(확인 창·오류 문구)는 호출부가 곧바로 번역하므로 인자 자리 값을 보호한다 (engine-v1.80.1)
+    return this.bindingEngine.resolveBindings(value, dataContext, {
+      skipCache: true,
+      protectTranslationParams: protectTranslationParams && value.startsWith('$t:'),
+    });
   }
 
   /**
@@ -7545,7 +8123,7 @@ export class ActionDispatcher {
    * @param expr 표현식 문자열
    * @param dataContext 데이터 컨텍스트
    */
-  private evaluateExpression(expr: string, dataContext?: any): any {
+  private evaluateExpression(expr: string, dataContext?: any, protectTranslationParams = false): any {
     if (!dataContext) return expr;
 
     // 단일 `{{...}}` 판정은 BindingShape 정본을 쓴다. 종전에는 greedy 정규식
@@ -7581,7 +8159,13 @@ export class ActionDispatcher {
           };
         }
       }
-      return this.bindingEngine.resolveBindings(expr, effectiveContext, { skipCache: true });
+      // `$t:키|이름={{값}}` 문구를 곧바로 번역하는 핸들러(toast message)의 인자만 인자 자리 값을 보호한다 — 값의
+      // `&`·`|`·`=`·끝 ` /` 가 인자 구분자로 읽히지 않게 한다. 상태 저장·요청 본문 등 다른 핸들러의 인자는 표식이
+      // 밖으로 나가지 않도록 종전 그대로 둔다 (engine-v1.80.1)
+      return this.bindingEngine.resolveBindings(expr, effectiveContext, {
+        skipCache: true,
+        protectTranslationParams: protectTranslationParams && expr.startsWith('$t:'),
+      });
     }
 
     let expression = singleExpression;
@@ -7676,7 +8260,7 @@ export class ActionDispatcher {
    * 오류 처리 문맥의 `auth.loginPath` 를 만드는 함수를 설정합니다.
    *
    * 시스템 기본 401 처리는 `{{auth.loginPath}}` 로 이동한다. 이 값을 싣는 곳이 없으면 경로가 빈 값으로 풀려
-   * 이동이 실패하고, 그 실패가 「네트워크 실패」 토스트로 바뀌어 보였다(7.1.0 O-F1).
+   * 이동이 실패하고, 그 실패가 「네트워크 실패」 토스트로 바뀌어 보였다(7.1.0).
    *
    * @param resolver 로그인 주소(복귀 경로 포함)를 돌려주는 함수
    * @since engine-v1.78.2
@@ -8010,7 +8594,7 @@ export class ActionDispatcher {
     // DevTools 추적 - pending 상태
     const devTools = getDevTools();
     if (devTools?.isEnabled()) {
-      devTools.trackAction({
+      devTools.trackAction!({
         handler: typeof action.handler === 'string' ? action.handler : String(action.handler),
         type: action.type,
         status: 'pending',
@@ -8031,7 +8615,7 @@ export class ActionDispatcher {
 
       // DevTools 추적 - leading 실행
       if (devTools?.isEnabled()) {
-        devTools.trackAction({
+        devTools.trackAction!({
           handler: typeof action.handler === 'string' ? action.handler : String(action.handler),
           type: action.type,
           status: 'success',
@@ -8054,7 +8638,7 @@ export class ActionDispatcher {
 
         // DevTools 추적 - trailing 실행
         if (devTools?.isEnabled()) {
-          devTools.trackAction({
+          devTools.trackAction!({
             handler: typeof action.handler === 'string' ? action.handler : String(action.handler),
             type: action.type,
             status: 'success',
@@ -8111,10 +8695,33 @@ export class ActionDispatcher {
   }
 
   /**
+   * 대기 중 디바운스 flush 를 끈 채 함수를 실행합니다 (engine-v1.81.2, 7.1.1).
+   *
+   * 자동바인딩 디바운스 쓰기는 끝에 그 칸의 change 동작을 부른다. 그 동작은 비디바운스로 묶여 있어 실행 직전에
+   * {@link flushPendingDebounceTimers} 를 부르는데, 이 호출은 사용자 동작이 아니라 타이머가 낳은 것이다. 여기서 flush 하면
+   * 사용자가 아직 치고 있는 다른 칸의 대기 쓰기·change 동작이 앞당겨진다(관리자 상품 수정: 정가 칸 타이머 → 판매가 중간 값 쓰기).
+   * 자동바인딩이 flush 레지스트리 밖이던 종전에는 이런 앞당김이 없었으므로 그 동작 동안만 flush 를 끈다.
+   *
+   * @param fn 실행할 함수
+   * @return fn 의 반환값
+   * @since engine-v1.81.2
+   */
+  runWithoutDebounceFlush<T>(fn: () => T): T {
+    this.debounceFlushSuppressDepth++;
+    try {
+      return fn();
+    } finally {
+      this.debounceFlushSuppressDepth--;
+    }
+  }
+
+  /**
    * 프로그래매틱 호출(G7Core.state.setLocal, G7Core.dispatch)에 대한 디바운스를 처리합니다.
    *
    * 레이아웃 JSON 액션의 debounce와 동일한 타이머 인프라(debounceTimers, pendingDebounceFlushers)를
-   * 사용하여 컴포넌트 언마운트 시 자동 정리 및 flushPendingDebounceTimers 연동을 보장합니다.
+   * 사용하여 flushPendingDebounceTimers 연동을 보장합니다. 언마운트 정리는 자동이 아니다 —
+   * {@link clearDebounceTimers}(componentId) 는 `{componentId}-` 접두 키만 지우고, 코어 안에는 이 메서드를
+   * 부르는 곳이 없다. 자동바인딩 예약처럼 인스턴스 키를 쓰는 예약은 그 정리 대상도 아니어서 언마운트 뒤에도 실행된다.
    *
    * @param key debounce 고유 키 (동일 키의 이전 타이머를 취소)
    * @param delay 디바운스 지연 시간 (ms)
@@ -8150,6 +8757,19 @@ export class ActionDispatcher {
   }
 
   /**
+   * 대기 중인 debounce 액션(자동바인딩 대기 쓰기·`G7Core.dispatch`/`setLocal` 디바운스 포함)이 있는지 돌려줍니다.
+   *
+   * 읽기 전용이다 — 실행·취소·정리하지 않는다. 레이아웃 이탈 가드가 「아직 상태에 닿지 않은 입력」을 변경으로 보는 데 쓴다
+   * (브라우저 뒤로·새로고침은 액션이 아니라 flush 가 없다).
+   *
+   * @return 대기분이 하나라도 있으면 true
+   * @since engine-v1.82.0
+   */
+  hasPendingDebounce(): boolean {
+    return this.pendingDebounceFlushers.size > 0;
+  }
+
+  /**
    * 대기 중인 모든 debounce 액션을 즉시 실행합니다.
    *
    * 비디바운스 액션이 실행되기 전에 호출하여, 디바운스로 인해
@@ -8161,22 +8781,36 @@ export class ActionDispatcher {
    */
   flushPendingDebounceTimers(): boolean {
     if (this.pendingDebounceFlushers.size === 0) return false;
+    // 대기 쓰기가 끝나며 부른 동작(자동바인딩 칸의 change 동작)은 사용자 동작이 아니다 — 그 동작이 다른 칸의 대기 쓰기를
+    // 앞당기면 아직 치고 있는 칸의 디바운스가 깨진다 (engine-v1.81.2, {@link runWithoutDebounceFlush})
+    if (this.debounceFlushSuppressDepth > 0) return false;
 
-    // 반복 중 맵 변경 방지를 위해 복사 후 정리
-    const flushers = new Map(this.pendingDebounceFlushers);
+    // 반복 중 맵 변경 방지를 위해 복사 후 정리.
+    // engine-v1.81.2 (7.1.1): 실행한 항목이 새 디바운스를 걸면(자동바인딩 대기 쓰기 → 그 칸의 debounce change 동작, 디바운스 동작 →
+    // setLocal({debounce})·dispatch debounce) 그것도 같은 flush 에서 실행한다 — 복사본 한 번만 돌면 2단 사슬의 뒤 단계가 이 액션 뒤에
+    // 실행돼, 디바운스 창 안에서 누른 「저장」 이 그 단계가 만든 값 없이 나갔다. 같은 항목이 끝없이 다시 거는 경우를 막으려고 회차를 제한한다
+    // (남은 항목은 종전처럼 자기 타이머에 실행된다).
+    const MAX_FLUSH_PASSES = 5;
+    for (let pass = 0; pass < MAX_FLUSH_PASSES && this.pendingDebounceFlushers.size > 0; pass++) {
+      const flushers = new Map(this.pendingDebounceFlushers);
 
-    for (const [key, flushFn] of flushers) {
-      // 대기 중인 타이머 취소
-      const timer = this.debounceTimers.get(key);
-      if (timer) {
-        clearTimeout(timer);
-        this.debounceTimers.delete(key);
+      for (const [key, flushFn] of flushers) {
+        // 안쪽 flush 가 이미 실행한 항목은 건너뛴다 (engine-v1.81.2) — 자동바인딩 대기 쓰기는 실행 끝에 그 칸의 change 동작을 부르고,
+        // 그 동작이 비디바운스면 이 함수가 다시 불려 남은 항목을 먼저 실행한다. 복사본만 보면 같은 항목이 두 번 실행된다.
+        if (this.pendingDebounceFlushers.get(key) !== flushFn) continue;
+
+        // 대기 중인 타이머 취소
+        const timer = this.debounceTimers.get(key);
+        if (timer) {
+          clearTimeout(timer);
+          this.debounceTimers.delete(key);
+        }
+        this.debounceTimers.delete(key + '_leading');
+        this.pendingDebounceFlushers.delete(key);
+
+        // 즉시 실행 (render: false 콜백 포함)
+        flushFn();
       }
-      this.debounceTimers.delete(key + '_leading');
-      this.pendingDebounceFlushers.delete(key);
-
-      // 즉시 실행 (render: false 콜백 포함)
-      flushFn();
     }
 
     // engine-v1.42.0: flush된 콜백 중 render: false로 등록된 것이 있을 수 있음
@@ -8196,7 +8830,7 @@ export class ActionDispatcher {
    * 덮어쓰기가 없으면 디바운스 창 안에서 눌린 비디바운스 액션(저장 등)이 **직전 버퍼**를 보낸다.
    *
    * `_local` 은 여기서 손대지 않는다 — {@link createHandler} 가 `componentContext.state` 로 무조건
-   * 다시 덮으므로 이 자리의 갱신은 도달하지 못한다(그쪽 축은 별도다). 데이터소스 키·`route` 등
+   * 다시 덮으므로 이 자리의 갱신은 도달하지 못한다(그쪽 축은 {@link withFlushedLocal} — engine-v1.81.2). 데이터소스 키·`route` 등
    * 나머지 문맥도 그대로 둔다 — flush 가 바꿀 수 있는 것은 상태뿐이다.
    *
    * @param dataContext 렌더 시점 데이터 문맥
@@ -8213,6 +8847,86 @@ export class ActionDispatcher {
     if (!nextGlobal || typeof nextGlobal !== 'object') return dataContext;
 
     return { ...dataContext, _global: { ...(dataContext._global ?? {}), ...nextGlobal } };
+  }
+
+  /**
+   * flush 직후의 화면 문맥 `_local` 을 담은 컴포넌트 문맥 사본을 만듭니다 (engine-v1.81.2, 7.1.1).
+   *
+   * 액션의 `_local` 은 {@link createHandler} 가 `componentContext.state`(렌더 시점 화면 문맥)로 정한다. flush 로 실행된 디바운스
+   * 자동바인딩 쓰기는 저장소 A·B 와 함께 `__g7ForcedLocalFields`(setLocal 이 쓴 칸 — 다음 렌더에서 화면 최우선 덧칠)를 갱신하므로,
+   * 렌더러가 화면을 만드는 순서(`… → 저장소 A → forced`)대로 그 덧칠을 렌더 시점 문맥 위에 얹으면 「다음 렌더의 화면 문맥」 과 같다
+   * (자동바인딩 pending 합성 `composeAutoBindingPendingSnapshot` 과 같은 원칙). 그렇지 않으면 디바운스 창 안에서 누른 「저장」 이
+   * 마지막 입력을 빼고 보냈다(관리자 상품 수정 정가·쿠폰 최소주문금액 — 7.1.0 에도 있음).
+   *
+   * @param componentContext 렌더 시점 컴포넌트 문맥
+   * @return `state` 만 최신화한 사본 (덧칠이 없거나 문맥 상태가 없으면 원본)
+   * @since engine-v1.81.2
+   */
+  private withFlushedLocal<T extends { state?: any } | undefined>(componentContext: T): T {
+    const state = componentContext?.state;
+    if (!state || typeof state !== 'object' || Array.isArray(state) || typeof window === 'undefined') {
+      return componentContext;
+    }
+
+    const forced = (window as any).__g7ForcedLocalFields;
+    if (!forced || typeof forced !== 'object' || Array.isArray(forced)) return componentContext;
+
+    // 렌더러와 같은 병합(deepMergeState) — 배열 위 숫자 키 객체(`x.0.y` setLocal) 를 그 칸에 넣는 규칙까지 같아야 「다음 렌더의 화면 문맥」 이다
+    return { ...componentContext, state: deepMergeState(state, forced) } as T;
+  }
+
+  /**
+   * flush 직후의 `_local` 로 `_computed` 를 다시 계산한 문맥 쌍을 만듭니다 (engine-v1.81.2, 7.1.1).
+   *
+   * {@link withFlushedLocal} 이 액션의 `_local` 을 최신으로 바꿔도 `_computed` 는 렌더 시점 값이다. 식 평가는 `_computed` 를 액션 문맥의
+   * `computedRef.current`(마지막 렌더 값)로 다시 덮으므로({@link evaluateExpression}) 데이터 문맥만 바꿔서는 닿지 않는다. 그래서 렌더러·
+   * sequence 와 같은 공용 평가기로 다시 계산해 데이터 문맥의 `_computed`·`$computed` 와 컴포넌트 문맥의 `computedRef`(새 ref 객체 —
+   * 렌더러의 ref 는 건드리지 않는다)에 함께 싣는다. 디바운스 폼에서 친 직후(디바운스 창 안) 누른 단일 apiCall 의 본문 `{{_computed.x}}` 가
+   * 마지막 입력을 빼고 나갔다(sequence 도 첫 setState 전 단계는 같았다 — 7.1.0 에도 있음). 정의가 없으면 둘 다 원본 그대로다.
+   *
+   * @param dataContext flush 뒤 데이터 문맥({@link withFlushedState} 결과)
+   * @param componentContext flush 뒤 컴포넌트 문맥({@link withFlushedLocal} 결과)
+   * @return `_computed` 를 다시 계산한 두 문맥
+   * @since engine-v1.81.2
+   */
+  private withFlushedComputed<D, C extends { state?: any } | undefined>(dataContext: D, componentContext: C): { dataContext: D; componentContext: C } {
+    const data = dataContext as any;
+    const definitions = data?._computedDefinitions;
+    if (!definitions || typeof definitions !== 'object' || Object.keys(definitions).length === 0) {
+      return { dataContext, componentContext };
+    }
+
+    const freshLocal = componentContext?.state ?? data._local ?? {};
+    const previous = (data._computed && typeof data._computed === 'object') ? data._computed : {};
+    const computed = evaluateComputedDefinitions(
+      definitions,
+      { ...data, _local: freshLocal },
+      this.bindingEngine,
+      {
+        previous,
+        onError: 'keep-previous',
+        failureLog: (key, error) => logger.log(`[flush] computed 재계산 실패(직전 값 유지): ${key}`, error),
+      }
+    );
+
+    // ref 는 렌더러의 live ref 를 감싼다 — 이 액션이 await 하는 동안 렌더가 돌아 live 값이 바뀌면(뒤 단계의 setState 반영) 그 값을,
+    // 아직 렌더가 없으면 flush 뒤 다시 계산한 값을 돌려준다. 고정 값을 실으면 액션 문맥이 끝날 때까지 flush 시점 값에 묶인다
+    const liveRef = (componentContext as any)?.computedRef as { current?: Record<string, any> } | undefined;
+    const renderTimeComputed = liveRef?.current;
+    const computedRef = {
+      get current(): Record<string, any> {
+        const live = liveRef?.current;
+
+        return live !== undefined && live !== renderTimeComputed ? live : computed;
+      },
+    };
+
+    return {
+      dataContext: { ...data, _computed: computed, $computed: computed } as D,
+      componentContext: (componentContext
+        ? { ...componentContext, computedRef }
+        : componentContext) as C,
+    };
   }
 
   /**
@@ -8350,7 +9064,11 @@ export class ActionDispatcher {
               // (`_local` 은 아래 `createHandler` 가 `componentContext.state` 로 무조건 다시
               //  덮으므로 여기서 손대지 않는다 — {@link withFlushedState} 참조).
               const flushed = this.flushPendingDebounceTimers();
-              const freshContext = flushed ? this.withFlushedState(dataContext) : dataContext;
+              // engine-v1.81.2 (7.1.1): `_local` 축 — flush 가 실제로 일어났으면 그 쓰기를 담은 화면 문맥을 넘기고,
+              // 그 `_local` 로 `_computed` 도 다시 계산한다(withFlushedComputed)
+              const { dataContext: freshContext, componentContext: freshComponentContext } = flushed
+                ? this.withFlushedComputed(this.withFlushedState(dataContext), this.withFlushedLocal(componentContext))
+                : { dataContext, componentContext };
 
               // 기존 로직 (debounce 없음)
               // 커스텀 이벤트 핸들러인 경우 (action.event 사용)
@@ -8368,11 +9086,11 @@ export class ActionDispatcher {
                 // 갈아끼우면 `$event.target.value` 가 사라져 **핸들러는 실행되는데 값만 비는** 상태가 된다
                 // (콘솔·네트워크에 흔적이 없어 발견이 늦다).
                 const eventForHandler = this.resolveEventForHandler(firstArg, isStandardEvent);
-                this.createHandler(action, contextWithArgs, componentContext)(eventForHandler);
+                this.createHandler(action, contextWithArgs, freshComponentContext)(eventForHandler);
               } else {
                 // 표준 이벤트 핸들러
                 if (isStandardEvent) {
-                  this.createHandler(action, freshContext, componentContext)(firstArg);
+                  this.createHandler(action, freshContext, freshComponentContext)(firstArg);
                 } else {
                   // 커스텀 컴포넌트 이벤트 감지 (예: MultilingualInput의 { target: { name, value } })
                   // React 컴포넌트에서 onChange로 emit하는 plain object
@@ -8391,7 +9109,7 @@ export class ActionDispatcher {
                       preventDefault: () => {},
                       stopPropagation: () => {},
                     } as unknown as Event;
-                    this.createHandler(action, freshContext, componentContext)(eventForHandler);
+                    this.createHandler(action, freshContext, freshComponentContext)(eventForHandler);
                   }
                   // 주의: raw value fallback 없음 — 컴포넌트는 `{ target: { value } }` 패턴을 사용해야 함
                   // (사례 26 회귀 테스트 참조: 마운트 시 raw value로 초기 setState가 발동하여

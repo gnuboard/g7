@@ -405,6 +405,58 @@ describe('claimApplyHandlers', () => {
      *
      * @effects claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
      */
+    it('교환상품 변경 — 창에서 비운 추가옵션(null 로 지운 그룹)은 custom_options 와 이름 줄에 싣지 않는다 (7.1.1)', () => {
+        seedApplyState();
+
+        mockLocalState.changeProductTarget = { index: 0, order_option_id: 310, product_id: 5 };
+        mockLocalState.changeProductMode = 'change';
+        mockLocalState.changeProductMatched = { id: 56, option_name_localized: '블랙 / L', stock_quantity: 4 };
+        mockLocalState.changeProductProduct = {
+            additional_options: [
+                { id: 7, values: [{ id: 3, name: '선물포장' }] },
+                { id: 8, values: [{ id: 4, name: '각인' }] },
+            ],
+        };
+        // 창은 비운 그룹을 키째 빼지 않고 null 로 쓴다(기본 deep 병합은 뺀 키를 남기므로)
+        mockLocalState.changeProductAdditionalSelections = { 7: null, 8: 4 };
+        mockLocalState.changeProductAdditionalTexts = { 7: null, 8: '홍길동' };
+
+        applyClaimChangeProductHandler(
+            { handler: 'applyClaimChangeProduct', params: { claimApiBase: API_BASE } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimItems[0].custom_options).toEqual({ selections: { 8: 4 }, custom_texts: { 8: '홍길동' } });
+        expect(mockLocalState.claimItems[0].new_additional_labels).toEqual(['각인 (홍길동)']);
+    });
+
+    /**
+     * @scenario apply_handler=reason_and_exchange
+     *
+     * @effects claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
+     */
+    it('교환상품 변경 — 추가옵션을 모두 비우면(전부 null) custom_options 가 null 이다 (7.1.1)', () => {
+        seedApplyState();
+
+        mockLocalState.changeProductTarget = { index: 0, order_option_id: 310, product_id: 5 };
+        mockLocalState.changeProductMode = 'change';
+        mockLocalState.changeProductMatched = { id: 56, option_name_localized: '블랙 / L', stock_quantity: 4 };
+        mockLocalState.changeProductAdditionalSelections = { 7: null };
+        mockLocalState.changeProductAdditionalTexts = { 7: null };
+
+        applyClaimChangeProductHandler(
+            { handler: 'applyClaimChangeProduct', params: { claimApiBase: API_BASE } },
+            {} as any
+        );
+
+        expect(mockLocalState.claimItems[0].custom_options).toBeNull();
+    });
+
+    /**
+     * @scenario apply_handler=reason_and_exchange
+     *
+     * @effects claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
+     */
     it('교환상품 변경 — 옵션변경인데 옵션을 고르지 않으면 적용하지 않는다', () => {
         seedApplyState();
 

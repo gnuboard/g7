@@ -260,11 +260,11 @@ export const MenuAccessTree: React.FC<MenuAccessTreeProps> = ({
             aria-label={menuLabel(node.name)}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
-          <Span className={`text-sm font-medium ${inactive ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+          <Span className={`text-sm font-medium ${inactive ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
             {menuLabel(node.name)}
           </Span>
           {inactive && (
-            <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+            <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
               {t('admin.roles.form.menus_inactive_badge')}
             </Span>
           )}
@@ -289,7 +289,7 @@ export const MenuAccessTree: React.FC<MenuAccessTreeProps> = ({
                 }}
                 aria-expanded={isExpanded}
                 aria-label={t(isExpanded ? 'common.collapse' : 'common.expand')}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <Icon name={isExpanded ? IconName.ChevronDown : IconName.ChevronRight} className="w-4 h-4" />
               </Button>
@@ -306,7 +306,7 @@ export const MenuAccessTree: React.FC<MenuAccessTreeProps> = ({
   // 빈 데이터일 때도 시각적으로 렌더 + 루트에 id/editorAttrs 부착 (편집기 선택 패리티)
   if (data.length === 0) {
     return (
-      <Div className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`} id={id} {...editorAttrs}>
+      <Div className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`} id={id} {...editorAttrs}>
         {t('common.no_data')}
       </Div>
     );

@@ -42,7 +42,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 게시판 생성 시 적용되는 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
+| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 게시판 생성 시 적용되는 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 비밀 답변 열람 범위(secret_reply_visibility: thread_path/descendants_only/per_post, 기본 thread_path), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
 | report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
@@ -75,6 +75,7 @@ HTTP/1.1 200
             "use_reply": true,
             "max_reply_depth": 5,
             "reply_delete_policy": "cascade",
+            "secret_reply_visibility": "thread_path",
             "max_comment_depth": 10,
             "comment_order": "ASC",
             "show_view_count": true,
@@ -365,6 +366,7 @@ HTTP/1.1 200
 | notifications | body | array | 아니오 | — | 알림 채널 설정. `channels` 배열의 각 항목에 채널 식별자(id), 활성화 여부(is_active), 정렬 순서(sort_order)를 담아 저장합니다. |
 | basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
 | basic_defaults.reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 게시판 생성 시 적용될 답글 삭제 정책 기본값 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). 허용값 밖이면 422 |
+| basic_defaults.secret_reply_visibility | body | string | 아니오 | `thread_path`, `descendants_only`, `per_post` | 게시판 생성 시 적용될 비밀 답변 열람 범위 기본값 (thread_path 원글을 볼 수 있는 사람은 하위 답변을, 답변 작성자는 자기 답변의 원글까지 / descendants_only 하위만 / per_post 답변마다 따로). 미지정 시 thread_path, 허용값 밖이면 422 (1.2.1+) |
 | basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. 반응 기능 기본값으로 `basic_defaults.use_reaction`(boolean), `basic_defaults.use_comment_reaction`(boolean, `use_reaction` 의 하위 토글) 과 `basic_defaults.active_reaction_types`(반응 유형 code 문자열 배열)를 포함하며, 새 게시판 생성 시 이 값이 개별 게시판의 초기값으로 시드됩니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
 | report_policy | body | array | 아니오 | — | 신고 정책 카테고리 값. 자동 숨김 임계치/대상, 일일 신고 한도, 거부 누적 제한, 관리자·작성자 신고 알림 설정을 저장합니다. |
 | report_policy.auto_hide_threshold | body | integer | 아니오 | min 0, max 100 | 자동 숨김 신고 수 (이 횟수 이상 신고되면 자동 숨김 처리) |
@@ -436,6 +438,7 @@ Content-Type: application/json
     "basic_defaults.use_reply": true,
     "basic_defaults.max_reply_depth": 1,
     "basic_defaults.reply_delete_policy": "cascade",
+    "basic_defaults.secret_reply_visibility": "thread_path",
     "basic_defaults.max_comment_depth": 1,
     "basic_defaults.comment_order": "ASC",
     "basic_defaults.show_view_count": true,
@@ -519,7 +522,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 저장 후 갱신된 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
+| basic_defaults | object | `{"type":"basic","per_page":20,"per_page_mobile":15,"order…` | 저장 후 갱신된 기본 설정 카테고리. 게시판 타입, 페이지당 글 수(PC/모바일), 정렬 기준/방향, 댓글·답글 사용 여부와 깊이, 답글 삭제 방식(reply_delete_policy: block/cascade), 비밀 답변 열람 범위(secret_reply_visibility: thread_path/descendants_only/per_post, 기본 thread_path), 제목·내용·댓글 길이 제한, 파일 업로드 허용/용량/개수/확장자, 새 글 표시 시간, 게시판 기본 권한(default_board_permissions) 등을 포함합니다. |
 | report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 저장 후 갱신된 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 저장 후 갱신된 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 저장 후 갱신된 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
@@ -549,6 +552,7 @@ HTTP/1.1 200
             "use_reply": true,
             "max_reply_depth": 5,
             "reply_delete_policy": "cascade",
+            "secret_reply_visibility": "thread_path",
             "max_comment_depth": 10,
             "comment_order": "ASC",
             "show_view_count": true,
@@ -810,6 +814,7 @@ HTTP/1.1 200
 | board_ids | body | array | 아니오 | — | board 식별자 배열 |
 | override_values | body | array | 아니오 | — | 환경설정 기본값 대신 사용할 재정의 값 맵. 지정한 필드에 대해 기본값이 아닌 임의의 값으로 일괄 적용할 때 사용합니다. 각 키는 게시판 생성/수정과 동일한 제한값으로 검증됩니다 (범위 밖 값은 422). |
 | override_values.reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 답글 삭제 정책을 일괄 적용할 때의 재정의 값 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). `fields` 에 `reply_delete_policy` 를 포함해 함께 사용하며, 허용값 밖이면 422 |
+| override_values.secret_reply_visibility | body | string | 아니오 | `thread_path`, `descendants_only`, `per_post` | 비밀 답변 열람 범위를 일괄 적용할 때의 재정의 값. `fields` 에 `secret_reply_visibility` 를 포함해 함께 사용하며, 허용값 밖이면 422 (1.2.1+) |
 
 **요청 예시**
 

@@ -1,4 +1,4 @@
-// e2e:allow 조각 렌더 회귀(엔진 createLayoutTest) — 회원·비회원 주문 상세 브라우저 실측은 g7_2 W3 최종 리허설 몫(7.1.0 출시 최종 수정, 결정 2026-10-10)
+// e2e:allow 조각 렌더 회귀(엔진 createLayoutTest) — 회원·비회원 주문 상세 브라우저 실측은 다른 클론의 최종 리허설 몫(7.1.0 출시 최종 수정, 결정 2026-10-10)
 /**
  * @file userOrderShowVbankGuide.test.tsx
  * @description 토스페이먼츠 가상계좌 주문의 주문 상세 결제 정보 카드에 입금 안내가 보이는지

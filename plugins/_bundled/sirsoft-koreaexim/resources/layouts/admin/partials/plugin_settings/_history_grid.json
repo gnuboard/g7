@@ -15,6 +15,10 @@
             "id": "koreaexim_runs",
             "type": "composite",
             "name": "DataGrid",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "koreaeximRuns"
+            },
             "actions": [
                 {
                     "comment": "행을 펼칠 때 그 실행의 통화별 상세를 한 번만 받아 전역 캐시(koreaeximRunItems)에 실행 ID 로 쌓는다 — 이미 받은 행은 다시 부르지 않는다",
@@ -58,6 +62,8 @@
                 }
             ],
             "props": {
+                "pageHrefMergeQuery": true,
+                "pageHref": "/admin/plugins/sirsoft-koreaexim/settings?tab=history&page={page}",
                 "data": "{{(query.date_from && query.date_to && query.date_to < query.date_from) ? [] : (koreaeximRuns?.data?.data ?? [])}}",
                 "pagination": true,
                 "serverSidePagination": true,
@@ -69,7 +75,7 @@
                 "idField": "id",
                 "selectable": false,
                 "expandable": true,
-                "emptyMessage": "$t:sirsoft-koreaexim.empty",
+                "emptyMessage": "{{koreaeximRuns === undefined ? '' : $t('sirsoft-koreaexim.empty')}}",
                 "columns": [
                     {
                         "field": "search_date",

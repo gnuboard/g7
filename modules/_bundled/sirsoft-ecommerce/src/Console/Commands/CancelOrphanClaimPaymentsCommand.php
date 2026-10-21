@@ -54,7 +54,7 @@ class CancelOrphanClaimPaymentsCommand extends Command
         $days = (int) $this->option('days');
 
         if ($days < 1) {
-            $this->info('보존기간(--days)이 1 미만이라 정리를 건너뜁니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.cancel_orphan_claim_payments.retention_skipped'));
 
             return Command::SUCCESS;
         }
@@ -65,12 +65,20 @@ class CancelOrphanClaimPaymentsCommand extends Command
         $result = $this->paymentService->reapOrphanedPendingPayments($days, $limit, $isDryRun);
 
         if ($isDryRun) {
-            $this->info("[dry-run] 취소 대상 {$result['cancelled']}건 / 활성 유지 {$result['skipped_active']}건 (검사 {$result['scanned']}건)");
+            $this->info('[dry-run] '.__('sirsoft-ecommerce::messages.console.cancel_orphan_claim_payments.dry_run', [
+                'cancelled' => $result['cancelled'],
+                'skipped_active' => $result['skipped_active'],
+                'scanned' => $result['scanned'],
+            ]));
 
             return Command::SUCCESS;
         }
 
-        $this->info("고아 클레임 결제 대기 건 정리 완료: 검사 {$result['scanned']}건 / 취소 {$result['cancelled']}건 / 활성 유지 {$result['skipped_active']}건");
+        $this->info(__('sirsoft-ecommerce::messages.console.cancel_orphan_claim_payments.done', [
+            'scanned' => $result['scanned'],
+            'cancelled' => $result['cancelled'],
+            'skipped_active' => $result['skipped_active'],
+        ]));
 
         Log::info('[claim.payment] 고아 결제 대기 건 정리 배치', [
             'days' => $days,

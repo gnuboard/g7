@@ -47,6 +47,7 @@ return [
         'directory_not_writable' => '言語パックインストールディレクトリ(:path)に書き込み権限がありません。Webサーバーユーザー(例: www-data)に書き込み権限を付与してください。(例: sudo chgrp www-data :path && sudo chmod g+w :path)',
         'identifier_not_found' => '言語パックが見つかりません(:identifier)。',
         'unsupported_source' => 'サポートされていないソース(:source) — bundled、github、urlのいずれかを使用してください。',
+        'install_directory_replace_failed' => '言語パック(:identifier)のインストールフォルダーを新しいファイルに置き換えられませんでした。別のプログラムがそのフォルダーのファイルを開いている可能性があります。しばらくしてから再度お試しください。インストール記録は変更していません。',
     ],
     // マニフェストに名前がない内蔵(拡張・コア同梱)言語パックの表示名
     'built_in_name' => ':target 内蔵言語パック (:language)',
@@ -64,5 +65,59 @@ return [
         'checksum_invalid' => 'SHA-256チェックサムは64文字の16進数である必要があります。',
         'identifier_required' => '言語パック識別子を入力してください。',
         'identifier_invalid' => '識別子は英文/数字/ドット/アンダースコア/ハイフンのみが許可されます。',
+    ],
+    // `language-pack:*` コマンド出力
+    'commands' => [
+        'activate' => [
+            'not_found' => '言語パックが見つかりません: :identifier',
+            'done' => '言語パックの有効化が完了しました: :identifier',
+            'failed' => '言語パックの有効化に失敗しました: :error',
+        ],
+        'deactivate' => [
+            'not_found' => '言語パックが見つかりません: :identifier',
+            'done' => '言語パックの無効化が完了しました: :identifier',
+            'failed' => '言語パックの無効化に失敗しました: :error',
+        ],
+        'cache_clear' => [
+            'done' => '言語パックキャッシュの整理が完了しました:',
+            'failed' => '言語パックキャッシュの整理に失敗しました: :error',
+        ],
+        'check_updates' => [
+            'none' => '確認対象の GitHub ベースの言語パックがありません。',
+            'entry_failed' => '[:identifier] 照会に失敗しました: :error',
+            'entry_update_available' => '[:identifier] :current → :latest  (アップデート可能)',
+            'done' => '確認完了: :checked 件を検査、:updates 件アップデート可能です。',
+            'failed' => 'アップデート確認に失敗しました: :error',
+        ],
+        'install' => [
+            'done' => '言語パックのインストールが完了しました: :identifier v:version (status=:status)',
+            'failed' => '言語パックのインストールに失敗しました: :error',
+        ],
+        'list' => [
+            'empty' => '言語パックがありません。',
+            'files_missing' => ':status (ファイルなし)',
+        ],
+        'provision' => [
+            'no_target_locales' => 'プロビジョニング対象のロケールがありません (base locale 以外の supported_locales が未宣言です)。',
+            'nothing_to_do' => 'インストールまたは復旧するバンドル言語パックがありません (ロケール: :locales)。既にプロビジョニング済みです。',
+            'skipped_blocked' => 'スキップ (インストール不可: :reason): :identifier',
+            'installed_item' => 'インストール: :identifier v:version (status=:status)',
+            'repaired_item' => '復旧: :identifier v:version (status=:status)',
+            'item_failed' => '失敗 (スキップ): :identifier — :error',
+            'summary' => 'プロビジョニング完了 — インストール :installed、復旧 :repaired、スキップ :skipped、失敗 :failed',
+        ],
+        'uninstall' => [
+            'not_found' => '言語パックが見つかりません: :identifier',
+            'confirm' => '言語パック \':identifier\' を削除しますか？',
+            'cancelled' => 'キャンセルしました。',
+            'done' => '言語パックの削除が完了しました: :identifier',
+            'failed' => '言語パックの削除に失敗しました: :error',
+        ],
+        'update' => [
+            'invalid_source' => '不明な --source の値です: :source (auto|bundled|github から選択してください)',
+            'not_found' => '言語パックが見つかりません: :identifier',
+            'done' => '言語パックのアップデートが完了しました: :identifier (:from → :to)',
+            'failed' => '言語パックのアップデートに失敗しました: :error',
+        ],
     ],
 ];

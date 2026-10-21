@@ -76,7 +76,7 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
     }
 
     /**
-     * 설정 응답이 저장 권한(privacy.update) 판정을 싣는다 — 설정 화면 읽기 전용의 근거(7.1.0 abilities 게이트 G19).
+     * 설정 응답이 저장 권한(privacy.update) 판정을 싣는다 — 설정 화면 읽기 전용의 근거(7.1.0 abilities 게이트).
      *
      * @scenario surface=admin_show
      *

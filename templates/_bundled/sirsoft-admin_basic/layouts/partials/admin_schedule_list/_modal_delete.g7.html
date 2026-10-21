@@ -8,13 +8,13 @@
       <span class="text-primary font-medium">{{_global.deleteTargetName}}</span>
     </div>
     <div class="modal-footer-buttons">
-      <button class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
         <on type="click">
           <close-modal target="schedule_delete_modal"/>
         </on>
         $t:common.cancel
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
         <on type="click">
           <!-- 지운 뒤 담아 뒀던 대상을 비운다 — 이름·번호가 전역이라 남겨 두면 다음에 연 창이 이미 없는 작업을 가리킨다. -->
           <sequence>

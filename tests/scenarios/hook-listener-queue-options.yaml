@@ -1,0 +1,62 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 이슈 #139 리스너 큐 옵션. 선언 형태 × 배치 × timeout × 드라이버 × payload 의 곱 중 판정 지점이 독립인 대표값만 테스트별 @scenario 로 매핑한다 — 정규화(ListenerQueueOptions::normalize)·배치(QueueWorkerRegistry::resolve)·클램프·이벤트 ID 바인딩이 서로 다른 함수라 조합이 새 분기를 만들지 않는다.
+# audit:allow scenario-scale-axis-required reason: 리스너 1개의 잡 옵션 적용 — 처리 규모 경로 무변경
+
+feature: hook_listener_queue_options
+
+description: |
+  큐 리스너는 getSubscribedHooks() 의 queue 키(또는 registerDynamicAction 의 queueOptions)로 잡 단위 큐 옵션을 선언한다(#139).
+  connection·queue·delay·after_commit·tries·timeout·backoff·retry_until·max_exceptions·fail_on_timeout 10개만 받는다.
+
+  핵심 동작:
+    - 알 수 없는 키·형식이 틀린 값은 버리고 경고(리스너·훅 이름 포함). 값이 맞는 키는 그대로 적용.
+    - 등록된 연결·큐만 쓴다 — 미등록 큐는 연결 기본 큐로, 미등록 연결은 기본 연결로 보내고 경고(키당 1회)·카운터 기록.
+    - timeout 이 연결 retry_after 이상이면 retry_after − 10 초로 줄이고 카운터 기록(재예약 사본 방지).
+    - retry_until 은 디스패치 시각 기준 절대 시각으로 바뀐다.
+    - sync 리스너·필터에 queue 를 달면 경고만 남기고 무시(동기 실행 유지).
+    - 선언이 없으면 종전 잡 기본값 그대로.
+    - DispatchHookListenerJob 은 생성 때 eventId(uuid)를 싣고 실행 중 HookContextCapture::eventId() 로 노출한다 — 재시도해도 같은 값.
+    - 리스너가 RetryHookListenerLaterException 을 던지면 큐 잡은 지정 초 뒤로 release, sync 에서는 경고만.
+
+coverage_strategy: pairwise
+
+axes:
+  declaration: [none, all_keys, backoff_list, retry_until, invalid_values, unknown_key, non_array, with_sync, with_filter, dynamic, sync_only, filter_only]
+  placement: [registered, connection_unregistered, queue_unregistered]
+  timeout: [within_retry_after, at_retry_after]
+  driver: [sync, queued]
+  payload: [current, legacy]
+
+effects:
+  - options_normalized
+  - invalid_option_dropped_with_warning
+  - legacy_defaults_preserved
+  - options_applied_to_job
+  - options_ignored_for_sync_or_filter
+  - registered_pair_honored
+  - unregistered_queue_falls_back
+  - unregistered_connection_falls_back
+  - fallback_warning_throttled
+  - timeout_clamped_and_counted
+  - retry_until_at_dispatch
+  - event_id_bound_during_listener
+  - event_id_stable_across_retries
+  - retry_later_releases_job
+  - retry_later_logged_under_sync
+  # 종전 등록·잡 계약(같은 파일의 기존 테스트)
+  - action_listener_queued_by_default
+  - request_context_captured
+  - sync_listener_runs_immediately
+  - filter_listener_runs_synchronously
+  - registration_idempotent
+  - registration_per_source
+  - clear_allows_reregistration
+  - priority_forwarded
+  - listener_method_invoked
+  - display_name_formatted
+  - captured_context_restored
+  - request_binding_restored
+
+test_files:
+  - tests/Unit/Extension/ListenerQueueOptionsTest.php
+  - tests/Unit/Extension/HookListenerRegistrarTest.php
+  - tests/Unit/Jobs/DispatchHookListenerJobTest.php

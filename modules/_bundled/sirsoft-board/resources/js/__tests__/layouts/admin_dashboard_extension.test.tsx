@@ -94,18 +94,24 @@ function extractTKeys(node: any): string[] {
 }
 
 describe('admin_dashboard_quick_menu.json - quick_menu 슬롯 주입', () => {
+    // @scenario case=quick_menu
+    // @effects quick_menu_injection_contract
     it('extension_point / mode / priority 가 올바르다', () => {
         expect(quickMenuExt.extension_point).toBe('admin_dashboard_quick_menu');
         expect(quickMenuExt.mode).toBe('append');
         expect(quickMenuExt.priority).toBe(50);
     });
 
+    // @scenario case=quick_menu
+    // @effects quick_menu_injection_contract
     it('게시판/신고 버튼 2개를 주입한다', () => {
         expect(quickMenuExt.components).toHaveLength(2);
         const ids = quickMenuExt.components.map((c: any) => c.id);
         expect(ids).toEqual(['qm_boards', 'qm_reports']);
     });
 
+    // @scenario case=quick_menu
+    // @effects quick_menu_injection_contract
     it('각 버튼은 올바른 href 를 가진다', () => {
         const qmBoards = findById(quickMenuExt as any, 'qm_boards');
         const qmReports = findById(quickMenuExt as any, 'qm_reports');
@@ -113,6 +119,8 @@ describe('admin_dashboard_quick_menu.json - quick_menu 슬롯 주입', () => {
         expect(qmReports.props.href).toBe('/admin/boards/reports');
     });
 
+    // @scenario case=quick_menu
+    // @effects quick_menu_injection_contract
     it('각 버튼은 Icon + Span 자식을 가진다', () => {
         for (const btnId of ['qm_boards', 'qm_reports']) {
             const btn = findById(quickMenuExt as any, btnId);
@@ -123,6 +131,8 @@ describe('admin_dashboard_quick_menu.json - quick_menu 슬롯 주입', () => {
         }
     });
 
+    // @scenario case=quick_menu
+    // @effects quick_menu_injection_contract
     it('다국어 키는 sirsoft-board 네임스페이스를 사용한다', () => {
         const tKeys = extractTKeys(quickMenuExt);
         expect(tKeys).toContain('sirsoft-board.admin.dashboard.quick_menu.boards');
@@ -131,12 +141,16 @@ describe('admin_dashboard_quick_menu.json - quick_menu 슬롯 주입', () => {
 });
 
 describe('admin_dashboard_community.json - community 슬롯 주입', () => {
+    // @scenario case=community
+    // @effects community_injection_contract
     it('extension_point / mode / priority 가 올바르다', () => {
         expect(communityExt.extension_point).toBe('admin_dashboard_community');
         expect(communityExt.mode).toBe('append');
         expect(communityExt.priority).toBe(100);
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('data_sources 4개(overview/post-graph/recent-posts/pending-reports)를 정의한다', () => {
         expect(communityExt.data_sources).toHaveLength(4);
         const ids = communityExt.data_sources.map((d: any) => d.id);
@@ -148,6 +162,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         ]);
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('각 data_source 는 모듈 API 엔드포인트를 호출한다', () => {
         const endpoints = communityExt.data_sources.map((d: any) => d.endpoint);
         expect(endpoints).toEqual([
@@ -158,6 +174,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         ]);
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('각 data_source 는 auth_required=true 와 fallback 을 가진다', () => {
         for (const ds of communityExt.data_sources) {
             expect(ds.auth_required).toBe(true);
@@ -166,6 +184,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         }
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('community_section_wrapper 안에 ExtensionBadge + 카드 4종을 주입한다', () => {
         const wrapper = findById(communityExt as any, 'community_section_wrapper');
         expect(wrapper).not.toBeNull();
@@ -175,6 +195,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(badges[0].props.identifier).toBe('sirsoft-board');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('카드 4종(오늘 배지/추세 그래프/최신글/미처리 신고) 이 존재한다', () => {
         expect(findById(communityExt as any, 'post_graph_today_summary')).not.toBeNull();
         expect(findById(communityExt as any, 'post_graph_card')).not.toBeNull();
@@ -182,6 +204,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(findById(communityExt as any, 'report_management_card')).not.toBeNull();
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('오늘 배지는 board_overview 응답을 바인딩한다', () => {
         const today = findById(communityExt as any, 'today_new_posts_badge');
         expect(today.text).toContain('board_overview?.data?.today_posts');
@@ -189,6 +213,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(comments.text).toContain('board_overview?.data?.today_comments');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('총 게시글/댓글 값은 board_post_graph 응답을 바인딩한다', () => {
         const totalPosts = findById(communityExt as any, 'total_posts_value');
         expect(totalPosts.text).toContain('board_post_graph?.data?.total_posts');
@@ -196,6 +222,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(totalComments.text).toContain('board_post_graph?.data?.total_comments');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('변화율은 데이터 부족 시 — 폴백을 가진다', () => {
         const postsChange = findById(communityExt as any, 'total_posts_change');
         expect(postsChange.text).toContain("'—'");
@@ -205,6 +233,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(commentsChange.text).toContain('comments_change');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('BarChart 는 board_post_graph.days 를 변환하여 labels/datasets 을 생성한다', () => {
         const chart = findById(communityExt as any, 'post_graph_chart');
         expect(chart.name).toBe('BarChart');
@@ -213,6 +243,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(chart.props.datasets).toContain('comment_count');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('최신 게시글 항목(latest_post_item)에 iteration 이 정의된다', () => {
         // iteration 은 wrapper(latest_posts_list) 가 아니라 item(latest_post_item) 에 둔다.
         // wrapper 에 iteration 을 두면 wrapper 가 각 행마다 통째로 복제되어 divide-y > * 가
@@ -229,6 +261,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(item.iteration.index_var).toBe('i');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('미처리 신고 항목(report_item)에 iteration 이 정의된다', () => {
         const list = findById(communityExt as any, 'report_management_list');
         expect(list.iteration).toBeUndefined();
@@ -239,13 +273,17 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(item.iteration.index_var).toBe('i');
     });
 
-    it('빈 상태 메시지는 length === 0 조건으로 노출된다', () => {
+    // @scenario case=community
+    // @effects community_injection_contract
+    it('빈 상태 메시지는 받은 뒤 length === 0 일 때만 노출된다(받는 중에는 숨김)', () => {
         const postsEmpty = findById(communityExt as any, 'latest_posts_empty');
-        expect(postsEmpty.if).toBe('{{(board_recent_posts?.data ?? []).length === 0}}');
+        expect(postsEmpty.if).toBe('{{board_recent_posts !== undefined && ((board_recent_posts?.data ?? []).length === 0)}}');
         const reportsEmpty = findById(communityExt as any, 'report_management_empty');
-        expect(reportsEmpty.if).toBe('{{(board_pending_reports?.data?.items ?? []).length === 0}}');
+        expect(reportsEmpty.if).toBe('{{board_pending_reports !== undefined && ((board_pending_reports?.data?.items ?? []).length === 0)}}');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('"전체 보기" 링크가 정정된 경로 + 도착지 명칭(게시판 관리 / 신고 관리)을 사용한다', () => {
         const postsViewAll = findById(communityExt as any, 'latest_posts_view_all');
         expect(postsViewAll.props.href).toBe('/admin/boards');
@@ -255,22 +293,32 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(reportsViewAll.text).toBe('$t:sirsoft-board.admin.dashboard.community.go_to_reports');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('최신 게시글 항목은 클릭 시 게시글 상세로 navigate 한다', () => {
         const item = findByIdPrefix(communityExt as any, 'latest_post_item');
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
-        expect(click.params.path).toBe('/admin/board/{{post?.board_slug}}/post/{{post?.id}}');
+        // #757 — 항목은 링크(새 탭 열기). 목적지는 href 한 곳, path 없는 navigate 가 그 href 로 간다
+        expect(item.name).toBe('A');
+        expect(click.params?.path ?? item.props.href).toBe('/admin/board/{{post?.board_slug}}/post/{{post?.id}}');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('신고 항목은 클릭 시 신고 상세로 navigate 한다', () => {
         const item = findByIdPrefix(communityExt as any, 'report_item');
         expect(Array.isArray(item.actions)).toBe(true);
         const click = item.actions.find((a: any) => a.type === 'click' && a.handler === 'navigate');
         expect(click).toBeDefined();
-        expect(click.params.path).toBe('/admin/boards/reports/{{report?.id}}');
+        // #757 — 항목은 링크(새 탭 열기). 목적지는 href 한 곳, path 없는 navigate 가 그 href 로 간다
+        expect(item.name).toBe('A');
+        expect(click.params?.path ?? item.props.href).toBe('/admin/boards/reports/{{report?.id}}');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('신고 카드는 신고 처리상태 배지(report_status_badge)를 노출하고 신고현황과 동일한 색상으로 분기한다', () => {
         // 카드는 Pending/Review 신고만 표시한다 (ReportRepository::getPendingAcrossBoards).
         // 배지는 신고 대상(게시글/댓글)의 상태가 아니라 신고 건 자체의 처리상태(status)를 보여준다.
@@ -295,6 +343,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(cls).not.toContain('blinded');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('신고 카드의 타입 배지(report_target_type_badge)는 댓글/게시글 색상이 다르다', () => {
         const typeBadge = findByIdPrefix(communityExt as any, 'report_target_type_badge');
         expect(typeBadge.props.className).toContain("comment");
@@ -302,6 +352,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         expect(typeBadge.props.className).toContain('bg-blue-900');
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('3 카드(post_graph_card / latest_posts_card / report_management_card) 가 h-full 로 동일 높이를 보장한다', () => {
         for (const id of ['post_graph_card', 'latest_posts_card', 'report_management_card']) {
             const card = findById(communityExt as any, id);
@@ -309,6 +361,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         }
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('갱신 시각 캡션은 updated_at_display 가 있을 때만 노출되고 백엔드 포맷 결과를 그대로 표시한다', () => {
         // 캡션은 게시판 환경설정(display.date_display_format) 을 백엔드에서 적용한 결과(updated_at_display) 를 그대로 표시한다.
         // 프론트에서 slice/format 가공을 하지 않는다 — 게시글 created_at 표시 규칙과 동일 컨벤션 유지.
@@ -320,6 +374,8 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
         );
     });
 
+    // @scenario case=community
+    // @effects community_injection_contract
     it('모든 다국어 키는 sirsoft-board 네임스페이스 또는 코어 공용 키를 사용한다', () => {
         const tKeys = extractTKeys(communityExt);
         for (const key of tKeys) {

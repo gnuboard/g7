@@ -3,7 +3,7 @@
  *
  * 관리자 템플릿은 자기 레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃(`resources/layouts/**`)에만 있는
  * 유틸리티(`min-w-[16rem]`, `dark:bg-pink-900/20`, `disabled:opacity-30` 등)는 규칙이 생성되지 않아 화면에서 조용히
- * 빠졌다(7.1.0 출시 점검 D3-4). 그런 유틸리티를 이 파일이 같은 이름으로 싣는다(docs/extension/module-assets.md
+ * 빠졌다(7.1.0 출시 점검). 그런 유틸리티를 이 파일이 같은 이름으로 싣는다(docs/extension/module-assets.md
  * 「확장 화면의 의미 색은 확장 CSS 가 싣는다」 — 확장 자기 CSS 에 둔다).
  *
  * - 규칙은 템플릿과 같은 `utilities` 레이어에 넣는다. 모듈 CSS 는 템플릿 CSS 뒤에 실리므로 Tailwind 가 만든 순서
@@ -15,6 +15,31 @@
  */
 
 @layer properties, theme, base, components, utilities;
+
+/*
+ * 의미 색 — 템플릿 의미 색 클래스(`text-error`·`text-*-soft`·`border-error` 등) 대신 이 모듈 화면이 쓰는 접두 클래스.
+ * 템플릿이 자기 화면에 맞춰 의미 클래스의 이름·색을 바꾸면 모듈 화면 색이 오류 없이 따라 바뀌므로 모듈이 직접 싣는다
+ * (docs/extension/module-assets.md 「확장 화면의 의미 색은 확장 CSS 가 싣는다」, #757).
+ *
+ * - 색만 맡는다. 템플릿의 `-soft`(text-xs·text-sm)·`-strong`(text-sm font-medium)이 품던 크기·굵기는 레이아웃이
+ *   유틸리티로 함께 단다.
+ * - 템플릿 정의와 같은 `components` 층 — 같은 요소의 색 유틸리티(`text-gray-500` 등)가 이기던 우선순위를 그대로 둔다.
+ * - 색 값은 관리자 템플릿 정의와 같다(라이트 / `.dark` 조상).
+ */
+@layer components {
+    .ecommerce-tone-error { color: var(--color-red-600, oklch(57.7% 0.245 27.325)); } /* text-error */
+    .dark .ecommerce-tone-error { color: var(--color-red-300, oklch(80.8% 0.114 19.571)); }
+    .ecommerce-tone-error-soft { color: var(--color-red-700, oklch(50.5% 0.213 27.518)); } /* text-error-soft·text-danger-soft */
+    .dark .ecommerce-tone-error-soft { color: var(--color-red-300, oklch(80.8% 0.114 19.571)); }
+    .ecommerce-tone-error-strong { color: var(--color-red-800, oklch(44.4% 0.177 26.899)); } /* text-error-strong */
+    .dark .ecommerce-tone-error-strong { color: var(--color-red-200, oklch(88.5% 0.062 18.334)); }
+    .ecommerce-tone-info-soft { color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); } /* text-info-soft */
+    .dark .ecommerce-tone-info-soft { color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); }
+    .ecommerce-tone-warning-soft { color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); } /* text-warning-soft */
+    .dark .ecommerce-tone-warning-soft { color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); }
+    .ecommerce-tone-border-error { border-color: var(--color-red-200, oklch(88.5% 0.062 18.334)); } /* border-error */
+    .dark .ecommerce-tone-border-error { border-color: var(--color-red-800, oklch(44.4% 0.177 26.899)); }
+}
 
 @layer utilities {
     /* ── 크기 ─────────────────────────────────────────────────────── */
@@ -41,15 +66,22 @@
     .p-px { padding: 1px; } /* 은행 관리 창 오류 테두리 */
     .pl-9 { padding-left: calc(var(--spacing, 0.25rem) * 9); } /* 할인코드 생성 접두 아이콘 */
     .justify-self-center { justify-self: center; } /* 주문 취소 창 */
+    .mr-1\.5 { margin-right: calc(var(--spacing, 0.25rem) * 1.5); } /* 상품 폼·할인코드 생성 안내 아이콘 */
+    .pt-1\.5 { padding-top: calc(var(--spacing, 0.25rem) * 1.5); } /* 주문 목록 */
 
     /* ── 테두리·배경 ─────────────────────────────────────────────── */
     .border-l-blue-500 { border-left-color: var(--color-blue-500, oklch(62.3% 0.214 259.815)); } /* 입금 수동 매칭 선택 행 */
+    .bg-white\/20 { background-color: color-mix(in oklab, var(--color-white, #fff) 20%, transparent); } /* 배너 미리보기 점(꺼짐) */
+    .bg-white\/50 { background-color: color-mix(in oklab, var(--color-white, #fff) 50%, transparent); } /* 배너 미리보기 화살표 */
+    .bg-white\/60 { background-color: color-mix(in oklab, var(--color-white, #fff) 60%, transparent); } /* 계좌 관리·SEO 캐시 비우기 창의 진행 중 덮개 */
+    .text-white\/80 { color: color-mix(in oklab, var(--color-white, #fff) 80%, transparent); } /* 배너 상세 미리보기 부제 */
 
     /* ── 상태 변형 ───────────────────────────────────────────────── */
     .hover\:bg-white\/30:hover { background-color: color-mix(in oklab, var(--color-white, #fff) 30%, transparent); } /* 배너 미리보기 화살표 */
+    .hover\:bg-amber-800:hover { background-color: var(--color-amber-800, oklch(47.3% 0.137 46.201)); } /* 주문 상세 결제 정보 호박색 단추(흰 글자 대비) */
     .hover\:opacity-70:hover { opacity: 0.7; }
     .hover\:opacity-80:hover { opacity: 0.8; } /* 리뷰 이미지 썸네일 */
-    .hover\:text-amber-700:hover { color: var(--color-amber-700, oklch(55.5% 0.163 48.998)); } /* 상품 폼 기타 정보 링크 */
+    .hover\:text-amber-800:hover { color: var(--color-amber-800, oklch(47.3% 0.137 46.201)); } /* 상품 폼 기타 정보 링크(기본 amber-700 보다 한 단계 짙게) */
     .disabled\:opacity-20:disabled { opacity: 0.2; } /* 리뷰 이미지 미리보기 이전·다음 */
     .disabled\:opacity-30:disabled { opacity: 0.3; } /* 마일리지 통화 행 이동·삭제 */
 
@@ -57,10 +89,12 @@
     .dark .dark\:bg-blue-900\/10 { background-color: color-mix(in oklab, var(--color-blue-900, oklch(37.9% 0.146 265.522)) 10%, transparent); }
     .dark .dark\:bg-gray-700\/40 { background-color: color-mix(in oklab, var(--color-gray-700, oklch(37.3% 0.034 259.733)) 40%, transparent); }
     .dark .dark\:bg-gray-900\/40 { background-color: color-mix(in oklab, var(--color-gray-900, oklch(21% 0.034 264.665)) 40%, transparent); }
+    .dark .dark\:bg-gray-900\/60 { background-color: color-mix(in oklab, var(--color-gray-900, oklch(21% 0.034 264.665)) 60%, transparent); } /* 계좌 관리·SEO 캐시 비우기 창의 저장 중 덮개 */
     .dark .dark\:bg-pink-900\/20 { background-color: color-mix(in oklab, var(--color-pink-900, oklch(40.8% 0.153 2.432)) 20%, transparent); }
     .dark .dark\:border-gray-700\/50 { border-color: color-mix(in oklab, var(--color-gray-700, oklch(37.3% 0.034 259.733)) 50%, transparent); }
     .dark .dark\:hover\:bg-pink-900\/30:hover { background-color: color-mix(in oklab, var(--color-pink-900, oklch(40.8% 0.153 2.432)) 30%, transparent); }
     .dark .dark\:hover\:bg-red-900\/50:hover { background-color: color-mix(in oklab, var(--color-red-900, oklch(39.6% 0.141 25.723)) 50%, transparent); }
+    .dark .dark\:hover\:text-amber-300:hover { color: var(--color-amber-300, oklch(87.9% 0.169 91.605)); } /* 상품 폼 기타 정보 링크 다크 hover */
 
     /* ── 반응형 ──────────────────────────────────────────────────── */
     @media (min-width: 48rem) {

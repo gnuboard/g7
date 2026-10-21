@@ -64,6 +64,14 @@ vi.mock('../template-engine/LayoutLoader', () => ({
   }),
 }));
 
+// DataSourceManager 가 에러를 던지도록 모킹 — 종전에는 한 테스트 안에 있었으나 vi.mock 은 호이스팅돼 파일 전체에
+// 적용됐다(Vitest 경고: not at the top level). 실제 적용 범위대로 최상위에 둔다.
+vi.mock('../template-engine/DataSourceManager', () => ({
+  DataSourceManager: vi.fn(function(this: any) {
+    this.fetchDataSources = vi.fn().mockRejectedValue(new Error('Fetch failed'));
+  }),
+}));
+
 vi.mock('../template-engine/ComponentRegistry', () => {
   const mockInstance = {
     loadComponents: vi.fn().mockResolvedValue(undefined),
@@ -446,12 +454,7 @@ describe('TemplateApp', () => {
     it('데이터 fetch 실패 시에도 TransitionManager.setPending(false)를 호출해야 함', async () => {
       const { transitionManager } = await import('../template-engine/TransitionManager');
 
-      // DataSourceManager가 에러를 던지도록 모킹
-      vi.mock('../template-engine/DataSourceManager', () => ({
-        DataSourceManager: vi.fn(function(this: any) {
-          this.fetchDataSources = vi.fn().mockRejectedValue(new Error('Fetch failed'));
-        }),
-      }));
+      // DataSourceManager 는 파일 최상위 모킹으로 fetch 가 실패한다(vi.mock 은 원래 호이스팅되어 파일 전체에 적용됐다)
 
       const config: TemplateAppConfig = {
         templateId: 'test-template',
@@ -797,6 +800,175 @@ describe('TemplateApp', () => {
 
         // _local 상태가 dataContext에 반영되었는지 확인
         expect(dataContext._local).toEqual({ form: { id: 1, name: 'test' } });
+      });
+    });
+
+    /**
+     * [TS-INIT-4] init 항목을 통째로 넘긴다 (engine-v1.80.0, #753)
+     *
+     * 문제: executeInitActions 가 10개 키만 골라 담아 sequence(actions)·switch(cases)·actionRef·errorHandling 이
+     *       탈락했고, handler 없는 항목(actionRef 만)이 하나라도 있으면 `a.handler.includes` TypeError 로
+     *       화면 진입 자체가 실패했다. conditions·sequence 안의 확장 핸들러는 등록을 기다리지 않았다.
+     * 해결: `{ ...initAction, type: 'click' }` 로 넘기고, 기다릴 확장 핸들러를 중첩까지 재귀로 모은다.
+     */
+    describe('[TS-INIT-4] init 항목 통째 전달 · 중첩 확장 핸들러 대기', () => {
+      const created: any[] = [];
+
+      beforeEach(() => {
+        created.length = 0;
+        (sharedActionDispatcher as any).createHandler = vi.fn((actionDef: any) => {
+          created.push(actionDef);
+          return async () => undefined;
+        });
+        (sharedActionDispatcher as any).getNamedActions = vi.fn(() => ({
+          refWithExt: { handler: 'ext-mod.fromNamed' },
+        }));
+        sharedActionDispatcher.customHandlers.clear();
+      });
+
+      afterEach(() => {
+        delete (sharedActionDispatcher as any).createHandler;
+        delete (sharedActionDispatcher as any).getNamedActions;
+        sharedActionDispatcher.customHandlers.clear();
+      });
+
+      const makeApp = () => new TemplateApp({ templateId: 'test-template', templateType: 'admin', locale: 'ko', debug: false });
+
+      // @scenario slot=init, shape=sequence
+      // @effects init_runs_full_action
+      it('sequence·switch·actionRef·errorHandling 키를 그대로 createHandler 에 넘긴다', async () => {
+        const initActions = [
+          { handler: 'sequence', actions: [{ handler: 'setState', params: { target: 'local', a: 1 } }] },
+          { handler: 'switch', params: { value: '{{query.mode}}' }, cases: { quiet: { handler: 'setState', params: { target: 'local', m: 'q' } } } },
+          { actionRef: 'named1' },
+          { handler: 'apiCall', target: '/api/x', errorHandling: { 404: { handler: 'suppress' } }, identity_target: { email: 'a' } },
+        ];
+
+        await (makeApp() as any).executeInitActions(initActions, {});
+
+        expect(created).toEqual(initActions.map((a) => ({ ...a, type: 'click' })));
+      });
+
+      // @scenario slot=init, shape=action_ref
+      // @effects init_runs_full_action
+      it('handler 없는 항목(actionRef 만)이 있어도 나머지 항목을 실행한다', async () => {
+        const initActions = [
+          { actionRef: 'named1' },
+          { handler: 'setState', params: { target: 'local', after: 1 } },
+        ];
+
+        await (makeApp() as any).executeInitActions(initActions, {});
+
+        expect(created.map((a) => a.actionRef ?? a.handler)).toEqual(['named1', 'setState']);
+      });
+
+      // @scenario slot=init, shape=conditions
+      // @effects init_runs_full_action
+      it('conditions·sequence·actionRef 안의 확장 핸들러도 등록을 기다린다', async () => {
+        const app = makeApp() as any;
+        const waitSpy = vi.spyOn(app, 'waitForHandlers').mockResolvedValue(undefined);
+        const initActions = [
+          { handler: 'conditions', conditions: [{ if: '{{true}}', then: { handler: 'ext-mod.inThen' } }, { then: [{ handler: 'ext-mod.inElse' }] }] },
+          { handler: 'sequence', actions: [{ handler: 'ext-mod.inSeq', onError: { handler: 'ext-mod.inOnError' } }] },
+          { handler: 'switch', cases: { a: [{ handler: 'ext-mod.inCase' }] } },
+          { actionRef: 'refWithExt' },
+          { handler: '{{dynamic.handler}}' },
+          { handler: 'ext-mod.top' },
+        ];
+
+        await app.executeInitActions(initActions, {});
+
+        expect(waitSpy).toHaveBeenCalledTimes(1);
+        expect([...waitSpy.mock.calls[0][1]].sort()).toEqual(
+          ['ext-mod.fromNamed', 'ext-mod.inCase', 'ext-mod.inElse', 'ext-mod.inOnError', 'ext-mod.inSeq', 'ext-mod.inThen', 'ext-mod.top'].sort(),
+        );
+      });
+
+      // @scenario slot=init, shape=action_ref
+      // @effects init_runs_full_action
+      it('named action 이 서로를 참조해도 수집이 끝난다 (순환 방지)', async () => {
+        (sharedActionDispatcher as any).getNamedActions = vi.fn(() => ({
+          loopA: { actionRef: 'loopB' },
+          loopB: { handler: 'sequence', actions: [{ actionRef: 'loopA' }, { handler: 'ext-mod.loop' }] },
+        }));
+        const app = makeApp() as any;
+        const waitSpy = vi.spyOn(app, 'waitForHandlers').mockResolvedValue(undefined);
+
+        await app.executeInitActions([{ actionRef: 'loopA' }], {});
+
+        expect(waitSpy.mock.calls[0][1]).toEqual(['ext-mod.loop']);
+      });
+
+      describe('활성 확장이 아닌 네임스페이스는 기다리지 않는다', () => {
+        const originalConfig = (window as any).G7Config;
+
+        afterEach(() => {
+          (window as any).G7Config = originalConfig;
+        });
+
+        // @scenario slot=init, shape=conditions
+        // @effects init_runs_full_action
+        it('실행되지 않을 분기에 적힌 비활성 확장 핸들러 때문에 화면 진입을 늦추지 않는다', async () => {
+          (window as any).G7Config = {
+            activeModules: [{ identifier: 'ext-mod' }],
+            activePlugins: [{ identifier: 'ext-plug' }],
+          };
+          const app = makeApp() as any;
+          const waitSpy = vi.spyOn(app, 'waitForHandlers').mockResolvedValue(undefined);
+
+          await app.executeInitActions([
+            { handler: 'conditions', conditions: [{ if: '{{false}}', then: { handler: 'ext-off.inThen' } }, { then: { handler: 'ext-mod.inElse' } }] },
+            { handler: 'ext-plug.top', onError: { handler: 'ext-gone.onError' } },
+            { handler: 'test-template.fromTemplate' },
+          ], {});
+
+          expect([...waitSpy.mock.calls[0][1]].sort()).toEqual(['ext-mod.inElse', 'ext-plug.top', 'test-template.fromTemplate']);
+        });
+
+        // @scenario slot=init, shape=conditions
+        // @effects init_runs_full_action
+        it('기다릴 핸들러가 전부 비활성 확장 것이면 대기를 부르지 않는다', async () => {
+          (window as any).G7Config = { activeModules: [{ identifier: 'ext-mod' }], activePlugins: [] };
+          const app = makeApp() as any;
+          const waitSpy = vi.spyOn(app, 'waitForHandlers').mockResolvedValue(undefined);
+
+          await app.executeInitActions([
+            { handler: 'switch', cases: { a: { handler: 'ext-off.inCase' } } },
+          ], {});
+
+          expect(waitSpy).not.toHaveBeenCalled();
+        });
+
+        // @scenario slot=init, shape=conditions
+        // @effects init_runs_full_action
+        it('활성 목록을 모르면(비었거나 없음) 걸러내지 않는다', async () => {
+          (window as any).G7Config = { activeModules: [], activePlugins: [] };
+          const app = makeApp() as any;
+          const waitSpy = vi.spyOn(app, 'waitForHandlers').mockResolvedValue(undefined);
+
+          await app.executeInitActions([{ handler: 'ext-off.top' }], {});
+
+          expect(waitSpy.mock.calls[0][1]).toEqual(['ext-off.top']);
+        });
+      });
+    });
+
+    /**
+     * [TS-WS-ONRECEIVE-1] 웹소켓 onReceive 단일 객체 (engine-v1.80.0, #753 S11)
+     *
+     * 문제: onReceive 가 배열일 때만 실행해 단일 객체로 적은 수신 동작이 조용히 무시됐다.
+     */
+    describe('[TS-WS-ONRECEIVE-1] onReceive 정규화', () => {
+      // @scenario slot=websocket, shape=single
+      // @effects listen_runs_full_action
+      it('단일 객체는 한 개짜리 목록, 배열은 그대로, 그 밖은 빈 목록', () => {
+        const toList = (TemplateApp as any).toActionList;
+        const single = { handler: 'refetchDataSource', params: { dataSourceId: 'x' } };
+
+        expect(toList(single)).toEqual([single]);
+        expect(toList([single, single])).toEqual([single, single]);
+        expect(toList(undefined)).toEqual([]);
+        expect(toList('nope')).toEqual([]);
       });
     });
   });

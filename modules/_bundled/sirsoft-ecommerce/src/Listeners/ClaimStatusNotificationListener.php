@@ -7,6 +7,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
+use App\Support\LocalizedValue;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
@@ -611,7 +612,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             $name = $item->orderOption?->product_name ?? '';
 
             if (is_array($name)) {
-                $name = $name[app()->getLocale()] ?? $name[(string) config('app.fallback_locale', 'ko')] ?? (reset($name) ?: '');
+                $name = LocalizedValue::pick($name) ?? '';
             }
 
             $lines[] = trim((string) $name).' × '.(int) $item->exchange_quantity;
@@ -725,7 +726,7 @@ class ClaimStatusNotificationListener implements HookListenerInterface
             $name = $row->orderOption?->product_name ?? '';
 
             if (is_array($name)) {
-                $name = $name[app()->getLocale()] ?? $name[(string) config('app.fallback_locale', 'ko')] ?? (reset($name) ?: '');
+                $name = LocalizedValue::pick($name) ?? '';
             }
 
             $quantity = (int) ($row->exchange_quantity ?? $row->return_quantity ?? $row->quantity ?? 0);

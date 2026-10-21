@@ -77,7 +77,8 @@
     "reply_status": {
       "replied": "답변완료",
       "not_replied": "미답변"
-    }
+    },
+    "quantity_value": "{{count}} 개"
   },
   "detail": {
     "purchase_info": {

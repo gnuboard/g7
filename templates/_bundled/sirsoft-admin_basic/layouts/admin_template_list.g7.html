@@ -35,6 +35,21 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(#146). 모듈·플러그인·언어팩 화면과
+       **같은 API** 를 부르고 여기서는 응답의 `templates` 만 읽는다. 숨김 샘플·설치·디스크·닫은 관리자는 서버가 거른다. -->
+  <data-source id="unplaced_bundled_notice" label_key="$t:editor.data_source.unplaced_bundled_notice" type="api" endpoint="/api/admin/extensions/unplaced-bundled" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="modules" :value="[]"/>
+          <field name="plugins" :value="[]"/>
+          <field name="templates" :value="[]"/>
+          <field name="language_packs" :value="[]"/>
+        </field>
+        <field name="core_version" value=""/>
+      </field>
+    </fallback>
+  </data-source>
   <init-local>
     <field name="searchQuery" value=""/>
   </init-local>
@@ -44,6 +59,7 @@
   <transition-overlay target="templates_tab_content" fallback-target="right_content_area">
     <wait-for>templates</wait-for>
     <wait-for>auto_deactivated_banner</wait-for>
+    <wait-for>unplaced_bundled_notice</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -64,7 +80,7 @@
   <slot name="content">
     <div data-ref="template_list_content" class="admin-page-content-responsive-fluid">
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.templates.title" description="$t:admin.templates.description">
-        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+        <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <refetch-data-source dataSourceId="templates"/>
           </on>
@@ -94,7 +110,7 @@
           <icon data-if="{{_global.isCheckingTemplateUpdates}}" name="spinner" size="sm" class="animate-spin"/>
           <span>$t:admin.templates.actions.check_updates</span>
         </button>
-        <button data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+        <button type="button" data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
           <responsive on="portable" class="hidden"/>
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
@@ -102,7 +118,7 @@
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
-        <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <responsive on="portable" class="hidden"/>
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
@@ -110,14 +126,14 @@
       </page-header>
       <div data-ref="mobile_action_buttons" class="hidden">
         <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
-        <button data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
           </on>
           <icon name="upload" class="text-xl"/>
           <span>$t:admin.templates.manual_install</span>
         </button>
-        <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <icon name="globe" class="text-xl"/>
           <span>$t:admin.templates.marketplace</span>
         </button>
@@ -158,11 +174,47 @@
           </div>
         </div>
       </div>
+      <!-- 미배치 공식 번들 안내(#146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),
+        배치·정리하면 서버가 항목을 빼 모두에게서 사라진다. 명령은 클릭 한 번에 전체 선택된다. -->
+      <div data-ref="unplaced_bundled_notice_wrapper" data-if="{{(unplaced_bundled_notice?.data?.items?.templates?.length ?? 0) > 0}}" class="alert-info mb-4" role="status">
+        <div class="flex-start justify-between gap-4 w-full">
+          <div class="flex-start gap-3 flex-1 min-w-0">
+            <icon name="circle-info" class="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"/>
+            <div class="flex-1 min-w-0">
+              <p data-ref="unplaced_bundled_notice_title" class="text-sm font-medium text-info-soft mb-1 break-words">$t:extensions.unplaced_bundled.title_templates|version={{unplaced_bundled_notice?.data?.core_version ?? ''}}|count={{unplaced_bundled_notice?.data?.items?.templates?.length ?? 0}}</p>
+              <p class="text-xs text-info-soft mb-2 break-words">$t:extensions.unplaced_bundled.description</p>
+              <div class="row-stack">
+                <div data-each="notice_item in {{unplaced_bundled_notice?.data?.items?.templates ?? []}}" class="text-info-soft break-words">
+                  <span class="font-mono">{{notice_item.identifier}}</span>
+                  <span> — {{notice_item.name}} ({{notice_item.version}})</span>
+                </div>
+              </div>
+              <p class="text-xs text-info-soft mt-2">$t:extensions.unplaced_bundled.command_label</p>
+              <code data-ref="unplaced_bundled_notice_command" class="block mt-1 px-2 py-1 rounded font-mono text-xs break-all select-all bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-200">{{unplaced_bundled_notice?.data?.commands?.templates ?? ''}}</code>
+            </div>
+          </div>
+          <button data-ref="unplaced_bundled_notice_dismiss" type="button" class="shrink-0 text-info-soft hover:underline" aria-label="$t:extensions.unplaced_bundled.dismiss">
+            <on type="click">
+              <!-- 이 관리자에게서만 템플릿 안내를 닫는다(번들 자체는 그대로 미배치다).
+                   성공하면 안내 소스만 다시 받아 블록이 사라졌는지 확인한다. -->
+              <api-call :auth_required="true" target="/api/admin/extensions/unplaced-bundled/template/dismiss" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="unplaced_bundled_notice"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon name="times" size="xs"/>
+          </button>
+        </div>
+      </div>
       <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav-responsive">
         <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
           <prop name="tabs">
-            <item id="user" label="$t:admin.templates.tabs.user"/>
-            <item id="admin" label="$t:admin.templates.tabs.admin"/>
+            <item id="user" href="/admin/templates/user{{query.include_hidden === '1' ? '?include_hidden=1' : ''}}" label="$t:admin.templates.tabs.user"/>
+            <item id="admin" href="/admin/templates/admin{{query.include_hidden === '1' ? '?include_hidden=1' : ''}}" label="$t:admin.templates.tabs.admin"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 종류 탭 전환 — 종류가 **URL 경로에 있으므로 이동**이다(쿼리 변경이 아니다).
@@ -171,7 +223,7 @@
             <sequence>
               <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
               <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.
-                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0 O-G3-4). 꺼져 있으면 빈 값이라 주소에 붙지 않는다. -->
+                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0). 꺼져 있으면 빈 값이라 주소에 붙지 않는다. -->
               <navigate path="/admin/templates/{{$args[0]}}">
                 <query include_hidden="{{query.include_hidden === '1' ? '1' : undefined}}"/>
               </navigate>

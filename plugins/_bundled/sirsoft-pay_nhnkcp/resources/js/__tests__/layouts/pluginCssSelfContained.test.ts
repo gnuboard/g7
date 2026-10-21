@@ -1,4 +1,4 @@
-// e2e:allow 클래스 이름·CSS 정의의 구조 검증 — 다크 모드·포커스·호버 색의 브라우저 실측은 g7_2 W3 화면 실측 매트릭스 몫(7.1.0 출시 최종 수정)
+// e2e:allow 클래스 이름·CSS 정의의 구조 검증 — 다크 모드·포커스·호버 색의 브라우저 실측은 다른 클론의 화면 실측 매트릭스 몫(7.1.0 출시 최종 수정)
 /**
  * @file pluginCssSelfContained.test.ts
  * @description NHN KCP 결제 환경설정 화면이 관리자 템플릿 CSS 에 없는 유틸리티 대신 플러그인 자기 CSS 의 접두 클래스를 쓰는지
@@ -19,7 +19,7 @@ const PREFIX = 'pay-nhnkcp-';
 const CSS_ENTRY = 'resources/css/main.css';
 
 /** 이번에 접두 클래스로 옮긴, 관리자 템플릿 CSS 에 규칙이 없던 토큰 */
-const UNGENERATED = ['dark:focus-within:ring-blue-400', 'focus-within:border-transparent', 'hover:text-amber-950', 'dark:hover:text-amber-100'];
+const UNGENERATED = ['dark:focus-within:ring-blue-400', 'focus-within:border-transparent', 'hover:text-amber-950', 'dark:hover:text-amber-100', 'p-2.5'];
 
 /** 검사 대상 레이아웃·조각 소스(.g7.html) */
 const SOURCES = ['resources/layouts/admin/plugin_settings.g7.html'];

@@ -14,6 +14,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 
 /**
  * 이커머스 문의 연동 훅 리스너 (게시판 모듈)
@@ -224,6 +225,9 @@ class EcommerceInquiryHookListener implements HookListenerInterface
 
         try {
             $posts = $this->postRepository->findByIdsWithRelations($ids);
+
+            // 문의마다 스레드 경로를 따로 읽지 않게 비밀글 노드를 미리 채운다
+            app(SecretThreadAccess::class)->prime($posts, request());
 
             return $posts->map(function (Post $post) {
                 // 비밀글 서버측 게이팅(KVE-2026-1914): 열람 권한이 없으면 원문을 마스킹한다.
@@ -689,9 +693,18 @@ class EcommerceInquiryHookListener implements HookListenerInterface
             return null;
         }
 
+        // 답변이 비밀글이면 답변 자체도 게이트를 거친다 — 문의가 공개여도 비밀 답변 원문은 열람 권한자
+        // (문의 작성자·비밀번호 인증자·권한자 — 경로 규칙상 원글을 열 수 있는 사람)에게만 나간다.
+        // 부모·게시판 관계를 이미 쥔 인스턴스로 채워 판정이 다시 읽지 않게 한다.
+        $reply->setRelation('parent', $post);
+        if ($post->relationLoaded('board')) {
+            $reply->setRelation('board', $post->board);
+        }
+        $canViewReply = ! $reply->is_secret || PostResource::canViewSecretForPost($reply);
+
         return [
             'id' => $reply->id,
-            'content' => $reply->content,
+            'content' => $canViewReply ? $reply->content : null,
             'created_at' => $reply->created_at?->toIso8601String(),
         ];
     }

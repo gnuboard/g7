@@ -10,7 +10,7 @@
   <div data-ref="extra_fee_section" data-if="{{_computed.activeCountrySetting &amp;&amp; _computed.activeCountryCode === 'KR'}}" class="admin-card">
     <div class="flex-center gap-2 mb-4">
       <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_extra_fee</h2>
-      <span class="text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_kr_only</span>
+      <span class="ecommerce-tone-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_kr_only</span>
     </div>
     <div data-ref="extra_fee_fields">
       <div data-ref="field_extra_fee_enabled">
@@ -39,6 +39,7 @@
               <on type="click">
                 <!-- 템플릿 불러오기 창 열기 — 목록을 **먼저 다시 받고** 연다. 창이 스스로 조회하지 않으므로, 순서를 뒤집으면 지난번 목록이 잠깐 보인다. -->
                 <sequence>
+                  <set-state target="global" :extraFeeTemplatesLoadFailed="false"/>
                   <refetch-data-source dataSourceId="extra_fee_templates"/>
                   <open-modal target="extra_fee_template"/>
                 </sequence>
@@ -73,7 +74,7 @@
                 <div class="excel-card-body space-y-3">
                   <div class="form-group">
                     <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode</label>
-                    <input type="text" class="input" value="{{feeItem.zipcode ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode')}}" type="text" class="input" value="{{feeItem.zipcode ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 우편번호 구간(좁은 화면 카드) — 숫자로 바꾸지 않고 글자 그대로 넘긴다. 앞자리 0 이 살아 있어야 하고 범위 표기도 담기기 때문이다. -->
                         <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="zipcode" value="{{$event.target.value}}"/>
@@ -82,7 +83,7 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region</label>
-                    <input type="text" class="input" value="{{feeItem.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region')}}" type="text" class="input" value="{{feeItem.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 지역 이름(좁은 화면 카드) — 표시용 메모다. 배송비 계산은 우편번호로만 하므로 이 값이 달라도 금액에는 영향이 없다. -->
                         <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="region" value="{{$event.target.value}}"/>
@@ -91,7 +92,7 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount</label>
-                    <input type="number" class="input" value="{{feeItem.fee ?? 0}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount')}}" type="number" class="input" value="{{feeItem.fee ?? 0}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 추가 금액(좁은 화면 카드) — 다른 숫자 칸들과 달리 여기서 숫자로 바꾸지 않고 핸들러에 맡긴다. -->
                         <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="fee" value="{{$event.target.value}}"/>
@@ -115,7 +116,7 @@
               <tbody>
                 <tr data-each="feeItem, feeIdx in {{(_computed.activeCountrySetting?.extra_fee_settings ?? []).map((item, i) => ({...item, _idx: i}))}}">
                   <td>
-                    <input type="text" class="input" value="{{feeItem.zipcode ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode')}}" type="text" class="input" value="{{feeItem.zipcode ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode_placeholder" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 우편번호 구간(넓은 화면 표) — 위 카드 판과 같은 동작이다. -->
                         <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="zipcode" value="{{$event.target.value}}"/>
@@ -123,7 +124,7 @@
                     </input>
                   </td>
                   <td>
-                    <input type="text" class="input" value="{{feeItem.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region')}}" type="text" class="input" value="{{feeItem.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 지역 이름(넓은 화면 표) — 표시용 메모이고 계산에는 쓰이지 않는다. -->
                         <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="region" value="{{$event.target.value}}"/>
@@ -131,7 +132,7 @@
                     </input>
                   </td>
                   <td>
-                    <input type="number" class="input" value="{{feeItem.fee ?? 0}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount')}}" type="number" class="input" value="{{feeItem.fee ?? 0}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 추가 금액(넓은 화면 표) — 위 카드 판과 같은 동작이다. -->
                         <action handler="sirsoft-ecommerce.updateExtraFeeField" :debounce="300" feeIndex="{{feeItem._idx}}" field="fee" value="{{$event.target.value}}"/>
@@ -152,7 +153,7 @@
             </table>
           </div>
         </div>
-        <div data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}" class="text-center py-4 text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+        <div data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}" class="text-center py-4 text-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.no_extra_fee</span>
         </div>
       </div>

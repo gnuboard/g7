@@ -11,6 +11,7 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\LayoutExtension;
 use App\Models\Template;
+use App\Models\TemplateLayout;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -40,6 +41,11 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     private Template $template;
 
+    /**
+     * 확장 서비스·저장소와 활성 관리자 템플릿을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,6 +60,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 모듈 Extension 등록 및 레이아웃 적용 전체 흐름 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_module_extension_registration_and_layout_application_flow(): void
     {
@@ -116,9 +126,20 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 모듈 비활성화 시 Extension soft delete 및 재활성화 시 복원 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects reactivation_restores_rows_that_have_a_host
      */
     public function test_module_deactivation_and_reactivation_preserves_extensions(): void
     {
+        // 재활성화 복원은 붙을 자리가 있는 활성 템플릿의 행만 되살린다(#725) — 확장점을 가진 호스트 화면을 둔다.
+        TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'header_host',
+            'content' => ['layout_name' => 'header_host', 'components' => [['type' => 'extension_point', 'name' => 'header-actions']]],
+        ]);
+
         // 1. 모듈 Extension 등록
         $this->service->registerExtension(
             [
@@ -146,6 +167,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * Overlay를 통한 기존 컴포넌트에 주입 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_overlay_injection_into_existing_component(): void
     {
@@ -202,6 +227,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 템플릿 오버라이드가 모듈 Extension보다 우선순위가 높은지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects template_override_replaces_the_module_extension_when_served
      */
     public function test_template_override_has_higher_priority_than_module(): void
     {
@@ -265,6 +294,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 다중 모듈의 Extension이 우선순위대로 정렬되는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects served_extensions_follow_priority_order
      */
     public function test_multiple_module_extensions_sorted_by_priority(): void
     {
@@ -331,6 +364,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * data_sources 병합 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_data_sources_merged_from_extensions(): void
     {
@@ -378,6 +415,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 비활성 Extension이 레이아웃에 적용되지 않는지 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extensions_of_inactive_sources_are_not_served
      */
     public function test_inactive_extensions_not_applied_to_layout(): void
     {
@@ -428,6 +469,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 모듈 완전 삭제 시 Extension 영구 삭제 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects uninstall_and_template_deletion_remove_extension_rows
      */
     public function test_module_uninstall_permanently_deletes_extensions(): void
     {
@@ -454,6 +499,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 템플릿 삭제 시 관련 Extension 모두 삭제 테스트
+     *
+     * @return void 반환값 없음
+     *
+     * @effects uninstall_and_template_deletion_remove_extension_rows
      */
     public function test_template_deletion_cascades_to_extensions(): void
     {
@@ -498,6 +547,7 @@ class LayoutExtensionIntegrationTest extends TestCase
      *
      * @param  array  $moduleIdentifiers  활성 모듈 식별자 목록
      * @param  array  $pluginIdentifiers  활성 플러그인 식별자 목록
+     * @return void 반환값 없음
      */
     private function mockActiveExtensions(array $moduleIdentifiers, array $pluginIdentifiers): void
     {
@@ -529,6 +579,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-1: inject_props overlay 등록 → 적용 E2E
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_inject_props_registration_and_application_flow(): void
     {
@@ -592,6 +646,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-2: inject_props + append_child 복합 injection
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_inject_props_and_component_injection_combined(): void
     {
@@ -666,6 +724,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-3: 비활성 모듈의 inject_props 미적용
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extensions_of_inactive_sources_are_not_served
      */
     public function test_inactive_module_inject_props_not_applied(): void
     {
@@ -719,6 +781,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-4: 여러 확장의 inject_props 순차 적용 (priority 순)
+     *
+     * @return void 반환값 없음
+     *
+     * @effects served_extensions_follow_priority_order
      */
     public function test_multiple_inject_props_applied_by_priority_order(): void
     {
@@ -794,6 +860,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-5: overlay computed + modals 병합 E2E
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_overlay_computed_and_modals_merge_e2e(): void
     {
@@ -851,6 +921,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-6: Extension Point modals + Overlay modals 동시 병합
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_extension_point_and_overlay_modals_both_merged(): void
     {
@@ -939,6 +1013,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * E1: base(_user_base) 를 타겟한 overlay 가 자식(home) 서빙 시 적용된다
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_base_targeted_overlay_applies_to_child_via_extends_chain(): void
     {
@@ -991,6 +1069,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * E2: base overlay 의 init_actions 가 자식 서빙 시 호스트 init_actions 뒤에 병합된다
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_base_overlay_init_actions_merge_into_child_via_extends_chain(): void
     {
@@ -1041,6 +1123,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * E3: 다단계 extends 체인 — 자식의 자식까지 base overlay 전파
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_base_overlay_propagates_through_multi_level_extends_chain(): void
     {
@@ -1080,6 +1166,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * E4: 자식 자신을 타겟한 overlay 와 base 타겟 overlay 가 한 번씩만 적용된다(중복 방지)
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_child_and_base_overlays_apply_once_each_without_duplication(): void
     {
@@ -1128,6 +1218,10 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-7: inject_props + overlay state/computed 종합 시나리오
+     *
+     * @return void 반환값 없음
+     *
+     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_inject_props_with_state_and_computed_comprehensive(): void
     {

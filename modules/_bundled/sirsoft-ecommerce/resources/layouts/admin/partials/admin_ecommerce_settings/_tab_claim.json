@@ -60,14 +60,17 @@
                 "tabs": [
                     {
                         "id": "exchange",
+                        "href": "/admin/ecommerce/settings?tab=claim&sub_tab=exchange",
                         "label": "$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.exchange"
                     },
                     {
                         "id": "return",
+                        "href": "/admin/ecommerce/settings?tab=claim&sub_tab=return",
                         "label": "$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.return"
                     },
                     {
                         "id": "refund",
+                        "href": "/admin/ecommerce/settings?tab=claim&sub_tab=refund",
                         "label": "$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.refund"
                     }
                 ]

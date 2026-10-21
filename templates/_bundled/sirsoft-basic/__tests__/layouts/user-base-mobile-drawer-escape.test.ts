@@ -1,6 +1,6 @@
 /**
  * @file user-base-mobile-drawer-escape.test.ts
- * @description 모바일 메뉴 서랍 Esc 닫기 (7.1.0 N O-N6)
+ * @description 모바일 메뉴 서랍 Esc 닫기 (7.1.0 실측)
  *
  * 결함: 모바일에서 [메뉴] 로 연 서랍이 Esc 로 닫히지 않았다(닫기 단추·바깥 누름만 됨). 서랍을 연 직후 초점은
  * 서랍 밖 [메뉴] 단추에 있으므로 서랍에만 키 처리를 달면 그 순간의 Esc 를 못 받는다 — 화면 뿌리(`user_layout_root`)

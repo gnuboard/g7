@@ -114,7 +114,8 @@
         "test_mode_settings_warning_title": "Warning: NicePayments is currently set to test mode.",
         "test_mode_settings_warning_body": "Test payments do not create real payments. If the shop is live, switch this plugin to live payment mode before operating.",
         "test_mode_settings_warning_action": "Switch to live mode",
-        "test_mode_orders_in_list": "Test payment orders included"
+        "test_mode_orders_in_list": "Test payment orders included",
+        "vbank_noti_count_value": "{{count}}"
     },
     "easy_pay": {
         "section_title": "Easy Pay"

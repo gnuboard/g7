@@ -147,6 +147,7 @@ effects:
   - getCoreVersion_falls_back_to_config_when_env_absent_inside_update_tree
   # #658 상주 큐 워커 재시작 신호
   - core_update_step11_signals_queue_restart
+  - core_update_queue_restart_failure_does_not_abort_update
 
 test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php

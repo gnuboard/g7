@@ -62,7 +62,8 @@
       "tracking_only": "送り状のみ保存",
       "tracking_only_description": "選択した商品に{{direction}}送り状のみ保存します。ステータスは変わりません。",
       "quantity_split_hint": "数量を減らすと、その商品が分割されます。例えば、シャツ3個中1個のみを適用すると、1個と2個に分割されます。",
-      "tracking_mixed_address": "回収先が異なる商品は1つの送り状でまとめることができません。回収先ごとに分けて保存してください。"
+      "tracking_mixed_address": "回収先が異なる商品は1つの送り状でまとめることができません。回収先ごとに分けて保存してください。",
+      "tracking_direction_label": "送り状の方向"
     },
     "completion": {
       "title": "完了処理",

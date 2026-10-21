@@ -827,6 +827,11 @@
       "param_token": "Order token",
       "param_order_number": "Order number",
       "param_expires_at": "Expires at"
+    },
+    "save_secret_view_token": {
+      "label": "Save secret post view token",
+      "param_token": "View token",
+      "param_expires_at": "Expires at"
     }
   },
   "computed": {

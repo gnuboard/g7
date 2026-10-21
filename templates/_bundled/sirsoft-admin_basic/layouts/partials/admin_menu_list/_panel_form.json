@@ -345,7 +345,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 }
@@ -368,7 +368,7 @@
                                             "name": "Span",
                                             "if": "{{_global.formErrors?.name}}",
                                             "props": {
-                                                "className": "text-red-500 text-xs"
+                                                "className": "text-red-600 dark:text-red-400 text-xs"
                                             },
                                             "text": "{{_global.formErrors?.name?.[0] ?? ''}}"
                                         }
@@ -402,7 +402,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 }
@@ -423,7 +423,7 @@
                                             "name": "Span",
                                             "if": "{{_global.formErrors?.slug}}",
                                             "props": {
-                                                "className": "text-red-500 text-xs"
+                                                "className": "text-red-600 dark:text-red-400 text-xs"
                                             },
                                             "text": "{{_global.formErrors?.slug?.[0] ?? ''}}"
                                         },
@@ -481,7 +481,7 @@
                                             "name": "Span",
                                             "if": "{{_global.formErrors?.url}}",
                                             "props": {
-                                                "className": "text-red-500 text-xs"
+                                                "className": "text-red-600 dark:text-red-400 text-xs"
                                             },
                                             "text": "{{_global.formErrors?.url?.[0] ?? ''}}"
                                         },
@@ -607,7 +607,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.formErrors?.parent_id}}",
                                                     "props": {
-                                                        "className": "text-red-500 text-xs"
+                                                        "className": "text-red-600 dark:text-red-400 text-xs"
                                                     },
                                                     "text": "{{_global.formErrors?.parent_id?.[0] ?? ''}}"
                                                 }
@@ -961,7 +961,7 @@
                                                             "props": {
                                                                 "name": "calendar",
                                                                 "size": "sm",
-                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                                "className": "text-gray-500 dark:text-gray-500"
                                                             }
                                                         },
                                                         {
@@ -1001,7 +1001,7 @@
                                                             "props": {
                                                                 "name": "clock",
                                                                 "size": "sm",
-                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                                "className": "text-gray-500 dark:text-gray-500"
                                                             }
                                                         },
                                                         {

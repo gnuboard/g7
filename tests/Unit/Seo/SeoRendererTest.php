@@ -2936,6 +2936,55 @@ class SeoRendererTest extends TestCase
     }
 
     /**
+     * init 의 sequence·parallel 안 setState 도 봇 화면 초기 상태에 반영됩니다 (#753 W6).
+     *
+     * 엔진은 `<init>` 의 sequence 를 실행하게 됐다(engine-v1.80.0) — 봇 렌더러가 최상위 setState 만 읽으면
+     * 그 초기 상태가 봇 화면에서만 빠진다.
+     *
+     * @effects renderer_render_descends_into_init_sequence_set_state
+     *
+     * @return void 반환값 없음
+     */
+    public function test_render_resolves_set_state_inside_init_sequence_and_parallel(): void
+    {
+        $this->runInitialStateTest(
+            layoutArgs: [
+                'initActions' => [
+                    ['handler' => 'sequence', 'actions' => [
+                        ['handler' => 'setState', 'params' => ['target' => 'local', 'tab' => 'reviews']],
+                        ['handler' => 'parallel', 'params' => ['actions' => [
+                            ['handler' => 'setState', 'params' => ['target' => 'local', 'page' => 2]],
+                        ]]],
+                    ]],
+                ],
+            ],
+            assertContext: fn ($context) => ($context['_local']['tab'] ?? null) === 'reviews'
+                && ($context['_local']['page'] ?? null) === 2,
+        );
+    }
+
+    /**
+     * init 의 conditions 안 setState 는 지금처럼 반영하지 않습니다(분기는 봇에서 평가하지 않음).
+     *
+     * @effects renderer_render_descends_into_init_sequence_set_state
+     *
+     * @return void 반환값 없음
+     */
+    public function test_render_does_not_resolve_set_state_inside_init_conditions(): void
+    {
+        $this->runInitialStateTest(
+            layoutArgs: [
+                'initActions' => [
+                    ['handler' => 'conditions', 'conditions' => [
+                        ['if' => '{{true}}', 'then' => ['handler' => 'setState', 'params' => ['target' => 'local', 'branch' => 'a']]],
+                    ]],
+                ],
+            ],
+            assertContext: fn ($context) => ! array_key_exists('branch', $context['_local'] ?? []),
+        );
+    }
+
+    /**
      * 레이아웃 초기 상태(state/initLocal/initGlobal/init_actions) 검증 공통 헬퍼입니다.
      *
      * @param  array  $layoutArgs  buildMergedLayout 에 전달할 명명 인자

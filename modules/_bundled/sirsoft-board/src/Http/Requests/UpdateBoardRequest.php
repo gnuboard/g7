@@ -11,6 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\MapsBoardSettingAttributes;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
@@ -232,6 +233,7 @@ class UpdateBoardRequest extends FormRequest
             // 답글/대댓글 깊이 제한
             'max_reply_depth' => ['sometimes', 'nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
             'reply_delete_policy' => ['sometimes', 'nullable', 'string', Rule::in(ReplyDeletePolicy::values())],
+            'secret_reply_visibility' => ['sometimes', 'nullable', 'string', Rule::in(SecretReplyVisibility::values())],
             'max_comment_depth' => ['sometimes', 'nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
 
             // 알림 설정

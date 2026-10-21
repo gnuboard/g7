@@ -151,7 +151,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 전체 상품 리뷰를 페이지네이션으로 조회합니다. `sirsoft-ecommerce.reviews.read` 권한이 필요하며, `ProductReviewService::getAdminList()`가 검색어·별점·답변 여부·포토 여부·상태·기간 등 필터와 정렬을 적용해 목록을 반환합니다. 각 항목에는 작성자·상품·주문옵션·이미지·답변 정보가 함께 로드되고, `abilities` 로 현재 관리자의 수정/삭제 가능 여부가 내려옵니다. 리뷰 관리 화면의 목록 표를 채우는 데 사용합니다.
+**설명** 관리자가 전체 상품 리뷰를 페이지네이션으로 조회합니다. `sirsoft-ecommerce.reviews.read` 권한이 필요하며, `ProductReviewService::getAdminList()`가 검색어·별점·답변 여부·포토 여부·상태·기간 등 필터와 정렬을 적용해 목록을 반환합니다. 각 항목에는 작성자·상품·주문옵션·이미지·답변 정보가 함께 로드되고, `abilities` 로 현재 관리자의 수정/삭제 가능 여부가 내려옵니다. 리뷰 관리 화면의 목록 표를 채우는 데 사용합니다. 권한 범위가 「본인만」·「소유역할」 이면 그 범위 안의 행만 돌려줍니다(범위 밖 행은 목록·건수에서 빠집니다).
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/reviews/bulk

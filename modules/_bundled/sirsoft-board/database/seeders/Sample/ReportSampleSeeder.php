@@ -97,12 +97,12 @@ class ReportSampleSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('신고 샘플 데이터 생성 중...');
+        $this->command->info(__('sirsoft-board::messages.seeders.report_sample.start'));
 
         // 이번 실행에서 만든 샘플 글이 없으면(게시판에 이미 글이 있어 게시글 시더가 건너뜀) 신고 대상도 없다 —
         // 이전 샘플 신고를 지우면 그 신고로 블라인드된 글만 남으므로 그대로 두고 건너뛴다
         if (SampleRunRegistry::range('board_posts') === null) {
-            $this->command->warn('이번 실행에서 만든 샘플 글이 없어 신고 샘플을 건너뜁니다 (이전 샘플 신고는 그대로 둡니다).');
+            $this->command->warn(__('sirsoft-board::messages.seeders.report_sample.skip_no_posts'));
 
             return;
         }
@@ -116,7 +116,7 @@ class ReportSampleSeeder extends Seeder
             ->get();
 
         if ($boards->isEmpty()) {
-            $this->command->warn('신고 기능이 활성화된 샘플 게시판이 없습니다.');
+            $this->command->warn(__('sirsoft-board::messages.seeders.report_sample.no_boards'));
 
             return;
         }
@@ -125,7 +125,7 @@ class ReportSampleSeeder extends Seeder
         $users = User::where('status', UserStatus::Active->value)->orderBy('id')->limit(25)->get();
 
         if ($users->count() < 2) {
-            $this->command->error('활성 회원이 2명 이상 필요합니다. DummyUserSeeder를 먼저 실행하세요.');
+            $this->command->error(__('sirsoft-board::messages.seeders.report_sample.few_users'));
 
             return;
         }
@@ -167,7 +167,7 @@ class ReportSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info("신고 케이스 생성 완료: {$caseCount}건");
+        $this->command->info(__('sirsoft-board::messages.seeders.report_sample.done', ['count' => $caseCount]));
 
         // 비회원 작성 콘텐츠에 대한 신고 데이터 생성
         $this->createGuestAuthorReports($boards, $users);
@@ -181,10 +181,10 @@ class ReportSampleSeeder extends Seeder
         // 대량 신고자 케이스 (자동 블라인드 기준 이상 → 대상 자동 블라인드)
         $this->createManyReportersCase($boards, $users);
 
-        $this->command->info('  - 상태별 분포 (샘플):');
+        $this->command->info('  - '.__('sirsoft-board::messages.seeders.report_sample.status_distribution'));
         foreach (ReportStatus::cases() as $status) {
             $count = $this->sampleReportQuery()->where('status', $status)->count();
-            $this->command->info("    - {$status->value}: {$count}건");
+            $this->command->info('    - '.__('sirsoft-board::messages.seeders.report_sample.status_count', ['status' => $status->value, 'count' => $count]));
         }
 
         // 삭제 조치로 바뀐 글·댓글 수를 게시판 카운트에 반영
@@ -203,12 +203,12 @@ class ReportSampleSeeder extends Seeder
         if ($sampleIds !== []) {
             ReportLog::query()->whereIn('report_id', $sampleIds)->delete();
             Report::withTrashed()->whereIn('id', $sampleIds)->forceDelete();
-            $this->command->line('  - 이전 샘플 신고 '.count($sampleIds).'건 정리 (표식 있는 케이스만)');
+            $this->command->line('  - '.__('sirsoft-board::messages.seeders.report_sample.cleaned', ['count' => count($sampleIds)]));
         }
 
         $unmarked = Report::withTrashed()->count();
         if ($unmarked > 0) {
-            $this->command->warn("  ⚠ 표식 없는 신고 {$unmarked}건은 운영 데이터로 보고 남깁니다 (이전 버전 시더가 만든 샘플도 표식이 없어 정리되지 않습니다).");
+            $this->command->warn('  ⚠ '.__('sirsoft-board::messages.seeders.report_sample.unmarked_kept', ['count' => $unmarked]));
         }
     }
 
@@ -267,7 +267,8 @@ class ReportSampleSeeder extends Seeder
             'status' => $status,
             'processed_by' => $processedAt ? $this->admin?->id : null,
             'processed_at' => $processedAt,
-            'last_reported_at' => $firstReportedAt,
+            // 마지막 신고 시각 = 가장 늦은 신고 기록 시각 (ReportService 가 추가 신고마다 갱신하는 값과 같다)
+            'last_reported_at' => $lastLogAt,
             'last_activated_at' => null,
             'metadata' => $this->sampleMetadata('127.0.0.1', $agent),
             'process_histories' => $histories,
@@ -395,7 +396,7 @@ class ReportSampleSeeder extends Seeder
     private function createGuestAuthorReports($boards, Collection $users): void
     {
         $this->command->info('');
-        $this->command->info('비회원 작성 콘텐츠 신고 데이터 생성 중...');
+        $this->command->info(__('sirsoft-board::messages.seeders.report_sample.guest_start'));
 
         $count = 0;
 
@@ -417,7 +418,7 @@ class ReportSampleSeeder extends Seeder
             }
         }
 
-        $this->command->line("비회원 작성 콘텐츠 신고 케이스 생성 완료: {$count}건");
+        $this->command->line(__('sirsoft-board::messages.seeders.report_sample.guest_done', ['count' => $count]));
     }
 
     /**
@@ -430,7 +431,7 @@ class ReportSampleSeeder extends Seeder
     private function createMultiReporterCases($boards, Collection $users): void
     {
         $this->command->info('');
-        $this->command->info('다중 신고자 케이스 생성 중...');
+        $this->command->info(__('sirsoft-board::messages.seeders.report_sample.multi_start'));
 
         $caseCount = 0;
         $reporterCount = $this->autoHideThreshold > 1 ? $this->autoHideThreshold - 1 : 4;
@@ -444,13 +445,13 @@ class ReportSampleSeeder extends Seeder
 
                 $reporters = $this->pickReporters($users, $target, $reporterCount);
                 if ($reporters->isNotEmpty() && $this->createCase($board, $targetType, $target, ReportStatus::Pending, $reporters, 'Multi-Reporter-Test')) {
-                    $this->command->line("  - [{$board->slug}] {$targetType->value} #{$target->id}: {$reporters->count()}명 신고");
+                    $this->command->line('  - '.__('sirsoft-board::messages.seeders.report_sample.target_reporters', ['slug' => $board->slug, 'type' => $targetType->value, 'id' => $target->id, 'count' => $reporters->count()]));
                     $caseCount++;
                 }
             }
         }
 
-        $this->command->line("다중 신고자 케이스 생성 완료: {$caseCount}건");
+        $this->command->line(__('sirsoft-board::messages.seeders.report_sample.multi_done', ['count' => $caseCount]));
     }
 
     /**
@@ -463,29 +464,37 @@ class ReportSampleSeeder extends Seeder
     private function createManyReportersCase($boards, Collection $users): void
     {
         $this->command->info('');
-        $this->command->info('대량 신고자 케이스 생성 중...');
+        $this->command->info(__('sirsoft-board::messages.seeders.report_sample.bulk_start'));
 
-        $board = $boards->first();
         $caseCount = 0;
 
         foreach ([ReportType::Post, ReportType::Comment] as $targetType) {
-            $target = $this->pickTarget($board, $targetType);
-            if (! $target) {
-                continue;
-            }
+            // 한 게시판만 보면 앞 단계가 대상을 다 쓴 경우 0건이 된다 — 대상을 찾을 때까지 게시판을 돈다
+            foreach ($boards->shuffle() as $board) {
+                $target = $this->pickTarget($board, $targetType);
+                if (! $target) {
+                    continue;
+                }
 
-            $reporters = $this->pickReporters($users, $target, $users->count());
-            if ($reporters->count() < 2) {
-                continue;
-            }
+                $reporters = $this->pickReporters($users, $target, $users->count());
+                if ($reporters->count() < 2) {
+                    continue;
+                }
 
-            if ($this->createCase($board, $targetType, $target, ReportStatus::Pending, $reporters, 'Many-Reporters-Test')) {
-                $this->command->line("  - [{$board->slug}] {$targetType->value} #{$target->id}: {$reporters->count()}명 신고");
-                $caseCount++;
+                if ($this->createCase($board, $targetType, $target, ReportStatus::Pending, $reporters, 'Many-Reporters-Test')) {
+                    $this->command->line('  - '.__('sirsoft-board::messages.seeders.report_sample.target_reporters', ['slug' => $board->slug, 'type' => $targetType->value, 'id' => $target->id, 'count' => $reporters->count()]));
+                    $caseCount++;
+                }
+
+                break;
             }
         }
 
-        $this->command->line("대량 신고자 케이스 생성 완료: {$caseCount}건 (자동 블라인드 기준 {$this->autoHideThreshold}명)");
+        if ($caseCount === 0) {
+            $this->command->warn(__('sirsoft-board::messages.seeders.report_sample.bulk_no_targets'));
+        }
+
+        $this->command->line(__('sirsoft-board::messages.seeders.report_sample.bulk_done', ['count' => $caseCount, 'threshold' => $this->autoHideThreshold]));
     }
 
     /**
@@ -505,16 +514,16 @@ class ReportSampleSeeder extends Seeder
     private function createReactivatedCases($boards, Collection $users): void
     {
         $this->command->info('');
-        $this->command->info('재접수 케이스 생성 중...');
+        $this->command->info(__('sirsoft-board::messages.seeders.report_sample.resubmit_start'));
 
         $caseCount = 0;
         $reasonTypes = ReportReasonType::cases();
 
         $scenarios = [
-            'A' => ['status' => ReportStatus::Pending,   'first' => ReportStatus::Rejected,  'second' => null,                     'label' => '반려 후 재접수 (현재: 접수)'],
-            'B' => ['status' => ReportStatus::Rejected,  'first' => ReportStatus::Rejected,  'second' => ReportStatus::Rejected,  'label' => '반려 후 재접수 후 재반려'],
-            'C' => ['status' => ReportStatus::Pending,   'first' => ReportStatus::Suspended, 'second' => null,                     'label' => '중단 후 재접수 (현재: 접수)'],
-            'D' => ['status' => ReportStatus::Suspended, 'first' => ReportStatus::Rejected,  'second' => ReportStatus::Suspended, 'label' => '재접수 후 중단 처리'],
+            'A' => ['status' => ReportStatus::Pending,   'first' => ReportStatus::Rejected,  'second' => null,                     'label' => __('sirsoft-board::messages.seeders.report_sample.scenario_labels.a')],
+            'B' => ['status' => ReportStatus::Rejected,  'first' => ReportStatus::Rejected,  'second' => ReportStatus::Rejected,  'label' => __('sirsoft-board::messages.seeders.report_sample.scenario_labels.b')],
+            'C' => ['status' => ReportStatus::Pending,   'first' => ReportStatus::Suspended, 'second' => null,                     'label' => __('sirsoft-board::messages.seeders.report_sample.scenario_labels.c')],
+            'D' => ['status' => ReportStatus::Suspended, 'first' => ReportStatus::Rejected,  'second' => ReportStatus::Suspended, 'label' => __('sirsoft-board::messages.seeders.report_sample.scenario_labels.d')],
         ];
 
         foreach ($scenarios as $key => $scenario) {
@@ -523,7 +532,7 @@ class ReportSampleSeeder extends Seeder
             $target = $this->pickTarget($board, $targetType);
 
             if (! $target) {
-                $this->command->line("  - 시나리오 {$key}: 대상 없음 (건너뜀)");
+                $this->command->line('  - '.__('sirsoft-board::messages.seeders.report_sample.scenario_no_target', ['key' => $key]));
 
                 continue;
             }
@@ -585,12 +594,12 @@ class ReportSampleSeeder extends Seeder
                 ));
             }
 
-            $this->command->line("  - 시나리오 {$key} [{$board->slug}] {$targetType->value} #{$target->id}: {$scenario['label']}");
+            $this->command->line('  - '.__('sirsoft-board::messages.seeders.report_sample.scenario_created', ['key' => $key, 'slug' => $board->slug, 'type' => $targetType->value, 'id' => $target->id, 'label' => $scenario['label']]));
             $caseCount++;
         }
 
         // 시나리오 E: board_id null (게시판 삭제 후 남은 신고 케이스)
-        $this->command->line('  - 시나리오 E: 게시판 삭제 후 남은 신고 케이스 생성');
+        $this->command->line('  - '.__('sirsoft-board::messages.seeders.report_sample.scenario_e'));
         $reporter = $users->random();
         $orphanAt = now()->subDays(rand(10, 20));
 
@@ -630,7 +639,7 @@ class ReportSampleSeeder extends Seeder
         $this->backdate($orphanLog, $orphanAt);
 
         $caseCount++;
-        $this->command->line("재접수/특수 케이스 생성 완료: {$caseCount}건");
+        $this->command->line(__('sirsoft-board::messages.seeders.report_sample.resubmit_done', ['count' => $caseCount]));
     }
 
     /**

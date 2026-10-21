@@ -668,6 +668,12 @@ public function hasSettings(): bool
 }
 ```
 
+### 플러그인 사용자 화면과 라우트
+
+플러그인의 `resources/layouts/user/` 화면은 활성 사용자 템플릿에 등록되지만, 플러그인 라우트(플러그인 `resources/` 폴더의 `routes.json`)는 **관리자 템플릿에만** 병합됩니다. 고객이 플러그인 사용자 화면에 들어오게 하려면 공개 필터 `core.routes.filter_merged` 로 사용자 템플릿 라우트를 주입해야 합니다(필터는 병합 라우트 · 템플릿 종류 · 템플릿 식별자를 받습니다). 화면 이름은 `{플러그인 식별자}.{layout_name}` 입니다.
+
+`php artisan layout:check-installed` 가 어느 활성 사용자 템플릿 라우트에도 연결되지 않은 플러그인 사용자 화면을 「라우트에 연결되지 않은 플러그인 사용자 화면」 으로 보여 줍니다. 모달·부분 화면으로만 쓰는 화면이면 무시해도 됩니다(종료 코드에는 반영하지 않습니다).
+
 ### 템플릿 오버라이드 우선순위
 
 설정 레이아웃은 다음 순서로 로드됩니다:
@@ -1275,7 +1281,7 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 |--------|------|
 | `php artisan plugin:list` | 플러그인 목록 조회 |
 | `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함) |
-| `php artisan plugin:activate [identifier]` | 플러그인 활성화 |
+| `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략) |
 | `php artisan plugin:deactivate [identifier]` | 플러그인 비활성화 |
 | `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함) |
 | `php artisan plugin:composer-install [identifier]` | 플러그인 Composer 의존성 설치 |

@@ -3,9 +3,11 @@
 namespace Tests\Feature\LayoutMarkup;
 
 use App\Contracts\Extension\ModuleInterface;
+use App\Contracts\Extension\PluginInterface;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\LayoutExtension;
@@ -261,10 +263,118 @@ class LayoutCheckInstalledCommandTest extends TestCase
     }
 
     /**
+     * 읽지 못한 조각 소스는 「unreadable」 로 출처당 1행 보고되고 게이트를 실패시킨다 — 템플릿 수와 무관하다 (#725 W9).
+     *
+     * 종전에는 컴파일에 실패한 조각을 「소실」 판정에서 조용히 빼고 로그에만 남겨, 점검이 「이상 없음」 으로 끝났다.
+     *
+     * @scenario compile_unit=command,source_health=invalid
+     *
+     * @effects check_installed_reports_unreadable_fragments
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unreadable_fragment_source_fails_the_gate_once_per_source(): void
+    {
+        Template::factory()->create(['identifier' => 'probe-check-second', 'type' => 'admin', 'status' => ExtensionStatus::Active->value]);
+        File::put($this->tmp.'/admin-user-broken-field.g7.html',
+            "<extension target-layout=\"admin_user_form\" priority=\"100\">\n  <inject target-id=\"user_form\" position=\"append_child\">\n    <div/>\n");
+        $this->bindActiveExtensions([$this->module('sirsoft-checkmodule', $this->tmp)]);
+
+        $code = Artisan::call('layout:check-installed', ['--json' => true]);
+        $report = json_decode(Artisan::output(), true);
+
+        $unreadable = array_values(array_filter($report['registration'], static fn (array $item): bool => $item['kind'] === 'unreadable'));
+
+        $this->assertSame(1, $code, '읽지 못한 조각이 있는데 점검이 정상 종료했다');
+        $this->assertFalse($report['ok']);
+        $this->assertCount(1, $unreadable, '템플릿 둘을 점검해도 읽기 실패는 출처당 1행이어야 한다');
+        $this->assertSame('sirsoft-checkmodule', $unreadable[0]['source']);
+        $this->assertSame('admin-user-broken-field', $unreadable[0]['fragment_key']);
+        $this->assertMatchesRegularExpression('/\(\d+행 \d+열\)/u', (string) $unreadable[0]['error']);
+    }
+
+    /**
+     * 꺼진 템플릿에는 조각 행이 없어도 「소실」 로 보고하지 않는다 — 켤 때 등록되기 때문이다 (#725).
+     *
+     * 등록·재활성화 복원은 켜진 템플릿에만 행을 만든다. 점검이 꺼진 템플릿까지 소실로 세면, 정상 상태를 실패로 보고한다.
+     *
+     * @scenario compile_unit=command,source_health=valid
+     *
+     * @effects check_installed_skips_missing_for_inactive_templates
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inactive_template_is_not_reported_as_missing_fragments(): void
+    {
+        $off = Template::factory()->create(['identifier' => 'probe-check-off', 'type' => 'admin', 'status' => ExtensionStatus::Inactive->value]);
+        TemplateLayout::factory()->create(['template_id' => $off->id, 'name' => 'admin_user_form', 'content' => $this->validContent('admin_user_form')]);
+        File::put($this->tmp.'/admin-user-currency-field.g7.html',
+            "<extension target-layout=\"admin_user_form\" priority=\"100\">\n  <inject target-id=\"user_form\" position=\"append_child\">\n    <div/>\n  </inject>\n</extension>\n");
+        $this->bindActiveExtensions([$this->module('sirsoft-checkmodule', $this->tmp)]);
+
+        Artisan::call('layout:check-installed', ['--template' => 'probe-check-off', '--json' => true]);
+        $report = json_decode(Artisan::output(), true);
+
+        $this->assertSame([], array_values(array_filter($report['registration'], static fn (array $item): bool => $item['kind'] === 'missing')),
+            '꺼진 템플릿의 미등록 조각을 소실로 보고했다');
+    }
+
+    /**
+     * 어느 사용자 템플릿 라우트에도 연결되지 않은 플러그인 사용자 화면을 정보로 보고한다 — 종료 코드는 그대로다 (#725 W11).
+     *
+     * 플러그인 `layouts/user` 는 사용자 템플릿에 등록되지만 플러그인 라우트는 관리자 템플릿에만 병합된다. 공개 필터
+     * `core.routes.filter_merged` 로 라우트를 주입하지 않으면 고객이 들어갈 길이 없는데, 그 사실을 알려 주는 곳이 없었다.
+     *
+     * @scenario compile_unit=command,source_health=valid
+     *
+     * @effects check_installed_lists_unrouted_plugin_user_layouts
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unrouted_plugin_user_layouts_are_listed_without_failing(): void
+    {
+        Template::factory()->create(['identifier' => 'sirsoft-basic', 'type' => 'user', 'status' => ExtensionStatus::Active->value]);
+        File::ensureDirectoryExists($this->tmp.'/resources/layouts/user');
+        File::put($this->tmp.'/resources/layouts/user/probe_page.g7.html', "<layout name=\"probe_page\" version=\"1.0.0\">\n  <div id=\"root\"/>\n</layout>\n");
+
+        $plugin = $this->createMock(PluginInterface::class);
+        $plugin->method('getIdentifier')->willReturn('probe-unrouted');
+        $plugin->method('getExtensionsPath')->willReturn($this->tmp.'/resources/extensions');
+        $plugin->method('getLayoutExtensions')->willReturn([]);
+        $pluginManager = $this->createMock(PluginManager::class);
+        $pluginManager->method('getActivePlugins')->willReturn(['probe-unrouted' => $plugin]);
+        $this->app->instance(PluginManager::class, $pluginManager);
+
+        $code = Artisan::call('layout:check-installed', ['--template' => 'sirsoft-admin_basic']);
+        $output = Artisan::output();
+
+        $this->assertSame(0, $code, '정보 보고가 종료 코드를 바꿨다');
+        $this->assertStringContainsString('라우트에 연결되지 않은 플러그인 사용자 화면', $output);
+        $this->assertStringContainsString('probe-unrouted.probe_page', $output);
+
+        // 공개 필터로 라우트를 주입하면 더는 보고하지 않는다.
+        $inject = function (array $routes, string $type): array {
+            if ($type === 'user') {
+                $routes[] = ['path' => '/probe', 'layout' => 'probe-unrouted.probe_page'];
+            }
+
+            return $routes;
+        };
+        HookManager::addFilter('core.routes.filter_merged', $inject);
+
+        try {
+            Artisan::call('layout:check-installed', ['--template' => 'sirsoft-admin_basic']);
+            $this->assertStringNotContainsString('probe-unrouted.probe_page', Artisan::output());
+        } finally {
+            HookManager::removeFilter('core.routes.filter_merged', $inject);
+        }
+    }
+
+    /**
      * 프로덕션 컴파일을 통과하는 최소 레이아웃 JSON.
      *
      * @param  string  $name  레이아웃 이름
-     * @return array<string, 반환값
+     * @return array<string, mixed> 반환값
      */
     private function validContent(string $name): array
     {

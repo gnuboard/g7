@@ -22,6 +22,8 @@
     "no_reports": "No reports",
     "updated_at": "Updated: {{time}}",
     "go_to_boards": "All boards",
-    "go_to_reports": "View all"
+    "go_to_reports": "View all",
+    "untitled": "(Untitled)",
+    "anonymous": "Anonymous"
   }
 }

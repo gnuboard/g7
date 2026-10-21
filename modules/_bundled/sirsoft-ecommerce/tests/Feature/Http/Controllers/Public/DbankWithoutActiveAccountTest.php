@@ -122,6 +122,18 @@ class DbankWithoutActiveAccountTest extends ModuleTestCase
     {
         $admin = $this->createAdminUser(['sirsoft-ecommerce.settings.read', 'sirsoft-ecommerce.settings.update']);
 
+        // 저장된 상태는 무통장이 꺼져 있다 — 이번 요청이 무통장을 **새로 켠다**. 이미 켜진 채(새 설치 기본값) 계좌를
+        // 건드리지 않는 저장은 막지 않는다(7.1.1 출시 전 — EcommerceSettingsDefaultBankAccountTest). 그 상태의
+        // 주문서 노출은 공개 결제 설정이 무통장을 빼는 것으로 막는다(위 test_public_settings_hide_dbank_without_active_account).
+        File::ensureDirectoryExists($this->storagePath);
+        File::put($this->storagePath.'/order_settings.json', json_encode([
+            'payment_methods' => [
+                ['id' => 'dbank', 'sort_order' => 3, 'is_active' => false, 'min_order_amount' => 0, 'stock_deduction_timing' => 'order_placed'],
+            ],
+            'bank_accounts' => [],
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        app(EcommerceSettingsService::class)->clearCache();
+
         $response = $this->actingAs($admin)->putJson('/api/modules/sirsoft-ecommerce/admin/settings', [
             '_tab' => 'order_settings',
             'order_settings' => [

@@ -301,17 +301,22 @@ describe('채널 서브 탭 transition_overlay_target 가드 (이슈 #245, engin
         },
     ];
 
-    function collectNavigateHandlers(node: any, out: any[] = []): any[] {
+    /**
+     * navigate 액션을 그 액션을 단 노드(owner)와 함께 모은다 — 링크로 바뀐 탭(#757)은 주소·쿼리를 navigate 가 아니라
+     * 감싼 A 의 href 에 둔다(path 없는 navigate 는 클릭한 링크의 href 로 간다).
+     */
+    function collectNavigateHandlers(node: any, out: { nav: any; owner: any }[] = [], owner: any = null): { nav: any; owner: any }[] {
         if (!node || typeof node !== 'object') return out;
+        const self = typeof node.name === 'string' ? node : owner;
         if (node.handler === 'navigate' && node.params && typeof node.params === 'object') {
-            out.push(node);
+            out.push({ nav: node, owner });
         }
         for (const key of Object.keys(node)) {
             const value = node[key];
             if (Array.isArray(value)) {
-                for (const item of value) collectNavigateHandlers(item, out);
+                for (const item of value) collectNavigateHandlers(item, out, self);
             } else if (value && typeof value === 'object') {
-                collectNavigateHandlers(value, out);
+                collectNavigateHandlers(value, out, self);
             }
         }
         return out;
@@ -328,11 +333,12 @@ describe('채널 서브 탭 transition_overlay_target 가드 (이슈 #245, engin
         // @scenario subject=child_layout, contract=overlay_target_scope
         it(`${name}: 채널 탭 navigate 에 transition_overlay_target=${wrapperId} 가 명시되어야 한다`, () => {
             const navs = collectNavigateHandlers(partial);
-            const channelNavs = navs.filter((n) =>
-                n.params?.query && Object.prototype.hasOwnProperty.call(n.params.query, 'channel')
+            const channelNavs = navs.filter(({ nav, owner }) =>
+                (nav.params?.query && Object.prototype.hasOwnProperty.call(nav.params.query, 'channel'))
+                || (owner?.name === 'A' && !nav.params?.path && /[?&]channel=/.test(String(owner.props?.href ?? '')))
             );
             expect(channelNavs.length, '채널 탭 navigate handler 미발견').toBeGreaterThan(0);
-            for (const nav of channelNavs) {
+            for (const { nav } of channelNavs) {
                 expect(nav.params.transition_overlay_target).toBe(wrapperId);
             }
         });

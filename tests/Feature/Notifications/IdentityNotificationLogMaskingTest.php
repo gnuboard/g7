@@ -9,6 +9,7 @@ use App\Services\IdentityMessageDispatcher;
 use App\Services\NotificationDefinitionService;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
@@ -77,6 +78,32 @@ class IdentityNotificationLogMaskingTest extends TestCase
         $this->assertStringNotContainsString('SECRETTOKEN0123456789', (string) $log->body);
         $this->assertStringContainsString('******', (string) $log->body);
         $this->assertStringContainsString('SECRETTOKEN0123456789', $this->sentMails()[0]['html']);
+    }
+
+    /**
+     * 큐 드라이버가 database 여도 인증번호 원문이 큐 작업 인자(jobs.payload)에 실리지 않는다. (실패-먼저)
+     *
+     * 발송 로그 기록이 큐로 가면 마스킹 전 본문이 큐 인자로 직렬화돼 jobs 테이블에 평문으로 남는다 —
+     * 로그 화면이 가려도 DB 에는 인증번호가 그대로 있다. 로그 기록은 발송과 같은 자리에서 돈다.
+     *
+     * @scenario surface=queue_payload
+     *
+     * @effects code_absent_from_queue_payload
+     *
+     * @return void 반환값 없음
+     */
+    public function test_code_is_not_serialized_into_queue_payload(): void
+    {
+        config(['queue.default' => 'database']);
+
+        $this->dispatch('signup', 'text_code', ['code' => '739215']);
+
+        $this->assertSame(
+            0,
+            DB::table('jobs')->where('payload', 'like', '%739215%')->count(),
+            '인증번호 원문이 큐 작업 인자에 실렸습니다.'
+        );
+        $this->latestLog('identity.purpose.signup');
     }
 
     /**

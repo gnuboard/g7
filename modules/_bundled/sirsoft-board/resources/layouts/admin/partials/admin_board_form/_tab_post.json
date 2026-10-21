@@ -7,13 +7,6 @@
     "id": "section_post_card",
     "type": "basic",
     "name": "Div",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "props": {
         "className": "admin-card"
     },
@@ -551,6 +544,98 @@
                                 "className": "form-error-xs mt-1"
                             },
                             "text": "{{_local.errors?.reply_delete_policy?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "secret_reply_visibility_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.form.use_reply && _local.form.secret_mode !== 'disabled'}}",
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "id": "secret_reply_visibility_label",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.label"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "secret_reply_visibility_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "secret_reply_visibility",
+                                "disabled": "{{_computed.isReadOnly}}",
+                                "className": "",
+                                "options": [
+                                    {
+                                        "value": "thread_path",
+                                        "label": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.thread_path",
+                                        "description": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path"
+                                    },
+                                    {
+                                        "value": "descendants_only",
+                                        "label": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.descendants_only",
+                                        "description": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only"
+                                    },
+                                    {
+                                        "value": "per_post",
+                                        "label": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.per_post",
+                                        "description": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "secret_reply_visibility_description_thread_path",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_local.form.secret_reply_visibility ?? 'thread_path') === 'thread_path'}}",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path"
+                        },
+                        {
+                            "id": "secret_reply_visibility_description_descendants_only",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.form.secret_reply_visibility === 'descendants_only'}}",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only"
+                        },
+                        {
+                            "id": "secret_reply_visibility_description_per_post",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.form.secret_reply_visibility === 'per_post'}}",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.secret_reply_visibility}}",
+                            "props": {
+                                "className": "form-error-xs mt-1"
+                            },
+                            "text": "{{_local.errors?.secret_reply_visibility?.[0] ?? ''}}"
                         }
                     ]
                 },

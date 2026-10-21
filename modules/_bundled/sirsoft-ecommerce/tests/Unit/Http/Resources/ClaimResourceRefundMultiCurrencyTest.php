@@ -29,6 +29,11 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  */
 class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
 {
+    /**
+     * 통화 설정 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +61,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=refund, amount_source=stored_map, evidence=present
      *
      * @effects refund_secondary_currency_is_sum_of_cash_and_points
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_claim_secondary_currency_is_the_sum_of_cash_and_points(): void
     {
@@ -93,6 +100,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=refund, amount_source=stored_map, evidence=present
      *
      * @effects refund_sum_falls_back_to_cash_without_points
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_claim_sum_falls_back_to_cash_when_there_are_no_points(): void
     {
@@ -119,6 +128,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=refund, amount_source=stored_map, evidence=absent
      *
      * @effects secondary_currency_is_empty_when_nothing_was_stored
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_claim_sum_is_empty_when_nothing_was_stored(): void
     {
@@ -133,7 +144,7 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
             'mc_refund_points_amount' => null,
         ]);
 
-        $this->assertSame([], $this->toArray($refund)['mc_refund_total']);
+        $this->assertEquals(new \stdClass, $this->toArray($refund)['mc_refund_total'], '비면 빈 맵({}) — 코어 #758');
     }
 
     /**
@@ -148,6 +159,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=refund, amount_source=stored_map, evidence=present
      *
      * @effects refund_exposes_shipping_refund_secondary_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_claim_exposes_shipping_refund_secondary_currency(): void
     {
@@ -180,6 +193,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=refund, amount_source=stored_map, evidence=absent
      *
      * @effects secondary_currency_is_empty_when_nothing_was_stored
+     *
+     * @return void 반환값 없음
      */
     public function test_refund_claim_shipping_secondary_currency_is_empty_when_nothing_was_stored(): void
     {
@@ -193,7 +208,7 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
             'mc_refund_shipping_amount' => null,
         ]);
 
-        $this->assertSame([], $this->toArray($refund)['mc_refund_shipping_amount']);
+        $this->assertEquals(new \stdClass, $this->toArray($refund)['mc_refund_shipping_amount'], '비면 빈 맵({})');
     }
 
     /**
@@ -204,6 +219,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=cancel, amount_source=stored_map, evidence=present
      *
      * @effects cancel_carries_linked_refund_secondary_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_claim_carries_the_linked_refunds_secondary_currency(): void
     {
@@ -239,6 +256,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=cancel, amount_source=stored_map, evidence=absent
      *
      * @effects secondary_currency_is_empty_when_nothing_was_stored
+     *
+     * @return void 반환값 없음
      */
     public function test_cancel_claim_without_a_refund_exposes_an_empty_secondary_currency(): void
     {
@@ -251,7 +270,7 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
         $array = $this->toArray($cancel);
 
         $this->assertArrayHasKey('mc_refund_amount', $array);
-        $this->assertSame([], $array['mc_refund_amount']);
+        $this->assertEquals(new \stdClass, $array['mc_refund_amount'], '비면 빈 맵({})');
     }
 
     /**
@@ -293,6 +312,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=exchange, amount_source=server_summed, evidence=present
      *
      * @effects exchange_price_difference_secondary_currency_is_formatted
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_price_difference_secondary_currency_carries_formatted_text(): void
     {
@@ -330,6 +351,8 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
      * @scenario claim_type=exchange, amount_source=server_summed, evidence=absent
      *
      * @effects secondary_currency_is_empty_when_nothing_was_stored
+     *
+     * @return void 반환값 없음
      */
     public function test_exchange_price_difference_secondary_currency_is_empty_without_items(): void
     {
@@ -343,7 +366,7 @@ class ClaimResourceRefundMultiCurrencyTest extends ModuleTestCase
 
         $array = (new ClaimResource($exchange))->withReasonLabels([])->toArray(Request::create('/'));
 
-        $this->assertSame([], $array['mc_additional_product_amount']);
-        $this->assertSame([], $array['mc_refund_product_amount']);
+        $this->assertEquals(new \stdClass, $array['mc_additional_product_amount'], '비면 빈 맵({})');
+        $this->assertEquals(new \stdClass, $array['mc_refund_product_amount'], '비면 빈 맵({})');
     }
 }

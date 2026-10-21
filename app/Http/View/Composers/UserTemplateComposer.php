@@ -18,6 +18,7 @@ use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
+use App\Support\EmptyMapChildren;
 use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
@@ -142,7 +143,8 @@ class UserTemplateComposer
 
         $view->with('activeUserTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
-        $view->with('frontendSettings', $frontendSettings);
+        // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 보이는 필드가 없는 카테고리(`identity`)도 `[]` 가 아니라 `{}` 로 심는다(7.1.1 출시 전)
+        $view->with('frontendSettings', EmptyMapChildren::asObjects($frontendSettings));
         $view->with('pluginSettings', $pluginSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);

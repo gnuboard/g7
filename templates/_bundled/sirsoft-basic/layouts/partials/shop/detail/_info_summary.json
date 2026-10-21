@@ -56,7 +56,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-lg font-bold text-red-500"
+                                "className": "text-lg font-bold text-red-600 dark:text-red-400"
                             },
                             "text": "{{product.data?.discount_rate}}%"
                         },
@@ -104,7 +104,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "ticket",
-                                "className": "text-sm text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                "className": "text-sm text-orange-600 dark:text-orange-400 flex-shrink-0"
                             }
                         },
                         {
@@ -203,16 +203,26 @@
                                         {
                                             "if": "{{_global.currentUser?.uuid}}",
                                             "then": {
-                                                "comment": "「+N」 배지는 이 상품에 적용되는 쿠폰 수(productDownloadableCoupons)로 계산되므로, 모달도 같은 목록을 보여준다. 전체 다운로드 쿠폰을 다시 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다.",
+                                                "comment": "「+N」 배지는 이 상품에 적용되는 쿠폰 수(productDownloadableCoupons)로 계산되므로, 모달도 같은 목록을 보여준다. 전체 다운로드 쿠폰을 다시 조회하면 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다.\n                     창 상태는 창 고유 전역 이름 공간에 비운 뒤 다시 쓴다 — 창은 영구 마운트라 페이지 _local 에 넣으면 창이 앞서 쥔 목록(받음 표시)에 가린다(7.1.1).",
                                                 "handler": "sequence",
                                                 "actions": [
                                                     {
                                                         "handler": "setState",
                                                         "params": {
-                                                            "target": "local",
-                                                            "downloadableCoupons": "{{productDownloadableCoupons.data}}",
-                                                            "downloadableCouponsLoading": false,
-                                                            "downloadingMore": false
+                                                            "target": "global",
+                                                            "couponDownloadModal": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "couponDownloadModal": {
+                                                                "coupons": "{{productDownloadableCoupons.data ?? null}}",
+                                                                "loading": false,
+                                                                "loadingMore": false,
+                                                                "downloadingCouponId": null
+                                                            }
                                                         }
                                                     },
                                                     {
@@ -270,7 +280,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-16"
+                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0 truncate"
                                     },
                                     "text": "{{group.name_localized ?? group.name}}"
                                 },
@@ -418,7 +428,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-green-600 dark:text-green-400"
+                                        "className": "text-sm text-green-700 dark:text-green-400"
                                     },
                                     "text": "$t:shop.product.free_shipping_over|amount={{product.data?.shipping_policy?.free_threshold_formatted}}"
                                 }

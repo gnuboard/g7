@@ -55,6 +55,7 @@ use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
+use App\Http\Controllers\Api\Admin\UnplacedBundledNoticeController as AdminUnplacedBundledNoticeController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
@@ -76,6 +77,7 @@ use App\Http\Controllers\Api\Public\PublicSearchController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Models\IdentityVerificationLog;
+use App\Support\LocaleTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -150,7 +152,8 @@ Route::group([], function () use ($publicDataThrottle) {
 
         // 다국어 파일 서빙
         Route::dualSuffix('{identifier}/lang/{locale}', 'json', [PublicTemplateController::class, 'serveLanguage'])
-            ->where('locale', '[a-z]{2}(-[A-Z]{2})?')
+            // 언어팩 설치 규칙(BCP 47)과 같은 형식 — fil·fil-PH·zh-Hant·es-419 (#148)
+            ->where('locale', LocaleTag::PATTERN_BODY)
             ->middleware($publicDataThrottle)
             ->name('api.public.templates.language');
 
@@ -674,6 +677,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('auto-deactivated', [AdminExtensionRecoveryController::class, 'autoDeactivated'])
             ->middleware('permission:admin,core.plugins.activate|core.modules.activate|core.templates.activate,false')
             ->name('api.admin.extensions.auto-deactivated');
+        // 미배치 공식 번들 안내(#146) — 조회는 네 종류 중 하나의 조회 권한이면 열리고, 컨트롤러가 권한 없는 종류를 비운다.
+        Route::get('unplaced-bundled', [AdminUnplacedBundledNoticeController::class, 'index'])
+            ->middleware('permission:admin,core.modules.read|core.plugins.read|core.templates.read|core.language_packs.read,false')
+            ->name('api.admin.extensions.unplaced-bundled');
+        // 닫기는 관리자별이며 그 종류의 조회 권한(core.{type}s.read)을 요구한다.
+        Route::post('unplaced-bundled/{type}/dismiss', [AdminUnplacedBundledNoticeController::class, 'dismiss'])
+            ->where('type', 'module|plugin|template|language_pack')
+            ->middleware('permission:admin,core.{type}s.read')
+            ->name('api.admin.extensions.unplaced-bundled.dismiss');
         // 복구·닫기는 그 확장 종류의 활성화 권한(core.{type}s.activate)을 요구한다.
         Route::post('{type}/{identifier}/recover', [AdminExtensionRecoveryController::class, 'recover'])
             ->where('type', 'plugin|module|template')
@@ -753,6 +765,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
         Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
         Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
+        // 큐 워커 상태(연결·큐별 대기·워커 신호, #139) — 읽기 전용. `{key}` 와일드카드보다 먼저.
+        Route::get('queue-status', [AdminSettingsController::class, 'queueStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.queue-status');
         // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
         Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
         // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.

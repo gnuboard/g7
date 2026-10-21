@@ -59,7 +59,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.meta_title_suffix",
-                                        "placeholder": " | 그누보드7",
+                                        "placeholder": "$t:admin.settings.seo.meta_title_suffix_placeholder",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": ""
                                     }
@@ -128,7 +128,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "seo.meta_keywords",
-                                        "placeholder": "CMS, 그누보드7, 오픈소스",
+                                        "placeholder": "$t:admin.settings.seo.meta_keywords_placeholder",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "className": ""
                                     }
@@ -1228,7 +1228,7 @@
                                                     "queued": "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
                                                     "running": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
                                                     "writing": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200",
-                                                    "completed": "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200",
+                                                    "completed": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
                                                     "failed": "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
                                                 }
                                             },
@@ -1349,7 +1349,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                                             },
                                             "text": "{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}"
                                         }

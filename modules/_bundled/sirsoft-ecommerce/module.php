@@ -32,6 +32,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
+use Modules\Sirsoft\Ecommerce\Listeners\EcommerceScopeLedgerListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\InjectAppConfigDeviceListener;
 use Modules\Sirsoft\Ecommerce\Listeners\IssueCashReceiptOnDepositListener;
@@ -47,6 +48,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\PurgeCashReceiptIdentifierListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SearchProductsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
+use Modules\Sirsoft\Ecommerce\Listeners\SeoProductDetailRegenerateListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
@@ -1083,8 +1085,8 @@ class Module extends AbstractModule
                                 'en' => 'Confirm purchase of order item',
                             ],
                             'roles' => ['*'],
-                            'resource_route_key' => 'id',
-                            'owner_key' => 'user_id',
+                            // 소유 검증은 ConfirmOrderOptionRequest(회원)·주문 토큰(비회원)이 맡는다.
+                            // 권한 단위 resource_route_key/owner_key 는 ModuleManager 가 읽지 않으므로 선언하지 않는다.
                         ],
                     ],
                 ],
@@ -3722,6 +3724,8 @@ class Module extends AbstractModule
             CloseUnpaidVbankOnCancelListener::class,
             CouponUseListener::class,
             SeoProductCacheListener::class,
+            // 상세 재렌더는 큐 — 무효화(SeoProductCacheListener, sync)가 먼저 돌고 커밋 뒤에 다시 그린다(#724)
+            SeoProductDetailRegenerateListener::class,
             SeoCategoryCacheListener::class,
             CategoryTreeCacheListener::class,
             SeoSettingsCacheListener::class,
@@ -3749,6 +3753,8 @@ class Module extends AbstractModule
             UserListMileageFilterListener::class,
             UserListAddressFilterListener::class,
             ProvideNecessaryStorageKeysListener::class,
+            // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
+            EcommerceScopeLedgerListener::class,
         ];
     }
 

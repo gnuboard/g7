@@ -39,7 +39,7 @@ function collect(node: unknown, match: (value: Record<string, unknown>) => boole
 describe('주문서 배송지 관리 창 — 저장 안내와 기본 배송지 라벨', () => {
   const saveCall = collect(
     checkoutAddressModal,
-    (value) => value.handler === 'apiCall' && String(value.target ?? '').includes("editingAddress?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/'"),
+    (value) => value.handler === 'apiCall' && String(value.target ?? '').includes("checkoutAddressModal?.editing?.id ? '/api/modules/sirsoft-ecommerce/user/addresses/'"),
   )[0];
 
   /**
@@ -51,13 +51,14 @@ describe('주문서 배송지 관리 창 — 저장 안내와 기본 배송지 �
     const toastIndex = onSuccess.findIndex((action) => action.handler === 'toast');
     const resetIndex = onSuccess.findIndex(
       (action) => action.handler === 'setState'
-        && (action.params as Record<string, unknown> | undefined)?.editingAddress === null,
+        // 7.1.1: 편집 대상은 창 고유 전역 이름 공간의 editing 이다
+        && (action.params as Record<string, unknown> | undefined)?.['checkoutAddressModal.editing'] === null,
     );
 
     expect(toastIndex).toBeGreaterThanOrEqual(0);
     expect(resetIndex).toBeGreaterThanOrEqual(0);
     expect(toastIndex).toBeLessThan(resetIndex);
-    expect(String((onSuccess[toastIndex].params as Record<string, unknown>).message)).toContain('editingAddress?.id');
+    expect(String((onSuccess[toastIndex].params as Record<string, unknown>).message)).toContain('checkoutAddressModal?.editing?.id');
   });
 
   /**

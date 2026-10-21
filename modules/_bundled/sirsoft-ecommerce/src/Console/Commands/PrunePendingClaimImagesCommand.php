@@ -51,7 +51,7 @@ class PrunePendingClaimImagesCommand extends Command
         $days = (int) $this->option('days');
 
         if ($days < 1) {
-            $this->info('보존기간(--days)이 1 미만이라 정리를 건너뜁니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.prune_pending_claim_images.retention_skipped'));
 
             return Command::SUCCESS;
         }
@@ -62,12 +62,16 @@ class PrunePendingClaimImagesCommand extends Command
         $result = $this->attachmentService->prunePendingUploads($days, $limit, $isDryRun);
 
         if ($isDryRun) {
-            $this->info("[dry-run] 삭제 대상 {$result['scanned']}건 (보존기간 {$days}일 초과)");
+            $this->info('[dry-run] '.__('sirsoft-ecommerce::messages.console.prune_pending_claim_images.dry_run', ['count' => $result['scanned'], 'days' => $days]));
 
             return Command::SUCCESS;
         }
 
-        $this->info("클레임 임시 첨부 정리 완료: 대상 {$result['scanned']}건 / 삭제 {$result['deleted']}건 / 실패 {$result['failed']}건");
+        $this->info(__('sirsoft-ecommerce::messages.console.prune_pending_claim_images.done', [
+            'scanned' => $result['scanned'],
+            'deleted' => $result['deleted'],
+            'failed' => $result['failed'],
+        ]));
 
         Log::info('[claim.image] 임시 첨부 정리 배치', [
             'days' => $days,

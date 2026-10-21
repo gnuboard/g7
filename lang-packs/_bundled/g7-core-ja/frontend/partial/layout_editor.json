@@ -1044,6 +1044,7 @@
     "degrade": "このテンプレートはビジュアル編集に対応していません。コードエディターで設定してください。",
     "message_placeholder": "表示するメッセージ(🔍 でエラー情報を挿入可能)",
     "handler_none": "設定しない",
+    "handler_code_only": "このアクションはコードエディタ(HTML)で編集できます。",
     "handler_showErrorPage": "エラー画面を表示",
     "handler_navigate": "別の画面に移動",
     "handler_openModal": "モーダルを開く",
@@ -1228,6 +1229,7 @@
     "navigate": {
       "label": "別のページに移動",
       "param_path": "移動するページ",
+      "param_fallback_path": "アドレスが安全でないか空のときに移動するページ",
       "param_query": "クエリ値",
       "param_merge_query": "既存のクエリを保持",
       "param_scroll": "スクロール位置",

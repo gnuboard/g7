@@ -77,7 +77,7 @@ class NotificationDefinitionResource extends BaseApiResource
             'name' => $this->getValue('name'),
             'description' => $this->getValue('description'),
             // 변수 설명은 선언이 한국어 문자열이라 요청 언어로 바꿔 싣는다 — 그대로 실으면 영어·일본어 화면의
-            // 편집 창 「사용 가능한 변수」 가 한국어였다(7.1.0 실측 QE-O4).
+            // 편집 창 「사용 가능한 변수」 가 한국어였다(7.1.0 실측).
             'variables' => $this->definitionModel()->localizedVariables((array) ($this->getValue('variables') ?? [])),
             'channels' => $this->getValue('channels'),
             'hooks' => $this->getValue('hooks'),

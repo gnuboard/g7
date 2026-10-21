@@ -584,7 +584,7 @@ HTTP/1.1 200
 
 **설명**
 
-특정 확장이 소유한 메뉴 목록을 조회한다. `type` 은 `ExtensionOwnerType`(module, plugin)으로 파싱되며, 유효하지 않은 값이면 `422 menu.invalid_extension_type` 을 반환한다. `identifier` 는 확장 식별자(예: `sirsoft-board`)로, 해당 확장이 등록한 메뉴만 `MenuCollection` 으로 내려준다. 확장 설치/제거 시 그 확장 소유 메뉴를 확인·정리하는 관리 흐름에서 사용된다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+특정 확장이 소유한 메뉴 목록을 조회한다. `type` 은 `ExtensionOwnerType`(module, plugin)으로 파싱되며, 유효하지 않은 값이면 `422 menu.invalid_extension_type` 을 반환한다. `identifier` 는 확장 식별자(예: `sirsoft-board`)로, 해당 확장이 등록한 메뉴만 `MenuCollection` 으로 내려준다. 확장 설치/제거 시 그 확장 소유 메뉴를 확인·정리하는 관리 흐름에서 사용된다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`. 메뉴 목록(`GET /api/admin/menus`)과 같은 `core.menus.read` 범위를 적용한다(7.1.1) — 「본인만」 관리자는 자기가 만든 메뉴만, 「소유역할」 관리자는 역할을 공유하는 회원이 만든 메뉴만 받고, 해당 메뉴가 없으면 빈 목록이다.
 
 
 ### GET /api/admin/menus/hierarchy
@@ -679,7 +679,7 @@ HTTP/1.1 200
 
 **설명**
 
-전체 메뉴를 계층 구조로 반환한다. `MenuService::getMenuHierarchy()` 로 조회한 메뉴를 `MenuCollection::toNavigationArray()` 로 변환해 최상위 메뉴 + `children` 중첩 형태로 내려준다. `active` 와 달리 사용자 역할 기반 접근 필터 없이 메뉴 트리 전체를 노출하므로, 관리자 메뉴 관리 화면의 트리 표현·순서 편집 기준 데이터로 사용된다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
+활성 메뉴를 계층 구조로 반환한다. `MenuService::getMenuHierarchy()` 로 조회한 메뉴를 `MenuCollection::toNavigationArray()` 로 변환해 최상위 메뉴 + `children` 중첩 형태로 내려준다. `active` 와 달리 사용자 역할 기반 접근 필터는 걸지 않지만, 메뉴 목록(`GET /api/admin/menus`)과 같은 `core.menus.read` 범위는 적용한다(7.1.1) — 「본인만」 관리자는 자기가 만든 최상위 메뉴만, 「소유역할」 관리자는 역할을 공유하는 회원이 만든 최상위 메뉴만 받는다. 범위가 「전체」 이면 트리 전체다. 인증 계약: `auth:sanctum` + `permission:core.menus.read`.
 
 
 ### PATCH /api/admin/menus/bulk-roles

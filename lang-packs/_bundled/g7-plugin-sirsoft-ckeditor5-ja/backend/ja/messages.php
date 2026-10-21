@@ -26,4 +26,18 @@ return [
         'retention_disabled' => '保存期間が1日未満に設定されているため、クリーンアップを実行しませんでした。',
         'sources_incomplete' => '無効状態のモジュールがあり参照判定が不完全になる可能性があるため、未参照画像のクリーンアップをスキップしました。モジュールを有効化または削除してから再実行してください。',
     ],
+    // コンソールコマンド出力
+    'console' => [
+        'prune_unused_images' => [
+            'auto_cleanup_disabled' => '未使用画像の自動クリーンアップが無効のため、実行しませんでした。(unusedImageCleanup = false)',
+            'done' => '保存期間(:days日)を過ぎた候補:scanned件のうち、参照あり:referenced件、削除:deleted件、失敗:failed件。',
+            'delete_failed' => ':count件はファイルの削除に失敗したため、記録を保持しました。次回の実行で再試行します。',
+            'dry_run' => '保存期間(:days日)を過ぎた候補:scanned件のうち、参照あり:referenced件、削除対象:count件。',
+            'headers' => [
+                'original_name' => '元のファイル名',
+                'file_size' => 'サイズ(bytes)',
+                'uploaded_at' => 'アップロード日時',
+            ],
+        ],
+    ],
 ];

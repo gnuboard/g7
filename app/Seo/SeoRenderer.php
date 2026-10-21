@@ -1085,15 +1085,20 @@ class SeoRenderer implements SeoRendererInterface
      * - params 내 {{}} 표현식을 ExpressionEvaluator로 평가
      * - 배열 리터럴, 객체 리터럴 등 정적 값은 그대로 사용
      *
+     * - handler 가 sequence·parallel 이면 `actions`(없으면 `params.actions`) 안으로 내려가 같은 규칙으로 읽는다
+     *   (엔진이 `<init>` 의 sequence 를 실행하게 된 engine-v1.80.0 짝 — 깊이 상한 10)
+     *
      * 스킵 대상:
      * - handler가 setState가 아닌 항목 (loadFromLocalStorage, closeModal 등)
+     * - conditions·switch 분기 안의 setState (봇 렌더러는 분기를 평가하지 않는다 — `if` 도 지금처럼 무시)
      *
      * @param  array  $initActions  레이아웃의 init_actions 배열
      * @param  string  $target  대상 상태 (`local` 또는 `global`)
      * @param  array  $context  현재 컨텍스트 (route, query 등 포함)
+     * @param  int  $depth  sequence·parallel 중첩 깊이
      * @return array 평가된 초기값
      */
-    private function resolveInitActionState(array $initActions, string $target, array $context): array
+    private function resolveInitActionState(array $initActions, string $target, array $context, int $depth = 0): array
     {
         $state = [];
 
@@ -1102,6 +1107,16 @@ class SeoRenderer implements SeoRendererInterface
 
         foreach ($initActions as $action) {
             $handler = $action['handler'] ?? '';
+
+            if (($handler === 'sequence' || $handler === 'parallel') && $depth < 10) {
+                $children = $action['actions'] ?? ($action['params']['actions'] ?? []);
+                if (is_array($children)) {
+                    $state = array_merge($state, $this->resolveInitActionState($children, $target, $context, $depth + 1));
+                }
+
+                continue;
+            }
+
             if ($handler !== 'setState') {
                 continue;
             }

@@ -112,6 +112,8 @@ interface AdminSidebarProps {
 메뉴 `url` 은 엔진의 `navigate` 로 이동하고, 엔진이 없을 때만 전체 새로고침으로 폴백합니다. 폴백은
 같은 출처 주소(`/` 하나로 시작하는 경로 또는 같은 출처의 절대 주소)만 따라가며, 외부 주소·`//`·`/\`
 로 시작하는 주소는 이동하지 않습니다 — 메뉴 데이터에 외부 주소가 섞여도 관리자 화면 밖으로 나가지 않게 하는 장치입니다.
+메뉴 항목은 `<a href>` 라서 가운데 클릭·Ctrl/Cmd/Shift/Alt+클릭은 브라우저가 새 탭·새 창으로 엽니다. 엔진이 있을 때도
+없을 때(폴백)도 지금 탭은 보통 클릭에서만 옮깁니다 — 폴백은 엔진의 보통 클릭 판정이 없으므로 수정키를 직접 봅니다.
 
 ## SlotContainer 상세
 
@@ -631,7 +633,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `FilterGroup` | 다중 필터 그룹 | title, filters, onChange, onReset, showResetButton, ... |
 | `FilterVisibilitySelector` | 필터 가시성 상태 관리 (UI 없음, localStorage 저장) | id, visibleFilters, defaultFilters, onFilterVisibilityChange |
 | `ColumnSelector` | 테이블 컬럼 표시/숨김 선택 드롭다운 | columns, visibleColumns, onColumnVisibilityChange, triggerLabel, triggerIconName, ... |
-| `PermissionTree` | 계층형 권한 트리 (체크박스 선택) | data, value, onChange, disabled, desktopColumns |
+| `PermissionTree` | 계층형 권한 트리 (체크박스 선택 + 권한별 범위 드롭다운 — 범위를 적용할 수 있는 권한(`scope_supported`, 없으면 `resource_route_key && owner_key`)에만, `scopeDisabled` 면 숨김. 역할 폼은 `{{!!route?.id && _local.form?.supports_permission_scope === false}}` 로 켠다 — 비회원 역할 수정에서만 켜지고 비회원 역할을 복제한 새 역할에서는 꺼진다) | data, value, onChange, scopeOptions, scopeDisabled, disabled, desktopColumns |
 | `CategoryTree` | 계층형 카테고리 트리 (체크박스 선택) | data, expandedIds, selectedIds, searchKeyword, showProductCount, ... |
 | `MenuAccessTree` | 역할이 접근할 관리자 메뉴 체크 트리 (하위 선택 시 상위 자동, 상위 해제 시 하위 해제) | data, value, onChange, disabled, lockedAll, installedModules, installedPlugins |
 | `SortableMenuList` | 드래그앤드롭 계층형 메뉴 목록 (선택 모드·행별 역할 배지) | items, selectedId, onSelect, onOrderChange, onToggleStatus, selectionMode, selectedIds, onSelectionChange, roleOptions, ... |

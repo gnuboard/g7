@@ -1,0 +1,16 @@
+feature: 행·카드 메뉴 항목 href 의 목록 조건 (7.1.1 출시 전 점검)
+
+description: |
+  보통 클릭(onRowAction·onItemClick 의 navigate)이 지금 목록의 쪽·검색 조건을 싣는(mergeQuery) 메뉴 항목은 href 항목에도
+  mergeQuery 를 둔다 — 가운데 클릭·Ctrl+클릭·새 탭이 보통 클릭과 같은 주소로 열린다.
+
+axes:
+  surface:
+    - row_actions   # DataGrid rowActions
+    - menu_items    # ActionMenu items
+
+effects:
+  - menu_href_keeps_list_query
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/menu-item-href-merge-query.test.ts

@@ -1,0 +1,25 @@
+feature: console_output_locale
+
+description: |
+  코어 명령 출력과 부팅 중 훅 캐시 경고가 사이트 언어(언어팩 로케일)를 따른다(7.1.1 출시 전 점검).
+  레이아웃 갱신(module·plugin·template:refresh-layout)·레이아웃 컴파일·역변환·설치본 점검(layout:compile·decompile·check-installed)
+  명령의 진행·요약·표 머리글, 설치·업데이트·삭제 진행 표시줄 첫 문구는 번역 키로 만든다. 훅 캐시 폴백 경고는 서비스 공급자 부팅 중
+  (언어팩 번역 등록 전)에 나므로 BootDeferredLog 로 등록이 끝난 뒤 남긴다. 기대 문구는 ja 코어 언어팩 번들 원본에서 읽고 ko 와 다른지
+  함께 확인해, 번역이 빠져 폴백 ko 가 나오면 실패한다.
+  그 밖의 운영자 명령(확장 빌드·IP 접근 제한·방문 기록 익명화 등)도 ja·en 으로 출력하고, 코어·번들 확장의 콘솔 명령과 시더가
+  쓰는 번역 키는 ko·en 원본과 번들 ja 언어팩에 모두 있으며 치환 자리가 같다.
+
+coverage_strategy: full
+
+axes:
+  surface: [refresh_layout_commands, layout_markup_commands, progress_bar, boot_hook_cache_warning, operator_commands, console_translation_catalog]
+
+effects:
+  - command_output_uses_site_locale
+  - boot_time_hook_cache_warning_uses_active_language_pack_translation
+  - console_keys_resolve_in_ko_en_ja
+
+test_files:
+  - tests/Feature/Console/ConsoleOutputJaLocaleTest.php
+  - tests/Feature/Console/ConsoleOutputOperatorLocaleTest.php
+  - tests/Feature/Console/ConsoleOutputTranslationCatalogTest.php

@@ -1,0 +1,23 @@
+feature: 관리자 플러그인 업데이트 창의 코어 호환성 강제 업데이트
+
+description: |
+  플러그인 새 버전이 현재 코어와 호환되지 않으면(is_compatible=false) 업데이트 창은 코어 호환성 안내와
+  「경고를 이해했으며 강제로 업데이트합니다」 체크박스를 보이고, 그 체크박스를 켜기 전까지 진행 버튼을 막는다.
+  체크박스는 _global.pluginForceUpdate 를 토글하고, 진행 버튼은 그 값을 업데이트 요청 본문의 force 로 보낸다.
+  호환되는 버전이면 안내와 체크박스 없이 바로 진행할 수 있다. 실제 _modal_update.g7.html partial 을 렌더해 확인한다.
+
+# axis 의미:
+#   core_compat — 새 버전과 현재 코어의 호환 여부. incompatible 은 강제 체크가 필요한 경로, compatible 은 바로 진행하는 경로.
+axes:
+  core_compat: [incompatible, compatible]
+
+effects:
+  - incompatible_update_shows_force_checkbox   # 호환되지 않으면 코어 호환성 안내와 강제 체크박스(초기 미체크)가 보인다
+  - force_unchecked_blocks_confirm             # 강제 체크 전에는 진행 버튼이 비활성이다
+  - force_checked_enables_confirm              # 강제 체크 뒤에는 진행 버튼이 활성이다
+  - compatible_update_skips_force_checkbox     # 호환되면 안내·체크박스 없이 진행 버튼이 활성이다
+  - force_checkbox_toggles_global_flag         # 체크박스 변경이 _global.pluginForceUpdate 를 토글한다
+  - confirm_sends_force_in_update_body         # 진행 버튼의 업데이트 요청 본문에 force 값이 실린다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_plugin_list._modal_update.force.test.tsx

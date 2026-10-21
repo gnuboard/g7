@@ -1,4 +1,4 @@
-// e2e:allow [동작] 탭이 적은 액션 모양을 실제 ActionDispatcher 바인딩으로 확인하는 RTL — 라이브 실측(영역 I2 후속 D-I2F-02)으로 보강.
+// e2e:allow [동작] 탭이 적은 액션 모양을 실제 ActionDispatcher 바인딩으로 확인하는 RTL — 라이브 후속 실측으로 보강.
 /**
  * ActionRecipeEditor.runtimeEventForm.test.tsx — 편집기가 붙인 동작이 런타임에서 실제로 실행되는가
  *

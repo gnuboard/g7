@@ -20,7 +20,7 @@ axes:
   prop_value_kind: [string, array, boolean, empty_clear, binding_expression]
   template: [sirsoft-basic, sirsoft-admin_basic]
 
- # ( "범용 텍스트=값 전용 데이터칩 / 표현식 편집은 접힌
+  # ( "범용 텍스트=값 전용 데이터칩 / 표현식 편집은 접힌
   # 미리보기+[수정]") — 데이터 칩·표현식 분해 트리를 페이지 설정뿐 아니라 컴포넌트 속성 패널 전역과
   # 목록/표/레시피 입력칸으로 넓힌다. 칸의 종류(키화형 vs 값 전용)에 따라 진입 위젯이 갈린다.
   expr_chip_target:                  # 표현식 트리/데이터 칩이 닿는 입력칸(전수)

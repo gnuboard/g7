@@ -27,7 +27,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  *     (지금 발급 커맨드는 없는 식별자를 거절해 새로 만들지 않는다) —
  *     이름·설명이 식별자 그대로(ko·en), 코어 소유, 트리 부모·자식 없음, 코어 정의 권한이 아님,
  *     회수하는 테스트 역할 말고는 붙은 역할이 없음. 게시판이 생기기 전(또는 지워진 뒤) 그 게시판
- *     권한으로 토큰을 받으면 이런 행이 남아 관리자 권한 트리에 식별자 그대로 보였다(7.1.0 O-D2).
+ *     권한으로 토큰을 받으면 이런 행이 남아 관리자 권한 트리에 식별자 그대로 보였다(7.1.0).
  *     사람이 읽는 이름을 가진 정당한 권한, 사람 역할이 쓰는 권한은 남긴다.
  * 사람이 쓰는 계정에 `playwright_test_*` 가 붙어 있으면 그 유저는 건너뛴다.
  *
@@ -57,13 +57,13 @@ class PlaywrightCleanup extends Command
     {
         // 발급 커맨드와 동일한 가드 — 회수도 개발/CI 환경에서만 돈다
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
+            $this->error(__('common.console.playwright_guard.cli_only', ['sapi' => php_sapi_name()]));
 
             return self::FAILURE;
         }
 
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
+            $this->error(__('common.console.playwright_guard.bypass_required'));
 
             return self::FAILURE;
         }
@@ -82,17 +82,17 @@ class PlaywrightCleanup extends Command
         $permissionIds = $this->reclaimablePermissionIds($roleIds, $keepHours);
 
         if ($roles->isEmpty() && $permissionIds === []) {
-            $this->info('회수할 Playwright 잔여물이 없습니다.');
+            $this->info(__('common.console.playwright_cleanup.nothing_to_reclaim'));
 
             return self::SUCCESS;
         }
 
         $userIds = $this->reclaimableUserIds($roleIds);
 
-        $this->line('역할 '.$roles->count().'개 / 계정 '.count($userIds).'개 / 권한 '.count($permissionIds).'개가 회수 대상입니다.');
+        $this->line(__('common.console.playwright_cleanup.targets', ['roles' => $roles->count(), 'users' => count($userIds), 'permissions' => count($permissionIds)]));
 
         if ($dryRun) {
-            $this->comment('--dry-run 이므로 삭제하지 않았습니다.');
+            $this->comment(__('common.console.playwright_cleanup.dry_run_skipped'));
 
             return self::SUCCESS;
         }
@@ -124,7 +124,7 @@ class PlaywrightCleanup extends Command
             }
         });
 
-        $this->info('회수 완료 — 역할 '.count($roleIds).'개, 계정 '.count($userIds).'개, 권한 '.count($permissionIds).'개.');
+        $this->info(__('common.console.playwright_cleanup.done', ['roles' => count($roleIds), 'users' => count($userIds), 'permissions' => count($permissionIds)]));
 
         return self::SUCCESS;
     }

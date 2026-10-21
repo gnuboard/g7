@@ -1,46 +1,49 @@
 <partial description="게시글 첨부파일 목록">
   <!-- 블라인드 처리된 글에서는 첨부파일을 노출하지 않는다 — 이 조건은 본래 부모(show.g7.html)의 partial 노드에 있었으나 설치 시점 통째 치환으로 소실되고 있었다. -->
   <div data-if="{{post?.data?.has_attachment &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.content !== null}}" class="mb-6 border-b border-gray-200 dark:border-gray-700 px-6 pt-4">
-    <!-- 첨부파일 토글 헤더 -->
-    <div class="flex items-center justify-between cursor-pointer mb-3">
-      <on type="click">
-        <set-state target="local" showAttachments="{{_local.showAttachments === false ? true : false}}"/>
-      </on>
-      <div class="flex items-center gap-2">
-        <icon name="paperclip" size="lg" class="text-gray-600 dark:text-gray-400"/>
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.attachments.title</h3>
-        <!-- 첨부파일 개수 -->
-        <span class="ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">{{post?.data?.attachment_count ?? 0}}</span>
-      </div>
-      <icon name="{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}" size="lg" class="text-gray-500 dark:text-gray-400"/>
-    </div>
+    <!-- 첨부파일 토글 헤더 — 제목(h3) 안의 펼침 단추라 Tab 으로 닿고 Enter·Space 로 접고 편다(7.1.1 — 종전 클릭만 받는 div). 단추 안에는 블록 요소를 두지 않아 제목·개수는 span 이다 -->
+    <h3 class="mb-3">
+      <button type="button" class="flex w-full items-center justify-between cursor-pointer text-left" aria-expanded="{{_local.showAttachments !== false}}">
+        <on type="click">
+          <!-- 누를 때마다 첨부파일 목록을 접고 편다(처음은 펼침) -->
+          <set-state target="local" showAttachments="{{_local.showAttachments === false ? true : false}}"/>
+        </on>
+        <span class="flex items-center gap-2">
+          <icon name="paperclip" size="lg" class="text-gray-600 dark:text-gray-400"/>
+          <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.attachments.title</span>
+          <!-- 첨부파일 개수 -->
+          <span class="ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">{{post?.data?.attachment_count ?? 0}}</span>
+        </span>
+        <icon name="{{_local.showAttachments === false ? 'chevron-down' : 'chevron-up'}}" size="lg" class="text-gray-500 dark:text-gray-400"/>
+      </button>
+    </h3>
     <!-- 첨부파일 목록 -->
     <div data-if="{{_local.showAttachments !== false}}" data-each="attachment in {{post?.data?.attachments ?? []}}" class="space-y-2 mb-2">
-      <!-- 첨부파일 카드 - 권한 있을 때 (토큰 동반 핸들러로 다운로드, #413 item 58b) -->
-      <div data-if="{{post?.data?.abilities?.can_download === true}}" data-testid="attachment-download-card" class="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer">
+      <!-- 첨부파일 카드 - 권한 있을 때 (토큰 동반 핸들러로 다운로드, #413 item 58b). 링크가 아니라 단추다 — 내려받기에 로그인 토큰을 실어야 해서 핸들러가 받는다. 단추라 Tab·Enter 로도 받는다(7.1.1) -->
+      <button type="button" data-if="{{post?.data?.abilities?.can_download === true}}" data-testid="attachment-download-card" class="group flex w-full justify-start items-center gap-3 p-3 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer">
         <on type="click">
           <action handler="downloadAttachment" url="{{attachment?.download_url}}" filename="{{attachment?.original_filename}}"/>
         </on>
         <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
-        <div data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+        <span data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
           <img src="{{attachment?.preview_url}}" alt="{{attachment?.original_filename}}" class="w-full h-full object-cover"/>
-        </div>
+        </span>
         <!-- 파일 아이콘 (일반 파일인 경우) -->
-        <div data-if="{{!attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-          <icon name="file" class="text-3xl text-gray-400 dark:text-gray-500"/>
-        </div>
+        <span data-if="{{!attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          <icon name="file" class="text-3xl text-gray-500 dark:text-gray-400"/>
+        </span>
         <!-- 파일 정보 -->
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium text-gray-900 dark:text-white truncate mb-1">{{attachment?.original_filename}}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</div>
-        </div>
+        <span class="flex-1 min-w-0">
+          <span class="block text-sm font-medium text-gray-900 dark:text-white truncate mb-1">{{attachment?.original_filename}}</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</span>
+        </span>
         <!-- 다운로드 아이콘 -->
-        <div class="flex-shrink-0">
-          <icon name="download" size="lg" class="text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"/>
-        </div>
-      </div>
-      <!-- 첨부파일 카드 - 권한 없을 때 (클릭 시 토스트 표시) -->
-      <div data-if="{{post?.data?.abilities?.can_download !== true}}" class="group flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer">
+        <span class="flex-shrink-0">
+          <icon name="download" size="lg" class="text-gray-500 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"/>
+        </span>
+      </button>
+      <!-- 첨부파일 카드 - 권한 없을 때 (클릭 시 토스트 표시). 누르면 안내가 뜨는 단추다 — Enter·Space 로도 같은 안내를 받는다 -->
+      <button type="button" data-if="{{post?.data?.abilities?.can_download !== true}}" class="group flex w-full justify-start items-center gap-3 p-3 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer">
         <on type="click">
           <!-- 회원은 권한 없음 안내, 비회원은 로그인하면 받을 수 있는 게시판이 있어 로그인으로 안내한다 -->
           <sequence>
@@ -50,23 +53,23 @@
           </sequence>
         </on>
         <!-- 이미지 썸네일 (이미지 파일인 경우) - preview_url 사용 -->
-        <div data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+        <span data-if="{{attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
           <img src="{{attachment?.preview_url}}" alt="{{attachment?.original_filename}}" class="w-full h-full object-cover"/>
-        </div>
+        </span>
         <!-- 파일 아이콘 (일반 파일인 경우) -->
-        <div data-if="{{!attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-          <icon name="file" class="text-3xl text-gray-400 dark:text-gray-500"/>
-        </div>
+        <span data-if="{{!attachment?.is_image}}" class="flex-shrink-0 w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          <icon name="file" class="text-3xl text-gray-500 dark:text-gray-400"/>
+        </span>
         <!-- 파일 정보 -->
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium text-gray-900 dark:text-white truncate mb-1">{{attachment?.original_filename}}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</div>
-        </div>
+        <span class="flex-1 min-w-0">
+          <span class="block text-sm font-medium text-gray-900 dark:text-white truncate mb-1">{{attachment?.original_filename}}</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">{{attachment?.size_formatted}}</span>
+        </span>
         <!-- 다운로드 아이콘 (비활성화 스타일) -->
-        <div class="flex-shrink-0">
-          <icon name="download" size="lg" class="text-gray-300 dark:text-gray-600"/>
-        </div>
-      </div>
+        <span class="flex-shrink-0">
+          <icon name="download" size="lg" class="text-gray-500 dark:text-gray-500"/>
+        </span>
+      </button>
     </div>
   </div>
 </partial>

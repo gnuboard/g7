@@ -92,10 +92,10 @@ final class LayoutContentComparator
     private static function prepare(mixed $value): mixed
     {
         if (is_string($value)) {
-            $decoded = json_decode($value, true);
+            $decoded = json_decode($value, true); // layout-assoc-decode-ok: 비교 전용 — 편집기 왕복의 {}/[] 표기 차이를 운영자 수정으로 세지 않는다(#758 W11)
             $value = json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
         } elseif (is_array($value) || is_object($value)) {
-            $value = json_decode((string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), true);
+            $value = json_decode((string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), true); // layout-assoc-decode-ok: 비교 전용
         }
 
         return self::dropIgnored($value);

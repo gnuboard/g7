@@ -480,7 +480,7 @@ test.describe('@layout-editor drag-drop reorder', () => {
   });
 
   /**
-   * 검수 10차 결함 a 회귀 — 카드 내부 자식(아이콘 등)을 **다른 채워진 카드**로 nest.
+   * 검수 결함 회귀 — 카드 내부 자식(아이콘 등)을 **다른 채워진 카드**로 nest.
    *
    * `allowsNestingInContainer` 가 빈/레이아웃 컨테이너만 nest 타깃으로 허용해, 카드 안 아이콘을
    * 형제 카드(콘텐츠가 채워진 Div)로 옮길 수 없던 결함. accepts 하는 컨테이너성 노드면 nest 허용

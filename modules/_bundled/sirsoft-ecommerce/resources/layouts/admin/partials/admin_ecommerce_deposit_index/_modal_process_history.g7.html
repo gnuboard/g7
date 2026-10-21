@@ -9,7 +9,7 @@
       <div class="grid-2col">
         <div>
           <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name</span>
-          <div class="text-primary font-medium mt-1">김철수</div>
+          <div class="text-primary font-medium mt-1">$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu</div>
         </div>
         <div>
           <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount</span>
@@ -27,7 +27,7 @@
         <div data-ref="timeline_item_success" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <div class="flex-start gap-3">
             <div class="flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0">
-              <icon name="zap" class="text-base icon-muted"/>
+              <icon name="zap" class="text-base icon-muted text-gray-500 dark:text-gray-400"/>
             </div>
             <div class="flex-1">
               <div class="flex-center gap-2 mb-1">
@@ -35,14 +35,14 @@
                 <span class="badge-status badge-status-success">$t:sirsoft-ecommerce.admin.deposit.modal.process_history.match_complete</span>
               </div>
               <div class="text-secondary text-sm">2024-01-27 15:20:00</div>
-              <div class="text-secondary text-sm mt-1">주문번호 20240127-001과 자동 매칭 완료</div>
+              <div class="text-secondary text-sm mt-1">$t:sirsoft-ecommerce.admin.sample.fmt.auto_matched|order=20240127-001</div>
             </div>
           </div>
         </div>
         <div data-ref="timeline_item_failed" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <div class="flex-start gap-3">
             <div class="flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 justify-center flex-shrink-0">
-              <icon name="code" class="text-base icon-muted"/>
+              <icon name="code" class="text-base icon-muted text-gray-500 dark:text-gray-400"/>
             </div>
             <div class="flex-1">
               <div class="flex-center gap-2 mb-1">
@@ -52,7 +52,7 @@
               </div>
               <div class="text-secondary text-sm">2024-01-27 10:40:30</div>
               <div class="text-secondary text-sm mt-1">https://api.pg.com/v1/webhook/notification</div>
-              <div class="bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm">주문번호가 존재하지 않습니다</div>
+              <div class="bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm">$t:sirsoft-ecommerce.admin.sample.misc.order_not_found_msg</div>
               <div class="mt-3">
                 <button type="button" class="flex-center gap-1 text-sm text-secondary hover:text-gray-900 dark:hover:text-white">
                   <icon name="chevron-up" class="text-base"/>
@@ -73,7 +73,7 @@
                   <div class="bg-gray-100 dark:bg-gray-900 rounded p-3 font-mono text-xs overflow-x-auto">
                     <pre class="text-primary whitespace-pre-wrap">{
   "success": false,
-  "error": "주문을 찾을 수 없습니다"
+  "error": "$t:sirsoft-ecommerce.admin.sample.misc.order_not_found_api"
 }</pre>
                   </div>
                 </div>

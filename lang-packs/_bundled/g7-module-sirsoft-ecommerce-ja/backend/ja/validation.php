@@ -608,6 +608,7 @@ return [
         'user_ids_required' => '発行する会員を選択してください。',
         'user_ids_min' => '最低1名以上の会員を選択してください。',
         'user_ids_invalid' => '存在しない会員が含まれています。',
+        'user_withdrawn' => '退会した会員にはクーポンを発行できません。',
     ],
     'orders' => [
         'ids' => [
@@ -2094,6 +2095,7 @@ return [
         'user_required' => '対象会員を選択してください。',
         'amount_min' => '金額は1ポイント以上である必要があります。',
         'action_invalid' => '付与または差引のみが可能です。',
+        'user_withdrawn' => '退会した会員にはマイレージを付与できません。',
         'duplicate_currency' => '通貨コードが重複しています。',
         'first_must_be_default' => '最初の通貨はデフォルト通貨(:currency)である必要があります。',
         'currency_not_registered' => '登録されていない通貨(:currency)です。言語/通貨設定に先に追加してください。',

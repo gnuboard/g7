@@ -4,6 +4,7 @@ namespace App\Support\LayoutMarkup;
 
 use App\Enums\LayoutMarkupErrorCode;
 use App\Enums\LayoutMarkupLintCode;
+use Illuminate\Support\Facades\Log;
 
 /**
  * `.g7.html` 소스 파일 하나를 검증된 JSON 레이아웃으로 만드는 최상위 파사드 (S6).
@@ -80,6 +81,28 @@ final class LayoutMarkupCompiler
         // 붙여 한 번 더 컴파일하고 그 결과로 lint 를 다시 돈다 — 경고가 그 노드·액션의 줄·칸을 싣는다(7.1.0 P16).
         // 표식 JSON 은 lint 에만 쓰고 버린다(반환 JSON 은 위의 표식 없는 산출).
         if ($this->hasUnlocatedWarning($warnings)) {
+            $warnings = $this->lintWithSourcePositions($roots, $rootKind, $context, $path) ?? $warnings;
+        }
+
+        return new CompileResult($json, $this->locateWarnings($roots, $warnings));
+    }
+
+    /**
+     * 노드·액션에 소스 위치 표식을 붙여 다시 컴파일하고 lint 를 돕니다 — 실패하면 null(1차 경고를 그대로 쓴다).
+     *
+     * 이 단계는 경고에 줄을 붙이려는 **보조** 단계다. 10-07 에는 표식이 `<init>` 액션의 키 검사에 걸려
+     * (`init_action_key_forbidden`) 컴파일 전체가 실패했고, 그 실패가 설치·활성화까지 막을 수 있었다(원인은 `ea5286728`
+     * 이 고쳤다). 보조 단계의 실패가 컴파일을 세우지 않도록 여기서 가둔다(#725).
+     *
+     * @param  array<int, MarkupElement>  $roots  소스 트리 루트
+     * @param  string  $rootKind  문서 루트 종류
+     * @param  CompileContext  $context  컴파일 문맥
+     * @param  string|null  $path  소스 파일 경로
+     * @return array<int, LintWarning>|null 위치가 붙은 경고, 실패하면 null
+     */
+    private function lintWithSourcePositions(array $roots, string $rootKind, CompileContext $context, ?string $path): ?array
+    {
+        try {
             $this->document->markSourcePositions(true);
 
             try {
@@ -88,10 +111,15 @@ final class LayoutMarkupCompiler
                 $this->document->markSourcePositions(false);
             }
 
-            $warnings = $this->linter->lint($marked, $rootKind, $context, $path);
-        }
+            return $this->linter->lint($marked, $rootKind, $context, $path);
+        } catch (\Throwable $e) {
+            Log::debug('lint 경고 위치 찾기 재컴파일 실패 — 위치 없는 경고로 돌려준다', [
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
 
-        return new CompileResult($json, $this->locateWarnings($roots, $warnings));
+            return null;
+        }
     }
 
     /**

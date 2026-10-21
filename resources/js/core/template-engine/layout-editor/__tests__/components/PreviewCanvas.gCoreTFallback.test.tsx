@@ -51,7 +51,7 @@ describe('PreviewCanvas — G7Core.t fallback wrapper', () => {
     (window as any).G7Core = { t: originalT };
 
     // editor-assets API mock
-    (global as any).fetch = vi.fn(async (url: string) => {
+    (globalThis as any).fetch = vi.fn(async (url: string) => {
       if (url.includes('/editor-assets')) {
         return {
           ok: true,
@@ -80,6 +80,7 @@ describe('PreviewCanvas — G7Core.t fallback wrapper', () => {
             // 양쪽(편집 대상 + 호스트)에 같은 키가 다른 값으로 존재하는 충돌 키 —
             // 편집 대상 우선이므로 편집 대상(basic) 값이 채택돼야 한다.
             editor: { computed: { filter_default: { label: '기본값 채우기(편집대상)' } } },
+            common: { select_item: '{{name}} 선택' },
           }),
         };
       }
@@ -118,6 +119,8 @@ describe('PreviewCanvas — G7Core.t fallback wrapper', () => {
     );
   }
 
+  // @scenario arg_shape=key_only, value_chars=plain
+  // @effects editor_preview_t_prefers_edit_target
   it('마운트 후 G7Core.t 가 fallback wrapper 로 교체됨 — 편집 대상에 없는 코어 키는 호스트로 폴백', async () => {
     renderCanvas();
 
@@ -130,6 +133,8 @@ describe('PreviewCanvas — G7Core.t fallback wrapper', () => {
     expect(hostResult).toBe('[host] layout_editor.chrome.toolbar.exit');
   });
 
+  // @scenario arg_shape=key_only, value_chars=plain
+  // @effects editor_preview_t_prefers_edit_target
   it('편집 대상 사전(translationEngine) 에서 우선 해석 — 호스트에 없는 키', async () => {
     renderCanvas();
 
@@ -142,6 +147,8 @@ describe('PreviewCanvas — G7Core.t fallback wrapper', () => {
     expect(result).toBe('로그인');
   });
 
+  // @scenario arg_shape=key_only, value_chars=plain
+  // @effects editor_preview_t_prefers_edit_target
   it('충돌 키(양쪽 존재, 값 다름)는 편집 대상 우선 — basic 라벨 채택', async () => {
     renderCanvas();
 
@@ -156,6 +163,23 @@ describe('PreviewCanvas — G7Core.t fallback wrapper', () => {
     expect(result).not.toBe('필터 기본값 정하기(호스트)');
   });
 
+  // @scenario arg_shape=object, value_chars=separators
+  // @effects component_t_shares_object_path
+  it('편집 대상 사전 해석도 인자 값을 글자 그대로 넣는다 — 값의 `&`·`|` 에서 잘리지 않음(engine-v1.80.1)', async () => {
+    renderCanvas();
+
+    await waitFor(() => {
+      expect((window as any).G7Core.t).not.toBe(originalT);
+    });
+
+    // 종전에는 `|name=Tom & Jerry|x` 로 이어 붙여 「Tom 선택」이 됐다(호스트 G7Core.t 와 다른 결과).
+    await waitFor(() => {
+      expect((window as any).G7Core.t('common.select_item', { name: 'Tom & Jerry|x' })).toBe('Tom & Jerry|x 선택');
+    });
+  });
+
+  // @scenario arg_shape=key_only, value_chars=plain
+  // @effects editor_preview_t_restored_on_unmount
   it('언마운트 시 원본 G7Core.t 복원 — 호스트 admin 화면 사이드이펙트 0', async () => {
     const { unmount } = renderCanvas();
 

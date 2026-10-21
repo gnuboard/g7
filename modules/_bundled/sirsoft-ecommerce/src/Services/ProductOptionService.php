@@ -3,14 +3,19 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Helpers\PermissionHelper;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 옵션 서비스
  */
 class ProductOptionService
 {
+    use ReappliesPermissionScope;
+
     /**
      * ProductOptionService 생성자
      *
@@ -39,6 +44,38 @@ class ProductOptionService
         }
 
         return $optionIds;
+    }
+
+    /**
+     * 일괄 변경 대상 상품 전량이 액터의 `products.update` 스코프 안인지 단언합니다.
+     *
+     * 옵션 일괄 경로는 정적 경로라 미들웨어 스코프 검사가 돌지 않는다. 대상 상품은 요청의 상품 ID 와
+     * **옵션이 실제로 속한 상품**의 합집합이다 — 「상품ID-옵션ID」 의 상품 자리는 요청자가 쓴 값이라
+     * 그것으로 판정하면 자기 상품 ID 를 붙인 남의 옵션이 통과한다. 하나라도 범위 밖이면 전량 거부한다.
+     *
+     * @param  array<int, int>  $productIds  요청이 지정한 상품 ID 목록
+     * @param  array<int, int>  $optionIds  해석된 옵션 ID 목록
+     * @return void
+     *
+     * @throws AccessDeniedHttpException 스코프 밖 상품이 하나라도 있는 경우
+     */
+    private function assertOptionProductsWithinScope(array $productIds, array $optionIds): void
+    {
+        // 범위가 「전체」인 액터(와 비인증 내부 호출)는 판정 결과가 같으므로 대상 상품을 다시 읽지 않는다
+        if (PermissionHelper::getEffectiveScope('sirsoft-ecommerce.products.update') === null) {
+            return;
+        }
+
+        $targetIds = array_values(array_unique(array_map('intval', array_merge(
+            $productIds,
+            $this->repository->pluckProductIds($optionIds)
+        ))));
+
+        if ($targetIds === []) {
+            return;
+        }
+
+        $this->assertAllWithinScope($this->productRepository->findByIdsKeyed($targetIds), 'sirsoft-ecommerce.products.update');
     }
 
     /**
@@ -90,6 +127,8 @@ class ProductOptionService
             ];
         }
 
+        $this->assertOptionProductsWithinScope($productIds, $optionIds);
+
         // 2. 수정 전 스냅샷 캡처 (after 훅에 전달)
         $snapshots = $this->repository->getSnapshotsByIds($optionIds);
 
@@ -136,6 +175,8 @@ class ProductOptionService
                 'requested_product_count' => count($productIds),
             ];
         }
+
+        $this->assertOptionProductsWithinScope($productIds, $optionIds);
 
         // 2. 수정 전 스냅샷 캡처 (after 훅에 전달)
         $snapshots = $this->repository->getSnapshotsByIds($optionIds);
@@ -223,6 +264,8 @@ class ProductOptionService
         if (empty($optionIds)) {
             return ['options_updated' => 0];
         }
+
+        $this->assertOptionProductsWithinScope($data['product_ids'] ?? [], $optionIds);
 
         $bulkChanges = $data['bulk_changes'] ?? [];
         $items = $data['items'] ?? [];

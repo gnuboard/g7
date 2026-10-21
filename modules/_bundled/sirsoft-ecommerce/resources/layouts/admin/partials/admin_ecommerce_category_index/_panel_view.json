@@ -101,7 +101,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.selectedCategory?.is_active}}",
                                                     "props": {
-                                                        "className": "inline-block px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
+                                                        "className": "inline-block px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 rounded"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.common.active"
                                                 },
@@ -110,7 +110,7 @@
                                                     "name": "Span",
                                                     "if": "{{!_global.selectedCategory?.is_active}}",
                                                     "props": {
-                                                        "className": "text-secondary inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded"
+                                                        "className": "text-secondary dark:text-gray-300 inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.common.inactive"
                                                 }
@@ -224,7 +224,7 @@
                                             "name": "Span",
                                             "if": "{{!_global.selectedCategory?.description || Object.keys(_global.selectedCategory?.description || {}).length === 0}}",
                                             "props": {
-                                                "className": "block text-sm text-gray-400 dark:text-gray-500"
+                                                "className": "block text-sm text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "-"
                                         }
@@ -270,7 +270,7 @@
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
-                                                                    "name": "Img",
+                                                                    "name": "Button",
                                                                     "actions": [
                                                                         {
                                                                             "comment": "섬네일을 눌러 원본 창을 연다. 미리보기 창은 스스로 이미지를 고르지 않으므로\n                        주소와 대체문구를 여기서 `_global.imagePreview` 에 채워 넘긴다.\n                        대체문구는 이미지에 붙은 설명이 없으면 분류 이름으로 대신한다 — 창 제목이\n                        빈칸으로 열리는 것을 막는 자리다.",
@@ -295,10 +295,20 @@
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "src": "{{image?.download_url}}",
-                                                                        "alt": "{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}",
-                                                                        "className": "w-full max-h-56 py-2 object-contain rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-75 hover:shadow-md transition-all bg-gray-50 dark:bg-gray-800"
-                                                                    }
+                                                                        "type": "button",
+                                                                        "className": "block w-full text-left"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Img",
+                                                                            "props": {
+                                                                                "src": "{{image?.download_url}}",
+                                                                                "alt": "{{$localized(image?.alt_text) || $localized(_global.selectedCategory?.name)}}",
+                                                                                "className": "w-full max-h-56 py-2 object-contain rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-75 hover:shadow-md transition-all bg-gray-50 dark:bg-gray-800"
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 }
                                                             ]
                                                         }
@@ -328,7 +338,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.category.info.no_image"
                                         }
@@ -562,7 +572,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-xs text-secondary"
+                                                                "className": "text-xs text-secondary dark:text-gray-300"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.category.info.product_count"
                                                         },
@@ -620,7 +630,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-xs text-secondary"
+                                                                "className": "text-xs text-secondary dark:text-gray-300"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.category.info.subcategory_count"
                                                         },
@@ -689,7 +699,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "calendar",
-                                                        "className": "text-base text-gray-400 dark:text-gray-500"
+                                                        "className": "text-base text-gray-500 dark:text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -725,7 +735,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "clock",
-                                                        "className": "text-base text-gray-400 dark:text-gray-500"
+                                                        "className": "text-base text-gray-500 dark:text-gray-500"
                                                     }
                                                 },
                                                 {
@@ -788,8 +798,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.selectedCategory?.abilities?.can_update !== true}}",
-                                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "text": "$t:sirsoft-ecommerce.common.edit"
                         },
@@ -805,7 +816,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "flex-1 px-4 py-2 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.selectedCategory?.abilities?.can_delete !== true}}"
                             },
                             "text": "$t:sirsoft-ecommerce.common.delete"

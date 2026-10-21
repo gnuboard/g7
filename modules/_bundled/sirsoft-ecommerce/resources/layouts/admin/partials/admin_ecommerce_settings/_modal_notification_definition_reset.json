@@ -56,7 +56,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "ecommerce-tone-error-soft text-sm"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.warning_message"
                 }
@@ -159,7 +159,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-800 dark:hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isResettingNotification}}"
                     },
                     "children": [

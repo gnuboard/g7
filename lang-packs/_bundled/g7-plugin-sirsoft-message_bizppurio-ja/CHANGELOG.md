@@ -4,6 +4,17 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-10-21
+
+### Added
+
+- SMS 본문 편집칸의 화면 낭독기용 이름(`template.sms.body_label`)의 일본어 번역을 추가했습니다.
+- 비즈뿌리오 1.1.1 에서 번역 문구로 바뀐 알림톡 템플릿 상태 동기화 명령의 콘솔 출력(2건)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
+
+### Changed
+
+- 문자·알림톡을 보내지 못한 사유 문구 4건(`messages.send_skipped.*`)의 일본어 번역을 원문 변경에 맞춰 「送信をスキップしました」에서 「送信できませんでした」로 바꿨습니다.
+
 ## [1.0.1] - 2026-10-10
 
 ### Added

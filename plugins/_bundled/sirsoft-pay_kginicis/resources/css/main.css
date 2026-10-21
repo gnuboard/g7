@@ -132,3 +132,11 @@
         background-color: color-mix(in oklab, oklch(37.9% 0.146 265.522) 40%, transparent); /* blue-900/40 */
     }
 }
+
+/* 진한 호박색 단추(흰 글자, 일본 CBT 연결 점검) — 호버 바탕을 한 단계 더 짙게. 관리자 템플릿 CSS 에 hover:bg-amber-800 규칙이 없어 이 플러그인이 제공한다 */
+@media (hover: hover) {
+    .pay-kginicis-btn-amber:hover,
+    .dark .pay-kginicis-btn-amber:hover {
+        background-color: oklch(47.3% 0.137 46.201); /* amber-800 */
+    }
+}

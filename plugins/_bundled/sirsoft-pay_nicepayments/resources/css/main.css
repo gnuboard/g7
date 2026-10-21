@@ -110,3 +110,11 @@
     border-color: oklch(44.8% 0.119 151.328); /* green-800 */
     background-color: color-mix(in oklab, oklch(39.3% 0.095 152.535) 20%, transparent); /* green-900/20 */
 }
+
+/* 진한 에메랄드 단추(흰 글자, 주문 상세 결제 조회) — 호버 바탕을 한 단계 더 짙게. 관리자 템플릿 CSS 에 hover:bg-emerald-800 규칙이 없어 이 플러그인이 제공한다 */
+@media (hover: hover) {
+    .pay-nicepayments-btn-emerald:hover,
+    .dark .pay-nicepayments-btn-emerald:hover {
+        background-color: oklch(43.2% 0.095 166.913); /* emerald-800 */
+    }
+}

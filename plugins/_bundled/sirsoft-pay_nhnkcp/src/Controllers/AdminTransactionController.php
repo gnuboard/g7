@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 
 /**
@@ -26,10 +27,16 @@ use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
  */
 class AdminTransactionController extends AdminBaseController
 {
+    use GuardsOrderScope;
     use ResolvesEasyPayDisplay;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_nhnkcp';
 
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
     ) {
@@ -50,6 +57,10 @@ class AdminTransactionController extends AdminBaseController
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
         $payment = DB::table((new OrderPayment)->getTable().' as p')
             ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
@@ -127,6 +138,12 @@ class AdminTransactionController extends AdminBaseController
         ]);
     }
 
+    /**
+     * 주문의 가장 최근 환불 레코드를 찾습니다.
+     *
+     * @param  int  $orderId  주문 ID
+     * @return object|null 환불 레코드 (없으면 null)
+     */
     private function latestRefundForOrder(int $orderId): ?object
     {
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
@@ -160,7 +177,10 @@ class AdminTransactionController extends AdminBaseController
     }
 
     /**
-     * @return array<int|string, mixed>
+     * JSON 문자열 또는 배열 값을 배열로 풉니다.
+     *
+     * @param  mixed  $value  JSON 문자열·배열·null
+     * @return array<int|string, mixed> 배열 (풀 수 없으면 빈 배열)
      */
     private function decodeJsonArray(mixed $value): array
     {

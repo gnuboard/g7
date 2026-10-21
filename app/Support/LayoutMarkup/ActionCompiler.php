@@ -23,8 +23,9 @@ use App\Enums\LayoutMarkupErrorCode;
  *
  * **③ confirm 은 진입점에서만.** 엔진은 이벤트에 바인딩된 루트 액션에서만 confirm 을 발화하고
  * 중첩 실행(executeAction)에서는 읽지 않는다. 그래서 중첩 액션의 confirm 은 컴파일 에러다 —
- * 작성자는 확인창이 뜰 것으로 기대하지만 실제로는 아무 일도 없기 때문이다. init 루트는 한술 더 떠
- * confirm 을 포함한 여러 키가 통째로 탈락하므로 축소 화이트리스트로 더 좁게 잡는다.
+ * 작성자는 확인창이 뜰 것으로 기대하지만 실제로는 아무 일도 없기 때문이다. init 루트는 엔진이 통째로
+ * 실행하지만(engine-v1.80.0) 화면 첫 진입에는 「누르는 순간」 이 없으므로 진입점 전용 키
+ * (confirm·debounce·stopPropagation·key)를 ActionHandlerManifest::INIT_ROOT_KEYS 밖 키로 거부한다.
  *
  * 표현식(`{{...}}`/`$t:`)은 어느 위치에서도 선평가하지 않는다 — 액션 `if` 의 혼합형 판정만이
  * 예외다(NodeCompiler 와 동일 규칙, MarkupValue 공유).
@@ -162,7 +163,8 @@ final class ActionCompiler
     /**
      * init_actions 루트 액션 하나를 컴파일합니다 (문서 섹션 층 S4 가 `<init>` 에서 호출).
      *
-     * init 루트는 executeInitActions 가 축소 키만 전달하므로(§199) 화이트리스트 밖 키를 거부한다.
+     * init 루트는 통째로 실행되지만 진입점 전용 키(confirm·debounce·stopPropagation·key)는 의미가 없어
+     * 화이트리스트 밖 키로 거부한다(engine-v1.80.0 부터 sequence·switch·action-ref 는 허용).
      *
      * @param  MarkupElement  $element  핸들러 요소
      * @param  string|null  $path  소스 파일 경로
@@ -195,9 +197,8 @@ final class ActionCompiler
      *
      * 이름으로 참조돼 `actionRef`/`resultTo` 로 실행되는 재사용 액션이다. `<action name>` 은 본문을
      * 감싸는 봉투이므로 그 본문을 `<on>` 블록과 같은 규칙으로 컴파일한다 — 자식이 하나면 그 액션,
-     * 여럿이면 암묵 sequence. 진입점처럼 컴파일해(entry=true) confirm 을 허용한다 — named action 도
-     * 이벤트에 직접 연결될 수 있고, init 루트와 달리 축소 화이트리스트를 적용하지 않는다
-     * (executeInitActions 를 거치지 않으므로).
+     * 여럿이면 암묵 sequence. 진입점처럼 컴파일해(entry=true) confirm 을 허용한다 — named action 은
+     * `actionRef` 로 버튼 클릭 같은 진입점에서 불릴 수 있어, init 루트처럼 진입점 전용 키를 거부하지 않는다.
      *
      * @param  MarkupElement  $wrapper  `<action name>` 요소
      * @param  string|null  $path  소스 파일 경로
@@ -240,7 +241,18 @@ final class ActionCompiler
      */
     private function applySubscription(MarkupElement $on, string $eventName, array &$node, ?string $path): void
     {
-        $action = $this->compileBlockBody($on, ['event' => $eventName], false, $path);
+        $trigger = ['event' => $eventName];
+
+        // 키 한정자는 이벤트 받기에서 효과가 없다(엔진은 사용자가 직접 누르는 진입점에서만 읽는다). 종전에는 이
+        // 갈래가 `key` 를 읽지 않아 경고 없이 사라졌다 — 산출에 남겨 저장 검사(⑭ entry_only_key_ignored)가 알리게 한다.
+        // 실행에는 영향이 없다(구독 콜백은 key 필터를 거치지 않는다).
+        $keyValue = $on->attribute('key')?->value;
+
+        if ($keyValue !== null) {
+            $trigger['key'] = $keyValue;
+        }
+
+        $action = $this->compileBlockBody($on, $trigger, false, $path);
         $node['onComponentEvent'][] = $action;
     }
 
@@ -752,15 +764,17 @@ final class ActionCompiler
      * 규칙은 `StructuredValueCompiler` 가 단일 SSoT 다 — `<prop>`·데이터소스 자식과 같은 문법을
      * 쓴다(중첩 `<field>` 객체 / `<item>` 리스트 / 문자열 `<item>` 본문).
      *
+     * 자식이 없으면 리프 값(`:value`·`value`)을 쓴다 — `<field name="x" :value="null"/>` 이 `[]` 로 굽히던 결함.
+     *
      * @param  MarkupElement  $element  `<field>` 요소
      * @param  string|null  $path  소스 파일 경로
-     * @return array<array-key, mixed> 구조값
+     * @return mixed 구조값 또는 리프 값
      *
      * @throws CompileError 자식 표기가 규칙을 벗어난 경우
      */
-    private function compileParamValue(MarkupElement $element, ?string $path): array
+    private function compileParamValue(MarkupElement $element, ?string $path): mixed
     {
-        return $this->values->compileChildren($element, $path);
+        return $this->values->compileFieldValue($element, $path);
     }
 
     /**

@@ -1,6 +1,6 @@
 /**
  * @file Select.searchI18n.test.tsx
- * @description 선택 상자 검색칸 안내·이름 다국어 (7.1.0 영역 J D-J11 후속)
+ * @description 선택 상자 검색칸 안내·이름 다국어 (7.1.0 후속)
  *
  * 검색칸의 기본 안내(placeholder)만 번역 키로 바꾸고 이름(aria-label)은 「Search」 로 남아,
  * 한국어 관리자 화면에서도 화면 읽기 프로그램이 검색칸을 영어로 읽었다. 안내와 이름 모두 화면 언어를 따른다.
@@ -61,7 +61,7 @@ describe('Select 검색칸 다국어', () => {
    * @scenario control=select_search_box
    * @effects select_search_no_results_translated
    */
-  it('검색 결과가 없으면 화면 언어의 「결과 없음」 문구를 보인다 (validate R4 동류)', () => {
+  it('검색 결과가 없으면 화면 언어의 「결과 없음」 문구를 보인다 (같은 결함군)', () => {
     (window as any).G7Core = { t: (key: string) => DICT[key] ?? key };
 
     render(<Select options={OPTIONS} value="Asia/Seoul" onChange={() => {}} searchable />);

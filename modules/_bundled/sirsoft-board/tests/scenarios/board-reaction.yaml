@@ -48,6 +48,8 @@ axes:
     - react_pending_disables_button
     - secret_post_react_blocked
     - secret_post_react_allowed_with_permission
+    # 열람할 수 있으면 반응할 수 있다 — 비밀번호 확인자·스레드 경로 앵커 (#789 D6)
+    - secret_post_react_by_viewer
     - reaction_area_hidden_on_inaccessible_secret_post
     - icon_image_priority_post_detail
     - icon_image_priority_settings
@@ -78,6 +80,10 @@ effects:
   # 비밀글 열람 권한 가드 (신고와 동일 기준)
   - secret_post_without_permission_returns_422
   - secret_post_with_read_secret_permission_allows_react
+  - secret_post_viewer_can_react
+  - secret_thread_reply_author_reacts_to_root_not_sibling
+  - self_scoped_read_secret_cannot_react_to_others_secret
+  - reaction_service_secret_post_uses_gate_can_view
   - reaction_area_hidden_when_secret_content_inaccessible
   # 화면 렌더 (확정 09·11)
   - active_types_always_shown_even_zero_count

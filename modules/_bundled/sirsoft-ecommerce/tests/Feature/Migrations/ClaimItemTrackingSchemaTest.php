@@ -139,7 +139,7 @@ class ClaimItemTrackingSchemaTest extends ModuleTestCase
     }
 
     /**
-     * 「상자」 테이블은 만들지 않는다(PO 2026-09-25 D4 개정) — `%shipment%` 이름의 테이블이 없고, 이 계획의
+     * 「상자」 테이블은 만들지 않는다(2026-09-25 결정 개정) — `%shipment%` 이름의 테이블이 없고, 이 계획의
      * 마이그레이션 파일은 테이블을 만들지 않으며 모듈 클래스를 참조하지 않는다(오토로더 없이도 돈다).
      *
      * @return void 반환값 없음

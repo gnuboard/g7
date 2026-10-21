@@ -33,7 +33,7 @@
               <set-state target="global" identity_notification_add_modal.form.policy_key="{{$event.target.value}}"/>
             </on>
           </select>
-          <p data-if="{{(adminIdentityPolicies?.data?.data ?? []).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_empty</p>
+          <p data-if="{{adminIdentityPolicies !== undefined &amp;&amp; (adminIdentityPolicies?.data?.data ?? []).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_empty</p>
           <p data-if="{{(adminIdentityPolicies?.data?.data ?? []).length &gt; 0 &amp;&amp; (adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_all_defined</p>
         </div>
         <div data-ref="identity_notification_add_variables" class="rounded-md bg-gray-100 dark:bg-gray-700 p-3">

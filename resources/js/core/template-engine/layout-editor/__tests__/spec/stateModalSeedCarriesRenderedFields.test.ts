@@ -65,9 +65,49 @@ function declaresId(node: Json, modalId: string): boolean {
   return Object.values(node).some((child) => declaresId(child, modalId));
 }
 
+/**
+ * 문서 묶음의 「창 id → 그 id 를 선언한 문서」 색인 — 한 번만 훑는다.
+ * `declaresId` 를 창 묶음마다 번들 전체 문서에 다시 돌리던 비용(부하에서 시험 하나 5.9s)을 줄인다. 판정은 같다(문자열 id 일치).
+ */
+const DECLARED_ID_INDEX = new WeakMap<Json[], Map<string, Json[]>>();
+function docsDeclaringId(docs: Json[], modalId: string): Json[] {
+  let index = DECLARED_ID_INDEX.get(docs);
+  if (!index) {
+    index = new Map<string, Json[]>();
+    for (const doc of docs) {
+      const ids = new Set<string>();
+      const visit = (node: Json): void => {
+        if (Array.isArray(node)) {
+          node.forEach(visit);
+          return;
+        }
+        if (!isPlainObject(node)) return;
+        if (typeof node.id === 'string') ids.add(node.id);
+        Object.values(node).forEach(visit);
+      };
+      visit(doc);
+      for (const id of ids) {
+        const list = index.get(id) ?? [];
+        list.push(doc);
+        index.set(id, list);
+      }
+    }
+    DECLARED_ID_INDEX.set(docs, index);
+  }
+  return index.get(modalId) ?? [];
+}
+
+/** `collectSetterSubkeys` 결과 기억 — 같은 문서 묶음·키를 창 묶음마다 다시 훑지 않는다(문서는 바뀌지 않는다) */
+const SETTER_SUBKEYS_MEMO = new WeakMap<Json[], Map<string, Set<string>>>();
+
 /** setState 가 상태 키 `key` 에 싣는 하위 키 — 객체 대입(`key: {a, b}`)과 경로 대입(`key.a`)을 모두 센다. */
 function collectSetterSubkeys(docs: Json[], key: string): Set<string> {
+  const memo = SETTER_SUBKEYS_MEMO.get(docs) ?? new Map<string, Set<string>>();
+  SETTER_SUBKEYS_MEMO.set(docs, memo);
+  const hit = memo.get(key);
+  if (hit) return hit;
   const subkeys = new Set<string>();
+  memo.set(key, subkeys);
   const visit = (node: Json): void => {
     if (Array.isArray(node)) {
       node.forEach(visit);
@@ -115,10 +155,10 @@ export function findModalSeedGaps(ext: ExtInput, otherDocs: Json[] = []): string
   for (const group of ext.groups) {
     if (group?.scope?.kind !== 'modal' || typeof group.scope.match !== 'string') continue;
     const modalId: string = group.scope.match;
-    let modalDocs = ext.docs.filter((doc) => declaresId(doc, modalId));
+    let modalDocs = docsDeclaringId(ext.docs, modalId);
     let setterDocs = ext.docs;
     if (!modalDocs.length) {
-      modalDocs = otherDocs.filter((doc) => declaresId(doc, modalId));
+      modalDocs = docsDeclaringId(otherDocs, modalId);
       setterDocs = otherDocs;
     }
     if (!modalDocs.length) continue;
@@ -171,7 +211,7 @@ export function findErrorSeedShapeViolations(ext: Pick<ExtInput, 'label' | 'grou
 /** 판정 3 위반 — 문자열 시드를 같은 확장 레이아웃이 숫자가 아닌 색인(언어별 맵 등)으로 읽는 자리. */
 export function findStringSeedsReadAsMap(ext: ExtInput): string[] {
   const offenders: string[] = [];
-  const text = ext.docs.map((doc) => JSON.stringify(doc)).join('\n');
+  const text = docsText(ext.docs);
   const escape = (seg: string): string => seg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const visit = (node: Json, path: string[], scope: string, where: string): void => {
     if (!isPlainObject(node)) return;
@@ -196,7 +236,7 @@ export function findStringSeedsReadAsMap(ext: ExtInput): string[] {
 /** 판정 4 위반 — 빈 오류 맵(`{}`) 시드를 같은 확장 레이아웃이 참/거짓만으로 검사해 빈 오류 띠를 띄우는 자리. */
 export function findEmptyErrorMapBanners(ext: ExtInput): string[] {
   const offenders: string[] = [];
-  const text = ext.docs.map((doc) => JSON.stringify(doc)).join('\n');
+  const text = docsText(ext.docs);
   const escape = (seg: string): string => seg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const visit = (node: Json, path: string[], scope: string, where: string): void => {
     if (!isPlainObject(node)) return;
@@ -216,6 +256,22 @@ export function findEmptyErrorMapBanners(ext: ExtInput): string[] {
     }
   }
   return offenders;
+}
+
+/** 확장 문서 묶음의 직렬화 원문 — 판정 여럿이 같은 묶음을 다시 직렬화하지 않게 기억한다(문서는 바뀌지 않는다) */
+const DOCS_TEXT_MEMO = new WeakMap<Json[], string>();
+function docsText(docs: Json[]): string {
+  let text = DOCS_TEXT_MEMO.get(docs);
+  if (text === undefined) {
+    text = docs.map((doc) => JSON.stringify(doc)).join('\n');
+    DOCS_TEXT_MEMO.set(docs, text);
+  }
+  return text;
+}
+
+/** `findNodeById` 와 같은 결과 — 그 id 를 선언한 첫 문서만 훑는다(색인 사용, 문서 순서 유지) */
+function findDeclaredNode(docs: Json[], modalId: string): Json | null {
+  return findNodeById(docsDeclaringId(docs, modalId).slice(0, 1), modalId);
 }
 
 /** 트리에서 `id === modalId` 인 첫 노드. */
@@ -289,10 +345,10 @@ export function findFilledModalsWithoutListItems(ext: ExtInput, otherDocs: Json[
   const offenders: string[] = [];
   for (const group of ext.groups) {
     if (group?.scope?.kind !== 'modal' || typeof group.scope.match !== 'string') continue;
-    const modal = findNodeById(ext.docs, group.scope.match) ?? findNodeById(otherDocs, group.scope.match);
+    const modal = findDeclaredNode(ext.docs, group.scope.match) ?? findDeclaredNode(otherDocs, group.scope.match);
     if (!modal) continue;
     // 「완료 뒤」 목록(그 값이 차면 입력 본문을 감추는 키 — `{{!_global.K}}`·`{{!(_global.K?.length)}}`)은 「채움」(입력 모습)에서
-    // 비어 있는 것이 맞다. 7.1.0 실측(영역 I2): 템플릿 제거 창이 보존 사본 목록을 채워 늘 「제거 완료」 모습으로 열렸다.
+    // 비어 있는 것이 맞다. 7.1.0 실측: 템플릿 제거 창이 보존 사본 목록을 채워 늘 「제거 완료」 모습으로 열렸다.
     const completionKeys = collectCompletionBranchKeys(modal);
     const paths = collectStateIterationPaths(modal).filter(({ scope, segs }) => !(scope === 'global' && completionKeys.has(segs[0])));
     if (!paths.length) continue;
@@ -368,7 +424,7 @@ export function findScalarItemsReadAsObjects(ext: ExtInput, otherDocs: Json[] = 
   const offenders = new Set<string>();
   for (const group of ext.groups) {
     if (group?.scope?.kind !== 'modal' || typeof group.scope.match !== 'string') continue;
-    const modal = findNodeById(ext.docs, group.scope.match) ?? findNodeById(otherDocs, group.scope.match);
+    const modal = findDeclaredNode(ext.docs, group.scope.match) ?? findDeclaredNode(otherDocs, group.scope.match);
     if (!modal) continue;
     for (const { scope, segs, itemVar } of collectObjectItemIterations(modal)) {
       for (const item of group.items ?? []) {
@@ -414,6 +470,12 @@ function collectExtensions(): ExtInput[] {
   }
   return exts;
 }
+
+/**
+ * 번들 전체 정적 검사의 시험 한도 — 「모양」 판정은 확장마다 번들 전체 문서를 훑어 동시 실행 부하에서 기본 5초를 넘긴 전례가 있다(6.2s).
+ * 읽기는 아래처럼 수집 단계에서 한 번 하고, 판정 시험에만 한도를 명시한다(전역 한도는 그대로).
+ */
+const STATIC_SCAN_TIMEOUT_MS = 60_000;
 
 const EXTS = collectExtensions();
 const ALL_DOCS = EXTS.flatMap((e) => e.docs);
@@ -595,47 +657,47 @@ describe('창 상태 표본 시드 — 모양', () => {
    */
   it('창 표본 시드는 여는 쪽이 싣고 창이 글자로 그리는 하위 키를 모두 담는다', () => {
     expect(EXTS.flatMap((e) => findModalSeedGaps(e, ALL_DOCS))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   /**
    * @effects error_seed_is_message_list
    */
   it('검증 오류 시드는 필드별 문구 목록이다', () => {
     expect(EXTS.flatMap((e) => findErrorSeedShapeViolations(e))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   /**
    * @effects string_seed_not_read_as_locale_map
    */
   it('언어 색인으로 읽는 자리에는 문자열이 아니라 언어별 맵 시드를 둔다', () => {
     expect(EXTS.flatMap((e) => findStringSeedsReadAsMap(e))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   /**
    * @effects empty_error_map_does_not_render_banner
    */
   it('참/거짓으로 오류 띠를 띄우는 자리에는 빈 오류 맵이 아니라 null 을 둔다', () => {
     expect(EXTS.flatMap((e) => findEmptyErrorMapBanners(e))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   /**
    * @effects filled_modal_fills_a_list
    */
   it('창의 「채움」 표본은 창이 도는 상태 목록 하나 이상을 채운다', () => {
     expect(EXTS.flatMap((e) => findFilledModalsWithoutListItems(e, ALL_DOCS))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   /**
    * @effects image_seed_has_no_placeholder
    */
   it('그림을 싣는 키에는 생성기 자리표시 값을 두지 않는다', () => {
     expect(EXTS.flatMap((e) => findPlaceholderImageSeeds(e))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 
   /**
    * @effects iteration_items_read_as_objects_are_seeded_as_objects
    */
   it('창이 항목을 객체로 읽는 상태 목록에는 객체 항목을 시드한다', () => {
     expect(EXTS.flatMap((e) => findScalarItemsReadAsObjects(e, ALL_DOCS))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 });

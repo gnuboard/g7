@@ -1,0 +1,29 @@
+feature: 상속 레이아웃의 초기 상태(initLocal·initGlobal·initIsolated) 저장 라운드트립
+
+description: |
+  초기 상태는 computed 와 같은 부류로 shallow merge(자식 우선)다. 편집기는 자식 원본만 PUT 하고, 저장은 미덮은 부모 키를
+  제외해 덮은 키·고유 키만 영속한다. legacy `state` 는 `initLocal` 로 이관되고, 세 섹션의 하위 키는 validated() 에서 탈락하지
+  않는다. 부모 행은 자식 저장에 영향받지 않고 재로드 때 다시 병합된다. 저장 본문은 요청 원문에서 다시 읽으므로(#758) JSON 객체
+  본문의 빈 문자열 초기값도 그대로 저장된다.
+
+test_files:
+  - tests/Feature/Api/Admin/InitialStateInheritedSaveTest.php
+
+axes:
+  case:
+    - child_only
+    - override
+    - legacy_state
+    - nested_subkeys
+    - parent_untouched
+    - empty_string
+    - reload_merge
+
+effects:
+  - child_init_local_only_persisted
+  - overridden_inherited_key_persisted
+  - legacy_state_migrated_to_init_local
+  - nested_init_subkeys_preserved
+  - parent_row_unchanged
+  - empty_string_initial_value_kept
+  - parent_child_remerged_on_reload

@@ -109,7 +109,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['mileage.expiry_days']}}",
                     "props": {
-                        "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                     },
                     "text": "{{_local.errors?.['mileage.expiry_days']?.[0] ?? ''}}"
                 }

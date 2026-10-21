@@ -95,8 +95,6 @@
       "key_duplicate": "이미 있는 항목 키입니다. 다른 키를 입력하세요.",
       "label_required": "사이트 기본 언어의 항목명을 입력하세요.",
       "key_placeholder": "예: sms_subscription",
-      "label_ko": "항목명 (한국어)",
-      "label_en": "항목명 (English)",
       "label_placeholder": "예: 광고성 SMS 수신",
       "page_slug": "약관 페이지 slug",
       "page_slug_hint": "비워두면 약관 보기 버튼이 숨겨집니다.",

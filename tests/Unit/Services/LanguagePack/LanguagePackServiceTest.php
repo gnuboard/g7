@@ -1122,7 +1122,7 @@ class LanguagePackServiceTest extends TestCase
     }
 
     /**
-     * 꺼 둔 팩(inactive)은 업데이트 뒤에도 inactive 로 남는다 (7.1.0 출시 점검 U5-3).
+     * 꺼 둔 팩(inactive)은 업데이트 뒤에도 inactive 로 남는다 (7.1.0 출시 점검).
      *
      * 재설치 경로가 상태를 installed 로 기록해, 대상 확장을 다시 켤 때 「함께 켤 언어팩」 목록(inactive 만 고른다)에서
      * 빠져 꺼진 채 남았다. 7.1.0 은 ja 팩 20종을 한꺼번에 올려 일괄 업데이트 한 번에 영향이 넓다.
@@ -1156,7 +1156,7 @@ class LanguagePackServiceTest extends TestCase
     }
 
     /**
-     * 대상 확장이 켜지기를 기다리는 팩(awaiting_host)은 업데이트 뒤에도 그 표시를 지닌다 (7.1.0 출시 점검 U5-3).
+     * 대상 확장이 켜지기를 기다리는 팩(awaiting_host)은 업데이트 뒤에도 그 표시를 지닌다 (7.1.0 출시 점검).
      *
      * 표시가 지워지면 대상 확장을 켤 때 자동으로 함께 켜지지 않는다.
      *

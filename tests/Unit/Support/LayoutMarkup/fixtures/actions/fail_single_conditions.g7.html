@@ -1,0 +1,13 @@
+<button type="button" data-ref="probe_fail">
+  <on type="click">
+    <api-call target="/api/probe" method="POST">
+      <fail>
+        <conditions>
+          <when if="{{error.status === 409}}"><toast type="info" message="dup"/></when>
+          <else><toast type="error" message="{{error.message}}"/></else>
+        </conditions>
+      </fail>
+    </api-call>
+  </on>
+  Save
+</button>

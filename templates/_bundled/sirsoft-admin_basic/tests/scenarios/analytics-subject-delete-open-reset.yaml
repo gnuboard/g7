@@ -1,0 +1,14 @@
+feature: 정보주체 삭제 창을 열 때 앞 기준이 남지 않는다 (7.1.1)
+
+description: |
+  방문자 상세의 「삭제」 가 지울 기준을 부분 객체({visitor_key})로 deep 병합해, 같은 세션에서 정보주체 화면에서 연 IP·회원·기간이
+  남아 방문자 키와 AND 로 묶였다(삭제가 덜 지워지거나 0건). 여는 쪽이 같은 액션 목록에서 그 상태를 null 로 먼저 비운다.
+
+axes:
+  entry: [visitor_detail, privacy_requests]
+
+effects:
+  - subject_criteria_reset_on_open
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/analyticsSubjectDeleteOpenReset.test.ts

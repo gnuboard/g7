@@ -1,0 +1,26 @@
+feature: API 문서 생성 파이프라인 — 응답 스키마 추론·섹션 스캐폴딩·재생성 병합·요청/응답 예시·README 목차
+
+description: |
+  `api:docgen` 의 순수 로직을 HTTP 의존 없이 검증한다. 실측 응답에서 필드·페이지네이션을 추론하고, 라우트 메타로
+  엔드포인트 섹션(인증 표기·대표 에러 표·파라미터 표)을 표준 형식으로 만든다. 재생성은 생성 블록만 갱신하고
+  사람이 쓴 서술·표 셀·응답 예시를 보존하며, 실측이 바뀐 몫(새 필드·타입 변경·권한 식별자)만 갱신한다.
+  요청 예시는 raw HTTP 요청, 응답 예시는 envelope 통짜 JSON 을 크기 상한 안으로 절단하고 민감값·실측 호스트를
+  가린다. README 목차는 도메인 파일과 엔드포인트 수를 표로 나열한다.
+
+axes:
+  stage: [schema_inference, section_scaffold, regeneration_merge, request_response_examples, readme_index]
+
+effects:
+  - response_schema_inferred_from_probe
+  - endpoint_section_uses_standard_format
+  - representative_errors_follow_route_meta
+  - human_prose_preserved_on_regeneration
+  - probe_changes_refresh_generated_parts
+  - request_example_is_raw_http_request
+  - response_example_is_truncated_envelope
+  - example_blocks_scoped_and_idempotent
+  - example_sensitive_values_masked
+  - readme_index_regenerated_preserving_prose
+
+test_files:
+  - tests/Unit/Support/ApiDoc/ApiDocPipelineTest.php

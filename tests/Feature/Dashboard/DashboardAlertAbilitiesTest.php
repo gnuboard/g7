@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 대시보드 경고의 [복구]·[닫기] 권한 (G23, 제품 결정 2026-10-09).
+ * 대시보드 경고의 [복구]·[닫기] 권한 (2026-10-09 결정).
  *
  * 경고는 시스템 알림 권한(core.dashboard.alerts)으로 보이지만, 복구·닫기는 그 경고가 실어 온
  * 엔드포인트의 라우트 권한(확장 복구 = core.plugins.activate, 정적 캐시 재발행 = core.settings.update)
@@ -146,7 +146,7 @@ class DashboardAlertAbilitiesTest extends TestCase
     }
 
     /**
-     * 경고 API 는 시스템 알림 권한(core.dashboard.alerts)을 요구한다 — 화면 블록 게이트와 같은 권한 (backend#8)
+     * 경고 API 는 시스템 알림 권한(core.dashboard.alerts)을 요구한다 — 화면 블록 게이트와 같은 권한
      *
      * @scenario endpoint=admin.dashboard.alerts,permission=dashboard_read_only
      *

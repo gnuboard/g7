@@ -233,7 +233,8 @@ test.describe('@sirsoft-ecommerce 마이페이지 주문 진행단계', () => {
     await expect(page.locator('[data-step-state="current"]')).toHaveCount(0);
     const last = page.locator('[data-step-state="off_path"]');
     await expect(last).toHaveAttribute('data-step-value', 'cancelled');
-    await expect(last.locator('.rounded-full.border-2')).toHaveClass(/bg-red-500/);
+    // 이탈 칸 원은 흰 글자 대비(4.5) 때문에 red-600 이다 — red-500 은 3.82 로 미달
+    await expect(last.locator('.rounded-full.border-2')).toHaveClass(/bg-red-600/);
     await expect(page.locator('[data-step-chevron="pc"]:visible')).toHaveCount(7);
 
     await page.setViewportSize({ width: 390, height: 844 });

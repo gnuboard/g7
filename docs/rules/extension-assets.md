@@ -68,6 +68,7 @@
 | 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
 | SEO | `app/Seo/SeoRenderRequest.php` | 게시판 |
 | 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
+| 언어 코드·다국어 값 | `app/Support/LocaleTag.php`(BCP 47 판정·정규화·협상), `app/Support/LocalizedValue.php`(다국어 값 대체 순서) | 게시판, 이커머스, 페이지, 마케팅, gdpr, 결제 2종, 비즈뿌리오 |
 
 ### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
 
@@ -213,6 +214,7 @@ Laravel 은 `bootstrap/cache/packages.php` 가 있으면 stale 여부를 검사�
 | vendor 교체 뒤 `proc_open`·`config:cache`·`route:cache` 등 새 부팅을 `bootstrap/cache/{packages,services}.php` 정리 없이 실행 | 부팅 직전 `PackageManifestCacheHelper::clear()`(재생성까지 필요하면 `rebuild()`) — `ConfigCacheHelper::clear()` 와 짝으로 |
 | 정리 로직을 호출부마다 `@unlink` 로 복제 | 헬퍼 단일 지점 — `clearAllCaches()` 도 같은 헬퍼를 쓴다 |
 | 자식 프로세스 보호를 부모 코드에만 두기 | 부모는 이미 배포된 옛 코드일 수 있다 — 새 버전의 `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS` 를 보고 스스로 비운다(App\ 클래스 미참조·실패 무시) |
+| 업데이트 중 자식 env·`config:cache` 의 `APP_VERSION` 을 부모가 물려준 값에만 맡기기 | 새 `bootstrap/app.php` 의 업데이트 트리 블록이 `g7_reconcile_update_app_version()` 으로 디스크 `.env` 값까지 올리고(낮추지 않는다), 새 코드가 띄우는 자식 env 는 `UpdateChildEnv::build()` 로 `APP_VERSION`·업데이트 플래그를 명시한다 — 옛 부모(7.0.0~7.0.10)는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 둔다 |
 | 코어 버전 판정에서 프로세스 env `APP_VERSION` 을 무조건 우선 | env 우선은 `CoreUpdateContext::isInProgress()` 인 프로세스 트리 안에서만 — 업데이트 전에 뜬 `artisan serve`·큐 워커는 옛 값을 물고 있다 |
 | 업데이트 커맨드 argv 판정을 SAPI 게이트 없이 두기 | argv 는 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다 — CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링에서 채워(`?x+core:update`) 비인증 웹 요청이 업데이트 트리로 판정되고, 자가 치유가 요청마다 매니페스트를 지운다. env 플래그 채널은 웹에서 주입할 수 없으므로 그대로 둔다 |
 | 매니페스트 삭제 실패를 `@unlink` 로 삼키기 | `clear()` 가 지우지 못한 경로를 돌려주고 spawn 직전 호출부가 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식도 같은 이유로 실패해 증상은 제보와 같고, 이 경고가 원인을 가리키는 유일한 흔적이다 |

@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Board\Repositories;
 
-use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -59,8 +58,7 @@ class ReportRepository implements ReportRepositoryInterface
     {
         $query = Report::query();
 
-        // 권한 스코프 필터링
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
 
         // 검색
         $this->applySearchConditions($query, $filters);
@@ -256,7 +254,7 @@ class ReportRepository implements ReportRepositoryInterface
     /**
      * 케이스 기준으로 신고 목록을 페이지네이션하여 조회합니다.
      * boards_reports 1행 = 1케이스이므로 복잡한 그룹핑 없이 직접 페이지네이션합니다.
-     * 재신고 시 last_reported_at이 갱신되어 목록 상단으로 올라옵니다.
+     * 새 신고가 들어올 때마다(추가 신고·재접수) last_reported_at이 갱신되어 목록 상단으로 올라옵니다.
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
@@ -344,7 +342,7 @@ class ReportRepository implements ReportRepositoryInterface
             }
         }
 
-        // 정렬: last_reported_at DESC (재신고 시 위로 올라옴)
+        // 정렬: last_reported_at DESC (새 신고가 들어온 케이스가 위로 올라옴)
         $sortOrder = $this->normalizeSortDirection($filters['sort_order'] ?? null);
 
         $paginator = $this->paginateWithDeferredJoin(
@@ -362,6 +360,9 @@ class ReportRepository implements ReportRepositoryInterface
                     $outer->addSelect([
                         "target_status_{$targetType}" => $targetColumn($model, $targetType, 'status'),
                         "target_trigger_type_{$targetType}" => $targetColumn($model, $targetType, 'trigger_type'),
+                        // 대상 작성자 회원 번호 — 회원 계정이 지워지면 케이스 author_id 는 비워지지만(FK) 글·댓글에는
+                        // 번호가 남는다. 「계정이 남지 않은 회원」을 비회원과 가르는 근거다.
+                        "target_author_user_id_{$targetType}" => $targetColumn($model, $targetType, 'user_id'),
                     ]);
                 }
 
@@ -376,6 +377,7 @@ class ReportRepository implements ReportRepositoryInterface
         return $paginator->through(function (Report $report) {
             $report->setAttribute('target_status', $report->target_status_post ?? $report->target_status_comment);
             $report->setAttribute('target_trigger_type', $report->target_trigger_type_post ?? $report->target_trigger_type_comment);
+            $report->setAttribute('target_author_user_id', $report->target_author_user_id_post ?? $report->target_author_user_id_comment);
             $report->setAttribute(
                 'target_post_id',
                 $report->target_type === 'post' ? $report->target_id : $report->target_post_id_comment
@@ -470,7 +472,7 @@ class ReportRepository implements ReportRepositoryInterface
     /**
      * 사용자의 오늘 전체 신고 건수를 boards_report_logs 기준으로 조회합니다.
      *
-     * 「오늘」은 신고하는 사람 자신의 하루다(보는 사람 시간대 — 7.1.0 O-CF3 · 원칙 「화면은 유저 시간대,
+     * 「오늘」은 신고하는 사람 자신의 하루다(보는 사람 시간대 — 7.1.0 원칙 「화면은 유저 시간대,
      * 기록은 UTC」). UTC 자정으로 자르면 한국 시간 새벽 0~9시 신고가 전날 한도에 섞인다.
      *
      * @param  int  $userId  사용자 ID
@@ -683,9 +685,6 @@ class ReportRepository implements ReportRepositoryInterface
             // 비활성 게시판의 신고는 대시보드 집계에서 제외한다(활성 게시판 스코프).
             ->whereHas('board', fn ($q) => $q->where('is_active', true));
 
-        // 신고 조회 권한 스코프 필터링 (목록 엔드포인트와 동일 게이트)
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
-
         return $query
             ->with(['board', 'author'])
             ->orderByDesc('last_reported_at')
@@ -704,8 +703,6 @@ class ReportRepository implements ReportRepositoryInterface
             ->whereIn('status', [ReportStatus::Pending, ReportStatus::Review])
             // 목록(getPendingAcrossBoards)과 동일 스코프여야 배지 건수와 목록 건수가 일치한다.
             ->whereHas('board', fn ($q) => $q->where('is_active', true));
-
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
 
         return $query->count();
     }
@@ -802,6 +799,19 @@ class ReportRepository implements ReportRepositoryInterface
     public function latestLogCreatedAt(int $reportId)
     {
         return ReportLog::query()->where('report_id', $reportId)->max('created_at');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function advanceLastReportedAt(int $reportId, \DateTimeInterface $reportedAt): bool
+    {
+        return Report::query()
+            ->whereKey($reportId)
+            ->where(fn (Builder $query) => $query
+                ->whereNull('last_reported_at')
+                ->orWhere('last_reported_at', '<', $reportedAt))
+            ->update(['last_reported_at' => $reportedAt]) > 0;
     }
 
     /**

@@ -216,6 +216,32 @@ describe('관리자 기간 입력칸 이름', () => {
         expect(missing).toEqual([]);
     });
 
+    // 브라우저는 날짜·일시 칸(type=date·datetime-local)의 placeholder 를 그리지도 이름으로 읽지도 않는다 —
+    // placeholder 만 단 칸은 접근성 트리에서 이름 없는 textbox 다(7.1.1 출시 전 실측: 상품·주문·클레임 목록 필터,
+    // 엑셀 내려받기 목록, 메인 배너 폼, 마일리지 수정 창, 상품 폼 기타 정보). 그래서 위 규칙과 달리 placeholder 를
+    // 이름으로 치지 않고, 칸이 하나뿐인 자리도 aria-label·aria-labelledby 를 직접 단다.
+    // @scenario surface=admin_filter_range
+    // @effects admin_date_inputs_named_without_placeholder
+    it('날짜·일시 칸은 placeholder 가 아니라 aria-label·aria-labelledby 로 이름이 있다', () => {
+        const files = layoutFiles(LAYOUTS);
+        const missing: string[] = [];
+        files.forEach((path) => {
+            const file = relative(LAYOUTS, path).replace(/\\/g, '/');
+            const walk = (n: any): void => {
+                if (Array.isArray(n)) return n.forEach(walk);
+                if (n === null || typeof n !== 'object') return;
+                const p = n.props ?? {};
+                if (RANGE_TYPES.has(p.type) && !p['aria-label'] && !p['aria-labelledby']) {
+                    missing.push(`${file}: ${p.name ?? p.value ?? p.type}`);
+                }
+                Object.entries(n).forEach(([k, v]) => k !== 'props' && v !== null && typeof v === 'object' && walk(v));
+            };
+            walk(JSON.parse(readFileSync(path, 'utf-8')));
+        });
+
+        expect(missing).toEqual([]);
+    });
+
     // @scenario surface=admin_filter_range
     // @effects admin_range_inputs_have_own_names
     it('기간 칸 이름은 공용 「{라벨} 시작일·종료일」 문구로 화면의 라벨을 감싼다', () => {
@@ -240,11 +266,12 @@ describe('관리자 기간 입력칸 이름', () => {
     it.each([
         [
             'admin/partials/admin_ecommerce_product_form/_partial_product_options.json',
+            // 반복 행 안이라 「{옵션명 또는 N번째 행} 마일리지 적립값·적립 단위」 로 행을 품는다(#757, 수정 후 브라우저 실측)
             [
-                ['Input', '$t:sirsoft-ecommerce.admin.product.options.mileage_value_label'],
-                ['Select', '$t:sirsoft-ecommerce.admin.product.options.mileage_type_label'],
-                ['Input', '$t:sirsoft-ecommerce.admin.product.options.mileage_value_label'],
-                ['Select', '$t:sirsoft-ecommerce.admin.product.options.mileage_type_label'],
+                ['Input', '$t:common.row_cell|row={{$localized(opt.option_name) || $t(\'common.row_n\', {n: optIdx + 1})}}|column={{$t(\'sirsoft-ecommerce.admin.product.options.mileage_value_label\')}}'],
+                ['Select', '$t:common.row_cell|row={{$localized(opt.option_name) || $t(\'common.row_n\', {n: optIdx + 1})}}|column={{$t(\'sirsoft-ecommerce.admin.product.options.mileage_type_label\')}}'],
+                ['Input', '$t:common.row_cell|row={{$localized(opt.option_name) || $t(\'common.row_n\', {n: optIdx + 1})}}|column={{$t(\'sirsoft-ecommerce.admin.product.options.mileage_value_label\')}}'],
+                ['Select', '$t:common.row_cell|row={{$localized(opt.option_name) || $t(\'common.row_n\', {n: optIdx + 1})}}|column={{$t(\'sirsoft-ecommerce.admin.product.options.mileage_type_label\')}}'],
             ],
             (n: any) => /mileage_(value|type)/.test(String(n.props?.value ?? '')),
         ],

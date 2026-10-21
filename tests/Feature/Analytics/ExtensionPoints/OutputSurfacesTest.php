@@ -88,6 +88,54 @@ class OutputSurfacesTest extends AnalyticsApiTestCase
     }
 
     /**
+     * CSV 행 필터가 받는 화면용 행의 `extra` 는 부가 값이 없어도 배열이다 — 응답(JSON)에서만 빈 맵 `{}` 로 낸다(#758).
+     * 리스너가 `$row['extra'][키]` 로 읽어도 오류가 나지 않는다.
+     *
+     * @scenario point=output, extension_state=active, input=registered
+     *
+     * @effects csv_row_filter_receives_array_extra
+     *
+     * @return void 반환값 없음
+     */
+    public function test_csv_row_filter_receives_array_extra_without_extension_values(): void
+    {
+        AnalyticsDimensionStat::factory()->create([
+            'date' => now('UTC')->toDateString(),
+            'visitor_type' => 'guest',
+            'dimension' => 'ext:vendor-shop:category',
+            'label' => 'radio',
+            'label_hash' => md5('radio'),
+            'visits' => 1,
+            'hits' => 1,
+            'extra' => null,
+        ]);
+
+        $seen = [];
+        HookManager::addFilter('core.analytics.csv_row', function (array $line, array $row) use (&$seen): array {
+            $seen[] = is_array($row['extra']);
+            $line[1] .= ':'.($row['extra']['orders'] ?? 0);
+
+            return $line;
+        });
+
+        $captured = null;
+        $this->mock(CsvExporter::class, function ($mock) use (&$captured): void {
+            $mock->shouldReceive('stream')->once()->andReturnUsing(function (string $filename, array $headers, iterable $rows) use (&$captured) {
+                $captured = iterator_to_array($rows, false);
+
+                return response()->streamDownload(fn () => null, $filename);
+            });
+        });
+
+        $this->actingAs($this->readAdmin())
+            ->get('/api/admin/analytics/reports/ext:vendor-shop:category?preset=today&format=csv')
+            ->assertOk();
+
+        $this->assertSame([true], $seen, '필터가 받은 행의 extra 가 배열이 아니다');
+        $this->assertStringEndsWith(':0', (string) $captured[0][1]);
+    }
+
+    /**
      * 진단 응답에 확장 섹션이 `extensions` 아래로만 붙는다.
      *
      * @scenario point=output, extension_state=active, input=registered

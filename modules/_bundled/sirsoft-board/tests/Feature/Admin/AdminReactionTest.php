@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 
+use App\Enums\ScopeType;
 use App\Enums\UserStatus;
+use App\Helpers\PermissionHelper;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -388,6 +390,9 @@ class AdminReactionTest extends BoardTestCase
         $member = $this->createUser();
         $postId = $this->createTestPost(['user_id' => $author->id]);
 
+        // 반응 라우트는 그 게시판의 게시글 열람 권한을 요구한다 — 회원(user 역할)에게 준다.
+        $this->grantUserRolePermissions(['posts.read']);
+
         $this->actingAs($member, 'sanctum')
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/react", ['reaction_type_id' => $this->likeId])
             ->assertOk();
@@ -575,6 +580,131 @@ class AdminReactionTest extends BoardTestCase
         );
 
         $role->permissions()->syncWithoutDetaching([$permission->id]);
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role->id);
+
+        return $user;
+    }
+
+    // ==========================================
+    // 스코프 재적용 (#789 §6.3 B9)
+    // ==========================================
+
+    /**
+     * 「본인만」 스코프 조회 권한은 목록에서 자기 반응만 본다.
+     *
+     * @scenario case=admin_reaction_index_filtered_by_scope
+     *
+     * @effects admin_reaction_index_filtered_by_scope
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_viewer_lists_only_own_reactions(): void
+    {
+        $operator = $this->createScopedReactionOperator(ScopeType::Self);
+        $postId = $this->createTestPost(['user_id' => $this->createUser()->id]);
+        $own = $this->seedReaction($operator->id, 'post', $postId, $this->likeId);
+        $this->seedReaction($this->createUser()->id, 'post', $postId, $this->likeId);
+
+        $response = $this->actingAs($operator)->getJson(self::ENDPOINT);
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.id', $own);
+    }
+
+    /**
+     * 「본인만」 스코프 관리 권한으로 남의 반응 단건 삭제는 403(500 아님)이고 행이 남는다.
+     *
+     * @scenario case=admin_reaction_destroy_out_of_scope_forbidden
+     *
+     * @effects admin_reaction_destroy_out_of_scope_forbidden
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_manager_cannot_destroy_others_reaction(): void
+    {
+        $operator = $this->createScopedReactionOperator(ScopeType::Self);
+        $postId = $this->createTestPost(['user_id' => $this->createUser()->id]);
+        $others = $this->seedReaction($this->createUser()->id, 'post', $postId, $this->likeId);
+
+        $this->actingAs($operator)->deleteJson(self::ENDPOINT.'/'.$others)->assertStatus(403);
+
+        $this->assertDatabaseHas('board_reactions', ['id' => $others]);
+    }
+
+    /**
+     * 「본인만」 스코프 관리 권한으로 자기 반응 단건 삭제는 된다 (대조군).
+     *
+     * @scenario case=admin_reaction_destroy_in_scope_allowed
+     *
+     * @effects admin_reaction_destroy_in_scope_allowed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_manager_can_destroy_own_reaction(): void
+    {
+        $operator = $this->createScopedReactionOperator(ScopeType::Self);
+        $postId = $this->createTestPost(['user_id' => $this->createUser()->id]);
+        $own = $this->seedReaction($operator->id, 'post', $postId, $this->likeId);
+
+        $this->actingAs($operator)->deleteJson(self::ENDPOINT.'/'.$own)->assertOk();
+
+        $this->assertDatabaseMissing('board_reactions', ['id' => $own]);
+    }
+
+    /**
+     * 일괄 삭제에 범위 밖 반응이 하나라도 섞이면 전량 403 이고 어느 행도 지워지지 않는다.
+     *
+     * @scenario case=admin_reaction_bulk_out_of_scope_rejects_all
+     *
+     * @effects admin_reaction_bulk_out_of_scope_rejects_all
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_manager_bulk_destroy_with_others_reaction_rejects_all(): void
+    {
+        $operator = $this->createScopedReactionOperator(ScopeType::Self);
+        $postId = $this->createTestPost(['user_id' => $this->createUser()->id]);
+        $own = $this->seedReaction($operator->id, 'post', $postId, $this->likeId);
+        $others = $this->seedReaction($this->createUser()->id, 'post', $postId, $this->dislikeId);
+
+        $this->actingAs($operator)
+            ->deleteJson(self::ENDPOINT.'/bulk', ['ids' => [$own, $others]])
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('board_reactions', ['id' => $own]);
+        $this->assertDatabaseHas('board_reactions', ['id' => $others]);
+    }
+
+    /**
+     * 반응 조회·관리 권한을 주어진 스코프로 가진 운영자를 만듭니다 (권한 행에 스코프 메타 포함).
+     *
+     * @param  ScopeType  $scope  스코프
+     * @return User 운영자
+     */
+    private function createScopedReactionOperator(ScopeType $scope): User
+    {
+        $role = Role::firstOrCreate(
+            ['identifier' => 'sirsoft-board.reaction-scoped-operator-test'],
+            ['name' => ['ko' => '반응 스코프 운영자', 'en' => 'Scoped Reaction Operator']]
+        );
+
+        foreach (['sirsoft-board.reactions.view', 'sirsoft-board.reactions.manage'] as $identifier) {
+            $permission = Permission::updateOrCreate(
+                ['identifier' => $identifier],
+                [
+                    'name' => ['ko' => $identifier, 'en' => $identifier],
+                    'type' => 'admin',
+                    'resource_route_key' => 'reaction',
+                    'owner_key' => 'user_id',
+                ]
+            );
+            $role->permissions()->syncWithoutDetaching([$permission->id => ['scope_type' => $scope->value]]);
+        }
+
+        PermissionHelper::clearPermissionScopeCache();
 
         $user = User::factory()->create();
         $user->roles()->attach($role->id);

@@ -16,6 +16,21 @@ export interface ActionMenuItem {
     disabledReason?: string;
     /** 조건부 표시 (false면 아이템 숨김, 엔진이 표현식 평가 후 boolean 전달) */
     if?: boolean;
+    /**
+     * 화면을 옮기는 항목의 주소 — 주면 `<a role="menuitem" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+     * 보통 클릭은 지금처럼 onClick·onItemClick(#757). 삭제처럼 옮기지 않는 항목은 비워 둔다.
+     */
+    href?: string;
+    /**
+     * 참이면 현재 주소의 쿼리를 href 에 합쳐 그린다(같은 키는 href 쪽이 이긴다) — 보통 클릭이 목록 조건을 넘기는 항목은
+     * 새 탭에도 같은 조건이 가도록 켠다(#757, A 의 mergeQuery 와 같은 규칙).
+     */
+    mergeQuery?: boolean;
+    /**
+     * 링크 항목을 여는 창 — `_blank` 면 새 창(`rel="noopener noreferrer"`)으로 연다(#757). 보통 클릭도 브라우저가 새 창으로
+     * 열고 항목 동작(onClick·onItemClick)은 부르지 않는다 — 종전 `openWindow` 항목을 링크로 바꿀 때 쓴다. 바깥 주소는 늘 새 창.
+     */
+    target?: string;
 }
 export interface ActionMenuProps {
     items: ActionMenuItem[];

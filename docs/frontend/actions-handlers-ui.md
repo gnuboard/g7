@@ -651,8 +651,10 @@
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
 | `params.value` | string | ❌ | 케이스 키 값 (데이터 바인딩 지원, engine-v1.9.0+) |
-| `cases` | object | ✅ | 케이스별 액션 정의 |
-| `cases.default` | object | ❌ | 기본 케이스 (매칭 없을 때 실행, engine-v1.9.0+) |
+| `cases` | object | ✅ | 케이스별 액션 정의 — 값이 배열이면 순서대로(sequence) 실행 (engine-v1.80.0+, `conditions` 의 `then` 배열과 같다) |
+| `cases.default` | object/array | ❌ | 기본 케이스 (매칭 없을 때 실행, engine-v1.9.0+) |
+
+`<switch>` 는 `<on listen>`·`<fail>`·`<on-code>`·데이터소스 오류 처리·`<init>` 안에서도 그대로 실행된다(engine-v1.80.0 — 그 전에는 이 자리들에서 `cases` 가 버려져 아무 일도 하지 않았다).
 
 ---
 

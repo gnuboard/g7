@@ -32,7 +32,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "warning",
-                                "className": "text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-500 flex-shrink-0 mt-0.5"
                             }
                         },
                         {
@@ -163,7 +163,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded"
+                                                "className": "text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded"
                                             },
                                             "text": "v{{module.version}}"
                                         }
@@ -224,7 +224,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded"
+                                                "className": "text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded"
                                             },
                                             "text": "v{{plugin.version}}"
                                         }
@@ -280,6 +280,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "btn btn-secondary",
                         "disabled": "{{_global.isForceDeactivating}}"
                     },
@@ -383,7 +384,8 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isForceDeactivating}}"
                     },
                     "children": [

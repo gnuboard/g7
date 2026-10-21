@@ -14,8 +14,24 @@
     },
     "children": [
         {
+            "comment": "창 본문 — 닫힐 때(unmount) 접수 상태와 타이머를 정리하는 자리를 겸한다",
             "type": "basic",
             "name": "Div",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1). 이어서 예약된 미리보기를 거둔다 — 비운 뒤라 늦게 온 응답은 쓸 상태가 없어 버려진다",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "adminClaimRequest": null
+                        }
+                    },
+                    {
+                        "handler": "sirsoft-ecommerce.clearAdminClaimRequestTimers"
+                    }
+                ]
+            },
             "props": {
                 "className": "space-y-4"
             },
@@ -74,6 +90,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.row_cell|row={{reqRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.order.claim_request.exchange_option_label')}}",
                                         "className": "w-56 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                         "value": "{{reqRow.newProductOptionId ?? ''}}",
                                         "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.claim_request.same_option') }].concat(reqRow.optionChoices ?? [])}}"
@@ -104,6 +121,7 @@
                                                 "type": "number",
                                                 "min": "1",
                                                 "max": "{{reqRow.max}}",
+                                                "aria-label": "$t:common.row_cell|row={{reqRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.items.columns.quantity')}}",
                                                 "className": "w-20 px-2 py-1 text-sm text-right rounded",
                                                 "value": "{{reqRow.quantity}}"
                                             }
@@ -506,11 +524,25 @@
                             ]
                         },
                         {
+                            "comment": "결제 설정(은행 목록) 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「은행이 등록되어 있지 않습니다」를 보이면 운영자가 환경설정에서 은행을 다시 등록하러 간다",
+                            "id": "claim_request_refund_bank_load_failed",
                             "type": "basic",
                             "name": "P",
-                            "if": "{{(paymentSettings.data?.order_settings?.banks ?? []).length === 0}}",
+                            "if": "{{paymentSettings === null}}",
                             "props": {
-                                "className": "text-xs text-amber-600 dark:text-amber-400 mt-1"
+                                "role": "alert",
+                                "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
+                        },
+                        {
+                            "comment": "은행 목록 빈 안내는 받은 뒤 0개일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다",
+                            "id": "claim_request_refund_bank_empty_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{paymentSettings !== undefined && paymentSettings !== null && (paymentSettings.data?.order_settings?.banks ?? []).length === 0}}",
+                            "props": {
+                                "className": "text-xs text-amber-700 dark:text-amber-400 mt-1"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_empty_hint"
                         }
@@ -672,6 +704,7 @@
                                     ],
                                     "props": {
                                         "type": "number",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.claim_request.shipping_fee",
                                         "min": "0",
                                         "className": "w-32 px-2 py-1 text-sm text-right rounded disabled:opacity-50",
                                         "disabled": "{{_global.adminClaimRequest?.chargeMethod === 'free'}}",
@@ -775,9 +808,9 @@
                     "id": "acr_009_approve_no_permission",
                     "type": "basic",
                     "name": "P",
-                    "if": "{{claimRequestContext?.data?.abilities?.can_update_status !== true}}",
+                    "if": "{{claimRequestContext !== undefined && (claimRequestContext?.data?.abilities?.can_update_status !== true)}}",
                     "props": {
-                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                        "className": "text-xs text-amber-700 dark:text-amber-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.claim_request.approve_no_permission"
                 },
@@ -811,6 +844,13 @@
                                         },
                                         {
                                             "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "adminClaimRequest": null
+                                            }
                                         }
                                     ]
                                 }
@@ -841,7 +881,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}"
                             },
                             "children": [

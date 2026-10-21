@@ -1,0 +1,44 @@
+feature: 권한 범위 강제 지점 원장 + 테스트 감사 (7.1.1)
+
+description: |
+  스코프 메타(resource_route_key·owner_key)가 있는 권한을 걸면서 라우트가 그 모델을 바인딩하지 않으면
+  PermissionMiddleware 의 범위 검사가 조용히 건너뛴다. 그런 라우트는 서비스·저장소가 다시 판정해야 하고, 그 위치를
+  강제 지점 원장(ScopedPermissionEnforcement::LEDGER + 필터 훅 core.permission.scope_enforcement_ledger)에 적는다.
+  런타임 동작은 바꾸지 않는다 — 테스트가 감사한다.
+
+  - 라우트 감사: 바인딩도 원장 등록도 없는 라우트, 자리표시자를 치환하지 못한 권한을 위반으로 드러낸다.
+  - 강제 메서드 감사: 원장에 적혔지만 사라졌거나 범위를 판정하지 않는 메서드, 잘못된 모드를 드러낸다.
+  - 번들 선언 감사: 매니저가 읽지 않는 권한 단위 스코프 키를 드러낸다.
+  - 하위 호환: 원장의 query 항목은 기존 쿼리 스코프 목록에 합쳐진다.
+
+test_files:
+  - tests/Feature/Security/ScopedPermissionLedgerTest.php
+
+axes:
+  case:
+    - core_route_audit
+    - core_enforcer_audit
+    - bundled_manifest_audit
+    - mechanism_binding_vs_ledger
+    - mechanism_placeholders
+    - mechanism_enforcers
+    - mechanism_query_compat
+    - mechanism_exempt
+
+effects:
+  - core_routes_have_no_unledgered_scope_gap
+  - core_ledger_enforcers_exist_and_check_scope
+  - permission_level_scope_keys_absent
+  - unbound_route_reported
+  - ledgered_route_passes
+  - bound_route_passes
+  - non_scoped_permission_ignored
+  - unresolved_placeholder_reported
+  - template_ledger_key_matches
+  - missing_enforcer_reported
+  - enforcer_without_scope_check_reported
+  - invalid_mode_reported
+  - delegation_accepted
+  - ledger_query_entries_join_query_scoped_list
+  - exempt_route_passes
+  - exempt_without_reason_reported

@@ -43,7 +43,7 @@ class ReportCommand extends Command
         $period = (string) $this->option('period');
 
         if (! in_array($period, ['weekly', 'monthly'], true)) {
-            $this->error('기간은 weekly 또는 monthly 여야 합니다.');
+            $this->error(__('analytics.console.report.invalid_period'));
 
             return self::FAILURE;
         }
@@ -51,18 +51,17 @@ class ReportCommand extends Command
         $report = $service->send($period, AnalyticsConfig::fromSettings());
 
         if ($report === null) {
-            $this->info('리포트 발송이 꺼져 있어 보내지 않았습니다.');
+            $this->info(__('analytics.console.report.disabled'));
 
             return self::SUCCESS;
         }
 
-        $this->info(sprintf(
-            '%s 리포트를 보냈습니다 — 방문 %d건, 방문자 %d명, 페이지뷰 %d건',
-            $report['period_label'],
-            $report['visits'],
-            $report['visitors'],
-            $report['pageviews'],
-        ));
+        $this->info(__('analytics.console.report.sent', [
+            'period' => $report['period_label'],
+            'visits' => $report['visits'],
+            'visitors' => $report['visitors'],
+            'pageviews' => $report['pageviews'],
+        ]));
 
         return self::SUCCESS;
     }

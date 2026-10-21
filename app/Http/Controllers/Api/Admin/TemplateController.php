@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Enums\LanguagePackScope;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\TemplateOperationException;
+use App\Extension\Layout\LayoutInstallSourceScope;
 use App\Extension\Layout\LayoutSyncSummary;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -179,9 +180,12 @@ class TemplateController extends AdminBaseController
             }
 
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
-            $this->installSelectedDependencies($validated['dependencies'] ?? []);
+            // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
+            $template = LayoutInstallSourceScope::run($request->validated('layout_source'), function () use ($validated, $templateName) {
+                $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
-            $template = $this->templateService->installTemplate($templateName);
+                return $this->templateService->installTemplate($templateName);
+            });
 
             if ($template) {
                 // cascade 2단계: 동반 번들 언어팩 best-effort 설치
@@ -443,7 +447,11 @@ class TemplateController extends AdminBaseController
     {
         try {
             $templateName = $request->validated()['template_name'];
-            $template = $this->templateService->refreshTemplateLayouts($templateName);
+            // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
+            $template = LayoutInstallSourceScope::run(
+                $request->validated('layout_source'),
+                fn () => $this->templateService->refreshTemplateLayouts($templateName)
+            );
 
             if ($template) {
                 return $this->successWithResource(
@@ -537,7 +545,11 @@ class TemplateController extends AdminBaseController
             $validated = $request->validated();
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
             $force = (bool) ($validated['force'] ?? false);
-            $result = $this->templateService->performVersionUpdate($templateName, $layoutStrategy, $force);
+            // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
+            $result = LayoutInstallSourceScope::run(
+                $validated['layout_source'] ?? null,
+                fn () => $this->templateService->performVersionUpdate($templateName, $layoutStrategy, $force)
+            );
 
             $templateInfo = $result['template_info'] ?? null;
 

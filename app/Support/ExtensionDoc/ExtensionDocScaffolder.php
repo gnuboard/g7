@@ -1381,7 +1381,7 @@ class ExtensionDocScaffolder
         $root = rtrim((string) $record['path'], '/\\').DIRECTORY_SEPARATOR
             .($isTemplate ? 'extensions' : 'resources'.DIRECTORY_SEPARATOR.'extensions');
         foreach ($this->fragmentDirectories($root) as $directory => $jsonFiles) {
-            foreach ($this->loadFragmentDefinitions($directory, $jsonFiles, ['scope' => 'ext:docgen', 'extension' => $record['identifier'] ?? null]) as $definition) {
+            foreach ($this->loadFragmentDefinitions($directory, $jsonFiles, ['scope' => 'ext:docgen', 'extension' => $record['id'] ?? null]) as $definition) {
                 $data = $definition['data'];
                 $target = null;
                 if (isset($data['target_layout']) && is_string($data['target_layout'])) {

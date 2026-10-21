@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\MessageBizppurio\Models;
 
+use App\Support\LocalizedValue;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -106,7 +107,8 @@ class BizppurioTemplate extends Model
      * 수신자 로케일의 SMS 본문을 반환합니다 (#597 §14.3).
      *
      * sms_body 는 다국어 맵이다. 코어 NotificationContentBehavior::getLocalizedBody() 와
-     * 동일한 해석 규칙을 쓴다 — 해당 로케일이 없으면 fallback_locale, 그것도 없으면 빈 문자열.
+     * 동일한 해석 규칙을 쓴다 — 해당 로케일이 없거나 비면 사이트 기본 언어 → 영어(#148, `LocalizedValue`),
+     * 그것도 없으면 빈 문자열(그 언어 수신자에게는 보내지 않는다).
      * 알림톡 content 가 단일 언어인 것은 카카오 제약 때문이며 SMS 에는 그 제약이 없다.
      *
      * @param  string|null  $locale  수신자 로케일 (null 이면 현재 앱 로케일)
@@ -117,9 +119,7 @@ class BizppurioTemplate extends Model
         $locale = $locale ?? app()->getLocale();
         $body = is_array($this->sms_body) ? $this->sms_body : [];
 
-        $resolved = $body[$locale] ?? $body[config('app.fallback_locale', 'ko')] ?? '';
-
-        return is_string($resolved) ? $resolved : '';
+        return LocalizedValue::pick($body, $locale, anyAsLast: false) ?? '';
     }
 
     /**

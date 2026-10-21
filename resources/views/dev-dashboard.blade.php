@@ -985,6 +985,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>코어 업데이트</span>
                                     <span class="text-[10px] opacity-60">(core:update --force) ⚠️</span>
                                 </button>
+                                <button onclick="runCommand('core:bundled-sources list')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-medium rounded transition-colors">
+                                    <span>공식 번들 소스 목록</span>
+                                    <span class="text-[10px] opacity-60">(core:bundled-sources list)</span>
+                                </button>
                                 <button onclick="runCommand('core:vendor-verify')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>코어 Vendor 검증</span>
                                     <span class="text-[10px] opacity-60">(core:vendor-verify)</span>
@@ -1101,6 +1105,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>저장 레이아웃 보안 재검사</span>
                                     <span class="text-[10px] opacity-60">(layout:audit-expressions)</span>
                                 </button>
+                                <button onclick="runCommand('layout:repair-empty-objects')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>굳은 빈 객체 점검 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(layout:repair-empty-objects)</span>
+                                </button>
                                 <button onclick="runCommand('ext-bundles:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>확장 번들 정리</span>
                                     <span class="text-[10px] opacity-60">(ext-bundles:cleanup)</span>
@@ -1148,6 +1156,10 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('notification-log:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>알림 발송 이력 정리</span>
                                     <span class="text-[10px] opacity-60">(notification-log:prune)</span>
+                                </button>
+                                <button onclick="runCommand('notification-delivery:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>알림 중복 방지 기록 정리</span>
+                                    <span class="text-[10px] opacity-60">(notification-delivery:prune)</span>
                                 </button>
                                 <button onclick="runCommand('attachments:prune-orphans --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>고아 첨부 정리 (미리보기)</span>

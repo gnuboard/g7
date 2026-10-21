@@ -1,6 +1,6 @@
 /**
  * @file layout-translation-keys.test.ts
- * @description 레이아웃과 라우트가 쓰는 다국어 키($t:)가 ko/en/ja 언어 파일에 모두 있다 (7.1.0 O-C3c-1 같은 결함군)
+ * @description 레이아웃과 라우트가 쓰는 다국어 키($t:)가 ko/en/ja 언어 파일에 모두 있다 (7.1.0 같은 결함군)
  *
  * 검증 방식: 레이아웃 원본(.g7.html)과 라우트 JSON 의 정적 대조(DOM 비의존).
  *

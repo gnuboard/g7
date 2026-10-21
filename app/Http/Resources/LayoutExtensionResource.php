@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
@@ -48,7 +49,10 @@ class LayoutExtensionResource extends BaseApiResource
     public function toArray(Request $request): array
     {
         $content = $this->getValue('content', []);
-        $contentJson = is_array($content) ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
+        // 편집기가 처음 여는 본문 — 캐스트는 `{}` 를 `[]` 로 만들어, 무변경 저장으로도 그 `[]` 가 굳는다.
+        // 원문을 빈 객체 보존 디코드해 다시 인코딩한다 (#758). 수정 여부 판정은 종전대로 캐스트 값을 쓴다.
+        $preserved = $this->resource instanceof Model ? LayoutEmptyObjects::rawPreserving($this->resource) : $content;
+        $contentJson = is_array($preserved) ? json_encode($preserved, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
 
         $extensionType = $this->getValue('extension_type');
         $sourceType = $this->getValue('source_type');

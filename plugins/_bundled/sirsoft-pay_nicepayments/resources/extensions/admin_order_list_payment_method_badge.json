@@ -22,7 +22,7 @@
             "name": "Span",
             "if": "{{nicepay_test_map.data?.[row.order_number] === true}}",
             "props": {
-                "className": "block mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs font-medium text-orange-500 dark:text-orange-400 leading-tight"
+                "className": "block mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs font-medium text-orange-700 dark:text-orange-400 leading-tight"
             },
             "text": "($t:sirsoft-pay_nicepayments.admin.test_mode_badge)"
         }

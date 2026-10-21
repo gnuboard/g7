@@ -2,7 +2,7 @@
  * sampleAbilitiesMatchLayout.test.ts — 편집기 표본이 레이아웃이 읽는 권한 플래그(`abilities.can_*`)를 담는지 정적 가드
  *
  * 레이아웃은 `{id}?.data?.abilities?.can_update` 처럼 응답의 권한 플래그로 배너·버튼·입력 잠금을 가른다.
- * 표본에 그 플래그가 없으면 편집기 기본 화면이 「권한 없음」 모습으로 그려진다 — 7.1.0 실측(영역 I2 후속)에서
+ * 표본에 그 플래그가 없으면 편집기 기본 화면이 「권한 없음」 모습으로 그려진다 — 7.1.0 실측(후속)에서
  * 게시판 환경설정 편집 화면이 「보기 권한만 있습니다」 띠를 띄우고 하단 [저장] 묶음을 숨긴 채 열렸다
  * (실 응답은 `abilities.can_update` 를 늘 싣는다 — BoardSettingsController::index).
  *
@@ -57,40 +57,47 @@ function loadSamples(): { ext: Record<string, ById>; tpl: Record<string, ById>; 
   return { ext, tpl, flat };
 }
 
+/** 번들 전체 정적 검사의 시험 한도 — 동시 실행 부하 대비. 전역 한도는 그대로 두고 이 시험에만 명시한다. */
+const STATIC_SCAN_TIMEOUT_MS = 60_000;
+
+/** 표본과 번들 레이아웃 원문 — 수집 단계에서 한 번 읽는다(시험 한도 밖). 시험은 판정만 한다. */
+const SAMPLES = loadSamples();
+const LAYOUT_TEXTS: Array<{ base: string; owner: string; file: string; text: string }> = [];
+for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) {
+  for (const owner of readdirSync(resolve(ROOT, base))) {
+    for (const dir of ['layouts', 'resources/layouts', 'resources/extensions']) {
+      for (const file of walkJson(join(resolve(ROOT, base, owner), dir))) LAYOUT_TEXTS.push({ base, owner, file, text: readFileSync(file, 'utf-8') });
+    }
+  }
+}
+
 describe('편집기 표본 — 레이아웃이 읽는 권한 플래그', () => {
   // @scenario source=bundled
   // @effects sample_abilities_declare_layout_keys
   it('레이아웃이 `{id}?.data?.abilities?.{key}` 로 읽는 표본이 그 key 를 명시한다', () => {
-    const { ext, tpl, flat } = loadSamples();
+    const { ext, tpl, flat } = SAMPLES;
     const offenders = new Set<string>();
     let reads = 0;
 
-    for (const base of ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled']) {
-      for (const owner of readdirSync(resolve(ROOT, base))) {
-        for (const dir of ['layouts', 'resources/layouts', 'resources/extensions']) {
-          for (const file of walkJson(join(resolve(ROOT, base, owner), dir))) {
-            const rel = relative(ROOT, file).split(sep).join('/');
-            const isTemplate = base === 'templates/_bundled';
-            const hostTemplate = isTemplate
-              ? owner
-              : /\/(admin)\//.test(rel) || /admin_/.test(rel)
-                ? 'sirsoft-admin_basic'
-                : 'sirsoft-basic';
-            const text = readFileSync(file, 'utf-8');
-            for (const m of text.matchAll(/\b([A-Za-z_]\w*)\?\.data\?\.abilities\?\.(can_\w+)/g)) {
-              reads++;
-              const [, id, key] = m;
-              const sample =
-                (!isTemplate ? ext[owner]?.[id] : undefined) ?? tpl[hostTemplate]?.[id] ?? flat[id];
-              if (!sample || typeof sample !== 'object') continue;
-              const data = sample.data;
-              if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
-              const abilities = data.abilities;
-              if (!abilities || typeof abilities !== 'object' || !(key in abilities)) {
-                offenders.add(`${owner}:${id}.data.abilities.${key}`);
-              }
-            }
-          }
+    for (const { base, owner, file, text } of LAYOUT_TEXTS) {
+      const rel = relative(ROOT, file).split(sep).join('/');
+      const isTemplate = base === 'templates/_bundled';
+      const hostTemplate = isTemplate
+        ? owner
+        : /\/(admin)\//.test(rel) || /admin_/.test(rel)
+          ? 'sirsoft-admin_basic'
+          : 'sirsoft-basic';
+      for (const m of text.matchAll(/\b([A-Za-z_]\w*)\?\.data\?\.abilities\?\.(can_\w+)/g)) {
+        reads++;
+        const [, id, key] = m;
+        const sample =
+          (!isTemplate ? ext[owner]?.[id] : undefined) ?? tpl[hostTemplate]?.[id] ?? flat[id];
+        if (!sample || typeof sample !== 'object') continue;
+        const data = sample.data;
+        if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
+        const abilities = data.abilities;
+        if (!abilities || typeof abilities !== 'object' || !(key in abilities)) {
+          offenders.add(`${owner}:${id}.data.abilities.${key}`);
         }
       }
     }
@@ -101,5 +108,5 @@ describe('편집기 표본 — 레이아웃이 읽는 권한 플래그', () => {
     const list = [...offenders];
     expect(list.filter((o) => !KNOWN.has(o)).sort()).toEqual([]);
     expect([...KNOWN].filter((k) => !offenders.has(k))).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 });

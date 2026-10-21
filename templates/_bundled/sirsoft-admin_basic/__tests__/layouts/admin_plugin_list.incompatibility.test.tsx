@@ -6,7 +6,7 @@
  * - is_compatible === false 시 amber 배지 렌더
  * - is_compatible === true 시 배지 미렌더
  * - aria-describedby + sr-only 텍스트 존재
- * - sr-only 문구는 실제 ko 언어 파일 값을 쓰고, 식별자 뒤 괄호 조사(「은(는)」) 없이 읽힌다(7.1.0 실측 O-R2-5)
+ * - sr-only 문구는 실제 ko 언어 파일 값을 쓰고, 식별자 뒤 괄호 조사(「은(는)」) 없이 읽힌다(7.1.0 실측)
  *
  * @scenario-manifest tests/scenarios/plugin-list-core-incompatibility.yaml
  */

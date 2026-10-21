@@ -827,6 +827,11 @@
       "param_token": "注文トークン",
       "param_order_number": "注文番号",
       "param_expires_at": "有効期限"
+    },
+    "save_secret_view_token": {
+      "label": "秘密の投稿の閲覧トークン保存",
+      "param_token": "閲覧トークン",
+      "param_expires_at": "有効期限"
     }
   },
   "computed": {

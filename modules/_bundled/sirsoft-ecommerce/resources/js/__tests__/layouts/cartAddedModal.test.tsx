@@ -21,21 +21,37 @@ import purchaseCard from '../../../../../../../templates/_bundled/sirsoft-basic/
 import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('장바구니 담기 완료 모달 구조 검증', () => {
+    /**
+     * @scenario surface=modal
+     * @effects cart_added_modal_structure_and_text
+     */
     it('모달이 올바른 id와 Modal 컴포넌트를 사용해야 함', () => {
         expect(modalCartAdded.id).toBe('cart_added_modal');
         expect(modalCartAdded.type).toBe('composite');
         expect(modalCartAdded.name).toBe('Modal');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_added_modal_structure_and_text
+     */
     it('모달 제목이 다국어 키를 사용해야 함', () => {
         expect(modalCartAdded.props.title).toContain('$t:');
         expect(modalCartAdded.props.title).toContain('cart_added_modal_title');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_added_modal_ignores_backdrop_click
+     */
     it('배경 클릭이 비활성화되어야 함', () => {
         expect(modalCartAdded.props.closeOnBackdropClick).toBe(false);
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_added_modal_structure_and_text
+     */
     it('체크 아이콘이 존재해야 함', () => {
         const content = modalCartAdded.children[0];
         const iconContainer = content.children[0];
@@ -46,6 +62,10 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(icon.props.name).toBe('check');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_added_modal_structure_and_text
+     */
     it('메시지 텍스트가 다국어 키를 사용해야 함', () => {
         const content = modalCartAdded.children[0];
         const message = content.children[1];
@@ -54,6 +74,10 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(message.text).toContain('cart_added_modal_message');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects continue_shopping_resets_option_state_and_closes, option_maps_nulled_before_empty_object_reset
+     */
     it('쇼핑 계속하기 버튼이 setState(옵션 초기화) + closeModal 시퀀스를 실행해야 함', () => {
         const footer = modalCartAdded.children[1];
         const continueBtn = footer.children[0];
@@ -63,10 +87,16 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         const clickAction = asArray(continueBtn?.actions)[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
-        expect(clickAction.actions).toHaveLength(2);
+        expect(clickAction.actions).toHaveLength(3);
+
+        // 깊은 병합(기본)은 빈 객체 {} 로 앞 선택을 지우지 못한다 — 두 map 을 먼저 null 로 덮는다(7.1.1 출시 전 sirsoft-basic)
+        const resetAction = asArray(clickAction?.actions)[0];
+        expect(resetAction.handler).toBe('setState');
+        expect(resetAction.params.currentSelection).toBeNull();
+        expect(resetAction.params.additionalOptions).toBeNull();
 
         // setState로 옵션 초기화 (additionalOptions 포함)
-        const setStateAction = asArray(clickAction?.actions)[0];
+        const setStateAction = asArray(clickAction?.actions)[1];
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.selectedOptionItems).toEqual([]);
         // 이 둘은 **옵션 그룹 이름을 키로 갖는 map** 이다(`currentSelection[그룹명]`).
@@ -78,10 +108,14 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(setStateAction.params.additionalOptions).toEqual({});
 
         // closeModal
-        const closeAction = asArray(clickAction?.actions)[1];
+        const closeAction = asArray(clickAction?.actions)[2];
         expect(closeAction.handler).toBe('closeModal');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_buttons_reflect_navigating_state
+     */
     it('쇼핑 계속하기 버튼이 로딩 중 비활성화되어야 함', () => {
         const footer = modalCartAdded.children[1];
         const continueBtn = footer.children[0];
@@ -89,6 +123,10 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(continueBtn.props.disabled).toContain('isNavigatingToCart');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects go_to_cart_sets_loading_closes_and_navigates
+     */
     it('장바구니 이동 버튼이 setState(로딩) + closeModal + navigate 시퀀스를 실행해야 함', () => {
         const footer = modalCartAdded.children[1];
         const goToCartBtn = footer.children[1];
@@ -110,6 +148,10 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(asArray(clickAction?.actions)[2].params.path).toBe('{{_global.shopBase}}/cart');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_buttons_reflect_navigating_state
+     */
     it('장바구니 이동 버튼이 로딩 중 비활성화되어야 함', () => {
         const footer = modalCartAdded.children[1];
         const goToCartBtn = footer.children[1];
@@ -117,6 +159,10 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(goToCartBtn.props.disabled).toContain('isNavigatingToCart');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_buttons_reflect_navigating_state
+     */
     it('장바구니 이동 버튼에 로딩 스피너가 있어야 함', () => {
         const footer = modalCartAdded.children[1];
         const goToCartBtn = footer.children[1];
@@ -129,6 +175,10 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(spinnerIcon.if).toContain('isNavigatingToCart');
     });
 
+    /**
+     * @scenario surface=modal
+     * @effects cart_added_modal_structure_and_text
+     */
     it('다크 모드 클래스가 모든 색상 요소에 적용되어야 함', () => {
         const json = JSON.stringify(modalCartAdded);
 
@@ -140,6 +190,10 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
 });
 
 describe('show.json modals 섹션 검증', () => {
+    /**
+     * @scenario surface=show_layout
+     * @effects show_layout_registers_cart_added_modal
+     */
     it('modals 섹션에 cart_added_modal 파셜이 포함되어야 함', () => {
         const modals = (showLayout as any).modals;
         expect(modals).toBeDefined();
@@ -153,6 +207,10 @@ describe('show.json modals 섹션 검증', () => {
 });
 
 describe('show.json init_actions에서 isNavigatingToCart 초기화 검증', () => {
+    /**
+     * @scenario surface=show_layout
+     * @effects navigating_flag_reset_on_entry
+     */
     it('init_actions에서 _global.isNavigatingToCart를 false로 초기화해야 함', () => {
         const initActions = showLayout.init_actions;
         const resetAction = initActions.find(
@@ -164,6 +222,10 @@ describe('show.json init_actions에서 isNavigatingToCart 초기화 검증', () 
 });
 
 describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
+    /**
+     * @scenario surface=purchase_card
+     * @effects add_success_opens_modal_instead_of_toast
+     */
     it('장바구니 버튼 onSuccess에서 openModal을 호출해야 함', () => {
         const json = JSON.stringify(purchaseCard);
 
@@ -171,6 +233,10 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
         expect(json).toContain('cart_added_modal');
     });
 
+    /**
+     * @scenario surface=purchase_card
+     * @effects add_success_updates_cart_count
+     */
     it('장바구니 버튼 onSuccess에서 cartCount를 업데이트해야 함', () => {
         const json = JSON.stringify(purchaseCard);
 
@@ -178,6 +244,10 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
         expect(json).toContain('response.data.cart_count');
     });
 
+    /**
+     * @scenario surface=purchase_card
+     * @effects add_success_resets_option_state
+     */
     it('장바구니 버튼 onSuccess에서 옵션 상태를 초기화해야 함', () => {
         const json = JSON.stringify(purchaseCard);
 
@@ -189,6 +259,10 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
         expect(json).toContain('"additionalOptions":{}');
     });
 
+    /**
+     * @scenario surface=purchase_card
+     * @effects add_success_opens_modal_instead_of_toast
+     */
     it('장바구니 버튼 onSuccess에서 toast가 아닌 openModal을 사용해야 함', () => {
         const json = JSON.stringify(purchaseCard);
 

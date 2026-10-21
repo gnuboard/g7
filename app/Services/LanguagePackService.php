@@ -11,6 +11,7 @@ use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\InstalledExtensionLookup;
 use App\Extension\Helpers\ZipInstallHelper;
@@ -1000,15 +1001,10 @@ class LanguagePackService
         }
 
         $finalPath = base_path('lang-packs/'.$identifier);
-        if (File::isDirectory($finalPath)) {
-            File::deleteDirectory($finalPath);
-        }
-        File::ensureDirectoryExists(dirname($finalPath));
-        File::moveDirectory($packageRoot, $finalPath);
+        $this->placeInstallDirectory($packageRoot, $finalPath, $manifest);
 
-        if ($extractPath !== $packageRoot) {
-            File::deleteDirectory($extractPath);
-        }
+        // 새 판은 복사로 놓였으므로 _pending 사본은 통째로 정리한다(잠금으로 덜 지워져도 무해 — 다음 설치와 이름이 겹치지 않는다).
+        $this->cleanupPending($extractPath);
 
         // 재설치(update path) 시 자기 자신을 슬롯 충돌로 오인하지 않도록 $existing->id 를 제외.
         // 이전엔 재설치 시 자기가 active 였더라도 $shouldActivate 가 false 가 되어
@@ -1113,6 +1109,7 @@ class LanguagePackService
             $this->repository->update($pack, [
                 'status' => LanguagePackStatus::Active->value,
                 'deactivated_reason' => null,
+                'deactivated_at' => null,
                 'activated_at' => now(),
             ]);
         });
@@ -1178,9 +1175,13 @@ class LanguagePackService
             throw new LanguagePackOperationException('language_packs.errors.protected_pack');
         }
 
-        DB::transaction(function () use ($pack) {
+        DB::transaction(function () use ($pack, $cascadeFromHost) {
+            // 호스트 연쇄면 사유를 남겨 호스트를 다시 켤 때 함께 켤 대상으로 삼는다(#145 — 캐시 대신 DB).
+            // 운영자가 직접 끈 팩은 사유 없이 시각만 남긴다 — 호스트를 켜도 다시 켜지 않는다.
             $this->repository->update($pack, [
                 'status' => LanguagePackStatus::Inactive->value,
+                'deactivated_reason' => $cascadeFromHost ? LanguagePackDeactivationReason::HostDeactivated->value : null,
+                'deactivated_at' => now(),
             ]);
 
             $this->promoteSlotSuccessor($pack);
@@ -1254,6 +1255,8 @@ class LanguagePackService
         if ($next) {
             $this->repository->update($next, [
                 'status' => LanguagePackStatus::Active->value,
+                'deactivated_reason' => null,
+                'deactivated_at' => null,
                 'activated_at' => now(),
             ]);
         }
@@ -1661,6 +1664,65 @@ class LanguagePackService
     }
 
     /**
+     * 검증을 마친 새 설치본을 활성 디렉토리(`lang-packs/{identifier}`) 자리에 놓습니다.
+     *
+     * 확장 폴더 교체와 같은 `ExtensionPendingHelper::copyToActive` 를 쓴다 — 사본을 만든 뒤 옛 폴더를 `_pending` 으로
+     * 비켜 두고 새 폴더를 놓으며, 디렉토리 rename 이 막히면(Windows 에서 다른 프로그램이 트리 안 핸들을 잡고 있을 때)
+     * 파일 단위 복사·제자리 동기화로 폴백한다. 놓은 뒤 manifest 의 식별자·판이 설치하려던 것과 같은지 확인한다.
+     *
+     * 예전에는 옛 폴더를 먼저 지우고(`deleteDirectory`) `moveDirectory` 결과를 보지 않았다. rename 이 실패하면 예외 없이
+     * DB 만 새 판·active 로 기록되고 활성 폴더는 사라졌다 — 2026-10-14 `g7-plugin-sirsoft-pay_nicepayments-ja` 재설치 뒤
+     * 사본이 `lang-packs/_pending/{uuid}` 에 남고 설치 폴더가 없어져 「파일 없음」 이 된 실측 사례.
+     *
+     * @param  string  $packageRoot  검증을 마친 새 설치본 디렉토리(`_pending` 아래)
+     * @param  string  $finalPath  활성 디렉토리 경로
+     * @param  array<string, mixed>  $manifest  검증을 마친 manifest
+     * @return void 반환값 없음
+     *
+     * @throws LanguagePackOperationException 새 설치본을 활성 자리에 놓지 못했을 때(DB 기록 전)
+     */
+    private function placeInstallDirectory(string $packageRoot, string $finalPath, array $manifest): void
+    {
+        $identifier = (string) $manifest['identifier'];
+
+        try {
+            File::ensureDirectoryExists(dirname($finalPath));
+            ExtensionPendingHelper::copyToActive($packageRoot, $finalPath);
+        } catch (Throwable $e) {
+            Log::error('lang-pack install directory replace failed', [
+                'identifier' => $identifier,
+                'path' => $finalPath,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new LanguagePackOperationException(
+                'language_packs.errors.install_directory_replace_failed',
+                ['identifier' => $identifier],
+                $e
+            );
+        }
+
+        // 폴백 복사가 일부 파일을 조용히 놓치는 경우까지 — 활성 자리의 manifest 가 이번 판이어야 DB 에 기록한다.
+        $placedManifestPath = $finalPath.DIRECTORY_SEPARATOR.'language-pack.json';
+        $placed = File::isFile($placedManifestPath) ? json_decode((string) File::get($placedManifestPath), true) : null;
+        if (! is_array($placed)
+            || ($placed['identifier'] ?? null) !== $identifier
+            || (string) ($placed['version'] ?? '') !== (string) ($manifest['version'] ?? '')) {
+            Log::error('lang-pack install directory replace incomplete', [
+                'identifier' => $identifier,
+                'path' => $finalPath,
+                'placed_version' => is_array($placed) ? ($placed['version'] ?? null) : null,
+                'expected_version' => $manifest['version'] ?? null,
+            ]);
+
+            throw new LanguagePackOperationException(
+                'language_packs.errors.install_directory_replace_failed',
+                ['identifier' => $identifier]
+            );
+        }
+    }
+
+    /**
      * _pending 임시 디렉토리를 정리합니다.
      *
      * @param  string  $path  정리 대상 경로
@@ -1719,9 +1781,8 @@ class LanguagePackService
      * 단일 GitHub 언어팩의 최신 버전을 조회하고 latest_version 을 갱신합니다.
      *
      * @param  LanguagePack  $pack  대상 언어팩
-     * 후보는 GitHub 공개 최신과 번들(`lang-packs/_bundled`) 판 중 높은 버전이다(같으면 GitHub) — 모듈·플러그인·템플릿과 같은 규칙.
-     * 확장 공개 릴리스가 코어 출시보다 늦으면 옛 공개 판만 보고 「최신」으로 끝나지 않게 한다.
-     *
+     *                              후보는 GitHub 공개 최신과 번들(`lang-packs/_bundled`) 판 중 높은 버전이다(같으면 GitHub) — 모듈·플러그인·템플릿과 같은 규칙.
+     *                              확장 공개 릴리스가 코어 출시보다 늦으면 옛 공개 판만 보고 「최신」으로 끝나지 않게 한다.
      * @return array{identifier:string, current:string, latest:string|null, source:string|null, has_update:bool, error:string|null}
      */
     private function checkSinglePackUpdate(LanguagePack $pack): array

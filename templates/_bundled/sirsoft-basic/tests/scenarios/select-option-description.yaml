@@ -1,0 +1,19 @@
+feature: Select 옵션 설명(description)
+
+description: |
+  커스텀 드롭다운(options 모드) Select 의 옵션에 `description` 을 주면, 목록을 펼쳤을 때 그 옵션의 라벨 아래에
+  작은 글자로 설명을 보인다. 닫힌 상자에는 라벨만 보이고, description 이 없는 옵션은 종전 그대로다.
+  관리자 템플릿(sirsoft-admin_basic)과 같은 표면이다 — 두 템플릿의 Select 는 옵션 모양이 같아야 한 레이아웃 정의가 어느 쪽에서나 같은 뜻으로 그려진다.
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/basic/__tests__/Select.description.test.tsx
+
+axes:
+  option:
+    - with_description
+    - without_description
+
+effects:
+  - description_shown_small_under_label   # 펼친 목록에서 라벨 아래 text-xs 설명
+  - trigger_shows_label_only              # 닫힌 상자에는 라벨만
+  - plain_option_unchanged                # description 없는 옵션은 라벨 하나

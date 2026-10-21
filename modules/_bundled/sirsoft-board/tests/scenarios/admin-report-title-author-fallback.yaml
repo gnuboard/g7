@@ -1,0 +1,20 @@
+feature: 신고 목록 글 제목 링크·작성자 이름 대체값 (7.1.1 출시 전 점검)
+
+description: |
+  신고 목록의 글 제목 칸을 반응·스크랩 목록처럼 링크로 그린다(가운데 클릭·Ctrl+클릭·새 탭). 작성자 이름이 없으면
+  신고 목록은 「알 수 없음」으로 대신 보이고, 작성자 이름을 번역 인자로 넣는 자리(답변 안내·입력칸 이름·댓글 신고 창)는
+  모두 「알 수 없음」 대체값을 가진다 — 이름이 null 이면 「{{name}}님에게 답변 작성 중...」처럼 자리표시자가 그대로 보였다.
+
+axes:
+  surface:
+    - reports_index_title     # 신고 목록 글 제목 칸
+    - reports_index_author    # 신고 목록 작성자 칸
+    - author_name_t_params    # 레이아웃 전수 — 작성자 이름을 $t 인자로 넣는 자리
+
+effects:
+  - report_title_is_link
+  - report_author_unknown_fallback
+  - author_param_unknown_fallback
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-report-title-and-author-fallback.test.ts

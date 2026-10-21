@@ -81,6 +81,9 @@ class CouponService
         ]);
 
         if ($coupon) {
+            // 상세 라우트는 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다 — 목록과 같은 `promotion-coupon.read` 범위를 재적용
+            $this->assertWithinScope($coupon, 'sirsoft-ecommerce.promotion-coupon.read');
+
             // 필터 훅 - 조회 결과 변형
             $coupon = HookManager::applyFilters('sirsoft-ecommerce.coupon.filter_show_result', $coupon);
 
@@ -346,6 +349,13 @@ class CouponService
      */
     public function cancelIssue(int $couponId, int $issueId): CouponIssue
     {
+        // 발급 취소는 쿠폰의 `promotion-coupon.update` 범위 안이어야 한다(라우트가 `{id}` 라 미들웨어가 건너뜀).
+        // 쿠폰이 없으면 아래 발급 내역 대조가 기존 not_found 계약으로 답한다.
+        $coupon = $this->repository->findById($couponId);
+        if ($coupon) {
+            $this->assertWithinScope($coupon, 'sirsoft-ecommerce.promotion-coupon.update');
+        }
+
         return DB::transaction(function () use ($couponId, $issueId) {
             $issue = $this->issueRepository->findById($issueId);
 
@@ -391,6 +401,8 @@ class CouponService
         if (! $coupon) {
             throw new CouponOperationException('sirsoft-ecommerce::exceptions.coupon_not_found');
         }
+
+        $this->assertWithinScope($coupon, 'sirsoft-ecommerce.promotion-coupon.read');
 
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.coupon.before_issues_list', $couponId, $filters);

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PasswordExpiryPolicy;
 use App\Models\Concerns\HasUserOverrides;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Role extends Model
 {
+    /**
+     * 비회원 역할 식별자 — 로그인하지 않은 방문자의 권한을 담는 시스템 역할.
+     */
+    public const GUEST_IDENTIFIER = 'guest';
+
     use HasFactory, HasUserOverrides;
 
     /**
@@ -199,10 +205,8 @@ class Role extends Model
             return (string) $this->name;
         }
 
-        return $this->name[$locale]
-            ?? $this->name[config('app.fallback_locale')]
-            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
-            ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($this->name, $locale) ?? '';
     }
 
     /**
@@ -219,10 +223,8 @@ class Role extends Model
             return (string) $this->description;
         }
 
-        return $this->description[$locale]
-            ?? $this->description[config('app.fallback_locale')]
-            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
-            ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($this->description, $locale) ?? '';
     }
 
     /**
@@ -313,5 +315,28 @@ class Role extends Model
         }
 
         return ! $this->isCore() && ! $this->isExtensionOwned();
+    }
+
+    /**
+     * 비회원(guest) 역할인지 확인합니다.
+     *
+     * @return bool 비회원 역할이면 true
+     */
+    public function isGuest(): bool
+    {
+        return $this->identifier === self::GUEST_IDENTIFIER;
+    }
+
+    /**
+     * 이 역할의 권한 부여에 스코프(본인·소유역할)를 지정할 수 있는지 판정합니다.
+     *
+     * 비회원에게는 「본인」 을 판정할 신원이 없어 스코프를 가질 수 없다(7.1.1) — 비회원 본인 글은
+     * 비밀번호로 확인한다. 역할 수정 요청(422)·서비스 방어·확장 동기화·역할 폼이 이 한 곳을 읽는다.
+     *
+     * @return bool 스코프 지정 가능 여부
+     */
+    public function supportsPermissionScope(): bool
+    {
+        return ! $this->isGuest();
     }
 }

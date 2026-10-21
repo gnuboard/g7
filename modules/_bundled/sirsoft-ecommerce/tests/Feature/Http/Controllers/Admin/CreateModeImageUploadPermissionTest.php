@@ -6,7 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 등록 화면의 임시 이미지 업로드 권한 테스트 (7.1.0 abilities 게이트 ecom-admin-products#9)
+ * 등록 화면의 임시 이미지 업로드 권한 테스트 (7.1.0 abilities 게이트)
  *
  * 상품·분류 등록 화면은 저장 전에 이미지를 임시로 올린다. 임시 업로드가 수정 권한만 받으면 등록 권한만 가진
  * 운영자는 등록 화면에서 이미지를 올릴 수 없다. 임시 업로드는 등록 또는 수정 권한으로 열고, 이미 있는 상품·분류에

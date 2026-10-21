@@ -11,14 +11,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\TransactionQueryRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
 class AdminTransactionController extends AdminBaseController
 {
+    use GuardsOrderScope;
     use ResolvesEasyPayDisplay;
 
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  NicePaymentsApiService  $apiService  나이스페이먼츠 API 서비스
+     */
     public function __construct(
         private NicePaymentsApiService $apiService
     ) {
@@ -36,6 +43,10 @@ class AdminTransactionController extends AdminBaseController
      */
     public function query(TransactionQueryRequest $request): JsonResponse
     {
+        if ($denied = $this->transactionScopeDenial(trim((string) $request->validated('tid')), 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         return $this->queryByTid(trim((string) $request->validated('tid')));
     }
 
@@ -50,6 +61,10 @@ class AdminTransactionController extends AdminBaseController
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
         $payment = DB::table((new OrderPayment)->getTable().' as p')
             ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
@@ -67,6 +82,12 @@ class AdminTransactionController extends AdminBaseController
         return $this->queryByTid($payment->transaction_id);
     }
 
+    /**
+     * 거래번호로 거래를 조회해 화면 표시용 응답을 만듭니다.
+     *
+     * @param  string  $tid  거래번호
+     * @return JsonResponse 거래 조회 응답
+     */
     private function queryByTid(string $tid): JsonResponse
     {
         try {

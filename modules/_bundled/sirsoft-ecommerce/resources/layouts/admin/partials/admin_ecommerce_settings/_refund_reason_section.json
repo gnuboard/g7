@@ -168,6 +168,7 @@
                                     ],
                                     "props": {
                                         "value": "{{_local.refundReasonForm?.name ?? {}}}",
+                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name",
                                         "layout": "inline",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder",
                                         "error": "{{_local.refundReasonFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.validation.name_required' : ''}}",
@@ -367,7 +368,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{(_local.form?.claim?.refund_reasons ?? []).length === 0 && !_local.isAddingRefundReason}}",
+            "if": "{{settings !== undefined && ((_local.form?.claim?.refund_reasons ?? []).length === 0 && !_local.isAddingRefundReason)}}",
             "props": {
                 "className": "p-8 text-center text-gray-500 dark:text-gray-400"
             },
@@ -528,6 +529,7 @@
                                                     ],
                                                     "props": {
                                                         "value": "{{reason.name ?? {}}}",
+                                                        "ariaLabel": "$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.name')}}",
                                                         "layout": "compact",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder",
                                                         "error": "{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}",
@@ -560,6 +562,7 @@
                                                     ],
                                                     "props": {
                                                         "value": "{{reason.fault_type ?? 'customer'}}",
+                                                        "aria-label": "$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.fault_type')}}",
                                                         "className": "w-full",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "options": [
@@ -605,6 +608,7 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "checked": "{{reason.is_user_selectable ?? false}}",
+                                                        "aria-label": "$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_user_selectable')}}",
                                                         "className": "checkbox",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
@@ -635,6 +639,7 @@
                                                     ],
                                                     "props": {
                                                         "checked": "{{reason.is_active ?? false}}",
+                                                        "ariaLabel": "$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_active')}}",
                                                         "size": "sm",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
@@ -667,7 +672,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "title": "$t:common.delete",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     },

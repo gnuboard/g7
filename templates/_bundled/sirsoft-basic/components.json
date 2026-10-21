@@ -343,6 +343,31 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "description": "비활성 링크 — 참이면 href 를 빼고 aria-disabled·tabindex -1 로 그리며 클릭을 무시한다(꾸밈은 aria-disabled: 변형)"
+          },
+          "mergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "현재 주소의 쿼리를 href 에 합친다(href 자신의 키가 이김) — 보통 클릭과 새 탭이 같은 목록 조건으로 열린다"
+          },
+          "fallbackHref": {
+            "type": "string",
+            "required": false,
+            "description": "대체 주소 — href 가 이 사이트 주소가 아니면(실행 주소·다른 사이트·//host) 대신 이 주소를 href 로 단다. 바깥에서 정해지는 href(알림 이동 주소 등)가 새 탭으로 그대로 열리지 않게 하며, 보통 클릭의 navigate fallbackPath 와 같은 착지점을 적는다. 빈 href 는 그대로"
+          },
+          "target": {
+            "type": "string",
+            "required": false,
+            "description": "링크를 열 창 — \"_blank\" 면 rel 에 noopener noreferrer 를 합친다(넘긴 rel 토큰은 남긴다)"
+          },
+          "rel": {
+            "type": "string",
+            "required": false,
+            "description": "링크 관계 — target=\"_blank\" 면 noopener noreferrer 가 빠져 있어도 컴포넌트가 채운다"
           }
         }
       },
@@ -874,7 +899,7 @@
             "type": "array",
             "required": false,
             "default": [],
-            "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)"
+            "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data, url) — url 이 있으면 알림 본문이 <a href> 링크가 되어 새 탭으로 열 수 있다(보통 클릭은 onNotificationClick, 삭제 단추는 링크 밖)"
           },
           "unreadCount": {
             "type": "number",
@@ -1005,6 +1030,16 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          },
+          "pageHref": {
+            "type": "string",
+            "required": false,
+            "description": "페이지 주소 틀 — {page} 자리에 번호를 넣는다. 주면 번호·이전·다음·처음·끝이 링크가 되어 새 탭으로 열 수 있다(보통 클릭은 onPageChange)"
+          },
+          "pageHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다"
           }
         }
       },
@@ -1569,7 +1604,7 @@
           "tabs": {
             "type": "array",
             "required": true,
-            "description": "탭 목록 (id, label, iconName)"
+            "description": "탭 목록 (id, label, iconName) — 탭 항목에 href 를 주면 <a role=\"tab\" href> 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange)"
           },
           "activeTabId": {
             "type": "string",
@@ -1586,6 +1621,11 @@
             "type": "function",
             "required": false,
             "description": "탭 변경 핸들러"
+          },
+          "tabHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "탭 주소(tabs[].href)에 현재 주소의 쿼리를 합친다 — 같은 화면 안에서 쿼리만 바꾸는 탭이 목록 문맥을 이고 갈 때"
           },
           "className": {
             "type": "string",

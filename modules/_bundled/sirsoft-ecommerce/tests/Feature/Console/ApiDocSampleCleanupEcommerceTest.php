@@ -12,7 +12,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 이커머스 API 문서 실측 샘플 정리 테스트
  *
- * 2026-10-09 실측(O-R2-6): 개발 DB 에 `api:docgen --seed` 의 이커머스 시더가 만든 샘플(카테고리 `apidoc-sample-category`,
+ * 2026-10-09 실측: 개발 DB 에 `api:docgen --seed` 의 이커머스 시더가 만든 샘플(카테고리 `apidoc-sample-category`,
  * 브랜드 `apidoc-sample-brand`, 쿠폰 「API 문서 샘플 쿠폰」, 추가배송비 템플릿 우편번호 00000)이 남아 있었다. 코어 정리가
  * 확장 시더의 생성분도 기록했다가 실측 뒤 지우므로, 이커머스 범위 실행이 끝나면 샘플과 시드 중 만든 행이 남지 않는지 고정한다.
  *

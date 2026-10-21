@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  *
  * 레이아웃만 수정된 경우(소스 SSoT `.g7.html` 또는 짝 `.json`), 빌드 없이 레이아웃만 갱신합니다.
  *
- * 설치 소스는 `--layout-source` 가 결정한다 — 기본 `auto` 는 `.g7.html` 우선이며
+ * 설치 소스는 `--layout-source` 가 결정한다 — 생략하면 설정(`LAYOUT_INSTALL_SOURCE`)을 따르고, `auto` 는 `.g7.html` 우선이며
  * `json` 은 짝 `.json` 이 있으면 그것으로 뒤로 물러선다(진단·복구용).
  */
 class RefreshModuleLayoutCommand extends Command
@@ -23,14 +23,14 @@ class RefreshModuleLayoutCommand extends Command
     use SelectsLayoutInstallSource;
 
     /**
-     * The name and signature of the console command.
+     * 커맨드 이름 및 시그니처
      */
     protected $signature = 'module:refresh-layout
         {identifier? : 특정 모듈의 식별자 (생략 시 모든 활성 모듈)}
-        {--layout-source=auto : 레이아웃 설치 소스 (auto|json) — json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
+        {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
 
     /**
-     * The console command description.
+     * 커맨드 설명
      */
     protected $description = '모듈 레이아웃을 갱신합니다 (빌드 없이 레이아웃만 DB에 동기화)';
 
@@ -46,7 +46,7 @@ class RefreshModuleLayoutCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 커맨드를 실행합니다.
      *
      * @return int 종료 코드
      */
@@ -84,19 +84,19 @@ class RefreshModuleLayoutCommand extends Command
      */
     private function refreshSingle(string $identifier): int
     {
-        $this->info("모듈 '{$identifier}' 레이아웃 갱신 중...");
+        $this->info(__('modules.commands.refresh_layout.refreshing', ['module' => $identifier]));
 
         $result = $this->moduleService->refreshModuleLayouts($identifier);
 
         if ($result) {
-            $this->info("✅ 모듈 '{$identifier}' 레이아웃 갱신 완료");
+            $this->info('✅ '.__('modules.commands.refresh_layout.success', ['module' => $identifier]));
             $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
             Log::info('모듈 레이아웃 갱신 완료', ['module' => $identifier]);
 
             return Command::SUCCESS;
         }
 
-        $this->error("❌ 모듈 '{$identifier}' 레이아웃 갱신 실패");
+        $this->error('❌ '.__('modules.commands.refresh_layout.failed', ['module' => $identifier]));
 
         return Command::FAILURE;
     }
@@ -111,28 +111,28 @@ class RefreshModuleLayoutCommand extends Command
         $modules = Module::where('status', 'active')->pluck('identifier')->toArray();
 
         if (empty($modules)) {
-            $this->line('활성화된 모듈이 없습니다.');
+            $this->line(__('modules.commands.refresh_layout.none_active'));
 
             return Command::SUCCESS;
         }
 
-        $this->info('모든 활성 모듈 레이아웃 갱신 중...');
+        $this->info(__('modules.commands.refresh_layout.refreshing_all'));
 
         $successCount = 0;
         $failCount = 0;
 
         foreach ($modules as $moduleIdentifier) {
-            $this->line("  {$moduleIdentifier} 갱신 중...");
+            $this->line('  '.__('modules.commands.refresh_layout.item_refreshing', ['identifier' => $moduleIdentifier]));
 
             try {
                 $result = $this->moduleService->refreshModuleLayouts($moduleIdentifier);
 
                 if ($result) {
-                    $this->info("  ✅ {$moduleIdentifier} 완료");
+                    $this->info('  ✅ '.__('modules.commands.refresh_layout.item_done', ['identifier' => $moduleIdentifier]));
                     $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                     $successCount++;
                 } else {
-                    $this->warn("  ⚠️ {$moduleIdentifier} 실패");
+                    $this->warn('  ⚠️ '.__('modules.commands.refresh_layout.item_failed', ['identifier' => $moduleIdentifier]));
                     $failCount++;
                 }
             } catch (\Exception $e) {
@@ -142,7 +142,7 @@ class RefreshModuleLayoutCommand extends Command
         }
 
         $this->newLine();
-        $this->info("✅ 총 {$successCount}개 성공, {$failCount}개 실패");
+        $this->info('✅ '.__('modules.commands.refresh_layout.summary', ['success' => $successCount, 'failed' => $failCount]));
 
         Log::info('모듈 레이아웃 일괄 갱신 완료', [
             'success' => $successCount,

@@ -15,5 +15,6 @@
   "layout_not_found": "The requested page could not be found.",
   "layout_editor_load_failed": "Layout editor failed to load",
   "layout_editor_bundle_failed": "The editor could not be loaded. Check your network connection and try again.",
-  "layout_editor_init_failed": "The editor was loaded but could not start. Please reload the page."
+  "layout_editor_init_failed": "The editor was loaded but could not start. Please reload the page.",
+  "refresh_failed": "Could not reload the latest content. What is on the screen has been kept. Please try again in a moment."
 }

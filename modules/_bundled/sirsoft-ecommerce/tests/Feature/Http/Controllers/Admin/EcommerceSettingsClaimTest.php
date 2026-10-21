@@ -345,7 +345,7 @@ class EcommerceSettingsClaimTest extends ModuleTestCase
     #[Test]
     public function reason_label_follows_viewer_locale_and_falls_back_to_ko(): void
     {
-        // 사유명 필수는 "현재 로케일" 이다(2차 라운드 확정). ko 만 담은 행을 만들려면 저장
+        // 사유명 필수는 "현재 로케일" 이다(재검토에서 확정). ko 만 담은 행을 만들려면 저장
         // 요청의 로케일이 ko 여야 한다 — 이 전제 자체가 그 확정을 실물로 고정한다. 로케일은
         // 요청마다 SetLocale 미들웨어가 다시 정하므로 `app()->setLocale()` 이 아니라 헤더로 준다.
         $this->actingAs($this->adminUser)

@@ -139,7 +139,7 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "iteration": {
                         "source": "{{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true && (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}",
                         "item_var": "ch",
@@ -147,29 +147,22 @@
                     },
                     "actions": [
                         {
-                            "comment": "채널 탭 전환 — 화면 상태와 URL 둘 다에 남긴다(화면 상태는 즉시 반영용, URL 은 새로고침용).\n               페이지를 1로 되돌리는 것은 채널마다 정의 수가 다르기 때문이다.",
+                            "comment": "채널 탭 전환 — 주소는 링크 href 한 곳(새 탭으로도 열린다, #757). 페이지를 1로 되돌리는 것은 채널마다\n               정의 수가 다르기 때문이다.",
                             "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/settings",
-                                        "replace": true,
-                                        "mergeQuery": true,
-                                        "transition_overlay_target": "notif_channel_content",
-                                        "query": {
-                                            "channel": "{{ch.id}}",
-                                            "page": 1
-                                        }
-                                    }
-                                }
-                            ]
+                            "handler": "navigate",
+                            "params": {
+                                "replace": true,
+                                "mergeQuery": true,
+                                "transition_overlay_target": "notif_channel_content",
+                                "query": {}
+                            }
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
+                        "href": "/admin/settings?channel={{ch.id}}&page=1",
+                        "mergeQuery": true,
+                        "aria-current": "{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}",
+                        "className": "button {{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2"
                     },
                     "children": [
                         {
@@ -354,6 +347,7 @@
                                     ],
                                     "props": {
                                         "name": "notifPerPage",
+                                        "aria-label": "$t:common.per_page",
                                         "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                         "value": "{{String(query.per_page || 20)}}",
                                         "options": [
@@ -425,7 +419,7 @@
                                                         "type": "button",
                                                         "aria-label": "{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}",
                                                         "aria-expanded": "{{!!(_local.expandedNotifications ?? {})[def.id]}}",
-                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                        "className": "p-1.5 rounded-md text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                                     },
                                                     "children": [
                                                         {
@@ -481,7 +475,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                                                                "className": "text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                                                             },
                                                                             "text": "{{def.type}}"
                                                                         },
@@ -507,7 +501,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full"
+                                                                                "className": "{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} text-xs font-medium px-2 py-0.5 rounded-full"
                                                                             },
                                                                             "text": "{{def.is_active ? '$t:admin.settings.notification_definitions.active' : '$t:admin.settings.notification_definitions.inactive'}}"
                                                                         },
@@ -536,7 +530,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400 italic"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.no_template_for_channel"
                                                                 },
@@ -588,7 +582,7 @@
                                                                                     "name": "Span",
                                                                                     "if": "{{rcpt.exclude_trigger_user}}",
                                                                                     "props": {
-                                                                                        "className": "text-purple-500 dark:text-purple-400"
+                                                                                        "className": "text-purple-600 dark:text-purple-400"
                                                                                     },
                                                                                     "text": "$t:admin.settings.notification_definitions.recipients.badge.exclude_self"
                                                                                 }
@@ -612,7 +606,7 @@
                                                                                 "item_var": "v"
                                                                             },
                                                                             "props": {
-                                                                                "className": "text-tertiary px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono"
+                                                                                "className": "text-body px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -846,7 +840,7 @@
                     "id": "notif_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(notificationDefinitions?.data?.data ?? []).length === 0}}",
+                    "if": "{{notificationDefinitions !== undefined && (notificationDefinitions?.data?.data ?? []).length === 0}}",
                     "props": {
                         "className": "admin-card"
                     },
@@ -856,7 +850,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "fa-solid fa-envelope",
-                                "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "text-4xl text-gray-500 dark:text-gray-500 mb-3"
                             }
                         },
                         {
@@ -897,6 +891,8 @@
                                 }
                             ],
                             "props": {
+                                "pageHref": "/admin/settings?page={page}",
+                                "pageHrefMergeQuery": true,
                                 "currentPage": "{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}",
                                 "totalPages": "{{notificationDefinitions?.data?.pagination?.last_page ?? null}}",
                                 "hasMorePages": "{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}"

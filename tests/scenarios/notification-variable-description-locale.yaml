@@ -1,4 +1,4 @@
-feature: 알림 템플릿 편집 창 「사용 가능한 변수」 설명이 화면 언어를 따른다 (7.1.0 실측 QE-O4)
+feature: 알림 템플릿 편집 창 「사용 가능한 변수」 설명이 화면 언어를 따른다 (7.1.0 실측)
 
 description: |
   알림 정의의 변수 설명은 선언(config/core.php·확장 getNotificationDefinitions())에 한국어 문자열로만 있고

@@ -69,7 +69,7 @@ class UserCountryDisplayTest extends TestCase
 
     /**
      * 본인 프로필(/api/me) 응답이 언어 이름을 싣는다 — 마이페이지 「내 정보」 가 `language_label ?? language`
-     * 를 읽는데 프로필 응답만 이름이 없어 코드(`ko`·`en`)가 그대로 보였다(7.1.0 N O-N7). 언어 칸은 필수라 비어 있는 경우는 없다.
+     * 를 읽는데 프로필 응답만 이름이 없어 코드(`ko`·`en`)가 그대로 보였다(7.1.0 실측). 언어 칸은 필수라 비어 있는 경우는 없다.
      *
      * @scenario filter_axis=language, outcome=narrows
      *

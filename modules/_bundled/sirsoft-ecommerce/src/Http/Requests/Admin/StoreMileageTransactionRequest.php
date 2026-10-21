@@ -2,7 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\UserStatus;
 use App\Models\User;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,7 +32,9 @@ class StoreMileageTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'uuid', Rule::exists(User::class, 'uuid')],
+            // 탈퇴 회원에게는 지급하지 않는다 — 로그인할 수 없어 쓰지 못하고, 탈퇴 때 소멸시키는 규칙도 비켜 간다(7.1.1).
+            // 차감은 받는다: 7.1.0 에서 탈퇴 회원에게 들어간 지급 잔액을 운영자가 정리하는 수단이다.
+            'user_id' => ['required', 'uuid', Rule::exists(User::class, 'uuid'), $this->rejectWithdrawnOnEarn(...)],
             'action' => ['required', 'string', 'in:earn,deduct'],
             'amount' => ['required', 'integer', 'min:1'],
             'currency' => ['required', 'string', 'max:10'],
@@ -39,6 +44,25 @@ class StoreMileageTransactionRequest extends FormRequest
             'expires_at' => ['nullable', 'date'],
             'use_default_expiry' => ['nullable', 'boolean'],
         ];
+    }
+
+    /**
+     * 지급(earn)일 때 대상 회원이 탈퇴 상태면 실패시킵니다.
+     *
+     * @param  string  $attribute  검증 중인 필드명
+     * @param  mixed  $value  회원 uuid
+     * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
+     */
+    public function rejectWithdrawnOnEarn(string $attribute, mixed $value, Closure $fail): void
+    {
+        if ($this->input('action') !== 'earn' || ! is_string($value)) {
+            return;
+        }
+
+        if (app(UserRepositoryInterface::class)->findByUuid($value)?->status === UserStatus::Withdrawn->value) {
+            $fail(__('sirsoft-ecommerce::validation.mileage.user_withdrawn'));
+        }
     }
 
     /**

@@ -11,7 +11,7 @@ use Tests\TestCase;
  * (같은 개발 클론에서 돌린 `plugin:update`·`module:update`·`template:update` — 확장 반영은 config 캐시를 다시 굽는다)
  * 가 그 파일을 다시 만들면 그 뒤에 만들어지는 테스트 앱은 캐시된 개발 config 로 부팅했다. 캐시된 config 는
  * `.env.testing` 을 무시하므로 테스트가 개발 DB 에 붙고(2026-10-08 00:50 실측: 게시판 테스트 setUp 의 정리 쿼리가
- * 개발 DB `g7_2` 에서 실행되다 FK 로 멈춤), 확장 저장소 디스크가 `storage/app/plugins` 를 가리켜 GDPR 설정 테스트가
+ * 개발 DB 에서 실행되다 FK 로 멈춤), 확장 저장소 디스크가 `storage/app/plugins` 를 가리켜 GDPR 설정 테스트가
  * 개발 사이트 설정 파일을 덮었다(2026-10-07 23:38 실측, O-M1F-A).
  *
  * 라우트 캐시와 같이 config 캐시 경로도 테스트 전용 위치로 돌려, 운영 캐시가 언제 다시 구워지든 테스트 앱이

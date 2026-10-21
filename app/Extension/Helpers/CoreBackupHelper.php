@@ -154,6 +154,7 @@ class CoreBackupHelper
      * 백업을 삭제합니다.
      *
      * @param  string  $backupPath  백업 디렉토리 경로
+     * @return void 반환값 없음
      */
     public static function deleteBackup(string $backupPath): void
     {
@@ -223,6 +224,8 @@ class CoreBackupHelper
      * @param  array  $excludes  제외 패턴 목록 (예: ['node_modules', '.git'])
      * @param  string  $fromVersion  시작 버전 (manifest 기록용)
      * @param  string  $toVersion  대상 버전 (manifest 기록용)
+     * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대, 예 `plugins/_bundled/{id}`).
+     *                                         `computeApplyList()` 와 같은 목록을 넘겨 롤백 manifest 와 적용 목록을 일치시킨다.
      * @return array{new_files_count:int, new_dirs_count:int}
      */
     public static function writeNewFilesManifest(
@@ -233,6 +236,7 @@ class CoreBackupHelper
         array $excludes,
         string $fromVersion,
         string $toVersion,
+        array $skipPaths = [],
     ): array {
         $newFiles = [];
         $newDirs = [];
@@ -240,6 +244,7 @@ class CoreBackupHelper
         $protectedSet = self::normalizeProtectedSet($protectedPaths);
         $allowedTargetSet = self::normalizeProtectedSet($targets);
         $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
+        $skipSet = self::normalizeSkipPaths($skipPaths);
 
         foreach ($targets as $target) {
             $target = trim($target);
@@ -287,6 +292,9 @@ class CoreBackupHelper
                     continue;
                 }
                 if (self::isWithinProtectedPath($relative, $protectedSet, $allowedTargetSet)) {
+                    continue;
+                }
+                if (self::isWithinSkipPaths($relative, $skipSet)) {
                     continue;
                 }
 
@@ -370,6 +378,9 @@ class CoreBackupHelper
      * @param  array  $targets  처리할 target 경로 목록 (`app.update.targets`)
      * @param  array  $protectedPaths  보호 경로 목록 (목록에서 제외)
      * @param  array  $excludes  제외 패턴 목록 (예: ['node_modules', '.git'])
+     * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대). 경로와 정확히 같거나
+     *                                         그 하위면 제외한다. `excludes` 와 달리 이름이 아니라 경로로만 매치한다 —
+     *                                         미설치·미배치 공식 번들(`plugins/_bundled/{id}` 등)을 건너뛰는 용도(#146).
      * @return array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}
      *                                                                                              apply = 적용 대상 상대경로 목록(정렬됨, 슬래시 정규화)
      */
@@ -379,6 +390,7 @@ class CoreBackupHelper
         array $targets,
         array $protectedPaths,
         array $excludes,
+        array $skipPaths = [],
     ): array {
         $added = [];
         $changed = [];
@@ -387,6 +399,7 @@ class CoreBackupHelper
         $protectedSet = self::normalizeProtectedSet($protectedPaths);
         $allowedTargetSet = self::normalizeProtectedSet($targets);
         $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
+        $skipSet = self::normalizeSkipPaths($skipPaths);
 
         foreach ($targets as $target) {
             $target = trim($target);
@@ -439,6 +452,9 @@ class CoreBackupHelper
                 if (self::isWithinProtectedPath($relative, $protectedSet, $allowedTargetSet)) {
                     continue;
                 }
+                if (self::isWithinSkipPaths($relative, $skipSet)) {
+                    continue;
+                }
 
                 // symlink 는 목록 제외 — 링크 처리 경로가 별도 담당
                 if ($item->isLink()) {
@@ -479,6 +495,7 @@ class CoreBackupHelper
      * @param  string  $baseAbsolute  백업(base) 파일 절대 경로
      * @param  array<int,string>  $added  added 누적 배열 (참조)
      * @param  array<int,string>  $changed  changed 누적 배열 (참조)
+     * @return void 반환값 없음
      */
     private static function classifyForApply(
         string $relative,
@@ -679,6 +696,7 @@ class CoreBackupHelper
      * @param  string  $relative  검사할 상대 경로
      * @param  array<int, string>  $protectedSet  정규화된 보호 경로 집합
      * @param  array<int, string>  $allowedTargetSet  정규화된 targets 집합 (protected 오버라이드 허용)
+     * @return bool 보호 경로 하위면 true
      */
     private static function isWithinProtectedPath(string $relative, array $protectedSet, array $allowedTargetSet = []): bool
     {
@@ -722,10 +740,51 @@ class CoreBackupHelper
     }
 
     /**
+     * skipPaths 를 슬래시 정규화된 경로 목록으로 만듭니다.
+     *
+     * @param  array<int, string>  $skipPaths  base 상대 경로 목록
+     * @return array<int, string> 빈 항목을 뺀 정규화 경로 목록
+     */
+    private static function normalizeSkipPaths(array $skipPaths): array
+    {
+        $out = [];
+        foreach ($skipPaths as $path) {
+            $normalized = self::normalizeRelative((string) $path);
+            if ($normalized !== '') {
+                $out[] = $normalized;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * 상대 경로가 skipPaths 중 하나와 같거나 그 하위인지 판정합니다.
+     *
+     * @param  string  $relative  슬래시 정규화된 상대 경로
+     * @param  array<int, string>  $skipSet  정규화된 skipPaths
+     * @return bool 건너뛸 경로면 true
+     */
+    private static function isWithinSkipPaths(string $relative, array $skipSet): bool
+    {
+        foreach ($skipSet as $skip) {
+            if ($relative === $skip || str_starts_with($relative, $skip.'/')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 상대 경로가 excludes 패턴(이름 또는 슬래시 포함 경로) 에 매칭되는지 검사합니다.
      *
      * 단순 이름(슬래시 미포함) 은 경로의 어떤 세그먼트와도 매칭 — `node_modules` 처럼
      * 깊이 무관 제외 패턴 의도와 일치.
+     *
+     * @param  string  $relative  슬래시 정규화된 상대 경로
+     * @param  array<int, string>  $excludes  제외 패턴 목록
+     * @return bool 제외 대상이면 true
      */
     private static function matchesExcludes(string $relative, array $excludes): bool
     {
@@ -750,6 +809,9 @@ class CoreBackupHelper
 
     /**
      * 경로 문자열을 슬래시 정규화 + 좌측 슬래시 제거.
+     *
+     * @param  string  $path  정규화할 경로
+     * @return string 슬래시 정규화된 상대 경로
      */
     private static function normalizeRelative(string $path): string
     {
@@ -765,6 +827,9 @@ class CoreBackupHelper
 
     /**
      * 디렉토리가 비어있는지 검사 (`.` `..` 제외).
+     *
+     * @param  string  $path  검사할 디렉토리 경로
+     * @return bool 비어 있거나 디렉토리가 아니면 true
      */
     private static function isEmptyDirectory(string $path): bool
     {

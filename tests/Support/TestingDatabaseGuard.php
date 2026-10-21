@@ -10,7 +10,7 @@ use RuntimeException;
  * `tests/bootstrap.php` 는 `.env` 와 `.env.testing` 의 DB 이름이 같으면 멈추고 config 캐시 경로를 테스트 전용으로 돌린다.
  * 그래도 테스트가 도는 사이 다른 경로로 개발 설정이 실리면(같은 클론에서 확장 반영이 config 캐시를 다시 굽는 등)
  * RefreshDatabase 가 개발 DB 의 모든 테이블을 지우고 다시 만든다(2026-10-08 다른 클론에서 개발 DB 전체 초기화).
- * 테스트가 만든 권한 행이 개발 DB 권한 트리에 남은 것도 같은 경로였다(O-D2, `admin.access`).
+ * 테스트가 만든 권한 행이 개발 DB 권한 트리에 남은 것도 같은 경로였다(`admin.access`).
  * 그래서 설정을 읽은 직후, 서비스 제공자 부팅과 트레이트(RefreshDatabase 등)가 DB 를 만지기 전에 실제 연결 설정의 DB 이름을 확인한다.
  */
 final class TestingDatabaseGuard

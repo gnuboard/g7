@@ -15,7 +15,7 @@
       <!-- 우측: 정렬, 페이지당 개수, 엑셀 다운로드 -->
       <div class="flex-center gap-2">
         <!-- D-050 ~ D-057 정렬 -->
-        <select name="sortBy" class="w-40" value="{{_local.sortBy || 'ordered_at_desc'}}">
+        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40" value="{{_local.sortBy || 'ordered_at_desc'}}">
           <options>
             <option value="ordered_at_desc">$t:sirsoft-ecommerce.admin.order.sort.latest_order</option>
             <option value="ordered_at_asc">$t:sirsoft-ecommerce.admin.order.sort.oldest_order</option>
@@ -34,7 +34,7 @@
           </on>
         </select>
         <!-- D-060 ~ D-063 페이지당 개수 -->
-        <select name="perPage" class="w-24" value="{{_local.perPage || '20'}}">
+        <select name="perPage" aria-label="$t:common.per_page" class="w-24" value="{{_local.perPage || '20'}}">
           <options>
             <option value="10">10</option>
             <option value="20">20</option>
@@ -63,7 +63,8 @@
       </div>
     </div>
     <div data-ref="order_datagrid_card" class="p-0 md:p-0">
-      <data-grid data-type="composite" data-ref="order_datagrid" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-type="composite" data-ref="order_datagrid" pageHref="/admin/ecommerce/orders?page={page}" :pageHrefMergeQuery="true" rowLabelField="order_number" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="{{orders === undefined ? '' : $t('sirsoft-ecommerce.admin.order.message.no_orders')}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+        <blur-until-loaded sources="orders"/>
         <column field="no" header="NO" width="60px" :sortable="false" :required="false">
           <cell>
             <span>{{row.no}}</span>
@@ -77,14 +78,14 @@
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" width="140px" :sortable="true" :required="true">
           <cell>
             <!-- 주문번호를 눌러 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
-            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+            <a href="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
               <on type="click">
-                <navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               {{row.order_number}}
-            </span>
+            </a>
           </cell>
         </column>
         <column field="product" header="$t:sirsoft-ecommerce.admin.order.column.product" width="auto" :sortable="false" :required="false">
@@ -92,7 +93,7 @@
             <div class="flex items-start gap-2">
               <img data-if="{{row.first_option?.thumbnail_url}}" src="{{row.first_option?.thumbnail_url}}" alt="{{row.first_option?.product_name}}" class="w-10 h-10 rounded object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700"/>
               <div data-if="{{!row.first_option?.thumbnail_url}}" class="w-10 h-10 rounded flex-shrink-0 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                <icon name="image" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="image" class="text-gray-500 dark:text-gray-400"/>
               </div>
               <div class="space-y-0.5 min-w-0">
                 <div class="font-medium">
@@ -114,8 +115,8 @@
           <cell>
             <div class="stack-flush gap-0.5">
               <span class="font-medium">{{row.total_amount_formatted}}</span>
-              <span data-if="{{row.total_shipping_amount > 0}}" class="text-xs text-gray-400 dark:text-gray-500">$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}</span>
-              <span data-if="{{row.total_paid_amount > 0}}" class="text-xs text-green-600 dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.order.column.paid_short|amount={{row.total_paid_amount_formatted}}</span>
+              <span data-if="{{row.total_shipping_amount > 0}}" class="text-xs text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}</span>
+              <span data-if="{{row.total_paid_amount > 0}}" class="text-xs text-green-700 dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.order.column.paid_short|amount={{row.total_paid_amount_formatted}}</span>
               <span data-if="{{row.total_unpaid_amount > 0}}" class="text-xs text-red-600 dark:text-red-400">$t:defer:sirsoft-ecommerce.admin.order.column.unpaid_short|amount={{row.total_unpaid_amount_formatted}}</span>
               <span data-if="{{row.total_points_used_amount > 0}}" class="text-xs text-purple-600 dark:text-purple-400">$t:defer:sirsoft-ecommerce.admin.order.column.mileage_used_short|amount={{row.total_points_used_amount_formatted}}</span>
               <span data-if="{{row.total_earned_points_amount > 0 &amp;&amp; row.order_status !== 'cancelled' &amp;&amp; !row.is_partially_cancelled}}" class="text-xs text-blue-600 dark:text-blue-400">$t:defer:sirsoft-ecommerce.admin.order.column.points_earned_short|amount={{row.total_earned_points_amount_formatted}}</span>
@@ -137,7 +138,7 @@
             <span data-if="{{!row.address?.orderer_name &amp;&amp; !row.user?.name}}" class="text-gray-500 dark:text-gray-400">-</span>
             <action-menu data-type="composite" data-if="{{!!row.address?.orderer_name || !!row.user?.name}}" position="right">
               <prop name="items">
-                <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
+                <item id="view_member" href="/admin/users/{{row.user?.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.order.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
                 <item id="search_by_orderer_member" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!!row.user?.uuid}}"/>
                 <item id="search_by_orderer_guest" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!row.user?.uuid}}"/>
               </prop>
@@ -150,9 +151,6 @@
                   손수 채우는 이유는, 필터의 주문자 드롭다운이 그 목록에서 라벨을 찾기 때문이다 —
                   비워 두면 이름 대신 uuid 가 그대로 보인다. -->
                 <switch>
-                  <case when="view_member">
-                    <open-window path="/admin/users/{{row.user?.uuid}}"/>
-                  </case>
                   <case when="search_by_orderer_member">
                     <set-state target="_local" filter.ordererUuid="{{row.user?.uuid}}" filter.searchField="all" filter.searchKeyword="" ordererSearchResults="{{[{ uuid: row.user?.uuid, name: row.user?.name || row.address?.orderer_name, email: row.user?.email || '' }]}}"/>
                     <!-- 이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (#75). -->
@@ -169,13 +167,13 @@
                   </case>
                 </switch>
               </on>
-              <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
-                <icon data-if="{{!!row.user?.uuid}}" name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+              <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
+                <icon data-if="{{!!row.user?.uuid}}" name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <div class="min-w-0 flex-1">
                   <span data-if="{{!!row.user?.uuid}}" class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.address?.orderer_name || row.user?.name}}</span>
-                  <span data-if="{{!row.user?.uuid}}" class="text-gray-600 dark:text-gray-400 truncate block">{{row.address?.orderer_name || row.user?.name}}</span>
+                  <span data-if="{{!row.user?.uuid}}" class="text-gray-600 dark:text-gray-300 truncate block">{{row.address?.orderer_name || row.user?.name}}</span>
                   <!-- 첫구매 표시 -->
-                  <span data-if="{{row.is_first_order}}" class="text-xs text-emerald-500 dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
+                  <span data-if="{{row.is_first_order}}" class="text-xs text-emerald-700 dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
                 </div>
               </div>
             </action-menu>
@@ -224,7 +222,7 @@
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="view_detail" label="$t:sirsoft-ecommerce.admin.order.action.view_detail" iconName="eye" disabledField="abilities.can_read"/>
+          <item id="view_detail" href="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true" label="$t:sirsoft-ecommerce.admin.order.action.view_detail" iconName="eye" disabledField="abilities.can_read"/>
           <item id="excel_download" label="$t:sirsoft-ecommerce.admin.order.action.excel_download" iconName="download" :if="false"/>
         </prop>
         <on type="change" event="onSelectionChange">

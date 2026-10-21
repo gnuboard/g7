@@ -80,7 +80,8 @@
     "shipping_policy_options": {
       "all": "All"
     },
-    "detail_filter_label": "Detail Search Filter"
+    "detail_filter_label": "Detail Search Filter",
+    "category_step": "Category step {{n}}"
   },
   "action": {
     "edit": "Edit",
@@ -582,7 +583,8 @@
       "value": "Quantity",
       "preview_increase": "Increase stock by {{value}}.",
       "preview_decrease": "Decrease stock by {{value}}.",
-      "preview_set": "Set stock to {{value}}."
+      "preview_set": "Set stock to {{value}}.",
+      "quantity_unit": " ea"
     },
     "bulk_confirm": {
       "title": "Confirm Bulk Change",
@@ -646,7 +648,10 @@
       "related_data_notice": "The following data will also be deleted:",
       "warning_message": "Deleted products cannot be recovered.",
       "permanent_warning": "This action cannot be undone. All data related to this product (images, options, inventory, etc.) will be permanently deleted.",
-      "confirm_button": "Delete"
+      "confirm_button": "Delete",
+      "related_images": "- Images: {{count}}",
+      "related_options": "- Options: {{count}}",
+      "related_additional_options": "- Additional options: {{count}}"
     },
     "mode_change": {
       "title": "Change Description Mode",
@@ -899,7 +904,9 @@
       "additional_max_5": "You can add up to 5 option groups.",
       "additional_value_max_20": "You can add up to 20 choices per group.",
       "additional_value_min_1": "At least one choice is required per group."
-    }
+    },
+    "option_group_name_n": "Option group {{n}} name",
+    "option_group_values_n": "Option group {{n}} values"
   },
   "notice": {
     "tab_existing_template": "Select Template",

@@ -106,9 +106,10 @@ class DiagnosticsService
         // 확장이 자기 수집 상태를 진단 화면에 붙이는 자리. 코어 섹션을 덮지 못하게
         // `extensions.{식별자}` 아래로만 받는다 — 화면은 확장이 레이아웃 확장 지점에 둔
         // 자기 조각으로 그 값을 읽는다.
+        // 이름표로 읽는 맵이라 비면 `[]` 가 아니라 `{}` 로 낸다 (7.1.1 출시 전)
         $diagnostics['extensions'] = self::extensionSections(
             HookManager::applyFilters('core.analytics.diagnostics_sections', [], $config),
-        );
+        ) ?: new \stdClass;
 
         return $diagnostics;
     }
@@ -189,7 +190,8 @@ class DiagnosticsService
             'excluded_today' => $this->exclusions->forDate($today),
             'excluded_yesterday' => $this->exclusions->forDate($yesterday),
             // 확장이 등록한 제외 사유는 화면 번역 파일에 없으므로 이름을 함께 싣는다.
-            'excluded_reason_labels' => ExclusionCounter::extensionReasons(),
+            // 사유 키 → 이름 맵이라 확장 사유가 없으면 `{}` (7.1.1 출시 전)
+            'excluded_reason_labels' => ExclusionCounter::extensionReasons() ?: new \stdClass,
         ];
     }
 

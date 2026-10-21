@@ -83,6 +83,12 @@ exclusions:
 effects:
   - vbank_due_at_stored_in_app_timezone   # 가상계좌 dueDate(+09:00)를 앱 시간대(UTC)로 바꿔 저장 — 9시간 어긋남 방지(S4-D5 후속)
   - toss_provider_registered_with_payment_handler
+  - toss_provider_hook_subscriptions_declared
+  - toss_provider_supported_methods_use_core_payment_ids
+  - toss_provider_carries_name_key_for_lang_pack
+  - toss_provider_registration_preserves_existing_providers
+  - toss_provider_registration_works_with_empty_list
+  - toss_client_config_ignores_other_providers
   - enabled_methods_exposed_with_core_mapping
   - vbank_account_stored_without_completing
   - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전) — KG·KCP·나이스와 같은 처리
@@ -140,6 +146,12 @@ effects:
   - is_idempotent
   - does_not_touch_other_plugins_or_builtin_methods
   - backfills_pg_declaration_for_toss_methods
+  # 결제수단 등록 리스너 — 훅 구독·주입 조건·삽입 위치·브랜드 마크
+  - toss_methods_listener_subscribes_filter_hook_with_priority_20   # 결제수단 목록 필터 훅, 우선순위 20
+  - no_toss_methods_injected_when_disabled                          # 주문서 모드 꺼짐·토글 전부 꺼짐이면 주입 없음
+  - toss_methods_inserted_after_phone_or_appended                   # 휴대폰 뒤·포인트 앞, 휴대폰이 없으면 맨 끝
+  - toss_easy_pay_methods_declare_brand_mark_matching_other_pg      # 같은 브랜드는 다른 PG 와 같은 배지
+  - toss_non_brand_methods_have_no_brand_mark                       # 카드·가상계좌·계좌이체·휴대폰은 마크 없음
 
 notes: |
   실계약 전이므로 실제 PG 결제창 진입/승인은 샌드박스 의존이며 M20·M21(Chrome MCP)은

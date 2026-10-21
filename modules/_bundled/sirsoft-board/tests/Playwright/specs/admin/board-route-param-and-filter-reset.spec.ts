@@ -186,12 +186,24 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     boardManageToken,
   }) => {
     await authenticatePage(page, boardManageToken);
+    // 관리자 목록은 쪽당 최소 10건이다(서버가 더 작은 값을 10 으로 올린다) — 글이 그보다 적은 사이트에는
+    // 2페이지가 없으므로 목록 응답의 쪽 정보로 전제를 먼저 확인한다
+    const listResponse = page.waitForResponse(
+      (r) => new RegExp(`/admin/board/${BOARD_SLUG}/posts(\\?|$)`).test(r.url()) && r.request().method() === 'GET',
+      { timeout: 30_000 },
+    );
     await page.goto(`${POSTS_URL}?per_page=15`);
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await waitForPostsGrid(page);
+    const pagination = (await (await listResponse).json())?.data?.pagination ?? {};
+    test.skip(
+      !((pagination.last_page ?? 0) >= 2 || pagination.has_more_pages === true),
+      `자유게시판 글 ${pagination.total ?? '?'}건 — 쪽당 15건으로 2페이지가 없어 쪽 이동을 잴 수 없다(샘플 시드 28건에서 잰다)`,
+    );
 
-    // aria-label 은 번역되므로(`common.page_n`) 쓰지 않는다 — 클래스 + 숫자 텍스트로 잡는다
-    const secondPage = page.locator('.pagination button').filter({ hasText: /^2$/ }).first();
+    // aria-label 은 번역되므로(`common.page_n`) 쓰지 않는다 — 클래스 + 숫자 텍스트로 잡는다.
+    // 쪽 번호는 pageHref 가 있어 링크(#757)다 — 단추로 되돌아가도 찾도록 둘 다 본다
+    const secondPage = page.locator('.pagination :is(a, button)').filter({ hasText: /^2$/ }).first();
     await expect(secondPage).toBeVisible({ timeout: 15_000 });
     await secondPage.click();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });

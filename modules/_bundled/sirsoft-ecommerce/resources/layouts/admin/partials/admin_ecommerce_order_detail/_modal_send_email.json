@@ -72,7 +72,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6"
+                                "className": "text-red-700 dark:text-red-400 text-xs space-y-0.5 ml-6"
                             },
                             "children": [
                                 {
@@ -149,7 +149,7 @@
                                     "props": {
                                         "className": "text-hint"
                                     },
-                                    "text": "{{($parent._local.emailMessage || '').length}}자"
+                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.send_email.char_count|count={{($parent._local.emailMessage || '').length}}"
                                 }
                             ]
                         },
@@ -204,7 +204,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{$parent._local.isSending}}"
                     },
                     "children": [
@@ -287,7 +287,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{$parent._local.isSending || !$parent._local.emailMessage}}"
                     },
                     "children": [

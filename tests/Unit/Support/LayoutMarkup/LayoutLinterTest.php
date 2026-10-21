@@ -746,13 +746,13 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     }
 
     // ---------------------------------------------------------------------
-    // ⑫ 진입점이 아닌 액션의 debounce (2026-10-06 실측 D-I1-8)
+    // ⑫ 진입점이 아닌 액션의 debounce (2026-10-06 실측)
     // ---------------------------------------------------------------------
 
     /**
      * `<when>` 안 액션에 단 debounce 는 엔진이 적용하지 않는다 — 매 입력 즉시 실행된다.
      *
-     * 코드 편집기 내용 검색이 글자마다 요청 25건을 보낸 원인이었다(D-I1-8). 엔진은 이벤트에 바로 묶인
+     * 코드 편집기 내용 검색이 글자마다 요청 25건을 보낸 원인이었다. 엔진은 이벤트에 바로 묶인
      * 진입점 액션의 debounce 만 적용하므로 감싸는 `<conditions :debounce>` 에 달아야 한다.
      *
      * @scenario compile_unit=linter,source_health=valid
@@ -805,6 +805,104 @@ class LayoutLinterTest extends LayoutMarkupTestCase
         ]]];
 
         $this->assertNoLint(LayoutMarkupLintCode::NestedActionDebounceIgnored, $json);
+    }
+
+    /**
+     * 이벤트 받기·데이터소스 오류 처리·레이아웃 오류 처리·첫 진입 동작의 **루트** 액션도 진입점이 아니다 (#753).
+     *
+     * 이 자리는 사용자가 누르는 순간이 없어 엔진이 debounce 를 읽지 않는다. 종전 ⑫ 는 다른 액션의 안쪽만
+     * 보아 이 루트들을 놓쳤다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects nested_action_debounce_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_debounce_on_non_entry_slot_roots_warns(): void
+    {
+        $json = [
+            'layout_name' => 'x',
+            'init_actions' => [['handler' => 'setState', 'debounce' => 300, 'params' => ['target' => 'local', 'a' => 1]]],
+            'errorHandling' => ['404' => ['handler' => 'showErrorPage', 'debounce' => 300, 'params' => ['errorCode' => 404]]],
+            'data_sources' => [[
+                'id' => 'ds', 'type' => 'api', 'endpoint' => '/api/x',
+                'onError' => ['handler' => 'toast', 'debounce' => 300, 'params' => ['message' => 'x']],
+                'errorHandling' => ['500' => ['handler' => 'suppress', 'debounce' => 300]],
+            ]],
+            'components' => [[
+                'type' => 'basic', 'name' => 'Div',
+                'onComponentEvent' => [['event' => 'p:x', 'handler' => 'refetchDataSource', 'debounce' => 300, 'params' => ['dataSourceId' => 'ds']]],
+                // 액션 단위 실패 처리 — `<fail>`(onError)·`<on-code>`(errorHandling) 안의 debounce
+                'actions' => [[
+                    'type' => 'click', 'handler' => 'apiCall', 'target' => '/api/x',
+                    'onError' => ['handler' => 'navigate', 'debounce' => 300, 'params' => ['path' => '/y']],
+                    'errorHandling' => ['409' => ['handler' => 'openModal', 'debounce' => 300, 'target' => 'm']],
+                ]],
+            ]],
+        ];
+
+        $handlers = collect($this->linter->lint($json, 'layout', new CompileContext))
+            ->filter(fn (LintWarning $w) => $w->getCode() === LayoutMarkupLintCode::NestedActionDebounceIgnored)
+            ->map(fn (LintWarning $w) => $w->getParams()['handler'])
+            ->sort()->values()->all();
+
+        $this->assertSame(['navigate', 'openModal', 'refetchDataSource', 'setState', 'showErrorPage', 'suppress', 'toast'], $handlers);
+    }
+
+    // ---------------------------------------------------------------------
+    // ⑭ 진입점 전용 키(key·stopPropagation)를 진입점 밖에 적음 (#753)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 이벤트 받기·실패 처리·안쪽 액션에 적은 `key`·`stopPropagation` 은 엔진이 읽지 않는다 — 경고한다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects entry_only_key_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_entry_only_keys_outside_entry_actions_warn(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic', 'name' => 'Div',
+            'onComponentEvent' => [['event' => 'p:x', 'key' => 'Enter', 'handler' => 'setState', 'params' => ['target' => 'local', 'a' => 1]]],
+            'actions' => [[
+                'type' => 'click', 'handler' => 'apiCall', 'target' => '/api/x',
+                'onError' => ['handler' => 'toast', 'stopPropagation' => true, 'params' => ['message' => 'x']],
+            ]],
+        ]]];
+
+        $params = collect($this->linter->lint($json, 'layout', new CompileContext))
+            ->filter(fn (LintWarning $w) => $w->getCode() === LayoutMarkupLintCode::EntryOnlyKeyIgnored)
+            ->map(fn (LintWarning $w) => $w->getParams()['key'].'@'.$w->getParams()['handler'])
+            ->sort()->values()->all();
+
+        $this->assertSame(['key@setState', 'stopPropagation@toast'], $params);
+    }
+
+    /**
+     * 진입점 액션의 `key`·`stopPropagation`, `resultTo` 의 `key` 는 정상이다 — 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects entry_only_key_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_entry_only_keys_on_entry_actions_do_not_warn(): void
+    {
+        $json = ['layout_name' => 'x', 'components' => [[
+            'type' => 'basic', 'name' => 'Input',
+            'actions' => [
+                ['type' => 'keydown', 'key' => 'Enter', 'stopPropagation' => true, 'handler' => 'sequence', 'actions' => [
+                    ['handler' => 'apiCall', 'target' => '/api/x', 'resultTo' => ['target' => '_local', 'key' => 'result']],
+                ]],
+            ],
+        ]]];
+
+        $this->assertNoLint(LayoutMarkupLintCode::EntryOnlyKeyIgnored, $json);
     }
 
     // ---------------------------------------------------------------------

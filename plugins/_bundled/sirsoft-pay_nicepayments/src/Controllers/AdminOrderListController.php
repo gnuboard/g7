@@ -12,9 +12,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
 
 class AdminOrderListController extends AdminBaseController
 {
+    use GuardsOrderScope;
+
     /**
      * 관리자 주문 목록 보조 컨트롤러를 생성합니다.
      */
@@ -50,6 +53,9 @@ class AdminOrderListController extends AdminBaseController
                 $map[$row->order_number] = true;
             }
         }
+
+        // 범위가 좁혀진 관리자에게는 범위 안 주문번호만 싣는다
+        $map = array_intersect_key($map, array_flip($this->orderNumbersWithinScope(array_map('strval', array_keys($map)), 'sirsoft-ecommerce.orders.read')));
 
         return ResponseHelper::success('common.success', $map);
     }

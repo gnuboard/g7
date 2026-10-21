@@ -14,7 +14,7 @@ description: |
     - LanguagePackServiceProvider::registerExtensionSeedFilters 가 seed/manifest.json 존재
       시 {scope}.{id}.manifest.translations 필터를 자동 등록 (module/plugin/template 3 scope)
     - 각 Manager 가 DB 저장 직전 applyFilters("{scope}.{id}.manifest.translations") 적용
- - self-heal 미구현: 기존 환경은 해당 확장 재설치/재동기화 시에만 반영
+    - self-heal 미구현: 기존 환경은 해당 확장 재설치/재동기화 시에만 반영
 
 axes:
   scope: [module, plugin, template]
@@ -45,6 +45,11 @@ effects:
   - plugin_notification_definitions_fires_lang_pack_filter
   - plugin_identity_messages_fires_lang_pack_filter
   - manifest_translations_filter_auto_registered_and_injects_ja
+  # 2026-10-18 시험 격리 때 LanguagePackSeedInjectorTest 를 고치며 사후 등재 — 코어·엔티티·알림 seed 주입 표지
+  - core_permissions_seed_injects_locale_keys
+  - core_notification_seed_injects_definition_and_templates
+  - module_entity_seed_merged_by_key
+  - module_notification_seed_merged_for_target
 
 test_files:
   - tests/Unit/Services/LanguagePack/LanguagePackSeedInjectorTest.php

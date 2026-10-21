@@ -15,10 +15,12 @@ description: |
     - 탈퇴 뒤 도착하는 적립·환불 반환·현금 대체 지급(Q18)은 원래 거래를 기록하고 즉시 「탈퇴로 소멸」 한다.
     - 유형 라벨 「유효기간 소멸」 → 「소멸」(Q19 — 탈퇴 소멸도 같은 유형).
     - 탈퇴 확인 창은 환불로 받은 마일리지 잔여가 있으면 「그 금액도 소멸된다」 를 알린다(Q20).
+    - 업그레이드(1.3.1): 1.3.0 의 관리자 수동 지급이 탈퇴 회원을 거르지 않아 남은 잔액을 탈퇴 때와 같은 계약(forfeitForWithdrawal)으로
+      소멸 기록한다. 정상 회원·유효기간이 이미 지난 적립건(소멸 배치 몫)은 건드리지 않고, 다시 돌려도 소멸 거래가 한 번만 생긴다.
 
 axes:
   member_state: [active, withdrawn, deleted]
-  event: [withdraw, delete, credit_after_withdraw]
+  event: [withdraw, delete, credit_after_withdraw, upgrade_backfill]
   refund_credit: [present, absent]
 
 effects:
@@ -30,6 +32,7 @@ effects:
   - admin_ledger_shows_deleted_member_for_detached_rows
   - member_payload_carries_refund_credit_available
   - withdraw_modal_warns_refund_credit_forfeiture
+  - upgrade_forfeits_balance_left_on_withdrawn_member   # 1.3.1 업그레이드 — 탈퇴 뒤 남은 잔액 소멸 기록(멱등)
   # 회원 응답의 마일리지 잔액 주입 (PHPUnit Unit — UserMileageInfoListenerTest)
   - injects_mileage_summary_into_user_data
   - injects_zero_filled_summary_for_user_without_activity
@@ -42,6 +45,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/UserMileageRefundCreditNoticeTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/UserMileageInfoListenerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/UserMileageServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/ForfeitWithdrawnMemberMileageTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminMileageTransactionDeletedMember.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/extensions/mypageWithdrawRefundCreditNotice.test.ts
   - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-withdraw-warning-anchor.test.ts

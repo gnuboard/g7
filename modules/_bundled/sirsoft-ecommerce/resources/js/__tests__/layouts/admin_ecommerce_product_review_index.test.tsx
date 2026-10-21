@@ -256,6 +256,9 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
             translations,
             locale: 'ko',
             componentRegistry: registry,
+            // 빈 문구는 표현식 안 `$t('…')` 로 번역한다 — 그 함수는 렌더 컨텍스트의 템플릿·로케일로 사전을 고르므로
+            // 실제 앱이 싣는 두 값을 하네스에도 싣는다(하네스는 번역 사전만 넣고 이 값은 넣지 않는다)
+            initialData: { $templateId: 'test-template', $locale: 'ko' },
         });
     });
 
@@ -266,12 +269,24 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
     // ─── 레이아웃 구조 검증 ───
 
     describe('레이아웃 구조 검증', () => {
+        /**
+         * 레이아웃 이름과 버전이 실려 있다.
+         *
+         * @scenario area=permission
+         * @effects review_admin_list_layout_identity_declared
+         */
         it('레이아웃 정보가 올바르게 로드된다', () => {
             const info = testUtils.getLayoutInfo();
             expect(info.name).toBe('admin_ecommerce_product_review_index');
             expect(info.version).toBe('1.0.0');
         });
 
+        /**
+         * 후기 목록 데이터소스가 관리자 후기 주소를 부르고 자동으로 받는다.
+         *
+         * @scenario area=datasource
+         * @effects review_admin_list_reviews_source_targets_admin_endpoint_and_auto_fetches
+         */
         it('reviews 데이터소스가 정의되어 있다', () => {
             const dataSources = testUtils.getDataSources();
             const reviewsDs = dataSources.find((ds) => ds.id === 'reviews');
@@ -280,10 +295,22 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
             expect(reviewsDs?.auto_fetch).toBe(true);
         });
 
+        /**
+         * 화면 권한 목록에 후기 읽기 권한이 있다.
+         *
+         * @scenario area=permission
+         * @effects review_admin_list_permissions_include_reviews_read
+         */
         it('reviews.read 권한이 설정되어 있다', () => {
             expect((layoutJson as any).permissions).toContain('sirsoft-ecommerce.reviews.read');
         });
 
+        /**
+         * 선택·펼침 상태가 초기 상태에 배열로 선언되어 있다.
+         *
+         * @scenario area=state
+         * @effects review_admin_list_initial_state_declares_selection_and_expansion_arrays
+         */
         it('state에 selectedReviews, expandedRows가 정의되어 있다', () => {
             expect(Array.isArray(initStateOf(layoutJson as any).selectedReviews)).toBe(true);
             expect(Array.isArray(initStateOf(layoutJson as any).expandedRows)).toBe(true);
@@ -293,22 +320,46 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
     // ─── 렌더링 검증 ───
 
     describe('컴포넌트 렌더링 검증', () => {
+        /**
+         * 후기 응답이 있으면 화면 마크업이 그려진다.
+         *
+         * @scenario area=grid
+         * @effects review_admin_list_renders_markup_with_reviews_response
+         */
         it('데이터가 있을 때 레이아웃이 정상 렌더링된다', async () => {
             testUtils.mockApi('reviews', { response: mockReviews });
             const { container } = await testUtils.render();
             expect(container.innerHTML.length).toBeGreaterThan(0);
         });
 
+        /**
+         * 화면 제목이 번역되어 그려진다.
+         *
+         * @scenario area=header
+         * @effects review_admin_list_header_renders_title
+         */
         it('데이터가 있을 때 제목이 렌더링된다', async () => {
             testUtils.mockApi('reviews', { response: mockReviews });
             await testUtils.render();
             expect(screen.getByText('상품리뷰 관리')).toBeInTheDocument();
         });
 
+        /**
+         * 시험 레지스트리에 표 컴포넌트가 있다(이후 렌더 단언의 전제).
+         *
+         * @scenario area=grid
+         * @effects review_admin_list_test_registry_provides_datagrid
+         */
         it('DataGrid 컴포넌트가 레지스트리에 등록되어 있다', () => {
             expect(registry.hasComponent('DataGrid')).toBe(true);
         });
 
+        /**
+         * 받은 결과가 0건이면 표에 번역된 빈 문구가 보인다.
+         *
+         * @scenario area=grid
+         * @effects review_admin_list_empty_result_shows_translated_empty_message
+         */
         it('빈 데이터 시 emptyMessage가 렌더링된다', async () => {
             testUtils.mockApi('reviews', {
                 response: { data: [], meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 } },
@@ -325,6 +376,12 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
     // ─── 상태 초기화 검증 ───
 
     describe('초기 상태 검증', () => {
+        /**
+         * 렌더 뒤 지역 상태가 만들어진다.
+         *
+         * @scenario area=state
+         * @effects review_admin_list_local_state_exists_after_render
+         */
         it('렌더링 후 로컬 상태가 초기화된다', async () => {
             testUtils.mockApi('reviews', { response: mockReviews });
             await testUtils.render();
@@ -332,6 +389,12 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
             expect(state._local).toBeDefined();
         });
 
+        /**
+         * 처음에는 선택한 후기가 없다.
+         *
+         * @scenario area=state
+         * @effects review_admin_list_selection_state_starts_empty
+         */
         it('selectedReviews 초기값이 빈 배열이다', async () => {
             testUtils.mockApi('reviews', { response: mockReviews });
             await testUtils.render();
@@ -343,12 +406,24 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
     // ─── 데이터 바인딩 검증 ───
 
     describe('데이터 바인딩 검증', () => {
+        /**
+         * 렌더 뒤 슬롯·바인딩 검증 경고가 없다.
+         *
+         * @scenario area=grid
+         * @effects review_admin_list_render_has_no_slot_or_binding_warnings
+         */
         it('레이아웃 검증 오류가 없어야 한다', async () => {
             testUtils.mockApi('reviews', { response: mockReviews });
             await testUtils.render();
             expect(() => testUtils.assertNoValidationErrors()).not.toThrow();
         });
 
+        /**
+         * 표의 data 가 응답의 reviews.data 경로를 읽는다.
+         *
+         * @scenario area=datasource
+         * @effects review_admin_list_grid_data_reads_reviews_data_path
+         */
         it('reviews 데이터소스가 올바른 배열 경로를 사용한다', () => {
             // DataGrid data prop이 reviews.data?.data를 참조해야 함 (reviews.data는 객체)
             const datagrid = (layoutJson as any).slots?.content?.[0]?.children
@@ -365,6 +440,12 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
     // ─── 일괄처리 구조 검증 ───
 
     describe('일괄처리 버튼 동작 검증', () => {
+        /**
+         * 받은 직후 선택한 후기가 0개다(일괄 적용 단추 비활성의 전제 — 단추 상태 자체는 이 시험이 보지 않는다).
+         *
+         * @scenario area=state
+         * @effects review_admin_list_selection_state_starts_empty
+         */
         it('선택 없이 적용 버튼이 비활성화된다', async () => {
             testUtils.mockApi('reviews', { response: mockReviews });
             await testUtils.render();
@@ -374,6 +455,12 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
             expect(selectedReviews.length).toBe(0);
         });
 
+        /**
+         * 지역 상태의 선택 목록을 바꾸면 그 값이 남는다.
+         *
+         * @scenario area=bulk
+         * @effects review_admin_list_selected_reviews_state_is_writable
+         */
         it('setState로 selectedReviews 상태를 변경할 수 있다', async () => {
             testUtils.mockApi('reviews', { response: mockReviews });
             await testUtils.render();

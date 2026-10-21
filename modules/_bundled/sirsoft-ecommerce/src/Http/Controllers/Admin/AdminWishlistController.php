@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminWishlistBulkDeleteRequest
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminWishlistListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\AdminWishlistCollection;
 use Modules\Sirsoft\Ecommerce\Services\ProductWishlistService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자 찜 관리 컨트롤러
@@ -60,7 +61,13 @@ class AdminWishlistController extends AdminBaseController
      */
     public function destroy(int $id): JsonResponse
     {
-        if (! $this->wishlistService->deleteByAdmin($id)) {
+        try {
+            $deleted = $this->wishlistService->deleteByAdmin($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
+
+        if (! $deleted) {
             return ResponseHelper::notFound('common.not_found');
         }
 
@@ -76,7 +83,11 @@ class AdminWishlistController extends AdminBaseController
     public function bulkDestroy(AdminWishlistBulkDeleteRequest $request): JsonResponse
     {
         $ids = array_map('intval', $request->validated()['ids']);
-        $count = $this->wishlistService->bulkDeleteByAdmin($ids);
+        try {
+            $count = $this->wishlistService->bulkDeleteByAdmin($ids);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',

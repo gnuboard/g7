@@ -23,7 +23,9 @@ use Tests\TestCase;
 class LayoutPartialBaseDirectoryTest extends TestCase
 {
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 확장 유형·활성/_bundled·깊이별 기준 경로와 기대 layouts 루트를 제공합니다.
+     *
+     * @return array<string, array{0: string, 1: string}> 데이터셋 이름 → [기준 경로, 기대 루트]
      */
     public static function layoutRootProvider(): array
     {
@@ -68,9 +70,15 @@ class LayoutPartialBaseDirectoryTest extends TestCase
     }
 
     /**
+     * 임의 깊이의 기준 경로에서 layouts 루트를 찾는다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects layout_root_detected_at_any_directory_depth
+     *
+     * @param  string  $basePath  기준 경로 (프로젝트 루트 상대)
+     * @param  string  $expected  기대 layouts 루트 (프로젝트 루트 상대)
+     * @return void 반환값 없음
      */
     #[DataProvider('layoutRootProvider')]
     public function test_layouts_root_is_detected_at_any_depth(string $basePath, string $expected): void
@@ -79,6 +87,12 @@ class LayoutPartialBaseDirectoryTest extends TestCase
         {
             use ValidatesLayoutFiles;
 
+            /**
+             * 기준 경로의 layouts 루트를 돌려줍니다.
+             *
+             * @param  string  $path  기준 경로
+             * @return string layouts 루트
+             */
             public function dir(string $path): string
             {
                 return $this->getLayoutsBaseDirectory($path);
@@ -97,6 +111,8 @@ class LayoutPartialBaseDirectoryTest extends TestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects layout_root_falls_back_to_input_when_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_input_when_no_layouts_segment(): void
     {
@@ -104,6 +120,12 @@ class LayoutPartialBaseDirectoryTest extends TestCase
         {
             use ValidatesLayoutFiles;
 
+            /**
+             * 기준 경로의 layouts 루트를 돌려줍니다.
+             *
+             * @param  string  $path  기준 경로
+             * @return string layouts 루트
+             */
             public function dir(string $path): string
             {
                 return $this->getLayoutsBaseDirectory($path);
@@ -113,6 +135,55 @@ class LayoutPartialBaseDirectoryTest extends TestCase
         $path = base_path('templates/_bundled/sirsoft-admin_basic/src/components');
 
         $this->assertSame($this->normalize($path), $this->normalize($resolver->dir($path)));
+    }
+
+    /**
+     * 사이트가 이름이 `layouts` 인 폴더 아래 설치돼도 루트는 프로젝트 안의 첫 `layouts` 다 (#144).
+     *
+     * 종전에는 경로에서 처음 나오는 `layouts` 를 루트로 잡아 `/srv/layouts/g7/templates/x/layouts/…` 의 루트가
+     * `/srv/layouts` 가 됐다 — 보안 경계가 프로젝트 전체로 넓어지고 `partials/…` 폴백·조각 출처 키가 어긋났다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects layouts_root_counts_only_segments_inside_project
+     *
+     * @return void 반환값 없음
+     */
+    public function test_layouts_segment_above_project_root_is_ignored(): void
+    {
+        $resolver = new class
+        {
+            use ValidatesLayoutFiles;
+
+            /**
+             * 기준 경로의 layouts 루트를 돌려줍니다.
+             *
+             * @param  string  $path  기준 경로
+             * @return string layouts 루트
+             */
+            public function dir(string $path): string
+            {
+                return $this->getLayoutsBaseDirectory($path);
+            }
+        };
+
+        $original = $this->app->basePath();
+        $this->app->setBasePath('/srv/layouts/g7');
+
+        try {
+            $this->assertSame(
+                '/srv/layouts/g7/templates/acme/layouts',
+                $resolver->dir('/srv/layouts/g7/templates/acme/layouts/partials/auth'),
+            );
+            $this->assertSame(
+                '/srv/layouts/g7/modules/_bundled/acme-board/resources/layouts',
+                $resolver->dir('/srv/layouts/g7/modules/_bundled/acme-board/resources/layouts/admin/partials'),
+            );
+            // 프로젝트 밖 경로는 종전 규칙(경로 첫 `layouts`)을 유지한다.
+            $this->assertSame('/opt/other/layouts', $resolver->dir('/opt/other/layouts/x/y'));
+        } finally {
+            $this->app->setBasePath($original);
+        }
     }
 
     /**

@@ -173,4 +173,14 @@ return [
             'recipient_email' => '受信者メールアドレス',
         ],
     ],
+    // `notification:cleanup` コマンド出力
+    'console' => [
+        'cleanup' => [
+            'start' => '通知のクリーンアップを開始...',
+            'retention' => '既読の保管: :read_days 日、未読の保管: :unread_days 日',
+            'deleted_read' => '既読通知の削除: :count 件',
+            'deleted_unread' => '未読通知の削除: :count 件',
+            'done' => '通知のクリーンアップ完了',
+        ],
+    ],
 ];

@@ -1,0 +1,25 @@
+feature: 전역 data-key 자동바인딩 폼은 칸마다 쓰기 시점 전역에 그 칸 경로만 쓴다 (engine-v1.81.1, 7.1.1 — `_global.` 접두사 지원부터의 결함)
+
+description: |
+  `data-key="_global.*"` 폼의 자동바인딩 쓰기는 「마지막 렌더 때의 `_global` 스냅샷」 에 이번 칸만 얹은 전역 전체 사본을 넘겼다.
+  전역 다시 그리기는 미뤄지므로 칸 사이를 쉼 없이 옮기면 앞 칸 값이 지워졌고(주문서 배송지 창 4칸 중 1칸), 사본의 `_local` 이
+  그사이 setLocal 로 쓴 저장소 B 를 되돌렸으며, 사본을 지역 상태 캐시(pending)에 실어 그 칸의 지역 setState 가 전역 키를 `_local`
+  에 보충했다. 엔진이 쓰기 시점 전역(prev)을 받는 함수형 갱신으로 그 칸 경로만 쓰고 pending 을 건드리지 않는다.
+  축 store 는 폼 저장소, flow 는 화면 흐름, typing 은 입력 모양이다(실 TemplateApp + renderTemplate modals 섹션).
+
+axes:
+  store: [global]
+  flow: [edit_close_then_add, edit, plugin_setlocal_between_keys, local_action_on_global_field, track_changes]
+  typing: [no_gap, single]
+
+exclusions:
+  - { flow: [edit_close_then_add, edit, plugin_setlocal_between_keys], typing: single, reason: "칸 사이 쉼 없는 연속 입력이 결함 조건 — 한 번 입력은 시험이 덮는다" }
+  - { flow: [local_action_on_global_field, track_changes], typing: no_gap, reason: "pending 오염·hasChanges 는 한 번 입력으로 결정된다" }
+
+effects:
+  - rapid_field_switch_keeps_all_fields
+  - global_form_write_keeps_store_b
+  - global_form_local_action_no_pending_leak
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.globalAutoBindingWriteBase.test.tsx

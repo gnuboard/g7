@@ -1165,6 +1165,7 @@
               "use_reply": true,
               "max_reply_depth": 5,
               "reply_delete_policy": "cascade",
+              "secret_reply_visibility": "thread_path",
               "use_report": false,
               "comment_order": "ASC",
               "max_comment_depth": 10,
@@ -1235,7 +1236,8 @@
           "abilities": {
             "can_create": true,
             "can_update": true,
-            "can_delete": true
+            "can_delete": true,
+            "can_reorder": true
           },
           "board_types": [
             {
@@ -1274,6 +1276,7 @@
               "use_reply": true,
               "max_reply_depth": 5,
               "reply_delete_policy": "cascade",
+              "secret_reply_visibility": "thread_path",
               "use_report": false,
               "comment_order": "ASC",
               "max_comment_depth": 10,
@@ -1806,6 +1809,7 @@
               "use_reply": true,
               "max_reply_depth": 5,
               "reply_delete_policy": "cascade",
+              "secret_reply_visibility": "thread_path",
               "use_report": false,
               "comment_order": "ASC",
               "max_comment_depth": 10,

@@ -225,7 +225,8 @@
                                                                             {
                                                                                 "handler": "navigate",
                                                                                 "params": {
-                                                                                    "path": "{{_local.return_url ?? '/admin'}}",
+                                                                                    "path": "{{_local.return_url}}",
+                                                                                    "fallbackPath": "/admin",
                                                                                     "mergeQuery": true,
                                                                                     "query": {
                                                                                         "verification_token": "{{response.data.verification_token ?? ''}}",

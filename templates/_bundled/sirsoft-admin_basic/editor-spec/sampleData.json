@@ -121,6 +121,79 @@
         ]
       }
     },
+    "queueStatus": {
+      "data": {
+        "driver": "database",
+        "measured_at": "2026-10-13T01:41:55+09:00",
+        "heartbeat_stale_after_minutes": 5,
+        "rows": [
+          {
+            "connection": "database",
+            "queue": "default",
+            "driver": "database",
+            "pending": 3,
+            "pending_measurable": true,
+            "last_heartbeat_at": "2026-10-13T01:41:43+09:00",
+            "warnings": [],
+            "clamped_timeout_count": 0,
+            "long_queue_hint": false
+          },
+          {
+            "connection": "database",
+            "queue": "notifications",
+            "driver": "database",
+            "pending": 0,
+            "pending_measurable": true,
+            "last_heartbeat_at": null,
+            "warnings": [
+              "no_heartbeat"
+            ],
+            "clamped_timeout_count": 1,
+            "long_queue_hint": false
+          },
+          {
+            "connection": "database-long",
+            "queue": "long",
+            "driver": "database",
+            "pending": 1,
+            "pending_measurable": true,
+            "last_heartbeat_at": null,
+            "warnings": [
+              "pending_without_worker"
+            ],
+            "clamped_timeout_count": 0,
+            "long_queue_hint": false
+          }
+        ],
+        "long_worker": {
+          "connection": "database-long",
+          "queue": "long",
+          "status": "registered"
+        },
+        "commands": [
+          {
+            "connection": "database",
+            "queues": "default,notifications",
+            "command": "php artisan queue:work database --queue=default,notifications --sleep=3 --tries=3 --max-time=3600"
+          },
+          {
+            "connection": "database-long",
+            "queues": "long",
+            "command": "php artisan queue:work database-long --queue=long --sleep=3 --tries=3 --max-time=3600 --timeout=3600"
+          }
+        ],
+        "placement": {
+          "timeout_clamped": {
+            "count": 1,
+            "last": null
+          },
+          "fallback": {
+            "count": 0,
+            "last": null
+          }
+        }
+      }
+    },
     "locales": {
       "data": [
         {
@@ -2052,6 +2125,28 @@
           "templates": []
         },
         "current_core_version": "7.1.0"
+      }
+    },
+    "unplaced_bundled_notice": {
+      "data": {
+        "items": {
+          "modules": [],
+          "plugins": [
+            {
+              "identifier": "sirsoft-totp",
+              "name": "2단계 인증",
+              "version": "1.0.0"
+            }
+          ],
+          "templates": [],
+          "language_packs": []
+        },
+        "hash": "sample",
+        "core_version": "7.1.2",
+        "command": "php artisan core:bundled-sources place",
+        "commands": {
+          "plugins": "php artisan core:bundled-sources place sirsoft-totp"
+        }
       }
     },
     "clone_source": {
@@ -4819,7 +4914,20 @@
           "memcached_port": 11211,
           "session_driver": "file",
           "session_lifetime": 120,
-          "queue_driver": "sync",
+          "queue_driver": "database",
+          "queue_connections": [
+            "database",
+            "database-long"
+          ],
+          "queue_names": {
+            "database": [
+              "default",
+              "notifications"
+            ],
+            "database-long": [
+              "long"
+            ]
+          },
           "log_driver": "daily",
           "log_level": "error",
           "log_days": 14,
@@ -5011,6 +5119,26 @@
                 "en": "SES (Amazon)",
                 "ja": "SES (Amazon)"
               }
+            }
+          ]
+        },
+        "_meta": {
+          "queue_connection_options": [
+            {
+              "name": "database",
+              "driver": "database"
+            },
+            {
+              "name": "database-long",
+              "driver": "database"
+            },
+            {
+              "name": "redis",
+              "driver": "redis"
+            },
+            {
+              "name": "redis-long",
+              "driver": "redis"
             }
           ]
         },

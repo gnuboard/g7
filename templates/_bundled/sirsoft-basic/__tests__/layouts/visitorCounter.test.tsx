@@ -67,7 +67,8 @@ describe('홈 방문자 카운터', () => {
     expect(shown('1', data), '참 비슷한 값이 아니라 정확히 true 만').toBe(false);
     expect(shown(true, undefined), '응답 전 — 0 을 그리지 않는다').toBe(false);
     expect(shown(true, { data: null }), '빈 응답').toBe(false);
-    expect(shown(true, { ...data, error: { status: 404 } }), '실패(404 를 삼킨 뒤)').toBe(false);
+    // 받기 실패 — 엔진은 값을 null 로 두고 `_dataSourceErrors.visitor_summary` 에 적는다(값에 error 를 싣지 않는다)
+    expect(shown(true, null), '실패(404 를 삼킨 뒤)').toBe(false);
   });
 
   // @scenario screen=home_widget, state=normal, viewport=390, locale=en

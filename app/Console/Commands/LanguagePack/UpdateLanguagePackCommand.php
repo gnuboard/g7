@@ -52,14 +52,14 @@ class UpdateLanguagePackCommand extends Command
         $source = (string) $this->option('source');
 
         if (! in_array($source, ['auto', 'bundled', 'github'], true)) {
-            $this->error("알 수 없는 --source 값: {$source} (auto|bundled|github 중 선택)");
+            $this->error(__('language_packs.commands.update.invalid_source', ['source' => $source]));
 
             return self::FAILURE;
         }
 
         $pack = $this->service->findByIdentifier($identifier);
         if (! $pack) {
-            $this->error("언어팩을 찾을 수 없습니다: {$identifier}");
+            $this->error(__('language_packs.commands.update.not_found', ['identifier' => $identifier]));
 
             return self::FAILURE;
         }
@@ -70,16 +70,15 @@ class UpdateLanguagePackCommand extends Command
             $effectiveForce = $force || $source === 'bundled';
             $updated = $this->service->performUpdate($pack, $effectiveForce);
 
-            $this->info(sprintf(
-                '언어팩 업데이트 완료: %s (%s → %s)',
-                $updated->identifier,
-                $fromVersion,
-                $updated->version,
-            ));
+            $this->info(__('language_packs.commands.update.done', [
+                'identifier' => $updated->identifier,
+                'from' => $fromVersion,
+                'to' => $updated->version,
+            ]));
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('언어팩 업데이트 실패: '.$e->getMessage());
+            $this->error(__('language_packs.commands.update.failed', ['error' => $e->getMessage()]));
 
             return self::FAILURE;
         }

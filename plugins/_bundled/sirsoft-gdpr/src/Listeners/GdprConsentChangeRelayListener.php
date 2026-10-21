@@ -22,6 +22,11 @@ use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepository
  * 알리는 것은 직전 결정과 **달라진** 항목뿐입니다. 동의 서비스는 게스트(그리고 저장된 행이 없는 회원)에게 이전
  * 값과 상관없이 저장마다 부여·철회 훅을 내므로, 그대로 옮기면 한 번도 동의하지 않은 방문자의 첫 「모두 거부」가
  * 철회로 세어집니다. 직전 결정은 훅 직전에 남는 동의 이력의 바로 앞 행에서 읽고, 없으면 「동의 안 함」으로 봅니다.
+ *
+ * 알리는 시점: 웹 요청은 요청 종료 시, 큐 워커는 작업 종료 시 알립니다. 워커는 요청이 끝나지 않으므로 요청 종료
+ * 예약만 두면 워커를 끌 때까지 알림이 밀리고, 한 번 예약한 뒤에는 다시 예약하지 않아 이후 작업의 변경을 놓칩니다
+ * (#724). 그래서 서비스 프로바이더가 큐 작업 종료(`JobProcessed`)에 {@see drainAfterQueueJob()} 를, 작업 예외
+ * (`JobExceptionOccurred`)에 {@see discardPending()} 를 부릅니다.
  */
 class GdprConsentChangeRelayListener implements HookListenerInterface
 {
@@ -100,6 +105,45 @@ class GdprConsentChangeRelayListener implements HookListenerInterface
         foreach ($pending as $entry) {
             app(ConsentManager::class)->reportChange(GdprConsentProvider::PROVIDER_ID, $entry['subject'], $entry['changes']);
         }
+    }
+
+    /**
+     * 큐 작업 하나가 끝났을 때 그 작업이 모은 변경을 알리고 비웁니다.
+     *
+     * 요청 종료 예약(`scheduled`)은 건드리지 않는다 — 워커 프로세스의 종료 예약은 한 번으로 유지하고, 그 사이의
+     * 변경은 작업이 끝날 때마다 이 메서드가 비워 둔다. 버퍼가 아직 없으면 아무것도 하지 않는다.
+     *
+     * @return void 반환값 없음
+     */
+    public function drainAfterQueueJob(): void
+    {
+        if (! app()->bound(self::BUFFER_KEY)) {
+            return;
+        }
+
+        $buffer = $this->buffer();
+        $pending = $buffer['pending'];
+        $buffer['pending'] = [];
+
+        foreach ($pending as $entry) {
+            app(ConsentManager::class)->reportChange(GdprConsentProvider::PROVIDER_ID, $entry['subject'], $entry['changes']);
+        }
+    }
+
+    /**
+     * 모은 변경을 알리지 않고 버립니다 (큐 작업이 예외로 끝났을 때).
+     *
+     * 실패한 작업의 변경은 롤백됐거나 재시도에서 다시 모인다 — 남겨 두면 다음 작업이 끝날 때 함께 알려진다.
+     *
+     * @return void 반환값 없음
+     */
+    public function discardPending(): void
+    {
+        if (! app()->bound(self::BUFFER_KEY)) {
+            return;
+        }
+
+        $this->buffer()['pending'] = [];
     }
 
     /**

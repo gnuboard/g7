@@ -283,7 +283,7 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
 
     public function run(): void
     {
-        $this->command->info('클레임 사유 초기 데이터 동기화를 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.claim_reason.sync_start'));
 
         $helper = app(GenericEntitySyncHelper::class);
         $created = 0;
@@ -306,7 +306,7 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
                 $synced++;
             } else {
                 $created++;
-                $this->command->line("  - 클레임 사유 생성: {$reason['name']['ko']} ({$reason['code']})");
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.claim_reason.created', ['name' => $reason['name']['ko'], 'code' => $reason['code']]));
             }
         }
 
@@ -348,10 +348,10 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
         }
 
         if ($preserved > 0) {
-            $this->command->line("  - 사용 중이라 보존한 사유: {$preserved}건");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.claim_reason.preserved', ['count' => $preserved]));
         }
 
         $total = ClaimReason::count();
-        $this->command->info("클레임 사유 동기화 완료: {$created}건 생성, {$synced}건 동기화, stale {$totalDeleted}건 삭제 (전체 {$total}건)");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.claim_reason.sync_done', ['created' => $created, 'synced' => $synced, 'deleted' => $totalDeleted, 'total' => $total]));
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -294,6 +295,9 @@ class ReactionRepository implements ReactionRepositoryInterface
             excludeDeletedTargets: false,
         );
 
+        // 반응 조회 권한의 스코프(본인만·소유역할)를 목록에 건다 — 라우트에 모델이 없어 미들웨어가 걸러 주지 않는다
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reactions.view');
+
         $direction = strtolower((string) ($filters['sort_order'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $paginator = $this->paginateWithDeferredJoin(
@@ -336,6 +340,20 @@ class ReactionRepository implements ReactionRepositoryInterface
         $reaction->delete();
 
         return $reaction;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findManyByIds(array $ids): EloquentCollection
+    {
+        if ($ids === []) {
+            return new EloquentCollection;
+        }
+
+        return Reaction::query()
+            ->whereIn('id', $ids)
+            ->get(['id', 'user_id', 'target_type', 'target_id', 'reaction_type_id', 'board_id']);
     }
 
     /**

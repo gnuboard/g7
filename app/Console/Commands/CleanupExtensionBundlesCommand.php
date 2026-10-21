@@ -36,7 +36,7 @@ class CleanupExtensionBundlesCommand extends Command
         $currentVersion = $service->getCurrentVersion();
         $deleted = $service->cleanupStaleBundles($currentVersion);
 
-        $this->info("오래된 확장 번들 {$deleted}건이 삭제되었습니다. (현재 version: {$currentVersion})");
+        $this->info(__('extensions.commands.ext_bundles_cleanup.done', ['count' => $deleted, 'version' => $currentVersion]));
 
         return self::SUCCESS;
     }

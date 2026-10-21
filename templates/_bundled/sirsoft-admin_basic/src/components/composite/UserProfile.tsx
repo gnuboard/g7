@@ -7,13 +7,23 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
+import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
 };
+
+/**
+ * 단추 모양 링크의 클래스 — 기본 Button 이 붙이는 바탕 클래스(`button`)를 같은 방식으로 합쳐 모양을 그대로 둔다.
+ */
+const buttonLikeClass = (className: string): string =>
+  (window as any).G7Core?.style?.mergeClasses?.('button', className) ?? `button ${className}`;
+
+/** 프로필 설정 항목 클래스 — 단추·링크가 같은 모양 */
+const PROFILE_ITEM_CLASS = 'w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 transition-colors';
 
 /** 로그아웃 후 이동 기본 경로 — `redirectPath` 가 동일 출처가 아니면 이 경로로 간다 */
 const DEFAULT_REDIRECT_PATH = '/admin/login';
@@ -108,7 +118,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const profileText = profileTextProp ?? tOr('admin.profile_settings', 'Profile Settings');
   const logoutText = logoutTextProp ?? tOr('admin.logout', 'Logout');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -131,6 +141,36 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  /**
+   * 메뉴의 화면 이동 주소 — 사용자 uuid 가 있을 때만 링크로 그린다(#757). 없으면 종전처럼 단추·클릭 영역.
+   */
+  const userUuid = typeof user?.uuid === 'string' && user.uuid !== '' ? user.uuid : null;
+  const userDetailLink = userUuid ? resolveLinkHref(`/admin/users/${userUuid}`) : null;
+  const profileEditLink = userUuid ? resolveLinkHref(`/admin/users/${userUuid}/edit`) : null;
+
+  /** 사용자 정보 영역 클릭 — 종전 동작(메뉴 닫고 사용자 상세로 SPA 이동) */
+  const openUserDetail = () => {
+    setShowProfileMenu(false);
+    (window as any).G7Core?.dispatch({
+      handler: 'navigate',
+      params: { path: `/admin/users/${user.uuid}` },
+    });
+  };
+
+  /** 프로필 설정 클릭 — 종전 동작(메뉴 닫고 onProfileClick, 없으면 사용자 수정 화면으로 SPA 이동) */
+  const openProfileSettings = () => {
+    setShowProfileMenu(false);
+    if (onProfileClick) {
+      onProfileClick();
+    } else {
+      // 기본 동작: 사용자 수정 페이지로 이동 (SPA 네비게이션)
+      (window as any).G7Core?.dispatch({
+        handler: 'navigate',
+        params: { path: `/admin/users/${user.uuid}/edit` },
+      });
+    }
+  };
 
   /**
    * 로그인 토큰 제거 — 코어 ApiClient 가 토큰 저장을 맡으므로 공개 API 로 지운다
@@ -214,13 +254,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               />
             ) : (
               <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </Div>
             )}
-            <Div className="flex-1 text-left">
-              <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
+            <Div className="flex-1 min-w-0 text-left">
+              <Div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{user.name}</Div>
               {user.role && (
-                <Div className="text-gray-500 dark:text-gray-400 text-xs">{user.role}</Div>
+                <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>
               )}
             </Div>
             {showChevron && (
@@ -233,44 +273,53 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       {/* 프로필 드롭다운 */}
       {showProfileMenu && (
         <Div className={`absolute ${dropdownDirection === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'} ${dropdownOnly ? 'right-0 w-72' : 'left-0 w-full'} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50`}>
-          <Div
-            className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            onClick={() => {
-              setShowProfileMenu(false);
-              (window as any).G7Core?.dispatch({
-                handler: 'navigate',
-                params: { path: `/admin/users/${user.uuid}` },
-              });
-            }}
-          >
-            <Div className="font-semibold text-gray-900 dark:text-white">{user.name}</Div>
-            <Div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</Div>
-          </Div>
+          {/* 사용자 정보 — 주소가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭, #757). 보통 클릭은 종전처럼 SPA 이동 */}
+          {userDetailLink ? (
+            <a
+              href={userDetailLink.href}
+              className="block px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              onClick={(event) => handleLinkClick(event, openUserDetail)}
+            >
+              {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
+              <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
+              <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
+            </a>
+          ) : (
+            <Div
+              className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              onClick={openUserDetail}
+            >
+              {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
+              <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
+              <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
+            </Div>
+          )}
           {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 유저 템플릿 패리티(H-T7).
               languageText/availableLocales props 는 하위호환을 위해 유지하되 더 이상 사용하지 않는다. */}
           <Div className="py-2">
-            <Button
-              onClick={() => {
-                setShowProfileMenu(false);
-                if (onProfileClick) {
-                  onProfileClick();
-                } else {
-                  // 기본 동작: 사용자 수정 페이지로 이동 (SPA 네비게이션)
-                  (window as any).G7Core?.dispatch({
-                    handler: 'navigate',
-                    params: { path: `/admin/users/${user.uuid}/edit` },
-                  });
-                }
-              }}
-              className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 transition-colors"
-            >
-              <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <Span className="text-gray-900 dark:text-white">{profileText}</Span>
-            </Button>
+            {/* 프로필 설정 — 주소가 있으면 링크(#757). 보통 클릭은 종전처럼 onProfileClick 또는 SPA 이동 */}
+            {profileEditLink ? (
+              <a
+                href={profileEditLink.href}
+                onClick={(event) => handleLinkClick(event, openProfileSettings)}
+                className={buttonLikeClass(PROFILE_ITEM_CLASS)}
+              >
+                <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Span className="text-gray-900 dark:text-white">{profileText}</Span>
+              </a>
+            ) : (
+              <Button
+                onClick={openProfileSettings}
+                className={PROFILE_ITEM_CLASS}
+              >
+                <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Span className="text-gray-900 dark:text-white">{profileText}</Span>
+              </Button>
+            )}
             <Button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 text-red-600 dark:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 text-red-600 dark:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Icon name={IconName.ArrowRight} className="w-5 h-5" />
               <Span>{isLoggingOut ? tOr('common.logging_out', 'Logging out...') : logoutText}</Span>

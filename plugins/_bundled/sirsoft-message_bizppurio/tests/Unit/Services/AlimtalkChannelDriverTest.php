@@ -21,7 +21,6 @@ use Plugins\Sirsoft\MessageBizppurio\Repositories\BizppurioDispatchRepository;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkChannelDriver;
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkPayloadMapper;
-use Plugins\Sirsoft\MessageBizppurio\Services\DispatchLinkContext;
 use Plugins\Sirsoft\MessageBizppurio\Services\MessagePayloadBuilder;
 use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
 
@@ -37,7 +36,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     /**
      * 승인 스냅샷을 담은 템플릿 행을 만듭니다.
      *
-     * @param  array<string, mixed>|null  $approved  approved_content
+     * @param  array<string, mixed>|null  $approved  승인 스냅샷(approved_content), null 이면 기본 본문
+     * @param  BizppurioTemplateStatus  $status  템플릿 검수 상태
+     * @param  bool  $alimtalkEnabled  알림톡 사용 여부
+     * @param  bool  $isActive  행 활성 여부
+     * @param  bool  $fallback  대체 SMS 발송 여부
+     * @param  string|array<string, string>|null  $smsBody  로케일 맵 또는 ko 본문
+     * @return BizppurioTemplate 조립한 템플릿 행
      */
     private function templateRow(
         ?array $approved = null,
@@ -63,6 +68,9 @@ class AlimtalkChannelDriverTest extends PluginTestCase
 
     /**
      * findByType 반환값을 지정한 템플릿 리포지토리 mock 을 만듭니다.
+     *
+     * @param  BizppurioTemplate|null  $row  findByType 이 돌려줄 템플릿 행
+     * @return BizppurioTemplateRepositoryInterface 반환값
      */
     private function fakeTemplates(?BizppurioTemplate $row): BizppurioTemplateRepositoryInterface
     {
@@ -74,6 +82,11 @@ class AlimtalkChannelDriverTest extends PluginTestCase
 
     /**
      * 드라이버를 조립합니다.
+     *
+     * @param  BizppurioTemplate|null  $row  findByType 이 돌려줄 템플릿 행
+     * @param  MessagePayloadBuilder|null  $builder  payload 빌더, null 이면 스파이 빌더
+     * @param  bool  $isTestMode  검수 모드 설정값
+     * @return AlimtalkChannelDriver 조립한 드라이버
      */
     private function makeDriver(
         ?BizppurioTemplate $row,
@@ -94,7 +107,6 @@ class AlimtalkChannelDriverTest extends PluginTestCase
             $this->fakeTemplates($row),
             $builder ?? $this->spyBuilder(),
             new BizppurioDispatchRepository,
-            new DispatchLinkContext,
             new AlimtalkPayloadMapper,
             $pluginSettings,
         );
@@ -102,6 +114,8 @@ class AlimtalkChannelDriverTest extends PluginTestCase
 
     /**
      * buildAlimtalk 호출 인자를 기록하는 payload 빌더 스파이를 만듭니다.
+     *
+     * @return MessagePayloadBuilder 반환값
      */
     private function spyBuilder(): MessagePayloadBuilder
     {
@@ -110,8 +124,21 @@ class AlimtalkChannelDriverTest extends PluginTestCase
             /** @var array<int, array<string, mixed>> */
             public array $calls = [];
 
+            /**
+             * 부모 생성자 의존성 없이 스파이를 만듭니다.
+             */
             public function __construct() {}
 
+            /**
+             * buildAlimtalk 호출 인자를 기록하고 최소 payload 를 돌려줍니다.
+             *
+             * @param  string  $to  수신 번호
+             * @param  string  $templateCode  템플릿 코드
+             * @param  string  $message  치환된 본문
+             * @param  string  $refkey  발송 참조 키
+             * @param  array<string, mixed>  $extra  버튼 등 추가 필드
+             * @return array<string, mixed> 최소 알림톡 payload
+             */
             public function buildAlimtalk(
                 string $to,
                 string $templateCode,
@@ -131,15 +158,25 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         };
     }
 
+    /**
+     * notification 을(를) 검증합니다.
+     *
+     * @param  array<string, mixed>  $data  알림 data
+     * @return GenericNotification 반환값
+     */
     private function notification(array $data = ['name' => '김철수']): GenericNotification
     {
         return new GenericNotification('order_confirmed', 'sirsoft-ecommerce', $data, 'module', 'sirsoft-ecommerce');
     }
 
     /**
+     * 템플릿 행이 없으면 예외를 던지고 발송하지 않는다.
+     *
      * @scenario template_state=row_missing, fallback_sms=off, sms_only=off, recipient=member
      *
      * @effects alimtalk_skipped_when_row_missing, no_kapi_call_at_dispatch_time
+     *
+     * @return void 반환값 없음
      */
     public function test_템플릿_행이_없으면_예외를_던지고_발송하지_않는다(): void
     {
@@ -160,9 +197,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 미승인 상태면 예외를 던지고 발송하지 않는다.
+     *
      * @scenario template_state=unapproved, fallback_sms=off, sms_only=off, recipient=member
      *
      * @effects alimtalk_skipped_when_not_approved, no_kapi_call_at_dispatch_time
+     *
+     * @return void 반환값 없음
      */
     public function test_미승인_상태면_예외를_던지고_발송하지_않는다(): void
     {
@@ -183,9 +224,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 알림톡 사용이 꺼져 있으면 발송하지 않는다.
+     *
      * @scenario template_state=disabled, fallback_sms=off, sms_only=off, recipient=member
      *
      * @effects alimtalk_skipped_when_alimtalk_disabled, no_kapi_call_at_dispatch_time
+     *
+     * @return void 반환값 없음
      */
     public function test_알림톡_사용이_꺼져_있으면_발송하지_않는다(): void
     {
@@ -205,9 +250,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 비활성 행이면 발송하지 않는다.
+     *
      * @scenario template_state=disabled, fallback_sms=off, sms_only=off, recipient=member
      *
      * @effects alimtalk_skipped_when_row_inactive
+     *
+     * @return void 반환값 없음
      */
     public function test_비활성_행이면_발송하지_않는다(): void
     {
@@ -225,9 +274,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 승인 스냅샷이 없으면 발송하지 않는다.
+     *
      * @scenario template_state=unapproved, fallback_sms=off, sms_only=off, recipient=member
      *
      * @effects alimtalk_skipped_when_snapshot_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_승인_스냅샷이_없으면_발송하지_않는다(): void
     {
@@ -247,9 +300,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * sms 단독을 선택한 알림은 승인되어도 알림톡을 발송하지 않는다.
+     *
      * @scenario template_state=approved, fallback_sms=off, sms_only=on, recipient=member
      *
      * @effects alimtalk_skipped_when_sms_only_selected, no_kapi_call_at_dispatch_time
+     *
+     * @return void 반환값 없음
      */
     public function test_sms_단독을_선택한_알림은_승인되어도_알림톡을_발송하지_않는다(): void
     {
@@ -271,7 +328,11 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 스킵 예외 메시지는 알림 유형 코드값 대신 사람이 읽는 이름을 사용한다.
+     *
      * @effects skip_exception_uses_human_readable_type_label
+     *
+     * @return void 반환값 없음
      */
     public function test_스킵_예외_메시지는_알림_유형_코드값_대신_사람이_읽는_이름을_사용한다(): void
     {
@@ -292,7 +353,6 @@ class AlimtalkChannelDriverTest extends PluginTestCase
             $this->fakeTemplates(null),
             $this->spyBuilder(),
             new BizppurioDispatchRepository,
-            new DispatchLinkContext,
             new AlimtalkPayloadMapper,
             $pluginSettings,
         );
@@ -306,6 +366,15 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         }
     }
 
+    /**
+     * 승인 스냅샷을 치환한 본문이 비면 예외를 던지고 보내지 않는다.
+     *
+     * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=member
+     *
+     * @effects alimtalk_skipped_when_substituted_body_empty
+     *
+     * @return void 반환값 없음
+     */
     public function test_스냅샷_치환_결과_본문이_비어있으면_예외를_던지고_발송하지_않는다(): void
     {
         Bus::fake();
@@ -322,9 +391,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 회원은 mobile로 자체 채번 템플릿코드로 발송한다.
+     *
      * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=member
      *
      * @effects dispatch_uses_row_template_code, no_kapi_call_at_dispatch_time
+     *
+     * @return void 반환값 없음
      */
     public function test_회원은_mobile로_자체_채번_템플릿코드로_발송한다(): void
     {
@@ -344,9 +417,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 비회원은 data의 전화번호로 발송한다.
+     *
      * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=guest
      *
      * @effects guest_phone_resolved_from_data_recipient_phone
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원은_data의_전화번호로_발송한다(): void
     {
@@ -362,7 +439,11 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 스냅샷 본문의 변수를 알림 data로 치환해 발송한다.
+     *
      * @effects snapshot_content_substituted_with_notification_data
+     *
+     * @return void 반환값 없음
      */
     public function test_스냅샷_본문의_변수를_알림_data로_치환해_발송한다(): void
     {
@@ -383,7 +464,11 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 스냅샷 버튼을 발송 extra로 전달한다.
+     *
      * @effects snapshot_buttons_mapped_to_dispatch_button_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_스냅샷_버튼을_발송_extra로_전달한다(): void
     {
@@ -397,8 +482,21 @@ class AlimtalkChannelDriverTest extends PluginTestCase
             /** @var array<int, array<string, mixed>> */
             public array $extras = [];
 
+            /**
+             * 부모 생성자 의존성 없이 스파이를 만듭니다.
+             */
             public function __construct() {}
 
+            /**
+             * buildAlimtalk 을(를) 검증합니다.
+             *
+             * @param  string  $to  수신 번호
+             * @param  string  $templateCode  템플릿 코드
+             * @param  string  $message  치환된 본문
+             * @param  string  $refkey  발송 참조 키
+             * @param  array<string, mixed>  $extra  버튼 등 추가 필드
+             * @return array 반환값
+             */
             public function buildAlimtalk(string $to, string $templateCode, string $message, string $refkey, array $extra = []): array
             {
                 $this->extras[] = $extra;
@@ -423,9 +521,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 대체발송 on이면 행의 sms body가 resend로 병합된다.
+     *
      * @scenario template_state=approved, fallback_sms=on, sms_only=off, recipient=member
      *
      * @effects fallback_on_merges_resend_recontent_from_sms_body
+     *
+     * @return void 반환값 없음
      */
     public function test_대체발송_on이면_행의_sms_body가_resend로_병합된다(): void
     {
@@ -434,8 +536,21 @@ class AlimtalkChannelDriverTest extends PluginTestCase
 
         $builder = new class extends MessagePayloadBuilder
         {
+            /**
+             * 부모 생성자 의존성 없이 스텁을 만듭니다.
+             */
             public function __construct() {}
 
+            /**
+             * buildAlimtalk 을(를) 검증합니다.
+             *
+             * @param  string  $to  수신 번호
+             * @param  string  $templateCode  템플릿 코드
+             * @param  string  $message  치환된 본문
+             * @param  string  $refkey  발송 참조 키
+             * @param  array<string, mixed>  $extra  버튼 등 추가 필드
+             * @return array 반환값
+             */
             public function buildAlimtalk(string $to, string $templateCode, string $message, string $refkey, array $extra = []): array
             {
                 return ['type' => 'at', 'to' => $to, 'refkey' => $refkey, 'content' => ['at' => ['message' => $message]]];
@@ -457,9 +572,13 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 비회원도 대체발송 on이면 같은 전화번호로 resend가 병합된다.
+     *
      * @scenario template_state=approved, fallback_sms=on, sms_only=off, recipient=guest
      *
      * @effects fallback_on_merges_resend_recontent_from_sms_body, guest_phone_resolved_from_data_recipient_phone
+     *
+     * @return void 반환값 없음
      */
     public function test_비회원도_대체발송_on이면_같은_전화번호로_resend가_병합된다(): void
     {
@@ -489,6 +608,8 @@ class AlimtalkChannelDriverTest extends PluginTestCase
      * @scenario template_state=approved, fallback_sms=on, sms_only=off, recipient=guest
      *
      * @effects fallback_on_merges_resend_recontent_from_sms_body, sms_body_rendered_in_recipient_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_대체발송_본문도_수신자_로케일로_렌더된다(): void
     {
@@ -513,7 +634,11 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 대체발송 on이라도 sms body가 비어있으면 resend를 병합하지 않는다.
+     *
      * @effects fallback_on_with_empty_sms_body_skips_merge
+     *
+     * @return void 반환값 없음
      */
     public function test_대체발송_on이라도_sms_body가_비어있으면_resend를_병합하지_않는다(): void
     {
@@ -531,7 +656,11 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 대체발송 off이면 resend가 없다.
+     *
      * @effects fallback_off_has_no_resend
+     *
+     * @return void 반환값 없음
      */
     public function test_대체발송_off이면_resend가_없다(): void
     {
@@ -549,7 +678,11 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 회원 발송 시 pending 이력을 alimtalk 채널로 생성한다.
+     *
      * @effects pending_dispatch_row_created_with_channel_and_user
+     *
+     * @return void 반환값 없음
      */
     public function test_회원_발송_시_pending_이력을_alimtalk_채널로_생성한다(): void
     {
@@ -566,6 +699,15 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         $this->assertSame('order_confirmed', $dispatch->notification_type);
     }
 
+    /**
+     * 발송할 때 실제 전송 payload 가 이력에 저장된다.
+     *
+     * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=member
+     *
+     * @effects actual_payload_saved_on_dispatch_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_발송_시_실제_전송_payload가_이력에_저장된다(): void
     {
         Bus::fake();
@@ -579,6 +721,15 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         $this->assertSame('g7_abcd1234_1', $dispatch->request_payload['templatecode'] ?? null);
     }
 
+    /**
+     * 전화번호가 없으면 예외를 던지고 보내지 않는다.
+     *
+     * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=member
+     *
+     * @effects alimtalk_skipped_when_no_phone
+     *
+     * @return void 반환값 없음
+     */
     public function test_전화번호가_없으면_예외를_던지고_발송하지_않는다(): void
     {
         Bus::fake();
@@ -593,6 +744,15 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         }
     }
 
+    /**
+     * GenericNotification 이 아니면 무시한다.
+     *
+     * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=member
+     *
+     * @effects non_generic_notifications_are_ignored
+     *
+     * @return void 반환값 없음
+     */
     public function test_generic_notification이_아니면_무시한다(): void
     {
         Bus::fake();
@@ -603,6 +763,15 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         Bus::assertNotDispatched(SendMessageJob::class);
     }
 
+    /**
+     * 검수 모드 설정값이 이력에 스냅샷으로 남는다.
+     *
+     * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=member
+     *
+     * @effects test_mode_flag_is_snapshotted_on_the_dispatch_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수_모드_설정값이_이력에_스냅샷으로_기록된다(): void
     {
         Bus::fake();
@@ -613,6 +782,15 @@ class AlimtalkChannelDriverTest extends PluginTestCase
         $this->assertTrue(BizppurioDispatch::first()->is_test_mode);
     }
 
+    /**
+     * 운영 모드 설정값도 이력에 스냅샷으로 남는다.
+     *
+     * @scenario template_state=approved, fallback_sms=off, sms_only=off, recipient=member
+     *
+     * @effects live_mode_flag_is_snapshotted_on_the_dispatch_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_운영_모드_설정값도_이력에_스냅샷으로_기록된다(): void
     {
         Bus::fake();

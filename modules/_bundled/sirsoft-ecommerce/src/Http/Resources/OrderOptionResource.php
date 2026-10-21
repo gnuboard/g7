@@ -6,6 +6,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
@@ -196,7 +197,7 @@ class OrderOptionResource extends BaseApiResource
                     if (is_array($name)) {
                         $locale = app()->getLocale();
 
-                        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null;
+                        return LocalizedValue::pick($name, $locale);
                     }
 
                     return null;
@@ -266,7 +267,7 @@ class OrderOptionResource extends BaseApiResource
         foreach ($snapshot as $entry) {
             $name = $entry['name'] ?? '';
             if (is_array($name)) {
-                $name = $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? (! empty($name) ? reset($name) : '');
+                $name = LocalizedValue::pick($name, $locale) ?? '';
             }
 
             $result[] = [

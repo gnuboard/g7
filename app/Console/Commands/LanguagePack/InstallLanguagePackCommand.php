@@ -58,16 +58,15 @@ class InstallLanguagePackCommand extends Command
                 ),
             };
 
-            $this->info(sprintf(
-                '언어팩 설치 완료: %s v%s (status=%s)',
-                $pack->identifier,
-                $pack->version,
-                $pack->status,
-            ));
+            $this->info(__('language_packs.commands.install.done', [
+                'identifier' => $pack->identifier,
+                'version' => $pack->version,
+                'status' => $pack->status,
+            ]));
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('언어팩 설치 실패: '.$e->getMessage());
+            $this->error(__('language_packs.commands.install.failed', ['error' => $e->getMessage()]));
 
             return self::FAILURE;
         }

@@ -74,6 +74,7 @@
                                     "props": {
                                         "type": "number",
                                         "min": "{{_local?.form?._meta?.limits?.write_deadline_days_min ?? 1}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.review_settings.write_deadline_days_label",
                                         "max": "{{_local?.form?._meta?.limits?.write_deadline_days_max ?? 365}}",
                                         "step": "1",
                                         "className": "input w-20",
@@ -133,6 +134,7 @@
                                     "props": {
                                         "type": "number",
                                         "min": "{{_local?.form?._meta?.limits?.max_images_min ?? 0}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_images_label",
                                         "max": "{{_local?.form?._meta?.limits?.max_images_max ?? 20}}",
                                         "step": "1",
                                         "className": "input w-20",
@@ -192,6 +194,7 @@
                                     "props": {
                                         "type": "number",
                                         "min": "{{_local?.form?._meta?.limits?.max_image_size_mb_min ?? 1}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_image_size_mb_label",
                                         "max": "{{_local?.form?._meta?.limits?.max_image_size_mb_max ?? 50}}",
                                         "step": "1",
                                         "className": "input w-20",

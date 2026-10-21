@@ -1,10 +1,10 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
 /**
  * @file admin-page-ability-gate.test.ts
- * @description 관리자 페이지 화면 abilities 게이트 (7.1.0 abilities 게이트 page-hello #1·#5)
+ * @description 관리자 페이지 화면 abilities 게이트 (7.1.0 abilities 게이트)
  *
- * - #1 본문 편집기: disabled 와 함께 readOnly 도 넘겨 편집기 컴포넌트가 어느 쪽을 받든 읽기 전용이면 잠긴다(G09 사용처)
- * - #5 페이지 목록: 수정 권한이 없으면 행 체크박스와 일괄 바를 그리지 않는다
+ * - 본문 편집기: disabled 와 함께 readOnly 도 넘겨 편집기 컴포넌트가 어느 쪽을 받든 읽기 전용이면 잠긴다(HtmlEditor disabled 계약 사용처)
+ * - 페이지 목록: 수정 권한이 없으면 행 체크박스와 일괄 바를 그리지 않는다
  */
 
 import { describe, it, expect } from 'vitest';
@@ -33,7 +33,7 @@ function evaluate(raw: unknown, scope: Record<string, unknown>): any {
   return new Function(...Object.keys(scope), `return (${expr});`)(...Object.values(scope));
 }
 
-describe('페이지 폼 본문 편집기 (#1)', () => {
+describe('페이지 폼 본문 편집기', () => {
   /**
    * 편집기 확장점과 기본 편집기 둘 다 readOnly 를 받는다.
    *
@@ -48,7 +48,7 @@ describe('페이지 폼 본문 편집기 (#1)', () => {
   });
 });
 
-describe('페이지 목록 선택·일괄 바 (#5)', () => {
+describe('페이지 목록 선택·일괄 바', () => {
   /**
    * 수정 권한이 없으면 행 선택과 일괄 바를 그리지 않는다.
    *

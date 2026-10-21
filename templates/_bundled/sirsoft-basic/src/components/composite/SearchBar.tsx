@@ -160,7 +160,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <Div className="relative flex-1">
             {/* 검색 아이콘 */}
             <Div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <Icon name={IconName.Search} className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+              <Icon name={IconName.Search} className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             </Div>
 
             {/* 검색 입력 */}
@@ -206,7 +206,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               onClick={() => handleSuggestionClick(suggestion)}
             >
               <Div className="flex items-center gap-2">
-                <Icon name={IconName.Search} className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <Icon name={IconName.Search} className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 <Span className="text-sm text-gray-700 dark:text-gray-300">{suggestion.text}</Span>
               </Div>
             </Div>

@@ -199,7 +199,7 @@ describe('loadLayoutEditorBundle — 편집기 lazy 번들 로더', () => {
   });
   /**
    * 편집기 번들을 받지 못한 실패 문구는 화면 언어를 따른다 — 종전에는 영어 화면에서도 한국어로 박혀 있었다
-   * (7.1.0 J O-J4, 2026-10-07 재실측: html lang=en 에서 「편집기를 불러오지 못했습니다 …」).
+   * (7.1.0 실측, 2026-10-07 재실측: html lang=en 에서 「편집기를 불러오지 못했습니다 …」).
    *
    * @scenario state=load_failed
    * @effects failure_message_follows_screen_language

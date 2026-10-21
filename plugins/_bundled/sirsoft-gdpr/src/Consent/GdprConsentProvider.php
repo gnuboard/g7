@@ -6,6 +6,7 @@ use App\Contracts\Extension\ConsentProviderInterface;
 use App\Extension\Consent\ConsentSnapshot;
 use App\Extension\Consent\ConsentSubject;
 use App\Services\PluginSettingsService;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Plugins\Sirsoft\Gdpr\Concerns\IssuesGuestSessionCookie;
@@ -89,7 +90,7 @@ class GdprConsentProvider implements ConsentProviderInterface
         return array_values(array_map(static function (array $category) use ($locale): array {
             $label = $category['label'] ?? $category['key'];
             if (is_array($label)) {
-                $label = $label[$locale] ?? $label['ko'] ?? (reset($label) ?: $category['key']);
+                $label = LocalizedValue::pick($label, $locale) ?? $category['key'];
             }
 
             return [

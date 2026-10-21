@@ -22,12 +22,12 @@
             <div data-each="cs, csIdx in {{_global.targetPolicy?.country_settings ?? []}}" class="flex-center gap-2 text-sm">
               <span class="fi fi-{{cs.country_code?.toLowerCase()}} rounded-sm flex-shrink-0"/>
               <span class="font-medium text-gray-700 dark:text-gray-300 w-8">{{cs.country_code}}</span>
-              <span class="text-info-soft px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded">{{cs.shipping_method_label ?? ''}}</span>
-              <span class="text-gray-400 dark:text-gray-500">|</span>
+              <span class="ecommerce-tone-info-soft px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-xs">{{cs.shipping_method_label ?? ''}}</span>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
               <span class="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs">{{cs.charge_policy_label ?? ''}}</span>
               <span data-if="{{cs.charge_policy === 'fixed' || cs.charge_policy === 'conditional_free' || cs.charge_policy?.startsWith('per_')}}" class="text-secondary">{{(cs.base_fee ?? 0).toLocaleString()}} {{cs.currency_code ?? ''}}</span>
-              <span data-if="{{cs.extra_fee_enabled &amp;&amp; cs.country_code === 'KR'}}" class="text-warning-soft px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded">$t:sirsoft-ecommerce.admin.shipping_policy.table.extra_fee_badge</span>
-              <span data-if="{{!cs.is_active}}" class="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.table.inactive</span>
+              <span data-if="{{cs.extra_fee_enabled &amp;&amp; cs.country_code === 'KR'}}" class="ecommerce-tone-warning-soft px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.table.extra_fee_badge</span>
+              <span data-if="{{!cs.is_active}}" class="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.table.inactive</span>
             </div>
           </div>
         </div>
@@ -41,7 +41,7 @@
         </on>
         $t:sirsoft-ecommerce.admin.shipping_policy.common.cancel
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700">
         <on type="click">
           <!-- 복사 진행 — 창을 닫고 등록 화면으로 원본 id 를 실어 보낸다. 이 창은 복제를 만들지 않으므로 그 화면에서 저장을 누르지 않으면 아무것도 남지 않는다. -->
           <sequence>

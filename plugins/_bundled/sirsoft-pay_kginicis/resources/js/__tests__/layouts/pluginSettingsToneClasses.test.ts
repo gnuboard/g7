@@ -127,7 +127,7 @@ describe('KG이니시스 결제 환경설정 — 플러그인 자체 글자색 �
         expect(tokens(success)).toContain(`${PREFIX}tone-success-strong`);
 
         const editLink = byText((t) => t.endsWith('.settings.cbt_helper_admin_edit_link'))[0];
-        expect(tokens(parentOf(editLink!))).toContain(`${PREFIX}tone-success`);
+        expect(tokens(parentOf(editLink!))).toContain(`${PREFIX}tone-success-strong`); // green-100 상자 위 링크 — tone-success(green-700)는 4.4996 으로 미달
 
         const error = byText((t) => t === '{{_local.cbtTestProductError}}')[0];
         expect(tokens(error)).toContain(`${PREFIX}tone-danger-strong`);

@@ -113,6 +113,7 @@
         "showUnit": false
     },
     "computed": {
+        "tabQuery": "{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page'].filter(k => query[k]).map(k => '&' + k + '=' + encodeURIComponent(query[k])).join('')}}",
         "reportName": "{{({popular: 'page_url', entry: 'entry_pages', exit: 'exit_pages', titles: 'page_title', durations: 'visit_duration', depths: 'visit_pages'})[query.tab || 'popular'] || 'page_url'}}",
         "csvUrl": "{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
         "csvFilename": "{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
@@ -220,26 +221,32 @@
                             "tabs": [
                                 {
                                     "id": "popular",
+                                    "href": "/admin/analytics/pages?tab=popular{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.pages.tabs.popular"
                                 },
                                 {
                                     "id": "entry",
+                                    "href": "/admin/analytics/pages?tab=entry{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.pages.tabs.entry"
                                 },
                                 {
                                     "id": "exit",
+                                    "href": "/admin/analytics/pages?tab=exit{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.pages.tabs.exit"
                                 },
                                 {
                                     "id": "titles",
+                                    "href": "/admin/analytics/pages?tab=titles{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.pages.tabs.titles"
                                 },
                                 {
                                     "id": "durations",
+                                    "href": "/admin/analytics/pages?tab=durations{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.pages.tabs.durations"
                                 },
                                 {
                                     "id": "depths",
+                                    "href": "/admin/analytics/pages?tab=depths{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.pages.tabs.depths"
                                 }
                             ]

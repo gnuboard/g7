@@ -15,6 +15,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
 use Modules\Sirsoft\Board\Services\ReactionService;
+use Modules\Sirsoft\Board\Services\SecretViewTokenService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
@@ -313,5 +314,77 @@ class ReactionServiceTest extends BoardTestCase
 
         $this->expectException(PostNotFoundException::class);
         $service->react($reactor->id, $this->board, $postId, $this->likeId);
+    }
+
+    /**
+     * 비밀글 반응은 SecretContentGate::canView 로 판정된다 — 본문을 못 보는 회원은 secretDenied (#789 D6).
+     *
+     * @scenario case=secret_post_react_blocked
+     *
+     * @effects reaction_service_secret_post_uses_gate_can_view
+     *
+     * @return void 반환값 없음
+     */
+    public function test_react_on_secret_post_denied_when_gate_cannot_view(): void
+    {
+        $author = $this->createUser();
+        $outsider = $this->createUser();
+        $postId = $this->createTestPost(['user_id' => $author->id, 'is_secret' => true]);
+        $this->actingAs($outsider);
+
+        try {
+            $this->service->react($outsider->id, $this->board, $postId, $this->likeId);
+            $this->fail('본문을 볼 수 없는 회원의 비밀글 반응은 거부되어야 한다');
+        } catch (ReactionNotAllowedException $e) {
+            $this->assertSame(ReactionNotAllowedException::secretDenied()->getMessage(), $e->getMessage());
+        }
+    }
+
+    /**
+     * 경로 규칙 앵커(비밀 답변 작성자)는 조상 비밀글을 볼 수 있으므로 반응할 수 있다 (#789 D1·D6).
+     *
+     * 수정 전에는 반응만 비밀글 조회 권한·게시판 관리자로 따로 판정해 거부됐다.
+     *
+     * @scenario case=secret_post_react_by_viewer
+     *
+     * @effects reaction_service_secret_post_uses_gate_can_view
+     *
+     * @return void 반환값 없음
+     */
+    public function test_react_on_secret_post_allowed_for_thread_anchor(): void
+    {
+        $author = $this->createUser();
+        $replier = $this->createUser();
+        $rootId = $this->createTestPost(['user_id' => $author->id, 'is_secret' => true]);
+        $this->createTestPost(['user_id' => $replier->id, 'is_secret' => true, 'parent_id' => $rootId, 'depth' => 1]);
+        $this->actingAs($replier);
+
+        $result = $this->service->react($replier->id, $this->board, $rootId, $this->likeId);
+
+        $this->assertSame('add', $result['action']);
+    }
+
+    /**
+     * 비밀번호를 확인해 받은 열람 토큰의 grant 가 있으면 비밀글에 반응할 수 있다 (게이트 2-b 규칙).
+     *
+     * @scenario case=secret_post_react_by_viewer
+     *
+     * @effects reaction_service_secret_post_uses_gate_can_view
+     *
+     * @return void 반환값 없음
+     */
+    public function test_react_on_secret_post_allowed_with_view_token_grant(): void
+    {
+        $reactor = $this->createUser();
+        $postId = $this->createTestPost(['user_id' => null, 'password' => bcrypt('g-pass'), 'is_secret' => true]);
+        $this->actingAs($reactor);
+
+        $tokens = app(SecretViewTokenService::class);
+        $issued = $tokens->grant(request(), $this->board->slug, $postId);
+        $tokens->useForRequest($issued['token'], request());
+
+        $result = $this->service->react($reactor->id, $this->board, $postId, $this->likeId);
+
+        $this->assertSame('add', $result['action']);
     }
 }

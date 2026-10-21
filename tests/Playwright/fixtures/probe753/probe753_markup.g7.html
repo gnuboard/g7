@@ -1,0 +1,46 @@
+<layout name="__probe_753_markup" version="1.0.0">
+  <meta title="probe 753"/>
+  <action name="probeNamed"><set-state target="local" probe.l6="named" probe.i3="named"/></action>
+  <action name="probeNamedFail"><set-state target="local" probe.f4="named-fail"/></action>
+  <init>
+    <sequence><set-state target="local" probe.i1a="1"/><set-state target="local" probe.i1b="2"/></sequence>
+    <switch on="{{query.mode}}"><case when="quiet"><set-state target="local" probe.i2="quiet"/></case><default><set-state target="local" probe.i2="loud"/></default></switch>
+    <action-ref name="probeNamed"/>
+  </init>
+  <div data-ref="p_root">
+    <span data-ref="p_state">{{JSON.stringify(_local.probe ?? {})}}</span>
+    <div data-ref="p_listen_box">
+      <on listen="probe753:l1"><set-state target="local" probe.l1a="1"/><set-state target="local" probe.l1b="2"/><set-state target="local" probe.l1count="{{(_local.probe?.l1count ?? 0) + 1}}"/></on>
+      <on listen="probe753:l2"><sequence><set-state target="local" probe.l2="step"/><set-state target="local" probe.l2="done"/></sequence></on>
+      <on listen="probe753:l3"><conditions><when if="{{_eventData.kind === 'a'}}"><set-state target="local" probe.l3="a-branch"/></when><else><set-state target="local" probe.l3="b-branch"/></else></conditions></on>
+      <on listen="probe753:l4"><switch on="{{_eventData.kind}}"><case when="a"><set-state target="local" probe.l4="a-case"/></case><default><set-state target="local" probe.l4="default"/></default></switch></on>
+      <on listen="probe753:l5"><set-state if="{{_eventData.allow === true}}" target="local" probe.l5="allowed"/></on>
+      <on listen="probe753:l6"><action-ref name="probeNamed"/></on>
+      <on listen="probe753:l7"><open-modal target="p_modal"/></on>
+      <on listen="probe753:l8"><api-call target="/api/__probe753_missing" method="GET"><fail><set-state target="local" probe.l8fail="1"/></fail></api-call></on>
+      <on listen="probe753:l9"><set-state target="local" probe.l9in="1"/></on>
+      <on listen="probe753:k2c"><conditions><when if="{{true}}"><api-call target="/api/__probe753_missing" method="GET"><fail><set-state target="local" probe.k2cfail="1"/></fail></api-call></when></conditions></on>
+      <on listen="probe753:k2s"><set-state target="local" probe.k2s1="1"/><api-call target="/api/__probe753_missing" method="GET"><fail><set-state target="local" probe.k2sfail="1"/></fail></api-call><set-state target="local" probe.k2s2="1"/></on>
+      <on listen="probe753:lint"><set-state :stopPropagation="true" target="local" probe.lint="1"/><set-state :debounce="300" target="local" probe.lint2="1"/></on>
+    </div>
+    <button type="button" data-ref="p_l1"><on type="click"><emit-event event="probe753:l1"/></on>L1</button>
+    <button type="button" data-ref="p_l2"><on type="click"><emit-event event="probe753:l2"/></on>L2</button>
+    <button type="button" data-ref="p_l3"><on type="click"><emit-event event="probe753:l3"><field name="data"><field name="kind" value="b"/></field></emit-event></on>L3</button>
+    <button type="button" data-ref="p_l4"><on type="click"><emit-event event="probe753:l4"><field name="data"><field name="kind" value="a"/></field></emit-event></on>L4</button>
+    <button type="button" data-ref="p_l5f"><on type="click"><emit-event event="probe753:l5"><field name="data"><field name="allow" :value="false"/></field></emit-event></on>L5 false</button>
+    <button type="button" data-ref="p_l5t"><on type="click"><emit-event event="probe753:l5"><field name="data"><field name="allow" :value="true"/></field></emit-event></on>L5 true</button>
+    <button type="button" data-ref="p_l6"><on type="click"><emit-event event="probe753:l6"/></on>L6</button>
+    <button type="button" data-ref="p_l7"><on type="click"><emit-event event="probe753:l7"/></on>L7</button>
+    <button type="button" data-ref="p_l8"><on type="click"><sequence><emit-event event="probe753:l8"/><set-state target="local" probe.l8result="{{String(_local._eventResult?.success)}}"/><set-state target="local" probe.l8after="1"/></sequence></on>L8</button>
+    <button type="button" data-ref="p_l9"><on type="click"><sequence><emit-event event="probe753:l9"/><set-state target="local" probe.l9result="{{String(_local._eventResult?.success)}}"/></sequence></on>L9</button>
+    <button type="button" data-ref="p_k2c"><on type="click"><sequence><emit-event event="probe753:k2c"/><set-state target="local" probe.k2cresult="{{String(_local._eventResult?.success)}}"/><set-state target="local" probe.k2cafter="1"/></sequence></on>K2C</button>
+    <button type="button" data-ref="p_k2s"><on type="click"><sequence><emit-event event="probe753:k2s"/><set-state target="local" probe.k2sresult="{{String(_local._eventResult?.success)}}"/><set-state target="local" probe.k2safter="1"/></sequence></on>K2S</button>
+    <button type="button" data-ref="p_f1"><on type="click"><api-call target="/api/__probe753_missing" method="GET"><fail><conditions><when if="{{error.status === 404}}"><set-state target="local" probe.f1="404"/></when><else><set-state target="local" probe.f1="other"/></else></conditions></fail></api-call></on>F1</button>
+    <button type="button" data-ref="p_f2"><on type="click"><api-call target="/api/__probe753_missing" method="GET"><fail><switch on="{{String(error.status)}}"><case when="404"><set-state target="local" probe.f2="404-case"/></case><default><set-state target="local" probe.f2="default"/></default></switch></fail></api-call></on>F2</button>
+    <button type="button" data-ref="p_f3"><on type="click"><api-call target="/api/__probe753_missing" method="GET"><fail><toast if="{{error.status === 500}}" type="error" message="probe f3"/></fail></api-call></on>F3</button>
+    <button type="button" data-ref="p_f4"><on type="click"><api-call target="/api/__probe753_missing" method="GET"><fail><action-ref name="probeNamedFail"/></fail></api-call></on>F4</button>
+    <button type="button" data-ref="p_f5"><on type="click"><api-call target="/api/__probe753_missing" method="GET"><error-handling><on-code code="404"><conditions><when if="{{error.status === 404}}"><set-state target="local" probe.f5="404"/></when></conditions></on-code></error-handling></api-call></on>F5</button>
+    <button type="button" data-ref="p_f6"><on type="click"><api-call target="/api/admin/users" method="GET"><fail><conditions><when if="{{error.status === 404}}"><set-state target="local" probe.f6="404"/></when><else><set-state target="local" probe.f6="other"/></else></conditions></fail></api-call></on>F6</button>
+  </div>
+  <modal data-ref="p_modal" title="probe modal"><span data-ref="p_modal_body">modal</span></modal>
+</layout>

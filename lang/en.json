@@ -5,6 +5,9 @@
     },
     "assets": {
       "$partial": "partial/en/assets.json"
+    },
+    "navigation": {
+      "leave_confirm": "You have unsaved changes. If you leave this page, what you entered will be lost. Leave anyway?"
     }
   },
   "layout_editor": {

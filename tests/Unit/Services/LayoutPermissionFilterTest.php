@@ -665,7 +665,7 @@ class LayoutPermissionFilterTest extends TestCase
     }
 
     /**
-     * 실제 모달 형태(`children`)의 자식 컴포넌트 permissions 도 걸러지고 속성이 지워진다 (G25 #9).
+     * 실제 모달 형태(`children`)의 자식 컴포넌트 permissions 도 걸러지고 속성이 지워진다.
      *
      * 번들 모달은 `components` 가 아니라 `children` 을 쓴다. 이전 필터는 `components` 만 재귀해서
      * 모달 자식의 permissions 가 평가도 제거도 되지 않고 클라이언트로 나갔다.
@@ -737,7 +737,7 @@ class LayoutPermissionFilterTest extends TestCase
     }
 
     /**
-     * 표 셀(`props.columns[].cellChildren`)·노드의 `expandChildren` 안 컴포넌트 permissions 도 걸러진다 (G25 #10).
+     * 표 셀(`props.columns[].cellChildren`)·노드의 `expandChildren` 안 컴포넌트 permissions 도 걸러진다.
      *
      * @scenario case=props_embedded_children_filter
      *

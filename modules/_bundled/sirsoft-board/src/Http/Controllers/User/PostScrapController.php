@@ -13,6 +13,8 @@ use Modules\Sirsoft\Board\Http\Resources\PostScrapCollection;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostScrapService;
+use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 사용자용 게시글 스크랩 컨트롤러
@@ -59,6 +61,9 @@ class PostScrapController extends AuthBaseController
                 return $this->forbidden('sirsoft-board::messages.scrap.scrap_disabled');
             }
 
+            // 읽기 스코프(본인만·소유역할) 밖 글은 스크랩할 수 없다 — 라우트가 {postId} 라 미들웨어가 보지 않는다
+            BoardReadScope::assertTargetReadable($board, 'post', $postId);
+
             // 스코프 검증(postId 가 이 게시판 소속인지)은 Service 가 수행하며, 미소속 시 예외를 던진다.
             $result = $this->scrapService->toggle(Auth::id(), $postId, $board->id);
 
@@ -72,6 +77,8 @@ class PostScrapController extends AuthBaseController
             ]);
         } catch (PostNotFoundException $e) {
             return $this->notFound('sirsoft-board::messages.scrap.post_not_found');
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (Exception $e) {
             return $this->error('sirsoft-board::messages.scrap.toggle_failed', 500);
         }

@@ -29,13 +29,13 @@
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
           <div data-each="trackRow, trackIdx in {{_global.claimBulkConfirmData?.trackings ?? []}}" class="flex-center flex-wrap gap-2 p-3">
             <span class="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-[8rem] truncate">{{[trackRow.claim_number, trackRow.requester_name].filter(Boolean).join(' · ')}}</span>
-            <select name="bulkTrackingCarrier" class="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{trackRow.carrier_id ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(_global.claimBulkConfirmData?.carriers ?? [])}}">
+            <select name="bulkTrackingCarrier" aria-label="$t:common.row_cell|row={{trackRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder')}}" class="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{trackRow.carrier_id ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(_global.claimBulkConfirmData?.carriers ?? [])}}">
               <on type="change">
                 <!-- 일괄 처리 확인 창에서 신청서별 택배사를 고치면 그 행의 송장 정보에 바로 반영한다 -->
                 <action handler="sirsoft-ecommerce.updateClaimBulkTracking" claimId="{{trackRow.id}}" field="carrier_id" value="{{$event.target.value}}"/>
               </on>
             </select>
-            <input type="text" name="bulkTrackingNumber" :maxLength="50" class="w-40 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{trackRow.tracking_number ?? ''}}">
+            <input type="text" name="bulkTrackingNumber" aria-label="$t:common.row_cell|row={{trackRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder')}}" :maxLength="50" class="w-40 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{trackRow.tracking_number ?? ''}}">
               <on type="change">
                 <!-- 신청서별 송장번호 입력을 그 행의 송장 정보에 바로 반영한다 -->
                 <action handler="sirsoft-ecommerce.updateClaimBulkTracking" claimId="{{trackRow.id}}" field="tracking_number" value="{{$event.target.value}}"/>
@@ -53,7 +53,7 @@
         <span>$t:sirsoft-ecommerce.admin.claim.bulk.confirm_cancel</span>
       </button>
       <!-- [변경] — 고른 신청서를 한꺼번에 전이한다. 부분 성공 계약이라 게이트에 막힌 건은 건너뛰고 성공·결제 요청으로 돌려진 건·건너뛴 건을 나눠 알린 뒤, 목록의 선택과 상태 셀렉트를 비우고 목록을 다시 부른다. -->
-      <button data-ref="cbc_006_apply_button" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}">
+      <button data-ref="cbc_006_apply_button" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}">
         <on type="click">
           <set-state target="global" :isProcessing="true"/>
           <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. -->

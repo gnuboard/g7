@@ -20,7 +20,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 판정 기준: 로그인 회원은 회원 번호, 비로그인은 IP 로 한 번만 센다.
  * 서버가 SEO 화면을 만들려고 자기 자신에게 보내는 내부 호출(글 작성·수정 직후 캐시 재생성,
  * 검색 봇 방문)은 열람이 아니므로 세지 않는다 — 세면 글을 쓰자마자 조회수 1 이 되고,
- * 서버 IP 키가 먼저 잡혀 같은 IP 의 비로그인 방문이 「이미 봄」이 된다(7.1.0 실측 O-K3-1).
+ * 서버 IP 키가 먼저 잡혀 같은 IP 의 비로그인 방문이 「이미 봄」이 된다(7.1.0 실측).
  */
 class PostViewCountIdentityTest extends BoardTestCase
 {

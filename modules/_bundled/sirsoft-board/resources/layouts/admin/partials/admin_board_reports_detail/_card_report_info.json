@@ -182,7 +182,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-600 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-700 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-700 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}"
                                                     },
                                                     "text": "{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}"
                                                 },
@@ -228,7 +228,7 @@
                                     "comment": "회원 작성자: ActionMenu로 사용자 정보 드롭다운",
                                     "type": "composite",
                                     "name": "ActionMenu",
-                                    "if": "{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest)}}",
+                                    "if": "{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) && (report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid)}}",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -250,12 +250,23 @@
                                         "position": "right",
                                         "items": [
                                             {
+                                                "href": "/admin/users/{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid}}",
                                                 "id": "view_author",
                                                 "label": "$t:sirsoft-board.admin.reports.detail.user_info",
                                                 "iconName": "user"
                                             }
                                         ]
                                     }
+                                },
+                                {
+                                    "comment": "회원 계정이 남지 않은 작성자(uuid 없음): 갈 곳이 없어 이름만",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) && !(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid)}}",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "{{(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name) ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                 },
                                 {
                                     "comment": "비회원 작성자: 이름 + 배지 (드롭다운 없음)",
@@ -311,18 +322,16 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "if": "{{report_detail?.data?.board?.slug}}",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/board/{{report_detail?.data?.board?.slug}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/board/{{report_detail?.data?.board?.slug}}",
                                         "className": "inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
                                     },
                                     "children": [
@@ -347,7 +356,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!report_detail?.data?.board?.slug}}",
+                                    "if": "{{report_detail !== undefined && report_detail !== null && (!report_detail?.data?.board?.slug)}}",
                                     "props": {
                                         "className": "inline-flex items-center gap-1.5 text-label-subtle"
                                     },
@@ -385,18 +394,16 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "if": "{{report_detail?.data?.board?.slug && report_detail?.data?.post?.id}}",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}",
                                         "className": "inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
                                     },
                                     "children": [
@@ -445,18 +452,16 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "if": "{{report_detail?.data?.board?.slug && report_detail?.data?.post?.id}}",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}",
                                         "className": "inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
                                     },
                                     "children": [
@@ -666,7 +671,7 @@
                                                         {
                                                             "type": "composite",
                                                             "name": "ActionMenu",
-                                                            "if": "{{reporter.reporter}}",
+                                                            "if": "{{reporter.reporter?.uuid}}",
                                                             "actions": [
                                                                 {
                                                                     "comment": "신고한 사람의 관리자 상세로 — 탈퇴해 회원이 남지 않은 신고는 이 메뉴 대신 「삭제된 사용자」 문구가 선다",
@@ -689,6 +694,7 @@
                                                                 "position": "right",
                                                                 "items": [
                                                                     {
+                                                                        "href": "/admin/users/{{reporter.reporter?.uuid}}",
                                                                         "id": "view_reporter",
                                                                         "label": "$t:sirsoft-board.admin.reports.detail.user_info",
                                                                         "iconName": "user"
@@ -699,7 +705,7 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{!reporter.reporter}}",
+                                                            "if": "{{!reporter.reporter?.uuid}}",
                                                             "props": {
                                                                 "className": "text-label-subtle"
                                                             },

@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 멈춘 업데이트(stuck_update) 확장 카드의 정리·활성화 단추와 템플릿 「업데이트 중」 표시 (7.1.1 출시 전)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 서버 쪽 정리 판정은 tests/scenarios/extension-stuck-update-recovery.yaml
+
+feature: admin_extension_stuck_update_card
+
+description: >-
+  업데이트 프로세스가 도중에 죽으면 행이 updating 으로 남는다. 서버는 10분 넘게 남고 하는 프로세스가 없으면(목록 행 stuck_update)
+  활성화·강제 업데이트 진입점에서 정리하지만, 카드는 updating 이면 스위치·업데이트 단추를 모두 잠가 화면에서는 정리할 곳이 없었다.
+  템플릿 카드는 updating 표시조차 없이 꺼진 스위치로만 보였다. 모듈·플러그인 목록, 템플릿 관리자·사용자 탭,
+  세 업데이트 창의 레이아웃 JSON 에서 카드 항목·처리기·알림을 평가해 잠근다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-stuck-update-card.test.tsx
+
+axes:
+  defect:
+    - stuck_update_card_no_recovery_action   # 멈춘 업데이트 카드에 정리 진입점이 없었다(모듈·플러그인·템플릿, 업데이트 창 안내 포함)
+    - template_card_no_updating_badge        # 템플릿 카드에 「업데이트 중」 배지가 없었다
+
+effects:
+  - stuck_card_shows_badge_recover_action_and_enabled_toggle            # 모듈·플러그인: 「업데이트 멈춤」 배지·「정리 후 다시 업데이트」 주 단추·켤 수 있는 스위치, 권한 없으면 잠금
+  - running_update_card_stays_locked                                    # 실제로 도는 업데이트는 「업데이트 중」 배지에 스위치·단추 잠금
+  - recover_action_opens_update_modal_with_force                        # 「정리 후 다시 업데이트」는 업데이트 창을 강제 업데이트 값으로 연다
+  - template_card_shows_updating_badge                                  # 업데이트 중 템플릿 카드에 「업데이트 중」 배지·잠긴 스위치
+  - template_card_shows_install_uninstall_badges_and_hides_update_available_while_updating  # 템플릿: 「설치 중」·「삭제 중」 배지, 업데이트 중엔 「업데이트 있음」 숨김
+  - stuck_template_card_shows_badge_recover_action_and_enabled_toggle   # 템플릿: 멈춤 배지·보조 단추·켤 수 있는 스위치, 강제 업데이트로 연다
+  - recovered_update_success_tells_to_reactivate                        # 세 업데이트 창은 멈춘 업데이트를 정리해 성공하면 「다시 켜라」 알림을 띄운다
+
+validation:
+  audit_rule: frontend-change-requires-e2e

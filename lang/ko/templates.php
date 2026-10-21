@@ -88,6 +88,7 @@ return [
         'delete_directory_failed' => '템플릿 디렉토리 삭제에 실패했습니다: :error',
         'update_failed' => '템플릿 ":template" 업데이트에 실패했습니다: :error',
         'invalid_layout_strategy' => '유효하지 않은 레이아웃 전략입니다. (overwrite 또는 keep만 허용)',
+        'invalid_layout_source' => '유효하지 않은 레이아웃 설치 소스입니다. (auto 또는 json만 허용)',
     ],
 
     'messages' => [
@@ -233,6 +234,18 @@ return [
     'move_failed' => '템플릿 ":template" 이동에 실패했습니다: :error',
 
     'commands' => [
+        // `template:refresh-layout` 명령 출력
+        'refresh_layout' => [
+            'refreshing' => '템플릿 \':template\' 레이아웃 갱신 중...',
+            'success' => '템플릿 \':template\' 레이아웃 갱신 완료',
+            'failed' => '템플릿 \':template\' 레이아웃 갱신 실패',
+            'none_active' => '활성화된 템플릿이 없습니다.',
+            'refreshing_all' => '모든 활성 템플릿 레이아웃 갱신 중...',
+            'item_refreshing' => ':identifier 갱신 중...',
+            'item_done' => ':identifier 완료',
+            'item_failed' => ':identifier 실패',
+            'summary' => '총 :success개 성공, :failed개 실패',
+        ],
         'install' => [
             'success' => '템플릿 ":template" 설치 완료',
             'already_installed' => '":template" 템플릿이 이미 설치되어 있습니다.',
@@ -245,8 +258,20 @@ return [
         ],
         'activate' => [
             'success' => '템플릿 ":template" 활성화 완료',
+            'language_packs_restored' => '언어팩 :count개를 함께 켰습니다: :list',
+            'language_packs_kept' => '다시 켜지 않은 언어팩: :list (관리자 화면에서 다시 켤 수 있습니다)',
+            'language_pack_restore_failed' => '언어팩 ":pack" 을(를) 다시 켜지 못했습니다: :error',
+            'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
             'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
             'deactivated_previous' => '기존 :type 템플릿 ":previous" 비활성화',
+            // `template:activate` 의존성 미충족 안내
+            'required_modules' => '필요한 모듈:',
+            'required_plugins' => '필요한 플러그인:',
+            'missing_status' => [
+                'not_installed' => '미설치',
+                'inactive' => '비활성',
+            ],
+            'force_hint' => '강제로 활성화하려면 --force 옵션을 사용하세요.',
         ],
         'deactivate' => [
             'success' => '템플릿 ":template" 비활성화 완료',
@@ -321,6 +346,33 @@ return [
             'aborted' => '업데이트가 취소되었습니다.',
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
             'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
+        ],
+        // `template:build` 명령 출력
+        'build' => [
+            'missing_identifier' => '템플릿 식별자를 지정하거나 --all 옵션을 사용하세요.',
+            'usage' => '사용법:',
+            'not_found' => '템플릿을 찾을 수 없습니다: :identifier',
+            'not_found_detail' => '_bundled 및 활성 디렉토리 모두 존재하지 않습니다.',
+            'source' => '빌드 소스: :source (:path)',
+            'source_active' => '활성',
+            'package_json_missing' => 'package.json 파일이 없습니다: :path',
+            'package_json_hint' => '템플릿 프론트엔드 구조를 먼저 생성하세요.',
+            'installing_dependencies' => '의존성 설치 중...',
+            'npm_install_failed' => 'npm install 실패',
+            'watch_start' => '파일 감시 모드로 빌드 시작: :identifier',
+            'watch_hint' => 'Ctrl+C로 종료할 수 있습니다.',
+            'start' => '빌드 시작: :identifier',
+            'start_production' => '빌드 시작: :identifier (프로덕션)',
+            'pruned' => '이전 산출물 정리: :files',
+            'done' => '빌드 완료: :identifier',
+            'build_results' => '빌드 결과:',
+            'cache_version_bumped' => '캐시 버전 갱신됨',
+            'apply_hint' => '활성 디렉토리에 반영하려면: php artisan template:update :identifier',
+            'no_targets' => '빌드할 템플릿이 없습니다.',
+            'start_all' => '모든 템플릿 빌드 시작 (:source)',
+            'start_all_production' => '모든 템플릿 빌드 시작 (:source) (프로덕션)',
+            'targets' => '대상 템플릿: :list',
+            'summary' => '빌드 결과: 성공 :success개, 실패 :failed개',
         ],
     ],
 

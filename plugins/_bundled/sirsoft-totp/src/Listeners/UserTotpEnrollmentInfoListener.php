@@ -13,7 +13,7 @@ use Plugins\Sirsoft\Totp\Repositories\Contracts\TotpCredentialRepositoryInterfac
  * 관리자 회원 상세 응답에 인증 앱 등록 여부를 싣는 리스너 (filter 훅).
  *
  * 회원 상세 「인증 앱」 카드가 등록 여부를 보이지 않아 미등록 회원에게도 [강제 해제] 가 보였다
- * (7.1.0 관측 R-26·B O-B5). 카드는 이 값(`totp_enrollment.enrolled`)으로 「등록됨/미등록」을 보이고,
+ * (7.1.0 관측). 카드는 이 값(`totp_enrollment.enrolled`)으로 「등록됨/미등록」을 보이고,
  * 등록된 회원에게만 [강제 해제] 를 낸다.
  *
  * **해제 권한(`sirsoft-totp.credentials.delete`)을 가진 관리자의 관리자 응답에만** 싣는다 — 회원 정보를

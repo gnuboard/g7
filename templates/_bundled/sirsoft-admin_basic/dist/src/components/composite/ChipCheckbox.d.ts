@@ -66,6 +66,8 @@ export interface ChipCheckboxProps {
  *
  * @remarks
  * - variant: green (연두색, 긍정 상태), orange (주황색, 진행 중), yellow (노란색, 회수), gray (회색, 대기/보류), blue (기본값)
- * - customColor: 임의의 hex 색상 코드 지정 시 variant 무시, 다크모드/호버 자동 처리
+ * - customColor: 임의의 hex 색상 코드 지정 시 variant 무시, 다크모드/호버 자동 처리.
+ *   글자색은 데이터 색을 그대로 쓰지 않고 바탕과 4.5 이상이 되도록 계산한다(고른 상태는 검정·흰색 중 대비가 큰 쪽,
+ *   안 고른 상태는 같은 색을 짙게/밝게 섞은 단계 — `utils/accessibleColor`).
  */
 export declare const ChipCheckbox: React.FC<ChipCheckboxProps>;

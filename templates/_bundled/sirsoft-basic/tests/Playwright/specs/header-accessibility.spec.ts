@@ -25,7 +25,8 @@ import type { Page } from '@playwright/test';
 
 const NAMES = {
   ko: { cart: '장바구니 (담긴 상품 0개)', user: '로그인', menu: '메뉴', close: '메뉴 닫기', language: '언어', theme: '화면 테마' },
-  en: { cart: 'Cart (0 items)', user: 'Login', menu: 'Menu', close: 'Close menu', language: 'Language', theme: 'Theme' },
+  // user 는 `common.login` 의 en 값 "Log in" 이다(언어 파일 원문 — 종전 기대값 'Login' 은 처음부터 어긋나 있었다).
+  en: { cart: 'Cart (0 items)', user: 'Log in', menu: 'Menu', close: 'Close menu', language: 'Language', theme: 'Theme' },
 } as const;
 
 /** 비회원 화면 언어를 정하고 홈을 연다 — SPA 가 떠서 머리글이 그려질 때까지 기다린다. */

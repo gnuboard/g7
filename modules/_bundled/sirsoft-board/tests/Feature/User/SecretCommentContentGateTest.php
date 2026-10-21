@@ -375,4 +375,37 @@ class SecretCommentContentGateTest extends BoardTestCase
 
         $this->assertFalse(app(SecretContentGate::class)->canViewSecretComment($comment));
     }
+
+    /**
+     * 스레드 앵커는 조상·자손 글의 비밀 댓글을 보고, 형제 가지 글의 비밀 댓글은 못 본다 (#789 D12 — canView 재사용).
+     *
+     * @scenario viewer=thread_anchor
+     *
+     * @effects thread_anchor_sees_secret_comments_on_path_not_sibling
+     *
+     * @return void 반환값 없음
+     */
+    public function test_thread_anchor_sees_secret_comments_on_path_but_not_sibling(): void
+    {
+        $base = "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
+        $other = $this->member(Role::where('identifier', 'user')->first());
+
+        $rootId = $this->createTestPost(['title' => '비밀 원글', 'user_id' => $this->postAuthor->id, 'is_secret' => true]);
+        $mineId = $this->createTestPost(['title' => '내 답변', 'user_id' => $this->outsider->id, 'is_secret' => true, 'parent_id' => $rootId, 'depth' => 1]);
+        $childId = $this->createTestPost(['title' => '내 답변의 답변', 'user_id' => $this->postAuthor->id, 'is_secret' => true, 'parent_id' => $mineId, 'depth' => 2]);
+        $siblingId = $this->createTestPost(['title' => '형제 답변', 'user_id' => $other->id, 'is_secret' => true, 'parent_id' => $rootId, 'depth' => 1]);
+
+        foreach ([$rootId => 'ROOT-SECRET', $childId => 'CHILD-SECRET', $siblingId => 'SIBLING-SECRET'] as $postId => $content) {
+            $this->createTestComment($postId, ['content' => $content, 'user_id' => $this->postAuthor->id, 'is_secret' => true]);
+        }
+
+        $read = fn (int $postId) => array_column(
+            $this->actingAs($this->outsider, 'sanctum')->getJson("{$base}/{$postId}/comments")->assertOk()->json('data'),
+            'content'
+        );
+
+        $this->assertContains('ROOT-SECRET', $read($rootId), '조상(원글) 비밀 댓글');
+        $this->assertContains('CHILD-SECRET', $read($childId), '자손(내 답변의 답변) 비밀 댓글');
+        $this->assertNotContains('SIBLING-SECRET', $read($siblingId), '형제 가지 비밀 댓글은 가려진다');
+    }
 }

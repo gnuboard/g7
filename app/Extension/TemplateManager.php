@@ -2,7 +2,6 @@
 
 namespace App\Extension;
 
-use App\Exceptions\ExtensionUpdateFailedException;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
@@ -15,6 +14,7 @@ use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationInProgressException;
+use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
@@ -24,7 +24,9 @@ use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
+use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
@@ -32,7 +34,9 @@ use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
+use App\Support\BootDeferredLog;
 use App\Support\ExtensionIntegrations;
+use App\Support\LocalizedValue;
 use App\Support\StateContracts;
 use Composer\Semver\Semver;
 use Illuminate\Support\Arr;
@@ -386,11 +390,8 @@ class TemplateManager implements TemplateManagerInterface
 
         // 배열인 경우 로케일에 맞는 값 반환
         if (is_array($value)) {
-            // 요청 언어 → fallback 언어 → 첫 번째 값 → 빈 문자열
-            return $value[$locale]
-                ?? $value[config('app.fallback_locale')]
-                ?? (! empty($value) ? array_values($value)[0] : '')
-                ?? '';
+            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (#148)
+            return LocalizedValue::pick($value, $locale) ?? '';
         }
 
         return '';
@@ -622,11 +623,14 @@ class TemplateManager implements TemplateManagerInterface
             throw new \Exception(__('templates.errors.not_installed', ['template' => $templateName]));
         }
 
+        // 멈춘 업데이트(updating 고착)는 활성화가 정리하고 진행한다(7.1.1 출시 전)
+        if (StuckUpdateRecovery::recover('template', $templateName, $templateRecord, fn (array $attributes) => $this->templateRepository->updateByIdentifier($templateName, $attributes)) !== null) {
+            self::invalidateTemplateStatusCache();
+            $templateRecord = $this->templateRepository->findByIdentifier($templateName);
+        }
+
         // 상태 가드: 설치·삭제·업데이트가 진행 중이면 차단 (모듈·플러그인 활성화와 같은 가드)
-        ExtensionStatusGuard::assertNotInProgress(
-            ExtensionStatus::from($templateRecord->status),
-            $templateName
-        );
+        StuckUpdateRecovery::assertNotInProgress($templateName, $templateRecord);
 
         // 필터 훅 — 직전 훅 뒤에 돈다(before → filter 순서). 직전 훅과 함께 Manager 로 옮겨 CLI·어드민 UI 공통으로
         // 한 번 발화한다(#138 후속 — 설계 결정). 결과 값은 종전처럼 쓰지 않는다(활성화 상태는 아래에서 정한다).
@@ -739,8 +743,10 @@ class TemplateManager implements TemplateManagerInterface
             // 조각이 통째로 빠진다(#712 — 새 관리자 템플릿 활성화 시 38 → 27행).
             // registerModuleLayouts/registerPluginLayouts는 모든 활성 템플릿을 조회하므로
             // 새로 활성화된 템플릿에도 자동으로 레이아웃이 등록됨 (keep 규칙 — 템플릿을 바꿨다 돌아와도 운영자 수정 보존, D3)
-            app(ModuleManager::class)->registerLayoutsForAllActiveModules();
-            app(PluginManager::class)->registerLayoutsForAllActivePlugins();
+            // 켜는 템플릿 종류의 화면만 처리하고 한 확장의 실패는 그 확장만 건너뛴다 — 무관한 확장의 다른 종류 화면 하나가
+            // 깨졌다고 활성화 전체가 되돌아가지 않게 한다(#725 D6).
+            app(ModuleManager::class)->registerLayoutsForAllActiveModules($template['type'], $templateName);
+            app(PluginManager::class)->registerLayoutsForAllActivePlugins($template['type'], $templateName);
 
             // 그 뒤에 활성 모듈/플러그인의 레이아웃 확장(조각)을 새 템플릿에 등록 (keep — 운영자가 고친 조각은 보존)
             $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
@@ -849,7 +855,8 @@ class TemplateManager implements TemplateManagerInterface
         // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
         HookManager::doAction('core.templates.after_deactivate', $templateName);
 
-        Log::info(__('templates.messages.template_deactivated'), [
+        // 부팅 중 자동 비활성화에서도 불리므로 언어팩 번역 등록 뒤에 남긴다
+        BootDeferredLog::info('templates.messages.template_deactivated', [], [
             'template' => $templateName,
         ]);
 
@@ -1005,7 +1012,8 @@ class TemplateManager implements TemplateManagerInterface
     {
         $uninstalledTemplates = [];
         // 캐시된 설치된 템플릿 identifier 목록 활용
-        $installedTemplateIdentifiers = self::getInstalledTemplateIdentifiers();
+        // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
+        $installedTemplateIdentifiers = array_values(array_unique([...self::getInstalledTemplateIdentifiers(), ...self::getRecordedTemplateIdentifiers()]));
         $locale = app()->getLocale();
 
         // 활성 디렉토리 템플릿 중 미설치
@@ -1129,6 +1137,8 @@ class TemplateManager implements TemplateManagerInterface
                     'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
                     'requires_core' => $template['g7_version'] ?? null,
                     'status' => $record->status,
+                    // 멈춘 업데이트(updating 이 10분 넘게 남고 잠금이 빔) — 관리자 카드가 정리·활성화 단추를 보인다
+                    'stuck_update' => StuckUpdateRecovery::isStuck('template', $identifier, $record),
                     'update_available' => $updateAvailable,
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
@@ -1191,9 +1201,13 @@ class TemplateManager implements TemplateManagerInterface
             'identifier' => $template['identifier'],
             'vendor' => $template['vendor'],
             'name' => $this->getLocalizedValue($nameJson, $locale),
-            'version' => $template['version'],
-            'latest_version' => $template['latest_version'] ?? null,
-            'update_available' => $template['update_available'] ?? false,
+            // 판은 DB 기록(설치가 끝난 판)을 앞세운다 — 판 전환이 끝나지 않은 확장(파일은 새 판, 정리가 기록 판을 시작 판으로 되돌림)의
+            // 활성화 응답이 파일 판을 내면 목록·카드(DB 판 + 「업데이트 있음」)와 어긋났다. 파일 판은 file_version 칸으로 따로 낸다.
+            'version' => $templateRecord?->version ?: $template['version'],
+            'file_version' => $template['version'],
+            'latest_version' => $templateRecord?->latest_version ?? ($template['latest_version'] ?? null),
+            'update_available' => (bool) ($templateRecord?->update_available ?? ($template['update_available'] ?? false)),
+            'update_source' => $templateRecord?->update_source,
             'type' => $template['type'],
             'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $template['github_url'] ?? null,
@@ -1721,7 +1735,7 @@ class TemplateManager implements TemplateManagerInterface
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $templateName, 'template', true);
             $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed'), [
+            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                 'template' => $templateName,
                 'error' => $e->getMessage(),
             ]);
@@ -1768,7 +1782,7 @@ class TemplateManager implements TemplateManagerInterface
                 ]);
 
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed'), [
+                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
@@ -1848,7 +1862,7 @@ class TemplateManager implements TemplateManagerInterface
                 $validatedLayouts = $this->validateLayoutFiles($moduleDirectory, $moduleIdentifier, 'template', true);
                 $this->rememberLayoutWarnings();
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.override_layout_registration_failed'), [
+                Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
                     'template' => $templateName,
                     'module' => $moduleIdentifier,
                     'error' => $e->getMessage(),
@@ -1906,7 +1920,7 @@ class TemplateManager implements TemplateManagerInterface
                     ]);
 
                 } catch (\Exception $e) {
-                    Log::error(__('templates.errors.override_layout_registration_failed'), [
+                    Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
                         'file' => $validatedLayout['file'],
                         'template' => $templateName,
                         'module' => $moduleIdentifier,
@@ -2130,7 +2144,8 @@ class TemplateManager implements TemplateManagerInterface
         // 레이아웃 캐시 삭제 (버전 없는 내부 캐시)
         $clearedCount += $this->clearLayoutCaches($templateIdentifier);
 
-        Log::info(__('templates.info.cache_cleared'), [
+        // 부팅 중 자동 비활성화(deactivateTemplate)에서도 불리므로 언어팩 번역 등록 뒤에 남긴다
+        BootDeferredLog::info('templates.info.cache_cleared', [], [
             'template' => $templateIdentifier,
         ]);
 
@@ -2212,7 +2227,8 @@ class TemplateManager implements TemplateManagerInterface
         // PublicTemplateController::getRoutes()와 동일한 캐시 키 패턴 사용
         try {
             $templateService = app(TemplateService::class);
-            $result = $templateService->getRoutesDataWithModules($templateIdentifier);
+            // 공개 routes 응답과 같은 캐시 키를 채우므로 그 응답처럼 빈 맵 `{}` 를 보존한다 (#758)
+            $result = $templateService->getRoutesDataWithModules($templateIdentifier, preserveEmptyMaps: true);
 
             if ($result['success']) {
                 $cacheKey = "template.routes.{$templateIdentifier}.v{$cacheVersion}";
@@ -2358,7 +2374,7 @@ class TemplateManager implements TemplateManagerInterface
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'template', true);
             $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed'), [
+            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                 'template' => $identifier,
                 'error' => $e->getMessage(),
             ]);
@@ -2395,7 +2411,7 @@ class TemplateManager implements TemplateManagerInterface
                 $this->tallyLayoutSync($stats, $entry);
                 $report->add($entry);
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed'), [
+                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
@@ -3227,11 +3243,14 @@ class TemplateManager implements TemplateManagerInterface
             throw new \RuntimeException(__('templates.not_installed', ['template' => $identifier]));
         }
 
-        // 상태 가드
-        ExtensionStatusGuard::assertNotInProgress(
-            ExtensionStatus::from($record->status),
-            $identifier
-        );
+        // 멈춘 업데이트(updating 고착) — --force 면 정리하고 진행한다(7.1.1 출시 전). 업데이트 잠금은 위에서 이미 잡았다.
+        if ($force && StuckUpdateRecovery::recover('template', $identifier, $record, fn (array $attributes) => $this->templateRepository->updateByIdentifier($identifier, $attributes), lockHeld: true) !== null) {
+            self::invalidateTemplateStatusCache();
+            $record = $this->templateRepository->findByIdentifier($identifier);
+        }
+
+        // 상태 가드 (멈춘 업데이트로 보이면 --force 를 안내한다)
+        StuckUpdateRecovery::assertNotInProgress($identifier, $record);
 
         $previousStatus = $record->status;
         $fromVersion = $record->version;
@@ -3318,11 +3337,16 @@ class TemplateManager implements TemplateManagerInterface
         $layoutWarnings = [];
         $recordedColumns = [];
         $filesRestored = false;
+        $journal = null;
 
         try {
             // 1. 백업 생성
             $onProgress?->__invoke('backup', __('extensions.progress.backup'));
             $backupPath = ExtensionBackupHelper::createBackup('templates', $identifier, $onProgress);
+
+            // 진행 기록 — 파일을 바꾼 뒤 DB 판을 적기 전에 프로세스가 죽으면 파일은 새 판·DB 판은 옛 판으로 남는다. 정리가 그 사실을
+            // 알고 알리게 한다. 템플릿은 업그레이드 스텝이 없어 판 기록까지가 판 전환이다.
+            $journal = ExtensionUpdateJournal::begin('template', $identifier, (string) $fromVersion, (string) $toVersion, $updateSource);
 
             // 2. 상태 → updating
             $onProgress?->__invoke('status', __('extensions.progress.status_change'));
@@ -3363,6 +3387,7 @@ class TemplateManager implements TemplateManagerInterface
                 $onProgress?->__invoke('files', __('extensions.progress.replace_files'));
                 if ($stagingPath) {
                     $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$identifier;
+                    $journal->markFilesTouched();
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
                 }
             } finally {
@@ -3458,6 +3483,9 @@ class TemplateManager implements TemplateManagerInterface
             // 8. 백업 삭제 + 캐시 삭제
             $onProgress?->__invoke('cleanup', __('extensions.progress.cleanup'));
             ExtensionBackupHelper::deleteBackup($backupPath);
+            // 진행 기록을 지운다 — 백업을 지운 뒤에는 파일을 되돌리지 않으므로 파일 판·DB 판이 새 판으로 맞고 돌 스텝도 없다. 그 전에
+            // 죽거나 실패하면 기록이 남아 정리·다시 시도가 끝낸 스텝을 건너뛴다(레이아웃 갱신에서 실패해도 스텝은 이미 끝났다).
+            $journal->finish();
             // 백업을 지운 뒤의 실패(완료 훅·캐시 재생성)는 파일을 되돌릴 수 없다 — 파일이 새 버전이므로 DB 버전 칸도 두어야
             // 둘이 맞는다. catch 가 지워진 백업으로 복원을 시도하지 않게 비운다.
             $backupPath = null;
@@ -3505,6 +3533,8 @@ class TemplateManager implements TemplateManagerInterface
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
                 'layout_strategy' => $layoutStrategy,
+                // 이번 실행의 레이아웃 설치 소스 — 활동 로그 리스너가 큐로 돌아도 실행 당시 값을 기록하게 결과에 싣는다.
+                'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
                 'dependency_warnings' => $dependencyWarnings,
@@ -3537,6 +3567,9 @@ class TemplateManager implements TemplateManagerInterface
                     ]);
                 }
             }
+
+            // 진행 기록 — 파일을 되돌렸으면 지우고, 못 되돌렸으면 남겨 정리가 알게 한다
+            $journal?->settleAfterFailure($filesRestored);
 
             // 상태 복원 — 새 버전 기록이 이미 저장된 뒤 실패했고 파일을 백업으로 되돌렸으면 버전 칸도 업데이트 전 값으로
             // 되돌린다. 파일은 옛 버전인데 DB 만 새 버전이면 관리자 화면이 설치되지 않은 버전을 보여 주고, "업데이트 없음" 으로

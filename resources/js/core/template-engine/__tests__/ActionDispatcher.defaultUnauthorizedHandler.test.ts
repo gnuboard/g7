@@ -1,7 +1,7 @@
 /**
  * 시스템 기본 401 처리(`navigate {{auth.loginPath}}`)와 세션 만료 이동 중 오류 처리
  *
- * 라이브 실측(7.1.0 영역 A·B 후속 O-F1): 토큰이 만료된 채 비회원 허용 화면(게시판 글쓰기)을 열면
+ * 라이브 실측(7.1.0): 토큰이 만료된 채 비회원 허용 화면(게시판 글쓰기)을 열면
  * 로그인 화면으로 옮겨지기 직전 「요청을 보내지 못했습니다. 네트워크 연결을 확인…」 토스트가 떴다.
  *
  * 원인 두 겹:
@@ -38,7 +38,7 @@ vi.mock('../../api/ApiClient', () => ({
   })),
 }));
 
-describe('[case:network-5] 기본 401 처리 · 세션 만료 이동 중 오류 처리 (O-F1)', () => {
+describe('[case:network-5] 기본 401 처리 · 세션 만료 이동 중 오류 처리', () => {
   let dispatcher: ActionDispatcher;
   let navigate: ReturnType<typeof vi.fn>;
   let globalUpdates: any[];

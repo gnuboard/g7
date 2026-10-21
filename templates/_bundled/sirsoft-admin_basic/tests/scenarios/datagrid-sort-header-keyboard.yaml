@@ -1,0 +1,16 @@
+feature: DataGrid 정렬 머리 — 키보드로 정렬하고 정렬 상태를 알린다
+
+description: |
+  정렬 가능한 관리자 목록(DataGrid)의 머리 칸이 클릭만 받는 th 라 Tab 이 닿지 않고 Enter·Space 로 정렬할 수 없었으며,
+  지금 정렬을 화살표 글자로만 보였다(7.1.1 — 판정, 이커머스 마일리지 내역 「일시」·「금액」 등 공통).
+  WAI-ARIA 정렬 표 패턴으로 칸 안에 type="button" 단추를 두고 칸에 aria-sort(ascending·descending·none)를 단다.
+  정렬 콜백은 칸의 클릭에 그대로 두고 단추는 클릭을 칸으로 올려 보낸다(칸 여백 클릭 유지·정렬 한 번). 축 control 은 대상 부품이다.
+
+axes:
+  control: [datagrid_sort_header]
+
+effects:
+  - datagrid_sort_header_keyboard_operable
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.sortKeyboard.test.tsx

@@ -12,7 +12,7 @@
       <h3 data-if="{{_global.panelMode === 'create'}}" class="text-heading">$t:sirsoft-ecommerce.admin.brand.form.create_title</h3>
       <h3 data-if="{{_global.panelMode === 'edit'}}" class="text-heading">$t:sirsoft-ecommerce.admin.brand.form.edit_title</h3>
       <div class="flex-center gap-2">
-        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <button type="button" class="px-3 py-1.5 text-label dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
           <on type="click">
             <!-- 편집 취소 ① 돌아갈 자리 — 고른 브랜드가 있으면 그 보기로, 신규 등록 중이었으면 빈 패널로. -->
             <set-state target="global" panelMode="{{_global.selectedBrandId ? 'view' : 'empty'}}"/>
@@ -35,10 +35,10 @@
       <div class="flex gap-3">
         <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
         <div>
-          <h3 class="text-error-strong">$t:common.validation_error</h3>
-          <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+          <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:common.validation_error</h3>
+          <p data-if="{{typeof _local.errors === 'string'}}" class="ecommerce-tone-error-soft mt-2 text-sm">{{_local.errors}}</p>
           <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-            <li class="text-error-soft">{{message}}</li>
+            <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
           </ul>
         </div>
       </div>

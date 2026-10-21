@@ -14,6 +14,7 @@ use App\Helpers\ResponseHelper;
 use App\Models\Template;
 use App\Rules\AllowedTemplateFileType;
 use App\Support\CustomAssets;
+use App\Support\LocaleTag;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -44,9 +45,6 @@ class ExtensionStaticCacheService
 
     /** 확장 식별자 패턴 (vendor-name) — 경로 세그먼트 화이트리스트 */
     private const IDENTIFIER_PATTERN = '/^[a-z0-9]+-[a-z0-9_]+$/';
-
-    /** 로케일 패턴 — 경로 세그먼트 화이트리스트 */
-    private const LOCALE_PATTERN = '/^[a-z]{2}(?:[-_][A-Za-z0-9]{2,8})?$/';
 
     /** 게시 작업 디렉토리(.tmp/.old)를 미완료 잔존물로 보는 나이 (초) — 게시 락 TTL 300 의 2배 */
     private const WORK_DIR_STALE_SECONDS = 600;
@@ -91,6 +89,16 @@ class ExtensionStaticCacheService
     /** isPublished 요청당 메모이즈 (version => 존재 여부) */
     private array $publishedMemo = [];
 
+    /**
+     * 정적 게시 서비스를 생성합니다.
+     *
+     * @param  TemplateService  $templateService  템플릿 lang·routes 병합 결과 조회
+     * @param  TemplateRepositoryInterface  $templateRepository  활성 템플릿 조회
+     * @param  ModuleRepositoryInterface  $moduleRepository  활성 모듈 조회
+     * @param  PluginRepositoryInterface  $pluginRepository  활성 플러그인 조회
+     * @param  ExtensionBundleService  $bundleService  확장 번들 에셋 조회
+     * @param  LanguagePackService  $languagePackService  언어팩 게시 대상 조회
+     */
     public function __construct(
         private TemplateService $templateService,
         private TemplateRepositoryInterface $templateRepository,
@@ -305,6 +313,8 @@ class ExtensionStaticCacheService
      *
      * 프로덕션 전용 — 비프로덕션은 blade 가 정적 URL 을 방출하지 않으므로
      * 게시 자체가 무의미하고(§2-2), testing 환경의 파일 쓰기 부수효과도 차단한다.
+     *
+     * @return void 반환값 없음
      */
     public static function schedulePublishOnTerminate(): void
     {
@@ -372,6 +382,8 @@ class ExtensionStaticCacheService
 
     /**
      * 테스트 격리용 — terminating 예약 플래그를 초기화합니다.
+     *
+     * @return void 반환값 없음
      */
     public static function resetPublishScheduleForTesting(): void
     {
@@ -410,6 +422,7 @@ class ExtensionStaticCacheService
      * @param  int  $version  실패한 확장 캐시 버전
      * @param  string  $reason  실패 사유 코드 (`parent_not_writable` / `write_failed` / `lock_unavailable`)
      * @param  string  $message  진단용 원문 메시지
+     * @return void 반환값 없음
      */
     private static function recordFailure(int $version, string $reason, string $message): void
     {
@@ -433,6 +446,8 @@ class ExtensionStaticCacheService
 
     /**
      * 게시 성공 시 실패 마커를 제거합니다.
+     *
+     * @return void 반환값 없음
      */
     private static function clearFailureMarker(): void
     {
@@ -478,6 +493,7 @@ class ExtensionStaticCacheService
      * 테스트 전용 — root 프로세스 판정을 강제합니다 (null 로 실판정 복귀).
      *
      * @param  bool|null  $isRoot  강제할 판정값
+     * @return void 반환값 없음
      */
     public static function fakeRootProcessForTesting(?bool $isRoot): void
     {
@@ -849,6 +865,7 @@ class ExtensionStaticCacheService
      * @param  int  $version  게시 대상 버전
      * @param  string  $path  쓰기 불가로 판정된 경로
      * @param  string  $summary  사람이 읽는 요약
+     * @return void 반환값 없음
      */
     private function failPreflight(int $version, string $path, string $summary): void
     {
@@ -906,6 +923,7 @@ class ExtensionStaticCacheService
      * 권한 정합화는 코어 공통 프리미티브에 위임한다 (umask 무력화 + POSIX setgid + 소유권 상속).
      *
      * @param  string  $dir  생성할 디렉토리 절대 경로
+     * @return void 반환값 없음
      */
     private function makeDirectory(string $dir): void
     {
@@ -959,6 +977,8 @@ class ExtensionStaticCacheService
      * — 그 경우 즉시 no-op. 실패는 chownRecursive 가 경고 로그로 누적한다.
      * 게시 루트 전체(`build/ext`)를 대상으로 하므로 방금 게시된 버전 디렉토리와
      * 잔존 구버전이 함께 정상화된다.
+     *
+     * @return void 반환값 없음
      */
     private function normalizeOwnership(): void
     {
@@ -1003,6 +1023,7 @@ class ExtensionStaticCacheService
      * @param  Template  $template  활성 템플릿
      * @param  array<string>  $locales  게시 대상 로케일
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
+     * @return void 반환값 없음
      */
     private function publishTemplate(string $tmp, Template $template, array $locales, array &$files): void
     {
@@ -1041,7 +1062,8 @@ class ExtensionStaticCacheService
         // 3. routes 병합 결과 — 프론트 소비 코드 무변경을 위한 성공 봉투 포함.
         //    열화 스냅샷(확장 업데이트 진행 중 등)은 게시하지 않는다 — 정적 파일은
         //    스스로 회복되지 않으므로 열화 상태가 다음 bump 까지 박제된다 (getRoutes 와 동일 규율)
-        $routesResult = $this->templateService->getRoutesDataWithModules($identifier);
+        //    공개 routes 응답의 정적 사본이므로 그 응답처럼 빈 맵 `{}` 를 보존한다 (#758)
+        $routesResult = $this->templateService->getRoutesDataWithModules($identifier, preserveEmptyMaps: true);
 
         if (($routesResult['success'] ?? false) && ! $this->templateService->lastRouteMergeWasDegraded()) {
             $this->writeJson(
@@ -1097,6 +1119,7 @@ class ExtensionStaticCacheService
      * @param  string  $targetDir  게시 대상 절대 경로 (`…/assets/custom`)
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
      * @param  string  $tmp  tmp 루트 (상대 경로 계산용)
+     * @return void 반환값 없음
      */
     private function publishCustomAssets(
         string $extensionType,
@@ -1124,6 +1147,7 @@ class ExtensionStaticCacheService
      * @param  string  $tmp  tmp 루트 (상대 경로 계산용)
      * @param  bool  $excludeCustom  원본 안의 `custom/` 하위를 건너뛸지 (dist 원본은 참 — `custom/` 은
      *                               `publishCustomAssets()` 가 공유 열거자로 따로 게시한다)
+     * @return void 반환값 없음
      */
     private function publishDistAssets(
         string $sourceDir,
@@ -1196,6 +1220,7 @@ class ExtensionStaticCacheService
      * @param  string  $tmp  tmp 디렉토리 절대 경로
      * @param  int  $version  확장 캐시 버전
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
+     * @return void 반환값 없음
      */
     private function publishBundles(string $tmp, int $version, array &$files): void
     {
@@ -1235,6 +1260,7 @@ class ExtensionStaticCacheService
      *
      * @param  string  $tmp  tmp 디렉토리 절대 경로
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
+     * @return void 반환값 없음
      */
     private function publishExtensionCustomAssets(string $tmp, array &$files): void
     {
@@ -1276,6 +1302,9 @@ class ExtensionStaticCacheService
      * 게시 대상 로케일을 열거합니다 — `/api/locales/active` 와 동일 소스
      * (언어팩이 추가한 로케일 포함).
      *
+     * 경로 세그먼트 화이트리스트는 언어팩 설치 규칙(BCP 47, `LocaleTag`)과 같다 — `fil`·`zh-Hant`
+     * 도 게시한다(#148). `_` 는 manifest 검증상 활성 로케일에 올 수 없어 받지 않는다.
+     *
      * @return array<string> 로케일 목록 (패턴 검증 통과분)
      */
     private function publishableLocales(): array
@@ -1284,7 +1313,7 @@ class ExtensionStaticCacheService
 
         return array_values(array_filter(
             is_array($locales) ? $locales : [],
-            static fn ($locale) => is_string($locale) && preg_match(self::LOCALE_PATTERN, $locale)
+            static fn ($locale) => LocaleTag::isValid($locale)
         ));
     }
 
@@ -1295,6 +1324,7 @@ class ExtensionStaticCacheService
      * @param  mixed  $data  직렬화할 데이터
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
      * @param  string  $tmp  tmp 루트 (상대 경로 계산용)
+     * @return void 반환값 없음
      */
     private function writeJson(string $absolutePath, mixed $data, array &$files, string $tmp): void
     {
@@ -1318,6 +1348,7 @@ class ExtensionStaticCacheService
      * @param  string  $target  대상 절대 경로
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
      * @param  string  $tmp  tmp 루트 (상대 경로 계산용)
+     * @return void 반환값 없음
      */
     private function copyFile(string $source, string $target, array &$files, string $tmp): void
     {
@@ -1352,6 +1383,7 @@ class ExtensionStaticCacheService
      *
      * @param  string  $tmp  tmp 디렉토리 절대 경로
      * @param  array<string>  $files  기록된 상대 경로 누적 (참조)
+     * @return void 반환값 없음
      */
     private function writeHtaccess(string $tmp, array &$files): void
     {
@@ -1376,6 +1408,7 @@ class ExtensionStaticCacheService
      * @param  string  $finalDir  최종 버전 디렉토리 절대 경로
      * @param  int  $version  확장 캐시 버전
      * @param  array<string>  $files  게시된 상대 경로 목록
+     * @return void 반환값 없음
      */
     private function writeManifest(string $finalDir, int $version, array $files): void
     {
@@ -1405,6 +1438,7 @@ class ExtensionStaticCacheService
      *
      * @param  string  $absolutePath  기록 대상 절대 경로
      * @param  string  $contents  기록할 내용
+     * @return void 반환값 없음
      *
      * @throws StaticCachePublishException 쓰기 실패 또는 바이트 수 불일치
      */

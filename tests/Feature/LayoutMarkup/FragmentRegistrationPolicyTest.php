@@ -24,11 +24,13 @@ use Tests\TestCase;
  *
  *  ⓐ 붙을 자리(호스트 레이아웃·확장점)가 없는 템플릿에는 등록하지 않는다 — 사용자 템플릿에 관리자 조각 0행.
  *  ⓑ 같은 확장이 같은 대상에 조각 둘을 보내면 두 행이 산다 (`fragment_key` 가 고유 키에 있다).
- *  ⓒ 조각은 붙을 템플릿의 `components.json` 으로 컴파일된다 — 관리자 전용 컴포넌트를 쓴 조각은 사용자 템플릿 컴파일에서 실패해 등록되지 않는다.
+ *  ⓒ 조각 컴파일은 붙을 템플릿과 무관하다(2026-09-28 결정) — 어느 템플릿의 컴포넌트 목록에 없는 컴포넌트를 써도 같은 결과로 등록되고,
+ *     그 컴포넌트가 실제로 있는지는 런타임(활성 템플릿)이 판정한다. 그래서 조각은 한 번만 읽고 실패도 파일마다 한 번만 기록한다(#725).
  *  ⓓ 호스트가 나중에 설치돼도 재등록(`registerAllActiveExtensionsToTemplate`)이 그 조각을 메운다. 갱신 경로는 소스에 없는 조각의 행(고아)을 정리한다.
  *
  * 종전에는 세 등록 루프가 모든 활성 템플릿에 무조건 등록했고(사용자 템플릿에 관리자 대상 13행), 5축 고유 키가
- * 같은 대상의 두 번째 조각을 덮었으며(ecommerce 통화 필드 소실), 경로로 표를 골라 사용자 조각도 관리자 표로 검사됐다.
+ * 같은 대상의 두 번째 조각을 덮었으며(ecommerce 통화 필드 소실), 경로로 표를 골라 사용자 조각도 관리자 표로 검사됐다(이 템플릿별
+ * 컴파일은 2026-09-28 결정으로 폐기 — ⓒ).
  */
 class FragmentRegistrationPolicyTest extends TestCase
 {
@@ -59,7 +61,8 @@ class FragmentRegistrationPolicyTest extends TestCase
         $this->tmp = base_path('storage/framework/testing/fragment_policy_'.uniqid());
         File::ensureDirectoryExists($this->tmp.'/module');
 
-        // 실물 템플릿 식별자를 쓴다 — 조각이 그 템플릿의 components.json 으로 컴파일되는지(ⓒ)를 보려면 표가 실재해야 한다.
+        // 실물 템플릿 식별자를 쓴다 — 관리자·사용자 템플릿 짝을 운영과 같게 둔다. ⓒ 가 고르는 관리자 전용 부품은
+        // 번들 components.json 에서 직접 읽으므로(adminOnlyComponentTag) 컴파일이 이 식별자로 표를 찾지는 않는다.
         $this->admin = Template::factory()->create(['identifier' => 'sirsoft-admin_basic', 'type' => 'admin', 'status' => ExtensionStatus::Active->value]);
         $this->user = Template::factory()->create(['identifier' => 'sirsoft-basic', 'type' => 'user', 'status' => ExtensionStatus::Active->value]);
 

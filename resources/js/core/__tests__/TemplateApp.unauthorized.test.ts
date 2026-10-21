@@ -308,7 +308,7 @@ describe('TemplateApp - 401 자동 리다이렉트 (Issue #301)', () => {
 
   /**
    * 오류 화면(ErrorDisplay)이 #app 을 덮기 전에 React 루트를 반납한다 — 그대로 두면 이후 토스트 갱신이
-   * 지워진 노드에 그려지며 NotFoundError 가 쌓인다(engine-v1.79.0, 7.1.0 실측 O-K2-2). 401 은 이동이라 반납하지 않는다.
+   * 지워진 노드에 그려지며 NotFoundError 가 쌓인다(engine-v1.79.0, 7.1.0 실측). 401 은 이동이라 반납하지 않는다.
    *
    * @scenario screen_takeover=error_display
    * @effects route_error_releases_root_before_error_screen

@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 185개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 136개 |
+| `partials` | 137개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -99,6 +99,7 @@
 | `_partial_filter` | `partials` | partial | - |
 | `_modal_bulk_roles_confirm` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
+| `_modal_editing_confirm` | `partials` | partial | - |
 | `_panel_bulk_roles` | `partials` | partial | - |
 | `_panel_detail` | `partials` | partial | - |
 | `_panel_form` | `partials` | partial | - |
@@ -247,6 +248,10 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
 목록 제목·안내 문구(`layout_strategy_keep_desc`·`modified_layouts_list_title`·`modified_layouts_keep_notice`)도 그 뜻으로
 씁니다. 목록은 유지를 골랐고 수정본이 있을 때만 보이며, 병합 결과 요약은 서버가 성공 문구 뒤에 붙여 보내므로 모달 마크업이
 따로 그리지 않습니다(규칙: 코어 `docs/extension/extension-update-system.md` §10).
+설치·업데이트·레이아웃 갱신 창(템플릿·모듈·플러그인 9개)에는 기본 접힌 「고급 설정」이 있고, 그 안의 라디오가 레이아웃 설치
+소스(`자동(권장)` = auto / `원본 JSON 우선(문제 해결용)` = json)를 `layout_source` 로 요청 본문에 싣습니다. 값과 접힘은
+`_global.{template|module|plugin}LayoutSource`·`…LayoutSourceOpen` 에 두고, **창을 여는 모든 지점과 성공 뒤 초기화**에서
+auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고른 json 이 다음 확장의 창으로 샙니다(1.1.1~, 코어 7.1.1 필요).
 
 **본인인증 메일 문구**(7.1.0~): 별도 편집 화면 없이 「알림 설정」 탭의 분류 칩 「본인인증」에서 일반 알림과 같은 카드·
 편집 모달로 다룹니다. 본인인증 탭의 「메시지」 하위 구획(`_tab_identity_messages`)은 그 자리로 가는 안내 상자만 남습니다.
@@ -414,6 +419,7 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 | 미리보기 HTML 해석 | 같은 값 | `rich` 일 때만 HTML 로 그립니다. 사이트내 알림은 알림센터가 평문으로 그리므로, 여기서만 HTML 로 해석하면 관리자가 본 문구와 사용자가 받는 문구가 다릅니다 |
 | 「관련 사용자」 선택지 | 정의의 `relations` | 선언이 비면 타입 드롭다운에서 그 항목 자체를 감춥니다 — 지원하지 않는 관계를 고르면 수신자가 **0명**이 되고 예외도 로그도 남지 않습니다 |
 | 역할 선택 | `recipients[].value` (서버가 언제나 배열로 정규화) | 다중 선택. 표시 이름은 `display_names` 가 **저장 순서 그대로** 나릅니다 |
+| 특정 회원 검색 | `GET /api/admin/users/search?keyword=…&exclude_withdrawn=1` | 탈퇴 회원은 결과에서 뺍니다(7.1.1) — 연락처가 익명화되고 바깥 채널 발송이 막혀 수신자로 골라도 받지 못합니다. 게시판·이커머스·GDPR·수출입은행 알림 문안 창도 같은 값을 싣습니다. 활동 로그 「회원」 필터처럼 기록을 찾는 자리는 싣지 않습니다 |
 
 `rich` 편집기는 상태를 `_global` 네임스페이스에 두므로 확장점 props 로 `writeScope: "global"`
 과 활성 언어까지 포함한 `writePath` 를 넘깁니다. 노드 `id` 에 활성 언어를 넣어 언어 탭을 바꿀
@@ -566,6 +572,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _panel_view.g7.html (우측: 미리보기)
 │           ├── _panel_bulk_roles.g7.html (여러 개 선택 모드: 고른 메뉴에 역할 일괄 추가·제거)
 │           ├── _modal_bulk_roles_confirm.g7.html (역할 일괄 적용 확인)
+│           ├── _modal_editing_confirm.g7.html (편집 중 다른 메뉴를 고를 때 이탈 확인)
 │           └── _modal_delete.g7.html
 │
 ├── 환경 설정

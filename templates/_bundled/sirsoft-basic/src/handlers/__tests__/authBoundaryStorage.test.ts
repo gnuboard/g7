@@ -121,6 +121,49 @@ describe('authBoundaryStorage (#639 ⑦)', () => {
         expect(setState).toHaveBeenCalledWith({ guestOrderToken: null });
     });
 
+    // @scenario surface=auth_boundary
+    // @effects secret_view_token_cleared_at_auth_boundary
+    it('로그아웃하면 비밀글 열람 토큰 두 키를 지우고 _global.secretViewToken 을 비운다 (공용 PC)', () => {
+        sessionStorage.setItem('g7_board_secret_view_token', 'a'.repeat(40));
+        sessionStorage.setItem('g7_board_secret_view_expires_at', '2099-01-01T00:00:00Z');
+
+        installAuthBoundaryStorageCleanup();
+        auth.emit({ isAuthenticated: false, user: null });
+
+        expect(sessionStorage.getItem('g7_board_secret_view_token')).toBeNull();
+        expect(sessionStorage.getItem('g7_board_secret_view_expires_at')).toBeNull();
+        expect(setState).toHaveBeenCalledWith({ secretViewToken: null });
+    });
+
+    // @scenario surface=auth_boundary
+    // @effects secret_view_token_cleared_at_auth_boundary
+    it('로그인하면 비회원으로 받은 비밀글 열람 토큰 두 키를 지우고 _global.secretViewToken 을 비운다 (서버가 토큰을 발급 신원에 묶는다)', () => {
+        auth = createAuthManager({ isAuthenticated: false, user: null });
+        (window as any).G7Core.AuthManager = { getInstance: () => auth };
+        sessionStorage.setItem('g7_board_secret_view_token', 'a'.repeat(40));
+        sessionStorage.setItem('g7_board_secret_view_expires_at', '2099-01-01T00:00:00Z');
+
+        installAuthBoundaryStorageCleanup();
+        auth.login({ isAuthenticated: true, user: { uuid: 'member-1' } });
+
+        expect(sessionStorage.getItem('g7_board_secret_view_token')).toBeNull();
+        expect(sessionStorage.getItem('g7_board_secret_view_expires_at')).toBeNull();
+        expect(setState).toHaveBeenCalledWith({ secretViewToken: null });
+    });
+
+    // @scenario surface=auth_boundary
+    // @effects secret_view_token_cleared_at_auth_boundary
+    it('부팅 시 인증 복원(로그인 이벤트 없음)으로는 비밀글 열람 토큰을 지우지 않는다', () => {
+        auth = createAuthManager({ isAuthenticated: false, user: null });
+        (window as any).G7Core.AuthManager = { getInstance: () => auth };
+        sessionStorage.setItem('g7_board_secret_view_token', 'keep-token');
+
+        installAuthBoundaryStorageCleanup();
+        auth.emit({ isAuthenticated: true, user: { uuid: 'member-1' } });
+
+        expect(sessionStorage.getItem('g7_board_secret_view_token')).toBe('keep-token');
+    });
+
     // @scenario surface=auth_boundary, storage=guest_keys
     // @effects guest_storage_is_cleared_or_reissued_at_auth_boundary
     it('같은 회원 상태의 재발행은 무시한다', () => {

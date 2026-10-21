@@ -118,8 +118,8 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 79개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 194개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
-| 전용 핸들러 | 34개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
+| 레이아웃 | 193개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 전용 핸들러 | 37개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 1개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
 
@@ -130,6 +130,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 확장점 | 어떻게 쓰는가 |
 |---|---|
 | 레이아웃 166개 | 다른 확장이 `layout_extensions` 로 자기 조각을 끼워 넣습니다 — 이커머스의 헤더 통화 선택기·마이페이지 마일리지 카드, 마케팅의 회원가입 동의 항목이 그 예입니다 |
+| 게시판 확장 자리 5종 | 글 목록 행·글 상세 제목·댓글·글쓰기 맨 위/아래에 연 이름 고정 확장점(`board_post_row_badges` 등, 1.2.1+)입니다. 같은 조각이 유형별 갈래 세 곳에 include 되는 화면이라 overlay 는 basic 에만 닿으므로 이 자리를 씁니다 — [게시판 확장 자리](docs/layouts.md#게시판-확장-자리-121) |
 | 제공 컴포넌트 79개 | 조각을 만드는 확장이 이 컴포넌트로 화면을 구성합니다. **여기 없는 컴포넌트를 쓰면 그 조각은 이 템플릿에서 렌더되지 않습니다** |
 | 전용 핸들러 33개 | 조각의 액션에서 부를 수 있습니다. 네임스페이스가 붙은 11개(`sirsoft-basic.*`)는 전체 이름으로, 나머지는 이름만으로 부릅니다 |
 | 확장 오버라이드 | `extensions/{확장}/` 에 같은 이름의 조각을 두면 그 확장이 제공한 원본을 대체합니다 |
@@ -149,6 +150,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 새 화면을 추가했다면 `_user_base` 를 상속하는지, `routes.json` 에 경로가 등록됐는지 확인
 - [ ] 상점 관련 경로·링크는 표현식(`route_path` · `no_route`)을 유지 — 문자열로 굳히지 않는다
 - [ ] 목록 클러스터(목록 → 상세 → 형제 상세 → 폼 → 복귀) 이동 전 leg 에 `mergeQuery: true`
@@ -157,6 +159,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 - [ ] `extensions/sirsoft-daum_postcode/` 오버라이드는 원본이 바뀌어도 따라가지 않는다 — 그 플러그인 업그레이드 후 확인
 - [ ] TSX/TS 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 프론트엔드 변경은 Playwright spec 동반 — 단위 테스트만으로는 화면 회귀가 드러나지 않는다
+- [ ] 사용자·운영자가 입력한 글(사이트·게시판·상품·회원 이름, 제목·본문·댓글, 알림)을 그리는 노드는 넘침 규칙을 따른다 — 상단 바 이름은 감싼 칸 `min-w-0 flex-1` + `truncate` + 옆 단추 `shrink-0`, 블록 글은 `break-words`, 단추·배지와 같은 flex 줄의 글은 `min-w-0 wrap-anywhere`(`break-words` 는 flex 최소 폭을 줄이지 못한다), 배지·메뉴 라벨 같은 좁은 칸은 `truncate` + 폭 상한(줄지 않는 배지 `max-w-32`), 표의 긴 칸은 `w-full max-w-0` + `block truncate`(자동 표 배치는 칸을 글 폭만큼 늘린다). 공백 없는 긴 글(`https://example.com/aaaa…`)로 297px·1280px 를 재고, 레이아웃 클래스는 `@source` 로 스캔되지 않으므로 새 클래스는 `safelist.txt` 에 있어야 한다 (#143)
 - [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 마이페이지 반응·신고·스크랩 13건이 미등재·앵커 40 으로 red)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-basic --force` (편집기는 활성 디렉토리만 읽는다)
 - [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
@@ -184,6 +187,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | `extension_point` 의 콜백 액션을 `props` 에 선언 | 형제 키 `callbacks` 에 둔다 (`"callbacks": { "onAddressSelect": { … } }`) | 엔진은 `props` 를 **평가해** `extensionPointProps` 로, `callbacks` 를 **그대로** `extensionPointCallbacks` 로 넘기는데 주입된 컴포넌트가 읽는 자리는 후자다. `props` 에 두면 액션이 도달하지 않고, 도달해도 `{{$event.*}}` 가 `$event` 이전에 평가돼 빈 값으로 굳는다 — 확장점 버튼은 정상으로 보이고 자기 일까지 하는데 고른 값만 폼에 안 돌아와, 그 필드가 필수면 저장에 영영 도달하지 못한다 |
 | 색 배경 유틸(`bg-blue-500` 등)을 `dark:` 짝 없이 쓰기 | 한 단계 밝은 짝을 함께 둔다(`bg-blue-600 dark:bg-blue-500`, `bg-blue-500 dark:bg-blue-400`) | 다크 모드에서 밝은 화면 색이 그대로 떠 배지·아바타 원만 튄다. 가드: audit `darkmode-class-pair` |
 | 동시에 여럿 그려질 수 있는 컴포넌트(`Modal` 등)에 고정 id(`id="modal-title"`)를 두고 `aria-labelledby` 로 잇기 | `useId()` 로 만든 id 를 쓴다(스타일·E2E 선택자는 클래스 `.modal-title`) | 창 위에 창이 열리면 id 가 겹쳐 위 창이 아래 창 제목으로 읽힌다(#736). 가드: `Modal.nestedEscape.test.tsx` |
+| 메뉴·목록·제목 단추(`<button>`)에 `w-full`·`flex-1` 로 폭을 주면서 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다(`text-left` 만으로는 부족) | 기본 `Button` 이 `inline-flex items-center justify-center` 를 병합해 넣어, 넓어진 단추의 글·아이콘이 가운데로 간다 — 모바일 헤더 이름·서랍 로그아웃·댓글 메뉴가 이렇게 가운데로 갔다 |
+| 창 안에서 고르는 카드·행(저장 배송지 등)을 클릭만 받는 `<div>` 로 그리기 | 카드를 `<button type="button" aria-pressed="{{고른 조건}}">` 로 그리고 안 블록은 `<span class="block">` 으로 — 카드 안에 다른 단추(수정·삭제)가 있으면 정보 영역만 자기 동작 없는 단추로 두어 클릭이 카드의 고르기 동작으로 올라가게 한다 | Tab 이 닿지 않아 키보드 사용자는 고를 수 없고, 고르지 않으면 잠기는 확인 단추 때문에 진행이 막힌다(배송지 변경·배송지 관리 창). 가드: `address-select-keyboard.test.tsx` |
+| 누르면 무언가 하는 자리(접기 머리·내려받기 카드·사진 썸네일)를 `<on type="click">` 만 단 `<div>`·`<span>`·`<img>` 로 그리기 | `<button type="button">` 으로 그린다 — 펼침은 `aria-expanded`, 사진·아이콘만 있으면 다국어 `aria-label`, 제목이면 `<h3><button>…</button></h3>`, 화면 이동이면 `<a href>`(비회원 조회 토큰처럼 새 탭에서 깨지는 이동은 단추). 마우스 전용 덮개(`fixed inset-0`)는 같은 상태를 닫는 단추·Esc 가 따로 있을 때만 둔다 | Tab 이 닿지 않아 키보드로 열거나 받을 수 없다(7.1.1 — 게시글 첨부·금액 줄 펼침·후기 사진·클레임 번호). 가드: `click-only-keyboard.test.tsx`(basic 레이아웃 전체) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -192,9 +198,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 278개 | `vitest.config.ts` |
-| Playwright | 12개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 70개 | `tests/scenarios` |
+| Vitest | 310개 | `vitest.config.ts` |
+| Playwright | 32개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 118개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

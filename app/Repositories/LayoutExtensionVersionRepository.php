@@ -6,6 +6,7 @@ use App\Contracts\Repositories\LayoutExtensionVersionRepositoryInterface;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
@@ -174,17 +175,19 @@ class LayoutExtensionVersionRepository implements LayoutExtensionVersionReposito
 
             // 2. 확장 모델 조회 및 복원 직전 content 보관 (변경 요약 기준)
             $extension = LayoutExtension::findOrFail($extensionId);
-            $currentContent = $extension->content;
+            // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
+            $currentContent = LayoutEmptyObjects::rawPreserving($extension);
+            $restoredContent = LayoutEmptyObjects::rawPreserving($versionToRestore);
 
             // 3. 확장을 복원할 content로 업데이트 — lock_version 도 올린다(레이아웃 본체와 동형).
             $extension->update([
-                'content' => $versionToRestore->content,
+                'content' => $restoredContent,
                 'lock_version' => ((int) ($extension->lock_version ?? 0)) + 1,
             ]);
 
             // 4. 복원 결과를 새 버전으로 저장 — content 는 복원된 내용, changes_summary 는 복원
             //    직전(currentContent) 대비 변경(레이아웃 본체와 동일 — 복원으로 줄면 삭제, 늘면 추가).
-            return $this->saveVersion($extensionId, $versionToRestore->content, $currentContent);
+            return $this->saveVersion($extensionId, $restoredContent, $currentContent);
         });
     }
 }

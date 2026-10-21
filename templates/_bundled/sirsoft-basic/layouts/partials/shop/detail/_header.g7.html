@@ -3,13 +3,15 @@
 <partial description="상품명, 카테고리, 찜하기">
   <div>
     <div class="flex items-start justify-between">
-      <div>
-        <span class="text-sm text-gray-500 dark:text-gray-400">{{product.data?.category_name}}</span>
+      <!-- 상품명 칸은 줄어들 수 있고(min-w-0) 이름은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 상품명이 찜하기 단추를 밀어냈다(#143). -->
+      <div class="min-w-0">
+        <span class="block truncate text-sm text-gray-500 dark:text-gray-400">{{product.data?.category_name}}</span>
         <div class="flex items-center gap-2 mt-1">
-          <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.name_localized}}</h1>
-          <!-- 라벨 뱃지 -->
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">{{product.data?.name_localized}}</h1>
+          <!-- 라벨 뱃지 — 바탕은 운영자 라벨 색 그대로, 글자는 그 바탕의 상대 휘도로 검정·흰색 중 대비가 큰 쪽을 고른다(어느 색이든 4.58 이상).
+            흰 글자 고정이면 밝은 라벨 색(초록·노랑 500 등)에서 2 안팎으로 읽히지 않았다. #rrggbb 가 아닌 값은 기본 회색으로 그린다(상품 카드와 같은 규칙). -->
           <div data-if="{{product.data?.labels?.length > 0}}" class="flex items-center gap-1 flex-wrap">
-            <span data-each="labelItem in {{product.data?.labels ?? []}}" class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium text-white" style="background-color: {{labelItem.color ?? '#6B7280'}}">{{labelItem.name}}</span>
+            <span data-each="labelItem in {{product.data?.labels ?? []}}" class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium" style="background-color: {{String(labelItem.color ?? '').length === 7 &amp;&amp; String(labelItem.color).startsWith('#') ? labelItem.color : '#6B7280'}}; color: {{((h) => ((c) => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) > 0.179 ? '#000000' : '#ffffff')([1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => v &lt;= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4))))(String(labelItem.color ?? '').length === 7 &amp;&amp; String(labelItem.color).startsWith('#') ? labelItem.color : '#6B7280')}}">{{labelItem.name}}</span>
           </div>
         </div>
       </div>
@@ -17,7 +19,7 @@
       <div class="flex items-center gap-2 flex-shrink-0">
         <!-- 관리자 상품 수정 링크 (권한 게이트, 새 탭) -->
         <include src="./_admin_edit_link.g7.html"/>
-        <button type="button" aria-label="{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? '$t:shop.product.remove_from_wishlist' : '$t:shop.product.add_to_wishlist'}}" aria-pressed="{{!!(_local.isWishlisted ?? product.data?.is_wishlisted)}}" class="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.wishlistLoading}}">
+        <button type="button" aria-label="{{(_local.isWishlisted ?? product.data?.is_wishlisted) ? '$t:shop.product.remove_from_wishlist' : '$t:shop.product.add_to_wishlist'}}" aria-pressed="{{!!(_local.isWishlisted ?? product.data?.is_wishlisted)}}" class="p-2 text-gray-500 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.wishlistLoading}}">
           <on type="click">
             <!-- 찜하기 — 회원이면 켜고 끄고, 비회원이면 로그인 안내 창으로 갈린다. 낙관적 갱신을 하지 않고
                  서버 응답을 기다렸다 반영하므로 그동안 버튼이 잠긴다 -->

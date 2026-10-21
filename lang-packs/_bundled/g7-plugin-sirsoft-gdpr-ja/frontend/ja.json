@@ -230,7 +230,8 @@
         "close": "閉じる",
         "open_policy_page": "本文ページを開く",
         "no_policy_url": "登録されたプライバシーポリシーのURLがありません。",
-        "legacy_slug_note": "以前の形式(ページスラッグ「{slug}」)で記録されたバージョンです。当時リンクが指していたURLを表示します。"
+        "legacy_slug_note": "以前の形式(ページスラッグ「{slug}」)で記録されたバージョンです。当時リンクが指していたURLを表示します。",
+        "load_failed": "ポリシー版の内容を読み込めませんでした。しばらくしてからもう一度お試しください。"
       },
       "not_found": "そのポリシーバージョンが見つかりません。",
       "history_page_summary": "全体 {total}件 · {current} / {last} ページ",
@@ -335,7 +336,8 @@
   },
   "common": {
     "loading": "読み込み中...",
-    "refresh": "更新"
+    "refresh": "更新",
+    "list_load_failed": "一覧を読み込めませんでした。しばらくしてからもう一度お試しください。"
   },
   "banner": {
     "re_appear_reason": "クッキーポリシーがバージョン{version}に変更されたため、同意を改めてご確認します。",

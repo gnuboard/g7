@@ -99,7 +99,7 @@ class RateRunService
         }
         try {
             // 연결 테스트(dry-run)와 실제 갱신은 예산을 나눈다 — 같은 카운터를 쓰면 키를 확인하려고
-            // 연결 테스트를 누른 직후 「지금 갱신」이 60초 동안 429 로 막힌다(PO 지적 2026-09-14).
+            // 연결 테스트를 누른 직후 「지금 갱신」이 60초 동안 429 로 막힌다(2026-09-14 지적).
             $scope = $dryRun ? 'test' : 'manual';
             $limit = $dryRun ? 5 : 20;
             $cooldown = 'koreaexim:'.$scope.':cooldown';

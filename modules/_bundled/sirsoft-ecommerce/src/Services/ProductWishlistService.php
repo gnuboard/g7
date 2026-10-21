@@ -5,12 +5,15 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductWishlistRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 상품 찜 서비스
  */
 class ProductWishlistService
 {
+    use ReappliesPermissionScope;
+
     /**
      * ProductWishlistService 생성자
      *
@@ -106,6 +109,14 @@ class ProductWishlistService
      */
     public function deleteByAdmin(int $id): bool
     {
+        $row = $this->repository->findByIds([$id])->first();
+        if ($row === null) {
+            return false;
+        }
+
+        // 라우트가 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다 — `wishlists.manage` 범위를 재적용
+        $this->assertWithinScope($row, 'sirsoft-ecommerce.wishlists.manage');
+
         return $this->repository->deleteById($id);
     }
 
@@ -122,7 +133,12 @@ class ProductWishlistService
     {
         // 스냅샷은 삭제 «전» 에 뜬다 — 찜은 소프트 삭제가 아니라 지우고 나면 행이 사라져
         // 활동 로그에 남은 id 로는 「누구의 무엇」을 되짚을 수 없다(배송정책 선례와 동형).
-        $snapshots = $this->repository->findByIds($ids)
+        $rows = $this->repository->findByIds($ids);
+
+        // 정적 경로라 미들웨어 스코프 검사가 돌지 않는다 — 대상 전량이 `wishlists.manage` 범위 안이어야 한다(전량 거부)
+        $this->assertAllWithinScope($rows, 'sirsoft-ecommerce.wishlists.manage');
+
+        $snapshots = $rows
             ->map(fn ($row) => [
                 'id' => (int) $row->id,
                 'user_id' => $row->user_id !== null ? (int) $row->user_id : null,

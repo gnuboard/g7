@@ -8,7 +8,9 @@ use App\Seo\SitemapGenerator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Modules\Sirsoft\Ecommerce\Console\Commands\AggregateEcommerceStatsCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\CancelOrphanClaimPaymentsCommand;
@@ -17,6 +19,7 @@ use Modules\Sirsoft\Ecommerce\Console\Commands\EarnMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\ExpireMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyExpiringMileageCommand;
 use Modules\Sirsoft\Ecommerce\Console\Commands\NotifyOverdueCollectionsCommand;
+use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedClaimDetail;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedMemberData;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedOrderRetention;
 use Modules\Sirsoft\Ecommerce\Console\Commands\PlaywrightSeedSiteDayOrders;
@@ -31,6 +34,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
 use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
+use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Repositories\BrandRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CartRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CategoryImageRepository;
@@ -139,6 +143,7 @@ use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
+use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 
 /**
  * Ecommerce 모듈 서비스 프로바이더
@@ -254,6 +259,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         NotifyExpiringMileageCommand::class,
         NotifyOverdueCollectionsCommand::class,
         // E2E·실측 시드 — 3중 가드(CLI · G7_PLAYWRIGHT_BYPASS · APP_DEBUG)가 커맨드 안에 있다.
+        PlaywrightSeedClaimDetail::class,
         PlaywrightSeedMemberData::class,
         PlaywrightSeedOrderRetention::class,
         PlaywrightSeedSiteDayOrders::class,
@@ -273,20 +279,24 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
     {
         parent::register();
 
-        // CurrencyConversionService를 싱글톤으로 등록 (요청 내 통화 설정 캐시 유지)
-        $this->app->singleton(CurrencyConversionService::class);
+        // 아래 4종은 요청·큐 작업 수명 동안 1회 캐시한다(scoped). 싱글톤이면 큐 워커가 재시작될 때까지
+        // 옛 값을 쓴다 — 워커는 작업마다 scoped 인스턴스만 비운다(#724, 코어 #599 선례).
 
-        // ShippingPolicyResolver를 싱글톤으로 등록 (요청 내 기본 배송정책 조회 1회 캐시)
-        $this->app->singleton(ShippingPolicyResolver::class);
+        // CurrencyConversionService (요청·작업 내 통화 설정 캐시 유지)
+        $this->app->scoped(CurrencyConversionService::class);
 
-        // PaymentMethodResolver를 싱글톤으로 등록 (요청 내 결제수단 카탈로그 조회 1회 캐시)
-        $this->app->singleton(PaymentMethodResolver::class);
+        // ShippingPolicyResolver (요청·작업 내 기본 배송정책 조회 1회 캐시)
+        $this->app->scoped(ShippingPolicyResolver::class);
 
-        // EcommerceSettingsService를 싱글톤으로 등록 (공개 #116)
+        // PaymentMethodResolver (요청·작업 내 결제수단 카탈로그 조회 1회 캐시)
+        $this->app->scoped(PaymentMethodResolver::class);
+
+        // EcommerceSettingsService (공개 #116)
         // 위 3종과 달리 미등록이라 주입 지점마다 별개 인스턴스가 만들어졌고, 각자 자기 설정
-        // 캐시를 들고 있었다. 싱글톤 리졸버가 비-싱글톤 설정 서비스를 captive 로 보유하는
-        // 비대칭도 함께 생긴다. 쓰기 메서드가 모두 자기 캐시를 무효화하므로 공유해도 안전하다.
-        $this->app->singleton(EcommerceSettingsService::class);
+        // 캐시를 들고 있었다. 공유 리졸버가 비공유 설정 서비스를 captive 로 보유하는
+        // 비대칭도 함께 생긴다. 같은 요청(작업) 안에서만 공유한다 — 쓰기 메서드가 모두 자기 캐시를
+        // 무효화하므로 요청 안 공유는 안전하고, 작업 경계에서는 새로 만들어 저장된 설정을 다시 읽는다.
+        $this->app->scoped(EcommerceSettingsService::class);
     }
 
     /**
@@ -300,6 +310,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
 
         $this->registerClaimMorphMap();
         $this->registerRateLimiters();
+        $this->registerQueueJobScopeReset();
 
         // Artisan 커맨드 등록
         if ($this->app->runningInConsole()) {
@@ -318,6 +329,27 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
                     $this->app->make(EcommerceSitemapContributor::class)
                 );
             }
+        });
+    }
+
+    /**
+     * 큐 작업이 시작될 때마다 요청 단위 static 캐시를 비웁니다.
+     *
+     * scoped 로 만들 수 없는 static 캐시(통화 설정·배송유형 코드)는 작업 시작마다 비운다 — 큐 워커는 프로세스가
+     * 끝날 때까지 static 을 들고 있어, 관리자가 통화·배송유형을 바꿔도 재시작 전까지 옛 값을 쓴다(#724).
+     * sync 연결 작업은 웹 요청 안에서 돌므로 그 요청의 캐시를 비우지 않는다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function registerQueueJobScopeReset(): void
+    {
+        Queue::before(function (JobProcessing $event) {
+            if ($event->connectionName === 'sync') {
+                return;
+            }
+
+            CurrencySettingsCache::clear();
+            ShippingType::clearCodeCache();
         });
     }
 

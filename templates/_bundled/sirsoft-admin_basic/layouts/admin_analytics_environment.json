@@ -113,6 +113,7 @@
         "showUnit": false
     },
     "computed": {
+        "tabQuery": "{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page'].filter(k => query[k]).map(k => '&' + k + '=' + encodeURIComponent(query[k])).join('')}}",
         "reportName": "{{({browsers: 'browser', os: 'os', devices: 'device_type', resolutions: 'resolution', languages: 'browser_language', locales: 'locale'})[query.tab || 'browsers'] || 'browser'}}",
         "csvUrl": "{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
         "csvFilename": "{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
@@ -220,26 +221,32 @@
                             "tabs": [
                                 {
                                     "id": "browsers",
+                                    "href": "/admin/analytics/environment?tab=browsers{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.environment.tabs.browsers"
                                 },
                                 {
                                     "id": "os",
+                                    "href": "/admin/analytics/environment?tab=os{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.environment.tabs.os"
                                 },
                                 {
                                     "id": "devices",
+                                    "href": "/admin/analytics/environment?tab=devices{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.environment.tabs.devices"
                                 },
                                 {
                                     "id": "resolutions",
+                                    "href": "/admin/analytics/environment?tab=resolutions{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.environment.tabs.resolutions"
                                 },
                                 {
                                     "id": "languages",
+                                    "href": "/admin/analytics/environment?tab=languages{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.environment.tabs.languages"
                                 },
                                 {
                                     "id": "locales",
+                                    "href": "/admin/analytics/environment?tab=locales{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.environment.tabs.locales"
                                 }
                             ]

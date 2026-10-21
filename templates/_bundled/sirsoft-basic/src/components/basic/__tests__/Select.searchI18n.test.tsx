@@ -1,9 +1,9 @@
 // e2e:allow 문구 다국어만 바뀜 — 사용자·관리자 화면 ko/en/ja 브라우저 실측은 Playwright MCP 매트릭스로 수행(7.1.0 Q-G3 세션 2 이력)
 /**
  * @file Select.searchI18n.test.tsx
- * @description 사용자 선택 상자 검색칸 안내·이름·결과 없음 문구 다국어 (7.1.0 validate R4, admin_basic 대칭)
+ * @description 사용자 선택 상자 검색칸 안내·이름·결과 없음 문구 다국어 (7.1.0 전수 실측, admin_basic 대칭)
  *
- * 관리자 Select 는 검색칸 안내·이름을 화면 언어로 바꿨지만(D-J11) 사용자 Select 는 「Search...」·「Search」·
+ * 관리자 Select 는 검색칸 안내·이름을 화면 언어로 바꿨지만 사용자 Select 는 「Search...」·「Search」·
  * 「No results」 가 영어로 고정돼 한국어·일본어 화면에서도 영어로 보이고 읽혔다. 세 문구 모두 화면 언어를 따른다.
  */
 

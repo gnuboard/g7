@@ -124,6 +124,7 @@
                             "name": "Select",
                             "props": {
                                 "id": "exchange_rate_provider",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label",
                                 "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'w-full input-error' : 'w-full'}}",
                                 "name": "language_currency.rate_provider",
                                 "value": "{{_local.form?.language_currency?.rate_provider ?? ''}}",
@@ -222,23 +223,35 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "통화 추가 시작. 여기서는 빈 입력줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다.",
+                                    "comment": "통화 추가 시작. 여기서는 빈 입력줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다.\n              앞서 연 추가 줄을 먼저 null 로 덮고, 통화 이름은 빈 객체 `{}` 가 아니라 **사이트 언어마다 빈 문자열**로 세운다.\n              기본 병합(deep)은 `{}` 로 앞 값을 지우지 못하고, 이름 칸의 자동바인딩이 실물 setLocal(render:false)로 남긴\n              덮어쓰기 기록(__g7SetLocalOverrideKeys·__g7ForcedLocalFields)이 다음 setState 마다 앞 이름을 다시 얹어 null 덮기도\n              무효가 된다(7.1.1 출시 전 실측). 언어 키마다 값을 주면 그 덮어쓰기를 이긴다.",
                                     "type": "click",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "isAddingCurrency": true,
-                                        "form.newCurrency": {
-                                            "code": "",
-                                            "name": {},
-                                            "symbol": "",
-                                            "exchange_rate": 1,
-                                            "rounding_unit": "0.01",
-                                            "rounding_method": "round",
-                                            "decimal_places": 2,
-                                            "is_default": false
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.newCurrency": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isAddingCurrency": true,
+                                                "form.newCurrency": {
+                                                    "code": "",
+                                                    "name": "{{Object.fromEntries((_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => [l, '']))}}",
+                                                    "symbol": "",
+                                                    "exchange_rate": 1,
+                                                    "rounding_unit": "0.01",
+                                                    "rounding_method": "round",
+                                                    "decimal_places": 2,
+                                                    "is_default": false
+                                                }
+                                            }
                                         }
-                                    }
+                                    ]
                                 }
                             ],
                             "props": {

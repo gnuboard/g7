@@ -29,7 +29,7 @@ class LayoutServingPartialDescriptionTest extends TestCase
      *
      * 마크업 `<partial description="…">` 은 조각 루트 노드의 `meta: {is_partial: true, description}` 으로 컴파일된다.
      * 이 설명은 편집기와 개발자를 위한 글(예: 「본인인증 공통 모달 — 428 응답을 가로채는 … launcher」)이고 런타임
-     * 렌더러는 읽지 않는데, `comment` 키만 지우던 탓에 7.1.0 실측(영역 I2)에서 사용자 404 화면 구성 데이터에
+     * 렌더러는 읽지 않는데, `comment` 키만 지우던 탓에 7.1.0 실측에서 사용자 404 화면 구성 데이터에
      * 그대로 실려 방문자에게 전달됐다. 레이아웃 최상단 `meta.description` 은 화면 설명(SEO)이므로 보존한다.
      *
      * @scenario compile_unit=document,source_health=valid

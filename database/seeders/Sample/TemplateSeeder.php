@@ -32,11 +32,11 @@ class TemplateSeeder extends Seeder
             ->first();
 
         if ($template === null) {
-            $this->command->warn('설치된 관리자 템플릿이 없습니다. 관리자 템플릿을 먼저 설치하세요 — 레이아웃 버전 샘플을 건너뜁니다.');
+            $this->command->warn(__('common.console.seeders.template.no_admin_template'));
 
             return;
         }
 
-        $this->command->info("관리자 템플릿 {$template->identifier} (레이아웃 {$template->layouts_count}개)를 샘플 대상으로 씁니다.");
+        $this->command->info(__('common.console.seeders.template.using_template', ['identifier' => $template->identifier, 'count' => $template->layouts_count]));
     }
 }

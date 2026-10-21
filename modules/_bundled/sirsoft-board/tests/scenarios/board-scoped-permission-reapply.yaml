@@ -1,0 +1,141 @@
+feature: 게시판 권한 스코프 재적용 (#789 §6.2·§6.3 B2~B5·B7~B15·§6.4)
+
+description: |
+  권한의 스코프 메타(resource_route_key·owner_key)는 라우트가 그 이름의 모델을 바인딩할 때만 미들웨어가
+  검사한다. 게시판 라우트는 {slug}·{id}·{postId}·{commentId} 를 써서 스코프가 늘 건너뛰어졌고, 코드 안의
+  판정(ChecksBoardPermission)도 같은 미들웨어를 불러 똑같이 빠졌다. 「본인만」·「소유역할」로 위임받은
+  사람이 범위 밖 자원을 다루던 경로를 모두 서비스·저장소 재적용으로 닫는다.
+
+  1. 게시판 관리 권한(manager·admin.manage — 게시판 단위, owner_key created_by)
+     ChecksBoardPermission::checkBoardPermission(s)·checkPermissionByIdentifier 가 보유 확인 뒤 게시판 모델로
+     스코프를 곱한다(B2 SecretContentGate 규칙 4, B3 삭제글·수정 판정, B15 화면 권한 맵이 함께 정렬).
+     블라인드·복원·일괄은 서비스 진입부 BoardManageScope::assert(B4, 일괄은 전량 거부), 삭제·블라인드 글
+     첨부는 hasBoardManagePermission(B5). 403 은 500 이 아니다(컨트롤러 catch 순서).
+  2. 관리자 스크랩·반응(scrap·reaction, owner_key user_id) — 목록은 저장소 스코프, 단건·일괄은 서비스 단언(B7~B9).
+  3. 게시글·댓글 읽기(post·comment, owner_key user_id) — 신고·스크랩·반응 대상(B10·B11)은
+     BoardReadScope::assertTargetReadable, 최근글·인기글(B12)은 캐시 항목 작성자로 응답 시점 판정,
+     공개 프로필(B13)은 범위 밖 게시판 제외, 통합검색(B13)은 게시판별 작성자 조건, 이전/다음 글(B14)은 목록과 같은 쿼리 스코프,
+     댓글 목록 API(B16)는 사용자 문맥(comments.read)으로 조회 — 서비스 문맥 기본값(admin)을 쓰면 범위가 풀린다.
+  4. 신고 관리(reports.*)는 범위를 두지 않는다 — 1케이스 구조 뒤 케이스 테이블에 신고자 컬럼이 없어
+     「본인만」이 일관되게 동작하지 않았다. 메타 선언·코드 판정을 걷어내고 옛 부여 행은 보유만으로 동작한다.
+  5. 재발 방지(§6.4) — 원장 리스너가 바인딩 없는 라우트마다 강제 메서드를 기록하고 감사 테스트가 낡은 원장·새 라우트를 잡는다.
+     래칫: 게시판 관리 권한을 PermissionHelper::check 로 직접 보는 코드 0건.
+
+axes:
+  # 결함 경로·범위·대상 조합은 서로 독립이 아니라 경로마다 의미 있는 조합이 정해져 있다 — 실제 시나리오를 한 축으로 둔다
+  case:
+    - others_board_blind_forbidden
+    - own_board_blind_allowed
+    - role_peer_board_blind_allowed
+    - others_board_restore_forbidden
+    - others_board_bulk_forbidden_all_or_nothing
+    - own_board_bulk_allowed
+    - others_board_comment_blind_restore_forbidden
+    - others_board_deleted_post_hidden
+    - own_board_deleted_post_visible
+    - others_board_secret_content_masked
+    - own_board_secret_content_visible
+    - others_board_deleted_blinded_attachment_forbidden
+    - own_board_deleted_attachment_passes_gate
+    - others_board_can_manage_false
+    - own_board_can_manage_true
+    - others_board_board_abilities_false
+    - own_board_board_abilities_true
+    - detail_scope_baseline_kept
+    - out_of_scope_post_report_forbidden
+    - out_of_scope_post_scrap_forbidden
+    - out_of_scope_post_react_forbidden
+    - out_of_scope_comment_report_react_forbidden
+    - recent_posts_filtered_by_scope
+    - popular_posts_filtered_by_scope
+    - public_profile_filtered_by_scope
+    - search_filtered_by_scope
+    - navigation_filtered_by_scope
+    - directory_recent_posts_filtered_by_scope
+    - comment_list_api_filtered_by_scope
+    - board_routes_have_no_unledgered_scope_gap
+    - board_ledger_enforcers_exist_and_check_scope
+    - board_ledger_listener_registered
+    - board_manage_permission_never_checked_without_board_scope
+    - read_secret_hold_only_check_confined_to_allowlist
+    - admin_scrap_index_filtered_by_scope
+    - admin_scrap_destroy_out_of_scope_forbidden
+    - admin_scrap_destroy_in_scope_allowed
+    - admin_scrap_bulk_out_of_scope_rejects_all
+    - admin_reaction_index_filtered_by_scope
+    - admin_reaction_destroy_out_of_scope_forbidden
+    - admin_reaction_destroy_in_scope_allowed
+    - admin_reaction_bulk_out_of_scope_rejects_all
+    - report_scope_meta_not_declared
+    - report_read_paths_ignore_legacy_scope
+    - report_manage_paths_ignore_legacy_scope
+    - upgrade_clears_report_permission_scopes
+
+effects:
+  # 1. 게시판 관리 권한
+  - others_board_blind_forbidden
+  - own_board_blind_allowed
+  - role_peer_board_blind_allowed
+  - others_board_restore_forbidden
+  - others_board_bulk_forbidden_all_or_nothing
+  - own_board_bulk_allowed
+  - others_board_comment_blind_restore_forbidden
+  - others_board_deleted_post_hidden
+  - own_board_deleted_post_visible
+  - others_board_secret_content_masked
+  - own_board_secret_content_visible
+  - others_board_deleted_blinded_attachment_forbidden
+  - own_board_deleted_attachment_passes_gate
+  - others_board_can_manage_false
+  - own_board_can_manage_true
+  - others_board_board_abilities_false
+  - own_board_board_abilities_true
+  # 2. 관리자 스크랩·반응
+  - admin_scrap_index_filtered_by_scope
+  - admin_scrap_destroy_out_of_scope_forbidden
+  - admin_scrap_destroy_in_scope_allowed
+  - admin_scrap_bulk_out_of_scope_rejects_all
+  - admin_reaction_index_filtered_by_scope
+  - admin_reaction_destroy_out_of_scope_forbidden
+  - admin_reaction_destroy_in_scope_allowed
+  - admin_reaction_bulk_out_of_scope_rejects_all
+  # 3. 게시글·댓글 읽기 부가 경로
+  - detail_scope_baseline_kept
+  - out_of_scope_post_report_forbidden
+  - out_of_scope_post_scrap_forbidden
+  - own_post_scrap_allowed
+  - out_of_scope_post_react_forbidden
+  - out_of_scope_comment_report_react_forbidden
+  - recent_posts_filtered_by_scope
+  - popular_posts_filtered_by_scope
+  - public_profile_filtered_by_scope
+  - search_filtered_by_scope
+  - navigation_filtered_by_scope
+  - directory_recent_posts_filtered_by_scope
+  - comment_list_api_filtered_by_scope
+  # 5. 원장·래칫
+  - board_routes_have_no_unledgered_scope_gap
+  - board_ledger_enforcers_exist_and_check_scope
+  - board_ledger_listener_registered
+  - board_manage_permission_never_checked_without_board_scope
+  - read_secret_hold_only_check_confined_to_allowlist
+  # 4. 신고 관리 — 범위 없음
+  - report_scope_meta_not_declared
+  - report_read_paths_ignore_legacy_scope
+  - report_manage_paths_ignore_legacy_scope
+  - upgrade_clears_report_permission_scopes
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManageScopeTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostScrapTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminReactionTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/PostReadScopeSidePathTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Security/BoardScopedRouteLedgerTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReportScopeRemovedTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/ReportPermissionScopeClearUpgradeTest.php
+
+validation:
+  note: |
+    각 결함 테스트는 수정 전 코드(origin/develop 기준 게시판 모듈)에서 fail 을 확인했다. 대조군(자기 게시판·본인 글·
+    역할 공유)으로 회귀(전체 차단)가 아님을 함께 단언한다. 상태 코드는 403 을 직접 단언해 500 으로 새지 않음을 고정한다.
+    신고 관리(reports.*)는 범위를 두지 않는다 — 범위 메타를 선언에서 빼고, 옛 「본인만」 부여 행이 남아도 보유만으로 동작함을 고정한다.

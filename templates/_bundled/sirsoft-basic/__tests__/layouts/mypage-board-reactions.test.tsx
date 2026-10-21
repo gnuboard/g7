@@ -165,7 +165,8 @@ describe('내 반응 — 행의 세 갈래', () => {
         expect(/reaction\.board_deleted/.test(json)).toBe(true);
         expect(/reactions\.disabled_flag/.test(json)).toBe(true);
         expect(/reactions\.board_deleted/.test(json)).toBe(true);
-        expect(/opacity-50/.test(json)).toBe(true);
+        // 톤 낮춤은 opacity-75 — 50 이면 행 글자가 흰 바탕 대비 4.5 를 넘지 못한다(gray-900 도 3.79)
+        expect(/opacity-75/.test(json)).toBe(true);
     });
 
     // @scenario case=subtab_lists_rows_in_three_states

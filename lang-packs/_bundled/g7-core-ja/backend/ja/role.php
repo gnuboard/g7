@@ -19,6 +19,7 @@ return [
         'permission_ids_array' => '権限リストは配列形式である必要があります。',
         'permission_ids_exists' => '選択した権限の中に無効な権限があります。',
         'permission_ids_integer' => '権限IDは整数である必要があります。',
+        'guest_scope_not_allowed' => '非会員ロールには権限範囲を指定できません。範囲なし(全体)で付与してください。',
     ],
     'errors' => [
         'system_role_delete' => 'システムロールは削除できません。',

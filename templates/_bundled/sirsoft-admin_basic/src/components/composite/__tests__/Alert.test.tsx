@@ -49,7 +49,7 @@ describe('Alert 컴포넌트', () => {
     // @effects alert_contract_with_decorative_icon
     it('info 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
       const { container } = render(<Alert type="info" message="정보 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「info icon」 을 달지 않는다(7.1.0 O-C3b-3)
+      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「info icon」 을 달지 않는다(7.1.0)
       expect(container.querySelector('[aria-label="info icon"]')).toBeNull();
       expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
     });
@@ -76,7 +76,7 @@ describe('Alert 컴포넌트', () => {
     // @effects alert_contract_with_decorative_icon
     it('success 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
       const { container } = render(<Alert type="success" message="성공 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「success icon」 을 달지 않는다(7.1.0 O-C3b-3)
+      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「success icon」 을 달지 않는다(7.1.0)
       expect(container.querySelector('[aria-label="success icon"]')).toBeNull();
       expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
     });
@@ -103,7 +103,7 @@ describe('Alert 컴포넌트', () => {
     // @effects alert_contract_with_decorative_icon
     it('warning 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
       const { container } = render(<Alert type="warning" message="경고 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「warning icon」 을 달지 않는다(7.1.0 O-C3b-3)
+      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「warning icon」 을 달지 않는다(7.1.0)
       expect(container.querySelector('[aria-label="warning icon"]')).toBeNull();
       expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
     });
@@ -130,7 +130,7 @@ describe('Alert 컴포넌트', () => {
     // @effects alert_contract_with_decorative_icon
     it('error 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
       const { container } = render(<Alert type="error" message="에러 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「error icon」 을 달지 않는다(7.1.0 O-C3b-3)
+      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「error icon」 을 달지 않는다(7.1.0)
       expect(container.querySelector('[aria-label="error icon"]')).toBeNull();
       expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
     });

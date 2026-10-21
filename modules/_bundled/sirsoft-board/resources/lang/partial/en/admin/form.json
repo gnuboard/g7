@@ -123,6 +123,20 @@
         "cascade": "Delete together"
       }
     },
+    "secret_reply_visibility": {
+      "label": "Secret Reply Visibility",
+      "hint": "Set how far original post and reply authors, and password-verified visitors, can see each other's posts in a secret thread",
+      "options": {
+        "thread_path": "Thread path (default)",
+        "descendants_only": "Descendants only",
+        "per_post": "Per post"
+      },
+      "descriptions": {
+        "thread_path": "Anyone who can view the original post sees the replies under it, and reply authors see the original post above their reply. Other people's reply branches stay hidden.",
+        "descendants_only": "Anyone who can view the original post sees the replies under it. Reply authors see only their reply and the replies under it.",
+        "per_post": "A secret reply is visible only to its author and to users allowed to view secret posts. Even the original post author cannot see the reply."
+      }
+    },
     "max_comment_depth": {
       "label": "Max Comment Depth",
       "hint": "Enter a value between {{min}} and {{max}}. Setting to 0 disables the nested comment feature."

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\MessageBizppurio\Repositories;
 
 use App\Models\NotificationDefinition;
+use App\Support\LocaleTag;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -106,16 +107,15 @@ class BizppurioTemplateRepository implements BizppurioTemplateRepositoryInterfac
             // sirsoft-ecommerce ProductInquiryRepository 의 product_name_snapshot 검색).
             // 로케일 키는 config 유래(사용자 입력 아님)이고 검색어는 바인딩으로 전달된다.
             $locales = config('app.translatable_locales', ['ko', 'en']);
-            // raw 안의 조인 별칭에는 빌더가 프리픽스를 붙여주지 않으므로 직접 부착한다
-            // (조인 선언의 'as nd' 는 실제로 '{prefix}nd' 별칭이 된다).
-            $ndName = DB::getTablePrefix().'nd.name';
-            $query->where(function ($q) use ($templates, $term, $locales, $ndName) {
+            $query->where(function ($q) use ($templates, $term, $locales) {
                 $q->where($templates.'.notification_type', 'like', $term);
                 foreach ($locales as $locale) {
-                    $q->orWhereRaw(
-                        "JSON_UNQUOTE(JSON_EXTRACT({$ndName}, '$.{$locale}')) LIKE ?",
-                        [$term],
-                    );
+                    // 하이픈 로케일(fil-PH)은 따옴표 없는 JSON 경로가 무효(MySQL 3143)였다 — 형식을 검증하고
+                    // 빌더의 JSON 경로 문법으로 넘겨 키 인용·조인 별칭 프리픽스·DB 별 함수를 문법기에 맡긴다 (#148)
+                    if (! LocaleTag::isValid($locale)) {
+                        continue;
+                    }
+                    $q->orWhere("nd.name->{$locale}", 'like', $term);
                 }
             });
         }
@@ -199,6 +199,7 @@ class BizppurioTemplateRepository implements BizppurioTemplateRepositoryInterfac
      * 템플릿 행을 삭제합니다.
      *
      * @param  BizppurioTemplate  $template  대상 행
+     * @return void 반환값 없음
      */
     public function delete(BizppurioTemplate $template): void
     {

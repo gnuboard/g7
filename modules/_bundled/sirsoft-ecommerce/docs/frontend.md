@@ -55,6 +55,7 @@
 | `_panel_form` | `admin` | partial | - |
 | `_panel_view` | `admin` | partial | - |
 | `_modal_delete_confirm` | `admin` | partial | - |
+| `_modal_editing_confirm` | `admin` | partial | - |
 | `_modal_image_preview` | `admin` | partial | - |
 | `_panel_category_list` | `admin` | partial | - |
 | `_panel_detail` | `admin` | partial | - |
@@ -208,7 +209,6 @@
 | `_modal_clear_seo_cache` | `admin` | partial | - |
 | `_modal_identity_policy_delete` | `admin` | partial | - |
 | `_modal_identity_policy_form` | `admin` | partial | - |
-| `_modal_mail_template_edit` | `admin` | partial | - |
 | `_modal_notification_definition_reset` | `admin` | partial | - |
 | `_modal_notification_template_edit` | `admin` | partial | - |
 | `_modal_notification_template_preview` | `admin` | partial | - |
@@ -316,11 +316,13 @@
 
 환경설정의 탭 전환은 같은 화면으로의 재진입(`navigate replace`)이라 설정 소스가 `refetchOnMount` 로 다시 받아 폼을
 덮습니다. 그래서 탭 줄은 `_local.hasChanges` 가 참이고 지금 탭이 아닌 탭을 누르면 옮기지 않고 확인 창(`_modal_unsaved_tab_switch`, 코어·게시판 환경설정과 같은 공통 창)을 엽니다 —
-가려던 탭은 `_global.pendingEcommerceSettingsTab` 에 둡니다. 창의 [이동] 은 창이 자기 지역 상태를 따로 가지므로
-전역 `_local`(저장 가드가 읽는 자리)과 `$parent._local`(화면 폼이 읽는 자리)에 탭 줄 「변경 없음」 갈래와 **같은 정리 목록**(인라인 추가 폼 플래그·버퍼·오류)과 `hasChanges=false` 를
-쓰고 옮깁니다. 인라인 폼이 새로 생기면 두 목록을 함께 고칩니다(회귀 테스트가 키 일치를 단언). 창에서 사건(`emit-event`)을
-보내 부모의 `<on listen>` 하나로 모으는 방식은 쓰지 않습니다 — 엔진의 컴포넌트 사건 구독이 `handler`·`params` 만 넘겨
-`sequence` 를 받는 쪽이 아무것도 하지 않습니다.
+가려던 탭은 `_global.pendingEcommerceSettingsTab` 에 둡니다. 탭 전환의 정리·이동은 **탭 본문 틀(`ecommerce_settings_tab_content`)의
+`<on listen="sirsoft-ecommerce:settings-switch-tab">` 한 곳**이 맡습니다 — 정리 목록(인라인 추가 폼 플래그·버퍼·오류)과 `hasChanges=false`,
+전역 탭(`activeEcommerceSettingsTab`·`pendingEcommerceSettingsTab=null`), 주소 갱신(`navigate replace`) 순서입니다. 탭 줄의
+「변경 없음」 갈래와 확인 창 [이동](창을 먼저 닫고)은 같은 이벤트에 `{ tab }` 만 실어 보냅니다. 받는 쪽이 페이지 문맥이라
+`target="local"` 쓰기가 화면 폼 렌더러 상태와 저장 가드가 읽는 자리에 함께 닿습니다. 인라인 폼이 새로 생기면 이 목록 하나만
+고칩니다(코어 7.1.1 — 엔진이 이벤트 받기 안의 연속 실행을 지원하면서, 종전에 탭 줄과 확인 창 두 곳에 복제하고 창은 `$parent._local`·
+전역 `_local` 두 자리에 같은 값을 쓰던 우회를 걷어 냈습니다).
 
 다국어 이름의 **필수 언어는 사이트 기본 언어**(`_global.appConfig.siteLocale`, 서버 `app.site_locale`)입니다 —
 보는 사람의 언어가 아닙니다. 상품 옵션 처리기(`optionHandlers.ts` 의 `getDefaultLocale`)가 옵션 조합 이름을 넣는 칸,
@@ -350,7 +352,7 @@
 
 ### 환경설정 본인인증 정책 탭의 목록 조작
 
-환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="ecommerceIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, initLocal)까지 다시 받아 다른 구획의 설정 폼을 서버 값으로 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `ecommerceIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-ecommerce-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 G2 실측).
+환경설정 「본인인증 정책」 탭(`_tab_identity_policies`)의 검색·필터·초기화·쪽 넘김은 `navigate`(replace)에 `refetch_data_sources="ecommerceIdentityPolicies"` 를 붙여 목록 소스만 다시 받습니다(7.1.0~). 붙이지 않으면 설정 본체(`settings`, initLocal)까지 다시 받아 다른 구획의 설정 폼을 서버 값으로 되돌립니다. 목록만 다시 받을 때도 목록 영역 덮개가 뜨도록 `ecommerceIdentityPolicies` 를 `transition_overlay` 의 `wait_for` 에 둡니다. 잠금: `admin-ecommerce-settings-unsaved-tab-confirm.test.ts`. 필터 칸과 검색칸은 설정 폼 밖이라 자동 바인딩을 끄고(`:autoBinding="false"`), 입력 중인 검색어는 `_local.identityPolicySearch` 에 받아 두었다가 Enter 나 검색 단추가 쿼리로 싣습니다. 자동 바인딩되면 `form.filter.*` 에 남아 「변경 있음」을 켜고 탭 전환 확인 창을 잘못 띄웠습니다(7.1.0 실측).
 
 이 탭의 목록·켜고 끄기·추가·수정·삭제는 모듈 경로(`/api/modules/sirsoft-ecommerce/admin/identity-policies`)를 쓰고, 모듈 권한 `sirsoft-ecommerce.identity.policies.read`/`.update` 로 동작합니다(7.1.0~). 목록이 403 이면 데이터소스 `error_handling` 이 `_local.identityPoliciesLoadError='forbidden'` 을 남기고, computed `identityPoliciesNoReadPermission` 이 탭 내용 대신 「권한 없음」 안내(`identity_policies_no_permission`)를 띄웁니다. 수정 권한은 목록 응답 `abilities.can_update`·`can_delete` 로 읽어 읽기 전용 안내(`identity_policies_read_only_notice`)와 추가·토글·편집·삭제, 정책 창 [저장]·삭제 창 [삭제]를 잠급니다. 인증 제공자 선택지(`identityProviders`)는 권한이 필요 없는 공개 목록 `/api/identity/providers` 에서 받습니다. 잠금: `admin-ecommerce-identity-policy-gate.test.ts`.
 
@@ -360,10 +362,14 @@
 
 관리자 클레임 상세의 창(진행 방식 전환·대리 철회·신청 내용 수정·환불 실행)은 입력값을 `_global` 에 모은다 — 모달은 부모 `_local` 을 읽지 못하므로, 여는 핸들러가 대상 신청서를 `_global` 문맥에 두고 실행 핸들러가 거기서 읽는다.
 
+### 비동기 응답 뒤 오류 화면을 부르는 핸들러
+
+자기 API 를 기다린 **뒤** 오류 화면(`showErrorPage`)·이동·상태 쓰기를 하는 핸들러는 시작할 때 화면 표식을 잡아 두고(`captureRouteGeneration()` — 경로+쿼리, 엔진이 `G7Core.navigation.getRouteGeneration()` 을 내면 그 경로 세대도 함께 잡아 나갔다가 같은 주소로 돌아온 경우도 가른다), 응답이 왔을 때 `isSameRouteGeneration()` 이 거짓이면 아무것도 하지 않는다(`initClaimEdit`). 엔진 `showErrorPage` 는 부른 시점의 경로 세대를 출처로 보므로, 응답을 기다리는 사이 사용자가 다른 화면으로 옮긴 뒤 부르면 그 새 화면을 404 로 덮는다. 데이터소스 오류 처리에서 불린 핸들러가 다시 dispatch 할 때는 받은 문맥을 `G7Core.dispatch(action, { componentContext: context })` 로 넘겨, 문맥의 `data.__routeGeneration`(그 fetch 를 시작한 세대)을 엔진이 쓰게 한다(`claimApplyOrderMissing`). 코어 내부(`window.__templateApp`)는 읽지 않는다. 또 init_actions 안에서는 `showErrorPage` 를 기다리지 않는다 — 렌더 전 단계라 본문 칸이 아직 없어 서로를 기다린다.
+
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 218개 (정의: `resources/js/handlers/index.ts`).
+핸들러 220개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -373,6 +379,8 @@
 | `initPreferredCurrency` | `sirsoft-ecommerce.initPreferredCurrency` |
 | `initPreferredShippingCountry` | `sirsoft-ecommerce.initPreferredShippingCountry` |
 | `setDateRange` | `sirsoft-ecommerce.setDateRange` |
+| `focusElement` | `sirsoft-ecommerce.focusElement` |
+| `stopEventPropagation` | `sirsoft-ecommerce.stopEventPropagation` |
 | `setDefaultOption` | `sirsoft-ecommerce.setDefaultOption` |
 | `toggleOption` | `sirsoft-ecommerce.toggleOption` |
 | `toggleProductOptions` | `sirsoft-ecommerce.toggleProductOptions` |
@@ -587,6 +595,8 @@
 | `initNoticeFromUrl` | `sirsoft-ecommerce.initNoticeFromUrl` |
 <!-- @generated:handlers END -->
 
+> **사용 중단 — `claimApplyOrderMissing`**(1.3.1): 클레임 신청 셸의 주문 조회 404 를 작성/수정 진입으로 가르던 핸들러입니다. 코어 7.1.1 부터 데이터소스 오류 처리 안의 `<conditions>` 가 실행되고 그 문맥에서 `route` 를 읽을 수 있어, 번들 사용자 템플릿은 `<when if="{{!!route.claim_number}}"><suppress/></when>` 로 직접 가릅니다. 운영자가 편집기로 저장해 둔 레이아웃이 깨지지 않도록 등록만 유지합니다 — 새 레이아웃에서는 쓰지 않습니다.
+
 <!-- @intent START -->
 핸들러 201개는 레이아웃 JSON 에서 `sirsoft-ecommerce.{이름}` 으로 부릅니다. 관리자 화면 전용이
 아니라 **템플릿의 방문자 화면도 이 핸들러를 씁니다** — `toggleItemSelection` ·
@@ -669,6 +679,11 @@ store 를, 그것도 없으면 취소 여부만 봅니다. 구매자 신청서 �
 이 인자를 필터 상태 `dateBasis` 로 들고 있다가 검색할 때 다시 싣고, 날짜 종류·시작일·종료일·빠른 기간·프리셋·초기화가
 그 상태를 비워 보는 사람의 하루로 돌아갑니다. 날짜와 무관한 조건만 바꿔 검색하면 사이트 하루가 유지됩니다. 인자가
 걸린 동안 날짜 필터 줄에 사이트 시간대 기준이라는 안내(`admin.order.filter.site_day_notice`)를 보입니다.
+
+`stopEventPropagation` 은 조건이 붙는 이벤트 전파 멈춤입니다. 액션 키 `stopPropagation: true` 는 액션의 `if` 를 보기 전에
+적용돼 조건을 받지 못하므로, 헤더 통화 선택 트리거는 「목록이 열려 있을 때의 Esc 만 내 것」을 이 핸들러에 `if` 를 달아
+나타냅니다 — 닫혀 있으면 불리지 않아 Esc 가 기반 레이아웃 뿌리의 서랍 닫기로 올라갑니다. 화면 이벤트는 바깥 요소로 바로
+올라가므로 `<on>` 바로 아래의 진입점 액션으로만 둡니다(`sequence`·`conditions` 안쪽에 두면 늦습니다).
 <!-- @intent END -->
 
 ## 전역 진입점

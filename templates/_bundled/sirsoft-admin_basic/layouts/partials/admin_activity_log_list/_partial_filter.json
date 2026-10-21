@@ -42,6 +42,7 @@
                             ],
                             "props": {
                                 "name": "searchType",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500",
                                 "value": "{{_local.filter.searchType || 'all'}}",
                                 "options": [
@@ -76,7 +77,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "fa-solid fa-search",
-                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
                                     }
                                 },
                                 {
@@ -363,6 +364,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:admin.activity_log.filter.actor_label",
                                         "options": "{{_local.actorSearchResults ?? []}}",
                                         "value": "{{_local.filter.createdBy || ''}}",
                                         "triggerLabel": "$t:admin.activity_log.filter.actor_select",
@@ -392,7 +394,7 @@
                                         "type": "button",
                                         "aria-label": "$t:common.clear_selection",
                                         "title": "$t:common.clear_selection",
-                                        "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                        "className": "text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                                     },
                                     "children": [
                                         {
@@ -460,7 +462,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "~"
                                 },

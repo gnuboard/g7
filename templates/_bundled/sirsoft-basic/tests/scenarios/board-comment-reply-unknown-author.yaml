@@ -1,0 +1,26 @@
+feature: 계정 없는 작성자 댓글에 답변할 때 안내 문구의 이름 자리표시자 (7.1.1)
+
+description: |
+  게시글 상세 댓글의 「답변」 을 누르면 입력칸 위에 「{{name}}님에게 답변 작성 중...」(board.replying_to) 안내가 뜬다.
+  하드 삭제된 회원의 댓글은 author.name 이 null(또는 author 자체가 null)이라 name 값이 비어 자리표시자 `{{name}}` 이
+  그대로 보였다. 사용자 템플릿 partials/board/show/_comment_item 의 안내 문구가 name 값으로
+  `comment?.author?.name || $t('board.unknown_author')` 를 넘겨, 이름이 없으면 「알 수 없음」 으로 채운다.
+  백엔드가 계정 없는 회원 작성자를 비회원으로 내지 않게 한 짝 수정은 게시판 모듈 매니페스트
+  board-deleted-account-author-display.yaml 이 맡는다.
+
+# axis 의미:
+#   author_name — 댓글 작성자 이름이 있는가(present) / 없는가(missing — author.name null 또는 author null)
+axes:
+  author_name: [present, missing]
+
+effects:
+  - reply_hint_shows_author_name            # 이름이 있으면 「{이름}님에게 답변 작성 중...」
+  - reply_hint_falls_back_to_unknown_author # 이름이 없으면 「알 수 없음님에게 답변 작성 중...」, `{{name}}` 이 남지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-deleted-comment-tree.test.tsx
+
+validation:
+  note: |
+    레이아웃 문구를 실제 TranslationEngine 으로 풀어 비교한다. 브라우저 확인(하드 삭제 회원 댓글 「답변」 →
+    「알 수 없음님에게 답변 작성 중...」)은 보고 행에 적힌 절차를 따른다.

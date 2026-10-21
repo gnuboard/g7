@@ -909,7 +909,32 @@ via()
 
 게스트 + database → 게이트 제외 → 발송 안 됨. database 가 차단되므로 `notifications` morph 테이블에 null-id 행이 생기지 않습니다.
 
+## 수신자 분할 발송과 중복 방지 (#139)
+
+수신자가 많을 때(운영자가 「역할 기반 → 전 회원」을 고른 경우 등) 발송을 훅 잡 하나 안의 동기 루프로 돌리면, 잡이 연결의 `retry_after` 를 넘겨 다시 예약되거나 재시도될 때 처음부터 다시 돌아 같은 회원에게 같은 알림이 또 간다. 그래서 두 가지를 한다.
+
+**① 분할 발송** — `NotificationHookListener` 는 템플릿마다 수신자를 **참조**(회원 id·비회원 연락처)로만 뽑는다(`NotificationRecipientResolver::resolveRefs()` — `resolve()` 와 같은 규칙·같은 중복 제거 키). 수신자가 묶음 크기(`notification.fanout.chunk_size`, 기본 100 · env `NOTIFICATION_FANOUT_CHUNK_SIZE`)를 넘으면 묶음마다 자식 잡(`dispatchChunk`)을 띄우고, 넘지 않으면 종전처럼 그 자리에서 보낸다. 자식 잡은 묶음의 회원을 id 순으로 다시 싣는다(역할·권한은 권한 판정이 읽는 컬럼만). 사이 사라진 회원은 건너뛴다. 발송 잡의 큐 옵션은 `tries: 5`(다른 사본을 기다리는 release 도 시도 1회를 쓰므로).
+
+**② 수신자별 중복 방지** — `NotificationDeliveryGuard` 가 기준 **누락 방지 우선(at-least-once)** 으로 판정한다.
+
+| 단계 | 동작 |
+| --- | --- |
+| 보내기 전 | `notification_deliveries` 에 `sending` 행을 선점(리스). 이미 `sent`·`skipped` 면 건너뜀, 다른 사본이 리스 안에서 보내는 중이면 보류 |
+| 보낸 뒤 | 채널 결과 보고서(`DeliveryReport`)로 판정 — 보냄 → `sent`, 건너뜀 → `skipped`, **실패 → 선점 삭제**(재시도가 다시 보낸다) |
+| 루프 끝 | 보류한 수신자를 한 번 더 본다(끝났으면 건너뜀, 리스가 지났으면 넘겨받아 보냄). 그래도 처리 중이면 `RetryHookListenerLaterException(리스+5초)` 로 잡을 미룬다 |
+
+- 중복 방지 키: `sha256(이벤트 ID ␟ 알림 유형 ␟ 채널 ␟ 수신자 키)`. 이벤트 ID 는 훅 리스너 잡 단위(`HookContextCapture::eventId()`)라 재시도·재예약된 사본은 같은 키, 다른 사건은 다른 키다. 수신자 키는 `user:{id}` · `guest:{hash}` · `{모델}:{id}`.
+- 리스(`notification.delivery.claim_lease_seconds`, 기본 60 · env `NOTIFICATION_DELIVERY_CLAIM_LEASE`)보다 오래 걸린 발송 1건(SMTP 정체)은 다른 사본이 넘겨받아 한 번 더 갈 수 있다 — 누락 방지 우선의 대가다. SMTP 1건 최장 응답보다 길게 둔다.
+- 저장소가 실패하면(업데이트 직후 표가 아직 없는 등) 경고 한 번 남기고 선점한 것으로 보고 보낸다(fail-open).
+- 탈퇴 회원 건너뜀은 `skipped` 로 확정해 재실행돼도 건너뜀 로그가 한 번만 남는다.
+- 기록 보관: `notification.delivery.retention_days`(기본 7) — `php artisan notification-delivery:prune {--days=}` 가 매일 04:52 에 지운다.
+- `notification_logs` 를 쓰지 않는 이유: 고유 키가 없고, 실패·건너뜀 행이 섞이며, 관리자 삭제·보존기간 정리로 방지가 풀리고, 리스 상태를 둘 곳이 없다.
+
+**personalize 구독자 계약(재명시)** — `{hook_prefix}.notification.personalize_data` 필터는 큐 워커의 자식 잡에서 돈다. 자식 잡의 `$context`·`$args` 는 큐 직렬화를 거쳐 **모델이 아닌 객체는 null** 이 되므로, 구독자는 `$context` 의 스칼라만 읽는다.
+
 ### 발송 로깅
+
+발송 성공·실패 로그(`core.notification.after_channel_send`·`channel_send_failed` 를 구독하는 `NotificationLogListener`)는 **발송 프로세스 안에서 동기**로 기록한다(#139). 큐로 돌리면 이력이 늦게 보이고, 그 로그에 자기 발송건을 잇는 확장(비즈뿌리오 등)이 발송 때 남긴 프로세스 내 표식을 워커에서 찾지 못해 연결이 늘 실패했다. `core.mail.send_skipped` 는 종전대로 큐다.
 
 비회원 발송도 기존 `notification_logs` 에 정상 기록됩니다 (`NotificationDispatcher::buildContext`).
 

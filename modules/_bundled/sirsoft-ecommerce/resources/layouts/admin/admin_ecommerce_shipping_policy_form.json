@@ -4,6 +4,7 @@
     "layout_name": "admin_ecommerce_shipping_policy_form",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true || _local.claimAddressesDirty === true}}",
         "title": "{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"
     },
     "data_sources": [
@@ -33,10 +34,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "errorCondition": {
@@ -59,6 +79,33 @@
             "fallback": {
                 "data": null
             },
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "복사 진입일 때만 원본을 받는다(신규 경로이므로 `route.id` 가 없을 때로 한정). 원본이 지워졌어도 빈 폼으로 계속 진행하도록 fallback 을 둔다"
         },
         {
@@ -74,7 +121,7 @@
             "loading_strategy": "background",
             "onSuccess": [
                 {
-                    "comment": "회수지 편집 버퍼의 시드는 initLocal 이 아니라 응답 시점의 단일 setState 다 — initLocal 은 마운트 후 한 번 더 적용되며, 그 재적용이 명시적 setState 로 기록한 편집(자동바인딩이 아닌 경로)을 되돌린다. 조회가 `background` 라 응답이 편집보다 늦게 올 수 있다 — 이미 손댄 버퍼(dirty)는 덮지 않고 로딩 완료 표식(`_loaded`)만 합친다. 표식을 별도 로컬 키로 두면 입력 change 의 setState 뒤에 초기값으로 되돌아가고(10차 실측), 편집 뒤의 점 경로 쓰기도 붙지 않으므로 객체 전체를 한 번에 쓴다. `_loaded` 는 회수지 저장 허용 조건이다 — 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 `{exchange:null, return:null}` 이라 '못 받았다' 와 '비어 있다' 가 값으로 구분되지 않는데, 저장은 두 회수지를 항상 함께 실어 `null` 이 서버 삭제 계약을 탄다.",
+                    "comment": "회수지 편집 버퍼의 시드는 initLocal 이 아니라 응답 시점의 단일 setState 다 — initLocal 은 마운트 후 한 번 더 적용되며, 그 재적용이 명시적 setState 로 기록한 편집(자동바인딩이 아닌 경로)을 되돌린다. 조회가 `background` 라 응답이 편집보다 늦게 올 수 있다 — 이미 손댄 버퍼(dirty)는 덮지 않고 로딩 완료 표식(`_loaded`)만 합친다. 표식을 별도 로컬 키로 두면 입력 change 의 setState 뒤에 초기값으로 되돌아가고(실측), 편집 뒤의 점 경로 쓰기도 붙지 않으므로 객체 전체를 한 번에 쓴다. `_loaded` 는 회수지 저장 허용 조건이다 — 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 `{exchange:null, return:null}` 이라 '못 받았다' 와 '비어 있다' 가 값으로 구분되지 않는데, 저장은 두 회수지를 항상 함께 실어 `null` 이 서버 삭제 계약을 탄다.",
                     "handler": "setState",
                     "params": {
                         "target": "local",
@@ -134,6 +181,26 @@
                 "search": "{{_local.templateSearch ?? ''}}",
                 "per_page": 20
             },
+            "onSuccess": [
+                {
+                    "comment": "다시 받기에 성공하면 실패 표시를 내린다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "extraFeeTemplatesLoadFailed": false
+                    }
+                }
+            ],
+            "errorHandling": {
+                "default": {
+                    "comment": "다시 받기(refetch)가 실패하면 템플릿 창이 알 수 있게 표시를 남긴다 — 엔진 판과 무관하게 창은 이 표시로 오류 안내를 가른다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "extraFeeTemplatesLoadFailed": true
+                    }
+                }
+            },
             "comment": "지역별 추가배송비 템플릿(도서산간 등). 추가배송비 구획을 펼칠 때만 필요해 자동 조회를 끄고, 검색어가 바뀌면 그때 다시 받는다"
         }
     ],
@@ -177,7 +244,7 @@
         "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}",
         "addableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active && !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}",
         "addableCountryOptions": "{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}",
-        "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))}}",
+        "shippingMethodOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: $localized(t.name) || t.code}))}}",
         "chargePolicyOptions": "{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}",
         "currencyOptions": "{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}",
         "defaultCurrencyCode": "{{ecommerce_settings?.data?.language_currency?.default_currency}}",
@@ -202,6 +269,14 @@
         ]
     },
     "init_actions": [
+        {
+            "comment": "들어올 때마다 「고친 것 있음」 을 끈다 — 이탈 확인(meta.leave_guard)이 읽는 값이라, 같은 레이아웃의 다른 정책으로 넘어와도 직전 표시가 남지 않게 한다",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "hasChanges": false
+            }
+        },
         {
             "comment": "생성 모드: 배송정책 수정 화면에서 SPA 로 넘어오면 같은 레이아웃이라 엔진이 `_local` 을 비우지 않아 직전 정책의 form(id·이름 등)이 남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). 복사 진입(copy_id)은 copy_source 의 initLocal 이 init_actions 뒤에 병합되고 initShippingPolicyForm 이 country_settings 를 다시 쓰므로 영향 없음.",
             "handler": "setState",
@@ -345,7 +420,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "ecommerce-tone-error-strong text-sm font-medium"
                                         },
                                         "text": "$t:sirsoft-ecommerce.common.validation_error"
                                     },
@@ -365,7 +440,7 @@
                                                 "type": "basic",
                                                 "name": "Li",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "ecommerce-tone-error-soft text-sm"
                                                 },
                                                 "text": "{{message}}"
                                             }
@@ -380,6 +455,7 @@
                         "type": "basic",
                         "name": "Div",
                         "dataKey": "form",
+                        "trackChanges": true,
                         "debounce": 300,
                         "props": {
                             "className": "row-stack"
@@ -427,22 +503,22 @@
                                     {
                                         "id": "footer_list_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "목록으로. 보던 목록 상태를 이고 간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/shipping-policies",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                            "href": "/admin/ecommerce/shipping-policies",
+                                            "mergeQuery": true,
+                                            "className": "button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                                         },
                                         "children": [
                                             {
@@ -524,6 +600,7 @@
                                                                     {
                                                                         "handler": "navigate",
                                                                         "params": {
+                                                                            "bypassLeaveGuard": true,
                                                                             "path": "/admin/ecommerce/shipping-policies",
                                                                             "mergeQuery": true,
                                                                             "query": {}
@@ -570,6 +647,7 @@
                                                                 "handler": "navigate",
                                                                 "if": "{{_local.claimAddressesDirty !== true}}",
                                                                 "params": {
+                                                                    "bypassLeaveGuard": true,
                                                                     "path": "/admin/ecommerce/shipping-policies",
                                                                     "mergeQuery": true,
                                                                     "query": {}

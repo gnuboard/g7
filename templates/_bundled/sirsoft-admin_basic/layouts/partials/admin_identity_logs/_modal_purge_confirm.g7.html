@@ -13,7 +13,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPurgingIdentityLogs}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPurgingIdentityLogs}}">
         <on type="click">
           <!-- 지우는 동안 두 버튼을 모두 잠가 두 번 눌리는 것을 막고, 끝나면 목록을 다시 받아 남은 기록만 보이게 한다. 실패하면 창을 열어 둔 채 사유를 띄운다. -->
           <sequence>

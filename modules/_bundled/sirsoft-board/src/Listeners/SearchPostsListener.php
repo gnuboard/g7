@@ -9,6 +9,7 @@ use App\Search\SearchHighlighter;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Support\BoardReadScope;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -22,6 +23,12 @@ class SearchPostsListener implements HookListenerInterface
 {
     use FormatsBoardDate;
 
+    /**
+     * SearchPostsListener 생성자
+     *
+     * @param  PostService  $postService  게시글 서비스 (게시판 가로지르기 검색)
+     * @param  BoardService  $boardService  게시판 서비스 (검색 대상 게시판·필터 목록)
+     */
     public function __construct(
         private readonly PostService $postService,
         private readonly BoardService $boardService,
@@ -115,7 +122,7 @@ class SearchPostsListener implements HookListenerInterface
             if (! $isRelevantTab) {
                 // 배지를 그리지 않는 화면은 건수 자체를 요청하지 않는다 — 그 경우 집계를 생략한다.
                 return ($context['include_inactive_counts'] ?? true)
-                    ? $this->withCountOnlyResult($results, $boards, $q)
+                    ? $this->withCountOnlyResult($results, $boards, $q, BoardReadScope::resolve($boards, $user))
                     : $this->withEmptyPostsResult($results);
             }
 
@@ -183,15 +190,16 @@ class SearchPostsListener implements HookListenerInterface
      * @param  array  $results  기존 검색 결과
      * @param  iterable  $boards  게시판 목록
      * @param  string  $keyword  검색어
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve())
      * @return array count만 포함된 결과
      */
-    private function withCountOnlyResult(array $results, iterable $boards, string $keyword): array
+    private function withCountOnlyResult(array $results, iterable $boards, string $keyword, array $readScope = []): array
     {
         // 다른 탭을 보는 중이라도 탭 배지에는 건수가 필요하다. 상한을 건 집계라
         // 대량 매칭에서도 비용이 일정하다.
         // 잘린 값을 정확한 것처럼 내보내지 않도록 정확도를 함께 싣는다.
         $boardIds = collect($boards)->pluck('id')->all();
-        $count = $this->postService->countAcrossBoards($boardIds, $keyword);
+        $count = $this->postService->countAcrossBoards($boardIds, $keyword, $readScope);
 
         $results['posts'] = SearchCategoryPayload::fromCountOnly($count, ['available_boards' => []]);
 
@@ -214,6 +222,9 @@ class SearchPostsListener implements HookListenerInterface
         $type = $context['type'] ?? 'all';
 
         $boardIds = collect($boards)->pluck('id')->all();
+        // 읽기 권한의 스코프(본인만·소유역할)는 게시판마다 다르므로 저장소가 게시판별 작성자 조건으로 건다 —
+        // 보유만 보면 「본인 글만」 회원에게 남의 글 제목·본문 미리보기가 검색 결과로 나간다.
+        $readScope = BoardReadScope::resolve($boards, $context['user'] ?? null);
         // available_boards(필터 드롭다운)는 검색 결과 필터와 동일하게 읽기 권한을 통과한
         // 게시판만 담는다 — 권한 없는 게시판이 필터 목록으로 노출되지 않도록 컨텍스트 사용자를 전달.
         $extra = ['available_boards' => $this->boardService->getActiveBoardsListForFilter($context['user'] ?? null)];
@@ -226,7 +237,7 @@ class SearchPostsListener implements HookListenerInterface
         // 전체 탭은 최신 N개만 보여 주므로 깊은 페이지 자체가 없다.
         if ($type === 'all') {
             $allTabLimit = (int) ($context['all_tab_limit'] ?? 5);
-            $searchPage = $this->postService->searchAcrossBoards($boardIds, $keyword, $sort, $allTabLimit, 1);
+            $searchPage = $this->postService->searchAcrossBoards($boardIds, $keyword, $sort, $allTabLimit, 1, $readScope);
 
             return SearchCategoryPayload::fromBounded($searchPage, $format($searchPage->items()), $extra);
         }
@@ -240,19 +251,20 @@ class SearchPostsListener implements HookListenerInterface
             $sort,
             (int) $perPage,
             $context['cursor'] ?? null,
-            (int) $page
+            (int) $page,
+            $readScope
         );
 
         if ($cursorPage !== null) {
             return SearchCategoryPayload::fromCursor(
                 $cursorPage,
-                $this->postService->countAcrossBoards($boardIds, $keyword),
+                $this->postService->countAcrossBoards($boardIds, $keyword, $readScope),
                 $format($cursorPage->items()),
                 $extra
             );
         }
 
-        $searchPage = $this->postService->searchAcrossBoards($boardIds, $keyword, $sort, (int) $perPage, (int) $page);
+        $searchPage = $this->postService->searchAcrossBoards($boardIds, $keyword, $sort, (int) $perPage, (int) $page, $readScope);
 
         return SearchCategoryPayload::fromBounded($searchPage, $format($searchPage->items()), $extra);
     }

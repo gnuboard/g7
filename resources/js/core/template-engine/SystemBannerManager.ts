@@ -11,6 +11,7 @@
  */
 
 import { createLogger } from '../utils/Logger';
+import { pickLocalized } from '../support/localeTag';
 
 const logger = createLogger('SystemBannerManager');
 
@@ -107,7 +108,8 @@ export class SystemBannerManager {
         if (typeof message === 'string') {
             return message;
         }
-        return message[locale] || message['en'] || message['ko'] || Object.values(message)[0] || '';
+        // 화면 언어 → 사이트 기본 언어 → en → 첫 값 (engine-v1.81.0)
+        return pickLocalized(message, locale) ?? '';
     }
 
     /**

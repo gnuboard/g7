@@ -9,16 +9,16 @@
         <span class="text-sm text-blue-600 dark:text-blue-400">{{(searchResults?.data?.products_count ?? 0) | number}}</span>
       </div>
       <!-- 전체보기 버튼 -->
-      <button data-if="{{(searchResults?.data?.products_count ?? 0) > 0}}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+      <a href="/search?type=products&board_slug=&page=&cursor=" :mergeQuery="true" data-if="{{(searchResults?.data?.products_count ?? 0) > 0}}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
         <on type="click">
           <!-- 같은 검색어 안에서 해당 탭 전체 목록으로 넘어가는 이동이라 mergeQuery 로 q 를 승계한다. 탭이 바뀌면 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다 -->
-          <navigate path="/search" :mergeQuery="true">
+          <navigate :mergeQuery="true">
             <query type="products" board_slug="" page="" cursor=""/>
           </navigate>
         </on>
         <span>$t:search.view_all</span>
         <icon name="chevron-right" size="sm"/>
-      </button>
+      </a>
     </div>
     <!-- 상품 그리드 (전체 탭: 최대 5개) -->
     <div data-if="{{searchResults?.data?.products?.length > 0}}" class="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -36,7 +36,7 @@
         <icon name="triangle-exclamation" size="sm" class="text-red-500 dark:text-red-400"/>
         <span>$t:search.failed.title</span>
       </div>
-      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">$t:search.failed.suggestion</p>
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">$t:search.failed.suggestion</p>
     </div>
   </div>
 </partial>

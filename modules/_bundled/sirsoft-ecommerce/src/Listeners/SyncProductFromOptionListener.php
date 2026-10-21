@@ -39,16 +39,20 @@ class SyncProductFromOptionListener implements HookListenerInterface
      */
     public static function getSubscribedHooks(): array
     {
+        // sync: 상품 총재고는 저장 응답과 바로 다시 연 목록에 보이는 파생 데이터다 — 큐로 가면 워커가 돌 때까지
+        // 옛 총재고가 보인다. 발화 지점이 트랜잭션 안이면 같은 트랜잭션에서 함께 커밋된다(#724).
         return [
             // 옵션 재고 일괄 변경 후 상품 재고 동기화
             'sirsoft-ecommerce.product_option.after_bulk_stock_update' => [
                 'method' => 'syncProductStockFromOptions',
                 'priority' => 10,
+                'sync' => true,
             ],
             // 옵션 통합 일괄 수정 후 상품 재고 동기화 (개별 items 경로)
             'sirsoft-ecommerce.option.after_bulk_update' => [
                 'method' => 'syncProductStockFromBulkUpdate',
                 'priority' => 10,
+                'sync' => true,
             ],
         ];
     }

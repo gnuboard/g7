@@ -7,6 +7,10 @@
     "id": "member_notification_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "memberNotifications"
+    },
     "actions": [
         {
             "comment": "쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다.",
@@ -54,9 +58,12 @@
         }
     ],
     "props": {
+        "rowLabelField": "subject",
         "data": "{{memberNotifications?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/member-notifications?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{memberNotifications?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{memberNotifications?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{memberNotifications?.data?.pagination?.has_more_pages ?? false}}",
@@ -67,9 +74,8 @@
         "selectionScope": "page",
         "selectedIds": "{{_global.selectedIds_admin_member_notifications || []}}",
         "selectedCountText": "",
-        "loading": "{{memberNotifications?.loading}}",
         "expandable": true,
-        "emptyMessage": "$t:admin.member_notification.empty_message",
+        "emptyMessage": "{{memberNotifications === undefined ? '' : $t('admin.member_notification.empty_message')}}",
         "actionsColumnHeader": "$t:common.actions",
         "rowActions": [
             {
@@ -114,7 +120,7 @@
                                 "name": "Span",
                                 "if": "{{!row.body_excerpt}}",
                                 "props": {
-                                    "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                    "className": "text-sm text-gray-500 dark:text-gray-400 italic"
                                 },
                                 "text": "$t:admin.member_notification.detail.no_body"
                             }
@@ -215,12 +221,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.member.uuid}}"
-                                        }
-                                    },
                                     "filter_by_member": {
                                         "handler": "navigate",
                                         "params": {
@@ -243,7 +243,9 @@
                                 {
                                     "id": "view_member",
                                     "label": "$t:admin.member_notification.action.view_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "href": "/admin/users/{{row.member.uuid}}",
+                                    "target": "_blank"
                                 },
                                 {
                                     "id": "filter_by_member",
@@ -265,7 +267,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-user",
-                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                         }
                                     },
                                     {

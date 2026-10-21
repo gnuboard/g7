@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ExchangeModeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
@@ -314,7 +315,7 @@ class ClaimItemResource extends BaseApiResource
     protected function localize(mixed $value, string $locale): ?string
     {
         if (is_array($value)) {
-            $value = $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? (reset($value) ?: null);
+            $value = LocalizedValue::pick($value, $locale);
         }
 
         return $value === null ? null : (string) $value;

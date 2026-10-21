@@ -29,4 +29,19 @@ return [
     'permissions' => [
         'credentials_delete' => '회원 인증 앱 등록 해제',
     ],
+    // 콘솔 명령 출력
+    'console' => [
+        'seed_totp' => [
+            'cli_only' => 'CLI 전용 커맨드입니다. (현재 SAPI: :sapi)',
+            'bypass_required' => 'G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — :example)',
+            'mode_required' => '--enroll · --code 중 하나는 지정해야 합니다.',
+            'account_not_found' => '계정을 찾을 수 없습니다: :email',
+        ],
+        'reset' => [
+            'user_not_found' => '회원을 찾을 수 없습니다: :email',
+            'not_enrolled' => '이 회원에게는 등록된 인증 앱이 없습니다: :email',
+            'done' => '인증 앱 등록을 해제했습니다: :email',
+            'next_login_notice' => '다음 로그인부터 이 회원은 인증 앱 코드를 요구받지 않습니다 (메일 폴백이 켜져 있으면 이메일로 받습니다).',
+        ],
+    ],
 ];

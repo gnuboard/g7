@@ -17,6 +17,11 @@ export interface MenuItemData {
      * 주지 않으면 roleNames 길이를 쓴다.
      */
     roleCount?: number;
+    /**
+     * 항목 편집 주소 — 있으면 이름이 행 전체를 덮는 링크(`after:` 덮개)가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 연다(#757).
+     * 보통 클릭은 지금처럼 onClick(선택). 끌기 손잡이·펼침 단추·스위치는 덮개 위층이라 링크 안에 들어가지 않는다.
+     */
+    href?: string;
 }
 export interface SortableMenuItemProps {
     item: MenuItemData;

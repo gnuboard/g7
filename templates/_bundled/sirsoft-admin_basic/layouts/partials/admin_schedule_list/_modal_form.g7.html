@@ -28,14 +28,14 @@
         <div>
           <label class="form-label">
             <span>$t:admin.schedules.form.name</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <input type="text" name="name" defaultValue="{{_global.selectedSchedule?.name ?? ''}}" placeholder="$t:admin.schedules.form.name_placeholder" class="input"/>
         </div>
         <div>
           <label class="form-label">
             <span>$t:admin.schedules.form.type</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <select name="type" class="w-full" value="{{_global.scheduleForm?.type ?? 'artisan'}}">
             <options>
@@ -57,7 +57,7 @@
       <div>
         <label class="form-label">
           <span>$t:admin.schedules.form.command</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <input type="text" name="command" defaultValue="{{_global.selectedSchedule?.command ?? ''}}" placeholder="$t:admin.schedules.form.command_placeholder" class="input font-mono"/>
         <p class="form-hint">$t:admin.schedules.form.command_help</p>
@@ -66,7 +66,7 @@
         <div>
           <label class="form-label">
             <span>$t:admin.schedules.form.frequency</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <select name="frequency" class="w-full" value="{{_global.scheduleForm?.frequency ?? 'daily'}}">
             <options>
@@ -86,7 +86,7 @@
         <div data-if="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom'}}">
           <label class="form-label">
             <span>$t:admin.schedules.form.expression</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <input type="text" name="expression" defaultValue="{{_global.selectedSchedule?.expression ?? '* * * * *'}}" placeholder="* * * * *" class="input font-mono"/>
           <p class="form-hint">$t:admin.schedules.form.expression_help</p>

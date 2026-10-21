@@ -4,7 +4,10 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
+use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\LocalizedValue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,7 +52,7 @@ class Brand extends Model implements FulltextSearchable
      */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
@@ -59,7 +62,7 @@ class Brand extends Model implements FulltextSearchable
      */
     public function updater(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**
@@ -87,14 +90,14 @@ class Brand extends Model implements FulltextSearchable
             return '';
         }
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**
      * 활성 브랜드만 조회 스코프
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeActive($query)
     {
@@ -104,8 +107,8 @@ class Brand extends Model implements FulltextSearchable
     /**
      * 정렬 순서대로 조회 스코프
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeOrdered($query)
     {

@@ -18,7 +18,7 @@ use Tests\TestCase;
  *   `ForeignIdColumnDefinition::constrained()` 가 `references()->on()`, 즉 `ForeignKeyDefinition`
  *   을 반환하기 때문이며, MySQL grammar 의 compileForeign 은 comment 를 다루지 않는다.
  *
- *   실측 (g7_3, 교정 전):
+ *   실측 (개발 DB, 교정 전):
  *     g7_menus.name       → [메뉴 이름 (다국어 JSON)]
  *     g7_menus.created_by → []            ← 규정("전 컬럼 한국어 comment") 위반
  *
@@ -31,6 +31,11 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 백필 데이터 마이그레이션 클래스를 불러옵니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -88,6 +93,7 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
      * @param  string  $table  프리픽스 없는 테이블명
      * @param  string  $column  컬럼명
      * @param  string  $comment  설정할 comment (빈 문자열이면 교정 전 상태 재현)
+     * @return void 반환값 없음
      */
     private function forceComment(string $table, string $column, string $comment): void
     {
@@ -110,6 +116,8 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
 
     /**
      * 백필 스텝을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function runBackfill(): void
     {
@@ -122,6 +130,12 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
      * 마이그레이션이 만든 스키마에 외래키 컬럼 comment 가 실재해야 한다.
      *
      * 교정 전 소스(`->constrained()->comment()`)라면 이 단언이 전부 실패한다.
+     *
+     * @scenario install=fresh_install
+     *
+     * @effects fk_column_comment_emitted_on_fresh_install
+     *
+     * @return void 반환값 없음
      */
     public function test_migrations_emit_comments_on_foreign_key_columns(): void
     {
@@ -155,6 +169,12 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
 
     /**
      * 기설치본 재현 — 비어 있는 comment 를 백필이 채워야 한다.
+     *
+     * @scenario install=existing_install
+     *
+     * @effects empty_fk_column_comment_backfilled
+     *
+     * @return void 반환값 없음
      */
     public function test_backfill_fills_empty_comment(): void
     {
@@ -172,6 +192,12 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
 
     /**
      * 운영자가 직접 넣어 둔 comment 는 덮어쓰지 않아야 한다.
+     *
+     * @scenario install=existing_install
+     *
+     * @effects operator_written_comment_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_backfill_preserves_operator_written_comment(): void
     {
@@ -188,6 +214,12 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
 
     /**
      * 재실행해도 결과가 같아야 한다 (멱등).
+     *
+     * @scenario install=existing_install
+     *
+     * @effects backfill_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_backfill_is_idempotent(): void
     {
@@ -209,6 +241,12 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
 
     /**
      * 설명 외의 컬럼 속성(자료형·NULL 허용)은 바뀌지 않아야 한다.
+     *
+     * @scenario install=existing_install
+     *
+     * @effects backfill_keeps_column_definition_and_constraint
+     *
+     * @return void 반환값 없음
      */
     public function test_backfill_does_not_alter_column_definition(): void
     {
@@ -239,6 +277,12 @@ class BackfillForeignKeyColumnCommentsTest extends TestCase
 
     /**
      * 외래키 제약이 백필 이후에도 유지되어야 한다.
+     *
+     * @scenario install=existing_install
+     *
+     * @effects backfill_keeps_column_definition_and_constraint
+     *
+     * @return void 반환값 없음
      */
     public function test_backfill_keeps_foreign_key_constraint(): void
     {

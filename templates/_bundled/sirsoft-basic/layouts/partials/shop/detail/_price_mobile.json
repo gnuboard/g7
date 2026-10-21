@@ -39,7 +39,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-lg font-bold text-red-500"
+                        "className": "text-lg font-bold text-red-600 dark:text-red-400"
                     },
                     "text": "{{product.data?.discount_rate}}%"
                 },

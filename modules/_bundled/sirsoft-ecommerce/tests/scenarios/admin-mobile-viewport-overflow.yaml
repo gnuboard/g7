@@ -1,0 +1,37 @@
+feature: 관리자 이커머스 화면 — 좁은 화면(390px·320px)에서 넘침·압착이 없다
+
+description: |
+  관리자 이커머스 화면을 휴대폰 폭(390px·320px)으로 열었을 때 브라우저 실측에서 확인된 넘침·압착 결함을
+  레이아웃 정적 구조로 잠근다(`adminMobileViewportOverflow.test.tsx`). 단언마다 실측 결함 하나에 1:1 대응한다
+  — 되돌리면 그 결함이 다시 생긴다.
+
+  결정 사항:
+    - 모달에 `max-w-full` 을 주지 않는다 — `.modal-container` 의 화면 여백 clamp 를 같은 명시도로 이겨 좌우 여백이 0 이 된다.
+    - 주문 상세 모달의 12열 표는 portable 에서 1열 카드로 쌓는다. 금액은 `whitespace-nowrap`, 한글 라벨은 `break-keep`.
+    - 환경설정 기본정보의 `w-80` 고정폭 입력은 폰(0~767px)에서만 전폭 — 태블릿은 넘치지 않는다. 같은 파일이 portable
+      프리셋도 쓰므로 mobile 프리셋 대신 같은 범위의 커스텀 `0-767` 로 쓴다(portable 과 mobile/tablet 프리셋 혼용 금지).
+
+  이 매니페스트는 #757 통합 관문 1(굽기 대조)의 컴파일 경고(`responsive_breakpoint_mix`)를 고치며 이 시험을 바꿀 때,
+  시험에 소유 매니페스트가 없던 상태(기존 부채)를 함께 정리한 것이다.
+
+axes:
+  area:
+    - order_modal            # 주문 상세 취소·일괄 변경 확인 창
+    - bank_modal             # 환경설정 은행 관리 창
+    - coupon_form            # 쿠폰 발급기간 입력 행
+    - settings               # 환경설정 탭바·기본정보
+    - excel_download         # 엑셀 다운로드 날짜 필터
+    - shipping_policy_form   # 배송정책 폼 도서산간 템플릿 창
+
+effects:
+  - modal_keeps_side_margin                    # 모달이 화면 좌우 여백을 유지한다(max-w-full 금지)
+  - order_modal_rows_stack_on_portable         # 12열 행이 portable 에서 1열로 쌓인다
+  - order_modal_text_wraps_cleanly             # 금액은 숫자 안에서 끊기지 않고 한글 라벨은 음절 경계에서 잘리지 않는다
+  - bank_modal_table_fits_narrow_viewport      # 은행코드 칸 하한·표 가로 스크롤
+  - coupon_issue_period_wraps_on_portable      # 발급기간 행이 줄바꿈하고 일시 입력이 전폭
+  - settings_fields_fit_narrow_viewport        # 탭바 단계 패딩·이메일 행 줄바꿈·고정폭 입력의 폰 전폭
+  - excel_date_filter_wraps                    # 날짜 필터 자식 행 flex-wrap
+  - extra_fee_template_table_scrolls           # 도서산간 템플릿 표 가로 스크롤
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminMobileViewportOverflow.test.tsx

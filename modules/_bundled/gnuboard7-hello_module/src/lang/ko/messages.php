@@ -18,4 +18,12 @@ return [
         'delete_success' => '메모가 삭제되었습니다.',
         'delete_failed' => '메모 삭제에 실패했습니다.',
     ],
+    // Hello 모듈 시더 콘솔 출력
+    'seeders' => [
+        'database' => [
+            'start' => 'Hello 모듈 시더 실행 시작',
+            'sample_start' => 'Hello 모듈 샘플 시더 실행',
+            'done' => 'Hello 모듈 시더 실행 완료',
+        ],
+    ],
 ];

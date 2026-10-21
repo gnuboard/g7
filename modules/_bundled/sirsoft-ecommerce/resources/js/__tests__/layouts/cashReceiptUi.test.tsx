@@ -486,6 +486,31 @@ describe('W-2 유저 주문상세 현금영수증 카드 — 상태머신 5종',
     });
 
     /**
+     * 발급 창의 식별번호(휴대폰·카드·사업자등록번호)는 `_global.ecommerceCashReceiptForm` 에 산다. 창 머리 닫기·Esc·바깥 클릭은 엔진
+     * closeModal 로만 이어져 레이아웃 동작을 타지 않으므로, 열려 있는 동안 내내 붙어 있는 본문 틀(조건·반복 없음)의 unmount 가 비운다.
+     * 조건 안 노드에 걸면 창이 열린 채 그 노드가 내려갈 때 입력 중인 번호를 지운다.
+     *
+     * @scenario surface=mypage_order, card_state=issuable, actor=member
+     *
+     * @effects mypage_issue_modal_clears_identifier_on_close
+     */
+    it('발급 창을 닫으면 식별번호 이름 공간을 비운다 — 정리는 조건 없는 본문 틀의 unmount (7.1.1)', () => {
+        const modal = mypageExt.modals[0] as any;
+        const clears: Array<{ guarded: boolean }> = [];
+        const walk = (x: any, guarded: boolean) => {
+            if (!x || typeof x !== 'object') return;
+            const g = guarded || (x !== modal && (x.if !== undefined || x.iteration !== undefined));
+            const hit = (x.lifecycle?.onUnmount ?? []).some((a: any) => a?.handler === 'setState' && a.params?.target === 'global'
+                && Object.prototype.hasOwnProperty.call(a.params, 'ecommerceCashReceiptForm') && a.params.ecommerceCashReceiptForm === null);
+            if (hit) clears.push({ guarded: g });
+            (x.children ?? []).forEach((c: any) => walk(c, g));
+        };
+        walk(modal, false);
+        expect(clears.length).toBeGreaterThan(0);
+        expect(clears.every((c) => !c.guarded)).toBe(true);
+    });
+
+    /**
      * @scenario surface=mypage_order, card_state=issuable, actor=guest
      *
      * @effects mypage_issue_uses_member_or_guest_endpoint
@@ -788,7 +813,7 @@ describe('W-3 관리자 발급 모달', () => {
         const submit = byId(issueModal, 'modal_cash_receipt_submit');
         const expr = String(submit.props.disabled).slice(2, -2);
 
-        // 7.1.0 G05 — 발급은 주문 수정 권한(order.data.abilities.can_update)도 본다. 권한이 있는 문맥에서 번호 유무만 가른다.
+        // 7.1.0 — 발급은 주문 수정 권한(order.data.abilities.can_update)도 본다. 권한이 있는 문맥에서 번호 유무만 가른다.
         const order = { data: { abilities: { can_update: true } } };
         expect(engine.evaluateExpression(expr, { order, _global: { adminCashReceiptForm: { identifier: '' } } })).toBe(true);
         expect(engine.evaluateExpression(expr, { order, _global: { adminCashReceiptForm: { identifier: '01012345678' } } })).toBe(false);
@@ -1070,5 +1095,21 @@ describe('현금영수증 5개 표면 공통 규약', () => {
             const cls = String(icon.props?.className ?? '');
             expect(cls, `Icon(${icon.props?.name}) 에 w-N/h-N 클래스`).not.toMatch(/(^|\s)[wh]-\d/);
         }
+    });
+});
+
+describe('주문서 현금영수증 — 번호 칸 이름 (7.1.1 출시 전 실측)', () => {
+    /**
+     * 번호 칸의 이름이 placeholder(「- 없이 숫자만 입력」)뿐이라 화면 낭독기가 무엇을 넣는 칸인지 읽지 못했다.
+     * 마이페이지 발급 창의 같은 칸과 같은 「식별번호」 키를 aria-label 로 단다.
+     *
+     * @scenario surface=checkout, payment_method=dbank, provider_state=configured
+     *
+     * @effects checkout_fields_mount_on_request_toggle
+     */
+    it('번호 칸은 placeholder 가 아니라 「식별번호」 aria-label 로 읽힌다', () => {
+        const input = byId(checkoutExt, 'ext_checkout_cash_receipt_identifier');
+        expect(input).toBeTruthy();
+        expect(input.props['aria-label']).toBe('$t:sirsoft-ecommerce.order.cash_receipt.identifier');
     });
 });

@@ -347,7 +347,7 @@ describe('shippingPolicyFormLayouts', () => {
             expect(copyDefaultReset.params.target).toBe('local');
 
             // 신규 등록은 회수지 조회 데이터소스가 돌지 않으므로 저장 허용 플래그를 init 에서 세운다
-            // (액션 체인의 `if` 는 `route` 를 읽지 못한다 — S10 10차 실측)
+            // (액션 체인의 `if` 는 `route` 를 읽지 못한다 — 실측)
             const claimLoaded = actions.find((a) => a.params?.['claimAddresses._loaded'] === true);
             expect(claimLoaded).toBeDefined();
             expect(claimLoaded.if).toBe('{{!route.id}}');

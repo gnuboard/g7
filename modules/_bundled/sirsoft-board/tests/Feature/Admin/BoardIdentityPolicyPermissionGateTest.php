@@ -419,7 +419,7 @@ class BoardIdentityPolicyPermissionGateTest extends ModuleTestCase
 
     /**
      * 대상을 바꾸지 않는 수정(사용 토글·다른 칸 수정)은 기존 정책의 대상이 게시판 밖이어도 된다 — 7.0.11 에서 만든
-     * 정책이 업데이트 뒤 토글조차 422 가 되던 결함(B7-1)의 회귀 잠금. 편집 모달처럼 같은 범위·대상을 다시 보내도 같다.
+     * 정책이 업데이트 뒤 토글조차 422 가 되던 결함의 회귀 잠금. 편집 모달처럼 같은 범위·대상을 다시 보내도 같다.
      *
      * @scenario case=identity_legacy_target_unchanged
      *

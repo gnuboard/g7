@@ -95,17 +95,21 @@ function resolveCurrencyByLocale(locale: string | null): string | null {
   if (!locale) {
     return null;
   }
-  // locale 정규화 (ko-KR / ko_KR → ko)
-  const normalized = locale.toLowerCase().split('-')[0].split('_')[0];
-  if (!normalized) {
+  // locale 정규화 — 소문자 + '_'→'-' (zh_TW → zh-tw). 정확일치가 먼저, 없으면 주 언어(fil-PH → fil)로 비교 (#148)
+  const normalize = (value: unknown): string => String(value).toLowerCase().replace(/_/g, '-');
+  const primaryOf = (value: string): string => value.split('-')[0];
+  const normalized = normalize(locale);
+  if (!primaryOf(normalized)) {
     return null;
   }
 
   const currencies = getCurrencies();
-  const matched = currencies.filter((c) => {
-    const locales = Array.isArray(c?.locales) ? c.locales : [];
-    return locales.some((l: unknown) => String(l).toLowerCase() === normalized);
-  });
+  const localesOf = (c: any): string[] => (Array.isArray(c?.locales) ? c.locales.map(normalize) : []);
+  let matched = currencies.filter((c) => localesOf(c).includes(normalized));
+  if (matched.length === 0) {
+    const primary = primaryOf(normalized);
+    matched = currencies.filter((c) => localesOf(c).some((l) => primaryOf(l) === primary));
+  }
 
   // 1) 단일 매칭
   if (matched.length === 1) {

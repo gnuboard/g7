@@ -10,7 +10,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -84,15 +92,15 @@
           </div>
         </div>
         <div class="page-actions">
-          <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="btn btn-icon">
+          <a href="/admin/ecommerce/orders" :mergeQuery="true" aria-label="$t:common.refresh" title="$t:common.refresh" class="btn btn-icon">
             <on type="click">
-              <!-- 쿼리를 떨어뜨린 처음 상태로 되돌린다 -->
-              <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+              <!-- 지금 검색 조건 그대로 목록을 다시 불러온다 -->
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="arrows-rotate" class="text-xl"/>
-          </button>
+          </a>
         </div>
       </div>
       <div data-ref="mobile_top_actions" class="hidden">
@@ -115,14 +123,14 @@
             <on type="click">
               <open-modal target="modal_preset_manage"/>
             </on>
-            <icon name="list" class="text-base icon-muted"/>
+            <icon name="list" class="text-base icon-muted text-gray-500 dark:text-gray-400"/>
             <span class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.order.preset.label</span>
           </button>
           <button type="button" class="text-primary px-4 py-1.5 rounded-full text-sm font-bold border border-gray-900 dark:border-white">$t:sirsoft-ecommerce.admin.order.preset.today_payment</button>
           <button type="button" class="text-secondary px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800">$t:sirsoft-ecommerce.admin.order.preset.bank_pending</button>
         </div>
         <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-6">
-          <select name="searchField" class="w-32" value="{{_local.searchField}}">
+          <select name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.searchField}}">
             <options>
               <option value="all">$t:sirsoft-ecommerce.admin.order.search.field.all</option>
               <option value="order_number">$t:sirsoft-ecommerce.admin.order.search.field.order_number</option>
@@ -143,12 +151,12 @@
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
-            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"/>
           </div>
           <button type="button" class="btn btn-outline">
             <icon name="gear" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.order.search.column_select</span>
-            <span class="text-secondary">({{_local.selectedColumns}})</span>
+            <span class="text-secondary dark:text-gray-300">({{_local.selectedColumns}})</span>
           </button>
           <button type="button" class="btn btn-primary">
             <icon name="filter" class="text-base"/>
@@ -158,7 +166,7 @@
         <div data-ref="filter_date_row" class="flex-center flex-wrap gap-3 mb-4">
           <responsive on="portable" class="row-stack mb-4"/>
           <span class="text-label w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.date</span>
-          <select name="dateType" class="w-32" value="{{_local.dateType}}">
+          <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date" class="w-32" value="{{_local.dateType}}">
             <options>
               <option value="order_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.order_date</option>
               <option value="payment_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.payment_date</option>
@@ -192,11 +200,11 @@
           <responsive on="portable" class="row-stack mb-4"/>
           <span class="text-label w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.order_status</span>
           <div class="flex flex-wrap gap-2">
-            <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
               <span class="w-2 h-2 rounded-full border border-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.waiting</span>
             </div>
-            <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
               <span class="w-2 h-2 rounded-full border border-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_pending</span>
             </div>
@@ -204,7 +212,7 @@
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_complete</span>
             </div>
-            <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
               <span class="w-2 h-2 rounded-full border border-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_hold</span>
             </div>
@@ -224,7 +232,7 @@
               <span class="w-2 h-2 rounded-full bg-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</span>
             </div>
-            <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
               <span class="w-2 h-2 rounded-full border border-current"/>
               <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.cancelled</span>
             </div>
@@ -244,11 +252,11 @@
               <responsive on="portable" class="row-stack mb-3"/>
               <span class="text-tertiary text-xs w-12 pt-1.5 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_refund</span>
               <div class="flex flex-wrap gap-2">
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.requested</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="circle-xmark" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.hold</span>
                 </div>
@@ -256,7 +264,7 @@
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.approved</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="x" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.rejected</span>
                 </div>
@@ -270,15 +278,15 @@
               <responsive on="portable" class="row-stack mb-3"/>
               <span class="text-tertiary text-xs w-12 pt-1.5 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_return</span>
               <div class="flex flex-wrap gap-2">
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.requested</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.payment_pending</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="circle-xmark" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.hold</span>
                 </div>
@@ -286,15 +294,15 @@
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.approved</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="truck" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.pickup_in_progress</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="box" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.pickup_completed</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="x" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.rejected</span>
                 </div>
@@ -308,15 +316,15 @@
               <responsive on="portable" class="row-stack"/>
               <span class="text-tertiary text-xs w-12 pt-1.5 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_exchange</span>
               <div class="flex flex-wrap gap-2">
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.requested</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.payment_pending</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="circle-xmark" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.hold</span>
                 </div>
@@ -324,23 +332,23 @@
                   <icon name="check-circle" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.approved</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="truck" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.pickup_in_progress</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="box" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.pickup_completed</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                <div class="badge-status cursor-pointer bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
                   <icon name="x" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.rejected</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="truck" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.reshipping</span>
                 </div>
-                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
+                <div class="badge-status cursor-pointer bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-600 ring-1 ring-orange-400 dark:ring-orange-500">
                   <icon name="clock" class="text-xs"/>
                   <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.reshipping_completed</span>
                 </div>
@@ -412,16 +420,16 @@
           <responsive on="portable" class="row-stack mb-4"/>
           <span class="text-label w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.category</span>
           <div class="flex flex-wrap gap-2">
-            <select name="category1" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1" name="category1" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1">
               <prop name="options">[]</prop>
             </select>
-            <select name="category2" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2" name="category2" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2">
               <prop name="options">[]</prop>
             </select>
-            <select name="category3" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3" name="category3" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3">
               <prop name="options">[]</prop>
             </select>
-            <select name="category4" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4" name="category4" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4">
               <prop name="options">[]</prop>
             </select>
           </div>
@@ -443,7 +451,7 @@
                 <set-state target="_local" maxPrice="{{$event.target.value}}"/>
               </on>
             </input>
-            <select name="currency" class="w-20" value="krw">
+            <select name="currency" aria-label="$t:sirsoft-ecommerce.admin.order.filter.currency" class="w-20" value="krw">
               <options>
                 <option value="krw">$t:sirsoft-ecommerce.admin.order.filter.currency</option>
               </options>
@@ -509,7 +517,7 @@
       <div data-ref="batch_bar" class="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl mb-6 flex-between flex-wrap gap-4">
         <div class="flex-center flex-wrap gap-4">
           <span class="font-bold text-sm text-secondary">$t:sirsoft-ecommerce.admin.order.batch.selected_count|count=0</span>
-          <select name="batchAction" class="w-40" placeholder="$t:sirsoft-ecommerce.admin.order.batch.status_change" value="{{_local.batchAction}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.batch.status_change" name="batchAction" class="w-40" placeholder="$t:sirsoft-ecommerce.admin.order.batch.status_change" value="{{_local.batchAction}}">
             <options>
               <option value="preparing">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</option>
               <option value="shipping_ready">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_ready</option>
@@ -521,9 +529,9 @@
               <set-state target="_local" batchAction="{{$event.target.value}}"/>
             </on>
           </select>
-          <span class="text-gray-300 dark:text-gray-600">|</span>
+          <span class="text-gray-600 dark:text-gray-400">|</span>
           <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.order.batch.shipping_process:</span>
-          <select name="carrier_id" class="w-32" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.batch.carrier" name="carrier_id" class="w-32" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
             <on type="change">
               <!-- 일괄 출고에 쓸 택배사 — 옆 운송장번호와 짝을 이룬다 -->
               <set-state target="_local" carrier_id="{{$event.target.value}}"/>
@@ -543,7 +551,7 @@
         <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
           <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.order.table.total_count|count=12</span>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-36" value="{{_local.sortBy}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-36" value="{{_local.sortBy}}">
               <options>
                 <option value="latest">$t:sirsoft-ecommerce.admin.order.table.sort.latest</option>
                 <option value="oldest">$t:sirsoft-ecommerce.admin.order.table.sort.oldest</option>
@@ -555,7 +563,7 @@
                 <set-state target="_local" sortBy="{{$event.target.value}}"/>
               </on>
             </select>
-            <select name="perPage" class="w-24" value="{{_local.perPage}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-24" value="{{_local.perPage}}">
               <options>
                 <option :value="10">$t:sirsoft-ecommerce.admin.order.table.per_page|count=10</option>
                 <option :value="20">$t:sirsoft-ecommerce.admin.order.table.per_page|count=20</option>
@@ -582,37 +590,37 @@
             <div class="row-stack">
               <div class="admin-card">
                 <div class="flex-between mb-2">
-                  <div class="flex-center gap-2">
+                  <label class="flex-center gap-2 cursor-pointer">
                     <input type="checkbox" class="w-4 h-4"/>
                     <span class="text-sm font-bold text-primary">ord251010567890</span>
-                  </div>
+                  </label>
                   <button type="button" class="text-tertiary text-lg">⋮</button>
                 </div>
                 <div class="text-xs text-tertiary mb-4">2024-10-10 18:25:00</div>
                 <div class="flex gap-3 mb-4">
                   <div class="w-16 h-16 bg-gray-800 dark:bg-gray-700 rounded flex-shrink-0"/>
                   <div class="flex-1">
-                    <div class="text-sm font-bold text-primary mb-1">청소 스토퍼</div>
+                    <div class="text-sm font-bold text-primary mb-1">$t:sirsoft-ecommerce.admin.sample.products.cleaning_stopper</div>
                     <div class="text-xs text-tertiary mb-2">0.9kg / 0.0065m³</div>
                     <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</span>
                   </div>
                   <div class="text-right">
-                    <div class="text-sm font-bold text-primary">55,000원</div>
-                    <div class="text-xs text-green-600 dark:text-green-400">+55,000원</div>
+                    <div class="text-sm font-bold text-primary">₩55,000</div>
+                    <div class="text-xs text-green-700 dark:text-green-400">+₩55,000</div>
                   </div>
                 </div>
                 <div class="pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2 text-sm">
                   <div class="flex justify-between">
                     <span class="text-tertiary">$t:sirsoft-ecommerce.admin.order.mobile.orderer:</span>
-                    <span class="text-primary font-medium">🤖 한지민 (USR009)</span>
+                    <span class="text-primary font-medium">🤖 $t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.han_jimin|id=USR009</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-tertiary">$t:sirsoft-ecommerce.admin.order.mobile.payment_delivery:</span>
-                    <span class="text-primary">토스페이 / 택배</span>
+                    <span class="text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.payment_shipping|payment=$t:sirsoft-ecommerce.admin.sample.misc.toss_pay|shipping=$t:sirsoft-ecommerce.admin.sample.misc.parcel</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-tertiary">$t:sirsoft-ecommerce.admin.order.mobile.country:</span>
-                    <span class="text-primary">🇰🇷 대한민국</span>
+                    <span class="text-primary">🇰🇷 $t:sirsoft-ecommerce.admin.sample.misc.korea</span>
                   </div>
                 </div>
               </div>
@@ -622,7 +630,7 @@
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <th class="text-table-header py-3 px-4 text-left w-10">
-                  <input type="checkbox" class="w-4 h-4"/>
+                  <input type="checkbox" aria-label="$t:common.select_all" class="w-4 h-4"/>
                 </th>
                 <th class="text-table-header py-3 px-4 text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_date</th>
                 <th class="text-table-header py-3 px-4 text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_number</th>
@@ -637,9 +645,9 @@
               </tr>
             </thead>
             <tbody>
-              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="py-4 px-4">
-                  <input type="checkbox" class="w-4 h-4"/>
+                  <input type="checkbox" aria-label="$t:common.select_item|name=ord251010567890" class="w-4 h-4"/>
                 </td>
                 <td class="empty-state-cell text-sm text-secondary whitespace-nowrap">2024-10-10
 18:25:00</td>
@@ -648,25 +656,25 @@
                   <span class="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</span>
                 </td>
                 <td class="empty-state-cell">
-                  <div class="text-sm font-bold text-primary">55,000원</div>
-                  <div class="text-xs text-green-600 dark:text-green-400">+55,000원</div>
+                  <div class="text-sm font-bold text-primary">₩55,000</div>
+                  <div class="text-xs text-green-700 dark:text-green-400">+₩55,000</div>
                 </td>
                 <td class="py-4 px-4">
                   <div class="flex-center gap-3">
                     <div class="w-12 h-12 bg-gray-800 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0"/>
                     <div>
-                      <div class="text-sm font-bold text-primary">청소 스토퍼</div>
+                      <div class="text-sm font-bold text-primary">$t:sirsoft-ecommerce.admin.sample.products.cleaning_stopper</div>
                       <div class="text-xs text-tertiary">0.9kg / 0.0065m³</div>
                     </div>
                   </div>
                 </td>
                 <td class="empty-state-cell">
-                  <div class="text-sm font-bold text-primary">🤖 한지민</div>
+                  <div class="text-sm font-bold text-primary">🤖 $t:sirsoft-ecommerce.admin.sample.people.han_jimin</div>
                   <div class="text-xs text-tertiary">(USR009)</div>
                 </td>
-                <td class="empty-state-cell text-sm text-secondary">토스페이</td>
-                <td class="empty-state-cell text-sm text-secondary">🇰🇷 대한민국</td>
-                <td class="empty-state-cell text-sm text-secondary">택배</td>
+                <td class="empty-state-cell text-sm text-secondary">$t:sirsoft-ecommerce.admin.sample.misc.toss_pay</td>
+                <td class="empty-state-cell text-sm text-secondary">🇰🇷 $t:sirsoft-ecommerce.admin.sample.misc.korea</td>
+                <td class="empty-state-cell text-sm text-secondary">$t:sirsoft-ecommerce.admin.sample.misc.parcel</td>
                 <td class="empty-state-cell">
                   <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-300">•••</button>
                 </td>

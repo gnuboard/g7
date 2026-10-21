@@ -1,13 +1,13 @@
 /**
  * E2E: 관리자 머리글 접근성 회귀 — 7.1.0 종합 단계에서 고친 프론트 동작을 브라우저로 고정한다.
  *
- * - 언어 메뉴(`#language_selector_desktop`)는 이름 있는 listbox 이고 키보드로 다룬다(종합 3 ⑬, O-PF-1).
+ * - 언어 메뉴(`#language_selector_desktop`)는 이름 있는 listbox 이고 키보드로 다룬다.
  *   단추에서 ↓ 로 열면 현재 언어 항목에 초점이 가고, ↓ 로 옮겨 Enter 로 고르면 회원 언어 저장
- *   `PATCH /api/admin/users/me/language` 가 **한 번만** 나간다(종합 3 O-C3-3, R1 ⑫). Esc 는 닫고 단추로 초점을 돌린다.
- * - 테마 단추 이름이 화면 언어를 따른다 — ko 「화면 테마」, en 「Theme」(종합 3b O-C3-1, 종전 영문 고정 「Toggle theme」).
- * - 대표 화면(대시보드, 회원 목록, 환경설정)에 이름 없는 단추와 링크가 0 이다(종합 3c O-C3b-3, 아이콘 꾸밈화 뒤 아이콘만
+ *   `PATCH /api/admin/users/me/language` 가 **한 번만** 나간다. Esc 는 닫고 단추로 초점을 돌린다.
+ * - 테마 단추 이름이 화면 언어를 따른다 — ko 「화면 테마」, en 「Theme」(종전 영문 고정 「Toggle theme」).
+ * - 대표 화면(대시보드, 회원 목록, 환경설정)에 이름 없는 단추와 링크가 0 이다(아이콘 꾸밈화 뒤 아이콘만
  *   있는 단추가 이름을 잃지 않는다).
- * - FileUploader 를 `initialFiles` 없이 놓아도 렌더가 멈춘다(종합 3 ⑪, O-PD-2). 번들 레이아웃은 모두 값을 넘기므로
+ * - FileUploader 를 `initialFiles` 없이 놓아도 렌더가 멈춘다. 번들 레이아웃은 모두 값을 넘기므로
  *   대시보드 레이아웃 응답에 업로더 하나를 덧붙여 재현한다. 수정 전 번들(HEAD 의 dist)을 끼운 같은 조작에서는
  *   업로더 아래 DOM 변이가 5초에 수십만 건이었다.
  *
@@ -131,7 +131,7 @@ test.describe('관리자 머리글 언어 메뉴와 테마 단추', () => {
     expect((await saved).status()).toBe(200);
 
     await expect(page.getByRole('button', { name: 'Theme', exact: true }).first()).toBeVisible({ timeout: 30_000 });
-    // 저장이 두 번(컴포넌트 + 엔진) 나가던 회귀(O-C3-3)를 잡는다 — 화면이 다시 그려질 시간을 둔 뒤 센다.
+    // 저장이 두 번(컴포넌트 + 엔진) 나가던 회귀를 잡는다 — 화면이 다시 그려질 시간을 둔 뒤 센다.
     await page.waitForTimeout(3_000);
     expect(patches).toHaveLength(1);
     expect(JSON.parse(patches[0])).toEqual({ language: 'en' });
@@ -182,7 +182,8 @@ test.describe('FileUploader 를 initialFiles 없이 놓은 화면', () => {
     const errors: string[] = [];
     page.on('console', (m) => { if (m.type() === 'error' && /Maximum update depth/.test(m.text())) errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(String(e)));
-    await page.route(/\/api\/layouts\/sirsoft-admin_basic\/admin_dashboard(\?|$)/, async (route) => {
+    // 레이아웃 주소는 `admin_dashboard.json?v=…` 형태다(#615 정적 게시 이후) — `.json` 이 없는 패턴은 가로채지 못해 프로브가 주입되지 않았다
+    await page.route(/\/api\/layouts\/sirsoft-admin_basic\/admin_dashboard(\.json)?(\?|$)/, async (route) => {
       const res = await route.fetch();
       const json = await res.json();
       json.data.components.push({
@@ -197,16 +198,25 @@ test.describe('FileUploader 를 initialFiles 없이 놓은 화면', () => {
     await gotoAdmin(page, '/admin/dashboard');
     const probe = page.getByTestId('e2e-uploader-probe');
     await expect(probe.locator('input[type="file"]')).toHaveCount(1, { timeout: 30_000 });
+    // 대시보드 데이터 응답이 다 온 뒤에 관측한다 — 응답이 관측 창 안에 도착하면 그때마다 레이아웃이 다시 그려져
+    // 업로더 입력칸 속성(name·type)이 다시 쓰인다(응답 3.5초 지연 1회에 3건, 병렬 실행 부하에서 30건). 무한 갱신이 아니다.
+    await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2_000);
-    const mutations = await probe.evaluate(async (el) => {
-      let n = 0;
-      const mo = new MutationObserver((list) => { n += list.length; });
+    const records = await probe.evaluate(async (el) => {
+      const recs: string[] = [];
+      const mo = new MutationObserver((list) => {
+        for (const m of list) {
+          const t = m.target as Element;
+          recs.push(`${m.type}:${t.nodeName}${m.attributeName ? `@${m.attributeName}` : ''}+${m.addedNodes.length}-${m.removedNodes.length}:${(t.textContent ?? '').trim().slice(0, 24)}`);
+        }
+      });
       mo.observe(el, { subtree: true, childList: true, attributes: true, characterData: true });
       await new Promise((r) => setTimeout(r, 5_000));
       mo.disconnect();
-      return n;
+      return recs;
     });
-    expect(mutations).toBeLessThanOrEqual(5);
+    // 실패하면 무엇이 변했는지 메시지에 남긴다(변이 종류·대상·추가/제거 수)
+    expect(records.length, records.slice(0, 12).join('\n')).toBeLessThanOrEqual(5);
     expect(errors).toEqual([]);
   });
 });

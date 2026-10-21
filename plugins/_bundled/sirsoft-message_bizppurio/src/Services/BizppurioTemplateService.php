@@ -94,7 +94,7 @@ class BizppurioTemplateService
                 'fallback_sms_enabled' => $template->fallback_sms_enabled,
                 'sms_body' => $template->sms_body,
                 // 본문 유무·미리보기는 모델이 판정한다 — 화면이 로케일 맵을 직접 훑으면 발송 게이트
-                // (hasSmsBody: 공백 제거 후 비교, 폴백은 config('app.fallback_locale'))와 규칙이 갈려
+                // (hasSmsBody: 공백 제거 후 비교, 폴백은 LocalizedValue 대체 순서)와 규칙이 갈려
                 // "화면엔 본문 있음 / 실제로는 미발송" 이 된다. 판정 한 벌만 둔다.
                 'has_sms_body' => $template->hasSmsBody(),
                 'sms_body_preview' => $template->getLocalizedSmsBody(),

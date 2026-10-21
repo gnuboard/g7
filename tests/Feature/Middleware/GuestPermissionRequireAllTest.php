@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 /**
- * 비회원 다중 권한 판정 (core-backend #17).
+ * 비회원 다중 권한 판정 (7.1.0 abilities 게이트 점검).
  *
  * 회원은 다중 권한 라우트에서 requireAll(기본 AND)을 따르는데, 비회원만 항상 OR 로 판정해
  * 같은 라우트가 회원에게는 닫히고 비회원에게는 열리는 역전이 있었다.
@@ -34,7 +34,7 @@ class GuestPermissionRequireAllTest extends TestCase
     }
 
     /**
-     * 비회원의 다중 권한도 회원과 같이 requireAll(기본 AND)을 따른다 — 하나만 가지면 거부, OR 지정이면 허용 (core-backend #17)
+     * 비회원의 다중 권한도 회원과 같이 requireAll(기본 AND)을 따른다 — 하나만 가지면 거부, OR 지정이면 허용
      *
      * @scenario subject=guest,permissions=multiple,require_all=default|false
      *

@@ -173,6 +173,16 @@ export interface ErrorContext {
    * 코어가 IDV 가드 토스트 중복 억제 등 코드 기반 분기에 사용한다.
    */
   error_code?: string;
+  /**
+   * 데이터 소스 오류에서만 — 이 화면에서 이미 받은 소스를 다시 받다가 실패했는지(`{{error.refetch}}`).
+   *
+   * `true`: 다시 받기(`refetchDataSource` 액션·`G7Core.dataSource.refetch`·같은 화면 쿼리 갱신 `navigate replace`) 실패.
+   * `false`: 화면에 들어와 처음 받기(blocking·progressive·background) 실패. 오류 처리기가 「처음 받기 실패는 오류 화면,
+   * 다시 받기 실패는 토스트 + 마지막 값 유지」처럼 고를 때 쓴다. 액션(apiCall 등) 오류에는 없다.
+   *
+   * @since engine-v1.82.0
+   */
+  refetch?: boolean;
 }
 
 /**

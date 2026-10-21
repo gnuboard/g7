@@ -2,7 +2,7 @@
  * 게시판 모듈 영어 문구 — 수가 붙는 문구가 1 일 때도 읽히게 쓴다.
  *
  * 「Settings applied to {{count}} boards.」 처럼 복수 명사를 박아 두고 단수 갈래가 없으면 1 일 때 「1 boards」 로
- * 나온다(7.1.0 실측 K2 후속 관측 O-KF2-1). 영어 개수 문구는 PO 결정(po-decisions 7.1.0 비이커머스 전수 실측
+ * 나온다(7.1.0 실측 후속). 영어 개수 문구는 7.1.0 출시 점검 결정(비이커머스 전수 실측
  * 「영어 개수 문구」)대로 1 이면 단수, 그 밖은 복수로 쓰고 `(s)` 표기를 쓰지 않는다. 화면 문구는 같은 파일에
  * `키_one` 단수 갈래를 두고(TranslationEngine 이 `$t:키|count=N` 으로 고른다, engine-v1.78.7), 서버 문구는
  * `단수|복수` 로 써서 trans_choice·trans_count·검증 치환기가 고르게 한다.
@@ -34,7 +34,7 @@ function walk(dir: string, ext: string): string[] {
 
 // 수 자리 바로 뒤에(형용사 하나까지 허용) 「s」로 끝나는 복수 명사가 오는 문구. 같은 파일에 `키_one` 단수 갈래가 있으면 통과한다.
 const FRONT = /\{\{(count|total|updated|skipped|max)\}\}\s*(?:[a-z]+\s)?[a-z]+s\b/i;
-// `(s)` 표기는 PO 결정으로 쓰지 않는다.
+// `(s)` 표기는 쓰지 않기로 정했다.
 const PAREN_S = /[a-z]\(s\)/i;
 const BACK = /:(count|limit|days|total|skipped|updated)\s+(?:[a-z]+\s)?[a-z]+s\b/i;
 // :max 는 대개 고정 상한(글자 수 등)이라 BACK 에 넣지 않는다. 다만 게시판마다 1 로 둘 수 있는 상한(글당 첨부 개수,

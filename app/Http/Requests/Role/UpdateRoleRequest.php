@@ -5,13 +5,16 @@ namespace App\Http\Requests\Role;
 use App\Enums\PasswordExpiryPolicy;
 use App\Enums\ScopeType;
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\RejectsGuestPermissionScope;
 use App\Models\Menu;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * 역할 수정 요청 검증
@@ -21,6 +24,8 @@ use Illuminate\Validation\Rule;
  */
 class UpdateRoleRequest extends FormRequest
 {
+    use RejectsGuestPermissionScope;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -122,5 +127,25 @@ class UpdateRoleRequest extends FormRequest
             'password_expiry_policy.string' => __('user.validation.password_expiry_policy_invalid'),
             'password_expiry_policy.in' => __('user.validation.password_expiry_policy_invalid'),
         ];
+    }
+
+    /**
+     * 규칙 검증 뒤 교차 검사를 더합니다.
+     *
+     * 비회원 역할에는 권한 범위(본인·소유역할)를 줄 수 없다(7.1.1) — 실린 항목마다 422.
+     *
+     * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $role = $this->route('role');
+
+            $this->rejectGuestPermissionScope(
+                $validator,
+                ! $role instanceof Role || $role->supportsPermissionScope()
+            );
+        });
     }
 }

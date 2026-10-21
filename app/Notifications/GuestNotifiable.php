@@ -63,6 +63,19 @@ final class GuestNotifiable implements GuestRecipientInterface, HasLocalePrefere
     }
 
     /**
+     * 컨텍스트의 표준 guest_recipient 배열로 되돌립니다 — fromContext() 의 역 (#139).
+     *
+     * 알림 대량 발송이 자식 잡에 수신자를 실을 때 쓴다. 큐 인자 직렬화(HookArgumentSerializer)는 모델이 아닌
+     * 객체를 null 로 바꾸므로 비회원 수신자는 이 배열로 싣고 워커가 fromContext() 로 다시 만든다.
+     *
+     * @return array{email: string, name: string|null, locale: string|null} 표준 키 배열
+     */
+    public function toContext(): array
+    {
+        return ['email' => $this->email, 'name' => $this->name, 'locale' => $this->locale];
+    }
+
+    /**
      * 메일 채널 수신자 라우팅 (Laravel MailChannel 계약).
      *
      * @return array<string, string>|string 표시명이 있으면 [email => name], 없으면 email

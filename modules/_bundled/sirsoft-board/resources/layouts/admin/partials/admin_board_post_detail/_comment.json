@@ -30,7 +30,7 @@
                             "name": "Span",
                             "if": "{{comment.depth > 0}}",
                             "props": {
-                                "className": "text-gray-400 dark:text-gray-500 flex-shrink-0 text-sm"
+                                "className": "text-gray-500 dark:text-gray-400 flex-shrink-0 text-sm"
                             },
                             "text": "↳"
                         },
@@ -52,7 +52,7 @@
                                             "id": "author_name_menu_{{comment.id}}",
                                             "type": "composite",
                                             "name": "ActionMenu",
-                                            "if": "{{!comment?.author?.is_guest}}",
+                                            "if": "{{!comment?.author?.is_guest && comment?.author?.uuid}}",
                                             "actions": [
                                                 {
                                                     "comment": "글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원은 이 메뉴 자체가 없다(uuid 가 없어 갈 곳이 없다)",
@@ -76,6 +76,7 @@
                                                 "position": "right",
                                                 "items": [
                                                     {
+                                                        "href": "/admin/users/{{comment?.author?.uuid}}",
                                                         "id": "view_user_info",
                                                         "label": "$t:sirsoft-board.admin.posts.detail.user_info",
                                                         "iconName": "user"
@@ -86,11 +87,11 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{comment?.author?.is_guest}}",
+                                            "if": "{{comment?.author?.is_guest || !comment?.author?.uuid}}",
                                             "props": {
                                                 "className": "text-primary text-sm font-semibold"
                                             },
-                                            "text": "{{comment?.author?.name}}"
+                                            "text": "{{comment?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                         },
                                         {
                                             "type": "basic",
@@ -170,7 +171,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{post?.data?.abilities?.can_write_comments !== true}}"
                             },
                             "children": [
@@ -220,7 +222,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded transition-colors"
+                                "type": "button",
+                                "className": "text-tertiary inline-flex items-center gap-1 px-2 py-1 font-medium hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                             },
                             "children": [
                                 {
@@ -244,6 +247,7 @@
                             "name": "Button",
                             "if": "{{post?.data?.board?.use_report && comment?.author?.uuid !== current_user?.data?.uuid && comment?.status !== 'blinded' && comment?.status !== 'deleted' && !comment?.deleted_at && comment?.is_already_reported}}",
                             "props": {
+                                "type": "button",
                                 "disabled": true,
                                 "className": "text-hint inline-flex items-center gap-1 px-2 py-1 font-medium rounded cursor-not-allowed opacity-60"
                             },
@@ -392,7 +396,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "trash",
-                                                "className": "text-sm text-red-400 dark:text-red-500"
+                                                "className": "text-sm text-red-500 dark:text-red-500"
                                             }
                                         },
                                         {
@@ -417,7 +421,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "type": "button",
+                                        "className": "text-body px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{comment?.abilities?.can_manage !== true}}"
                                     },
                                     "text": "{{_local.showDeletedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
@@ -463,7 +468,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "eye-slash",
-                                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400"
                                             }
                                         },
                                         {
@@ -476,7 +481,7 @@
                                             "name": "Span",
                                             "if": "{{comment?.abilities?.can_manage && (comment?.action_logs ?? []).filter(log => log.action === 'blind').length > 0}}",
                                             "props": {
-                                                "className": "text-amber-600 dark:text-amber-400"
+                                                "className": "text-amber-700 dark:text-amber-400"
                                             },
                                             "text": "($t:sirsoft-board.admin.posts.detail.blind_reason_label {{(comment?.action_logs ?? []).filter(log => log.action === 'blind').slice(-1)[0]?.reason ?? '-'}})"
                                         }
@@ -497,7 +502,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-secondary px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "type": "button",
+                                        "className": "text-body px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{comment?.abilities?.can_manage !== true}}"
                                     },
                                     "text": "{{_local.showBlindedCommentId === comment?.id ? '$t:sirsoft-board.admin.posts.detail.hide_original_content' : '$t:sirsoft-board.admin.posts.detail.view_original_content'}}"
@@ -530,7 +536,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "lock",
-                                "className": "text-sm text-gray-400 dark:text-gray-500"
+                                "className": "text-sm text-gray-500 dark:text-gray-400"
                             }
                         },
                         {
@@ -634,6 +640,7 @@
                     ],
                     "props": {
                         "value": "{{_local.edit_comment_content ?? comment.content}}",
+                        "aria-label": "$t:sirsoft-board.attributes.comment.content",
                         "rows": 3,
                         "className": "text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2"
                     }
@@ -661,6 +668,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -743,7 +751,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_local.editSubmitting === true || !(comment?.abilities?.can_write === true && (comment?.is_author || comment?.abilities?.can_manage === true))}}"
                             },
                             "children": [
@@ -800,6 +809,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                     },
                     "children": [

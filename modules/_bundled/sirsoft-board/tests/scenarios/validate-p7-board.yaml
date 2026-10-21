@@ -15,7 +15,7 @@ effects:
   - recipient_relation_select_shows_relation_names
   - recipient_relation_outside_declaration_warns
   - recipient_multi_select_count_label_is_translated
-  # 7.1.0 전수 실측 영역 G(2026-10-06) — 방금 고른 역할·회원이 식별자·UUID 로 보이던 결함
+  # 7.1.0 전수 실측(2026-10-06) — 방금 고른 역할·회원이 식별자·UUID 로 보이던 결함
   - recipient_picked_role_keeps_search_result_name
   - recipient_picked_user_keeps_search_result_name
   # 7.1.0 칩 줄 통일 — 코어·이커머스와 같은 고른 역할·회원 칩, 열린 드롭다운에 가리지 않게 드롭다운 위에 둔다

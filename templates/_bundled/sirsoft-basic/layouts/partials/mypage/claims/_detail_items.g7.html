@@ -16,7 +16,7 @@
           <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
             <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{item.product_name ?? ''}}" class="w-full h-full object-cover"/>
             <div data-if="{{!item.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-              <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+              <icon name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
             </div>
           </div>
           <div class="flex-1 min-w-0">
@@ -29,7 +29,7 @@
                   <variant when="danger">bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400</variant>
                   <variant when="warning">bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400</variant>
                   <variant when="info">bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400</variant>
-                  <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400</variant>
+                  <variant when="primary">bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300</variant>
                   <variant when="secondary">bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300</variant>
                   <variant when="dark">bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200</variant>
                 </class-map>

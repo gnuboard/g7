@@ -4,6 +4,14 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.1] - 2026-10-21
+
+### Added
+
+- 개인정보 연간 통지 알림의 평문 변수(사이트내 알림·문자용 운영자 서문·확장 처리 내역, `notification_variables.common.introduction_text`·`notice_sections_text`) 설명의 일본어 번역을 추가했습니다.
+- GDPR 1.1.1 의 목록·정책 판 내용을 불러오지 못했을 때 보이는 안내(`common.list_load_failed`·`settings.policy_version.snapshot_modal.load_failed` — 「一覧を読み込めませんでした。…」)의 일본어 번역을 추가했습니다.
+- GDPR 1.1.1 에서 번역 문구로 바뀐 시험용 시드 명령의 콘솔 출력(3건)의 일본어 번역을 추가했습니다.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

@@ -1,4 +1,4 @@
-// e2e:allow 칸 아래 오류 표시·숫자 범위 속성 추가의 구조 검증 — 같은 화면은 Playwright 브라우저로 ko/en 재실측해 이력(20261007_1905_710_KLM_M1)에 남김
+// e2e:allow 칸 아래 오류 표시·숫자 범위 속성 추가의 구조 검증 — 같은 화면은 Playwright 브라우저로 ko/en 재실측해 작업 이력에 남김
 /**
  * @file pluginSettingsFieldErrors.test.ts
  * @description 우편번호 환경설정 화면이 저장 오류를 그 칸 아래에 보이고, 숫자 칸이 서버와 같은 범위를 갖는지

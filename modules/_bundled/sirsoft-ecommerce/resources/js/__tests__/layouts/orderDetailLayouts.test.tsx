@@ -1105,8 +1105,11 @@ describe('Partial 레이아웃 구조 검증', () => {
             const extract = (node: any) => {
                 if (!node) return;
                 if (typeof node === 'string') {
-                    const matches = node.match(/\$t:[a-zA-Z0-9._-]+/g);
-                    if (matches) keys.push(...matches);
+                    // 표 칸(cellChildren) 안에서 행 값을 넘기는 문구는 `$t:defer:` 로 쓴다
+                    // (data-binding-i18n.md 「지연 번역」, admin-cell-children-defer-translation 시험).
+                    // defer 접두는 네임스페이스가 아니므로 떼고 키만 검사한다.
+                    const matches = node.match(/\$t:(?:defer:)?[a-zA-Z0-9._-]+/g);
+                    if (matches) keys.push(...matches.map((m) => m.replace(/^\$t:defer:/, '$t:')));
                 }
                 if (typeof node === 'object') {
                     for (const value of Object.values(node)) extract(value);
@@ -1345,10 +1348,25 @@ describe('Partial 레이아웃 구조 검증', () => {
          * @scenario surface=activity_log
          * @effects activity_log_actor_menu_opens_user_detail_in_new_window
          */
-        it('회원 클릭 시 openWindow로 회원 상세 페이지를 연다', () => {
+        it('회원 메뉴 「회원 정보 보기」가 회원 상세를 새 창 링크로 연다', () => {
+            // #757 결정 — 「이미 새 창」 항목도 실제 주소의 새 창 링크다(메뉴 항목 href + target="_blank").
+            // 주소가 href 에 있어 가운데 클릭·주소 복사가 같은 곳을 가리키고, 항목 동작(openWindow)은 두지 않는다.
             const json = JSON.stringify(activityLogPartial);
-            expect(json).toContain('"handler":"openWindow"');
-            expect(json).toContain('/admin/users/{{log.user.uuid}}');
+            const items: any[] = [];
+            const walk = (n: any): void => {
+                if (!n || typeof n !== 'object') return;
+                if (Array.isArray(n)) { n.forEach(walk); return; }
+                if (n.name === 'ActionMenu') items.push(...(n.props?.items ?? []).filter((i: any) => i.id === 'view_member'));
+                Object.values(n).forEach(walk);
+            };
+            walk(activityLogPartial);
+            // 넓은 화면 표와 좁은 화면 카드에 같은 메뉴가 한 벌씩 있다
+            expect(items).toHaveLength(2);
+            for (const item of items) {
+                expect(item.href).toBe('/admin/users/{{log.user.uuid}}');
+                expect(item.target).toBe('_blank');
+            }
+            expect(json).not.toContain('"handler":"openWindow"');
         });
 
         /**

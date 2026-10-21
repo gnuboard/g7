@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Role;
 
+use App\Enums\ExtensionOwnerType;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RoleListRequest extends FormRequest
 {
@@ -32,6 +34,8 @@ class RoleListRequest extends FormRequest
             'per_page' => 'integer|min:1|max:100',
             'search' => 'nullable|string|max:255',
             'is_active' => 'nullable|boolean',
+            // 소유 구분 — core(시스템)·module·plugin 은 그 주체가 만든 역할, custom 은 직접 만든 역할
+            'extension_type' => ['nullable', 'string', Rule::in([...ExtensionOwnerType::values(), 'custom'])],
         ];
 
         return HookManager::applyFilters('core.role.list_validation_rules', $rules, $this);
@@ -51,6 +55,7 @@ class RoleListRequest extends FormRequest
             'per_page.min' => __('validation.min.numeric', ['attribute' => 'per_page', 'min' => 1]),
             'per_page.max' => __('validation.max.numeric', ['attribute' => 'per_page', 'max' => 100]),
             'search.max' => trans_choice('validation.max.string', 255, ['attribute' => 'search', 'max' => 255]),
+            'extension_type.in' => __('validation.in', ['attribute' => 'extension_type']),
         ];
     }
 

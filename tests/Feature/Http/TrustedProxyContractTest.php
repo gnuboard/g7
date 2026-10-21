@@ -55,11 +55,11 @@ class TrustedProxyContractTest extends TestCase
     {
         config(['trustedproxy.proxies' => $proxies]);
 
-        $request = Request::create('http://g7_2.dev/', 'GET', [], [], [], [
+        $request = Request::create('http://dev-site.kr/', 'GET', [], [], [], [
             'REMOTE_ADDR' => self::REMOTE_ADDR,
             'HTTP_X_FORWARDED_PROTO' => 'https',
             'HTTP_X_FORWARDED_FOR' => $forwardedFor,
-            'HTTP_X_FORWARDED_HOST' => 'g7_2.dev',
+            'HTTP_X_FORWARDED_HOST' => 'dev-site.kr',
             'HTTP_X_FORWARDED_PORT' => '8443',
         ]);
 
@@ -101,7 +101,7 @@ class TrustedProxyContractTest extends TestCase
 
         $this->assertTrue($request->isSecure());
         $this->assertSame(self::CLIENT_IP, $request->ip());
-        $this->assertSame('https://g7_2.dev:8443', $request->root());
+        $this->assertSame('https://dev-site.kr:8443', $request->root());
     }
 
     /**

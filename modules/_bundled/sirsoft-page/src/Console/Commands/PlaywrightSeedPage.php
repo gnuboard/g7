@@ -58,14 +58,14 @@ class PlaywrightSeedPage extends Command
     {
         // ① CLI 한정
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다.');
+            $this->error(__('sirsoft-page::messages.console.playwright_seed.cli_only'));
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
+            $this->error(__('sirsoft-page::messages.console.playwright_seed.bypass_required'));
 
             return self::FAILURE;
         }
@@ -131,7 +131,10 @@ class PlaywrightSeedPage extends Command
         if ($this->option('json')) {
             $this->line(json_encode($result, JSON_UNESCAPED_UNICODE));
         } else {
-            $this->info('페이지 시드 완료: 미발행='.self::UNPUBLISHED_SLUG.' / 발행='.self::PUBLISHED_SLUG);
+            $this->info(__('sirsoft-page::messages.console.seed_page.done', [
+                'unpublished' => self::UNPUBLISHED_SLUG,
+                'published' => self::PUBLISHED_SLUG,
+            ]));
         }
 
         return self::SUCCESS;

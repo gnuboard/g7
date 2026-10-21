@@ -77,10 +77,11 @@ test('@smoke #399 Phase 1.3 - admin_settings 진입 시 sticky-tab-nav 시맨틱
   const nav = stickyNav;
   await expect(nav).toHaveClass(/tab-nav-default/);
   await expect(nav).toBeVisible();
-  const firstTabBtn = nav.locator('button.tab-btn-base').first();
+  // 주소를 가진 탭은 링크(<a role="tab" href>, #757 — 새 탭으로 열 수 있게)라 a·button 을 함께 본다
+  const firstTabBtn = nav.locator(':is(a, button).tab-btn-base').first();
   await expect(firstTabBtn).toBeVisible();
   // 활성 탭은 .tab-btn-default-active, 비활성 탭은 .tab-btn-default 가 추가로 붙는다.
-  await expect(nav.locator('button.tab-btn-default-active')).toHaveCount(1);
+  await expect(nav.locator(':is(a, button).tab-btn-default-active')).toHaveCount(1);
 });
 
 // @scenario surface=admin_board_settings_header
@@ -139,10 +140,11 @@ test('@smoke #399 Phase 1.6 - AdminSidebar 메뉴 아이템이 admin-sidebar-* �
   const menuList = sidebarMenu.locator('.admin-sidebar-menu-list').first();
   await expect(menuList).toBeVisible();
 
-  const items = menuList.locator('button.admin-sidebar-item');
+  // URL 있는 메뉴는 링크(<a href>, #757 — 새 탭으로 열 수 있게), 하위 메뉴만 있는 부모는 단추라 둘 다 센다
+  const items = menuList.locator(':is(a, button).admin-sidebar-item');
   await expect(items.first()).toBeVisible();
   // /admin/dashboard 진입 시 활성 메뉴 (대시보드) 가 1건 이상 존재
-  await expect(menuList.locator('button.admin-sidebar-item-active')).toHaveCount(1);
+  await expect(menuList.locator(':is(a, button).admin-sidebar-item-active')).toHaveCount(1);
 
   // 메뉴 아이템 좌측 영역 (아이콘 + 라벨) 도 .admin-sidebar-item-content 시맨틱
   // 자산으로 흡수됐는지 확인 — Phase 1.6 후속 (flex items-center gap-2 단순화).

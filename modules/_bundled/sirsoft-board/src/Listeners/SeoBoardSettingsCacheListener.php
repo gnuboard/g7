@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Listeners;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Log;
  *
  * 게시판 모듈 환경설정이 변경되면 게시판 관련 SEO 캐시를 무효화합니다.
  * 게시판 목록, 게시글 상세, 게시판 인덱스 등의 캐시가 대상입니다.
+ *
+ * 비우기는 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면 TTL 까지) 봇이 옛 화면을
+ * 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에 비운다 — 커밋 전에 비우면
+ * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다(#724). 트랜잭션 밖이면 즉시 비운다.
  */
 class SeoBoardSettingsCacheListener implements HookListenerInterface
 {
@@ -26,12 +31,14 @@ class SeoBoardSettingsCacheListener implements HookListenerInterface
             'core.module_settings.after_save' => [
                 'method' => 'onModuleSettingsSave',
                 'priority' => 20,
+                'sync' => true,
             ],
             // 환경설정 기본값 일괄 적용도 게시판 화면 출력을 바꾸므로 같은 무효화가 필요하다.
             // payload 가 ($fields, $updatedCount) 라 식별자 인자가 없어 전용 핸들러로 받는다.
             'sirsoft-board.settings.after_bulk_apply' => [
                 'method' => 'onBulkApply',
                 'priority' => 20,
+                'sync' => true,
             ],
         ];
     }
@@ -40,6 +47,7 @@ class SeoBoardSettingsCacheListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -52,17 +60,20 @@ class SeoBoardSettingsCacheListener implements HookListenerInterface
      * 게시판 모듈이 아니면 무시합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($identifier, $mergedSettings, $result)
+     * @return void 반환값 없음
      */
     public function onModuleSettingsSave(...$args): void
     {
-        $identifier = $args[0] ?? null;
+        DB::afterCommit(function () use ($args) {
+            $identifier = $args[0] ?? null;
 
-        // 게시판 모듈이 아니면 무시
-        if ($identifier !== 'sirsoft-board') {
-            return;
-        }
+            // 게시판 모듈이 아니면 무시
+            if ($identifier !== 'sirsoft-board') {
+                return;
+            }
 
-        $this->invalidateBoardSeoCache();
+            $this->invalidateBoardSeoCache();
+        });
     }
 
     /**
@@ -72,14 +83,19 @@ class SeoBoardSettingsCacheListener implements HookListenerInterface
      * 게시판 모듈이 발행하는 훅이므로 식별자 가드 자체가 불필요하다.
      *
      * @param  mixed  ...$args  훅 인자 ($fields, $updatedCount)
+     * @return void 반환값 없음
      */
     public function onBulkApply(...$args): void
     {
-        $this->invalidateBoardSeoCache();
+        DB::afterCommit(function () {
+            $this->invalidateBoardSeoCache();
+        });
     }
 
     /**
      * 게시판 관련 SEO 레이아웃 캐시와 sitemap 캐시를 무효화합니다.
+     *
+     * @return void 반환값 없음
      */
     private function invalidateBoardSeoCache(): void
     {

@@ -1,3 +1,4 @@
+// audit:allow seo-renderer-parity-sync #143 은 루트에 줄바꿈 클래스(wrap-anywhere)만 더했다 — 평문/HTML 판정·정화 목록은 그대로라 봇 쪽 HtmlSanitizer 와 맞출 것이 없다
 import React, { useMemo } from 'react';
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -92,8 +93,10 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
 
   // isHtml=false: 일반 텍스트 렌더링
   if (!isHtml) {
+    // wrap-anywhere: 본문·검색 하이라이트의 공백 없는 긴 URL 이 칸을 넘지 않게 아무 데서나 줄을 바꾼다(#143).
     const textClasses = `
       whitespace-pre-wrap
+      wrap-anywhere
       text-gray-900 dark:text-gray-100
       font-sans
       ${className}
@@ -188,6 +191,7 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     dark:[&_td]:border-gray-600
     [&_tr:hover]:bg-gray-50 dark:[&_tr:hover]:bg-gray-700/50
     after:content-[''] after:block after:clear-both
+    wrap-anywhere
     ${className}
   `.trim().replace(/\s+/g, ' ');
 

@@ -1,7 +1,7 @@
 import { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler } from './productOptions';
 import { toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler } from './cartHandlers';
 import { findMatchingOptionHandler, initCartOptionSelectionHandler } from './cartOptionChange';
-import { initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler } from './storageHandlers';
+import { initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler } from './storageHandlers';
 import { getDisplayPriceHandler } from './getDisplayPrice';
 import { formatCurrencyHandler, getCurrencySymbol } from './formatCurrency';
 import { loadPreferredCurrencyHandler, savePreferredCurrencyHandler } from './loadPreferredCurrency';
@@ -64,6 +64,9 @@ export declare const handlers: {
     saveGuestOrderToken: typeof saveGuestOrderTokenHandler;
     clearGuestOrderToken: typeof clearGuestOrderTokenHandler;
     clearGuestTokenOnEntry: typeof clearGuestTokenOnEntryHandler;
+    initSecretViewToken: typeof initSecretViewTokenHandler;
+    saveSecretViewToken: typeof saveSecretViewTokenHandler;
+    clearSecretViewToken: typeof clearSecretViewTokenHandler;
 };
 /**
  * 핸들러 맵 (handlerMap alias)
@@ -105,9 +108,12 @@ export declare const handlerMap: {
     saveGuestOrderToken: typeof saveGuestOrderTokenHandler;
     clearGuestOrderToken: typeof clearGuestOrderTokenHandler;
     clearGuestTokenOnEntry: typeof clearGuestTokenOnEntryHandler;
+    initSecretViewToken: typeof initSecretViewTokenHandler;
+    saveSecretViewToken: typeof saveSecretViewTokenHandler;
+    clearSecretViewToken: typeof clearSecretViewTokenHandler;
 };
 /**
  * 핸들러 타입 정의 (TypeScript 자동완성용)
  */
 export type SirsoftBasicHandlers = typeof handlers;
-export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, markLocalOnceHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, };
+export { addSelectedItemIfCompleteHandler, updateSelectedItemQuantityHandler, removeSelectedItemHandler, updateNoOptionQuantityHandler, setBlockAdditionalOptionHandler, getDisplayPriceHandler, formatCurrencyHandler, getCurrencySymbol, loadPreferredCurrencyHandler, savePreferredCurrencyHandler, setThemeHandler, initThemeHandler, redirectToLoginWithReturnHandler, downloadAttachmentHandler, markLocalOnceHandler, toggleCartItemSelectionHandler, selectAllCartItemsHandler, setCartOptionHandler, openCartDeleteModalHandler, openCartOptionModalHandler, recalculateCartHandler, findMatchingOptionHandler, initCartOptionSelectionHandler, initCartKeyHandler, getCartKeyHandler, clearCartKeyHandler, regenerateCartKeyHandler, saveToStorageHandler, loadFromStorageHandler, initGuestOrderTokenHandler, saveGuestOrderTokenHandler, clearGuestOrderTokenHandler, clearGuestTokenOnEntryHandler, initSecretViewTokenHandler, saveSecretViewTokenHandler, clearSecretViewTokenHandler, };

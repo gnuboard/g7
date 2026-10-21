@@ -165,6 +165,8 @@
                             }
                         ],
                         "props": {
+                            "pageHref": "/search?page={page}&cursor=",
+                            "pageHrefMergeQuery": true,
                             "currentPage": "{{Number(query?.page ?? searchResults?.data?.current_page ?? 1)}}",
                             "totalPages": "{{searchResults?.data?.last_page ?? null}}",
                             "hasMorePages": "{{searchResults?.data?.has_more_pages ?? false}}",

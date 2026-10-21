@@ -158,7 +158,7 @@ class AdminVbankRefundControllerTest extends PluginTestCase
      */
     public function test_admin_vbank_refund_requires_execute_refund_permission(): void
     {
-        // 가상계좌 환불은 PG 취소와 주문 취소까지 하므로 「환불 실행」 권한을 요구한다(제품 결정 R1, 7.1.0) — 주문 수정 권한만으로는 403
+        // 가상계좌 환불은 PG 취소와 주문 취소까지 하므로 「환불 실행」 권한을 요구한다(7.1.0 제품 결정) — 주문 수정 권한만으로는 403
         $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.orders.update']);
         $order = $this->createPaidVbankOrder();
 

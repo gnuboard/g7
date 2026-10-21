@@ -6,6 +6,7 @@ use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use App\Repositories\Concerns\CalculatesJsonContentDiff;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
@@ -118,12 +119,15 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
 
             // 2. 레이아웃 모델 조회 및 복원 직전 content 보관 (변경 요약 기준)
             $layout = TemplateLayout::findOrFail($layoutId);
-            $currentContent = $layout->content;
+            // 버전 행·현재 행 모두 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만들어 복원 한 번으로
+            // 본 행의 빈 객체가 사라진다 (#758)
+            $currentContent = LayoutEmptyObjects::rawPreserving($layout);
+            $restoredContent = LayoutEmptyObjects::rawPreserving($versionToRestore);
 
             // 3. 레이아웃을 복원할 content로 업데이트 — lock_version 도 올린다. 복원 직전 화면을 열어 둔
             //    다른 편집기가 옛 lock 으로 저장하면 409 가 나야 복원 결과가 조용히 덮이지 않는다.
             $layout->update([
-                'content' => $versionToRestore->content,
+                'content' => $restoredContent,
                 'lock_version' => ((int) ($layout->lock_version ?? 0)) + 1,
             ]);
 
@@ -131,7 +135,7 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
             //    changes_summary 는 복원 직전(currentContent) 대비 변경이다. 따라서 복원으로
             //    내용이 줄면 "삭제", 늘면 "추가"로 정확히 기록된다(종전엔 content 로 복원 직전
             //    상태를 저장하고 방향도 거꾸로라, 복원인데 "추가"로 표기되던 결함 수정).
-            return $this->saveVersion($layoutId, $versionToRestore->content, $currentContent);
+            return $this->saveVersion($layoutId, $restoredContent, $currentContent);
         });
     }
 
@@ -202,6 +206,7 @@ class LayoutVersionRepository implements LayoutVersionRepositoryInterface
                 $summary = array_merge(array_diff_key($existing, array_flip(self::SUMMARY_COUNT_KEYS)), $summary);
 
                 $version->update(['changes_summary' => $summary]);
+                // layout-assoc-decode-ok: 변경 요약 건수 계산 전용 — 본문을 다시 쓰지 않는다
                 $previousContent = $version->content ?? [];
                 $updated++;
             }

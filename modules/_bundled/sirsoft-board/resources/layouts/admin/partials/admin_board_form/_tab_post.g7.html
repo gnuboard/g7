@@ -1,10 +1,6 @@
 <!-- 게시판 폼 「글」 탭 — 글·댓글에 걸리는 한도를 모아 둔다(제목·본문·댓글 길이의 최소와 최대, 답글·댓글 깊이, 첨부 개수·크기·확장자, 금지어, 「새 글」 표시가 유지되는 시간). 이 게시판에 글을 쓰는 쪽이 지켜야 할 규칙을 한자리에 모은 탭이다 -->
 <partial description="Board Form - Post Tab Content">
   <div data-ref="section_post_card" class="admin-card">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <h3 data-ref="section_post" class="card-title">$t:sirsoft-board.admin.form.tabs.post</h3>
     <div data-ref="section_post_fields" class="row-stack">
       <div data-ref="post_title_length_group" class="grid-2col">
@@ -86,6 +82,22 @@
         </select>
         <p data-ref="reply_delete_policy_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint</p>
         <span data-if="{{_local.errors?.reply_delete_policy}}" class="form-error-xs mt-1">{{_local.errors?.reply_delete_policy?.[0] ?? ''}}</span>
+      </div>
+      <div data-ref="secret_reply_visibility_field" data-if="{{_local.form.use_reply &amp;&amp; _local.form.secret_mode !== 'disabled'}}" class="">
+        <label data-ref="secret_reply_visibility_label" class="form-label">
+          <span>$t:sirsoft-board.admin.form.fields.secret_reply_visibility.label</span>
+        </label>
+        <select data-ref="secret_reply_visibility_select" name="secret_reply_visibility" disabled="{{_computed.isReadOnly}}" class="">
+          <prop name="options">
+            <item value="thread_path" label="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.thread_path" description="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path"/>
+            <item value="descendants_only" label="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.descendants_only" description="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only"/>
+            <item value="per_post" label="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.per_post" description="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post"/>
+          </prop>
+        </select>
+        <p data-ref="secret_reply_visibility_description_thread_path" data-if="{{(_local.form.secret_reply_visibility ?? 'thread_path') === 'thread_path'}}" class="form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path</p>
+        <p data-ref="secret_reply_visibility_description_descendants_only" data-if="{{_local.form.secret_reply_visibility === 'descendants_only'}}" class="form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only</p>
+        <p data-ref="secret_reply_visibility_description_per_post" data-if="{{_local.form.secret_reply_visibility === 'per_post'}}" class="form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post</p>
+        <span data-if="{{_local.errors?.secret_reply_visibility}}" class="form-error-xs mt-1">{{_local.errors?.secret_reply_visibility?.[0] ?? ''}}</span>
       </div>
       <div data-ref="use_comment_toggle" class="flex-start justify-between">
         <div class="flex-1">

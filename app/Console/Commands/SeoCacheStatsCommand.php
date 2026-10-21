@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Seo\SeoCacheStatsService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -13,6 +14,8 @@ use Illuminate\Console\Command;
  */
 class SeoCacheStatsCommand extends Command
 {
+    use ParsesDaysOption;
+
     /**
      * @var string 커맨드 시그니처
      */
@@ -31,7 +34,14 @@ class SeoCacheStatsCommand extends Command
      */
     public function handle(SeoCacheStatsService $statsService): int
     {
-        $days = (int) $this->option('days');
+        $days = $this->parseDaysOption();
+
+        if ($days === false) {
+            return Command::FAILURE;
+        }
+
+        $days ??= 7;
+
         $since = Carbon::now()->subDays($days);
 
         $this->info(trans_choice('seo.stats_period', $days, ['days' => $days]));

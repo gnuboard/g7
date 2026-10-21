@@ -4,7 +4,10 @@
   조건은 필터 영역이 이미 `_global` 에 넣어 두었기 때문이다. -->
 <partial description="Product Index - Preset Management Modal">
   <modal data-type="composite" data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.product.modal.preset_manage.title" size="md">
-    <div data-ref="preset_empty_message" data-if="{{!presets.data || presets.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.modal.preset_manage.empty</div>
+    <!-- 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「저장된 프리셋이 없습니다」를 보이면 프리셋이 지워진 줄 안다 -->
+    <p data-ref="preset_load_failed" data-if="{{presets === null}}" role="alert" class="py-8 text-center text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+    <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+    <div data-ref="preset_empty_message" data-if="{{presets !== undefined &amp;&amp; presets !== null &amp;&amp; (!presets.data || presets.data.length === 0)}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.modal.preset_manage.empty</div>
     <div data-ref="preset_list" data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="stack-tight">
       <div data-ref="preset_item_dynamic_{{presetIdx}}" data-each="presetItem, presetIdx in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
         <span class="text-heading">{{presetItem.name}}</span>
@@ -19,7 +22,7 @@
             </on>
             <icon name="fa-solid fa-pen" class="text-base"/>
           </button>
-          <button data-ref="preset_delete_button_{{presetIdx}}" type="button" class="btn-icon text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}" aria-label="$t:common.delete">
+          <button data-ref="preset_delete_button_{{presetIdx}}" type="button" class="btn-icon text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}" aria-label="$t:common.delete">
             <on type="click">
               <!-- 삭제. 확인 창이 이름을 문장에 넣어 보여 주는데 그 창은 프리셋 목록을 따로 조회하지 않으므로, id 만이 아니라 이름도 함께 넘긴다. -->
               <sequence>

@@ -56,7 +56,7 @@ class IndexBoardRequest extends FormRequest
             'per_page' => ['nullable', 'integer', 'min:1', 'max:999'],
             'type' => ['nullable', 'string', 'max:50'],
             'search' => ['nullable', 'string', 'max:100'],
-            'sort_by' => ['nullable', 'string', 'in:id,slug,type,is_active,posts_count,comments_count,created_at,updated_at'],
+            'sort_by' => ['nullable', 'string', 'in:id,display_order,slug,type,is_active,posts_count,comments_count,created_at,updated_at'],
             'sort_order' => ['nullable', 'string', 'in:asc,desc'],
         ];
     }

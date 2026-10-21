@@ -108,9 +108,9 @@ describe('배송지 창 — 새 배송지의 국가와 주소 폼이 같은 값�
    * @effects address_modal_country_single_source
    */
   it('주문서 배송지 관리 창: 새로 등록이 비운 뒤 국가를 채우고, 선택 칸은 선호 국가를 직접 보지 않는다', () => {
-    const seedCountry = findAll(manageModalJson, (n) => n.handler === 'setState' && typeof n.params?.['editingAddress.country_code'] === 'string')[0];
+    const seedCountry = findAll(manageModalJson, (n) => n.handler === 'setState' && typeof n.params?.['checkoutAddressModal.editing.country_code'] === 'string')[0];
     expect(seedCountry).toBeDefined();
-    expect(evalWithGlobal(seedCountry.params['editingAddress.country_code'], globalWith(true, 'US'))).toBe('US');
+    expect(evalWithGlobal(seedCountry.params['checkoutAddressModal.editing.country_code'], globalWith(true, 'US'))).toBe('US');
     const select = findAll(manageModalJson, (n) => n.name === 'Select' && n.props?.name === 'country_code')[0];
     expect(select.props.value).not.toContain('preferredShippingCountry');
   });
@@ -207,18 +207,19 @@ describe('선호 해외국가로 시작해 국내로 바꾼 뒤 상세주소를 
    * @effects address_modal_country_single_source, address_book_detail_optional_matches_server
    */
   it('주문서 배송지 관리 창: 새 배송지가 미국으로 시작 → 국내로 바꾸면 상세주소 칸이 나타나고, 배송지록 저장은 상세주소를 요구하지 않으므로 별표가 없다', () => {
-    const seedCountry = findAll(manageModalJson, (n) => n.handler === 'setState' && typeof n.params?.['editingAddress.country_code'] === 'string')[0];
-    const seeded = { editingAddress: { country_code: evalWithGlobal(seedCountry.params['editingAddress.country_code'], globalWith(true, 'US')) } };
-    const block = domesticDetailBlock(manageModalJson, '_local.editingAddress');
-    expect(evalWith(block.if, { _local: seeded })).toBe(false);
-    expect(evalWith(block.if, { _local: { editingAddress: { country_code: 'KR', address_detail: '' } } })).toBe(true);
+    const seedCountry = findAll(manageModalJson, (n) => n.handler === 'setState' && typeof n.params?.['checkoutAddressModal.editing.country_code'] === 'string')[0];
+    // 7.1.1: 주문서 창 상태는 창 고유 전역 이름 공간 _global.checkoutAddressModal 에 있다
+    const seeded = { checkoutAddressModal: { editing: { country_code: evalWithGlobal(seedCountry.params['checkoutAddressModal.editing.country_code'], globalWith(true, 'US')) } } };
+    const block = domesticDetailBlock(manageModalJson, '_global.checkoutAddressModal?.editing');
+    expect(evalWith(block.if, { _global: seeded })).toBe(false);
+    expect(evalWith(block.if, { _global: { checkoutAddressModal: { editing: { country_code: 'KR', address_detail: '' } } } })).toBe(true);
 
     // StoreUserAddressRequest: address_detail 은 nullable — 비워 저장해도 거절되지 않으므로 필수 표시를 붙이지 않는다
     const label = findAll(block, (n) => n.name === 'Label')[0];
     expect(label).toBeDefined();
     expect(JSON.stringify(label)).not.toContain('*');
     const input = findAll(block, (n) => n.name === 'Input' && n.props?.name === 'address_detail')[0];
-    expect(evalWith(input.props.className, { _local: { addressErrors: {} } })).not.toContain('border-red-500');
+    expect(evalWith(input.props.className, { _global: { checkoutAddressModal: { errors: {} } } })).not.toContain('border-red-500');
   });
 
   /**

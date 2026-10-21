@@ -45,9 +45,9 @@
         <!-- G7 설정 전역 변수 -->
         <script>
             window.G7Config = {
-                settings: @json($frontendSettings ?? []),
-                plugins: @json($pluginSettings ?? []),
-                modules: @json($moduleSettings ?? []),
+                settings: @json((object) ($frontendSettings ?? [])),
+                plugins: @json((object) ($pluginSettings ?? [])),
+                modules: @json((object) ($moduleSettings ?? [])),
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
                 bundleUrls: @json($bundleUrls ?? null),
@@ -60,7 +60,7 @@
                 trustedScriptHosts: @json($trustedScriptHosts ?? []),
                 // 전역 상태 공개 계약 (코어 예약 + 활성 확장 선언) — G7Core.stateContracts 가 읽는다
                 stateContracts: @json((object) ($stateContracts ?? [])),
-                appConfig: @json($appConfig ?? []),
+                appConfig: @json((object) ($appConfig ?? [])),
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
                 // 미빌드 상태 대비 file_exists 가드.

@@ -7,6 +7,10 @@
     "id": "activity_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "activityLogs"
+    },
     "actions": [
         {
             "comment": "쪽만 갈아 끼우고 나머지 조건은 주소에 있던 것을 그대로 물려받는다. 뒤로 가기로 이전 쪽에 돌아갈 수 있게 이력에 쌓지는 않는다.",
@@ -54,9 +58,12 @@
         }
     ],
     "props": {
+        "rowLabelField": "localized_description",
         "data": "{{activityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/activity-logs?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{activityLogs?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{activityLogs?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{activityLogs?.data?.pagination?.has_more_pages ?? false}}",
@@ -67,9 +74,9 @@
         "selectionScope": "page",
         "selectedIds": "{{_global.selectedIds_admin_activity_logs || []}}",
         "selectedCountText": "",
-        "loading": "{{activityLogs?.loading}}",
         "expandable": true,
         "expandConditionField": "has_changes",
+        "emptyMessage": "{{activityLogs === undefined ? '' : $t('common.no_data')}}",
         "actionsColumnHeader": "$t:common.actions",
         "rowActions": [
             {
@@ -207,7 +214,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "w-1/3 text-center text-green-600 dark:text-green-400 break-all"
+                                                    "className": "w-1/3 text-center text-green-700 dark:text-green-400 break-all"
                                                 },
                                                 "text": "{{change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                             }
@@ -312,7 +319,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "w-1/3 text-center text-green-600 dark:text-green-400 break-all"
+                                                            "className": "w-1/3 text-center text-green-700 dark:text-green-400 break-all"
                                                         },
                                                         "text": "{{change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                     }
@@ -428,12 +435,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.user.uuid}}"
-                                        }
-                                    },
                                     "search_by_actor": {
                                         "handler": "sequence",
                                         "actions": [
@@ -470,6 +471,8 @@
                                     "id": "view_member",
                                     "label": "$t:admin.activity_log.action.view_member",
                                     "iconName": "user",
+                                    "href": "/admin/users/{{row.user.uuid}}",
+                                    "target": "_blank",
                                     "if": "{{!!row.user?.uuid}}"
                                 },
                                 {
@@ -492,7 +495,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-user",
-                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                         }
                                     },
                                     {

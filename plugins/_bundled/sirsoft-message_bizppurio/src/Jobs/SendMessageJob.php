@@ -1,6 +1,6 @@
 <?php
 
-// audit:allow job-generator-needs-scale-test 단건 발송 Job(대용량 데이터 생성/처리 아님) — 결과코드 재시도 판정 집합만 변경, 대량 회귀 무관
+// audit:allow job-generator-needs-scale-test 단건 발송 Job(대용량 데이터 생성/처리 아님) — 이미 접수된 건 재발송 가드만 추가, 대량 회귀 무관
 
 declare(strict_types=1);
 
@@ -72,20 +72,42 @@ class SendMessageJob implements ShouldQueue
      *
      * @param  BizppurioApiClient  $client  발송 API 클라이언트
      * @param  BizppurioDispatchRepositoryInterface  $dispatches  발송 이력 리포지토리
+     * @return void 반환값 없음
      *
      * @throws BizppurioApiException 일시 오류·429 시(큐 재시도 트리거)
      */
     public function handle(BizppurioApiClient $client, BizppurioDispatchRepositoryInterface $dispatches): void
     {
+        // 이미 접수됐거나 결과가 확정된 건은 다시 보내지 않는다(#139) — 재시도·재예약된 사본이
+        // 같은 문자를 한 번 더 접수시키면 수신자가 두 통을 받는다. 이력이 없는 옛 건은 종전처럼 보낸다.
+        $existing = $dispatches->findByRefkey($this->refkey);
+        if ($existing !== null && $existing->status !== DispatchStatus::Pending) {
+            Log::info('비즈뿌리오: 이미 접수·확정된 발송이라 다시 보내지 않습니다', [
+                'refkey' => $this->refkey,
+                'status' => $existing->status->value,
+            ]);
+
+            return;
+        }
+
         $result = $client->sendMessage($this->payload);
         $code = (string) ($result['code'] ?? '');
 
         if ($client->isSuccess($result)) {
             // 발송 접수 성공 → sent(최종 성공/실패는 webhook 리포트가 확정) + messagekey 저장.
-            $this->updateDispatch($dispatches, [
-                'status' => DispatchStatus::Sent->value,
-                'messagekey' => $result['messagekey'] ?? null,
-            ]);
+            // 접수는 이미 끝났다 — 이력 갱신이 실패해도 예외를 올리지 않는다(올리면 큐가 재시도해 같은 문자를 또 보낸다).
+            try {
+                $this->updateDispatch($dispatches, [
+                    'status' => DispatchStatus::Sent->value,
+                    'messagekey' => $result['messagekey'] ?? null,
+                ]);
+            } catch (Throwable $e) {
+                Log::error('비즈뿌리오: 발송은 접수됐지만 발송 이력 갱신에 실패했습니다 — 재시도하지 않습니다', [
+                    'refkey' => $this->refkey,
+                    'messagekey' => $result['messagekey'] ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return;
         }
@@ -116,6 +138,7 @@ class SendMessageJob implements ShouldQueue
      *
      * @param  BizppurioDispatchRepositoryInterface  $dispatches  발송 이력 리포지토리
      * @param  array<string, mixed>  $data  갱신 데이터
+     * @return void 반환값 없음
      */
     private function updateDispatch(BizppurioDispatchRepositoryInterface $dispatches, array $data): void
     {
@@ -146,6 +169,7 @@ class SendMessageJob implements ShouldQueue
      * (success/failed)된 이력은 webhook 이 먼저 결과를 확정한 경우이므로 덮어쓰지 않는다(멱등).
      *
      * @param  Throwable  $exception  마지막으로 발생한 예외
+     * @return void 반환값 없음
      */
     public function failed(Throwable $exception): void
     {

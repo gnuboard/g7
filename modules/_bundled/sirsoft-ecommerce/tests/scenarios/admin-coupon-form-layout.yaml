@@ -1,0 +1,36 @@
+feature: 관리자 쿠폰 등록/수정 화면 레이아웃 계약
+
+description: |
+  관리자 쿠폰 폼(admin_ecommerce_promotion_coupon_form.g7.html)과 네 카드 partial(기본 정보·혜택 설정·발급 설정·사용 조건)이
+  지키는 화면 계약. 상태 기본값·데이터소스·수정 모드 매핑(initLocal)·저장 시퀀스, 선택지가 백엔드 Enum 과 같은 값인지,
+  선택에 따라 보이고 숨는 필드와 값 초기화, 다국어 입력, 상품 검색(무한 스크롤 포함)·카테고리 선택의 이벤트·응답 필드 계약,
+  다국어 키 네임스페이스, 다크 모드 대비, 백엔드 요청 필드명 일치, 카드 본문 간격을 실제 레이아웃 JSON 으로 확인한다.
+  중복 사용 라디오의 boolean 쓰기 경로는 issue97-coupon-combinable-boolean.yaml 과 함께 잠근다.
+
+# axis 의미:
+#   section — 시험이 들여다보는 화면 단위. main_layout 은 메인 레이아웃(상태·데이터소스·저장·다국어·백엔드 필드),
+#             나머지는 각 카드 partial.
+axes:
+  section: [main_layout, basic_info, benefit_settings, issue_settings, usage_conditions]
+
+effects:
+  - coupon_form_layout_state_and_sources       # 레이아웃 구조·폼/UI 상태 기본값·데이터소스·partial 참조가 맞다
+  - coupon_form_edit_mapping_not_clobbered     # init_actions 가 initLocal 이 채운 수정 모드 매핑 키를 덮어쓰지 않는다
+  - coupon_form_save_sequence                  # 저장 버튼이 apiCall 을 sequence 로 부른다
+  - coupon_form_section_card_layout            # 각 partial 이 카드 Div 이고 본문 항목은 구분선 없는 space-y-5 컨테이너의 직계 자식이다
+  - coupon_form_choice_options_match_enums     # 적용대상·발급방법·유효기간·중복 사용·적용 범위 선택지 값이 정해진 목록과 같다
+  - coupon_form_conditional_fields_follow_choice  # 선택값에 따라 발급조건·안내·기간·수량·재발급·상품/카테고리 선택 영역이 보이거나 숨는다
+  - coupon_form_ui_only_radios_reset_payload   # UI 전용 라디오(name 없음)가 제한 없음 선택 시 연결된 폼 값을 초기화한다
+  - coupon_form_multilingual_name_and_description  # 쿠폰명·설명은 다국어 입력 컴포넌트를 쓴다
+  - coupon_form_benefit_value_constraints      # 혜택 금액 입력·유형 선택의 배치·min/max 제약과 유형 변경 시 값 초기화
+  - coupon_form_product_search_contract        # 상품 검색 Select·검색 apiCall·응답 변수·페이지 메타·DataGrid 이벤트와 컬럼 필드명이 맞다
+  - coupon_form_product_search_infinite_scroll # 상품 검색 무한 스크롤의 스크롤 이벤트·조건 분기·다음 페이지 병합·오류 시 로딩 해제·스피너
+  - coupon_form_category_picker_contract       # 카테고리 선택 추가 경로·CategoryTree 이벤트·$args 패턴·응답 필드명이 맞다
+  - coupon_form_i18n_keys_namespaced           # 화면마다 필요한 다국어 키가 있고 모두 sirsoft-ecommerce·common 네임스페이스다
+  - coupon_form_buttons_dark_contrast          # 사용 조건 버튼이 다크 모드 짝을 갖고 흰 글자 대비 단계를 지킨다
+  - coupon_form_fields_match_backend_request   # 폼 필드명과 선택지 값이 백엔드 요청 규칙·Enum 과 같다
+  # 중복 사용 라디오의 boolean 쓰기 경로 시험은 issue97-coupon-combinable-boolean.yaml 의
+  # radio_click_saves_boolean_state 로 마킹한다(같은 효과를 두 매니페스트에 겹쳐 선언하지 않는다).
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponFormLayouts.test.tsx

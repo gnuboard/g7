@@ -9,7 +9,7 @@
  *  - 복합 바인딩(`{{a ? b : c}}` 삼항 등) → 디그레이드(코드 편집) 읽기전용, 검색 피커 미노출
  *  (단 `{{a?.b ?? []}}` 같은 G7 표준 안전 바인딩은에서 파싱·변경 가능)
  *  - shape 필터: array 행은 배열 후보만 노출
- *  - 회귀 가드(1차 결함): 구조/수치 prop(dataProps 미선언)은 데이터 연결 행 0
+ *  - 회귀 가드(결함): 구조/수치 prop(dataProps 미선언)은 데이터 연결 행 0
  *
  * @since engine-v1.50.0
  *
@@ -54,6 +54,9 @@ const candidates: BindingCandidate[] = [
 ];
 
 describe('DataBindingSection — 렌더', () => {
+  /**
+   * @effects data_binding_section_renders_declared_dataprops_rows
+   */
   it('dataProps 행을 shape 배지 + 필수 배지와 렌더한다', () => {
     const node: EditorNode = { name: 'CardGrid', props: {} };
     const dataProps: DataPropSpec[] = [
@@ -68,6 +71,9 @@ describe('DataBindingSection — 렌더', () => {
     expect(screen.getByTestId('g7le-binding-empty-data')).toBeInTheDocument();
   });
 
+  /**
+   * @effects structural_numeric_enum_boolean_props_have_zero_data_binding_ui
+   */
   it('dataProps 가 비면 null 렌더(영역 비노출)', () => {
     const node: EditorNode = { name: 'Div', props: {} };
     const { container } = render(
@@ -78,6 +84,9 @@ describe('DataBindingSection — 렌더', () => {
 });
 
 describe('DataBindingSection — 연결 round-trip', () => {
+  /**
+   * @effects select_candidate_writes_binding_expression_to_props_propkey
+   */
   it('검색 → array 후보 선택 → {{...}} 를 props[propKey] 기입', () => {
     const node: EditorNode = { name: 'CardGrid', props: {} };
     const dataProps: DataPropSpec[] = [{ propKey: 'data', shape: 'array' }];
@@ -96,6 +105,9 @@ describe('DataBindingSection — 연결 round-trip', () => {
     );
   });
 
+  /**
+   * @effects clear_removes_binding_back_to_unconnected
+   */
   it('연결됨 → 표현식 표시 + [해제] → prop 삭제', () => {
     const node: EditorNode = { name: 'CardGrid', props: { data: '{{products.data.data}}' } };
     const dataProps: DataPropSpec[] = [{ propKey: 'data', shape: 'array' }];
@@ -110,6 +122,9 @@ describe('DataBindingSection — 연결 round-trip', () => {
 });
 
 describe('DataBindingSection — 복합 바인딩 디그레이드', () => {
+  /**
+   * @effects complex_binding_degrades_to_code_edit_readonly_notice
+   */
   it('단일 경로가 아닌 복합식은 코드편집 디그레이드 + 검색 피커 미노출', () => {
     const node: EditorNode = { name: 'Input', props: { value: '{{a ? b : c}}' } };
     const dataProps: DataPropSpec[] = [{ propKey: 'value', shape: 'scalar' }];
@@ -122,6 +137,9 @@ describe('DataBindingSection — 복합 바인딩 디그레이드', () => {
 });
 
 describe('DataBindingSection — scalar 행 shape 필터', () => {
+  /**
+   * @effects shape_filter_returns_only_matching_scalar_array_object_candidates
+   */
   it('scalar 행은 스칼라 후보만 노출', () => {
     const node: EditorNode = { name: 'Input', props: {} };
     const dataProps: DataPropSpec[] = [{ propKey: 'value', shape: 'scalar' }];

@@ -40,7 +40,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-warning-soft"
+                                "className": "text-xs board-tone-warning"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.message"
                         }
@@ -68,7 +68,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-info-soft"
+                                "className": "text-xs board-tone-info"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.permission_notice"
                         }
@@ -128,7 +128,7 @@
                                     "name": "Span",
                                     "if": "{{!(_global.bulkApplySnapshot?.fields ?? []).length}}",
                                     "props": {
-                                        "className": "block p-3 text-sm text-gray-400 dark:text-gray-500 italic"
+                                        "className": "block p-3 text-sm text-gray-500 dark:text-gray-400 italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.no_fields"
                                 },
@@ -137,7 +137,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "iteration": {
-                                        "source": "(function() { const fields = _global.bulkApplySnapshot?.fields ?? []; const sectionMap = { type:'basic', show_view_count:'basic', secret_mode:'basic', use_comment:'basic', use_reply:'basic', use_report:'basic', use_reaction:'basic', use_comment_reaction:'basic', use_scrap:'basic', per_page:'list', per_page_mobile:'list', order_by:'list', order_direction:'list', min_title_length:'post', max_title_length:'post', min_content_length:'post', max_content_length:'post', max_reply_depth:'post', blocked_keywords:'post', new_display_hours:'post', comment_order:'comment', min_comment_length:'comment', max_comment_length:'comment', max_comment_depth:'comment', use_file_upload:'attachment', max_file_size:'attachment', max_file_count:'attachment', allowed_extensions:'attachment', notify_admin_on_post:'notification', notify_author:'notification', manager:'permissions' }; const sectionOrder = ['basic','list','post','comment','attachment','notification','permissions']; return sectionOrder.map(sk => ({ sectionKey: sk, items: fields.filter(k => (k.includes('.') ? 'permissions' : (sectionMap[k] ?? 'basic')) === sk) })).filter(g => g.items.length > 0); })()",
+                                        "source": "(function() { const fields = _global.bulkApplySnapshot?.fields ?? []; const sectionMap = { type:'basic', show_view_count:'basic', secret_mode:'basic', use_comment:'basic', use_reply:'basic', use_report:'basic', use_reaction:'basic', use_comment_reaction:'basic', use_scrap:'basic', per_page:'list', per_page_mobile:'list', order_by:'list', order_direction:'list', min_title_length:'post', max_title_length:'post', min_content_length:'post', max_content_length:'post', max_reply_depth:'post', secret_reply_visibility:'post', blocked_keywords:'post', new_display_hours:'post', comment_order:'comment', min_comment_length:'comment', max_comment_length:'comment', max_comment_depth:'comment', use_file_upload:'attachment', max_file_size:'attachment', max_file_count:'attachment', allowed_extensions:'attachment', notify_admin_on_post:'notification', notify_author:'notification', manager:'permissions' }; const sectionOrder = ['basic','list','post','comment','attachment','notification','permissions']; return sectionOrder.map(sk => ({ sectionKey: sk, items: fields.filter(k => (k.includes('.') ? 'permissions' : (sectionMap[k] ?? 'basic')) === sk) })).filter(g => g.items.length > 0); })()",
                                         "item_var": "sectionGroup"
                                     },
                                     "props": {
@@ -266,7 +266,7 @@
                                     "name": "Span",
                                     "if": "{{_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length}}",
                                     "props": {
-                                        "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                        "className": "text-sm text-gray-500 dark:text-gray-400 italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.no_boards"
                                 },
@@ -299,7 +299,7 @@
                     "name": "Div",
                     "if": "{{$parent._local.bulkApplySaveError}}",
                     "props": {
-                        "className": "alert-danger text-red-600 dark:text-red-400"
+                        "className": "alert-danger text-red-700 dark:text-red-400"
                     },
                     "children": [
                         {
@@ -550,7 +550,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}",
-                                "className": "flex-center gap-1.5 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-1.5 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {

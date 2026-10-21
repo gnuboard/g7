@@ -41,7 +41,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "check",
-                                        "className": "text-green-600 dark:text-green-400",
+                                        "className": "text-green-700 dark:text-green-400",
                                         "size": "lg"
                                     }
                                 }
@@ -77,6 +77,15 @@
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1)",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local",
+                                        "currentSelection": null,
+                                        "additionalOptions": null
+                                    }
+                                },
+                                {
                                     "handler": "setState",
                                     "params": {
                                         "target": "$parent._local",
@@ -93,6 +102,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isNavigatingToCart}}"
                     },
@@ -100,7 +110,7 @@
                 },
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "comment": "장바구니로 이동. 이동 표시를 먼저 세우고 창을 닫는다 — 상품 목록 클러스터 밖으로 나가는 이동이라 목록 상태를 승계하지 않는다",
@@ -128,7 +138,8 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "href": "{{_global.shopBase}}/cart",
+                        "className": "flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
                         "disabled": "{{_global.isNavigatingToCart}}"
                     },
                     "children": [

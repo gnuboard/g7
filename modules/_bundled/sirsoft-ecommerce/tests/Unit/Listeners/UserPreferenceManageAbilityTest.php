@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\UserShippingCountryInfoListener;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 회원 응답의 결제 통화·배송국가 변경 권한 키 테스트 (7.1.0 abilities 게이트 ecom-backend#9)
+ * 회원 응답의 결제 통화·배송국가 변경 권한 키 테스트 (7.1.0 abilities 게이트)
  *
  * 관리자 회원 상세의 결제 통화·배송국가 칸을 잠그는 키다. 저장 검증(`UserPreferenceCoreSaveListener`)과 같은 권한이다.
  */

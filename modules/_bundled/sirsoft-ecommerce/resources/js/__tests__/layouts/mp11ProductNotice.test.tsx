@@ -39,12 +39,20 @@ function appendNodes(layout: any) {
 }
 
 describe('A9 무한스크롤 바인딩 정정', () => {
+  /**
+   * @scenario surface=scroll_page2
+   * @effects infinite_scroll_appends_page2
+   */
   it('고시 패널 appendDataSource 가 response.data.data 를 추가한다', () => {
     const appends = appendNodes(noticePanel);
     expect(appends.length).toBeGreaterThanOrEqual(1);
     expect(appends[0].params.newData).toBe('{{response.data.data}}');
   });
 
+  /**
+   * @scenario surface=scroll_page2
+   * @effects infinite_scroll_stops_on_server_has_more_pages
+   */
   it('고시 hasMore 가 백엔드 pagination.has_more_pages 를 본다', () => {
     const setStates = collectNodes(
       noticePanel,
@@ -54,6 +62,10 @@ describe('A9 무한스크롤 바인딩 정정', () => {
     expect(setStates[0].params['infiniteScroll.hasMore']).toContain('pagination?.has_more_pages');
   });
 
+  /**
+   * @scenario surface=scroll_page2
+   * @effects common_info_scroll_fixed
+   */
   it('공통정보(A10) 패널도 동일하게 정정된다', () => {
     const appends = appendNodes(commonInfoPanel);
     expect(appends.length).toBeGreaterThanOrEqual(1);
@@ -72,6 +84,10 @@ describe('무한스크롤 로딩 인디케이터 가시성(scrollIntoView) 유�
     ['쿠폰 폼 상품검색', couponUsageConditions],
   ];
 
+  /**
+   * @scenario surface=scroll_page2
+   * @effects infinite_scroll_indicator_scrolls_into_view
+   */
   it.each(infiniteScrollPanels)('%s 에 로딩 인디케이터 scrollIntoView 가 존재한다', (_label, panel) => {
     const scrollIntoViews = collectNodes(panel, (n) => n.handler === 'scrollIntoView');
     expect(scrollIntoViews.length).toBeGreaterThanOrEqual(1);
@@ -80,6 +96,10 @@ describe('무한스크롤 로딩 인디케이터 가시성(scrollIntoView) 유�
     expect(scrollIntoViews[0].params.block).toBe('end');
   });
 
+  /**
+   * @scenario surface=scroll_page2
+   * @effects infinite_scroll_scroll_trigger_kept
+   */
   it.each(infiniteScrollPanels)('%s 는 scroll 이벤트 트리거를 유지한다', (_label, panel) => {
     const scrollTriggers = collectNodes(panel, (n) => n.type === 'scroll' && n.handler);
     expect(scrollTriggers.length).toBeGreaterThanOrEqual(1);
@@ -93,6 +113,10 @@ describe('무한스크롤 로딩 인디케이터 가시성(scrollIntoView) 유�
     ['배송정책 추가배송비 모달', extraFeeModal],
   ];
 
+  /**
+   * @scenario surface=scroll_page2
+   * @effects infinite_scroll_stops_on_server_has_more_pages
+   */
   it.each(totalGuardedPanels)('%s 의 스크롤 가드가 서버 has_more_pages 기반으로 정지한다', (_label, panel) => {
     // 스크롤 가드 switch 는 _global.infiniteScroll.hasMore 로 추가 로딩 여부를 게이트한다.
     const switches = collectNodes(
@@ -120,6 +144,10 @@ describe('무한스크롤 로딩 인디케이터 가시성(scrollIntoView) 유�
 });
 
 describe('A9 고시 목록 활성 토글', () => {
+  /**
+   * @scenario surface=list_toggle, permission=can_update
+   * @effects toggle_active_flips_is_active
+   */
   it('Toggle 이 PATCH toggle-active 를 호출한다', () => {
     const toggleCalls = collectNodes(
       noticePanel,
@@ -136,6 +164,10 @@ describe('A9 고시 목록 활성 토글', () => {
     expect(toggleCalls[0].stopPropagation).toBe(true);
   });
 
+  /**
+   * @scenario surface=list_toggle, permission=no_permission
+   * @effects toggle_active_requires_permission
+   */
   it('Toggle 은 can_update 권한이 없으면 비활성화된다', () => {
     const toggles = collectNodes(noticePanel, (n) => n.name === 'Toggle');
     expect(toggles.length).toBe(1);
@@ -144,9 +176,125 @@ describe('A9 고시 목록 활성 토글', () => {
 });
 
 describe('A9 상품폼 고시 드롭다운 active_only', () => {
+  /**
+   * @scenario surface=dropdown_visible, template_state=inactive
+   * @effects dropdown_excludes_inactive
+   */
   it('notice_templates 데이터소스에 active_only=true 필터가 적용된다', () => {
     const ds = (productForm.data_sources ?? []).find((d: any) => d.id === 'notice_templates');
     expect(ds).toBeTruthy();
     expect(ds.params?.active_only).toBe(true);
+  });
+});
+
+describe('고시 목록 — 편집 중 다른 항목 선택 (7.1.1 출시 전 실측)', () => {
+  // 공통정보 목록과 같은 규칙: 편집·등록 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다.
+  // 이동을 완결하는 것은 확인 창이다 — 창이 대기 항목을 선택으로 옮기지 않으면 클릭이 사라진다.
+  const editingConfirm = loadJson('partials/admin_ecommerce_product_notice_index/_modal_editing_confirm.json');
+
+  /** 클릭 갈래에서 편집 중 분기(switch)를 찾는다. */
+  function editingSwitches(layout: any): any[] {
+    return collectNodes(
+      layout,
+      (n) => n.handler === 'switch' && typeof n.params?.value === 'string' && n.params.value.includes("_global.panelMode === 'edit'"),
+    );
+  }
+
+  /**
+   * @scenario surface=notice_list
+   * @effects editing_selection_opens_leave_confirm
+   */
+  it('카드 클릭과 이름 링크 클릭 모두 편집 중이면 이탈 확인 창을 연다', () => {
+    const switches = editingSwitches(noticePanel);
+    expect(switches).toHaveLength(2);
+    switches.forEach((sw) => {
+      const editing = JSON.stringify(sw.cases?.true ?? sw.params?.cases?.true);
+      expect(editing).toContain('"target":"editing_confirm_modal"');
+      expect(editing).toContain('pendingTemplateId');
+      const idle = JSON.stringify(sw.cases?.false ?? sw.params?.cases?.false);
+      expect(idle).toContain('selectedTemplateId');
+      expect(idle).not.toContain('editing_confirm_modal');
+    });
+  });
+
+  /**
+   * @scenario surface=notice_list
+   * @effects leave_confirm_moves_pending_selection
+   */
+  it('이탈 확인 창의 「취소하고 이동」 이 대기 항목을 선택으로 옮기고 주소를 바꾼다', () => {
+    const text = JSON.stringify(editingConfirm);
+    expect(text).toContain('"selectedTemplateId":"{{_global.pendingTemplateId}}"');
+    expect(text).toContain('"selectedTemplate":"{{_global.pendingTemplate}}"');
+    expect(text).toContain('replaceUrl');
+  });
+});
+
+describe('브랜드 목록 — 편집 중 다른 브랜드 선택', () => {
+  // 브랜드 화면에도 이탈 확인 창(_modal_editing_confirm)이 있었지만 목록 선택이 그 창을 열지 않아 고치던 내용이 확인 없이 사라졌다.
+  const brandList = loadJson('partials/admin_ecommerce_brand_index/_panel_brand_list.json');
+  const brandConfirm = loadJson('partials/admin_ecommerce_brand_index/_modal_editing_confirm.json');
+
+  /**
+   * @scenario surface=brand_list
+   * @effects editing_selection_opens_leave_confirm
+   */
+  it('목록 선택(onSelect)은 편집 중이면 대기 자리에 두고 이탈 확인 창을 연다', () => {
+    const switches = collectNodes(
+      brandList,
+      (n) => n.handler === 'switch' && typeof n.params?.value === 'string' && n.params.value.includes("_global.panelMode === 'edit'"),
+    );
+    expect(switches).toHaveLength(1);
+    const editing = JSON.stringify(switches[0].cases?.true);
+    expect(editing).toContain('"target":"editing_confirm_modal"');
+    expect(editing).toContain('pendingBrandId');
+    expect(JSON.stringify(switches[0].cases?.false)).toContain('selectedBrandId');
+  });
+
+  /**
+   * @scenario surface=brand_list
+   * @effects leave_confirm_moves_pending_selection
+   */
+  it('이탈 확인 창의 「취소하고 나가기」 가 대기 브랜드를 선택으로 옮긴다', () => {
+    const text = JSON.stringify(brandConfirm);
+    expect(text).toContain('"selectedBrandId":"{{_global.pendingBrandId}}"');
+    expect(text).toContain('replaceUrl');
+  });
+});
+
+describe('분류 목록 — 편집 중 다른 분류 선택', () => {
+  // 분류 화면에는 이탈 확인 창 자체가 없어 고치던 내용이 확인 없이 사라졌다. 브랜드·공통정보·고시와 같은 규칙으로 맞춘다.
+  const categoryIndex = loadJson('admin_ecommerce_category_index.json');
+  const categoryList = loadJson('partials/admin_ecommerce_category_index/_panel_category_list.json');
+
+  /**
+   * @scenario surface=category_list
+   * @effects editing_selection_opens_leave_confirm
+   */
+  it('목록 선택(onSelect)은 편집·등록 중이면 대기 자리에 두고 이탈 확인 창을 연다', () => {
+    const switches = collectNodes(
+      categoryList,
+      (n) => n.handler === 'switch' && typeof n.params?.value === 'string' && n.params.value.includes("_global.panelMode === 'edit'"),
+    );
+    expect(switches).toHaveLength(1);
+    const editing = JSON.stringify(switches[0].cases?.true);
+    expect(editing).toContain('"target":"editing_confirm_modal"');
+    expect(editing).toContain('pendingCategoryId');
+    expect(JSON.stringify(switches[0].cases?.false)).toContain('selectedCategoryId');
+  });
+
+  /**
+   * @scenario surface=category_list
+   * @effects leave_confirm_moves_pending_selection, category_screen_registers_leave_confirm
+   */
+  it('화면에 이탈 확인 창이 붙어 있고, 「취소하고 이동」 이 대기 분류를 선택·주소로 옮긴다', () => {
+    const modals = JSON.stringify(categoryIndex.modals ?? []);
+    expect(modals).toContain('partials/admin_ecommerce_category_index/_modal_editing_confirm.json');
+
+    const confirm = loadJson('partials/admin_ecommerce_category_index/_modal_editing_confirm.json');
+    const text = JSON.stringify(confirm);
+    expect(text).toContain('"selectedCategoryId":"{{_global.pendingCategoryId}}"');
+    expect(text).toContain('"selectedCategory":"{{_global.pendingCategory}}"');
+    expect(text).toContain('replaceUrl');
+    expect(text).toContain('sirsoft-ecommerce.admin.category.modal.editing.discard');
   });
 });

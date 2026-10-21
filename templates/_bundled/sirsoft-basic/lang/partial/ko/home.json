@@ -5,6 +5,7 @@
     "login_prompt": "로그인하고 커뮤니티에 참여하세요.",
     "greeting": "안녕하세요, {{name}}님!"
   },
+  "welcome_badge": "환영합니다",
   "welcome_suffix": "에 오신 것을 환영합니다",
   "welcome_description": "함께 성장하는 커뮤니티에서 다양한 이야기를 나눠보세요.",
   "get_started": "시작하기",

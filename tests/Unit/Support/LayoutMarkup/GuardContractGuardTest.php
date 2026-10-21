@@ -40,7 +40,7 @@ use Tests\Support\InjectsGuardSamples;
  * ## 이 회차가 집행하는 계약
  *
  * - **C1 열거 폐쇄 방향** — 판정 술어로 소비되는 코어 표면 열거는 여집합을 잡는 폐쇄를 갖는다.
- *   35차 실측에서 이 판정식은 저장소를 훑어 위험 열거 5건을 냈고, 그중 하나
+ *   실측에서 이 판정식은 저장소를 훑어 위험 열거 5건을 냈고, 그중 하나
  *   (`AssertionStrengthGuardTest::EXEMPTIONS`)는 **사람의 전수조사가 놓친 자리**였다.
  * - **C2 면제 입도** — 면제는 파일을 통째로 검사에서 빼지 않는다.
  */
@@ -136,6 +136,8 @@ class GuardContractGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects predicate_enumerations_are_closed_or_declared_as_debt
+     *
+     * @return void 반환값 없음
      */
     public function test_every_predicate_enumeration_is_closed(): void
     {
@@ -189,6 +191,8 @@ class GuardContractGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects declared_enumeration_closures_are_verified_not_asserted
+     *
+     * @return void 반환값 없음
      */
     public function test_declared_closures_actually_exist(): void
     {
@@ -222,6 +226,8 @@ class GuardContractGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects guard_exemptions_never_skip_a_whole_file
+     *
+     * @return void 반환값 없음
      */
     public function test_no_guard_skips_a_whole_file_by_exemption(): void
     {
@@ -275,6 +281,8 @@ class GuardContractGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects guard_docblocks_are_never_orphaned_by_a_following_block
+     *
+     * @return void 반환값 없음
      */
     public function test_no_docblock_is_orphaned_by_a_following_block(): void
     {
@@ -313,6 +321,8 @@ class GuardContractGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects guard_contract_registry_enforcers_exist
+     *
+     * @return void 반환값 없음
      */
     public function test_every_contract_has_a_living_enforcer(): void
     {
@@ -366,6 +376,8 @@ class GuardContractGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects guard_contract_guard_reacts_to_population_injected_samples
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_reacts_to_samples_injected_into_the_population(): void
     {
@@ -443,7 +455,7 @@ class GuardContractGuardTest extends LayoutMarkupTestCase
     /**
      * 코어(`app/`)가 선언한 표면 심볼을 디스크에서 도출합니다.
      *
-     * @return array{methods: array<string, true>, classes: array<string, true>}
+     * @return array{methods: array<string, true>, classes: array<string, true>} 코어 메서드·클래스 심볼 집합
      */
     private function coreSurfaceSymbols(): array
     {

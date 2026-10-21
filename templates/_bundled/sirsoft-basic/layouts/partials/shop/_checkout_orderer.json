@@ -93,7 +93,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -131,6 +131,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.orderer_name",
                                 "type": "text",
                                 "name": "orderer_name",
                                 "value": "{{_local.orderer?.name ?? _global.currentUser?.name ?? ''}}",
@@ -143,7 +144,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['orderer.name']}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.['orderer.name']?.[0] ?? ''}}"
                         }
@@ -170,7 +171,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -208,6 +209,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.orderer_phone",
                                 "type": "tel",
                                 "name": "orderer_phone",
                                 "value": "{{_local.orderer?.phone ?? _global.currentUser?.phone ?? ''}}",
@@ -220,7 +222,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['orderer.phone']}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.['orderer.phone']?.[0] ?? ''}}"
                         }
@@ -250,7 +252,7 @@
                             "name": "Span",
                             "if": "{{!_global.currentUser?.uuid}}",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -278,6 +280,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:shop.checkout.orderer_email",
                         "type": "email",
                         "name": "orderer_email",
                         "value": "{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}",
@@ -290,7 +293,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.['orderer.email']}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1 block"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                     },
                     "text": "{{_local.errors?.['orderer.email']?.[0] ?? ''}}"
                 }
@@ -374,7 +377,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-500 ml-1"
+                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                             },
                                             "text": "*"
                                         }
@@ -402,6 +405,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.guest_lookup_password",
                                         "name": "guest_lookup_password",
                                         "value": "{{_local.guestLookupPassword ?? ''}}",
                                         "placeholder": "$t:shop.checkout.guest_lookup_password_placeholder",
@@ -437,7 +441,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-500 ml-1"
+                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                             },
                                             "text": "*"
                                         }
@@ -465,6 +469,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.guest_lookup_password_confirmation",
                                         "name": "guest_lookup_password_confirmation",
                                         "value": "{{_local.guestLookupPasswordConfirmation ?? ''}}",
                                         "placeholder": "$t:shop.checkout.guest_lookup_password_confirmation_placeholder",

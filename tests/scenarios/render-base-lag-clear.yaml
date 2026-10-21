@@ -1,0 +1,27 @@
+feature: 비운 값(shallow `{}`·setState `{}`·shallow 로 키를 줄인 객체)이 늦은 렌더 사본에 덮여 화면에 남거나 줄 동작으로 저장소 B 에 되써지지 않는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  루트 렌더러의 화면 문맥은 deepMergeState(dataContext._local, 저장소 A) 이고, dataContext._local 은 마지막 루트 다시 그리기 때의 B 사본이라
+  render:false 쓰기 뒤에는 B 보다 늦다. 그 사본에 앞 선택이 있으면 A·B 를 모두 비워도 깊은 병합이 키를 지우지 못해 화면에 남았고, 그 화면
+  문맥을 입력으로 쓰는 다음 setLocal 의 잎 키 보충이 앞 선택을 B 에 되썼다. 또 setLocal 의 shallow·replace 는 저장소 A 함수형 갱신 결과가
+  다시 깊게 병합되고 forced·override 키가 깊게 병합돼 의미가 사라졌다. 축 case 는 「비우는 쓰기 모양 × 렌더 사본이 늦어지는 조건 × 뒤이은
+  동작」 가운데 실제로 다른 경로를 타는 조합만 고른 것이다. 저장소 B 는 손으로 채우지 않는다(실제 writer 만). 템플릿 화면 축은
+  templates/_bundled/sirsoft-basic/tests/scenarios/shop-option-select-reset-after-add.yaml 의 *_after_rerender 가 덮는다.
+
+axes:
+  case: [handler_shallow_empty, handler_shallow_empty_after_root_rerender, handler_shallow_empty_after_root_rerender_then_line_action, setstate_deep_empty_after_root_rerender, handler_shallow_object_after_root_rerender, setlocal_shallow_empty, setlocal_shallow_twice_then_line_action, canonical_b_key_kept, setlocal_deep_empty_noop]
+
+effects:
+  - shallow_write_honored_in_store_a               # shallow·replace 쓰기가 저장소 A·forced·override 에서도 그 의미대로 남는다
+  - lagging_render_base_does_not_revive_cleared_keys # 늦은 렌더 사본에만 남은 키(A·정본 B 가 모두 버린 키)는 화면에 보이지 않는다
+  - line_action_does_not_write_back_lagging_keys   # 화면 문맥을 입력으로 쓰는 다음 동작이 앞 선택을 B·getLocal 에 되쓰지 않는다
+  - canonical_b_keys_survive_render_merge          # 정본 B 에 있는 키는 저장소 A 가 `{}` 여도 화면에 남는다
+  - setlocal_deep_empty_stays_noop                 # setLocal 기본(deep) 의 `{}` 는 종전처럼 아무것도 바꾸지 않는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.renderBaseLagClear.test.tsx
+
+validation:
+  browser_check: 재실측 — 비회원 상품 상세(옵션 2단 상품 58·33·46) 새 탭마다 색상 → 사이즈로 줄 추가 → 추가옵션 변경·「+」 를 반복(스크립트, 표본 수를 맞춰 발생률 비교)
+  note: |
+    fail-first: 렌더 병합 장치를 끄면 5 failed / 9, 함수형 표지 판정을 끄면 4 failed, forced·override shallow 를 끄면 1 failed.

@@ -17,7 +17,7 @@
     "reporter_name": "Reporter",
     "reported_at": "Reported At",
     "last_reported_at": "Last: {{date}}",
-    "last_reported_at_label": "Latest",
+    "first_reported_at_label": "First",
     "target_status": "Target Status",
     "status": "Status",
     "current_status": "Current Status"

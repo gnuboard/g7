@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 관리자 페이지 목록·버전 목록 표의 받는 중·빈 결과 표시
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_list_loading_empty_state
+
+description: >-
+  관리자 페이지 목록과 페이지 상세의 버전 목록은 화면을 먼저 그린 뒤 받는다(progressive — 전략을 적지
+  않으면 이 값이다). 받기 전에는 데이터소스 값이 비어 있어 표가 행 0개로 보이고, 표는 행이 없으면 빈
+  문구(적지 않으면 기본 문구 「데이터가 없습니다」)를 그린다 — 그래서 받는 중에 「없음」이 먼저 보였다.
+  빈 문구는 받은 결과가 0건일 때만 보이고, 받는 중에는 문구 없이 표를 흐리게 덮는다. 새 표가 규칙 없이
+  들어오면 전수 검사가 잡는다.
+
+test_files:
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-list-loading-empty-state.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   load_state — 목록 데이터소스 상태. loading 은 엔진이 화면을 먼저 그릴 때 넣는 undefined,
+#                loaded_empty 는 받은 결과 0건, loaded_rows 는 1건 이상. 2개 표는 같은 규칙을 쓰므로
+#                축으로 곱하지 않고 각 시험이 표 전부를 돈다(it.each).
+axes:
+  load_state: [loading, loaded_empty, loaded_rows]
+
+effects:
+  - loading_hides_empty_message   # 받는 중에는 빈 문구가 없다
+  - loading_blurs_grid   # 받는 중에는 표가 흐림 처리된다
+  - loaded_empty_shows_message   # 받은 결과 0건이면 빈 문구가 보이고 흐림이 풀린다
+  - loaded_rows_hide_message   # 받은 결과가 있으면 행이 그려지고 빈 문구가 없다
+  - every_progressive_list_grid_gated   # 관리자 표는 모두 이 규칙을 지킨다(전수)

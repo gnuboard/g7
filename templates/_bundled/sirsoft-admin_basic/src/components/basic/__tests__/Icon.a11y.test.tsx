@@ -1,6 +1,6 @@
 /**
  * @file Icon.a11y.test.tsx
- * @description admin_basic Icon — 꾸밈 아이콘 숨김 (7.1.0 영역 J D-J4)
+ * @description admin_basic Icon — 꾸밈 아이콘 숨김 (7.1.0)
  *
  * 이름 없는 아이콘에 글리프 이름(영어)을 이름표로 달아 버튼 이름이 「refresh 업데이트 확인」·「trash can」·「ellipsis」 로
  * 읽혔다. ariaLabel 을 받은 아이콘만 이미지로 읽히고 나머지는 접근성 트리에서 숨긴다.
@@ -11,7 +11,7 @@ import { render } from '@testing-library/react';
 import { Icon } from '../Icon';
 
 describe('Icon 접근성', () => {
-  // 7.1.0 영역 J D-J4: 이름 없는 아이콘은 꾸밈으로 숨긴다. 종전에는 글리프 이름을 영어 이름표로 달아
+  // 7.1.0: 이름 없는 아이콘은 꾸밈으로 숨긴다. 종전에는 글리프 이름을 영어 이름표로 달아
   // 버튼 이름이 「refresh 업데이트 확인」·「trash can」·「ellipsis」 처럼 읽혔다(번역도 안 됨).
     /**
      * @scenario control=icon

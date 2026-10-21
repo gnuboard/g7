@@ -103,7 +103,7 @@ describe('쇼핑몰 개인정보 보유기간 탭 — 계약', () => {
         expect(fields.if).toContain('privacy_retention?.enabled');
         expect(anonymize.if).toContain("=== 'anonymize'");
         expect(warning.if).toContain("=== 'delete'");
-        expect(warning.props.className).toContain('text-error-soft');
+        expect(warning.props.className).toContain('ecommerce-tone-error-soft');
     });
 
     /**

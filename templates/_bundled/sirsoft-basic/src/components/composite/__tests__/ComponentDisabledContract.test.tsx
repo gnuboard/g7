@@ -1,6 +1,6 @@
 /**
  * @file ComponentDisabledContract.test.tsx
- * @description 사용자 템플릿 컴포넌트의 disabled·권한 계약 — 관리자 템플릿과 대칭 (7.1.0 abilities 게이트 G09·G27)
+ * @description 사용자 템플릿 컴포넌트의 disabled·권한 계약 — 관리자 템플릿과 대칭 (7.1.0 abilities 게이트)
  */
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';

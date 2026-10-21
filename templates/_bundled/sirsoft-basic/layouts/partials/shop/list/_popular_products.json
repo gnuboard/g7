@@ -34,7 +34,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "flame",
-                                "className": "text-xl text-orange-500"
+                                "className": "text-xl text-orange-600"
                             }
                         },
                         {

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -146,6 +147,9 @@ class UserAddressRepository implements UserAddressRepositoryInterface
     {
         $table = $this->model->getTable();
         $query = $this->model->newQuery();
+
+        // 권한 스코프 필터링 (`user-addresses.read` 의 본인·역할 범위) — 목록 라우트는 미들웨어 스코프 검사 대상이 아니다
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.user-addresses.read');
 
         if (! empty($filters['user_id'])) {
             $query->where("{$table}.user_id", (int) $filters['user_id']);

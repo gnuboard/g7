@@ -13,7 +13,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *
  * 관리자 목록 화면의 「조회수」 열은 이 값(`data.board.settings.show_view_count`)으로 열을 감춘다.
  * 종전 응답에는 이 키가 없어(board 키: slug·name·type·categories·show_category·settings) 열 조건이
- * 가리키는 자리가 늘 비어 있었다(7.1.0 실측 O-K1-11).
+ * 가리키는 자리가 늘 비어 있었다(7.1.0 실측).
  */
 class AdminPostListViewCountSettingTest extends BoardTestCase
 {

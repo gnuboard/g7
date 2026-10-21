@@ -45,6 +45,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "받을 회원을 고르는 자리라 탈퇴 회원은 빼고 찾는다 — 서버는 탈퇴 회원에게도 그대로 지급·발급하지만 로그인할 수 없어 쓰지 못한다(7.1.1, 코어 exclude_withdrawn)",
                                     "handler": "apiCall",
                                     "target": "/api/admin/users/search",
                                     "if": "{{String($event.target.value ?? '').trim() !== ''}}",
@@ -52,16 +53,17 @@
                                     "params": {
                                         "method": "GET",
                                         "query": {
-                                            "keyword": "{{$event.target.value}}"
+                                            "keyword": "{{$event.target.value}}",
+                                            "exclude_withdrawn": "1"
                                         }
                                     },
                                     "onSuccess": {
-                                        "comment": "결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답(한 글자가 부른 전체 회원)은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이라 옛 응답도 통과하고, 값 식의 `_global` 만 평가 시점 최신 상태다). 덮어쓰고 아래 가드로 감추기만 하면 이미 보이던 정답 목록이 사라지고 다시 오지 않는다(2026-10-07 실측).",
+                                        "comment": "결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 실측 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답(한 글자가 부른 전체 회원)은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이라 옛 응답도 통과하고, 값 식의 `_global` 만 평가 시점 최신 상태다). 덮어쓰고 아래 가드로 감추기만 하면 이미 보이던 정답 목록이 사라지고 다시 오지 않는다(2026-10-07 실측).\n                창이 닫힌 뒤(검색어 null — 열 때는 빈 문자열로 연다) 도착한 응답은 두 키를 null 그대로 둔다. 종전에는 옛 응답 갈래가 `?? []` 로 빈 배열을 다시 써 닫힌 창의 키가 되살아났다(7.1.1)",
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
-                                            "directIssueSearchResults": "{{((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email })) : (_global.directIssueSearchResults ?? [])}}",
-                                            "directIssueSearchResultsKeyword": "{{((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.directIssueSearchResultsKeyword ?? null)}}"
+                                            "directIssueSearchResults": "{{_global.directIssueSearchKeyword == null ? null : (((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response.data ?? []).map(u => ({ uuid: u.uuid, name: u.name, email: u.email })) : (_global.directIssueSearchResults ?? []))}}",
+                                            "directIssueSearchResultsKeyword": "{{_global.directIssueSearchKeyword == null ? null : (((response?.meta?.keyword ?? '') === String(_global.directIssueSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.directIssueSearchResultsKeyword ?? null))}}"
                                         }
                                     },
                                     "onError": {
@@ -135,7 +137,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        "className": "text-xs text-gray-500 dark:text-gray-300"
                                     },
                                     "text": "{{member.email}}"
                                 }
@@ -158,7 +160,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                "className": "px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 border border-blue-300 dark:border-blue-600 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.add"
                         },
@@ -167,7 +169,7 @@
                             "name": "Span",
                             "if": "{{(_global.directIssueSelectedUsers ?? []).some(u => u.uuid === member.uuid)}}",
                             "props": {
-                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                "className": "text-xs text-gray-500 dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.modal.direct_issue.added"
                         }
@@ -256,8 +258,24 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다)",
                             "type": "click",
-                            "handler": "closeModal"
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "directIssueSearchResults": null,
+                                        "directIssueSelectedUsers": null,
+                                        "directIssueSearchKeyword": null,
+                                        "directIssueSearchResultsKeyword": null
+                                    }
+                                }
+                            ]
                         }
                     ],
                     "props": {
@@ -321,6 +339,17 @@
                                                 "type": "success",
                                                 "message": "{{response.message}}"
                                             }
+                                        },
+                                        {
+                                            "comment": "발급 성공 — 창을 닫고 안내를 띄운 뒤 회원 이름 공간을 비운다",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "directIssueSearchResults": null,
+                                                "directIssueSelectedUsers": null,
+                                                "directIssueSearchKeyword": null,
+                                                "directIssueSearchResultsKeyword": null
+                                            }
                                         }
                                     ],
                                     "onError": [
@@ -346,7 +375,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{(_global.directIssueSelectedUsers ?? []).length === 0 || _global.directIssueSubmitting}}",
-                        "className": "flex items-center gap-2 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "flex items-center gap-2 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     },
                     "children": [
                         {
@@ -367,6 +396,30 @@
                     ]
                 }
             ]
+        },
+        {
+            "comment": "창 닫힘 표지 — 본문이 조건으로 갈리는 형제 여럿이라 늘 붙어 있는 빈 표지에 건다",
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1)",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "directIssueSearchResults": null,
+                            "directIssueSelectedUsers": null,
+                            "directIssueSearchKeyword": null,
+                            "directIssueSearchResultsKeyword": null
+                        }
+                    }
+                ]
+            },
+            "props": {
+                "className": "hidden",
+                "aria-hidden": "true"
+            }
         }
     ]
 }

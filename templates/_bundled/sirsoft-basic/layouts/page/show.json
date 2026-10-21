@@ -110,7 +110,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "eye",
-                                                    "className": "text-amber-600 dark:text-amber-400 text-sm"
+                                                    "className": "text-amber-700 dark:text-amber-400 text-sm"
                                                 }
                                             },
                                             {
@@ -135,10 +135,11 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "제목은 판 번호 배지와 같은 flex 줄이라 줄어들 수 있게(min-w-0) 하고 아무 데서나 줄을 바꾼다(#143).",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex flex-wrap items-center gap-2"
+                                                    "className": "flex flex-wrap items-center gap-2 min-w-0"
                                                 },
                                                 "children": [
                                                     {
@@ -147,12 +148,12 @@
                                                         "responsive": {
                                                             "portable": {
                                                                 "props": {
-                                                                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                                    "className": "text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                                                 }
                                                             }
                                                         },
                                                         "props": {
-                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                                         },
                                                         "text": "{{page?.data?.title ?? ''}}"
                                                     },
@@ -174,7 +175,7 @@
                                                 "if": "{{page?.data?.abilities?.can_update === true}}",
                                                 "props": {
                                                     "href": "/admin/pages/{{page?.data?.id}}/edit",
-                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
+                                                    "className": "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
                                                 },
                                                 "children": [
                                                     {
@@ -318,7 +319,7 @@
                                                                         "if": "{{!att_item.is_image}}",
                                                                         "props": {
                                                                             "name": "file",
-                                                                            "className": "text-gray-400 dark:text-gray-500 text-sm flex-shrink-0"
+                                                                            "className": "text-gray-500 dark:text-gray-400 text-sm flex-shrink-0"
                                                                         }
                                                                     },
                                                                     {
@@ -377,7 +378,7 @@
                                 "id": "page_not_found",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{!page?.data && !page?.loading}}",
+                                "if": "{{!page?.data}}",
                                 "props": {
                                     "className": "bg-white dark:bg-gray-800 rounded-lg shadow p-10 text-center"
                                 },
@@ -387,7 +388,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "circle-exclamation",
-                                            "className": "text-4xl text-gray-400 dark:text-gray-500 mb-4"
+                                            "className": "text-4xl text-gray-500 dark:text-gray-500 mb-4"
                                         }
                                     },
                                     {
@@ -415,18 +416,15 @@
                                         "children": [
                                             {
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/"
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
+                                                    "href": "/",
                                                     "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                                 },
                                                 "children": [
@@ -452,7 +450,7 @@
                                                 "if": "{{_local.pageCanCreate === true}}",
                                                 "props": {
                                                     "href": "/admin/pages/create?slug={{route?.slug ?? ''}}",
-                                                    "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline"
+                                                    "className": "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors no-underline"
                                                 },
                                                 "children": [
                                                     {
@@ -492,18 +490,15 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
+                                            "href": "/",
                                             "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                                         },
                                         "children": [

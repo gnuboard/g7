@@ -464,7 +464,7 @@ export function staticToLegacy(url: string): string | null {
         return `/api/${bundleMatch[1]}/bundle.${bundleMatch[2]}?v=${version}`;
     }
 
-    const templateFetchMatch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([a-zA-Z-]+)\.json)$/);
+    const templateFetchMatch = rest.match(/^templates\/([^/]+)\/(routes\.json|components\.json|lang\/([A-Za-z0-9-]+)\.json)$/);
     if (templateFetchMatch) {
         const [, identifier, kind] = templateFetchMatch;
         const suffixless = kind.replace(/\.json$/, '');

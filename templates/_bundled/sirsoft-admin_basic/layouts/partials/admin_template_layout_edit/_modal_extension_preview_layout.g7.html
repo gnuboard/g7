@@ -5,7 +5,7 @@
 <partial name="modal_extension_preview_layout" editor_label="$t:admin.modal_label.admin_template_layout_edit.extension_preview_layout_modal">
   <modal data-type="composite" data-ref="extension_preview_layout_modal" size="small" title="$t:admin.templates.layout_edit.preview_layout_select_title">
     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:admin.templates.layout_edit.preview_layout_select_description</p>
-    <select value="{{_global.previewLayoutSelection ?? ''}}" options="{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}" placeholder="$t:admin.templates.layout_edit.preview_layout_select_placeholder">
+    <select aria-label="$t:admin.templates.layout_edit.preview_layout_select_title" value="{{_global.previewLayoutSelection ?? ''}}" options="{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}" placeholder="$t:admin.templates.layout_edit.preview_layout_select_placeholder">
       <on type="change">
         <!-- 고를 화면 목록은 이 템플릿이 가진 화면 정의 파일에서 온다. 고르기 전에는 아래 확인 버튼이 잠겨 있다. -->
         <set-state target="global" previewLayoutSelection="{{$event.target.value}}"/>
@@ -24,7 +24,7 @@
           <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview" method="POST">
             <success>
               <close-modal/>
-              <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0 O-G3-6). -->
+              <!-- 서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0). -->
               <open-window path="{{response.data?.preview_url ?? '/preview/' + response.data.token}}"/>
             </success>
             <fail>

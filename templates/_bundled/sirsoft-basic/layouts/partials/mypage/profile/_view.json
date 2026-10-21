@@ -93,7 +93,7 @@
                     "props": {
                         "name": "circle-xmark",
                         "size": "lg",
-                        "className": "text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                        "className": "text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                     }
                 },
                 {
@@ -116,7 +116,7 @@
                             "name": "P",
                             "if": "{{user.data?.withdrawn_at}}",
                             "props": {
-                                "className": "text-xs text-yellow-600 dark:text-yellow-300"
+                                "className": "text-xs text-yellow-700 dark:text-yellow-300"
                             },
                             "text": "$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}"
                         }
@@ -158,18 +158,15 @@
                         {
                             "comment": "비밀번호 변경 버튼",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/mypage/change-password"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
+                                "href": "/mypage/change-password",
                                 "className": "inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
@@ -191,18 +188,15 @@
                         {
                             "comment": "수정하기 버튼 - 편집 페이지로 이동",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/mypage/profile/edit"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
+                                "href": "/mypage/profile/edit",
                                 "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                             },
                             "children": [
@@ -309,16 +303,16 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "w-full space-y-3 text-center"
+                                        "className": "w-full min-w-0 space-y-3 text-center"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "flex-1 space-y-3 py-2"
+                                "className": "flex-1 min-w-0 space-y-3 py-2"
                             },
                             "children": [
                                 {
-                                    "comment": "이름 + 닉네임 (하단 정렬)",
+                                    "comment": "이름 + 닉네임 (하단 정렬). 이름·닉네임은 줄어들 수 있고 아무 데서나 줄을 바꾼다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143).",
                                     "type": "basic",
                                     "name": "Div",
                                     "responsive": {
@@ -338,12 +332,12 @@
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "className": "text-xl font-semibold text-gray-900 dark:text-white leading-none"
+                                                        "className": "text-xl font-semibold text-gray-900 dark:text-white leading-none min-w-0 wrap-anywhere"
                                                     }
                                                 }
                                             },
                                             "props": {
-                                                "className": "text-2xl font-semibold text-gray-900 dark:text-white leading-none"
+                                                "className": "text-2xl font-semibold text-gray-900 dark:text-white leading-none min-w-0 wrap-anywhere"
                                             },
                                             "text": "{{user.data?.name ?? '-'}}"
                                         },
@@ -353,7 +347,7 @@
                                             "name": "Span",
                                             "if": "{{user.data?.nickname}}",
                                             "props": {
-                                                "className": "text-base text-gray-500 dark:text-gray-400 leading-none"
+                                                "className": "text-base text-gray-500 dark:text-gray-400 leading-none min-w-0 wrap-anywhere"
                                             },
                                             "text": "({{user.data?.nickname}})"
                                         },
@@ -363,7 +357,7 @@
                                             "name": "Span",
                                             "if": "{{user.data?.status && user.data?.status !== 'active'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}"
+                                                "className": "inline-flex items-center shrink-0 px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}"
                                             },
                                             "text": "{{user.data?.status_label}}"
                                         }
@@ -376,12 +370,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-300"
+                                                "className": "text-sm text-gray-600 dark:text-gray-300 break-all"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "text-base text-gray-600 dark:text-gray-300"
+                                        "className": "text-base text-gray-600 dark:text-gray-300 break-all"
                                     },
                                     "text": "{{user.data?.email ?? '-'}}"
                                 },
@@ -740,7 +734,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white text-right max-w-[60%]"
+                                                "className": "text-sm text-gray-900 dark:text-white text-right max-w-[60%] break-words"
                                             },
                                             "text": "{{user.data?.zipcode || user.data?.address || user.data?.address_detail ? ((user.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user.data?.address ?? '') + (user.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}"
                                         }
@@ -1060,6 +1054,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_post_complete",
+                                        "aria-label": "$t:mypage.notification_settings.post_complete",
                                         "checked": "{{!!user.data?.notify_post_complete}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
@@ -1101,6 +1096,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_post_reply",
+                                        "aria-label": "$t:mypage.notification_settings.post_reply",
                                         "checked": "{{!!user.data?.notify_post_reply}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
@@ -1142,6 +1138,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_comment",
+                                        "aria-label": "$t:mypage.notification_settings.comment",
                                         "checked": "{{!!user.data?.notify_comment}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
@@ -1183,6 +1180,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_reply_comment",
+                                        "aria-label": "$t:mypage.notification_settings.reply_comment",
                                         "checked": "{{!!user.data?.notify_reply_comment}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
@@ -1255,12 +1253,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-base font-semibold text-red-600 dark:text-red-400"
+                                        "className": "text-base font-semibold text-red-700 dark:text-red-400"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-lg font-semibold text-red-600 dark:text-red-400"
+                                "className": "text-lg font-semibold text-red-700 dark:text-red-400"
                             },
                             "text": "$t:mypage.profile.withdraw"
                         }
@@ -1300,7 +1298,7 @@
                             "props": {
                                 "name": "info",
                                 "size": "md",
-                                "className": "text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0"
+                                "className": "text-yellow-700 dark:text-yellow-400 mt-0.5 flex-shrink-0"
                             }
                         },
                         {
@@ -1324,12 +1322,20 @@
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "탈퇴 창 상태(«알고 있다» 체크·처리 중)는 창 고유 전역 이름 공간에 두고 열 때마다 비운 뒤 다시 쓴다 — 페이지 _local 에 쓰면\n               영구 마운트된 창이 쥔 앞 체크에 가려 닿지 않아, 체크 → 취소 → 다시 열기에서 체크된 채 탈퇴 단추가 열려 있었다(7.1.1)",
                                     "handler": "setState",
                                     "params": {
-                                        "target": "local",
-                                        "isWithdrawing": false,
-                                        "form": {
-                                            "confirmWithdraw": false
+                                        "target": "global",
+                                        "profileWithdrawModal": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "profileWithdrawModal": {
+                                            "confirm": false,
+                                            "isWithdrawing": false
                                         }
                                     }
                                 },
@@ -1342,7 +1348,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-red-500 text-red-500 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        "className": "inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-red-500 text-red-700 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     },
                     "children": [
                         {

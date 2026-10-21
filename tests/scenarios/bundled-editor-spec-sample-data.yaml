@@ -1,0 +1,17 @@
+feature: 번들 editor-spec 의 캔버스 미리보기 샘플 데이터 계약
+
+description: |
+  편집기 캔버스 미리보기는 sampleData·sampleGlobal 폴백에 의존한다. 번들 editor-spec(sirsoft-basic·sirsoft-admin_basic·
+  sirsoft-ecommerce·sirsoft-board·sirsoft-page)은 `sampleData.byDataSourceId` 를 갖추고, 각 번들 레이아웃이 선언한
+  data_source 전수가 byDataSourceId 또는 byEndpointPattern 으로 덮여야 한다. 레이아웃에 새 data_source 를 더하고
+  샘플을 빠뜨리면 캔버스에서만 빈 화면이 되고 오류가 남지 않으므로 정적 검사로 잡는다.
+
+axes:
+  contract: [sample_data_keys, data_source_coverage]
+
+effects:
+  - bundled_spec_declares_sample_data_by_data_source_id
+  - every_layout_data_source_covered_by_sample_data
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/bundled-spec-schema.test.ts

@@ -145,7 +145,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         return Post::withTrashed()
             ->where('board_id', $board->id)
             ->where('id', $postId)
-            ->first(['id', 'board_id', 'user_id', 'is_secret', 'status', 'deleted_at']);
+            ->first(['id', 'board_id', 'parent_id', 'user_id', 'is_secret', 'status', 'deleted_at']);
     }
 
     /**

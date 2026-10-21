@@ -1,0 +1,20 @@
+feature: Hello 예제 템플릿 링크(A) — 새 탭 열기와 보통 클릭 SPA 이동 (#757)
+
+description: |
+  화면 이동을 링크로 쓰면 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 되어야 하고, 보통 클릭은 화면 전체를
+  다시 부르지 않고 옮겨 가야 한다. 보통 클릭인지는 엔진 G7Core.navigation.isPlainLeftClick 하나로 판정한다.
+  축 click 은 클릭 종류와 링크 상태(레이아웃 액션 유무·끄기·쿼리 병합·엔진 전역 없음)다.
+
+axes:
+  click: [plain, modifier, external, layout_action, disabled, merge_query, no_engine, new_window]
+
+effects:
+  - plain_click_spa_navigate          # 액션 없는 내부 링크 보통 클릭 = 기본 이동을 막고 SPA navigate 1회
+  - modifier_click_left_to_browser    # 수정키·외부 주소·엔진 없음 = 브라우저 기본 동작(새 탭·새 창)
+  - layout_action_owns_click          # 레이아웃 클릭 액션이 있으면 그것이 클릭을 맡는다
+  - disabled_link_has_no_href         # 끄면 href 없음·aria-disabled·tabIndex -1·클릭 막음
+  - merge_query_href                  # mergeQuery 면 현재 쿼리를 합친 주소를 href 로
+  - new_window_link_has_noopener      # target=_blank 링크는 rel 에 noopener noreferrer 를 합친다(기존 rel 유지·중복 없음)
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_user_template/__tests__/components/A.test.tsx

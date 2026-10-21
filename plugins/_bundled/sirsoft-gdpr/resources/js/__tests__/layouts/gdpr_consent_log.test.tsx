@@ -37,12 +37,16 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
     }
 
     describe('named_actions.searchConsentLogs (SSoT)', () => {
+        // @scenario area=filter
+        // @effects consent_log_search_carries_all_filters
         it('searchConsentLogs 가 navigate 핸들러로 정의되어 있다', () => {
             const named = (root as { named_actions?: Record<string, AnyNode> }).named_actions ?? {};
             expect(named.searchConsentLogs).toBeTruthy();
             expect((named.searchConsentLogs as { handler?: string }).handler).toBe('navigate');
         });
 
+        // @scenario area=filter
+        // @effects consent_log_search_carries_all_filters
         it('searchConsentLogs 가 _local.filter 의 모든 키 (search/consentKeys/actions/sources) 를 query 로 전달한다', () => {
             const named = (root as { named_actions?: Record<string, { params?: Record<string, unknown> }> }).named_actions ?? {};
             const query = (named.searchConsentLogs?.params as { query?: Record<string, string> } | undefined)?.query ?? {};
@@ -115,6 +119,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             return out;
         }
 
+        // @scenario area=filter
+        // @effects consent_log_checkbox_filters_apply_immediately
         it('consent_keys 필터의 체크박스 5개 모두 옵션 C 패턴', () => {
             // Phase 1 ICO/CNIL 4분류 체계 도입으로 functional 카테고리 추가됨 →
             // 「전체」 + necessary + functional + analytics + marketing = 5개.
@@ -123,6 +129,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             checkboxes.forEach((cb, idx) => expectSequencePattern(cb, `consent_keys[${idx}]`));
         });
 
+        // @scenario area=filter
+        // @effects consent_log_checkbox_filters_apply_immediately
         it('action 필터의 체크박스 4개 모두 옵션 C 패턴 (이슈 #430 거부 추가)', () => {
             const checkboxes = findCheckboxesIn('action_filter');
             // 전체 / granted / revoked / rejected — 이슈 #430 에서 거부(rejected) 필터 추가
@@ -140,6 +148,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(layoutJson).toContain('sirsoft-gdpr.admin.consent_log.action.rejected');
         });
 
+        // @scenario area=filter
+        // @effects consent_log_checkbox_filters_apply_immediately
         it('source 필터의 체크박스 7개 모두 옵션 C 패턴', () => {
             const checkboxes = findCheckboxesIn('source_filter');
             // 허용 어휘의 SSoT 는 ConsentSource enum 6종 — 화면 필터가 그 부분집합이면
@@ -153,6 +163,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
     });
 
     describe('텍스트 입력 (이메일/세션 ID) — 검색 버튼 의존 유지', () => {
+        // @scenario area=filter
+        // @effects consent_log_text_search_waits_for_submit
         it('search 입력 필드는 onChange 에 debounce 또는 searchConsentLogs 자동 호출이 없다 (검색 버튼/Enter 만)', () => {
             // 회귀 가드: 텍스트 입력에 debounce 적용 시 사용자가 입력하는 중간마다 API 호출 발생 → 의도된 UX 위반
             const stack: AnyNode[] = [root];
@@ -189,6 +201,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
          */
         const layoutJson = JSON.stringify(root);
 
+        // @scenario area=subject_column
+        // @effects consent_log_member_row_links_to_user_detail
         it('회원 row 가 Button + navigate 액션으로 회원 상세 페이지 경로를 가진다', () => {
             // subject 컬럼의 회원 row 식별 — if 조건이 !!row.user_id
             expect(layoutJson).toContain('"if":"{{!!row.user_id}}"');
@@ -198,6 +212,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(layoutJson).toMatch(/"type":"click"[^}]*"handler":"navigate"/);
         });
 
+        // @scenario area=subject_column
+        // @effects consent_log_guest_row_has_no_link
         it('게스트 row 는 클릭 액션이 없다 (Span 유지 — 본 작업 범위 외)', () => {
             // 게스트 row 식별 — if 조건이 !row.user_id
             expect(layoutJson).toContain('"if":"{{!row.user_id}}"');
@@ -216,20 +232,28 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
     describe('작업 2: policy_version 컬럼 → 평문 + 본문 보기 Button', () => {
         const layoutJson = JSON.stringify(layout);
 
+        // @scenario area=policy_version
+        // @effects consent_log_policy_version_snapshot_viewable
         it('gdprPolicyVersionSnapshot data_source 가 등록되어 있다', () => {
             expect(layoutJson).toContain('"id":"gdprPolicyVersionSnapshot"');
             expect(layoutJson).toContain('/api/plugins/sirsoft-gdpr/admin/policy-versions/{{_global.viewingPolicyVersion}}');
         });
 
+        // @scenario area=policy_version
+        // @effects consent_log_policy_version_snapshot_viewable
         it('policy_version_snapshot_modal partial 이 modals 배열에 등록되어 있다', () => {
             expect(layoutJson).toContain('partials/_shared/_policy_version_snapshot_modal.json');
         });
 
+        // @scenario area=policy_version
+        // @effects consent_log_policy_version_snapshot_viewable
         it('policy_version 컬럼이 평문 Span (값 또는 "-") 으로 항상 표시된다', () => {
             // row.policy_version ?? "-" — Span 텍스트
             expect(layoutJson).toContain('"text":"{{row.policy_version ?? \'-\'}}"');
         });
 
+        // @scenario area=policy_version
+        // @effects consent_log_policy_version_snapshot_viewable
         it('row.policy_version 존재 시 본문 보기 Button 이 추가 노출된다 (sequence)', () => {
             // Button if=row.policy_version + setState + refetch + openModal sequence
             expect(layoutJson).toContain('"if":"{{row.policy_version}}"');
@@ -243,6 +267,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
     describe('#25: 카테고리 스냅샷 — raw JSON → 표 형식 + Pre 컴포넌트 의존성 제거', () => {
         const layoutJson = JSON.stringify(layout);
 
+        // @scenario area=categories_snapshot
+        // @effects consent_log_categories_snapshot_table
         it('Pre 컴포넌트와 JSON.stringify 가 레이아웃에서 완전히 제거되었다', () => {
             // Pre 는 admin 템플릿 활성 번들에 미노출되어 "조용히 사라짐" 회귀를 유발하던 컴포넌트
             // feedback_layout_component_registration_check.md 회귀 가드
@@ -250,17 +276,23 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(layoutJson).not.toContain('JSON.stringify');
         });
 
+        // @scenario area=categories_snapshot
+        // @effects consent_log_categories_snapshot_table
         it('row.categories_snapshot 배열을 iteration 으로 순회한다 (객체 직접 순회 미사용)', () => {
             // 백엔드 Resource 가 categories 객체를 [{key, label_key, granted}] 배열로 변환
             expect(layoutJson).toContain('"source":"row.categories_snapshot"');
             expect(layoutJson).toContain('"item_var":"snapshot_item"');
         });
 
+        // @scenario area=categories_snapshot
+        // @effects consent_log_categories_snapshot_table
         it('iteration 컨테이너가 빈 스냅샷 가드를 가진다', () => {
             // categories_snapshot 이 null 또는 빈 배열이면 영역 자체 미노출
             expect(layoutJson).toContain('{{(row.categories_snapshot?.length ?? 0) > 0}}');
         });
 
+        // @scenario area=categories_snapshot
+        // @effects consent_log_categories_snapshot_table
         it('각 행이 동의/거부 두 가지 배지를 분기 노출한다', () => {
             expect(layoutJson).toContain('"if":"{{snapshot_item.granted}}"');
             expect(layoutJson).toContain('"if":"{{!snapshot_item.granted}}"');
@@ -268,18 +300,25 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(layoutJson).toContain('$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_revoked');
         });
 
+        // @scenario area=categories_snapshot
+        // @effects consent_log_categories_snapshot_table
         it('카테고리 라벨은 snapshot_item.label_key 의 $t 해석 + key fallback 패턴이다', () => {
             expect(layoutJson).toContain('{{$t(snapshot_item.label_key) ?? snapshot_item.key}}');
         });
 
+        // @scenario area=categories_snapshot
+        // @effects consent_log_categories_snapshot_table
         it('카테고리 스냅샷 영역에 운영자 안내(hint) 한 줄이 노출된다', () => {
             expect(layoutJson).toContain('$t:sirsoft-gdpr.admin.consent_log.detail.categories_hint');
         });
 
+        // @scenario area=categories_snapshot
+        // @effects consent_log_snapshot_badges_have_dark_pair
         it('동의/거부 배지가 light/dark 색 쌍을 갖는다 (다크모드 회귀 가드)', () => {
             // 동의 = green 불투명 (plugin_settings.g7.html 활성 배지와 동일 패턴 — /40 alpha 는 너무 밝아 사용 금지)
-            // 동의 배지 클래스 자리는 "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" 형태로 등장
-            expect(layoutJson).toContain('bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300');
+            // 동의 배지 클래스 자리는 "bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300" 형태로 등장
+            // (green-100 바탕 위 green-700 은 4.497:1 로 4.5 에 못 미쳐 바탕을 green-50(4.72:1)으로 낮췄다)
+            expect(layoutJson).toContain('bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300');
             expect(layoutJson).not.toContain('dark:bg-green-900/40');
         });
     });
@@ -297,6 +336,8 @@ describe('layouts/admin/gdpr_consent_log.json — #27 체크박스 즉시 적용
             expect(layoutJson).toContain('bg-amber-100');
         });
 
+        // @scenario area=action_badge
+        // @effects consent_log_action_badge_label_follows_action
         it('action 배지 텍스트는 동적으로 action 값에 따라 lang 키를 해석한다 (rejected 포함)', () => {
             // {{$t('sirsoft-gdpr.admin.consent_log.action.' + (row.action ?? 'granted'))}}
             expect(layoutJson).toContain('sirsoft-gdpr.admin.consent_log.action.');

@@ -16,6 +16,8 @@ const CART_KEY_API_ENDPOINT = '/api/modules/sirsoft-ecommerce/cart/key';
 const GUEST_ORDER_TOKEN_STORAGE_NAME = 'g7_guest_order_token';
 const GUEST_ORDER_NUMBER_STORAGE_NAME = 'g7_guest_order_number';
 const GUEST_ORDER_EXPIRES_AT_STORAGE_NAME = 'g7_guest_order_expires_at';
+export const SECRET_VIEW_TOKEN_STORAGE_NAME = 'g7_board_secret_view_token';
+export const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = 'g7_board_secret_view_expires_at';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
@@ -416,4 +418,112 @@ export function clearGuestTokenOnEntryHandler(
 ): void {
   clearGuestOrderTokenInternal();
   setGlobalState({ guestOrderToken: null, guestOrderNumber: null });
+}
+
+/**
+ * sessionStorage 의 비밀글 열람 토큰 두 키(토큰·만료 시각)를 지웁니다 (내부 헬퍼).
+ */
+function clearSecretViewTokenInternal(): void {
+  try {
+    sessionStorage.removeItem(SECRET_VIEW_TOKEN_STORAGE_NAME);
+    sessionStorage.removeItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME);
+  } catch {
+    // sessionStorage 접근 불가 시 무시
+  }
+}
+
+/**
+ * 비밀글 열람 토큰 초기화 (init_actions 전용)
+ *
+ * 비밀번호로 비밀글을 연 사실은 서버가 토큰 하나에 글별 인증으로 기록하고, 화면은 그 토큰을
+ * `_user_base.globalHeaders` 의 `X-Board-Secret-View-Token` 으로 게시판 요청에 싣는다. 토큰이
+ * 메모리(`_global.secretViewToken`)에만 있으면 답변 링크(`<a href>` 전체 이동)·새로고침에서 사라져
+ * 원글 비밀번호를 맞힌 비회원도 답변 화면에서 다시 잠긴다. 그래서 탭 세션(sessionStorage)에 두고
+ * 부팅마다 여기서 `_global` 로 복원한다 — 탭을 닫으면 사라지므로 공용 PC 에 남지 않는다.
+ *
+ * - 만료됐거나 만료 시각이 날짜가 아니면(NaN) 두 키를 지우고 null 로 둔다.
+ * - 저장 토큰이 없는데 같은 화면에서 막 받은 in-memory 토큰이 있으면 덮어쓰지 않는다
+ *   (sessionStorage 를 쓸 수 없는 환경 — `initGuestOrderToken` 과 같은 이유).
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function initSecretViewTokenHandler(
+  _action?: any,
+  _context?: any
+): void {
+  let token: string | null = null;
+  let expiresAt: string | null = null;
+  try {
+    token = sessionStorage.getItem(SECRET_VIEW_TOKEN_STORAGE_NAME);
+    expiresAt = sessionStorage.getItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME);
+  } catch {
+    // sessionStorage 접근 불가 시 무시
+  }
+
+  let expired = false;
+  if (token) {
+    const expiryTs = expiresAt ? new Date(expiresAt).getTime() : NaN;
+    if (isNaN(expiryTs) || expiryTs <= Date.now()) {
+      clearSecretViewTokenInternal();
+      token = null;
+      expired = true;
+    }
+  }
+
+  if (token) {
+    setGlobalState({ secretViewToken: token });
+    return;
+  }
+
+  if (!expired) {
+    const existing = (window as any).G7Core?.state?.get?.()?.secretViewToken;
+    if (typeof existing === 'string' && existing !== '') {
+      return;
+    }
+  }
+
+  setGlobalState({ secretViewToken: null });
+}
+
+/**
+ * 비밀글 열람 토큰을 sessionStorage 에 저장하고 `_global.secretViewToken` 에 동기 set 합니다.
+ *
+ * 비밀번호 확인(글 비밀번호·원글 비밀번호) 성공 응답의 `secret_view_token`·`secret_view_expires_at`
+ * 을 받는다. 서버는 같은 탭의 두 번째 인증에 같은 토큰을 다시 돌려주고 그 토큰에 글별 인증만 더하므로,
+ * 여기서는 마지막 응답 값으로 덮어쓰면 된다. 토큰이 비면(응답에 없음) 기존 값을 건드리지 않는다.
+ *
+ * @param action params.token, params.expiresAt
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function saveSecretViewTokenHandler(
+  action?: any,
+  _context?: any
+): void {
+  const { token, expiresAt } = action?.params || {};
+  if (typeof token !== 'string' || token === '') {
+    logger.warn('saveSecretViewToken: token is required');
+    return;
+  }
+  try {
+    sessionStorage.setItem(SECRET_VIEW_TOKEN_STORAGE_NAME, token);
+    sessionStorage.setItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME, typeof expiresAt === 'string' ? expiresAt : '');
+  } catch {
+    // sessionStorage 접근 불가 시 무시 — _global 만 set 되어 현재 화면은 동작
+  }
+  setGlobalState({ secretViewToken: token });
+}
+
+/**
+ * 비밀글 열람 토큰을 sessionStorage 에서 지우고 `_global.secretViewToken` 도 비웁니다.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function clearSecretViewTokenHandler(
+  _action?: any,
+  _context?: any
+): void {
+  clearSecretViewTokenInternal();
+  setGlobalState({ secretViewToken: null });
 }

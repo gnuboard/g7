@@ -29,6 +29,8 @@
 |--------|------|--------|
 | `current()` | 현재 로케일 반환 | `string` (예: 'ko', 'en') |
 | `supported()` | 지원 로케일 목록 | `string[]` |
+| `site()` | 사이트 기본 언어(환경설정 「기본 언어」). 모르면 현재 로케일 (engine-v1.81.0+) | `string` |
+| `pick(value, locale?)` | 다국어 값(`{ ko, en, … }`)에서 보여 줄 글자를 고른다 — 요청 언어(생략 시 현재 로케일) → 사이트 기본 언어 → 영어 → 첫 값, 빈 칸·공백만 있는 값은 건너뛴다. 문자열은 그대로, 고를 값이 없으면 `null`. 백엔드 `App\Support\LocalizedValue::pick()` 과 같은 규칙 (engine-v1.81.0+) | `string \| null` |
 | `change(locale, options?)` | 로케일 변경. `options.persist: false` 면 로그인 회원의 언어(`users.language`)를 저장하지 않는다 — 호출자가 이미 저장한 경우 저장 요청이 두 번 나가지 않게 한다 (engine-v1.79.0+). 생략하면 로그인 회원의 언어를 저장한다 | `Promise<void>` |
 | `handoff.isSwitching()` | 언어 전환으로 화면을 다시 마운트하는 중인지 (engine-v1.79.0) | `boolean` |
 | `handoff.stash(key, value)` | 언어 전환 중 언마운트되는 컴포넌트가 저장 전 상태를 맡긴다. 전환 중이 아니면 무시 | `boolean` (맡겼으면 true) |
@@ -63,6 +65,9 @@ G7Core.t(key: string, params?: Record<string, string | number>): string
 // 로케일 조회
 const currentLocale = G7Core.locale.current();  // 'ko'
 const supportedLocales = G7Core.locale.supported();  // ['ko', 'en']
+
+// 다국어 값 고르기 — 한국어로 고정 대체하지 않는다 (engine-v1.81.0+)
+const name = G7Core.locale.pick(product.name) ?? '';  // 'fil' 화면에서 fil 값이 비면 사이트 기본 언어 → en
 
 // 로케일 변경
 await G7Core.locale.change('en');
@@ -1014,6 +1019,8 @@ declare global {
       locale: {
         current: () => string;
         supported: () => string[];
+        site: () => string;
+        pick: (value: unknown, locale?: string) => string | null;
         change: (locale: string) => Promise<void>;
       };
       t: (key: string, params?: Record<string, string | number>) => string;

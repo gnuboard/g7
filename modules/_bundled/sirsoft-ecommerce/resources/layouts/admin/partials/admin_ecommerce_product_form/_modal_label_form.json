@@ -43,11 +43,12 @@
                                     },
                                     "children": [
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "comment": "미리보기 칩 — 상품 목록의 라벨 칩(ChipCheckbox)과 같은 규칙: 운영자 색은 바탕에만, 글자색은 바탕과 4.5 이상이 되도록 계산",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "props": {
-                                                "className": "px-3 py-1.5 rounded-full text-sm font-medium",
-                                                "style": "background-color: {{(_global.labelFormData?.color ?? '#6B7280') + '20'}}; color: {{_global.labelFormData?.color ?? '#6B7280'}}"
+                                                "size": "lg",
+                                                "customColor": "{{_global.labelFormData?.color ?? '#6B7280'}}"
                                             },
                                             "text": "{{$localized(_global.labelFormData?.name) || $t('sirsoft-ecommerce.admin.product.labels.preview')}}"
                                         }
@@ -182,7 +183,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "btn btn-ghost btn-sm text-gray-500 dark:text-gray-400"
+                                                "className": "btn btn-ghost btn-sm text-gray-600 dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.labels.color_reset"
                                         }

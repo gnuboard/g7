@@ -4,8 +4,8 @@
     "layout_name": "template_partial_test",
     "extends": "_admin_base",
     "meta": {
-        "title": "템플릿 Partial 시스템 테스트",
-        "description": "sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인"
+        "title": "$t:admin.template_partial_test.title",
+        "description": "$t:admin.template_partial_test.meta_description"
     },
     "slots": {
         "content": [
@@ -46,7 +46,7 @@
                                         "props": {
                                             "className": "text-page-heading sm:text-3xl"
                                         },
-                                        "text": "템플릿 Partial 시스템 테스트"
+                                        "text": "$t:admin.template_partial_test.title"
                                     }
                                 ]
                             },
@@ -56,7 +56,7 @@
                                 "props": {
                                     "className": "text-label"
                                 },
-                                "text": "sirsoft-admin_basic 템플릿의 레이아웃 Partial 기능을 테스트합니다"
+                                "text": "$t:admin.template_partial_test.description"
                             }
                         ]
                     },
@@ -96,7 +96,7 @@
                                                 "props": {
                                                     "className": "text-lg font-bold text-blue-900 dark:text-blue-100"
                                                 },
-                                                "text": "테스트 항목"
+                                                "text": "$t:admin.template_partial_test.checklist_title"
                                             }
                                         ]
                                     },
@@ -110,27 +110,27 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Li",
-                                                "text": "✅ Level 1 Partial: partials/_content_section.json"
+                                                "text": "$t:admin.template_partial_test.check_level1"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Li",
-                                                "text": "✅ Level 2 Partial: partials/_header_section.json"
+                                                "text": "$t:admin.template_partial_test.check_level2_header"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Li",
-                                                "text": "✅ Level 2 Partial: partials/_info_card.json (Composite 컴포넌트)"
+                                                "text": "$t:admin.template_partial_test.check_level2_card"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Li",
-                                                "text": "✅ Basic 컴포넌트 렌더링"
+                                                "text": "$t:admin.template_partial_test.check_basic"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Li",
-                                                "text": "✅ 다크 모드 지원"
+                                                "text": "$t:admin.template_partial_test.check_dark"
                                             }
                                         ]
                                     }
@@ -150,9 +150,9 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-md font-semibold text-gray-900 dark:text-gray-100 mb-2"
+                                            "className": "font-semibold text-gray-900 dark:text-gray-100 mb-2"
                                         },
-                                        "text": "🎉 Partial 시스템 정상 동작"
+                                        "text": "$t:admin.template_partial_test.success_title"
                                     },
                                     {
                                         "type": "basic",
@@ -160,7 +160,7 @@
                                         "props": {
                                             "className": "text-label"
                                         },
-                                        "text": "위의 모든 섹션이 정상적으로 표시되면 템플릿 Partial 시스템이 정상 작동하는 것입니다."
+                                        "text": "$t:admin.template_partial_test.success_description"
                                     }
                                 ]
                             }

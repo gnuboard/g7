@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Support\LocalizedValue;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -2259,8 +2260,8 @@ class OrderExchangeService
      *
      * 교환은 그 옵션을 새로 한 번 더 내보내는 일이라, 지금 판매하지 않는 것을 보내 달라는 신청은
      * 받을 수 없다. 예전에는 옵션의 `is_active` 만, 그것도 **옵션을 바꾸는 경로에서만** 봤다 —
-     * 그래서 ① 판매 중지한 옵션으로 **동일옵션 교환**이 접수되고(2026-09-22 #599 3차 실측 L-4 ·
-     * T2-D11: `is_active=false` 인 원 옵션으로 낸 동일옵션 교환이 201 로 통과했다) ② 품절·판매중지·
+     * 그래서 ① 판매 중지한 옵션으로 **동일옵션 교환**이 접수되고(2026-09-22 #599 실측
+     * `is_active=false` 인 원 옵션으로 낸 동일옵션 교환이 201 로 통과했다) ② 품절·판매중지·
      * 출시예정·미노출·구매등급제한 **상품**으로도 교환이 접수됐다.
      *
      * 재고는 여기서 보지 않는다 — 수량과 함께 판정해야 해서 `assertRedeliveryStock()` 이 따로 맡는다.
@@ -3500,7 +3501,6 @@ class OrderExchangeService
 
         if (isset($values[0]['key'])) {
             $locales = config('app.supported_locales', ['ko', 'en']);
-            $fallback = config('app.fallback_locale', 'ko');
             $result = [];
 
             foreach ($locales as $locale) {
@@ -3510,8 +3510,8 @@ class OrderExchangeService
                     $key = $entry['key'] ?? [];
                     $value = $entry['value'] ?? [];
 
-                    $localizedKey = is_array($key) ? ($key[$locale] ?? $key[$fallback] ?? array_values($key)[0] ?? '') : $key;
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[$fallback] ?? array_values($value)[0] ?? '') : $value;
+                    $localizedKey = is_array($key) ? (LocalizedValue::pick($key, $locale) ?? '') : $key;
+                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale) ?? '') : $value;
 
                     if ($localizedKey !== '' && $localizedValue !== '') {
                         $parts[] = $localizedKey.': '.$localizedValue;

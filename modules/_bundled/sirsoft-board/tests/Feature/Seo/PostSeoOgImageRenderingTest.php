@@ -29,6 +29,11 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  */
 class PostSeoOgImageRenderingTest extends ModuleTestCase
 {
+    /**
+     * 의존 모듈·플러그인을 매니페스트 버전으로 등록하고 사용자 템플릿을 활성화한 뒤, 봇 렌더가 부르는 내부 API 를 같은 프로세스로 돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,7 +45,10 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
         // installTemplate() 이 "버전이 맞지 않습니다" 로 실패 → 활성 user 템플릿 부재 →
         // SEO 라우트 미해석 → og:image 미출력으로 이어진다. updateOrCreate 로 기존 행의
         // stale 버전까지 매니페스트 값으로 교정한다(트랜잭션 롤백으로 격리).
+        // 게시판 자신도 넣는다 — ModuleTestCase 가 1.0.0 으로 등록하므로, 템플릿이 게시판 최소 버전을
+        // 올리면(>=1.2.0) 같은 이유로 설치가 실패한다.
         foreach ([
+            ['sirsoft-board', 'sirsoft', '게시판', 'Board'],
             ['sirsoft-ecommerce', 'sirsoft', '이커머스', 'Ecommerce'],
             ['sirsoft-page', 'sirsoft', '페이지', 'Page'],
         ] as [$id, $vendor, $ko, $en]) {
@@ -101,6 +109,12 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
 
     /**
      * 회귀: 첨부 이미지가 있는 게시물 SEO 응답에 og:image 절대 URL 포함.
+     *
+     * @scenario case=image_attachment
+     *
+     * @effects post_seo_emits_og_image_from_attachment_preview
+     *
+     * @return void 반환값 없음
      */
     public function test_post_with_image_attachment_emits_og_image(): void
     {

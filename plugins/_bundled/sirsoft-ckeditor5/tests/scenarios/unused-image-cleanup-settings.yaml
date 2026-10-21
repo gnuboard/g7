@@ -1,0 +1,20 @@
+feature: ckeditor5 미사용 이미지 정리 설정 섹션 (#757 건드린 시험 파일 매핑)
+
+description: |
+  환경설정의 미사용 이미지 자동 정리 섹션 — 저장 키·기본값·스키마·스케줄 게이트·업로드 관리 링크 계약과
+  다국어 렌더를 고정한다. 축 case 는 정적 계약 / 렌더 검증이다.
+
+axes:
+  case:
+    - contract             # 저장 키·기본값·스키마·스케줄 게이트·업로드 관리 링크
+    - render               # 라벨·힌트가 다국어로 풀려 렌더된다
+
+exclusions:
+  - { case: contract, reason: "제외 없음 — 검증 구역 단일 축" }
+
+effects:
+  - cleanup_settings_contract                    # 저장 키·기본값·스키마·스케줄 게이트·업로드 관리 링크
+  - cleanup_settings_render_translated           # 라벨·힌트가 다국어로 풀려 렌더된다
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/pluginSettingsCleanup.test.tsx

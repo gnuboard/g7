@@ -25,7 +25,7 @@ trait HasProgressBar
     {
         $this->progressBar = $this->output->createProgressBar($steps);
         $this->progressBar->setFormat(" %current%/%max% [%bar%] %message%\n   %detail%");
-        $this->progressBar->setMessage('시작 중...');
+        $this->progressBar->setMessage(__('extensions.progress.starting'));
         $this->progressBar->setMessage('', 'detail');
         $this->progressBar->start();
 
@@ -45,6 +45,8 @@ trait HasProgressBar
 
     /**
      * 프로그레스바를 완료합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function finishProgress(): void
     {

@@ -205,7 +205,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "spinner",
-                                "className": "text-xl animate-spin text-gray-400 dark:text-gray-500"
+                                "className": "text-xl animate-spin text-gray-500 dark:text-gray-500"
                             }
                         }
                     ]
@@ -328,7 +328,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "spinner",
-                                "className": "text-xl animate-spin text-gray-400 dark:text-gray-500"
+                                "className": "text-xl animate-spin text-gray-500 dark:text-gray-500"
                             }
                         }
                     ]
@@ -690,7 +690,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "folder-open",
-                                "className": "text-base text-gray-500"
+                                "className": "text-base text-gray-500 dark:text-gray-400"
                             }
                         },
                         {
@@ -761,6 +761,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "btn btn-secondary",
                         "disabled": "{{_global.isPluginUninstalling}}"
                     },
@@ -877,7 +878,8 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isPluginUninstalling}}"
                     },
                     "children": [
@@ -911,7 +913,7 @@
                                     "handler": "closeModal"
                                 },
                                 {
-                                    "comment": "창을 먼저 닫고 선택을 비운다 — 먼저 비우면 닫히는 몇 초 동안 문구의 확장 이름 자리가 빈 표시로 보였다(7.1.0 O-G3-7).",
+                                    "comment": "창을 먼저 닫고 선택을 비운다 — 먼저 비우면 닫히는 몇 초 동안 문구의 확장 이름 자리가 빈 표시로 보였다(7.1.0).",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
@@ -925,6 +927,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "btn btn-secondary"
                     },
                     "children": [

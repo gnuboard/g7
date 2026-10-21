@@ -54,6 +54,11 @@ class BuildVendorBundleCommandTest extends TestCase
     /** 스냅샷 복사본을 모아 두는 임시 디렉토리 */
     private ?string $snapshotDir = null;
 
+    /**
+     * 실제 번들 파일을 스냅샷하고, 고유 식별자의 가짜 모듈·플러그인을 만들고, composer 실행을 가짜 vendor 생성으로 바꾼다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -87,6 +92,11 @@ class BuildVendorBundleCommandTest extends TestCase
         });
     }
 
+    /**
+     * 가짜 확장 디렉토리를 지우고 실제 번들 파일을 스냅샷에서 복원한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ([
@@ -112,6 +122,8 @@ class BuildVendorBundleCommandTest extends TestCase
 
     /**
      * 실제 _bundled 번들 (코어 + 모든 모듈/플러그인) 스냅샷.
+     *
+     * @return void 반환값 없음
      */
     private function snapshotRealBundles(): void
     {
@@ -132,6 +144,8 @@ class BuildVendorBundleCommandTest extends TestCase
 
     /**
      * 스냅샷된 번들 파일을 원상 복구.
+     *
+     * @return void 반환값 없음
      */
     private function restoreRealBundles(): void
     {
@@ -158,7 +172,7 @@ class BuildVendorBundleCommandTest extends TestCase
     /**
      * 보호 대상 실제 번들 파일 경로 목록.
      *
-     * @return array<int, string>
+     * @return array<int, string> 코어와 모든 _bundled 확장의 vendor-bundle 파일 경로 목록
      */
     private function collectRealBundlePaths(): array
     {
@@ -184,6 +198,11 @@ class BuildVendorBundleCommandTest extends TestCase
 
     /**
      * 활성 디렉토리에 fake vendor 프로젝트 생성 + _bundled 에 composer.json 미러.
+     *
+     * @param  string  $activePath  composer.json·lock·vendor 를 둘 활성 디렉토리 경로
+     * @param  string  $bundledPath  composer.json 만 미러할 _bundled 디렉토리 경로
+     * @param  string  $kind  확장 종류(module 또는 plugin)
+     * @return void 반환값 없음
      */
     private function createFakeExtension(string $activePath, string $bundledPath, string $kind): void
     {
@@ -213,6 +232,15 @@ class BuildVendorBundleCommandTest extends TestCase
     // 모듈 명령어 (module:vendor-bundle / module:vendor-verify)
     // =========================================================================
 
+    /**
+     * 지정한 모듈의 번들을 _bundled 에만 만들고 활성 디렉토리는 건드리지 않는지 검증한다.
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_bundle_writes_output_to_bundled_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_bundle_builds_specific_identifier(): void
     {
         $this->artisan('module:vendor-bundle', [
@@ -225,13 +253,31 @@ class BuildVendorBundleCommandTest extends TestCase
         $this->assertFileDoesNotExist($this->fakeModuleActivePath.'/vendor-bundle.zip');
     }
 
+    /**
+     * 식별자와 --all 이 모두 없으면 안내를 출력하고 실패 종료하는지 검증한다.
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_command_requires_identifier_or_all_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_bundle_requires_identifier_or_all_flag(): void
     {
         $this->artisan('module:vendor-bundle')
-            ->expectsOutputToContain('식별자 또는 --all 옵션을 지정')
+            ->expectsOutputToContain(__('modules.commands.vendor_bundle.missing_identifier'))
             ->assertExitCode(1);
     }
 
+    /**
+     * 빌드 전 --check 는 번들이 낡았다고 보고하고 실패 종료하는지 검증한다.
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_bundle_check_reports_stale_until_built
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_bundle_check_reports_stale_when_not_built(): void
     {
         $this->artisan('module:vendor-bundle', [
@@ -245,6 +291,12 @@ class BuildVendorBundleCommandTest extends TestCase
      *
      * 종전에는 활성 디렉토리 부재를 "소스 경로 없음" 으로 보고하고 판정을 건너뛰어, _bundled 에
      * 외부 의존성이 선언됐는데 번들이 없거나 stale 인 상태가 --check 를 통과했다.
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_bundle_check_judges_bundled_composer_when_not_installed
+     *
+     * @return void 반환값 없음
      */
     public function test_module_vendor_bundle_check_judges_bundled_when_extension_not_installed(): void
     {
@@ -273,6 +325,12 @@ class BuildVendorBundleCommandTest extends TestCase
 
     /**
      * 미설치 + 외부 의존성 없음은 종전과 같이 SKIPPED (번들 대상 아님).
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_bundle_check_skips_extension_without_external_dependencies
+     *
+     * @return void 반환값 없음
      */
     public function test_module_vendor_bundle_check_skips_uninstalled_extension_without_external_dependencies(): void
     {
@@ -297,6 +355,15 @@ class BuildVendorBundleCommandTest extends TestCase
         }
     }
 
+    /**
+     * 빌드 직후 --check 는 최신으로 판정해 성공 종료하는지 검증한다.
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_bundle_check_reports_stale_until_built
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_bundle_check_reports_up_to_date_after_build(): void
     {
         $this->artisan('module:vendor-bundle', ['identifier' => $this->fakeModuleIdentifier])
@@ -308,6 +375,15 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(0);
     }
 
+    /**
+     * 이미 최신이면 다시 빌드하지 않고 스킵 안내를 출력하는지 검증한다.
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_bundle_skips_rebuild_when_up_to_date
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_bundle_skipped_when_up_to_date(): void
     {
         $this->artisan('module:vendor-bundle', ['identifier' => $this->fakeModuleIdentifier])
@@ -318,6 +394,15 @@ class BuildVendorBundleCommandTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * --force 는 최신 상태여도 다시 빌드해 성공 종료하는지 검증한다.
+     *
+     * @scenario command=module_bundle
+     *
+     * @effects vendor_bundle_force_option_rebuilds_successfully
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_bundle_force_rebuilds(): void
     {
         $this->artisan('module:vendor-bundle', ['identifier' => $this->fakeModuleIdentifier])
@@ -329,6 +414,15 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(0);
     }
 
+    /**
+     * 정상 빌드 직후 무결성 검증이 통과하는지 검증한다.
+     *
+     * @scenario command=module_verify
+     *
+     * @effects vendor_verify_passes_after_build
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_verify_passes_after_successful_build(): void
     {
         $this->artisan('module:vendor-bundle', ['identifier' => $this->fakeModuleIdentifier])
@@ -339,6 +433,15 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(0);
     }
 
+    /**
+     * 번들 파일이 없으면 무결성 검증을 스킵하고 성공 종료하는지 검증한다.
+     *
+     * @scenario command=module_verify
+     *
+     * @effects vendor_verify_skips_when_bundle_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_verify_skips_when_bundle_missing(): void
     {
         // _bundled 경로는 있지만 번들 파일 없음 — 스킵 처리되어 종료코드 0
@@ -347,6 +450,15 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(0);
     }
 
+    /**
+     * 빌드 뒤 zip 이 변조되면 무결성 검증이 실패하는지 검증한다.
+     *
+     * @scenario command=module_verify
+     *
+     * @effects vendor_verify_fails_on_tampered_zip
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_verify_fails_on_tampered_zip(): void
     {
         $this->artisan('module:vendor-bundle', ['identifier' => $this->fakeModuleIdentifier])
@@ -359,10 +471,19 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(1);
     }
 
+    /**
+     * 검증 커맨드도 식별자와 --all 이 모두 없으면 안내 후 실패 종료하는지 검증한다.
+     *
+     * @scenario command=module_verify
+     *
+     * @effects vendor_command_requires_identifier_or_all_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_vendor_verify_requires_identifier_or_all_flag(): void
     {
         $this->artisan('module:vendor-verify')
-            ->expectsOutputToContain('식별자 또는 --all 옵션을 지정')
+            ->expectsOutputToContain(__('modules.commands.vendor_verify.missing_identifier'))
             ->assertExitCode(1);
     }
 
@@ -370,6 +491,15 @@ class BuildVendorBundleCommandTest extends TestCase
     // 플러그인 명령어 (plugin:vendor-bundle / plugin:vendor-verify)
     // =========================================================================
 
+    /**
+     * 지정한 플러그인의 번들을 _bundled 에만 만들고 활성 디렉토리는 건드리지 않는지 검증한다.
+     *
+     * @scenario command=plugin_bundle
+     *
+     * @effects vendor_bundle_writes_output_to_bundled_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_vendor_bundle_builds_specific_identifier(): void
     {
         $this->artisan('plugin:vendor-bundle', [
@@ -381,13 +511,31 @@ class BuildVendorBundleCommandTest extends TestCase
         $this->assertFileDoesNotExist($this->fakePluginActivePath.'/vendor-bundle.zip');
     }
 
+    /**
+     * 플러그인 번들 커맨드가 식별자와 --all 없이 실행되면 안내 후 실패 종료하는지 검증한다.
+     *
+     * @scenario command=plugin_bundle
+     *
+     * @effects vendor_command_requires_identifier_or_all_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_vendor_bundle_requires_identifier_or_all_flag(): void
     {
         $this->artisan('plugin:vendor-bundle')
-            ->expectsOutputToContain('식별자 또는 --all 옵션을 지정')
+            ->expectsOutputToContain(__('plugins.commands.vendor_bundle.missing_identifier'))
             ->assertExitCode(1);
     }
 
+    /**
+     * 플러그인 빌드 전 --check 는 번들이 낡았다고 보고하고 실패 종료하는지 검증한다.
+     *
+     * @scenario command=plugin_bundle
+     *
+     * @effects vendor_bundle_check_reports_stale_until_built
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_vendor_bundle_check_reports_stale_when_not_built(): void
     {
         $this->artisan('plugin:vendor-bundle', [
@@ -396,6 +544,15 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(1);
     }
 
+    /**
+     * 플러그인도 --force 로 다시 빌드해 성공 종료하는지 검증한다.
+     *
+     * @scenario command=plugin_bundle
+     *
+     * @effects vendor_bundle_force_option_rebuilds_successfully
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_vendor_bundle_force_rebuilds(): void
     {
         $this->artisan('plugin:vendor-bundle', ['identifier' => $this->fakePluginIdentifier])
@@ -407,6 +564,15 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(0);
     }
 
+    /**
+     * 플러그인 정상 빌드 직후 무결성 검증이 통과하는지 검증한다.
+     *
+     * @scenario command=plugin_verify
+     *
+     * @effects vendor_verify_passes_after_build
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_vendor_verify_passes_after_successful_build(): void
     {
         $this->artisan('plugin:vendor-bundle', ['identifier' => $this->fakePluginIdentifier])
@@ -417,6 +583,15 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(0);
     }
 
+    /**
+     * 플러그인 번들 zip 이 변조되면 무결성 검증이 실패하는지 검증한다.
+     *
+     * @scenario command=plugin_verify
+     *
+     * @effects vendor_verify_fails_on_tampered_zip
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_vendor_verify_fails_on_tampered_zip(): void
     {
         $this->artisan('plugin:vendor-bundle', ['identifier' => $this->fakePluginIdentifier])
@@ -429,10 +604,19 @@ class BuildVendorBundleCommandTest extends TestCase
         ])->assertExitCode(1);
     }
 
+    /**
+     * 플러그인 검증 커맨드가 식별자와 --all 없이 실행되면 안내 후 실패 종료하는지 검증한다.
+     *
+     * @scenario command=plugin_verify
+     *
+     * @effects vendor_command_requires_identifier_or_all_flag
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_vendor_verify_requires_identifier_or_all_flag(): void
     {
         $this->artisan('plugin:vendor-verify')
-            ->expectsOutputToContain('식별자 또는 --all 옵션을 지정')
+            ->expectsOutputToContain(__('plugins.commands.vendor_verify.missing_identifier'))
             ->assertExitCode(1);
     }
 
@@ -440,6 +624,15 @@ class BuildVendorBundleCommandTest extends TestCase
     // 일괄 알리아스 (vendor-bundle:build-all / verify-all) — 모듈+플러그인 포함
     // =========================================================================
 
+    /**
+     * vendor-bundle:build-all 이 모듈과 플러그인 번들을 함께 만드는지 검증한다.
+     *
+     * @scenario command=bulk_alias
+     *
+     * @effects vendor_bulk_alias_builds_and_verifies_all_extensions
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_alias_build_all_builds_both_module_and_plugin_fakes(): void
     {
         // force 로 모든 _bundled 확장 빌드 (fake 모듈 + fake 플러그인 포함)
@@ -450,6 +643,15 @@ class BuildVendorBundleCommandTest extends TestCase
         $this->assertFileExists($this->fakePluginBundledPath.'/vendor-bundle.zip');
     }
 
+    /**
+     * vendor-bundle:verify-all 이 모듈·플러그인 빌드 뒤 충돌 없이 끝나는지 검증한다.
+     *
+     * @scenario command=bulk_alias
+     *
+     * @effects vendor_bulk_alias_builds_and_verifies_all_extensions
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_alias_verify_all_runs(): void
     {
         $this->artisan('module:vendor-bundle', ['identifier' => $this->fakeModuleIdentifier])

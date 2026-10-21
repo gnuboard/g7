@@ -80,6 +80,11 @@ php artisan template:activate [vendor-template]
 - `templates.is_active` 플래그 설정
 - 동일 타입의 기존 활성 템플릿 비활성화
 - 상태 캐시 무효화 (`ext.templates.active_identifiers*` / `ext.templates.installed_identifiers`)
+- 이 템플릿을 끌 때 함께 꺼진 언어팩을 함께 켜고 개수와 언어를 출력 (`--without-language-packs` 를 붙이면 켜지 않고 목록만 출력)
+
+**옵션**:
+- `--force`: 필요한 의존 확장이 없어도 강제로 활성화
+- `--without-language-packs`: 함께 꺼진 언어팩을 다시 켜지 않음
 
 ---
 

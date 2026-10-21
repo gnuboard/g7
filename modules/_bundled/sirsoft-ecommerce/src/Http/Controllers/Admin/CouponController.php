@@ -80,7 +80,11 @@ class CouponController extends AdminBaseController
      */
     public function show(int $id): JsonResponse
     {
-        $coupon = $this->couponService->getCoupon($id);
+        try {
+            $coupon = $this->couponService->getCoupon($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         if (! $coupon) {
             return ResponseHelper::notFound(

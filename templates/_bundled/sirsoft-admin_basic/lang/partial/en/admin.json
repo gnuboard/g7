@@ -753,14 +753,18 @@
       "installing": "Installing",
       "uninstalling": "Uninstalling",
       "updating": "Updating",
+      "stuck_update": "Update stuck",
       "active_label": "Active"
     },
+    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
+    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The module is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
+      "recover_update": "Clean up and update again",
       "check_updates": "Check Updates",
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
@@ -893,6 +897,13 @@
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modifications",
       "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
+      "layout_source_advanced": "Advanced settings",
+      "layout_source_title": "Layout install source",
+      "layout_source_help": "Use Auto in normal cases. Choose original JSON when processing new-format (.g7.html) layouts causes problems. Screens without a paired JSON file still use the new format.",
+      "layout_source_auto": "Auto (recommended)",
+      "layout_source_auto_desc": "Installs new-format (.g7.html) layouts first and uses JSON when they are missing.",
+      "layout_source_json": "Original JSON first (troubleshooting)",
+      "layout_source_json_desc": "Screens with a paired JSON file are installed from the original JSON instead of the new format.",
       "modified_layouts_warning": "{{count}} modified layouts exist. Choosing 'Overwrite All' will discard the modifications.",
       "modified_layouts_warning_one": "{{count}} modified layout exists. Choosing 'Overwrite All' will discard the modification.",
       "no_modified_layouts": "No modified layouts.",
@@ -966,14 +977,18 @@
       "not_installed": "Not Installed",
       "installing": "Installing",
       "uninstalling": "Uninstalling",
-      "updating": "Updating"
+      "updating": "Updating",
+      "stuck_update": "Update stuck"
     },
+    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
+    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The plugin is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
+      "recover_update": "Clean up and update again",
       "view_detail": "View Details",
       "settings": "Settings",
       "refresh_layouts": "Refresh Layouts",
@@ -1110,6 +1125,13 @@
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modifications",
       "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
+      "layout_source_advanced": "Advanced settings",
+      "layout_source_title": "Layout install source",
+      "layout_source_help": "Use Auto in normal cases. Choose original JSON when processing new-format (.g7.html) layouts causes problems. Screens without a paired JSON file still use the new format.",
+      "layout_source_auto": "Auto (recommended)",
+      "layout_source_auto_desc": "Installs new-format (.g7.html) layouts first and uses JSON when they are missing.",
+      "layout_source_json": "Original JSON first (troubleshooting)",
+      "layout_source_json_desc": "Screens with a paired JSON file are installed from the original JSON instead of the new format.",
       "modified_layouts_warning": "{{count}} modified layouts exist. Choosing 'Overwrite All' will discard the modifications.",
       "modified_layouts_warning_one": "{{count}} modified layout exists. Choosing 'Overwrite All' will discard the modification.",
       "no_modified_layouts": "No modified layouts.",
@@ -1219,7 +1241,12 @@
       "delete_title": "Delete Menu",
       "delete_confirm": "Are you sure you want to delete this menu?",
       "delete_core_warning": "Core menus cannot be deleted.",
-      "module_menu_notice": "Module default menu cannot be changed."
+      "module_menu_notice": "Module default menu cannot be changed.",
+      "editing_title": "You have unsaved changes",
+      "editing_message": "There are unsaved changes.",
+      "editing_confirm_message": "Move to another menu without saving?",
+      "editing_discard": "Discard changes",
+      "editing_continue": "Continue editing"
     },
     "messages": {
       "order_updated": "Menu order has been updated.",
@@ -1284,6 +1311,14 @@
       "module": "Module",
       "plugin": "Plugin"
     },
+    "filters": {
+      "extension_type": "Origin",
+      "extension_type_all": "All origins",
+      "extension_type_core": "System",
+      "extension_type_module": "Module",
+      "extension_type_plugin": "Plugin",
+      "extension_type_custom": "Custom"
+    },
     "actions": {
       "clone": "Clone"
     },
@@ -1309,6 +1344,7 @@
       "permissions_section": "Permission Settings",
       "permissions_selected_suffix": " selected",
       "permissions_hint": "Select permissions to grant to this role. Click a group to expand or collapse.",
+      "guest_scope_unsupported_hint": "The guest role cannot have a scope. Guests verify their own posts with a password.",
       "no_permissions_in_type": "No permissions registered.",
       "menus_section": "Accessible Menus",
       "menus_hint": "Checked menus appear in the admin menu for this role. Choosing a submenu also selects its parent; unchecking a parent also clears its submenus.",
@@ -1738,7 +1774,9 @@
       "sitemap_progress_phase": "Processing: {{phase}}",
       "sitemap_progress_urls": "URLs so far: {{count}}",
       "sitemap_realtime_connected": "Connected in real time.",
-      "sitemap_polling": "Checking progress periodically."
+      "sitemap_polling": "Checking progress periodically.",
+      "meta_title_suffix_placeholder": " | Gnuboard7",
+      "meta_keywords_placeholder": "CMS, Gnuboard7, open source"
     },
     "security": {
       "title": "Security Settings",
@@ -2024,7 +2062,66 @@
           "redis": "Redis"
         },
         "worker_notice": "Queue worker must be running when using database or redis.",
-        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected."
+        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected.",
+        "worker": {
+          "title": "Queue workers",
+          "not_required": "The sync driver runs jobs inside the request, so no queue worker is needed.",
+          "connections": {
+            "label": "Queue connections with workers",
+            "desc": "Register only the connections this server actually runs queue workers for. Jobs aimed at an unregistered connection go to the default connection.",
+            "placeholder": "Select connections",
+            "no_options": "No connections can be registered",
+            "default_missing": "The current queue driver ({{driver}}) connection is missing from the list. Saving will fail."
+          },
+          "queues": {
+            "label": "Queues per connection",
+            "desc": "Queue names the workers on each connection process. Jobs aimed at an unregistered queue go to that connection's default queue.",
+            "placeholder": "Type a queue name and press Enter"
+          },
+          "status": {
+            "title": "Status per queue",
+            "measured_at": "Measured {{at}}",
+            "refresh": "Refresh",
+            "col": {
+              "connection": "Connection",
+              "queue": "Queue",
+              "pending": "Pending",
+              "last_heartbeat": "Last worker signal",
+              "warnings": "Warnings"
+            },
+            "not_measurable": "Not measurable",
+            "no_heartbeat_yet": "No signal",
+            "empty": "No queues registered.",
+            "load_failed": "Could not load the queue worker status. Please press Refresh in a moment.",
+            "saved_driver_differs": "You changed the queue driver. The status below reflects the saved settings and updates after you save."
+          },
+          "warnings": {
+            "no_heartbeat": "No signal for {{minutes}} min",
+            "pending_without_worker": "Pending with no worker",
+            "clamped_timeout": "Timeout adjusted {{count}}",
+            "long_queue_hint": "Run on the long-job connection"
+          },
+          "fallback": {
+            "title": "{{count}} jobs aimed at an unregistered connection or queue were sent to the default instead",
+            "title_one": "{{count}} job aimed at an unregistered connection or queue was sent to the default instead",
+            "last": "Last: {{listener}} targeted connection {{connection}} · queue {{queue}}",
+            "hint": "Register this connection and queue above and run a worker so the listener runs where it asked. The count is kept for 24 hours after the last occurrence.",
+            "default": "(default)"
+          },
+          "long": {
+            "title": "Long-job worker",
+            "registered": "Registered",
+            "partial": "Partial",
+            "not_registered": "Not registered",
+            "desc_registered": "Long jobs such as analytics re-aggregation, anonymization and privacy manual runs go to the {{queue}} queue on the {{connection}} connection.",
+            "desc_partial": "The {{connection}} connection is registered but the {{queue}} queue is not. Long jobs go to the default queue.",
+            "desc_not_registered": "Long jobs run on the default queue. With several default workers the same job can be picked up again (it still runs only once); registering the {{connection}} connection with the {{queue}} queue and running a separate worker is recommended."
+          },
+          "supervisor": {
+            "title": "Supervisor commands",
+            "desc": "Start a worker for each registered connection with the commands below. Long-job connections must be started under that connection name."
+          }
+        }
       },
       "log": {
         "title": "Logging",
@@ -2577,14 +2674,18 @@
       "installing": "Installing",
       "uninstalling": "Uninstalling",
       "updating": "Updating",
+      "stuck_update": "Update stuck",
       "update_available": "Update Available"
     },
+    "stuck_update_hint": "The update stopped midway. \"Clean up and update again\" cleans it up and finishes the update; turning the switch on cleans it up and activates it.",
+    "stuck_update_reactivate_hint": "Cleaned up the stuck update. The template is now inactive — turn it back on with the switch.",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "update": "Update",
+      "recover_update": "Clean up and update again",
       "check_updates": "Check Updates",
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
@@ -2669,6 +2770,13 @@
       "layout_strategy_overwrite_desc": "Replace all layouts with the new version.",
       "layout_strategy_keep": "Keep Modified",
       "layout_strategy_keep_desc": "Keep what you changed and update the untouched parts to the new version. Where both sides changed the same part, your change is kept.",
+      "layout_source_advanced": "Advanced settings",
+      "layout_source_title": "Layout install source",
+      "layout_source_help": "Use Auto in normal cases. Choose original JSON when processing new-format (.g7.html) layouts causes problems. Screens without a paired JSON file still use the new format.",
+      "layout_source_auto": "Auto (recommended)",
+      "layout_source_auto_desc": "Installs new-format (.g7.html) layouts first and uses JSON when they are missing.",
+      "layout_source_json": "Original JSON first (troubleshooting)",
+      "layout_source_json_desc": "Screens with a paired JSON file are installed from the original JSON instead of the new format.",
       "modified_layouts_warning": "{{count}} layouts have been modified. Selecting 'Overwrite All' will discard modifications.",
       "modified_layouts_warning_one": "{{count}} layout has been modified. Selecting 'Overwrite All' will discard the modification.",
       "no_modified_layouts": "No modified layouts found.",
@@ -4266,5 +4374,28 @@
       "subject_delete_modal": "Delete data subject records confirm",
       "row_trend_modal": "Item trend"
     }
+  },
+  "brand_name": "Gnuboard7",
+  "default_user_name": "Administrator",
+  "template_partial_test": {
+    "title": "Template Partial System Test",
+    "meta_description": "Checks the partial system of the sirsoft-admin_basic template",
+    "description": "Tests the layout partial feature of the sirsoft-admin_basic template",
+    "checklist_title": "Checklist",
+    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
+    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
+    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (composite component)",
+    "check_basic": "✅ Basic component rendering",
+    "check_dark": "✅ Dark mode support",
+    "success_title": "🎉 Partial system works",
+    "success_description": "If every section above is shown, the template partial system is working.",
+    "level1_title": "Level 1 Partial: Content Section",
+    "level1_description": "This file includes the Level 2 partial files below",
+    "after_title": "Content After the Partial",
+    "after_description": "You can add as much content as you like after a partial file.",
+    "header_title": "Level 2 Include: Header Section Loaded",
+    "header_description": "This file is templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html",
+    "card_title": "✨ Composite Component Include Test",
+    "card_content": "This card was included from partials/template_partial_test/_info_card.g7.html.\n\n📌 Include system features:\n• Supported by both modules and templates\n• Unlimited nesting depth (depth limit 10)\n• Automatic circular reference detection\n• Both basic and composite components can be used"
   }
 }

@@ -36,7 +36,7 @@ describe('나이스페이먼츠 — 주문 목록 테스트 결제 배지 조각
     expect(components).toHaveLength(1);
     expect(components[0].if).toBe(`{{${MAP_ID}.data?.[row.order_number] === true}}`);
     expect(components[0].text).toBe(`($t:${PLUGIN}.admin.test_mode_badge)`);
-    expect(components[0].props.className).toContain('text-orange-500');
+    expect(components[0].props.className).toContain('text-orange-700'); // 흰 바탕 대비 4.5 — orange-500 은 2.77
     expect(components[0].props.className).toContain('dark:text-orange-400');
     expect(JSON.stringify(badge)).not.toMatch(OTHER_PG_PATTERN);
   });

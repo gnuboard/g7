@@ -118,7 +118,7 @@
                                     "name": "P",
                                     "if": "{{!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber}}",
                                     "props": {
-                                        "className": "text-sm text-yellow-600 dark:text-yellow-400"
+                                        "className": "text-sm text-yellow-700 dark:text-yellow-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_no_changes"
                                 },
@@ -242,7 +242,7 @@
                                             "name": "P",
                                             "if": "{{(_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0) > 0}}",
                                             "props": {
-                                                "className": "text-xs text-amber-600 dark:text-amber-400"
+                                                "className": "text-xs text-amber-700 dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_legacy_snapshot|count={{_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0}}"
                                         }
@@ -306,7 +306,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.apply_stock_deduction === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_off_warning"
                                                 }
@@ -382,7 +382,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.apply_mileage_deduction === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_off_warning"
                                                 }
@@ -448,7 +448,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.record_paid_amount === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_off_warning"
                                                 }
@@ -474,7 +474,7 @@
                                     "name": "P",
                                     "if": "{{(_global.manualPaidPreview?.summary?.never_paid_count ?? 0) > 0}}",
                                     "props": {
-                                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                                        "className": "text-xs text-amber-700 dark:text-amber-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.never_paid_note|count={{_global.manualPaidPreview?.summary?.never_paid_count ?? 0}}"
                                 },
@@ -485,7 +485,7 @@
                                     "name": "P",
                                     "if": "{{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).length > 0}}",
                                     "props": {
-                                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                                        "className": "text-xs text-amber-700 dark:text-amber-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled_orders|order_numbers={{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).join(', ')}}"
                                 }
@@ -513,7 +513,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isProcessing}}"
                     },
                     "children": [
@@ -569,7 +569,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{(!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0 || _global.isProcessing}}"
                     },
                     "children": [

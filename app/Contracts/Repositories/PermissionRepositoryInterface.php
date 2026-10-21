@@ -120,4 +120,12 @@ interface PermissionRepositoryInterface
      * @return array<int, array{role: string, permission: string, scope_type: string}> 부여 목록
      */
     public function getScopedGrantsWithoutOwnerMetadata(array $exemptIdentifiers): array;
+
+    /**
+     * 한 역할의 부여 중 스코프(self·role)가 붙은 것을 조회합니다.
+     *
+     * @param  string  $roleIdentifier  역할 식별자 (예: guest)
+     * @return array<int, array{role: string, permission: string, scope_type: string}> 부여 목록
+     */
+    public function getScopedGrantsForRole(string $roleIdentifier): array;
 }

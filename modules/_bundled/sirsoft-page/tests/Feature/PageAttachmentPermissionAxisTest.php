@@ -17,12 +17,12 @@ use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Tests\FeatureTestCase;
 
 /**
- * 페이지 슬러그 확인·첨부 업로드·임시 첨부 삭제의 권한 축 회귀 테스트 (7.1.0 abilities 게이트 page-hello #2·#3·#4·N1)
+ * 페이지 슬러그 확인·첨부 업로드·임시 첨부 삭제의 권한 축 회귀 테스트 (7.1.0 abilities 게이트)
  *
- * - #2 슬러그 확인·#3 첨부 업로드: 등록 권한만 요구해 수정 권한만 가진 관리자가 수정 화면에서 403 을 받았다 → 등록·수정 어느 쪽으로도
- * - #4 임시 첨부 삭제: 수정 권한을 요구해 등록 권한만 가진 관리자가 방금 올린 임시 첨부를 지우지 못했다 → 등록·수정 어느 쪽으로도
+ * - 슬러그 확인·첨부 업로드: 등록 권한만 요구해 수정 권한만 가진 관리자가 수정 화면에서 403 을 받았다 → 등록·수정 어느 쪽으로도
+ * - 임시 첨부 삭제: 수정 권한을 요구해 등록 권한만 가진 관리자가 방금 올린 임시 첨부를 지우지 못했다 → 등록·수정 어느 쪽으로도
  *   (연결된 첨부는 여전히 수정 권한 + 부모 페이지 스코프, 임시 첨부는 올린 사람만)
- * - N1 업로드에 page_id 를 붙이면 그 페이지의 수정 권한·스코프를 본다(등록 권한만으로, 또는 담당 밖 페이지에 첨부를 더할 수 없다)
+ * - 업로드에 page_id 를 붙이면 그 페이지의 수정 권한·스코프를 본다(등록 권한만으로, 또는 담당 밖 페이지에 첨부를 더할 수 없다)
  *
  * 시나리오 축·효과는 매니페스트 tests/scenarios/page-attachment-permission-axis.yaml 참조.
  */
@@ -161,7 +161,7 @@ class PageAttachmentPermissionAxisTest extends FeatureTestCase
     }
 
     /**
-     * 등록 권한만으로는 기존 페이지(page_id)에 첨부를 더할 수 없다(N1).
+     * 등록 권한만으로는 기존 페이지(page_id)에 첨부를 더할 수 없다.
      *
      * @scenario case=upload_page_id_create_only
      *
@@ -181,7 +181,7 @@ class PageAttachmentPermissionAxisTest extends FeatureTestCase
     }
 
     /**
-     * 본인 스코프 관리자는 담당 밖(남이 만든) 페이지에 첨부를 더할 수 없다(N1).
+     * 본인 스코프 관리자는 담당 밖(남이 만든) 페이지에 첨부를 더할 수 없다.
      *
      * @scenario case=upload_page_id_out_of_scope
      *

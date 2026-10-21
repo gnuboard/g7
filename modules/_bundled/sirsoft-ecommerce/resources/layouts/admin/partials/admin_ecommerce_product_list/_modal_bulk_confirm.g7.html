@@ -8,8 +8,8 @@
   <modal data-type="composite" data-ref="modal_bulk_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.title" size="md">
     <div class="space-y-4 max-h-96 overflow-y-auto">
       <div data-if="{{_global.bulkConfirmData?.summary?.hasBulkChanges}}" class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-        <h4 class="font-semibold text-info-soft mb-2">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section</h4>
-        <ul class="space-y-1 text-info-soft">
+        <h4 class="font-semibold ecommerce-tone-info-soft mb-2 text-xs">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section</h4>
+        <ul class="space-y-1 ecommerce-tone-info-soft text-xs">
           <li data-if="{{_global.bulkSalesStatus}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.sales_status|value={{_global.bulkSalesStatus === 'on_sale' ? '$t:sirsoft-ecommerce.enums.sales_status.on_sale' : (_global.bulkSalesStatus === 'suspended' ? '$t:sirsoft-ecommerce.enums.sales_status.suspended' : (_global.bulkSalesStatus === 'coming_soon' ? '$t:sirsoft-ecommerce.enums.sales_status.coming_soon' : '$t:sirsoft-ecommerce.enums.sales_status.sold_out'))}}</li>
           <li data-if="{{_global.bulkDisplayStatus}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.display_status|value={{_global.bulkDisplayStatus === 'visible' ? '$t:sirsoft-ecommerce.enums.display_status.visible' : '$t:sirsoft-ecommerce.enums.display_status.hidden'}}</li>
           <li data-if="{{_global.bulkPriceCondition}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.price_change</li>
@@ -21,7 +21,7 @@
         <ul class="space-y-1 text-label">
           <li data-each="product in _global.bulkConfirmData.products" class="flex justify-between">
             <span>{{product.name}}</span>
-            <span class="text-xs text-gray-500 dark:text-gray-500">{{product.changes}}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{product.changes}}</span>
           </li>
         </ul>
       </div>
@@ -31,12 +31,12 @@
           <li data-each="option in _global.bulkConfirmData.options" class="flex justify-between">
             <span data-if="{{option.aggregate !== true}}">{{option.productName}} > {{option.optionName}}</span>
             <span data-if="{{option.aggregate === true}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.options_aggregate|product={{option.productName}}|count={{option.optionCount}}</span>
-            <span class="text-xs text-gray-500 dark:text-gray-500">{{option.changes}}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{option.changes}}</span>
           </li>
         </ul>
       </div>
       <div data-if="{{(!_global.bulkConfirmData?.products || _global.bulkConfirmData.products.length === 0) &amp;&amp; (!_global.bulkConfirmData?.options || _global.bulkConfirmData.options.length === 0)}}" class="p-4 text-center">
-        <p class="text-yellow-600 dark:text-yellow-400">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.no_changes</p>
+        <p class="text-yellow-700 dark:text-yellow-400">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.no_changes</p>
       </div>
     </div>
     <div data-if="{{_global.bulkUpdateErrors?.length > 0}}" class="p-3 mt-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">

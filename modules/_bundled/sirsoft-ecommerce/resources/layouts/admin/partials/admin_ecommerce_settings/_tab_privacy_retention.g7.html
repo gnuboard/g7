@@ -41,7 +41,7 @@
                       <!-- 대상 주문 명단 — 목록 경로·제목을 주문 핸들러로 맞추고 쪽 상태를 1쪽으로 되돌린 뒤 첫 쪽을 다시 받아 창을 연다.
                            창은 스스로 조회하지 않으므로 이 버튼이 받아 주지 않으면 빈 명단이 뜬다. -->
                       <sequence>
-                        <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+                        <set-state target="global" privacyTargets="{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false, loadFailed: false })}}"/>
                         <set-state target="global" privacyTargets.title="$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.title"/>
                         <refetch-data-source dataSourceId="privacyTargets"/>
                         <open-modal target="privacy_targets_modal"/>
@@ -74,7 +74,7 @@
               <div data-ref="privacy_retention_manual_run_status" data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run}}" class="text-hint mt-1">
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}</span>
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'completed'}}">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.processed_count ?? 0}}</span>
-                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'failed'}}" class="text-error-soft">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.error ?? ''}}</span>
+                <span data-if="{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'failed'}}" class="ecommerce-tone-error-soft text-sm">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.error ?? ''}}</span>
               </div>
             </div>
           </div>
@@ -99,7 +99,7 @@
               </prop>
             </radio-group>
             <p data-ref="privacy_retention_anonymize_notice" data-if="{{(_local.form?.privacy_retention?.mode ?? 'anonymize') === 'anonymize'}}" class="form-hint">$t:sirsoft-ecommerce.admin.settings.privacy_retention.anonymize_notice</p>
-            <p data-ref="privacy_retention_delete_warning" data-if="{{_local.form?.privacy_retention?.mode === 'delete'}}" class="text-error-soft">$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning</p>
+            <p data-ref="privacy_retention_delete_warning" data-if="{{_local.form?.privacy_retention?.mode === 'delete'}}" class="ecommerce-tone-error-soft text-sm">$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning</p>
           </div>
           <p class="text-hint">$t:sirsoft-ecommerce.admin.settings.privacy_retention.preview_hint</p>
         </div>

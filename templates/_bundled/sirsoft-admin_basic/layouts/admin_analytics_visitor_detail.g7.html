@@ -63,15 +63,13 @@
     <div data-ref="analytics_visitor_detail_content" class="admin-page-content-responsive-fluid">
       <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
         <div class="flex-center gap-3">
-          <button data-ref="back_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.visitor_detail.back">
+          <a data-ref="back_button" href="/admin/analytics/visitors" :mergeQuery="true" class="button btn-icon" aria-label="$t:admin.analytics.visitor_detail.back">
             <on type="click">
               <!-- 목록으로 — 질의를 병합해 돌아가므로 목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다. -->
-              <navigate path="/admin/analytics/visitors" :mergeQuery="true">
-                <query/>
-              </navigate>
+              <navigate :mergeQuery="true"><query/></navigate>
             </on>
             <icon name="arrow-left" class="text-xl"/>
-          </button>
+          </a>
           <div>
             <h1 class="page-title">$t:admin.analytics.visitor_detail.title</h1>
             <p class="text-label-subtle mt-1 font-mono break-all">{{route?.key ?? ''}}</p>
@@ -91,8 +89,11 @@
           </button>
           <button data-ref="visitor_delete_button" type="button" class="btn btn-danger btn-sm flex-center gap-1.5">
             <on type="click">
-              <!-- 정보주체 삭제 창을 방문자 키로 연다. 끝나면 목록으로 돌아간다(analyticsSubjectAfter). -->
+              <!-- 정보주체 삭제 창을 방문자 키로 연다. 끝나면 목록으로 돌아간다(analyticsSubjectAfter).
+                   지울 기준을 먼저 null 로 비운다 — 기본(deep) 병합이라 정보주체 화면에서 연 IP·회원·기간이 남아 이 방문자 키와 AND 로
+                   묶여, 삭제가 덜 지워지거나 0건이 됐다(7.1.1) -->
               <sequence>
+                <set-state target="global" :analyticsSubject="null"/>
                 <set-state target="global" analyticsSubjectAfter="visitors" :analyticsSubjectConfirm="false">
                   <field name="analyticsSubject">
                     <field name="visitor_key" value="{{route?.key ?? ''}}"/>
@@ -180,7 +181,7 @@
               <div class="flex-center gap-2">
                 <span class="text-body font-mono">{{(analytics_visitor?.data?.visits ?? [])[0]?.ip ?? '-'}}</span>
                 <!-- 배지는 설정이 아니라 **이 주소**가 가려졌는지를 말한다 — 마스킹을 켜며 소급을 건너뛴 기존 방문은
-                     원래 주소 그대로라, 설정만 보고 「마스킹」을 붙이면 원래 주소를 가려진 값으로 읽는다(7.1.0 실측 O-E8).
+                     원래 주소 그대로라, 설정만 보고 「마스킹」을 붙이면 원래 주소를 가려진 값으로 읽는다(7.1.0 실측).
                      서버가 방문마다 `ip_masked`(지금 설정대로 가려졌는가)를 싣는다. -->
                 <badge data-type="composite" data-if="{{(analytics_visitor?.data?.ip_mask_octets ?? 0) &gt; 0 &amp;&amp; (analytics_visitor?.data?.visits ?? [])[0]?.ip_masked !== false}}" color="gray" text="$t:admin.analytics.visitor_detail.card.ip_masked|count={{analytics_visitor?.data?.ip_mask_octets ?? 0}}|octets={{analytics_visitor?.data?.ip_mask_octets ?? 0}}" size="sm"/>
                 <badge data-type="composite" data-if="{{(analytics_visitor?.data?.visits ?? [])[0]?.ip_masked === false}}" color="yellow" text="$t:admin.analytics.common.ip_not_masked" size="sm"/>
@@ -198,7 +199,7 @@
         </div>
         <div data-ref="visits_column" class="lg:col-span-2 space-y-3">
           <h2 class="section-heading">$t:admin.analytics.visitor_detail.visits_title</h2>
-          <empty-state data-type="composite" data-ref="visits_empty" data-if="{{!analytics_visitor?.loading &amp;&amp; (analytics_visitor?.data?.visits ?? []).length === 0}}" iconName="clock-rotate-left" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-10"/>
+          <empty-state data-type="composite" data-ref="visits_empty" data-if="{{analytics_visitor !== undefined &amp;&amp; (analytics_visitor?.data?.visits ?? []).length === 0}}" iconName="clock-rotate-left" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-10"/>
           <div data-ref="visit_item_{{$idx}}" data-each="visit, $idx in {{analytics_visitor?.data?.visits ?? []}}" class="admin-card">
             <button type="button" class="w-full flex-between gap-3 text-left">
               <on type="click">
@@ -217,7 +218,7 @@
                   그래서 라벨을 정적 `$t:` 로 앞세우고 토큰은 건수만 맡는다. -->
                 <badge data-type="composite" data-if="{{(visit.conversions ?? []).length > 0}}" color="green" text="$t:admin.analytics.visitor_detail.conversions_badge_label $t:defer:admin.analytics.visitor_detail.conversions_badge|count={{((visit.conversions ?? []).length) | number}}" size="sm"/>
               </div>
-              <icon name="{{(_local.openVisits ?? {})[visit.visit_id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm" class="text-gray-400 dark:text-gray-500"/>
+              <icon name="{{(_local.openVisits ?? {})[visit.visit_id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm" class="text-gray-500 dark:text-gray-500"/>
             </button>
             <div data-ref="visit_timeline_{{$idx}}" data-if="{{(_local.openVisits ?? {})[visit.visit_id] === true}}" class="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3 space-y-2">
               <!-- 이 방문의 부수정보 — 원장이 아는 환경·지역·언어·유입 값 전부(#682 S4 라운드 8). -->

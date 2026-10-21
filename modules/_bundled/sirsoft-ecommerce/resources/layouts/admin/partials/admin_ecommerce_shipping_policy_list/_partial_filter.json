@@ -42,6 +42,7 @@
                             ],
                             "props": {
                                 "name": "searchType",
+                                "aria-label": "$t:common.search_field",
                                 "className": "select-composite w-36",
                                 "value": "{{_local.filter.searchType || 'name'}}",
                                 "options": [
@@ -64,7 +65,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "search",
-                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-xl text-gray-400 dark:text-gray-500"
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-xl text-gray-500 dark:text-gray-400"
                                     }
                                 },
                                 {
@@ -172,7 +173,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "iteration": {
-                                        "source": "(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))",
+                                        "source": "(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: $localized(t.name) || t.code}))",
                                         "item_var": "option"
                                     },
                                     "props": {

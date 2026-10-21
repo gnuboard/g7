@@ -22,6 +22,7 @@ use App\Services\DriverRegistryService;
 use App\Services\ExtensionStaticCacheService;
 use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
+use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
 use App\Support\EnvPriority;
 use App\Support\TrustedProxyDiagnostic;
@@ -47,6 +48,7 @@ class SettingsController extends AdminBaseController
      * @param  PrivacyRetentionManager  $privacyRetentionManager  개인정보 보유기간 처리 진입점
      * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
+     * @param  QueueWorkerRegistry  $queueWorkerRegistry  큐 워커 등록·상태 (#139)
      */
     public function __construct(
         private SettingsService $settingsService,
@@ -56,7 +58,8 @@ class SettingsController extends AdminBaseController
         private ExtensionStaticCacheService $staticCacheService,
         private PrivacyRetentionManager $privacyRetentionManager,
         private DormantAccountService $dormantAccountService,
-        private PasswordExpiryService $passwordExpiryService
+        private PasswordExpiryService $passwordExpiryService,
+        private QueueWorkerRegistry $queueWorkerRegistry
     ) {
         parent::__construct();
     }
@@ -72,6 +75,7 @@ class SettingsController extends AdminBaseController
      * - `env_locked`: `.env` 로 잠긴 필드 목록 (프론트엔드 키 기준)
      * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
+     * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -82,7 +86,8 @@ class SettingsController extends AdminBaseController
         return [
             'limits' => config('core.settings_limits', []),
             'env_priority_enabled' => EnvPriority::enabled(),
-            'env_locked' => $this->settingsService->envLockedMeta(),
+            // 키-값 맵이다 — 잠긴 키가 없으면 `[]` 가 아니라 `{}` 로 낸다(settings.md 의 약속, #758)
+            'env_locked' => (object) $this->settingsService->envLockedMeta(),
             'consent_providers' => array_values(array_map(
                 static fn (ConsentProviderInterface $provider): array => [
                     'id' => $provider->getId(),
@@ -91,7 +96,29 @@ class SettingsController extends AdminBaseController
                 $consent->registered(),
             )),
             'consent_selection' => $consent->selection()->toArray(),
+            'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
         ];
+    }
+
+    /**
+     * 응답에 실을 설정을 다듬습니다.
+     *
+     * `drivers.queue_names` 는 연결 => 큐 목록 맵이다 — 비었을 때 PHP 배열 그대로 내면 `[]` 가 돼 화면이 키를
+     * 붙여도 저장 본문에서 사라진다(#758 과 같은 결함군). 그래서 늘 객체로 낸다.
+     *
+     * @param  array<string, mixed>  $settings  getAllSettings() 결과
+     * @return array<string, mixed> 응답용 설정
+     */
+    private function presentSettings(array $settings): array
+    {
+        if (isset($settings['drivers']) && is_array($settings['drivers'])) {
+            $settings['drivers']['queue_names'] = (object) (is_array($settings['drivers']['queue_names'] ?? null) ? $settings['drivers']['queue_names'] : []);
+        }
+
+        $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
+        $settings['_meta'] = $this->buildSettingsMeta();
+
+        return $settings;
     }
 
     /**
@@ -102,9 +129,7 @@ class SettingsController extends AdminBaseController
     public function index(): JsonResponse
     {
         try {
-            $settings = $this->settingsService->getAllSettings();
-            $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-            $settings['_meta'] = $this->buildSettingsMeta();
+            $settings = $this->presentSettings($this->settingsService->getAllSettings());
 
             return $this->success('settings.fetch_success',
                 (new SettingsResource($settings))->toArray(request())
@@ -130,9 +155,7 @@ class SettingsController extends AdminBaseController
 
             if ($result) {
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
-                $allSettings = $this->settingsService->getAllSettings();
-                $allSettings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-                $allSettings['_meta'] = $this->buildSettingsMeta();
+                $allSettings = $this->presentSettings($this->settingsService->getAllSettings());
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,
@@ -291,6 +314,19 @@ class SettingsController extends AdminBaseController
     public function staticCacheStatus(): JsonResponse
     {
         return $this->success('settings.static_cache_status_loaded', $this->staticCacheService->statusReport());
+    }
+
+    /**
+     * 큐 워커 상태(연결·큐별 대기 건수·마지막 워커 신호·경고)를 조회합니다 (#139).
+     *
+     * 드라이버 탭 「큐 워커」 구역이 쓴다. 읽기 전용이며 입력이 없어 FormRequest 를 두지 않는다
+     * (`staticCacheStatus` 와 동형). 판정은 등록 목록으로 하고 하트비트는 표시만 한다.
+     *
+     * @return JsonResponse 상태 보고서 JSON 응답
+     */
+    public function queueStatus(): JsonResponse
+    {
+        return $this->success('settings.queue_status_loaded', $this->queueWorkerRegistry->statusReport());
     }
 
     /**

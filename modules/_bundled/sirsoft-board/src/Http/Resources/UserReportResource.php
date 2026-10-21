@@ -11,7 +11,7 @@ use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
  * 마이페이지 「내 신고」 행 리소스 (ReportLog 기준)
  *
  * 신고자 본인에게만 보이는 화면이므로 **다른 신고자·처리자·관리자 메모·신고자 IP/UA 는
- * 싣지 않는다** (PO 결정 R10). 제목·내용은 신고 시점 스냅샷에서 읽어, 원본이 수정되거나
+ * 싣지 않는다**. 제목·내용은 신고 시점 스냅샷에서 읽어, 원본이 수정되거나
  * 삭제돼도 "내가 무엇을 신고했는지" 가 흔들리지 않게 한다.
  */
 class UserReportResource extends BaseApiResource

@@ -7,7 +7,7 @@ description: |
 
   배경:
     - DataGrid 가 받지 않는 prop(`columnSelectorId`·`loading`)을 싣고 테스트가 그 값을 고정하고 있었다 — 열 연결은
-      외부 ColumnSelector 의 id 가 맡고, 불러오는 동안 표시는 blur·전환 오버레이가 맡는다(#682 PO 실측 후속 4).
+      외부 ColumnSelector 의 id 가 맡고, 불러오는 동안 표시는 blur·전환 오버레이가 맡는다(#682 실측 후속 4).
 
 axes:
   area: [search_input, pagination, filter_params, grid_columns, grid_config, visible_columns, dynamic_filters, claim_filter_wired, shipping_filters, item_count_cell, amount_cell, orderer_filter, member_type_filter]

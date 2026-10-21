@@ -28,7 +28,7 @@ effects:
   - report_suspend_keeps_deleted_post_deleted
   - report_reject_keeps_deleted_post_deleted
   - admin_post_restore_of_deleted_still_publishes
-  # 원글이 지워진 채로 댓글만 복구하면 고아 댓글이 된다 — 원글 복구 먼저(2026-10-07 실측 O-KF3-2)
+  # 원글이 지워진 채로 댓글만 복구하면 고아 댓글이 된다 — 원글 복구 먼저(2026-10-07 실측)
   - admin_comment_restore_under_deleted_post_rejected
 
 test_files:

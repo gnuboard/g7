@@ -7,6 +7,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Breadcrumb, BreadcrumbItem } from './Breadcrumb';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
 
 /**
  * 탭 아이템 인터페이스
@@ -29,6 +30,12 @@ export interface ActionButton {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   iconName?: IconName;
   disabled?: boolean;
+  /**
+   * 바로가기 주소 — 있으면 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+   * 보통 클릭은 onClick(없으면 SPA 이동), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
+   * `disabled` 면 링크로 그리지 않고 종전처럼 비활성 단추다(href 없음).
+   */
+  href?: string;
 }
 
 /**
@@ -94,6 +101,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     return variantClasses[variant];
   };
 
+  /**
+   * 단추 모양 링크의 클래스 — 기본 Button 이 붙이는 바탕 클래스(`button`)를 같은 방식으로 합쳐 모양을 그대로 둔다.
+   */
+  const buttonLikeClass = (className: string): string =>
+    (window as any).G7Core?.style?.mergeClasses?.('button', className) ?? `button ${className}`;
+
   return (
     <Div className={className} id={id} {...editorAttrs}>
       {/* 브레드크럼 - Breadcrumb 컴포넌트 재사용 */}
@@ -107,12 +120,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       {/* 좁은 화면(태블릿 900px 등)에서 버튼이 많으면 한 줄에 우겨 넣지 않고 다음 줄로 내린다 —
           종전에는 버튼이 줄어들며 글자 단위로 꺾였다(「취
 소」·「저
-장」, 7.1.0 J D-J9). */}
+장」, 7.1.0 실측). */}
       <Div className="flex-between flex-wrap gap-3 mb-lg">
         <Div className="min-w-0">
-          <H1 className="page-title">{title}</H1>
+          {/* 제목·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 들어간 제목도 화면을 넘지 않는다(#143). */}
+          <H1 className="page-title break-words">{title}</H1>
           {description && (
-            <P className="page-description">{description}</P>
+            <P className="page-description break-words">{description}</P>
           )}
         </Div>
 
@@ -121,21 +135,52 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           <Div className="flex-center page-actions">{children}</Div>
         ) : actions && actions.length > 0 ? (
           <Div className="page-actions">
-            {actions.map((action) => (
-              <Button
-                key={action.id}
-                onClick={action.onClick}
-                disabled={action.disabled}
-                className={getButtonClasses(action.variant)}
-              >
-                {action.iconName && (
-                  <Icon name={action.iconName} className="icon-md" />
-                )}
-                {action.variant !== 'ghost' && action.label && (
-                  <Div>{action.label}</Div>
-                )}
-              </Button>
-            ))}
+            {actions.map((action) => {
+              const content = (
+                <>
+                  {action.iconName && (
+                    <Icon name={action.iconName} className="icon-md" />
+                  )}
+                  {action.variant !== 'ghost' && action.label && (
+                    <Div>{action.label}</Div>
+                  )}
+                </>
+              );
+              const link = !action.disabled && action.href !== undefined ? resolveLinkHref(action.href) : null;
+              if (link) {
+                return (
+                  <a
+                    key={action.id}
+                    href={link.href}
+                    {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    aria-label={action.variant === 'ghost' ? action.label : undefined}
+                    className={buttonLikeClass(getButtonClasses(action.variant))}
+                    onClick={(event) => {
+                      handleLinkClick(event, () => {
+                        if (action.onClick) {
+                          action.onClick();
+                        } else {
+                          navigateTo(link.href);
+                        }
+                      });
+                    }}
+                  >
+                    {content}
+                  </a>
+                );
+              }
+
+              return (
+                <Button
+                  key={action.id}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  className={getButtonClasses(action.variant)}
+                >
+                  {content}
+                </Button>
+              );
+            })}
           </Div>
         ) : null}
       </Div>

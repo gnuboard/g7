@@ -1,0 +1,36 @@
+feature: 단일 바인딩·표현식 판정 통일 라우팅 diff 하네스 — 구 방언과 BindingShape 정본이 갈리는 식을 저장소 전 레이아웃에서 잠근다
+
+description: |
+  `BindingShape` 로 단일 바인딩·복잡식 판정을 통일하면서(engine-v1.55.0) 일부 식의 라우팅이 바뀌었다.
+  하네스는 저장소의 모든 레이아웃 JSON 에서 `{{` 가 든 문자열을 모아 구 정규식·방언과 신 정본의 판정을 대조하고,
+  갈리는 식을 소속 파일과 함께 스냅숏으로 고정한다 — 새 레이아웃이 판정이 갈리는 식을 들이면 시험이 깨져 검토를 강제한다.
+
+  축 aspect 는 하네스가 잠그는 관점 하나씩이다 — 모집단 수집(population) · 단일 바인딩 판정이 갈리는 총량
+  (single_binding_total) · greedy 정규식이 실제로 쓰이던 지점과 링크 목적지에서 갈리는 값(greedy_and_link_sites) ·
+  복잡식 판정이 방언과 갈리는 식 목록(complex_dialects) · 그 분류별 건수(divergence_summary) · 빈 바인딩 부재
+  (empty_binding) · 파이프 우선 분류(pipe_classification) · 리터럴 분류(literal_classification).
+
+  링크 목적지(engine-v1.80.1): 화면 이동을 `<a href>` + path 없는 navigate 로 바꾸면 navigate `params.path` 의 주소가
+  링크 props(`href`·`pageHref`·`cardHref`·`tabs[].href`·`rowActions[].href` — props 아래 `href`/`…Href` 로 끝나는 키)로 옮겨 간다. 그 자리를 세지 않으면 옮겨 간 값이
+  목록에서 조용히 빠져 잠금이 약해지므로 같은 목록에 넣는다.
+
+axes:
+  aspect: [population, single_binding_total, greedy_and_link_sites, complex_dialects, divergence_summary, empty_binding, pipe_classification, literal_classification]
+
+effects:
+  - harness_collects_layout_population
+  - single_binding_divergence_total_locked
+  - greedy_site_divergence_listed_with_files
+  - link_target_sites_counted_as_greedy_sites
+  - complex_expression_divergence_listed
+  - divergence_category_counts_locked
+  - no_empty_binding_in_repo
+  - pipe_expression_classified_as_pipe
+  - literal_not_resolved_as_path
+
+test_files:
+  - resources/js/core/template-engine/__tests__/BindingShape.routingParity.test.ts
+
+notes: |
+  스냅숏을 갱신할 때는 `-u` 뒤 snap diff 를 열어 바뀐 항목만 의도한 변화인지 확인한다(기준 커밋 대비 값 집합의 추가·제거와 파일).
+  렌더 경로별 판정 일치는 `BindingShape.routingUnification.test.tsx` 가 따로 잠근다.

@@ -251,7 +251,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-green-600 dark:text-green-400"
+                                        "className": "text-green-700 dark:text-green-400"
                                     },
                                     "text": "+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines"
                                 },

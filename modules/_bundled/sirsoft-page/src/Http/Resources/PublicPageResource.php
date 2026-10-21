@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Page\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 
 /**
@@ -55,14 +56,13 @@ class PublicPageResource extends BaseApiResource
     public function toArray(Request $request): array
     {
         $locale = app()->getLocale();
-        $fallback = config('app.fallback_locale', 'ko');
 
         return [
             'id' => $this->id,
             'slug' => $this->slug,
             'title' => $this->getLocalizedTitle(),
             'content' => is_array($this->content)
-                ? ($this->content[$locale] ?? $this->content[$fallback] ?? (! empty($this->content) ? array_values($this->content)[0] : ''))
+                ? (LocalizedValue::pick($this->content, $locale) ?? '')
                 : (string) ($this->content ?? ''),
             'content_mode' => $this->content_mode ?? 'html',
             // 본문 첫 내부 이미지 URL 캐시 — 페이지 표시 레이아웃의 og:image 가 소비 (공개 #22)

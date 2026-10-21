@@ -14,6 +14,8 @@ use Modules\Sirsoft\Board\Http\Requests\User\ReactPostRequest;
 use Modules\Sirsoft\Board\Http\Resources\UserReactionCollection;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\ReactionService;
+use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 사용자용 반응 컨트롤러
@@ -53,6 +55,9 @@ class ReactionController extends AuthBaseController
                 return $this->notFound('sirsoft-board::messages.boards.error_404');
             }
 
+            // 읽기 스코프(본인만·소유역할) 밖 글에는 반응할 수 없다 — 라우트가 {postId} 라 미들웨어가 보지 않는다
+            BoardReadScope::assertTargetReadable($board, 'post', $postId);
+
             $result = $this->reactionService->react(
                 (int) Auth::id(),
                 $board,
@@ -75,6 +80,8 @@ class ReactionController extends AuthBaseController
             return $this->notFound('sirsoft-board::messages.post.not_found');
         } catch (ReactionNotAllowedException $e) {
             return $this->error($e->getMessageKey(), 422, ['code' => 'reaction_not_allowed']);
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.reaction.failed', 500, $e->getMessage());
         }
@@ -101,6 +108,9 @@ class ReactionController extends AuthBaseController
                 return $this->notFound('sirsoft-board::messages.boards.error_404');
             }
 
+            // 읽기 스코프 밖 댓글(또는 그 부모 글)에는 반응할 수 없다
+            BoardReadScope::assertTargetReadable($board, 'comment', $commentId);
+
             $result = $this->reactionService->reactToComment(
                 (int) Auth::id(),
                 $board,
@@ -125,6 +135,8 @@ class ReactionController extends AuthBaseController
             return $this->notFound('sirsoft-board::messages.post.not_found');
         } catch (ReactionNotAllowedException $e) {
             return $this->error($e->getMessageKey(), 422, ['code' => 'reaction_not_allowed']);
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.reaction.failed', 500, $e->getMessage());
         }

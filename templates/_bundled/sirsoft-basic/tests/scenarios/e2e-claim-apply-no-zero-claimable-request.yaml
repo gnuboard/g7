@@ -1,0 +1,20 @@
+feature: 클레임 신청서 claimable 첫 호출 브라우저 회귀 (7.1.1)
+
+description: |
+  주문 상세·claimable 응답을 page.route 로 모의하고, ?order_id 없는 진입과 있는 진입 모두에서
+  orders/0/claimable-options 요청이 0 이고 주문 ID 로 부르는지 본다. 레이아웃 정적 계약은 claim-apply-claimable-first-fetch.yaml.
+
+axes:
+  case:
+    - address_without_order_id
+    - address_with_order_id
+
+effects:
+  - claimable_called_with_real_order_id
+  - no_zero_order_claimable_request
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/claim-apply-no-zero-claimable-request.spec.ts
+
+notes: |
+  계정은 실행 환경변수로만 받는다.

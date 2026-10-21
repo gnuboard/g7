@@ -7,12 +7,16 @@
     <responsive on="portable" class="mt-4"/>
     <!-- 헤더: 새 주소 추가 버튼 -->
     <div class="flex justify-end mb-4">
-      <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+      <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"/>
         <on type="click">
           <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).
+               앞서 연 창의 값을 먼저 null 로 지운다 — 기본(deep) 병합은 이번 객체에 없는 키(id·이름·주소·입력해 둔 칸)를 남겨,
+               「수정」 창을 닫고 열면 「배송지 수정」 으로 열리고 저장이 앞 배송지를 PUT 으로 덮어썼다(7.1.1). 닫기·Esc 는 엔진이
+               closeModal 로만 이어 정리 동작을 붙일 수 없으므로, 비우기는 여는 쪽이 맡는다.
                배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703) -->
           <sequence>
+            <set-state target="global" :editingAddress="null"/>
             <set-state target="global">
               <field name="editingAddress">
                 <field name="is_default" :value="false"/>
@@ -45,9 +49,11 @@
           <!-- 수정/삭제 텍스트 버튼 -->
           <div class="flex items-center gap-2">
             <!-- 수정 버튼 -->
-            <button data-if="{{address.abilities?.can_update === true}}" type="button" class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button data-if="{{address.abilities?.can_update === true}}" type="button" class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <on type="click">
-                <!-- 조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙). -->
+                <!-- 조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙).
+                     앞 창의 값을 먼저 null 로 지운다 — 주소 검색이 따로 쓰는 키(region 등)가 남으면 이 배송지의 저장에 실린다(7.1.1). -->
+                <set-state target="global" :editingAddress="null"/>
                 <set-state target="global">
                   <field name="editingAddress">
                     <field name="id" value="{{address.id}}"/>
@@ -72,7 +78,7 @@
               $t:common.edit
             </button>
             <!-- 삭제 버튼 - 기본 배송지는 삭제 불가 -->
-            <button data-if="{{address.abilities?.can_delete === true}}" type="button" class="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+            <button data-if="{{address.abilities?.can_delete === true}}" type="button" class="px-3 py-1.5 text-sm text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
               <on type="click">
                 <set-state target="global" deletingAddressId="{{address.id}}"/>
                 <open-modal target="confirmDeleteAddressModal"/>
@@ -92,15 +98,19 @@
     <!-- 빈 상태 - 배송지 없음 -->
     <div data-if="{{!(addresses?.data?.addresses?.data ?? []).length}}" class="bg-white dark:bg-gray-800 rounded-lg p-12 text-center">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center"/>
-      <icon name="map-pin" class="text-6xl mx-auto text-gray-300 dark:text-gray-600 mb-4">
-        <responsive on="portable" name="map-pin" class="text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <icon name="map-pin" class="text-6xl mx-auto text-gray-500 dark:text-gray-500 mb-4">
+        <responsive on="portable" name="map-pin" class="text-5xl mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
       </icon>
       <p class="text-gray-500 dark:text-gray-400 mb-4">$t:mypage.addresses.empty</p>
-      <button class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+      <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <on type="click">
           <!-- 새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).
+               앞서 연 창의 값을 먼저 null 로 지운다 — 기본(deep) 병합은 이번 객체에 없는 키(id·이름·주소·입력해 둔 칸)를 남겨,
+               「수정」 창을 닫고 열면 「배송지 수정」 으로 열리고 저장이 앞 배송지를 PUT 으로 덮어썼다(7.1.1). 닫기·Esc 는 엔진이
+               closeModal 로만 이어 정리 동작을 붙일 수 없으므로, 비우기는 여는 쪽이 맡는다.
                배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703) -->
           <sequence>
+            <set-state target="global" :editingAddress="null"/>
             <set-state target="global">
               <field name="editingAddress">
                 <field name="is_default" :value="false"/>

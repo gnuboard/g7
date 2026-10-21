@@ -74,7 +74,7 @@
 | `data_sources` | `<data-source …/>` (반복) — §4 |
 | `computed` | `<computed name="total">{{a+b}}</computed>` (반복) |
 | `initLocal`/`initGlobal`/`initIsolated` | `<init-local>`/`<init-global>`/`<init-isolated>` + `<field>`/`<from-source>` 트리 — §7 |
-| `init_actions` | `<init>…</init>` (자식 액션, 축소 화이트리스트) |
+| `init_actions` | `<init>…</init>` (자식 액션 — `<sequence>`·`<switch>`·`<conditions>`·`<action-ref>`·`<success>`/`<fail>`/`<error-handling>` 모두 된다. 진입점 전용 키 `confirm`·`debounce`·`stopPropagation`·`key` 만 굽기 오류 `init_action_key_forbidden`) |
 | `named_actions` | `<action name="searchOrders">…</action>` |
 | `defines` | `<defines><define name="x">JSON</define></defines>` |
 | `permissions` | `<permissions>` — 아래 참조 |
@@ -375,9 +375,11 @@ hoist 태그는 **부모 컴포넌트 이름과 무관하게** 같은 props 키�
 
 ## 8. 액션
 
-top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액션에서는 **무접두** `if="{{…}}"` — 노드의 `data-if` 와 다르다. 액션에 `data-if` 를 달면 `params` 로 들어가 조건이 무시된 채 항상 실행된다) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce`(진입점만 — 다른 액션 안쪽의 debounce 는 적용되지 않고 lint `nested_action_debounce_ignored` 경고) `actionRef` `render` `onLoad` `stopPropagation`(진입점만). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
+top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액션에서는 **무접두** `if="{{…}}"` — 노드의 `data-if` 와 다르다. 액션에 `data-if` 를 달면 `params` 로 들어가 조건이 무시된 채 항상 실행된다) `confirm="메시지"`(진입점만) `auth_mode`/`auth_required` `identity_target` `resultTo` `debounce`(진입점만 — 다른 액션 안쪽의 debounce 는 적용되지 않고 lint `nested_action_debounce_ignored` 경고) `actionRef` `render` `onLoad` `stopPropagation`(진입점만) `preventDefault`(진입점만, engine-v1.80.1). **그 외 전부 `params`**(자식 `<body>`/`<query>` 또는 속성).
 
 > `:stopPropagation="true"` 는 engine-v1.68.0 에서 신설된 **액션 키**다(불리언이므로 타입 리터럴 `:attr` 로 적는다)(핸들러가 아니다 — `stopPropagation` 이라는 핸들러는 등록된 적이 없다). `true` 일 때만 진입점 액션에서 `event.stopPropagation()` 을 부르는 opt-in 이라, 목록 행 안의 토글처럼 부모 클릭까지 발화되던 자리에 쓴다. `change` 이벤트에서 `preventDefault` 는 부르지 않는다(토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋난다). 배치는 {@see \App\Support\LayoutMarkup\ActionHandlerManifest} 의 `UNIVERSAL_TOP_LEVEL_KEYS` 가 SSoT 다.
+
+> `:preventDefault` 도 같은 형식의 **액션 키**다(engine-v1.80.1). 생략하면 엔진이 자동 판정한다 — 실제 주소 `<a href>` 를 Ctrl·Cmd·Shift·Alt+클릭하거나 `target`·`download` 링크면 막지도 실행하지도 않아 새 탭·새 창으로 열린다. `true` 는 언제나 막고 실행, `false` 는 막지 않고 실행. 화면 이동 링크는 `<a href="…" :mergeQuery="true"><on type="click"><navigate :mergeQuery="true"><query/></navigate></on>…</a>` 처럼 **path 를 생략**하면 그 href 로 이동한다(목록 문맥을 넘기는 링크는 A 와 navigate 양쪽에 `:mergeQuery="true"` — 보통 클릭과 새 탭이 같은 주소로 간다)([actions-handlers-navigation.md 「화면 이동을 링크로 쓰는 법」](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801)).
 >
 > **같은 이름의 컴포넌트 prop 과 혼동하지 않는다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation` 을 갖는다(구현 [UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`, 작성 4파일). **자리가 둘을 가른다** — 노드 태그 속성(`<user-info :stopPropagation="true"/>`)이면 컴포넌트 prop, `<on>` 아래 핸들러 태그 속성이면 액션 키다.
 
@@ -418,7 +420,9 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액�
 
 > `<api-call>` 의 `target` 이 곧 요청 URL(엔드포인트)이다. `method` 는 params 로 전달. 핸들러 49종은 kebab↔camel 자동 변환(`<set-state>`↔setState). 확장/점 핸들러는 `<action handler="sirsoft-ecommerce.toggleArrayValue">`.
 >
-> **`<action-ref name>` 은 핸들러 없이 성립하는 유일한 액션이다.** `named_actions` 에 정의해 둔 액션을 이름으로 불러 쓰는 형태(`actionRef`)로, `<action>` 은 `handler` 가 필수라 이 형태를 지을 수 없다. 같은 액션을 여러 진입점에서 재사용하거나, `init_actions` 루트처럼 키 화이트리스트가 좁은 자리에서 복잡한 액션을 우회 실행할 때 쓴다.
+> **`<action-ref name>` 은 핸들러 없이 성립하는 유일한 액션이다.** `named_actions` 에 정의해 둔 액션을 이름으로 불러 쓰는 형태(`actionRef`)로, `<action>` 은 `handler` 가 필수라 이 형태를 지을 수 없다. 같은 액션을 여러 진입점에서 재사용할 때 쓴다. `<init>`·`<on listen>`·`<fail>`·`<on-code>` 안에서도 그대로 실행된다(engine-v1.80.0 — 그 전에는 `<init>` 이 이 형태를 굽기에서 거부했고 JSON 으로 적으면 화면 진입이 실패했다).
+>
+> **`<on>`·`<fail>`·`<on-code>` 의 자식이 여럿이면 순서대로 실행된다(암묵 sequence) — 이제 모든 자리에서 그렇다.** 엔진은 버튼 클릭뿐 아니라 이벤트 받기(`<on listen>`)·실패 처리(`<fail>`·`<on-code>`)·데이터소스 오류 처리·첫 진입 동작(`<init>`)에서도 적은 액션을 통째로 실행한다(engine-v1.80.0). 그 전에는 이 자리들에서 액션을 옮겨 담으며 키를 골라 담아, 분기(`<conditions>`·`<switch>`)·연속 실행·`if`·`<action-ref>` 가 경고 없이 버려졌다.
 >
 > **조건 분기의 실행 블록도 같은 블록 규칙이다 (G9).** `<conditions>` 의 `<when if>`/`<else>` 본문은 `<case>`/`<default>` 와 같다 — 액션이 하나면 `then` 이 단일 객체, 둘 이상이면 배열이 된다. 엔진은 두 형태를 모두 받으므로(배열은 sequence 처럼 순차 실행) 작성에서는 자식 수만 신경 쓰면 된다.
 >
@@ -745,7 +749,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 </select>
 ```
 
-- `<options>` 안은 `<option>` 만 온다(다른 태그는 자리 오류). `value=`(문자열)·`:value=`(타입 리터럴)·`disabled`·본문 텍스트(label)만 읽는다.
+- `<options>` 안은 `<option>` 만 온다(다른 태그는 자리 오류). `value=`(문자열)·`:value=`(타입 리터럴)·`disabled`·본문 텍스트(label)만 읽는다. 옵션에 그 밖의 키(예: 목록에서 라벨 아래 보이는 `description`)가 있으면 `<prop name="options"><item value="…" label="$t:…" description="$t:…"/></prop>` 로 적는다 — 역변환도 이 표기로 되돌린다.
 - `<options>` 와 `:options` 는 같은 자리를 다투므로 함께 쓰면 충돌로 잡힌다.
 - 래퍼 밖 `<option>` 은 **절대 접지 않는다**. `multiple`/`size` 여부와 무관하다.
 
@@ -792,6 +796,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 - 편집기가 여는 것은 **설치본**이라 저장소 파일과 다르다 — 설치가 `<include src>`·`<modal src>` 조각을 인라인한 평탄 문서이고, 인라인 모달의 원래 이름은 `<modal name>` 으로 남는다. 저장하면 본문이 서버 정규형(역변환 산출)으로 갱신되므로 손으로 맞춘 줄바꿈·들여쓰기는 유지되지 않는다.
 - 변환은 설치·검증과 **같은 클래스**(`LayoutMarkupDecompiler`·`LayoutMarkupCompiler`)를 탄다. 왕복 오라클(`layout:compile --roundtrip`)도 같은 진입점이라 "검사는 통과하는데 편집기 저장은 거부" 가 생기지 않는다.
 - 설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다(행마다 역변환→프로덕션 컴파일→왕복 대조 + 조각 등록 정합성).
+- 편집기 저장·버전 복원·이름 바꾸기는 본문의 빈 객체 `{}` 를 그대로 저장한다(7.1.1). 7.1.0 까지 이 경로로 `[]` 로 굳은 행은 `php artisan layout:repair-empty-objects` 로 확인하고 `--apply` 로 되돌린다 — 원본(`original_content`)이 `{}` 이고 저장본이 `[]` 인 자리만 고치며, 기본은 미리보기(쓰기 없음)다. `--template=<식별자>` 로 범위를 좁힐 수 있다.
 - `.g7.html` 내려받기·복사 버튼은 HTML 버퍼를 그대로 파일·클립보드로 옮긴다 — 저장소로 되가져올 때 위 인라인 상태를 감안한다.
 
 ---

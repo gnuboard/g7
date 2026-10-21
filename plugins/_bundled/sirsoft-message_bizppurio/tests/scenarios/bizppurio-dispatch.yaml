@@ -56,6 +56,12 @@ effects:
   - pending_dispatch_row_created_with_channel_and_user
   - guest_phone_resolved_from_data_recipient_phone
   - skip_exception_uses_human_readable_type_label
+  - alimtalk_skipped_when_substituted_body_empty
+  - actual_payload_saved_on_dispatch_row
+  - alimtalk_skipped_when_no_phone
+  - non_generic_notifications_are_ignored
+  - test_mode_flag_is_snapshotted_on_the_dispatch_row
+  - live_mode_flag_is_snapshotted_on_the_dispatch_row
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/AlimtalkChannelDriverTest.php

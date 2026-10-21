@@ -10,6 +10,7 @@ use App\Models\Template;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use ReflectionClass;
 use Tests\TestCase;
 
@@ -177,7 +178,7 @@ class TemplateOverrideStaleRowCleanupTest extends TestCase
      * 소스는 있는데 컴파일에 실패한 조각의 행은 지우지 않는다 (모듈·플러그인 갱신과 같은 기준 — 소스 존재).
      *
      * 정리가 「컴파일에 성공한 정의」만 살아 있다고 보면, 한 번의 컴파일 실패로 템플릿 오버라이드 행이 지워져
-     * 모듈 원본 조각이 대신 그려진다.
+     * 모듈 원본 조각이 대신 그려진다. 실패는 파일당 ERROR 1줄이다.
      *
      * @scenario compile_unit=install,source_health=invalid
      *
@@ -203,8 +204,15 @@ class TemplateOverrideStaleRowCleanupTest extends TestCase
             'is_active' => true,
         ]);
 
+        // 의도된 컴파일 실패라 공용 로그에 남기지 않고 가둬서 1줄인지 본다(#725).
+        Log::spy();
+
         $this->registerOverrides();
 
         $this->assertNotSoftDeleted($existing);
+        Log::shouldHaveReceived('error')
+            ->withArgs(fn (string $message): bool => str_contains($message, '레이아웃 확장 파일 처리 실패')
+                && str_contains($message, 'user-address-search.g7.html'))
+            ->once();
     }
 }

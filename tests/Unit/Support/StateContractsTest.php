@@ -10,7 +10,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 전역 상태 공개 계약 집계 (#639, 결정 P8·D13)
+ * 전역 상태 공개 계약 집계 (#639, 결정)
  *
  * 코어 예약 계약과 활성 확장 manifest 의 `state_contracts` 를 모아 프론트(`G7Core.stateContracts`)와 설치 충돌
  * 검사가 함께 쓴다. 집계가 한 소스의 실패로 통째로 비면 프론트는 계약이 없는 것으로 읽는다.

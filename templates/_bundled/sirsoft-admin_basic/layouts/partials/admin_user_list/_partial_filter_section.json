@@ -314,7 +314,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -344,7 +344,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "~"
                                         },
@@ -655,7 +655,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -686,7 +686,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "~"
                                         },
@@ -1386,7 +1386,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "calendar",
-                                        "className": "text-base text-gray-400 dark:text-gray-500"
+                                        "className": "text-base text-gray-500 dark:text-gray-500"
                                     }
                                 },
                                 {
@@ -1415,7 +1415,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "~"
                                 },
@@ -1545,7 +1545,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -1575,7 +1575,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "~"
                                         },
@@ -1755,6 +1755,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:admin.users.filter.country",
                                         "options": "{{_computed.countryOptions ?? []}}",
                                         "value": "{{_local.filter.country || ''}}",
                                         "triggerLabel": "$t:admin.users.filter.country_select",
@@ -1782,7 +1783,7 @@
                                         "type": "button",
                                         "aria-label": "$t:common.clear_selection",
                                         "title": "$t:common.clear_selection",
-                                        "className": "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                        "className": "text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
                                     },
                                     "children": [
                                         {
@@ -2203,6 +2204,7 @@
                             ],
                             "props": {
                                 "name": "searchField",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-32",
                                 "value": "{{_local.filter.searchField || 'all'}}",
                                 "options": [

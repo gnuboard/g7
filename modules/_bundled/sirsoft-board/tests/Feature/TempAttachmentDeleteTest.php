@@ -19,8 +19,8 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *
  * 글쓰기 화면은 [저장]을 누를 때 첨부를 먼저 올리고(임시 첨부, board_id=0) 글을 보낸다. 글 저장이
  * 422 로 실패하면 임시 첨부가 업로더 목록에 남는데, 이것을 지우면 첨부 조회가 「이 게시판 id」로만
- * 찾아 `DELETE …/attachments/{id} → 404` 「파일을 찾을 수 없습니다」가 났다(7.1.0 전수 실측 O-F1-1,
- * 페이지 모듈 L-D4 와 같은 결함군). 임시 첨부는 그 게시판 임시 경로(`{slug}/temp/…`)의 것만 대상이고,
+ * 찾아 `DELETE …/attachments/{id} → 404` 「파일을 찾을 수 없습니다」가 났다(7.1.0 전수 실측,
+ * 페이지 모듈과 같은 결함군). 임시 첨부는 그 게시판 임시 경로(`{slug}/temp/…`)의 것만 대상이고,
  * 올린 사람만 지우거나 순서를 바꿀 수 있다(남의 임시 첨부는 잇지도 지우지도 못한다 — KVE-2026-2349).
  *
  * @scenario-manifest tests/scenarios/board-temp-attachment-delete.yaml

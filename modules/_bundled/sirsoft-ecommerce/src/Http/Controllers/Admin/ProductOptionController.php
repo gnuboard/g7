@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOptionPriceRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOptionsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOptionStockRequest;
 use Modules\Sirsoft\Ecommerce\Services\ProductOptionService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 옵션 관리 컨트롤러
@@ -62,6 +63,8 @@ class ProductOptionController extends AdminBaseController
                 'messages.options.bulk_price_update_failed',
                 422
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -104,6 +107,8 @@ class ProductOptionController extends AdminBaseController
                 'messages.options.bulk_stock_update_failed',
                 422
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -142,6 +147,8 @@ class ProductOptionController extends AdminBaseController
                 'messages.options.bulk_update_failed',
                 422
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',

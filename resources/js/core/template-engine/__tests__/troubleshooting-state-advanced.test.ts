@@ -35,6 +35,8 @@ describe('트러블슈팅 회귀 테스트 - cellChildren 상태 접근', () => 
      * 증상: DataGrid의 cellChildren에서 _local.xxx 접근 불가
      * 해결: G7Core.renderItemChildren에서 전역 상태 자동 병합
      */
+    // @scenario case=cellchildren_local_access
+    // @effects cellchildren_merges_global_state_into_context
     it('renderItemChildren이 전역 상태를 컨텍스트에 자동 병합해야 함', () => {
       // 기존 컨텍스트 (row, value만 포함)
       const itemContext = {
@@ -71,7 +73,7 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
      * 증상: 폼 submit 액션에 debounce 를 걸면 페이지가 새로고침됨
      *
      * 실동작(시뮬레이션 아님, 실제 ActionDispatcher 로 검증):
-     * - `preventDefault()` 는 `createHandler` 진입점에서만 호출된다(ActionDispatcher.ts:2045).
+     * - `preventDefault()` 는 `createHandler` 진입점에서만 호출된다(`ActionDispatcher.createHandler` 진입부).
      * - `bindActionsToProps` 는 `action.debounce` 가 있으면 그 진입점 대신
      *   `handleDebouncedAction` 으로 분기하므로 원본 이벤트가 방치된다.
      * - 지연 만료 후 실행되는 것은 `preventDefault: () => {}` 인 합성 이벤트다.
@@ -85,6 +87,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       stopPropagation: vi.fn(),
     });
 
+    // @scenario case=debounce_submit_reload
+    // @effects debounced_submit_skips_original_prevent_default
     it('debounce 없는 submit 액션은 원본 이벤트의 preventDefault 를 호출한다', () => {
       const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
       const bound = dispatcher.bindActionsToProps({
@@ -99,6 +103,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       dispatcher.clearDebounceTimers();
     });
 
+    // @scenario case=debounce_submit_reload
+    // @effects debounced_submit_skips_original_prevent_default
     it('debounce 가 붙은 submit 액션은 원본 이벤트의 preventDefault 를 호출하지 않는다 (현행 제약)', () => {
       vi.useFakeTimers();
       const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
@@ -116,6 +122,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       dispatcher.clearDebounceTimers();
     });
 
+    // @scenario case=debounce_submit_reload
+    // @effects debounced_submit_skips_original_prevent_default
     it('debounce 는 Event 객체 메서드를 추출하지 않는다', () => {
       const extractEventData = (event: any) => ({
         type: event.type,
@@ -139,6 +147,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
      * 증상: debounce 후 $event.target.dataset.id가 undefined
      * 해결: 필요한 데이터를 params로 명시적 전달
      */
+    // @scenario case=debounce_event_access
+    // @effects debounced_event_data_is_extracted_only
     it('추출되는 이벤트 데이터는 제한적이어야 함', () => {
       const extractedData = {
         type: 'change',
@@ -161,6 +171,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
      * 증상: "value": "{{$event}}" 형태로 바인딩하면 Event 객체 자체가 전달됨
      * 해결: $event.target.value 사용
      */
+    // @scenario case=input_event_nan
+    // @effects event_object_not_used_as_number
     it('$event를 직접 사용하면 객체가 전달되어 parseFloat 시 NaN', () => {
       const eventObject = {
         type: 'change',
@@ -182,6 +194,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
      * 증상: $event를 상태에 저장하면 순환 참조로 인한 스택 오버플로우
      * 해결: $event.target.value로 실제 값만 추출
      */
+    // @scenario case=textarea_event_state_crash
+    // @effects react_event_not_stored_in_state
     it('React 이벤트 객체를 상태에 저장하면 안됨', () => {
       // 순환 참조 시뮬레이션 (실제 React 이벤트는 더 복잡)
       const mockReactEvent = {
@@ -245,6 +259,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       return [effectiveValue, updatedPendingRef];
     }
 
+    // @scenario case=form_debounce_flicker
+    // @effects pending_value_prevents_input_flicker
     it('debounce 대기 중 useMemo 재계산 시 pending value가 사용되어야 함', () => {
       // auto-binding이 value를 결정하는 로직 시뮬레이션
       const debounceMs = 300;
@@ -270,6 +286,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       clearTimeout(timerRef!);
     });
 
+    // @scenario case=form_debounce_flicker
+    // @effects pending_value_prevents_input_flicker
     it('debounce 완료 후 state 반영 전까지 pending value가 유지되어야 함 (핵심 수정)', () => {
       vi.useFakeTimers();
 
@@ -313,6 +331,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       vi.useRealTimers();
     });
 
+    // @scenario case=form_debounce_flicker
+    // @effects pending_value_prevents_input_flicker
     it('debounce 없는 Form에서는 pending 로직이 영향 없어야 함', () => {
       const debounceMs = 0; // debounce 없음
       const timerRef: ReturnType<typeof setTimeout> | null = null;
@@ -331,6 +351,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       expect(pendingValueRef).toBeUndefined();
     });
 
+    // @scenario case=form_debounce_flicker
+    // @effects pending_value_prevents_input_flicker
     it('연속 입력 시 마지막 pending value가 유지되어야 함', () => {
       vi.useFakeTimers();
 
@@ -392,6 +414,8 @@ describe('트러블슈팅 회귀 테스트 - Debounce 관련', () => {
       vi.useRealTimers();
     });
 
+    // @scenario case=form_debounce_flicker
+    // @effects pending_value_prevents_input_flicker
     it('숫자 타입 비교 시에도 pending 클리어가 정상 동작해야 함', () => {
       // Input value는 문자열, state value는 숫자일 수 있음
       const timerRef: ReturnType<typeof setTimeout> | null = null; // 타이머 완료
@@ -414,6 +438,8 @@ describe('트러블슈팅 회귀 테스트 - 부분 업데이트 API', () => {
      * 증상: G7Core.dataSource.updateItem() 호출 후 화면 미갱신
      * 해결: skipRender 확인, itemId 타입 일치, idField 옵션
      */
+    // @scenario case=update_item_no_render
+    // @effects update_item_renders_by_default
     it('skipRender 기본값은 false여야 함', () => {
       const defaultOptions = {};
       const skipRender = (defaultOptions as any).skipRender ?? false;
@@ -426,6 +452,8 @@ describe('트러블슈팅 회귀 테스트 - 부분 업데이트 API', () => {
      * 증상: itemPath가 잘못 지정되면 항목을 찾지 못함
      * 해결: 올바른 데이터 경로 지정
      */
+    // @scenario case=update_item_path
+    // @effects update_item_path_matches_data_shape
     it('itemPath가 실제 데이터 구조와 일치해야 함', () => {
       const dataSource = {
         data: {
@@ -453,6 +481,8 @@ describe('트러블슈팅 회귀 테스트 - computed 관련', () => {
      * 증상: computed 속성이 null로 평가됨
      * 해결: computed 정의 확인, 의존성 상태 초기화 확인
      */
+    // @scenario case=computed_null
+    // @effects computed_waits_for_dependencies
     it('computed는 의존 상태가 준비된 후에 평가되어야 함', () => {
       // 의존 상태
       const localState = {
@@ -467,6 +497,8 @@ describe('트러블슈팅 회귀 테스트 - computed 관련', () => {
       expect(computed.totalPrice).toBe(300);
     });
 
+    // @scenario case=computed_null
+    // @effects computed_waits_for_dependencies
     it('의존 상태가 없으면 computed는 기본값을 반환해야 함', () => {
       const localState: Record<string, any> = {};
 
@@ -508,6 +540,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
      * 증상: 모달에서 부모 컴포넌트의 _local 상태에 접근 불가
      * 해결: $parent._local 바인딩 또는 _global 사용
      */
+    // @scenario case=modal_parent_local_read
+    // @effects modal_reads_parent_local_via_parent_binding
     it('$parent 바인딩으로 부모 _local에 접근해야 함', () => {
       // 부모 컨텍스트
       const parentLocal = {
@@ -528,6 +562,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
      * 증상: 모달에서 중첩된 객체 데이터 접근 불가
      * 해결: openModal에서 modalContext로 데이터 전달
      */
+    // @scenario case=modal_complex_data
+    // @effects modal_context_passes_complex_data
     it('openModal의 modalContext로 데이터를 전달해야 함', () => {
       const openModalAction = {
         handler: 'openModal',
@@ -548,6 +584,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
      * 증상: 모달에서 부모 레이아웃의 _local 상태를 업데이트할 수 없음
      * 해결: G7Core.state.setParentLocal() 사용
      */
+    // @scenario case=modal_parent_local_write
+    // @effects set_parent_local_updates_parent_state
     it('setParentLocal로 부모의 _local 상태를 업데이트해야 함', () => {
       // 컨텍스트 스택 시뮬레이션
       const contextStack = [
@@ -573,6 +611,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
      * 증상: 커스텀 핸들러에서 모달 열면 $parent._local이 빈 객체
      * 해결: openModal 전에 __g7ParentContext 설정
      */
+    // @scenario case=modal_custom_handler_open
+    // @effects parent_context_on_stack_before_custom_open
     it('openModal 호출 전에 부모 컨텍스트가 스택에 있어야 함', () => {
       // 컨텍스트 스택
       const __g7ParentContextStack: any[] = [];
@@ -596,6 +636,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
      * 증상: $parent._local 변경 후 부모 UI가 업데이트되지 않음
      * 해결: 부모의 setState를 통해 업데이트
      */
+    // @scenario case=modal_parent_rerender
+    // @effects parent_set_state_triggers_rerender
     it('부모의 setState를 호출하여 리렌더링을 트리거해야 함', () => {
       let renderCount = 0;
       const parentSetState = vi.fn(() => {
@@ -617,6 +659,8 @@ describe('트러블슈팅 회귀 테스트 - 커스텀 핸들러 상태 업데�
      * 증상: 다국어 필드 변경 시 hasChanges가 false로 유지됨
      * 해결: 객체 참조가 아닌 깊은 비교 또는 새 객체 생성
      */
+    // @scenario case=multilingual_object_change
+    // @effects multilingual_change_creates_new_object
     it('다국어 필드 변경 시 새 객체를 생성해야 함', () => {
       const original = {
         name: { ko: '원본', en: 'Original' },
@@ -641,6 +685,8 @@ describe('트러블슈팅 회귀 테스트 - 커스텀 핸들러 상태 업데�
      * 증상: ...value가 null/undefined일 때 spread 오류
      * 해결: fallback 객체 사용
      */
+    // @scenario case=multilingual_spread_null
+    // @effects spread_guards_null_before_merge
     it('spread 전에 null/undefined 체크가 필요함', () => {
       const nullValue = null;
       const undefinedValue = undefined;
@@ -659,6 +705,8 @@ describe('트러블슈팅 회귀 테스트 - 커스텀 핸들러 상태 업데�
      * 증상: get()._local 사용 시 액션 컨텍스트의 최신 상태 미반영
      * 해결: G7Core.state.getLocal() 사용
      */
+    // @scenario case=get_local_vs_state_get
+    // @effects get_local_prefers_action_context
     it('getLocal()은 액션 컨텍스트의 상태를 우선 반환해야 함', () => {
       // 전역 상태
       const globalState = { _local: { value: 'global' } };
@@ -695,6 +743,8 @@ describe('트러블슈팅 회귀 테스트 - 비동기 setLocal', () => {
      * 증상: 외부 팝업 oncomplete 콜백에서 setLocal 호출 시 필드가 null
      * 해결: __g7ForcedLocalFields 메커니즘
      */
+    // @scenario case=async_setlocal_field_null
+    // @effects forced_local_fields_win_over_stale_render
     it('__g7ForcedLocalFields가 비동기 setLocal 값을 우선 적용해야 함', () => {
       // extendedDataContext 병합 순서 시뮬레이션
       const dataContext_local = { zipcode: '', base_address: '' };
@@ -722,6 +772,8 @@ describe('트러블슈팅 회귀 테스트 - 비동기 setLocal', () => {
      * 증상: 주소 설정 후 상세주소 입력 시 주소 값이 사라짐
      * 해결: __g7ForcedLocalFields에 업데이트된 필드만 저장
      */
+    // @scenario case=async_setlocal_other_field
+    // @effects forced_local_fields_store_updated_keys_only
     it('__g7ForcedLocalFields는 업데이트된 필드만 저장해야 함', () => {
       // 기존 forced fields
       let forcedFields: Record<string, any> = {
@@ -746,6 +798,8 @@ describe('트러블슈팅 회귀 테스트 - 비동기 setLocal', () => {
      * 증상: 페이지 전환 후 비동기 setLocal이 동작하지 않음
      * 해결: 페이지 전환 시 내부 컨텍스트 초기화
      */
+    // @scenario case=async_setlocal_page_change
+    // @effects page_change_resets_global_context
     it('페이지 전환 시 전역 컨텍스트가 초기화되어야 함', () => {
       // 페이지 A에서 설정된 컨텍스트
       (window as any).__g7ForcedLocalFields = { oldField: 'value' };
@@ -790,6 +844,8 @@ describe('트러블슈팅 회귀 테스트 - 비동기 setLocal', () => {
       (window as any).__g7PendingLocalState = undefined;
     });
 
+    // @scenario case=validation_stale_payload
+    // @effects forced_local_fields_cleared_per_render_cycle
     it('렌더 사이클 시작 시 __g7ForcedLocalFields가 클리어되어야 함', () => {
       // 이전 렌더에서 설정된 값
       (window as any).__g7ForcedLocalFields = {
@@ -808,6 +864,8 @@ describe('트러블슈팅 회귀 테스트 - 비동기 setLocal', () => {
       expect((window as any).__g7ForcedLocalFields).toBeUndefined();
     });
 
+    // @scenario case=validation_stale_payload
+    // @effects forced_local_fields_cleared_per_render_cycle
     it('같은 렌더 사이클 내 연속 setState는 누적되어야 함', () => {
       // 첫 번째 setState
       (window as any).__g7ForcedLocalFields = { form: { field1: 'value1' } };
@@ -823,6 +881,8 @@ describe('트러블슈팅 회귀 테스트 - 비동기 setLocal', () => {
       expect((window as any).__g7ForcedLocalFields.form.field2).toBe('value2');
     });
 
+    // @scenario case=validation_stale_payload
+    // @effects forced_local_fields_cleared_per_render_cycle
     it('새 렌더 사이클에서는 이전 __g7ForcedLocalFields가 사용되지 않아야 함', () => {
       // 시나리오: validation 실패 후 필드 수정
       // 1. 첫 번째 렌더: 사용자가 password="565656" 입력 후 저장
@@ -874,6 +934,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       delete (window as any).__g7ActionContext;
     });
 
+    // @scenario case=modal_context_propagation
+    // @effects open_modal_pushes_caller_context
     it('dispatch에 componentContext가 없으면 actionContext가 undefined가 됨', () => {
       // dispatch 시뮬레이션 (componentContext 미전달)
       const passedComponentContext = undefined;
@@ -883,6 +945,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect(actionContext).toBeUndefined();
     });
 
+    // @scenario case=modal_context_propagation
+    // @effects open_modal_pushes_caller_context
     it('dispatch에 componentContext가 있으면 actionContext가 올바르게 설정됨', () => {
       // local 상태를 가진 componentContext
       const localComponentContext = {
@@ -903,6 +967,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect(actionContext.state).not.toHaveProperty('settings');
     });
 
+    // @scenario case=modal_context_propagation
+    // @effects open_modal_pushes_caller_context
     it('handleOpenModal에서 올바른 컨텍스트가 스택에 푸시되어야 함', () => {
       // local 상태
       const localState = {
@@ -934,6 +1000,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect(pushedContext.state).not.toHaveProperty('sidebarOpen');
     });
 
+    // @scenario case=modal_context_propagation
+    // @effects open_modal_pushes_caller_context
     it('componentContext 없이 openModal 호출 시 스택에 undefined가 푸시될 수 있음', () => {
       // componentContext가 전달되지 않은 경우 (버그 상황)
       const passedComponentContext = undefined;
@@ -954,6 +1022,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect(pushedContext.state).toBeUndefined();
     });
 
+    // @scenario case=modal_context_propagation
+    // @effects open_modal_pushes_caller_context
     it('setParentLocal에서 스택 컨텍스트가 undefined면 global fallback 발생', () => {
       // 스택에 undefined 컨텍스트가 있는 경우
       (window as any).__g7LayoutContextStack = [
@@ -977,6 +1047,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect(targetState).toHaveProperty('sidebarOpen');
     });
 
+    // @scenario case=modal_context_propagation
+    // @effects open_modal_pushes_caller_context
     it('setParentLocal에서 올바른 컨텍스트가 있으면 local 상태 업데이트', () => {
       // local 상태를 가진 컨텍스트가 스택에 있는 경우
       const mockSetState = vi.fn();
@@ -1034,6 +1106,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       (window as any).__g7ForcedLocalFields = undefined;
     });
 
+    // @scenario case=multi_root_setlocal_restore
+    // @effects set_local_keys_cleared_after_microtask
     it('queueMicrotask 지연 클리어: 모든 root가 setLocalKeys를 읽을 수 있어야 함', async () => {
       // setLocal이 전역 플래그 설정
       const overrideKeys = { form: { notice_items: [{ title: 'new' }] } };
@@ -1079,6 +1153,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect((window as any).__g7ForcedLocalFields).toBeUndefined();
     });
 
+    // @scenario case=multi_root_setlocal_restore
+    // @effects set_local_keys_cleared_after_microtask
     it('참조 비교: microtask 실행 전 새 setLocal 호출 시 새 값이 보존되어야 함', async () => {
       // 첫 번째 setLocal 호출
       const firstOverrideKeys = { form: { notice_items: [{ title: 'first' }] } };
@@ -1111,6 +1187,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect((window as any).__g7ForcedLocalFields.form.notice_items[0].title).toBe('second');
     });
 
+    // @scenario case=multi_root_setlocal_restore
+    // @effects set_local_keys_cleared_after_microtask
     it('즉시 클리어(engine-v1.18.2 이전) 방식은 두 번째 root가 처리 못함 (버그 재현)', () => {
       // setLocal이 전역 플래그 설정
       const overrideKeys = { form: { notice_items: [{ title: 'new' }] } };
@@ -1166,6 +1244,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       return result;
     }
 
+    // @scenario case=delete_key_not_reflected
+    // @effects empty_value_replaces_key_instead_of_delete
     it('delete로 키를 제거한 빈 객체는 deepMerge에서 기존 값을 유지함 (버그 재현)', () => {
       const currentState = {
         rangeErrors: {
@@ -1185,6 +1265,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect(merged.rangeErrors.KR).toEqual([{ max: '구간이 연속적이지 않습니다.' }, {}]);
     });
 
+    // @scenario case=delete_key_not_reflected
+    // @effects empty_value_replaces_key_instead_of_delete
     it('빈 배열 할당은 deepMerge에서 기존 배열을 정상 교체함 (해결 패턴)', () => {
       const currentState = {
         rangeErrors: {
@@ -1203,6 +1285,8 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
       expect(merged.rangeErrors.KR).toEqual([]);
     });
 
+    // @scenario case=delete_key_not_reflected
+    // @effects empty_value_replaces_key_instead_of_delete
     it('다른 국가의 에러는 유지하면서 특정 국가만 초기화', () => {
       const currentState = {
         rangeErrors: {
@@ -1240,12 +1324,16 @@ describe('트러블슈팅 회귀 테스트 - 오류 콜백 컨텍스트 이름',
       error: { message: '재고가 부족합니다', errors: { qty: ['재고 초과'] } },
     };
 
+    // @scenario case=error_callback_name
+    // @effects error_callback_context_has_no_dollar_prefix
     it('정본 {{error.message}} 는 사유를 해소한다', () => {
       const engine = new DataBindingEngine();
 
       expect(engine.resolveBindings('{{error.message}}', failContext)).toBe('재고가 부족합니다');
     });
 
+    // @scenario case=error_callback_name
+    // @effects error_callback_context_has_no_dollar_prefix
     it('{{$error.message}} 는 값을 얻지 못한다 — 빈 토스트의 정체', () => {
       const engine = new DataBindingEngine();
 
@@ -1256,6 +1344,8 @@ describe('트러블슈팅 회귀 테스트 - 오류 콜백 컨텍스트 이름',
       expect(resolved).not.toBe('재고가 부족합니다');
     });
 
+    // @scenario case=error_callback_name
+    // @effects error_callback_context_has_no_dollar_prefix
     it('{{error.errors}} 는 필드별 오류를 객체 그대로 돌려준다 ({{error.data}} 아님)', () => {
       const engine = new DataBindingEngine();
 

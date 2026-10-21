@@ -70,10 +70,10 @@ describe('ActionDispatcher — openWindow 외부 주소', () => {
 
   // @scenario host_header=canonical, sink=front_open_window
   // @effects same_origin_window_unchanged
-  it('같은 출처 경로는 종전처럼 바로 연다', async () => {
+  it('같은 출처 경로는 종전처럼 바로 연다 — opener 는 끊는다(noopener)', async () => {
     await dispatcher.dispatchAction({ type: 'click', handler: 'openWindow', target: '/shop/orders/1' });
 
-    expect(openSpy).toHaveBeenCalledWith('/shop/orders/1', '_blank');
+    expect(openSpy).toHaveBeenCalledWith('/shop/orders/1', '_blank', 'noopener');
   });
 });
 

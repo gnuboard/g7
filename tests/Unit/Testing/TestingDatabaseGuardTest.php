@@ -9,7 +9,7 @@ use Tests\Support\TestingDatabaseGuard;
 /**
  * 테스트 앱이 테스트 전용 DB 가 아닌 DB 에 붙으면 스키마를 지우기 전에 멈추는지 검증한다.
  *
- * 2026-10-07 실측(O-D2): 개발 DB `g7_2` 권한 트리에 코어 테스트가 만드는 권한 행(`admin.access`, 이름이 식별자 그대로)이
+ * 2026-10-07 실측: 개발 DB 권한 트리에 코어 테스트가 만드는 권한 행(`admin.access`, 이름이 식별자 그대로)이
  * 남아 있었다. 같은 클론에서 확장을 반영하면 config 캐시가 다시 구워지고, 그 뒤 부팅한 테스트 앱이 `.env.testing` 대신
  * 개발 DB 설정으로 붙는다. 다른 클론에서는 같은 경로로 개발 DB 전체가 RefreshDatabase 에 초기화됐다(2026-10-08).
  * 판정은 앱 없이 연결 설정 배열만으로 하므로 이 테스트는 DB 를 열지 않는다.
@@ -31,8 +31,8 @@ class TestingDatabaseGuardTest extends TestCase
     {
         TestingDatabaseGuard::assertConnectionIsTesting('mysql', [
             'driver' => 'mysql',
-            'write' => ['database' => 'g7_2_testing'],
-            'read' => ['database' => 'g7_2_testing'],
+            'write' => ['database' => 'g7_dev_testing'],
+            'read' => ['database' => 'g7_dev_testing'],
         ]);
 
         // 병렬 실행은 이름 끝에 토큰을 붙인다(g7_testing_test_1)
@@ -54,12 +54,12 @@ class TestingDatabaseGuardTest extends TestCase
     public function test_blocks_development_write_database(): void
     {
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('g7_2');
+        $this->expectExceptionMessage('g7_dev');
 
         TestingDatabaseGuard::assertConnectionIsTesting('mysql', [
             'driver' => 'mysql',
-            'write' => ['database' => 'g7_2'],
-            'read' => ['database' => 'g7_2_testing'],
+            'write' => ['database' => 'g7_dev'],
+            'read' => ['database' => 'g7_dev_testing'],
         ]);
     }
 
@@ -78,8 +78,8 @@ class TestingDatabaseGuardTest extends TestCase
 
         TestingDatabaseGuard::assertConnectionIsTesting('mysql', [
             'driver' => 'mysql',
-            'write' => ['database' => 'g7_2_testing'],
-            'read' => ['database' => 'g7_2'],
+            'write' => ['database' => 'g7_dev_testing'],
+            'read' => ['database' => 'g7_dev'],
         ]);
     }
 

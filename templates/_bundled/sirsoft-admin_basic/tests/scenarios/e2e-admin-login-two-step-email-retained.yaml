@@ -1,0 +1,21 @@
+feature: 관리자 로그인 이메일·비밀번호 2단계 입력 — 엔진 심각 회귀 대장 login-two-step-email-loss
+
+description: |
+  /admin/login 에서 실제 키 입력으로 이메일 → 비밀번호 → 제출하고, 로그인 요청을 가로채 본문 이메일을 본 뒤 401 로 답한다.
+  오류 문구 표시·이메일 유지·오류 알림 중복 없음을 본다(7.1.1 엔진 변경 회귀 점검).
+
+axes:
+  case:
+    - admin_login_401
+
+effects:
+  - login_body_carries_email
+  - login_error_shown
+  - login_inputs_kept
+  - login_error_toast_not_duplicated
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-login-two-step-email-retained.spec.ts
+
+notes: |
+  로그인 요청은 서버에 닿지 않는다 — 계정 불필요.

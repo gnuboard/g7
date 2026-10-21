@@ -218,7 +218,7 @@
           <p class="text-body font-medium mb-3">$t:admin.settings.info.required_modules</p>
           <div class="module-badge-grid">
             <div data-each="ext in Object.entries(systemInfo?.data?.php_extensions?.required ?? {})" class="flex-center gap-1.5">
-              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
+              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-600 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
               <span class="text-body">{{ext[0]}}</span>
             </div>
           </div>
@@ -227,7 +227,7 @@
           <p class="text-body font-medium mb-3">$t:admin.settings.info.optional_modules</p>
           <div class="module-badge-grid">
             <div data-each="ext in Object.entries(systemInfo?.data?.php_extensions?.optional ?? {})" class="flex-center gap-1.5">
-              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
+              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-600 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
               <span class="text-body">{{ext[0]}}</span>
             </div>
           </div>

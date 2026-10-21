@@ -111,7 +111,7 @@ class ReportService
      * 집계는 「어느 봇이 얼마나」까지만 답한다. 어떤 주소를 언제 긁어 갔는지는
      * 원장에만 있어, 봇 화면이 집계 표 아래에 이 목록을 함께 깐다. 화면의 다른 숫자(봇 요청·봇 종류·
      * 봇별 집계)처럼 고른 기간을 따른다 — 기간과 무관한 최신 50건이면 어제 하루를 골라도 오늘 요청이
-     * 섞여 「그 기간에 무엇을 긁어 갔는지」를 답하지 못한다(7.1.0 실측 O-E10).
+     * 섞여 「그 기간에 무엇을 긁어 갔는지」를 답하지 못한다(7.1.0 실측).
      *
      * @param  string|null  $from  시작일 (Y-m-d, 사이트 표준시)
      * @param  string|null  $to  종료일 (Y-m-d, 사이트 표준시)
@@ -369,7 +369,7 @@ class ReportService
             'pages_per_visit' => $visits > 0 ? round((int) $row->hits / $visits, 2) : 0.0,
             // 부가 값이 없는 차원이 대부분이다 — 그 자리는 빈 객체로 두어 화면이
             // 언제나 같은 모양을 읽게 한다.
-            'extra' => $extra[(string) $row->label_hash] ?? [],
+            'extra' => $extra[(string) $row->label_hash] ?? new \stdClass,
         ];
     }
 

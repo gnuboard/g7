@@ -22,6 +22,7 @@ return [
         'permission_ids_array' => 'Permission list must be an array.',
         'permission_ids_exists' => 'One or more selected permissions are invalid.',
         'permission_ids_integer' => 'Permission ID must be an integer.',
+        'guest_scope_not_allowed' => 'A permission scope cannot be set for the guest role. Grant it without a scope (all).',
     ],
 
     // Error messages

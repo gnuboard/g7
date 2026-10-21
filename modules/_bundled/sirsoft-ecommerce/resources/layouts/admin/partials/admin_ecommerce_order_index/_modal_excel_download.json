@@ -78,7 +78,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -120,7 +120,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {

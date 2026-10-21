@@ -6,6 +6,8 @@
   <!-- 개인정보처리방침 본문 — 방침 모달을 열 때만 부른다. -->
   <data-source id="privacyContent" label_key="$t:editor.data_source.privacyContent" type="api" endpoint="/api/modules/sirsoft-page/pages/privacy" method="GET" :auto_fetch="false" auth_mode="optional"/>
   <init>
+    <!-- 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) — 같은 레이아웃으로 다시 들어오면 앞 입력이 남는다. -->
+    <set-state target="local" :registerForm="null"/>
     <!-- registerForm 초기 상태 시드 — language 기본값은 _register_form.g7.html 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘) -->
     <set-state target="local" :isRegistering="false" :registerError="null" :errors="null" :registerForm="{}"/>
   </init>
@@ -19,12 +21,12 @@
         <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           <span>$t:auth.already_member</span>
           <span> </span>
-          <button class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+          <a href="/login" class="inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
             <on type="click">
-              <navigate path="/login"/>
+              <navigate/>
             </on>
             $t:auth.login
-          </button>
+          </a>
         </div>
       </div>
     </flex>

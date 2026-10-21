@@ -166,7 +166,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "drag-handle"
+                                "className": "drag-handle text-gray-500 dark:text-gray-400"
                             },
                             "children": [
                                 {
@@ -188,7 +188,7 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "행 선택 — 오른쪽을 이 배너의 상세로 바꾼다. 배너 키가 글자로 박혀 있어(`banner_1`) 배선 시 실제 id 로 바뀔 자리다.",
@@ -202,22 +202,24 @@
                                 }
                             ],
                             "props": {
-                                "className": "flex-1 min-w-0 cursor-pointer"
+                                "type": "button",
+                                "className": "block text-left flex-1 min-w-0 cursor-pointer",
+                                "aria-pressed": "{{_local.selectedBannerId === 'banner_1'}}"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "P",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-primary truncate"
+                                        "className": "block text-sm font-medium text-primary truncate"
                                     },
-                                    "text": "겨울 신상품 최대 50% 할인"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.banners.winter_sale"
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "P",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-secondary"
+                                        "className": "block text-xs text-secondary"
                                     },
                                     "text": "2025-01-01 ~ 2025-12-31"
                                 }
@@ -225,7 +227,7 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "노출 스위치 — 배너별 상태 맵의 한 칸을 뒤집는다. 확인 창(`modal_status_change`)을 거치지 않고 곧바로 바뀌며, 서버로도 나가지 않는다(시안).",
@@ -238,19 +240,23 @@
                                 }
                             ],
                             "props": {
-                                "className": "toggle active"
+                                "type": "button",
+                                "className": "toggle active",
+                                "role": "switch",
+                                "aria-checked": "{{!!_local.bannerStatus?.banner_1}}",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.status"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "toggle-track"
                                     }
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "toggle-handle"
                                     }
@@ -271,7 +277,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "drag-handle"
+                                "className": "drag-handle text-gray-500 dark:text-gray-400"
                             },
                             "children": [
                                 {
@@ -303,7 +309,7 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "두 번째 배너 행 — 위와 같은 동작이고 키만 다르다. 반복 렌더로 바뀌면 이 중복은 사라진다.",
@@ -317,23 +323,25 @@
                                 }
                             ],
                             "props": {
-                                "className": "flex-1 min-w-0 cursor-pointer"
+                                "type": "button",
+                                "className": "block text-left flex-1 min-w-0 cursor-pointer",
+                                "aria-pressed": "{{_local.selectedBannerId === 'banner_2'}}"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "flex-center gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "P",
+                                            "name": "Span",
                                             "props": {
-                                                "className": "text-sm font-medium text-primary truncate"
+                                                "className": "block text-sm font-medium text-primary truncate"
                                             },
-                                            "text": "봄 맞이 새학기 준비"
+                                            "text": "$t:sirsoft-ecommerce.admin.sample.banners.spring_semester"
                                         },
                                         {
                                             "type": "basic",
@@ -347,9 +355,9 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "P",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-secondary"
+                                        "className": "block text-xs text-secondary"
                                     },
                                     "text": "2025-03-01 ~ 2025-03-31"
                                 }
@@ -357,7 +365,7 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "comment": "두 번째 배너의 노출 스위치. 이 행은 기간이 끝난 배너라 목록에 '종료' 배지가 함께 붙는데, 스위치는 그와 무관하게 눌린다.",
@@ -370,19 +378,23 @@
                                 }
                             ],
                             "props": {
-                                "className": "toggle"
+                                "type": "button",
+                                "className": "toggle",
+                                "role": "switch",
+                                "aria-checked": "{{!!_local.bannerStatus?.banner_2}}",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.status"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "toggle-track"
                                     }
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "toggle-handle"
                                     }

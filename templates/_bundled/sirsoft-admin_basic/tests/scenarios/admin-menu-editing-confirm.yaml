@@ -1,0 +1,20 @@
+feature: 메뉴 관리 — 편집 중 다른 메뉴 선택 시 이탈 확인 (7.1.1 출시 전 점검)
+
+description: |
+  메뉴 관리(왼쪽 목록·오른쪽 편집 판)에서 편집·등록 중에 목록의 다른 메뉴를 고르면 곧바로 넘어가지 않고, 고른 메뉴를
+  대기 자리(_global.pendingMenu*)에 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 확인 창이다 — 「변경사항 버리기」가
+  대기 메뉴를 선택으로 옮기고 주소(menu·mode)를 바꾸며 「고친 것 있음」을 끈다. 편집 중이 아니면 바로 고른다.
+  이커머스 브랜드·분류·상품정보고시·공통정보 목록이 지키던 규칙이 이 화면에만 없어 고치던 값이 확인 없이 사라졌다.
+  다른 화면으로 떠나는 이동은 화면의 이탈 가드(meta.leave_guard)가 묻는다(leave-guard-unsaved-changes.yaml).
+
+axes:
+  surface:
+    - menu_list   # 메뉴 관리 목록(onSelect)
+
+effects:
+  - editing_selection_opens_leave_confirm   # 편집·등록 중 선택 → 대기 자리 + menu_editing_confirm_modal, 아니면 바로 선택
+  - leave_confirm_moves_pending_selection   # 버리기 → 선택·보기 판·hasChanges false·주소 menu/mode·대기 비움, 계속 → 대기만 비움
+  - menu_screen_registers_leave_confirm     # 화면 modals 에 확인 창 등록·문구 5키 ko·en·ja
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-editing-confirm.test.ts

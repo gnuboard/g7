@@ -17,7 +17,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 글의 수정 시각(`updated_at`)은 글을 고친 시각이다 — 보유기간 IP 파기도 이 값을 건드리지 않고,
  * 사이트맵의 `lastmod` 도 이 값을 쓴다. 그런데 조회수·스크랩 수·반응 집계 칸을 Eloquent 빌더로
  * 올리면 `updated_at` 이 함께 갱신돼, 관리자나 회원이 글을 열기만 해도 수정 시각이 바뀌었다
- * (7.1.0 브라우저 실측 O-H6: 관리자 상세 열기 전 16:21:57 → 연 뒤 16:22:34).
+ * (7.1.0 브라우저 실측: 관리자 상세 열기 전 16:21:57 → 연 뒤 16:22:34).
  */
 class PostUpdatedAtReaderCounterTest extends BoardTestCase
 {

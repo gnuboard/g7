@@ -25,7 +25,7 @@ test.describe('관리자 목록 선택 건수 (#524)', () => {
   // @effects selected_count_renders_once_after_selecting_a_row
   test('행을 하나 고르면 「N개 선택됨」이 한 번만 뜬다', async ({ page }) => {
     // admin 역할(함께 부여)이 게시판 권한을 모두 가진다. 예전 인자(`sirsoft-board.posts.*`)는 게시판 이름이
-    // 빠진 없는 권한이라 발급 커맨드가 가짜 행을 만들던 것이다 — 이제는 발급 때 거절된다(7.1.0 O-D2).
+    // 빠진 없는 권한이라 발급 커맨드가 가짜 행을 만들던 것이다 — 이제는 발급 때 거절된다(7.1.0).
     const token = issueToken();
     await authenticatePage(page, token);
     await page.goto(LIST_URL);

@@ -106,8 +106,8 @@
   }
 
   .admin_sidebar_empty {
-    @apply px-4 py-8 text-center text-sm text-gray-400;
-    @apply dark:text-gray-500;
+    @apply px-4 py-8 text-center text-sm text-gray-500;
+    @apply dark:text-gray-400;
   }
 
   .admin_sidebar_empty_icon {
@@ -225,8 +225,10 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 
+  /* 좌측 칸(메뉴 단추 + 이름)이 줄어들 수 있어야 긴 사이트 이름이 우측 테마·알림 단추를 화면 밖으로 밀지 않는다(#143).
+     이름 Span 은 이미 truncate 이고 .mobile_logo 도 min-w-0 flex-1 이지만, 이 칸이 기본 min-width:auto 라 이름 폭 아래로 줄지 않았다. */
   .mobile_header_left {
-    @apply flex items-center gap-3;
+    @apply flex items-center gap-3 min-w-0 flex-1;
   }
 
   .mobile_header_right {

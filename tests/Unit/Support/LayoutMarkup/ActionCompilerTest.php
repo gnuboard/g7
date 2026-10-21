@@ -6,6 +6,9 @@ use App\Enums\LayoutMarkupErrorCode;
 use App\Support\LayoutMarkup\ActionCompiler;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
+use App\Support\LayoutMarkup\DocumentCompiler;
+use App\Support\LayoutMarkup\LayoutMarkupDecompiler;
+use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use App\Support\LayoutMarkup\MarkupTokenizer;
 use App\Support\LayoutMarkup\MarkupTreeBuilder;
 use App\Support\LayoutMarkup\NodeCompiler;
@@ -21,7 +24,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  *  2. **`<on>` 세 갈래** — type/event 는 actions[], mount/unmount 는 lifecycle, listen 은
  *     onComponentEvent 로 갈리는가. 병렬 3형태(fire-and-forget/암묵 sequence/parallel)가 구분되는가.
  *  3. **키 배치** — 핸들러별 top-level(apiCall.target) vs params(setState.target) 가 매니페스트대로인가.
- *  4. **진입점 규칙** — confirm 은 루트에서만, init 루트는 축소 화이트리스트인가.
+ *  4. **진입점 규칙** — confirm 은 루트에서만, init 루트는 진입점 전용 키만 금지하는가.
  *
  * 레지스트리는 번들 `sirsoft-admin_basic/components.json` 실물을 쓴다 — 노드 태그 해석이 실제
  * 템플릿과 어긋나면 액션이 붙을 노드 자체가 틀리기 때문이다.
@@ -30,6 +33,11 @@ class ActionCompilerTest extends LayoutMarkupTestCase
 {
     private NodeCompiler $compiler;
 
+    /**
+     * 테스트 준비 — 번들 관리자 템플릿 레지스트리를 문 노드 컴파일러를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,12 +52,17 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * `<on>` 을 품은 컴포넌트 픽스처가 짝 `.json` 과 키 순서까지 같게 컴파일된다.
+     *
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects on_type_or_event_becomes_an_actions_entry,
      *          handler_attributes_split_into_top_level_and_params,
      *          switch_case_conditions_parallel_sequence_compile_to_flow_handlers,
      *          action_json_key_order_is_deterministic
+     *
+     * @param  string  $fixture  픽스처 이름
+     * @return void 반환값 없음
      */
     #[DataProvider('fixtureProvider')]
     public function test_fixture_pair_compiles_to_expected_json(string $fixture): void
@@ -63,7 +76,9 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * HTML ↔ JSON 액션 픽스처 쌍 목록.
+     *
+     * @return array<string, array{0: string}> 경우 이름 → 픽스처 이름
      */
     public static function fixtureProvider(): array
     {
@@ -71,6 +86,60 @@ class ActionCompilerTest extends LayoutMarkupTestCase
             '이벤트 액션·switch·confirm' => ['event_actions'],
             '생명주기·구독·conditions' => ['lifecycle_subscription'],
             '병렬 3형태·에러맵·범용 핸들러' => ['flow_and_generic'],
+            // #753 — 이벤트 받기·실패 처리 안 분기 모양 (F1: 자식 여럿은 암묵 sequence, 단일 <fail> 은 객체)
+            '구독 안 sequence·conditions·switch' => ['listen_sequence_conditions'],
+            '단일 <fail> 안 conditions' => ['fail_single_conditions'],
+        ];
+    }
+
+    /**
+     * 분기 모양 픽스처가 굽기 → 역변환 → 재굽기 왕복에서 원본과 같다 (#753).
+     *
+     * `<on listen>`·`<fail>`·`<init>` 안의 sequence·conditions·switch·action-ref 는 엔진이 이제 그대로
+     * 실행하므로(engine-v1.80.0), 마크업 ↔ JSON 왕복이 그 모양을 잃지 않아야 편집기 저장이 안전하다.
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects branch_shapes_in_listen_fail_init_round_trip
+     *
+     * @param  string  $fixture  픽스처 이름
+     * @param  bool  $isDocument  문서 봉투 픽스처인지(아니면 노드 픽스처)
+     * @return void 반환값 없음
+     */
+    #[DataProvider('branchShapeFixtureProvider')]
+    public function test_branch_shape_fixture_round_trips(string $fixture, bool $isDocument): void
+    {
+        $directory = __DIR__.'/fixtures/actions';
+        $registry = ComponentRegistry::fromFile(base_path('templates/_bundled/sirsoft-admin_basic/components.json'));
+        $expected = json_decode(file_get_contents("{$directory}/{$fixture}.json"), true);
+
+        $json = $isDocument ? $expected : ['layout_name' => 'probe', 'components' => [$expected]];
+        if ($isDocument) {
+            $roots = (new MarkupTreeBuilder)->build((new MarkupTokenizer)->tokenize(file_get_contents("{$directory}/{$fixture}.g7.html")), null);
+            $this->assertSame($this->encode($expected), $this->encode((new DocumentCompiler($registry))->compile($roots)));
+        }
+
+        $markup = (new LayoutMarkupDecompiler($registry))->decompile($json);
+        $recompiled = (new DocumentCompiler($registry))->compile((new MarkupTreeBuilder)->build((new MarkupTokenizer)->tokenize($markup), null));
+
+        $this->assertSame(
+            LayoutMarkupRoundTrip::encode(LayoutMarkupRoundTrip::canonicalize(LayoutMarkupRoundTrip::normalize(LayoutMarkupRoundTrip::normalizeDocument($json)))),
+            LayoutMarkupRoundTrip::encode(LayoutMarkupRoundTrip::canonicalize(LayoutMarkupRoundTrip::normalize(LayoutMarkupRoundTrip::normalizeDocument($recompiled)))),
+            "왕복 불일치:\n{$markup}",
+        );
+    }
+
+    /**
+     * 분기 모양 왕복 픽스처 목록.
+     *
+     * @return array<string, array{0: string, 1: bool}> 경우 이름 → [픽스처 이름, 문서 봉투 여부]
+     */
+    public static function branchShapeFixtureProvider(): array
+    {
+        return [
+            '구독 안 sequence·conditions·switch' => ['listen_sequence_conditions', false],
+            '단일 <fail> 안 conditions' => ['fail_single_conditions', false],
+            '<init> 안 sequence·switch·action-ref' => ['init_sequence_switch', true],
         ];
     }
 
@@ -79,7 +148,11 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * `type` 은 DOM 이벤트, `event` 는 컴포넌트 콜백 이름으로 함께 실린다.
+     *
      * @effects on_type_or_event_becomes_an_actions_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_type_is_a_dom_event_and_event_is_a_component_callback(): void
     {
@@ -93,9 +166,13 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * mount·unmount 는 actions 가 아니라 lifecycle 배열 항목으로 간다.
+     *
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects mount_and_unmount_become_lifecycle
+     *
+     * @return void 반환값 없음
      */
     public function test_mount_and_unmount_route_to_lifecycle_as_arrays(): void
     {
@@ -110,7 +187,11 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * listen 은 이벤트 이름을 실은 onComponentEvent 항목이 된다.
+     *
      * @effects listen_becomes_on_component_event
+     *
+     * @return void 반환값 없음
      */
     public function test_listen_routes_to_on_component_event_with_event_name(): void
     {
@@ -123,9 +204,13 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * fire-and-forget·암묵 sequence·명시 parallel 세 형태가 서로 다르게 컴파일된다.
+     *
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects parallel_forms_are_distinguished_for_roundtrip
+     *
+     * @return void 반환값 없음
      */
     public function test_the_three_parallel_forms_are_distinct(): void
     {
@@ -150,7 +235,11 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * target 의 배치는 핸들러마다 다르다 — apiCall 은 top-level, setState 는 params.
+     *
      * @effects handler_attributes_split_into_top_level_and_params
+     *
+     * @return void 반환값 없음
      */
     public function test_target_placement_is_handler_specific(): void
     {
@@ -174,6 +263,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects trigger_key_qualifier_is_distinct_from_handler_params
+     *
+     * @return void 반환값 없음
      */
     public function test_trigger_key_is_on_level_and_handler_key_stays_in_params(): void
     {
@@ -193,6 +284,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects action_ref_compiles_without_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_action_ref_compiles_to_action_ref_key(): void
     {
@@ -208,6 +301,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=invalid
      *
      * @effects action_ref_requires_name
+     *
+     * @return void 반환값 없음
      */
     public function test_action_ref_rejects_missing_name_and_children(): void
     {
@@ -221,6 +316,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects condition_branch_comment_round_trips
+     *
+     * @return void 반환값 없음
      */
     public function test_condition_branch_comment_is_preserved(): void
     {
@@ -236,7 +333,11 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 범용 키(auth_required·resultTo·debounce)는 top-level 로, 타입 리터럴은 값으로 풀린다.
+     *
      * @effects handler_attributes_split_into_top_level_and_params
+     *
+     * @return void 반환값 없음
      */
     public function test_universal_keys_are_top_level_and_typed_literals_decode(): void
     {
@@ -250,9 +351,13 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 액션 if 는 감싸지 않은 식을 감싸고 혼합형은 거부한다.
+     *
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects action_if_follows_the_single_binding_rule
+     *
+     * @return void 반환값 없음
      */
     public function test_action_if_is_wrapped_and_mixed_form_is_rejected(): void
     {
@@ -267,7 +372,11 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 범용 `<action handler>` 는 확장·동적 핸들러 이름을 그대로 싣는다.
+     *
      * @effects generic_action_carries_extension_or_dynamic_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_generic_action_tag_carries_verbatim_handler_name(): void
     {
@@ -286,9 +395,13 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 이벤트에 직접 연결된 루트 액션은 confirm 을 허용한다.
+     *
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects confirm_is_allowed_only_at_the_entry_action
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_is_allowed_at_the_root_action_only(): void
     {
@@ -298,9 +411,14 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * 중첩 액션의 confirm 은 엔진이 읽지 않아 굽기 오류로 거부한다.
+     *
      * @scenario compile_unit=action,source_health=invalid
      *
      * @effects confirm_is_allowed_only_at_the_entry_action
+     *
+     * @param  string  $source  `.g7.html` 소스
+     * @return void 반환값 없음
      */
     #[DataProvider('nestedConfirmProvider')]
     public function test_confirm_on_a_nested_action_is_rejected(string $source): void
@@ -313,7 +431,9 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 중첩 위치의 confirm 소스 목록.
+     *
+     * @return array<string, array{0: string}> 위치 이름 → 소스
      */
     public static function nestedConfirmProvider(): array
     {
@@ -325,9 +445,13 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * init 루트 액션은 허용 키(target·onSuccess 등)로 컴파일된다.
+     *
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects init_root_action_is_limited_to_the_reduced_whitelist
+     *
+     * @return void 반환값 없음
      */
     public function test_init_action_allows_whitelisted_keys(): void
     {
@@ -339,13 +463,43 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * init 은 항목을 통째로 실행하므로(engine-v1.80.0) sequence·switch·action-ref 를 굽는다 (#753 W5).
+     *
+     * @scenario compile_unit=action,source_health=valid
+     *
+     * @effects init_accepts_flow_handlers_and_action_ref
+     *
+     * @return void 반환값 없음
+     */
+    public function test_init_action_accepts_sequence_switch_and_action_ref(): void
+    {
+        $sequence = $this->compileInitAction('<sequence><set-state target="local" a="1"/><set-state target="local" b="2"/></sequence>');
+        $this->assertSame('sequence', $sequence['handler']);
+        $this->assertCount(2, $sequence['actions']);
+
+        $switch = $this->compileInitAction('<switch on="{{query.mode}}"><case when="quiet"><set-state target="local" m="q"/></case><default><set-state target="local" m="l"/></default></switch>');
+        $this->assertSame('switch', $switch['handler']);
+        $this->assertSame(['quiet', 'default'], array_keys($switch['cases']));
+
+        $ref = $this->compileInitAction('<action-ref name="boot"/>');
+        $this->assertSame(['actionRef' => 'boot'], $ref);
+
+        $guarded = $this->compileInitAction('<api-call target="/api/boot" method="GET"><error-handling><on-code code="404"><suppress/></on-code></error-handling></api-call>');
+        $this->assertArrayHasKey('errorHandling', $guarded);
+    }
+
+    /**
+     * init 루트 액션의 진입점 전용 키(confirm·debounce·stopPropagation)는 거부한다.
+     *
      * @scenario compile_unit=action,source_health=invalid
      *
      * @effects init_root_action_is_limited_to_the_reduced_whitelist
+     *
+     * @return void 반환값 없음
      */
     public function test_init_action_rejects_keys_dropped_by_the_engine(): void
     {
-        // executeInitActions 는 confirm·debounce 등을 자식 actionDef 에 전달하지 않아 침묵 탈락한다.
+        // 진입점 전용 키는 사용자가 누르는 순간에만 의미가 있어 init 에서 효과가 없다.
         $this->assertSame(
             LayoutMarkupErrorCode::InitActionKeyForbidden,
             $this->compileInitActionError('<api-call target="/x" confirm="정말?"/>')->getErrorCode(),
@@ -355,6 +509,17 @@ class ActionCompilerTest extends LayoutMarkupTestCase
             LayoutMarkupErrorCode::InitActionKeyForbidden,
             $this->compileInitActionError('<api-call target="/x" :debounce="300"/>')->getErrorCode(),
         );
+
+        $this->assertSame(
+            LayoutMarkupErrorCode::InitActionKeyForbidden,
+            $this->compileInitActionError('<api-call target="/x" :stopPropagation="true"/>')->getErrorCode(),
+        );
+
+        // 진입점 전용 키 넷째 `key` 는 액션 태그 속성으로 루트에 실을 수 없다 — 키 필터는 `<on key>` 트리거로만 실리고,
+        // 액션 태그의 key 속성은 핸들러 인자(params.key)라 거부 대상이 아니다(ActionHandlerManifest 의 key 제외 사유).
+        $withParamKey = $this->compileInitAction('<set-state target="local" key="draft"/>');
+        $this->assertArrayNotHasKey('key', $withParamKey);
+        $this->assertSame('draft', $withParamKey['params']['key']);
     }
 
     // ---------------------------------------------------------------------
@@ -362,9 +527,15 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
+     * 잘못된 `<on>` 블록은 해당 오류 코드로 거부한다.
+     *
      * @scenario compile_unit=action,source_health=invalid
      *
      * @effects malformed_on_block_is_rejected
+     *
+     * @param  string  $source  `.g7.html` 소스
+     * @param  LayoutMarkupErrorCode  $code  기대 오류 코드
+     * @return void 반환값 없음
      */
     #[DataProvider('onErrorProvider')]
     public function test_malformed_on_block_is_rejected(string $source, LayoutMarkupErrorCode $code): void
@@ -373,7 +544,9 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: LayoutMarkupErrorCode}>
+     * 잘못된 `<on>` 블록 소스와 기대 오류 코드 목록.
+     *
+     * @return array<string, array{0: string, 1: LayoutMarkupErrorCode}> 경우 이름 → [소스, 기대 오류 코드]
      */
     public static function onErrorProvider(): array
     {
@@ -394,7 +567,11 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<success>` 자식이 하나면 객체, 여럿이면 배열로 실린다.
+     *
      * @effects on_component_event_and_success_carry_multiple_actions_as_array
+     *
+     * @return void 반환값 없음
      */
     public function test_success_with_one_child_is_object_and_many_is_array(): void
     {
@@ -414,6 +591,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects switch_subject_placement_is_expressible_in_both_forms
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_subject_attribute_splits_two_placements(): void
     {
@@ -434,6 +613,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects structured_param_accepts_nested_field_tree_and_string_items
+     *
+     * @return void 반환값 없음
      */
     public function test_structured_param_accepts_nested_tree_and_string_items(): void
     {
@@ -466,6 +647,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects structured_field_placement_follows_handler_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_structured_field_lands_top_level_when_manifest_says_so(): void
     {
@@ -485,6 +668,8 @@ class ActionCompilerTest extends LayoutMarkupTestCase
      * @scenario compile_unit=action,source_health=valid
      *
      * @effects structured_field_placement_follows_handler_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_structured_field_stays_in_params_when_not_top_level(): void
     {

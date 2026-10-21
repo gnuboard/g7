@@ -182,14 +182,14 @@ class MileageSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('마일리지 거래 더미 데이터 생성을 시작합니다. (실주문 기반)');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.mileage.start'));
 
         $this->resolveSettings();
         $this->deleteExistingTransactions();
 
         $members = $this->loadMembersWithOrders();
         if ($members->isEmpty()) {
-            $this->command->warn('  - 주문을 가진 회원이 없어 마일리지 데이터를 생성하지 않습니다. (OrderSeeder 선행 필요)');
+            $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.mileage.skip_no_members'));
 
             return;
         }
@@ -255,7 +255,7 @@ class MileageSeeder extends Seeder
             });
 
         if ($existing > 0) {
-            $this->command->warn("  - 기존 마일리지 거래 {$existing}건 및 주문 사용 흔적을 정리했습니다.");
+            $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.mileage.purged', ['count' => $existing]));
         }
     }
 
@@ -1087,13 +1087,13 @@ class MileageSeeder extends Seeder
         $txCount = MileageTransaction::count();
         $balanceCount = MileageBalance::count();
 
-        $this->command->line("  - 마일리지 보유 회원: {$this->stats['members']}명");
-        $this->command->line("  - 적립(구매): {$this->stats['earn']}건 / 적립 시점 전(적립 예정) 주문: {$this->stats['pending']}건 / 사용: {$this->stats['use']}건 / 취소복원: {$this->stats['cancel_restore']}건");
-        $this->command->line("  - 관리자 지급: {$this->stats['admin_earn']}건 / 관리자 차감: {$this->stats['admin_deduct']}건 / 소멸: {$this->stats['expired']}건");
-        $this->command->info("마일리지 거래 {$txCount}건, 잔액 캐시 {$balanceCount}건이 성공적으로 생성되었습니다.");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.mileage.stats_members', ['count' => $this->stats['members']]));
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.mileage.stats_earn_use', ['earn' => $this->stats['earn'], 'pending' => $this->stats['pending'], 'use' => $this->stats['use'], 'cancel_restore' => $this->stats['cancel_restore']]));
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.mileage.stats_admin', ['admin_earn' => $this->stats['admin_earn'], 'admin_deduct' => $this->stats['admin_deduct'], 'expired' => $this->stats['expired']]));
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.mileage.done', ['transactions' => $txCount, 'balances' => $balanceCount]));
 
         if (! $this->mileageEnabled) {
-            $this->command->warn('  ※ 마일리지가 꺼져 있어 화면에 안 보일 수 있습니다. 시연하려면 이커머스 설정 > 마일리지에서 사용을 켜세요.');
+            $this->command->warn('  ※ '.__('sirsoft-ecommerce::messages.seeders.mileage.disabled_notice'));
         }
     }
 }

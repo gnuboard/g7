@@ -11,6 +11,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -283,7 +284,8 @@ class ExecuteBundledUpdatesCommand extends Command
 
             // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고, 부모 core:update 가
             // 이미 패키지 매니페스트를 다시 만든 뒤 띄운 일괄 업데이트 자식 안에서 언어팩 단계만 떼어 낸다.
-            $process = proc_open($commandLine, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, base_path(), array_merge(getenv(), $_ENV));
+            // env 는 APP_VERSION·업데이트 플래그를 고정해 넘긴다 (#145 F10).
+            $process = proc_open($commandLine, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, base_path(), UpdateChildEnv::build());
             if (! is_resource($process)) {
                 return null;
             }

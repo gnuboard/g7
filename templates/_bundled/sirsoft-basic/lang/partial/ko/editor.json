@@ -827,6 +827,11 @@
       "param_token": "주문 토큰",
       "param_order_number": "주문 번호",
       "param_expires_at": "만료 시각"
+    },
+    "save_secret_view_token": {
+      "label": "비밀글 열람 토큰 저장",
+      "param_token": "열람 토큰",
+      "param_expires_at": "만료 시각"
     }
   },
   "computed": {

@@ -74,6 +74,7 @@ class PruneAttachmentsCommand extends Command
      *
      * @param  int  $limit  최대 처리 건수
      * @param  bool  $isDryRun  판정만 수행할지 여부
+     * @return void
      */
     private function pruneTemp(int $limit, bool $isDryRun): void
     {
@@ -81,7 +82,7 @@ class PruneAttachmentsCommand extends Command
 
         // 보존기간 0 이하 = 방금 올린 임시 첨부까지 지우게 되므로 차단한다.
         if ($days < 1) {
-            $this->info('임시 첨부 보존기간이 1일 미만이어서 임시 첨부 정리를 수행하지 않았습니다.');
+            $this->info(__('sirsoft-board::messages.console.prune_attachments.temp_retention_disabled'));
 
             return;
         }
@@ -89,18 +90,17 @@ class PruneAttachmentsCommand extends Command
         $result = $this->attachmentService->pruneTempUploads($days, $limit, $isDryRun);
 
         if ($isDryRun) {
-            $this->info("[DRY RUN] 보존기간({$days}일) 경과 미연결 임시 첨부: {$result['scanned']}건");
+            $this->info('[DRY RUN] '.__('sirsoft-board::messages.console.prune_attachments.temp_dry_run', ['days' => $days, 'count' => $result['scanned']]));
 
             return;
         }
 
-        $this->info(sprintf(
-            '보존기간(%d일) 경과 임시 첨부 %d건 중 %d건을 삭제했습니다. (실패 %d건)',
-            $days,
-            $result['scanned'],
-            $result['deleted'],
-            $result['failed'],
-        ));
+        $this->info(__('sirsoft-board::messages.console.prune_attachments.temp_done', [
+            'days' => $days,
+            'scanned' => $result['scanned'],
+            'deleted' => $result['deleted'],
+            'failed' => $result['failed'],
+        ]));
 
         Log::info('PruneAttachmentsCommand: 임시 첨부 정리 완료', [
             'days' => $days,
@@ -113,11 +113,12 @@ class PruneAttachmentsCommand extends Command
      *
      * @param  int  $limit  최대 처리 건수
      * @param  bool  $isDryRun  판정만 수행할지 여부
+     * @return void
      */
     private function purgeSoftDeleted(int $limit, bool $isDryRun): void
     {
         if ($this->option('scheduled') && ! $this->isPurgeEnabled()) {
-            $this->info('삭제 첨부 영구 정리가 꺼져 있어 실행하지 않았습니다. (attachment_settings.purge_enabled = false)');
+            $this->info(__('sirsoft-board::messages.console.prune_attachments.purge_disabled'));
 
             return;
         }
@@ -125,7 +126,7 @@ class PruneAttachmentsCommand extends Command
         $days = $this->resolvePurgeDays();
 
         if ($days < 1) {
-            $this->info('삭제 첨부 보존기간이 1일 미만이어서 영구 정리를 수행하지 않았습니다.');
+            $this->info(__('sirsoft-board::messages.console.prune_attachments.purge_retention_disabled'));
 
             return;
         }
@@ -133,18 +134,17 @@ class PruneAttachmentsCommand extends Command
         $result = $this->attachmentService->purgeSoftDeleted($days, $limit, $isDryRun);
 
         if ($isDryRun) {
-            $this->info("[DRY RUN] 보존기간({$days}일) 경과 삭제 첨부: {$result['scanned']}건");
+            $this->info('[DRY RUN] '.__('sirsoft-board::messages.console.prune_attachments.purge_dry_run', ['days' => $days, 'count' => $result['scanned']]));
 
             return;
         }
 
-        $this->info(sprintf(
-            '보존기간(%d일) 경과 삭제 첨부 %d건 중 %d건을 영구 삭제했습니다. (실패 %d건)',
-            $days,
-            $result['scanned'],
-            $result['deleted'],
-            $result['failed'],
-        ));
+        $this->info(__('sirsoft-board::messages.console.prune_attachments.purge_done', [
+            'days' => $days,
+            'scanned' => $result['scanned'],
+            'deleted' => $result['deleted'],
+            'failed' => $result['failed'],
+        ]));
 
         Log::info('PruneAttachmentsCommand: 삭제 첨부 영구 정리 완료', [
             'days' => $days,

@@ -31,11 +31,11 @@
       <container data-type="layout" class="py-8">
         <responsive on="portable" class="py-4"/>
         <!-- 로딩/에러 상태 처리 -->
-        <div data-if="{{profile.loading}}" class="flex justify-center items-center py-20">
+        <div data-if="{{profile === undefined}}" class="flex justify-center items-center py-20">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"/>
         </div>
         <!-- 프로필 내용 -->
-        <div data-if="{{profile.data &amp;&amp; !profile.loading &amp;&amp; !profile.error}}" class="space-y-6">
+        <div data-if="{{profile.data}}" class="space-y-6">
           <!-- 페이지 헤더 -->
           <div class="flex items-center gap-2 mb-6">
             <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
@@ -51,11 +51,11 @@
                 <responsive on="portable" size="lg"/>
               </avatar>
               <!-- 기본 정보 (일반 사용자) -->
-              <div data-if="{{profile.data?.status !== 'withdrawn'}}" class="flex-1 space-y-3">
-                <responsive on="portable" class="w-full space-y-3 text-center"/>
-                <!-- 이름 (배지 제거) -->
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                  <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+              <div data-if="{{profile.data?.status !== 'withdrawn'}}" class="flex-1 min-w-0 space-y-3">
+                <responsive on="portable" class="w-full min-w-0 space-y-3 text-center"/>
+                <!-- 이름 (배지 제거). 칸이 줄어들 수 있고(min-w-0) 이름·소개는 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143). -->
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white break-words">
+                  <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white break-words"/>
                   {{profile.data?.name ?? '-'}}
                 </h2>
                 <!-- 가입일 -->
@@ -66,14 +66,14 @@
                   <span class="font-medium text-gray-700 dark:text-gray-300">{{profile.data?.created_at ?? '-'}}</span>
                 </div>
                 <!-- 자기소개 -->
-                <p data-if="{{profile.data?.bio}}" class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap mt-4">{{profile.data?.bio}}</p>
+                <p data-if="{{profile.data?.bio}}" class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words mt-4">{{profile.data?.bio}}</p>
               </div>
               <!-- 기본 정보 (탈퇴한 사용자) -->
               <div data-if="{{profile.data?.status === 'withdrawn'}}" class="flex-1 space-y-3">
                 <responsive on="portable" class="w-full space-y-3 text-center"/>
                 <!-- 탈퇴한 사용자 텍스트 -->
-                <h2 class="text-2xl font-bold text-gray-400 dark:text-gray-500 line-through">
-                  <responsive on="portable" class="text-xl font-bold text-gray-400 dark:text-gray-500 line-through"/>
+                <h2 class="text-2xl font-bold text-gray-500 dark:text-gray-500 line-through">
+                  <responsive on="portable" class="text-xl font-bold text-gray-500 dark:text-gray-500 line-through"/>
                   $t:userinfo.withdrawn_user
                 </h2>
               </div>
@@ -97,55 +97,57 @@
           <div data-if="{{recentPosts.data?.data?.length > 0}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:user.profile.recent_posts</h3>
-              <button class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <a href="/users/{{route.userId}}/posts" class="inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 <on type="click">
-                  <navigate path="/users/{{route.userId}}/posts"/>
+                  <navigate/>
                 </on>
                 <span>$t:user.profile.view_all</span>
-              </button>
+              </a>
             </div>
             <div class="divide-y divide-gray-200 dark:divide-gray-700">
-              <button data-each="post in {{recentPosts.data?.data ?? []}}" class="block w-full text-left px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+              <a href="/board/{{post.board_slug}}/{{post.id}}" data-each="post in {{recentPosts.data?.data ?? []}}" class="block w-full text-left px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
                 <on type="click">
-                  <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+                  <navigate/>
                 </on>
                 <div class="flex items-center justify-between gap-4">
                   <!-- 제목 영역 -->
                   <div class="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
                     <!-- 게시판명 배지 -->
-                    <span class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap">{{post.board_name}}</span>
+                    <span class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32">{{post.board_name}}</span>
                     <!-- 카테고리 배지 -->
-                    <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
+                    <span data-if="{{post.category}}" class="flex-shrink-0 truncate max-w-32 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded whitespace-nowrap">{{post.category}}</span>
                     <!-- 비밀글 아이콘 -->
-                    <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-500 dark:text-yellow-400"/>
+                    <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-700 dark:text-yellow-400"/>
                     <!-- 블라인드 아이콘 -->
-                    <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-500 dark:text-orange-400"/>
+                    <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-600 dark:text-orange-400"/>
                     <!-- 제목 + 댓글수 컨테이너 -->
                     <div class="flex-1 min-w-0 flex items-center gap-1">
                       <!-- 제목 -->
                       <span class="truncate text-sm font-medium text-gray-900 dark:text-white">{{post.title}}</span>
+                      <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
+                      <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post.id}}" boardSlug="{{post.board_slug}}" context="user_profile_recent"/>
                       <!-- 댓글 수 -->
                       <span data-if="{{post.comment_count > 0}}" class="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium">[{{post.comment_count}}]</span>
                     </div>
                   </div>
                   <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 hidden md:inline" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
           <!-- 최근 게시글 없음 상태 -->
           <div data-if="{{!recentPosts.data?.data?.length}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:user.profile.recent_posts</h3>
-              <button class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <a href="/users/{{route.userId}}/posts" class="inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 <on type="click">
-                  <navigate path="/users/{{route.userId}}/posts"/>
+                  <navigate/>
                 </on>
                 <span>$t:user.profile.view_all</span>
-              </button>
+              </a>
             </div>
             <div class="text-center py-12">
-              <icon name="file-circle-xmark" size="2xl" class="text-gray-300 dark:text-gray-600 mb-4"/>
+              <icon name="file-circle-xmark" size="2xl" class="text-gray-500 dark:text-gray-500 mb-4"/>
               <p class="text-gray-500 dark:text-gray-400">$t:user.profile.no_posts</p>
             </div>
           </div>

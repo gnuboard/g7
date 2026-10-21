@@ -25,6 +25,7 @@ use Modules\Sirsoft\Board\Http\Requests\User\PostIndexRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\StorePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\UpdatePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\VerifyGuestPasswordRequest;
+use Modules\Sirsoft\Board\Http\Requests\User\VerifyThreadPasswordRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
@@ -36,6 +37,7 @@ use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
+use Modules\Sirsoft\Board\Services\SecretViewTokenService;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -60,12 +62,14 @@ class PostController extends PublicBaseController
      * @param  BoardService  $boardService  게시판 서비스
      * @param  CommentService  $commentService  댓글 서비스
      * @param  ReportService  $reportService  신고 서비스
+     * @param  SecretViewTokenService  $secretViewTokens  비밀글 열람 토큰 서비스
      */
     public function __construct(
         private PostService $postService,
         private BoardService $boardService,
         private CommentService $commentService,
-        private ReportService $reportService
+        private ReportService $reportService,
+        private SecretViewTokenService $secretViewTokens
     ) {}
 
     /**
@@ -236,7 +240,7 @@ class PostController extends PublicBaseController
                 // 현재 글과 동일 카테고리 글만 이전/다음 후보로 제한 (47-1).
                 // 미분류(null)면 getAdjacentPosts 의 when($category) 가 미적용 → 전체 원글 순회.
                 'category' => $meta['category'] ?? null,
-            ], withTrashed: $withTrashed, board: $board);
+            ], withTrashed: $withTrashed, board: $board, context: 'user');
         } catch (\Throwable $e) {
             // 내부 예외는 로그만 남기고 옆 글 없음으로 degrade
             Log::warning('Post navigation fetch failed, returning empty result', [
@@ -532,13 +536,16 @@ class PostController extends PublicBaseController
             // 검증 성공 - password_verified 플래그 설정하여 PostResource에서 content 포함
             $post->password_verified = true;
 
+            // 이 플래그는 이 응답 안에서만 산다. 화면은 원문이 열린 사람에게 댓글·답글·신고를
+            // 내주는데 그 요청들은 각각 별개라, 같은 사실을 넘길 토큰에 이 글의 grant 를 더한다.
+            // 댓글을 싣기 **전에** grant 를 걸어야 같은 응답의 답변(자손)·원글(조상)·댓글이
+            // 새 grant 로 판정된다. FormRequest 와 전역 request() 는 다른 인스턴스라 둘 다에 건다.
+            $viewToken = $this->secretViewTokens->grant($request, $slug, $id);
+            $this->secretViewTokens->useForRequest($viewToken['token'], $request, request());
+
             // 상세 조회와 같은 스키마를 돌려준다. 화면은 이 응답으로 게시글 데이터소스를
             // 통째로 교체하므로, 댓글을 싣지 않으면 목록이 사라진 채 "댓글 N" 헤더만 남는다.
             $this->attachComments($request, $post, $board, $slug, $id);
-
-            // 이 플래그는 이 응답 안에서만 산다. 화면은 원문이 열린 사람에게 댓글·답글·신고를
-            // 내주는데 그 요청들은 각각 별개라, 같은 사실을 넘길 토큰을 함께 발급한다.
-            $viewToken = $this->postService->issueSecretViewToken($slug, $id);
 
             // successWithResource 사용: $this->when() 조건부 필드가 올바르게 직렬화됨
             // (toArray 직접 호출 시 MissingValue 객체가 반환되는 문제 방지)
@@ -549,6 +556,70 @@ class PostController extends PublicBaseController
                     'secret_view_expires_at' => $viewToken['expires_at'],
                 ])
             );
+        } catch (ModelNotFoundException $e) {
+            throw new PostNotFoundException($id);
+        } catch (BoardNotFoundException|PostNotFoundException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return $this->error('sirsoft-board::messages.posts.password_verify_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 답변 화면에서 스레드 조상(비회원 글)의 비밀번호로 답변을 엽니다.
+     *
+     * 비회원이 쓴 글에 달린 비밀 답변 주소로 바로 들어오면 열 원글 비밀번호 폼이 없어 「로그인 후 확인」만
+     * 보였다. 이 엔드포인트는 가까운 조상부터 비회원·비밀번호 있음·살아 있는 글을 후보로 비밀번호를
+     * 맞춰 보고, 처음 맞은 조상에 grant 를 더한다 — 이후 경로 규칙으로 그 조상의 하위가 열린다.
+     * 응답에 조상 ID 를 싣지 않는다(어떤 조상이 맞았는지 노출하지 않음).
+     *
+     * @param  VerifyThreadPasswordRequest  $request  스레드 비밀번호 검증 요청
+     * @param  string  $slug  게시판 슬러그
+     * @param  string|int  $id  열려는 답변 게시글 ID
+     * @return JsonResponse 검증 결과 응답 (상세와 같은 스키마 + 열람 토큰)
+     */
+    public function verifyThreadPassword(VerifyThreadPasswordRequest $request, string $slug, string|int $id): JsonResponse
+    {
+        $id = (int) $id;
+
+        try {
+            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+            if (! $board || ! $board->is_active) {
+                throw new BoardNotFoundException($slug);
+            }
+
+            // 상세 조회·verify-password 와 같은 스코프 관문 (라우트 {id} 는 Model 로 resolve 되지 않는다)
+            $post = $this->postService->getPostWithCounts($slug, $id, board: $board, context: 'user');
+
+            if ($post->trashed() && ! $this->checkBoardPermission($slug, 'manager', PermissionType::User)) {
+                throw new PostNotFoundException($id);
+            }
+
+            // 원글(루트)·공개 답변은 이 폼이 뜰 일이 없다 — 원글은 verify-password 로 연다
+            if (! $post->parent_id || ! $post->is_secret) {
+                return $this->error('sirsoft-board::messages.posts.thread_password_not_applicable', 400);
+            }
+
+            $result = $this->postService->verifyThreadPassword($post, $request->validated('password'), $request);
+            if (! $result['success']) {
+                return $this->error($result['error_key'], $result['error_code']);
+            }
+
+            // 맞힌 조상에 grant 를 더하고, 댓글을 싣기 전에 이 응답의 판정에 쓰이게 건다
+            $viewToken = $this->secretViewTokens->grant($request, $slug, (int) $result['anchor_id']);
+            $this->secretViewTokens->useForRequest($viewToken['token'], $request, request());
+
+            $this->attachComments($request, $post, $board, $slug, $id);
+
+            return $this->successWithResource(
+                'sirsoft-board::messages.posts.thread_password_verified',
+                (new PostResource($post))->additional([
+                    'secret_view_token' => $viewToken['token'],
+                    'secret_view_expires_at' => $viewToken['expires_at'],
+                ])
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return $this->error('auth.scope_denied', 403);
         } catch (ModelNotFoundException $e) {
             throw new PostNotFoundException($id);
         } catch (BoardNotFoundException|PostNotFoundException $e) {
@@ -840,7 +911,8 @@ class PostController extends PublicBaseController
      * 차단은 PostNotFoundException(404)으로 처리하여 부모글의 존재 자체를 숨깁니다.
      * (제출 단계 차단은 ParentPostValidationRule 이 별도로 수행)
      *
-     * 부모글이 비밀글이면 열람 권한(SecretContentGate::canWriteChild)이 있는 요청만 통과합니다.
+     * 부모글이 비밀글이면 열람 권한이 있는 요청만, 부모의 비밀 조상이 있으면 그 조상을 모두 열 수 있는
+     * 요청만 통과합니다(SecretContentGate::canWriteReply).
      * 답글 폼은 부모 원문을 함께 싣기 때문에, 폼 진입이 곧 비밀글 읽기가 되던 결함(KVE-2026-2375)을
      * 막습니다. 제출 단계 ParentPostValidationRule 과 같은 판정입니다.
      *
@@ -858,7 +930,9 @@ class PostController extends PublicBaseController
             throw new PostNotFoundException($parentId);
         }
 
-        if (! app(SecretContentGate::class)->canWriteChild($parentPost)) {
+        // 답변은 앵커가 되어 조상 경로를 열므로, 부모의 모든 비밀 조상을 지금 열 수 있어야 한다
+        // (canWriteChild 에 더한 경로 규칙 권한 상승 차단 — 제출 단계 ParentPostValidationRule 과 같은 판정).
+        if (! app(SecretContentGate::class)->canWriteReply($parentPost)) {
             throw new PostNotFoundException($parentId);
         }
     }

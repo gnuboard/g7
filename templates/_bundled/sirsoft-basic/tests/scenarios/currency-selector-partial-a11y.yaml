@@ -1,0 +1,21 @@
+feature: sirsoft-basic 통화 선택 조각(partials/common/_currency_selector)의 단추 종류와 상태 알림 (7.1.1)
+
+description: |
+  여닫기 단추는 type="button" 에 목록이 열렸는지를 aria-expanded 로, 통화 항목 단추는 type="button" 에 지금 고른 통화인지를
+  aria-pressed 로 알린다. 바깥 덮개는 마우스용이라 단추가 아니고, 키보드는 여닫기 단추로 같은 목록을 닫는다.
+  이 조각은 지금 basic 레이아웃 어디에도 포함되지 않는다(머리글 통화 선택은 이커머스 확장 header-currency-selector-user 가 주입).
+  시험은 굽기 산출물(.json)의 속성과 식을 평가한다.
+
+axes:
+  control: [toggle, option]
+
+effects:
+  - currency_selector_controls_announce_state   # 여닫기 단추 aria-expanded · 통화 항목 aria-pressed · 모든 단추 type="button"
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/currency-selector-partial-a11y.test.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  note: |
+    수정 전 red 대조(2026-10-19): HEAD 의 _currency_selector.g7.html 에는 type·aria-expanded·aria-pressed 가 없어 세 시험 모두 빨개진다.

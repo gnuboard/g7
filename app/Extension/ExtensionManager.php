@@ -76,7 +76,9 @@ class ExtensionManager
         // config 캐시도 함께 재생성. 확장 설치/삭제/업데이트는 활성 확장 목록을 바꾸므로
         // (optimizeSystem 이 config:cache 를 만든 시점의 스냅샷이 stale 해짐), 오토로드/훅
         // 캐시와 동일 생명주기로 config 캐시를 재빌드해 캐시가 비활성 상태로 남지 않게 한다.
-        // activate/deactivate 는 이 메서드를 거치지 않으므로 각 Manager 에서 별도 호출한다.
+        // activate/deactivate 는 이 메서드를 거치지 않는다 — after_activate/after_deactivate 훅의
+        // ExtensionConfigCacheListener 가 재생성한다. 여러 건을 한꺼번에 바꾸는 경로는 ConfigCacheHelper::deferRebuilds()
+        // 로 감싸 마지막에 한 번만 재생성한다(#145 F6).
         ConfigCacheHelper::rebuild();
     }
 
@@ -1475,6 +1477,7 @@ PHP;
         }
 
         $lastError = null;
+        $resolvedAny = false;
 
         foreach ($strategies as $strategy) {
             $archiveType = $strategy['archive_type'];
@@ -1485,6 +1488,8 @@ PHP;
             if (! $archiveUrl) {
                 continue;
             }
+
+            $resolvedAny = true;
 
             $extension = $archiveType === 'zipball' ? '.zip' : '.tar.gz';
             $archivePath = $destDir.DIRECTORY_SEPARATOR.'download'.$extension;
@@ -1527,6 +1532,15 @@ PHP;
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+
+        // 어느 전략도 아카이브 주소를 얻지 못했다 = 한 번도 내려받지 않았다(태그 없음·GitHub 연결 실패).
+        // 「추출 실패」로 알리면 원인을 추출 도구로 잘못 짚는다(7.1.1 출시 전).
+        if (! $resolvedAny) {
+            throw new \RuntimeException(__('settings.core_update.extension_release_not_found', [
+                'repository' => $owner.'/'.$repo,
+                'version' => $version,
+            ]));
         }
 
         throw new \RuntimeException(

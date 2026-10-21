@@ -50,6 +50,11 @@ effects:
   - test_call_returns_preview_and_fee
   - test_call_requires_update_permission
   - options_from_backend_enum_ssot         # 프론트 하드코딩 부재
+  # 테스트 호출 엔드포인트 진단·안전 (#148 감사 정리에서 기존 테스트에 매핑)
+  - test_call_reports_failure_diagnostics   # 4xx/5xx·연결 실패에도 요청 미리보기 + 응답/오류 반환
+  - test_call_requires_endpoint             # endpoint 누락 422
+  - test_call_blocks_internal_endpoint      # 내부망·유니코드 위장·userinfo 위장 주소 422, 요청 미전송
+  - test_call_allows_internal_endpoint_when_opted_in  # 운영 옵트인 설정을 켜면 사내 주소 호출 허용
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingApiAdvancedCalculationTest.php

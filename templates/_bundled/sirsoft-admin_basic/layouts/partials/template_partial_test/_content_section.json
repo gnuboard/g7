@@ -38,7 +38,7 @@
                             "props": {
                                 "className": "text-xl font-bold text-purple-900 dark:text-purple-100"
                             },
-                            "text": "Level 1 Partial: 컨텐츠 섹션"
+                            "text": "$t:admin.template_partial_test.level1_title"
                         }
                     ]
                 },
@@ -48,7 +48,7 @@
                     "props": {
                         "className": "text-sm text-purple-600 dark:text-purple-300"
                     },
-                    "text": "이 파일은 아래에 Level 2 partial 파일들을 포함합니다"
+                    "text": "$t:admin.template_partial_test.level1_description"
                 }
             ]
         },
@@ -66,17 +66,17 @@
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "text-md font-semibold text-yellow-900 dark:text-yellow-100 mb-2"
+                        "className": "font-semibold text-yellow-900 dark:text-yellow-100 mb-2"
                     },
-                    "text": "Partial 이후 추가 컨텐츠"
+                    "text": "$t:admin.template_partial_test.after_title"
                 },
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-yellow-600 dark:text-yellow-300"
+                        "className": "text-sm text-yellow-700 dark:text-yellow-300"
                     },
-                    "text": "Partial 파일 뒤에도 원하는 만큼 컨텐츠를 추가할 수 있습니다."
+                    "text": "$t:admin.template_partial_test.after_description"
                 }
             ]
         }

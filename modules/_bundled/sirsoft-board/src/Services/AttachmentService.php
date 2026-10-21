@@ -20,6 +20,7 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
+use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -30,6 +31,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class AttachmentService
 {
+    use ChecksBoardPermission;
+
     /**
      * AttachmentService 생성자
      *
@@ -428,8 +431,9 @@ class AttachmentService
             return;
         }
 
-        $canManage = PermissionHelper::check("sirsoft-board.{$slug}.manager")
-            || PermissionHelper::check("sirsoft-board.{$slug}.admin.manage");
+        // 게시판 관리 권한은 게시판 스코프까지 본다 — 보유만 보면 「본인이 만든 게시판만」 위임 관리자가
+        // 남의 게시판 삭제·블라인드 글 첨부를 받는다.
+        $canManage = $this->hasBoardManagePermission($slug);
 
         if (! $canManage) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
@@ -507,8 +511,9 @@ class AttachmentService
             return;
         }
 
-        $canManage = PermissionHelper::check("sirsoft-board.{$slug}.manager")
-            || PermissionHelper::check("sirsoft-board.{$slug}.admin.manage");
+        // 게시판 관리 권한은 게시판 스코프까지 본다 — 보유만 보면 「본인이 만든 게시판만」 위임 관리자가
+        // 남의 게시판 삭제·블라인드 글 첨부를 받는다.
+        $canManage = $this->hasBoardManagePermission($slug);
 
         if (! $canManage) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
@@ -848,7 +853,7 @@ class AttachmentService
      * 걸러내지 않고 전량 거부한다(코어 첨부/메뉴 순서 변경과 같은 의미론).
      *
      * 컨트롤러는 `[첨부 ID => 순서]` 맵을 넘긴다. 종전에는 값 쪽에서 `['id']` 를 찾아 맵 형식에서는
-     * 검사할 ID 가 하나도 남지 않았다(검사 전체가 건너뛰어짐 — 7.1.0 전수 실측 O-F1-1 후속에서 발견).
+     * 검사할 ID 가 하나도 남지 않았다(검사 전체가 건너뛰어짐 — 7.1.0 전수 실측 후속에서 발견).
      * 지금은 맵의 키를 ID 로 읽고, 목록 형식(`[{id, order}]`)도 그대로 받는다.
      *
      * 사용자 경로는 삭제(`canDelete`)와 같은 기준으로 자기가 올린 첨부만 순서를 바꾼다.

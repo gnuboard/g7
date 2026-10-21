@@ -7,6 +7,10 @@
     "id": "notification_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "notificationLogs"
+    },
     "actions": [
         {
             "comment": "쪽만 바꾸고 조건은 주소에 있던 그대로 물려받는다. 위의 「이 사람으로 좁히기」와 달리 이쪽은 조건을 합쳐 넘긴다.",
@@ -54,9 +58,12 @@
         }
     ],
     "props": {
+        "rowLabelField": "subject",
         "data": "{{notificationLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/notification-logs?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{notificationLogs?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{notificationLogs?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}",
@@ -67,8 +74,8 @@
         "selectionScope": "page",
         "selectedIds": "{{_global.selectedIds_admin_notification_logs || []}}",
         "selectedCountText": "",
-        "loading": "{{notificationLogs?.loading}}",
         "expandable": true,
+        "emptyMessage": "{{notificationLogs === undefined ? '' : $t('common.no_data')}}",
         "actionsColumnHeader": "$t:common.actions",
         "rowActions": [
             {
@@ -115,7 +122,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-sm text-red-500 dark:text-red-300"
+                                            "className": "text-sm text-red-600 dark:text-red-300"
                                         },
                                         "text": "{{row.error_message}}"
                                     }
@@ -200,7 +207,7 @@
                                 "name": "Span",
                                 "if": "{{!row.body}}",
                                 "props": {
-                                    "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                    "className": "text-sm text-gray-500 dark:text-gray-400 italic"
                                 },
                                 "text": "$t:admin.notification_log.detail.no_body"
                             }
@@ -264,12 +271,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.recipient.uuid}}"
-                                        }
-                                    },
                                     "search_by_recipient": {
                                         "handler": "navigate",
                                         "params": {
@@ -292,7 +293,9 @@
                                 {
                                     "id": "view_member",
                                     "label": "$t:admin.notification_log.action.view_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "href": "/admin/users/{{row.recipient.uuid}}",
+                                    "target": "_blank"
                                 },
                                 {
                                     "id": "search_by_recipient",
@@ -314,7 +317,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-user",
-                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                         }
                                     },
                                     {
@@ -373,12 +376,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.sender.uuid}}"
-                                        }
-                                    },
                                     "search_by_sender": {
                                         "handler": "navigate",
                                         "params": {
@@ -401,7 +398,9 @@
                                 {
                                     "id": "view_member",
                                     "label": "$t:admin.notification_log.action.view_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "href": "/admin/users/{{row.sender.uuid}}",
+                                    "target": "_blank"
                                 },
                                 {
                                     "id": "search_by_sender",
@@ -423,7 +422,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-user",
-                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                            "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                         }
                                     },
                                     {

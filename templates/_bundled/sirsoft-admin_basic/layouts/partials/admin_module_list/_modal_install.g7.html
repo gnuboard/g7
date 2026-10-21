@@ -43,8 +43,8 @@
       </div>
       <p class="text-tertiary mb-2">$t:admin.modules.modals.cascade_dependencies_hint</p>
       <p data-if="{{_global.installPreview.dependencies.some(x => x.available &amp;&amp; x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.modules.modals.cascade_no_permission_hint</p>
-      <div data-each="dep in _global.installPreview.dependencies" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1">
-        <input type="checkbox" checked="{{dep.can_select === true &amp;&amp; ((_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) &amp;&amp; dep.default_selected))}}" disabled="{{!dep.available || dep.can_select !== true}}" class="w-4 h-4">
+      <label data-each="dep in _global.installPreview.dependencies" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1 cursor-pointer">
+        <input type="checkbox" aria-label="{{dep.name || dep.identifier}} ({{dep.identifier}})" checked="{{dep.can_select === true &amp;&amp; ((_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) &amp;&amp; dep.default_selected))}}" disabled="{{!dep.available || dep.can_select !== true}}" class="w-4 h-4">
           <on type="change">
             <!-- 의존 확장 체크. 선택값이 아직 없으면 **서버 기본 선택에서 시작**해(위 규칙 ⑴) 이 항목만
                  더하거나 뺀다. 같은 id 를 먼저 걸러 내고 다시 넣는 것은 중복을 막기 위함이다. -->
@@ -55,11 +55,11 @@
         <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500"/>
         <span class="text-primary text-sm">{{dep.name || dep.identifier}} ({{dep.identifier}})</span>
         <span class="text-tertiary font-mono">{{dep.required_version}}</span>
-        <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.modules.modals.dependency_met</span>
+        <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded">$t:admin.modules.modals.dependency_met</span>
         <span data-if="{{!dep.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.modules.modals.dependency_not_installed</span>
         <span data-if="{{dep.is_installed &amp;&amp; !dep.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.modules.modals.dependency_inactive</span>
         <span data-if="{{dep.available &amp;&amp; dep.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.modules.modals.cascade_no_permission</span>
-      </div>
+      </label>
     </div>
     <div data-ref="cascade_language_packs_section" data-if="{{_global.installPreview?.language_packs &amp;&amp; _global.installPreview.language_packs.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
@@ -68,8 +68,8 @@
       </div>
       <p class="text-tertiary mb-2">$t:admin.modules.modals.cascade_language_packs_hint</p>
       <p data-if="{{_global.installPreview.language_packs.some(x => x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.modules.modals.cascade_no_permission_hint</p>
-      <div data-each="lp in _global.installPreview.language_packs" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1">
-        <input type="checkbox" checked="{{lp.can_select === true &amp;&amp; (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) &amp;&amp; lp.default_selected)) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}" disabled="{{lp.can_select !== true || (lp.depends_on_extension &amp;&amp; !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}" class="w-4 h-4">
+      <label data-each="lp in _global.installPreview.language_packs" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1 cursor-pointer">
+        <input type="checkbox" aria-label="{{lp.locale_native_name}} ({{lp.locale}})" checked="{{lp.can_select === true &amp;&amp; (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) &amp;&amp; lp.default_selected)) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}" disabled="{{lp.can_select !== true || (lp.depends_on_extension &amp;&amp; !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}" class="w-4 h-4">
           <on type="change">
             <!-- 언어팩 체크 — 의존 확장 쪽과 같은 형태다. 딸린 확장이 해제되면 이 칸은 잠기고,
                  켜져 있던 것도 꺼진 것으로 계산된다(위 규칙 ⑵). -->
@@ -80,6 +80,49 @@
         <span class="text-tertiary font-mono">v{{lp.version}}</span>
         <span data-if="{{(lp.depends_on_extension ?? lp.target_identifier) &amp;&amp; (lp.depends_on_extension ?? lp.target_identifier) !== _global.installPreview?.target?.identifier}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.modules.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}</span>
         <span data-if="{{lp.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.modules.modals.cascade_no_permission</span>
+      </label>
+    </div>
+    <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
+         원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
+         창을 열 때마다 자동·접힘으로 되돌린다(여는 쪽이 전역값을 초기화한다). -->
+    <div data-ref="module_install_layout_source_section" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+      <button data-ref="module_install_layout_source_toggle" type="button" aria-expanded="{{_global.moduleLayoutSourceOpen === true}}" class="text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1">
+        <on type="click">
+          <!-- 접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다. -->
+          <set-state target="global" moduleLayoutSourceOpen="{{_global.moduleLayoutSourceOpen !== true}}"/>
+        </on>
+        <icon name="{{_global.moduleLayoutSourceOpen === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
+        <span>$t:admin.modules.modals.layout_source_advanced</span>
+      </button>
+      <div data-ref="module_install_layout_source_options" data-if="{{_global.moduleLayoutSourceOpen === true}}" class="mt-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:admin.modules.modals.layout_source_title</div>
+        <p class="text-tertiary mb-2">$t:admin.modules.modals.layout_source_help</p>
+        <div class="row-stack">
+          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <input type="radio" name="module_install_layout_source" value="auto" checked="{{(_global.moduleLayoutSource ?? 'auto') === 'auto'}}" class="radio mt-0.5">
+              <on type="change">
+                <!-- 자동(권장) — .g7.html 을 우선 설치하고 없으면 .json 을 쓴다. 기본값. -->
+                <set-state target="global" moduleLayoutSource="auto"/>
+              </on>
+            </input>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.layout_source_auto</span>
+              <p class="text-tertiary">$t:admin.modules.modals.layout_source_auto_desc</p>
+            </div>
+          </label>
+          <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <input type="radio" name="module_install_layout_source" value="json" checked="{{(_global.moduleLayoutSource ?? 'auto') === 'json'}}" class="radio mt-0.5">
+              <on type="change">
+                <!-- 원본 JSON 우선(문제 해결용) — 짝 .json 이 있는 화면은 .g7.html 대신 원본 JSON 으로 설치한다. -->
+                <set-state target="global" moduleLayoutSource="json"/>
+              </on>
+            </input>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.layout_source_json</span>
+              <p class="text-tertiary">$t:admin.modules.modals.layout_source_json_desc</p>
+            </div>
+          </label>
+        </div>
       </div>
     </div>
     <div class="modal-footer-buttons">
@@ -108,13 +151,13 @@
                 <refetch-data-source dataSourceId="admin_menu"/>
                 <reload-extensions/>
                 <close-modal/>
-                <set-state target="global" :selectedModule="null"/>
+                <set-state target="global" :selectedModule="null" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false"/>
               </success>
               <fail>
                 <set-state target="global" :isModuleInstalling="false"/>
                 <toast type="error" message="{{error.message}}"/>
               </fail>
-              <body module_name="{{_global.selectedModule.identifier}}" vendor_mode="{{_global.moduleInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"/>
+              <body module_name="{{_global.selectedModule.identifier}}" vendor_mode="{{_global.moduleInstallVendorMode ?? 'auto'}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}" layout_source="{{_global.moduleLayoutSource ?? 'auto'}}"/>
             </api-call>
           </sequence>
         </on>

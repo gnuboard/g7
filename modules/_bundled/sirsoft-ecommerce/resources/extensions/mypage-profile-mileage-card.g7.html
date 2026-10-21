@@ -18,15 +18,15 @@
         <div>
           <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.user_mileage.available</span>
           <span class="block text-xl font-bold text-gray-900 dark:text-white">{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P</span>
-          <span data-if="{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0) > 0}}" class="block text-xs text-amber-600 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.user_mileage.expiring_soon|amount={{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}}</span>
+          <span data-if="{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0) > 0}}" class="block text-xs text-amber-700 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.user_mileage.expiring_soon|amount={{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}}</span>
         </div>
-        <button data-ref="view_my_mileage_history" type="button" class="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+        <a href="/mypage/mileage" data-ref="view_my_mileage_history" class="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
           <on type="click">
-            <navigate path="/mypage/mileage"/>
+            <navigate/>
           </on>
           <span>$t:sirsoft-ecommerce.user_mileage.view_history</span>
           <icon name="arrow-right" class="text-sm"/>
-        </button>
+        </a>
       </div>
     </div>
   </inject>

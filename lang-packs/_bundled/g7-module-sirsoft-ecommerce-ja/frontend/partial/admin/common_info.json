@@ -59,7 +59,7 @@
     "editing": {
       "title": "編集中です",
       "message": "編集中の内容は保存されません",
-      "confirm_message": "本当にキャンセルして別の商品グループを選択しますか?",
+      "confirm_message": "本当にキャンセルして別の共通情報を選択しますか?",
       "continue": "編集を続行",
       "discard": "キャンセルして移動"
     },

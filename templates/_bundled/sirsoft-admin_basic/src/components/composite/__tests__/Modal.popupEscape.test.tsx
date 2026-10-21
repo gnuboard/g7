@@ -1,6 +1,6 @@
 /**
  * @file Modal.popupEscape.test.tsx
- * @description admin_basic Modal — 창 안에서 펼친 선택 목록이 있을 때의 Esc 회귀 테스트 (7.1.0 O-K3-16, g7 D-J3 와 같은 결함)
+ * @description admin_basic Modal — 창 안에서 펼친 선택 목록이 있을 때의 Esc 회귀 테스트 (7.1.0, 다른 화면과 같은 결함)
  *
  * 창과 창 안의 선택 목록이 각자 document keydown 리스너로 Esc 를 받아, 목록을 펼친 채 Esc 를 한 번 누르면
  * 목록과 창이 함께 닫혔다(게시판 환경설정 › 알림 템플릿 편집 창의 수신자 드롭다운 실측 — 저장 안 한 입력이 사라진다).

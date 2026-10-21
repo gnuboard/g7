@@ -40,6 +40,8 @@ function walk(node: unknown, out: Record<string, unknown>[] = []): Record<string
 }
 
 describe('비밀글 열람 확인 토큰 배선', () => {
+    // @scenario surface=post_detail
+    // @effects board_api_requests_carry_secret_view_token
     it('_user_base 의 globalHeaders 가 게시판 API 에 열람 토큰 헤더를 주입한다', () => {
         const rules = (userBase as Record<string, any>).globalHeaders;
 
@@ -55,35 +57,98 @@ describe('비밀글 열람 확인 토큰 배선', () => {
         expect(boardRule.headers?.[HEADER]).toBe('{{_global.secretViewToken}}');
     });
 
-    it('비밀번호 검증 성공 시 응답의 토큰을 _global.secretViewToken 에 보관한다', () => {
-        const nodes = walk(basicShow);
-
-        const verifyCall = nodes.find(
-            (node) =>
-                typeof node.target === 'string' &&
-                node.target.includes('/verify-password') &&
-                !node.target.includes('verify-password-for-modify')
-        );
-
-        expect(verifyCall, '비밀글 비밀번호 검증 apiCall 을 찾지 못했습니다.').toBeDefined();
-
-        const stored = walk(verifyCall!.onSuccess).some(
-            (node) =>
-                node.handler === 'setState' &&
-                (node.params as Record<string, unknown> | undefined)?.target === 'global' &&
-                typeof (node.params as Record<string, unknown> | undefined)?.secretViewToken === 'string'
-        );
+    // @scenario surface=post_detail
+    // @effects secret_view_token_persists_in_tab_session
+    it('_user_base 의 init 이 탭 세션에 보관된 열람 토큰을 복원한다 (initSecretViewToken)', () => {
+        const inits = ((userBase as Record<string, any>).init_actions ?? []) as Record<string, unknown>[];
 
         expect(
-            stored,
-            'verify-password 의 onSuccess 가 secret_view_token 을 _global.secretViewToken 에 보관하지 않습니다 — 토큰이 없으면 globalHeaders 가 빈 값을 보내 헤더 자체가 붙지 않습니다.'
+            inits.some((action) => action?.handler === 'initSecretViewToken'),
+            '_user_base init_actions 에 initSecretViewToken 이 없습니다 — 답변 링크(전체 이동)·새로고침에서 열람 토큰이 사라져, 원글 비밀번호를 맞힌 비회원이 답변 화면에서 다시 잠깁니다.'
         ).toBe(true);
     });
+
+    // @scenario surface=post_detail
+    // @effects verify_success_saves_token_and_replaces_post
+    it('비밀번호 검증 성공 시 응답의 토큰을 saveSecretViewToken 으로 탭 세션에 보관한다', () => {
+        const verifyCall = findApiCall('/verify-password');
+
+        expect(verifyCall, '비밀글 비밀번호 검증 apiCall 을 찾지 못했습니다.').toBeDefined();
+        expectStoresToken(verifyCall!, 'verify-password');
+    });
+
+    // @scenario surface=reply_detail
+    // @effects verify_success_saves_token_and_replaces_post
+    it('원글 비밀번호(스레드 비밀번호) 검증 apiCall 이 있고, 성공 시 글을 갈아끼우고 토큰을 보관한다', () => {
+        const threadCall = findApiCall('/verify-thread-password');
+
+        expect(
+            threadCall,
+            '답변 화면의 원글 비밀번호 폼(verify-thread-password apiCall)이 없습니다 — 답변 주소로 바로 들어온 비회원 질문자가 답변을 열 방법이 없습니다.'
+        ).toBeDefined();
+
+        expectStoresToken(threadCall!, 'verify-thread-password');
+
+        const replaced = walk(threadCall!.onSuccess).some(
+            (node) =>
+                node.handler === 'updateDataSource' &&
+                (node.params as Record<string, unknown> | undefined)?.dataSourceId === 'post'
+        );
+
+        expect(replaced, 'verify-thread-password 성공 시 post 데이터소스를 응답으로 갈아끼우지 않습니다 — 본문이 계속 잠겨 보입니다.').toBe(true);
+    });
+
+    // @scenario surface=post_detail
+    // @effects secret_view_token_persists_in_tab_session
+    it('verify-password 성공 블록에 _global.secretViewToken 을 직접 덮어쓰는 setState 가 남지 않는다 (탭 세션 저장 우회 금지)', () => {
+        ['/verify-password', '/verify-thread-password'].forEach((path) => {
+            const call = findApiCall(path);
+            const direct = walk(call?.onSuccess).some(
+                (node) =>
+                    node.handler === 'setState' &&
+                    (node.params as Record<string, unknown> | undefined)?.target === 'global' &&
+                    'secretViewToken' in ((node.params as Record<string, unknown> | undefined) ?? {})
+            );
+
+            expect(direct, `${path} 성공 블록이 메모리에만 토큰을 씁니다 — 전체 이동·새로고침에서 사라집니다.`).toBe(false);
+        });
+    });
 });
+
+/**
+ * show.json 에서 target 이 주어진 경로로 끝나는 apiCall 노드를 찾습니다(수정용 검증은 제외).
+ */
+function findApiCall(path: string): Record<string, unknown> | undefined {
+    return walk(basicShow).find(
+        (node) =>
+            typeof node.target === 'string' &&
+            (node.target as string).endsWith(path) &&
+            !(node.target as string).includes('verify-password-for-modify')
+    );
+}
+
+/**
+ * apiCall 의 onSuccess 가 응답 토큰·만료를 saveSecretViewToken 으로 넘기는지 단언합니다.
+ */
+function expectStoresToken(call: Record<string, unknown>, label: string): void {
+    const save = walk(call.onSuccess).find((node) => node.handler === 'saveSecretViewToken');
+
+    expect(
+        save,
+        `${label} 의 onSuccess 가 saveSecretViewToken 을 부르지 않습니다 — 토큰이 없으면 globalHeaders 가 빈 값을 보내 헤더 자체가 붙지 않습니다.`
+    ).toBeDefined();
+
+    const params = (save!.params ?? {}) as Record<string, unknown>;
+
+    expect(String(params.token ?? '')).toContain('secret_view_token');
+    expect(String(params.expiresAt ?? '')).toContain('secret_view_expires_at');
+}
 
 describe('게시글 수정 검증 토큰 전송로', () => {
     const sources = (boardForm as Record<string, any>).data_sources as Record<string, any>[];
 
+    // @scenario surface=post_detail
+    // @effects post_modify_token_sent_as_header
     it.each(['form_data', 'form_meta'])(
         '%s 는 검증 토큰을 헤더로 보낸다 (쿼리 파라미터 금지)',
         (id) => {
@@ -103,6 +168,8 @@ describe('게시글 수정 검증 토큰 전송로', () => {
         }
     );
 
+    // @scenario surface=post_detail
+    // @effects post_modify_token_sent_as_header
     it('검증 토큰을 담는 엔드포인트가 GET 인지 확인한다 (전송로 판단 근거)', () => {
         sources
             .filter((source) => source?.headers?.[MODIFY_HEADER])

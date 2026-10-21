@@ -98,7 +98,7 @@ class ProductReviewSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('상품 리뷰 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_review.start'));
 
         // 스토리지 드라이버 초기화
         $this->storage = app(ModuleManager::class)
@@ -109,7 +109,7 @@ class ProductReviewSeeder extends Seeder
         $this->createReviews();
 
         $count = ProductReview::count();
-        $this->command->info("상품 리뷰 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_review.done', ['count' => $count]));
     }
 
     /**
@@ -124,7 +124,7 @@ class ProductReviewSeeder extends Seeder
             // 스토리지에서 리뷰 이미지 폴더 전체 삭제
             if ($this->storage->exists('images', 'reviews')) {
                 $this->storage->deleteDirectory('images', 'reviews');
-                $this->command->line('  - 스토리지에서 리뷰 이미지 폴더를 삭제했습니다.');
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_review.images_dir_deleted'));
             }
             ProductReviewImage::withTrashed()->forceDelete();
         }
@@ -133,7 +133,7 @@ class ProductReviewSeeder extends Seeder
 
         if ($deletedCount > 0) {
             ProductReview::withTrashed()->forceDelete();
-            $this->command->warn("기존 리뷰 데이터 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_review.purged', ['count' => $deletedCount]));
         }
     }
 
@@ -151,7 +151,7 @@ class ProductReviewSeeder extends Seeder
             ->get();
 
         if ($confirmedOptions->isEmpty()) {
-            $this->command->warn('배송완료/구매확정 주문 옵션이 없습니다. OrderSeeder를 먼저 실행하는 것을 권장합니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_review.no_confirmed_options'));
 
             return;
         }
@@ -244,7 +244,7 @@ class ProductReviewSeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine();
-        $this->command->line("  - 구매확정 옵션 {$confirmedOptions->count()}건 중 {$created}건 리뷰 생성");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_review.created', ['options' => $confirmedOptions->count(), 'count' => $created]));
     }
 
     /**

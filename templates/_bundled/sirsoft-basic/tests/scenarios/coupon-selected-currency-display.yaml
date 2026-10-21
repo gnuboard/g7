@@ -1,0 +1,31 @@
+feature: 쿠폰 표시 자리의 선택 통화 — 쿠폰 받기 창·칩 확인 창·주문서 상품 쿠폰 선택칸 (7.1.1)
+
+description: |
+  다른 통화(예 USD)로 보는 회원에게 쿠폰의 정액 할인·최소 주문 금액·혜택 문구가 원화로 보이던 자리를 막는다.
+  쿠폰 받기 창(`_modal_coupon_download`)은 `multi_currency_discount_value`·`multi_currency_min_order_amount` 의
+  `[선택 통화].formatted` 를 먼저 쓰고, 맵이 없으면 기본 통화 숫자 + 단위로 폴백한다(주문서 경로의 맵은 이커머스 1.3.1
+  `user/coupons/downloadable` 응답이 싣는다). 상품 상세 칩 확인 창과 주문서 상품 쿠폰 선택칸 1·2 는
+  `multi_currency_benefit_formatted[선택 통화] ?? benefit_formatted` 를 쓴다. 시험은 굽기 산출물(JSON)의 실제 표현식을
+  USD 상태로 평가한다.
+
+# axis 의미:
+#   surface — 쿠폰을 보여 주는 자리(쿠폰 받기 창 / 칩 확인 창 / 주문서 상품 쿠폰 선택칸)
+axes:
+  surface: [download_modal, download_confirm, checkout_product_coupon]
+
+effects:
+  - download_modal_fixed_amount_uses_selected_currency  # 받기 창 정액 할인이 선택 통화 환산값
+  - download_modal_falls_back_to_base_amount            # 맵이 없으면 기본 통화 숫자 + 단위
+  - download_modal_min_order_uses_selected_currency     # 받기 창 최소 주문 금액이 선택 통화 환산값
+  - download_modal_rate_stays_percent                   # 정률은 % 그대로(통화 무관)
+  - download_modal_benefit_without_type_uses_selected_currency  # 할인 종류 없는 목록(상품 상세)은 선택 통화 혜택 문구, 맵이 없으면 기본 문구
+  - confirm_modal_benefit_uses_selected_currency        # 칩 확인 창 혜택 문구가 선택 통화
+  - confirm_modal_benefit_falls_back                    # 맵이 없으면 기본 혜택 문구, 쿠폰이 없으면 빈 글자
+  - product_coupon_option_uses_selected_currency        # 주문서 상품 쿠폰 선택칸 1·2 혜택 문구가 선택 통화
+  - product_coupon_option_falls_back                    # 맵이 없으면 기본 혜택 문구
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/couponMultiCurrency.test.tsx
+
+validation:
+  browser_check: 재실측 — 로그인 회원 선호 통화 USD(마이페이지 › 프로필 수정 › 선호 통화, 또는 머리글 통화 선택기) → 주문서 「쿠폰 다운로드」 창 정액 쿠폰·최소 주문 금액 $ 표기 · 상품 상세 쿠폰 칩 → 확인 창 혜택 문구 $ 표기 · 주문서 상품 줄 상품 쿠폰 선택칸 옵션 문구 $ 표기

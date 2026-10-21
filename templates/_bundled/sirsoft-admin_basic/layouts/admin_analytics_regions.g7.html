@@ -77,6 +77,7 @@
     <field name="periodSource" value="analytics_report"/>
     <field name="showUnit" :value="false"/>
   </init-local>
+  <computed name="tabQuery">{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page'].filter(k =&gt; query[k]).map(k =&gt; '&amp;' + k + '=' + encodeURIComponent(query[k])).join('')}}</computed>
   <computed name="reportName">{{({countries: 'country', regions: 'region', cities: 'city'})[query.tab || 'countries'] || 'country'}}</computed>
   <computed name="csvUrl">{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
   <computed name="csvFilename">{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
@@ -108,25 +109,23 @@
       <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
       <div data-ref="geoip_off_alert" data-if="{{analytics_status?.data?.geoip?.enabled === false || analytics_status?.data?.geoip?.db_present === false}}" class="alert-warning mb-4">
         <div class="flex-center gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.geoip_off</p>
-          <button data-ref="geoip_settings_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
+          <a data-ref="geoip_settings_link" href="/admin/settings?tab=advanced" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" class="button text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
             <on type="click">
               <!-- GeoIP 설정으로 — 환경설정 고급 탭을 연다. 환경설정 읽기 권한이 있을 때만 버튼이 보인다(안내 문구는 권한과 무관하게 남는다). -->
-              <navigate path="/admin/settings">
-                <query tab="advanced"/>
-              </navigate>
+              <navigate/>
             </on>
             $t:admin.analytics.alerts.geoip_off_link
-          </button>
+          </a>
         </div>
       </div>
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
       <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'countries'}}" variant="underline">
         <prop name="tabs">
-          <item id="countries" label="$t:admin.analytics.regions.tabs.countries"/>
-          <item id="regions" label="$t:admin.analytics.regions.tabs.regions"/>
-          <item id="cities" label="$t:admin.analytics.regions.tabs.cities"/>
+          <item id="countries" href="/admin/analytics/regions?tab=countries{{_computed.tabQuery}}" label="$t:admin.analytics.regions.tabs.countries"/>
+          <item id="regions" href="/admin/analytics/regions?tab=regions{{_computed.tabQuery}}" label="$t:admin.analytics.regions.tabs.regions"/>
+          <item id="cities" href="/admin/analytics/regions?tab=cities{{_computed.tabQuery}}" label="$t:admin.analytics.regions.tabs.cities"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->

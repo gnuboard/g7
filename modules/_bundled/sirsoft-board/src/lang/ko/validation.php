@@ -309,8 +309,14 @@ return [
         ],
     ],
 
+    // 게시판 표시 순서 저장 (관리자 게시판 목록 「순서 변경」)
+    'boards' => [
+        'reorder_stale' => '게시판 목록이 바뀌었습니다. 순서 변경 창을 닫고 다시 열어 주세요.',
+    ],
+
     // 필드 속성명 (attributes)
     'attributes' => [
+        'board_ids' => '게시판 순서',
         'bulk_members' => [
             'apply_all' => '대상 게시판 범위',
             'board_ids' => '대상 게시판',
@@ -350,6 +356,7 @@ return [
             'basic_defaults.use_reply' => '답글 사용 여부',
             'basic_defaults.max_reply_depth' => '최대 답글 깊이',
             'basic_defaults.reply_delete_policy' => '답글 삭제 방식',
+            'basic_defaults.secret_reply_visibility' => '비밀 답변 열람 범위',
             'basic_defaults.max_comment_depth' => '최대 댓글 깊이',
             'basic_defaults.comment_order' => '댓글 정렬',
             'basic_defaults.show_view_count' => '조회수 표시',
@@ -488,6 +495,7 @@ return [
             'override_values.per_page_mobile' => '모바일 페이지당 게시글 수',
             'override_values.max_reply_depth' => '최대 답글 깊이',
             'override_values.reply_delete_policy' => '답글 삭제 방식',
+            'override_values.secret_reply_visibility' => '비밀 답변 열람 범위',
             'override_values.max_comment_depth' => '최대 댓글 깊이',
             'override_values.min_title_length' => '최소 제목 길이',
             'override_values.max_title_length' => '최대 제목 길이',
@@ -855,6 +863,7 @@ return [
         'permissions' => '권한',
         'permissions.*.roles' => '권한 역할',
         'reply_delete_policy' => '답글 삭제 방식',
+        'secret_reply_visibility' => '비밀 답변 열람 범위',
         'attachment_ids' => '첨부파일',
         'password' => '비밀번호',
     ],

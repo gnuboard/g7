@@ -120,7 +120,7 @@
       <div data-ref="realtime_grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div data-ref="realtime_pages_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.realtime.pages_title</h2>
-          <p data-if="{{(analytics_realtime?.data?.visitors ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.realtime.empty</p>
+          <p data-if="{{analytics_realtime !== undefined &amp;&amp; (analytics_realtime?.data?.visitors ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.realtime.empty</p>
           <div data-each="entry, $idx in {{Object.entries((analytics_realtime?.data?.visitors ?? []).reduce((acc, v) => ({ ...acc, [v.page || '-']: (acc[v.page || '-'] || 0) + 1 }), {})).sort((a, b) => b[1] - a[1]).slice(0, 10)}}" class="py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
             <div class="flex-between gap-3">
               <span class="text-body truncate" title="{{entry[0]}}">{{entry[0]}}</span>
@@ -134,7 +134,8 @@
         <div data-ref="realtime_visitors_card" class="admin-card lg:col-span-2">
           <h2 class="section-heading mb-3">$t:admin.analytics.realtime.visitors_title</h2>
           <div class="overflow-x-auto">
-            <data-grid data-type="composite" data-ref="realtime_visitors_grid" data="{{analytics_realtime?.data?.visitors ?? []}}" :pagination="false" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.realtime.empty">
+            <data-grid data-type="composite" data-ref="realtime_visitors_grid" data="{{analytics_realtime?.data?.visitors ?? []}}" :pagination="false" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="{{analytics_realtime === undefined ? '' : $t('admin.analytics.realtime.empty')}}">
+              <blur-until-loaded sources="analytics_realtime"/>
               <column field="last_action_at" header="$t:admin.analytics.realtime.columns.time" width="150px">
                 <cell>
                   <span class="text-label">{{row.last_action_at | datetime | default('-')}}</span>
@@ -169,12 +170,7 @@
                        그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다.
                        표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4). -->
                   <span data-if="{{!!row.user?.name &amp;&amp; !(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" class="text-hint block">{{row.user.name}}</span>
-                  <button data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" type="button" class="text-hint underline block text-left">
-                    <on type="click">
-                      <open-window path="/admin/users/{{row.user.uuid}}"/>
-                    </on>
-                    {{row.user.name}}
-                  </button>
+                  <a data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" href="/admin/users/{{row.user.uuid}}" target="_blank" class="text-hint underline block text-left">{{row.user.name}}</a>
                 </cell>
               </column>
             </data-grid>

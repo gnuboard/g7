@@ -26,6 +26,11 @@ class LanguagePackSeedInjectorTest extends TestCase
 
     private string $packRoot;
 
+    /**
+     * 레지스트리·주입기를 준비하고 시험 전용 코어 팩 폴더(가짜 식별자 test-core-ja)를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,6 +41,11 @@ class LanguagePackSeedInjectorTest extends TestCase
         File::ensureDirectoryExists($this->packRoot.'/seed');
     }
 
+    /**
+     * 시험 전용 코어 팩 폴더를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->packRoot);
@@ -47,6 +57,7 @@ class LanguagePackSeedInjectorTest extends TestCase
      *
      * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications)
      * @param  array<string, mixed>  $seedData  seed 데이터
+     * @return void 반환값 없음
      */
     private function setupCorePackWithSeed(string $entity, array $seedData): void
     {
@@ -75,6 +86,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         $this->injector = $this->app->make(LanguagePackSeedInjector::class);
     }
 
+    /**
+     * 활성 코어 ja 팩의 seed/permissions.json 이 코어 권한 트리(모듈·카테고리·권한) 이름에 ja 키를 더한다.
+     *
+     * @scenario pack_state=active_ja_pack_present, locale=ja
+     *
+     * @effects core_permissions_seed_injects_locale_keys
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_core_permissions_adds_locale_keys(): void
     {
         $this->setupCorePackWithSeed('permissions', [
@@ -118,6 +138,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         );
     }
 
+    /**
+     * 활성 코어 ja 팩의 알림 seed 가 정의 이름·설명과 채널별 템플릿 제목·본문(3단)에 ja 를 넣는다.
+     *
+     * @scenario pack_state=active_ja_pack_present, locale=ja
+     *
+     * @effects core_notification_seed_injects_definition_and_templates
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_notifications_3tier_definition_and_template(): void
     {
         $this->setupCorePackWithSeed('notifications', [
@@ -151,6 +180,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         $this->assertSame('こんにちは', $result[0]['templates'][0]['body']['ja']);
     }
 
+    /**
+     * 활성 팩이 없으면 코어 권한 설정을 그대로 돌려준다.
+     *
+     * @scenario pack_state=no_pack, locale=ja
+     *
+     * @effects input_returned_unchanged_when_no_active_pack
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_skips_when_no_active_pack(): void
     {
         // active 팩 없음 → 입력 그대로 반환
@@ -164,6 +202,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         $this->assertSame($config, $result);
     }
 
+    /**
+     * 모듈 범위 활성 ja 팩의 엔티티 seed(배송유형)가 코드 키로 매칭돼 이름에 ja 를 넣는다.
+     *
+     * @scenario scope=module, pack_state=active_ja_pack_present, locale=ja
+     *
+     * @effects module_entity_seed_merged_by_key
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_entity_merges_module_seed(): void
     {
         $packRoot = base_path('lang-packs/acme-module-sirsoft-ecommerce-ja');
@@ -202,9 +249,19 @@ class LanguagePackSeedInjectorTest extends TestCase
         }
     }
 
+    /**
+     * 모듈 범위 활성 ja 팩의 알림 seed 가 같은 대상 모듈 알림 정의·템플릿에 ja 를 넣고 ko/en 은 보존한다.
+     *
+     * @scenario scope=module, pack_state=active_ja_pack_present, locale=ja
+     *
+     * @effects module_notification_seed_merged_for_target, ko_en_preserved_after_ja_injection
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_notifications_merges_module_pack_seed(): void
     {
-        $packRoot = base_path('lang-packs/g7-module-sirsoft-ecommerce-ja');
+        // 실제 설치 팩(g7-module-sirsoft-ecommerce-ja)과 겹치지 않는 가짜 벤더 이름 — 이 폴더는 끝에 통째로 지운다.
+        $packRoot = base_path('lang-packs/g7test-module-sirsoft-ecommerce-ja');
         File::ensureDirectoryExists($packRoot.'/seed');
         File::put($packRoot.'/seed/notifications.json', json_encode([
             'order_paid' => [
@@ -217,8 +274,8 @@ class LanguagePackSeedInjectorTest extends TestCase
 
         try {
             LanguagePack::query()->create([
-                'identifier' => 'g7-module-sirsoft-ecommerce-ja',
-                'vendor' => 'g7',
+                'identifier' => 'g7test-module-sirsoft-ecommerce-ja',
+                'vendor' => 'g7test',
                 'scope' => LanguagePackScope::Module->value,
                 'target_identifier' => 'sirsoft-ecommerce',
                 'locale' => 'ja',
@@ -262,9 +319,19 @@ class LanguagePackSeedInjectorTest extends TestCase
         }
     }
 
+    /**
+     * 다른 대상 모듈로 호출하면 그 모듈의 알림에 ja 를 넣지 않는다.
+     *
+     * @scenario scope=module, pack_state=active_ja_pack_present, locale=ja
+     *
+     * @effects other_target_pack_does_not_inject
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_notifications_skips_other_target(): void
     {
-        $packRoot = base_path('lang-packs/g7-module-sirsoft-ecommerce-ja');
+        // 실제 설치 팩(g7-module-sirsoft-ecommerce-ja)과 겹치지 않는 가짜 벤더 이름 — 이 폴더는 끝에 통째로 지운다.
+        $packRoot = base_path('lang-packs/g7test-module-sirsoft-ecommerce-ja');
         File::ensureDirectoryExists($packRoot.'/seed');
         File::put($packRoot.'/seed/notifications.json', json_encode([
             'order_paid' => ['definition' => ['name' => '注文支払い完了']],
@@ -272,8 +339,8 @@ class LanguagePackSeedInjectorTest extends TestCase
 
         try {
             LanguagePack::query()->create([
-                'identifier' => 'g7-module-sirsoft-ecommerce-ja',
-                'vendor' => 'g7',
+                'identifier' => 'g7test-module-sirsoft-ecommerce-ja',
+                'vendor' => 'g7test',
                 'scope' => LanguagePackScope::Module->value,
                 'target_identifier' => 'sirsoft-ecommerce',
                 'locale' => 'ja',
@@ -300,19 +367,26 @@ class LanguagePackSeedInjectorTest extends TestCase
     }
 
     /**
-     * manifest seed(name/description)를 활성 ja 팩 locale 로 주입하고 ko/en 을 보존합니다.
+     * manifest seed(name/description)를 가진 시험 전용 활성 ja 팩(가짜 식별자)과 그 폴더를 만듭니다.
      *
-     * @param  string  $scope  module|plugin|template
+     * @param  string  $scope  팩 범위 (module|plugin|template)
+     * @param  string  $target  주입 대상 확장 식별자
+     * @param  array<string, mixed>  $seed  seed/manifest.json 내용
+     * @return string 만든 팩 폴더 절대 경로 (호출부가 지운다)
      */
     private function setupExtensionManifestPack(string $scope, string $target, array $seed): string
     {
-        $packRoot = base_path("lang-packs/g7-{$scope}-{$target}-ja");
+        // 팩 식별자는 실제 설치 팩(`g7-{scope}-{target}-ja`)과 겹치지 않는 가짜 벤더(`g7test`)로 둔다 — 호출부가 이 폴더를
+        // 통째로 지우므로 실제 이름이면 개발 환경의 설치 ja 팩(gdpr·ecommerce·basic·marketing)이 사라진다.
+        // 주입 대상은 target_identifier 로 고르므로 대상 확장 식별자는 그대로 둔다.
+        $identifier = "g7test-{$scope}-{$target}-ja";
+        $packRoot = base_path('lang-packs/'.$identifier);
         File::ensureDirectoryExists($packRoot.'/seed');
         File::put($packRoot.'/seed/manifest.json', json_encode($seed));
 
         LanguagePack::query()->create([
-            'identifier' => "g7-{$scope}-{$target}-ja",
-            'vendor' => 'g7',
+            'identifier' => $identifier,
+            'vendor' => 'g7test',
             'scope' => $scope,
             'target_identifier' => $target,
             'locale' => 'ja',
@@ -330,6 +404,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         return $packRoot;
     }
 
+    /**
+     * 플러그인 범위 활성 ja 팩의 manifest seed 가 name·description 에 ja 를 넣고 ko/en 은 보존한다.
+     *
+     * @scenario scope=plugin, pack_state=active_ja_pack_present, name_shape=multilingual_array, description_state=present, seed_field_state=both_filled, locale=ja
+     *
+     * @effects ja_injected_into_name_and_description_when_pack_present, ko_en_preserved_after_ja_injection
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_manifest_adds_ja_and_preserves_ko_en(): void
     {
         $packRoot = $this->setupExtensionManifestPack('plugin', 'sirsoft-gdpr', [
@@ -355,6 +438,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         }
     }
 
+    /**
+     * 활성 ja 팩이 없으면 manifest 를 그대로 돌려준다.
+     *
+     * @scenario scope=module, pack_state=no_pack, name_shape=multilingual_array, description_state=present, locale=ja
+     *
+     * @effects input_returned_unchanged_when_no_active_pack
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_manifest_skips_when_no_pack(): void
     {
         $manifest = [
@@ -369,6 +461,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         $this->assertArrayNotHasKey('ja', $result['name']);
     }
 
+    /**
+     * 다른 대상 확장으로 호출하면 그 확장의 manifest 에 ja 를 넣지 않는다.
+     *
+     * @scenario scope=module, pack_state=active_ja_pack_present, name_shape=multilingual_array, description_state=missing, seed_field_state=both_filled, locale=ja
+     *
+     * @effects other_target_pack_does_not_inject
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_manifest_skips_other_target(): void
     {
         $packRoot = $this->setupExtensionManifestPack('module', 'sirsoft-ecommerce', [
@@ -387,6 +488,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         }
     }
 
+    /**
+     * 평문 문자열 name 은 배열로 바꾼 뒤 ja 를 넣고, 없던 description 은 seed 로 채운다.
+     *
+     * @scenario scope=template, pack_state=active_ja_pack_present, name_shape=plain_string, description_state=missing, seed_field_state=both_filled, locale=ja
+     *
+     * @effects plain_string_name_normalized_to_array_before_inject, missing_description_filled_from_seed
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_manifest_handles_string_name_and_missing_description(): void
     {
         $packRoot = $this->setupExtensionManifestPack('template', 'sirsoft-basic', [
@@ -408,6 +518,15 @@ class LanguagePackSeedInjectorTest extends TestCase
         }
     }
 
+    /**
+     * seed 의 빈 name 은 주입하지 않고 채워진 description 만 넣는다.
+     *
+     * @scenario scope=plugin, pack_state=active_ja_pack_present, name_shape=multilingual_array, description_state=present, seed_field_state=name_empty, locale=ja
+     *
+     * @effects empty_seed_name_skipped
+     *
+     * @return void 반환값 없음
+     */
     public function test_inject_extension_manifest_skips_empty_seed_fields(): void
     {
         $packRoot = $this->setupExtensionManifestPack('plugin', 'sirsoft-marketing', [

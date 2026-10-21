@@ -1,0 +1,25 @@
+feature: 디바운스 자동바인딩 칸의 대기 값이 다시 쓰인 상태·버린 대기 값과 섞여 화면 ≠ 상태가 되지 않는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  ① 타이머가 쓴 뒤 상태가 대기 값과 같아질 때까지 칸은 대기 값을 보인다(깜빡임 방지). 그 칸의 change 동작이 같은 칸을 다른 값으로 다시
+  쓰면 같아지는 일이 없어 칸 ≠ 상태였다(자동바인딩 디바운스 도입 이래). ② `_global` 디바운스 폼은 경로 이동으로 대기 쓰기를 버려도 전역
+  칸 표시용 대기 값이 남아 그 값을 다시 보였다. ③ 경로 이동으로 버린 대기 값의 다시 마운트 차례를 렌더 안에서 올려, 끊겨 버려진 전환
+  렌더의 증가가 남았다. 대조군은 change 동작 없는 칸의 보통 입력이다. 저장소 B 는 손으로 채우지 않는다.
+
+axes:
+  case: [change_action_transforms_same_field, change_action_reverts_same_field, plain_typing_control, global_debounce_route_switch, interrupted_transition_retype]
+
+effects:
+  - field_shows_rewritten_state     # change 동작이 다시 쓴 값을 칸도 보인다
+  - plain_typing_unchanged          # 보통 입력은 대기 → 쓰기 → 확정 그대로
+  - global_field_shows_global_state # `_global` 칸은 버린 쓰기 뒤 전역 상태 값을 보인다
+  - retyped_field_not_remounted     # 끊긴 전환 렌더 사이에 다시 친 칸은 다시 마운트되지 않고 친 글자가 남는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.autoBindingPendingRewrite.test.tsx
+
+validation:
+  browser_check: 재실측 — 디바운스 폼에서 change 동작이 같은 칸을 가공하는 모양(서드파티 계약 — 번들 해당 0)은 시험으로, 번들 디바운스 폼 4곳의 보통 입력·저장은 매트릭스 (a)(b)
+  note: |
+    fail-first: 다시 쓰임 판정(정본 B·본 값 묶음)을 끄면 change_action_transforms_same_field·change_action_reverts_same_field 가 red(칸 abc·oldx),
+    전역 칸 대기 값 버림을 끄면 global_debounce_route_switch 가 red(칸 abc), 커밋 효과 반영을 렌더 안 증가로 되돌리면 interrupted_transition_retype 가 red(칸 요소 바뀜·1000).

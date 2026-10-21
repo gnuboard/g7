@@ -1,7 +1,7 @@
 feature: 레이아웃 편집기 데이터 정의 빌트인 — 전 컴포넌트 데이터 표면 보강
 
 description: |
- 부록8 — propControl(스칼라 prop)은 1-a~1-c 로 전수 부여됐으나
+  부록8 — propControl(스칼라 prop)은 1-a~1-c 로 전수 부여됐으나
   컴포넌트의 "데이터"(옵션/항목/차트 데이터셋/중첩 컬럼/제공자 목록 등 구조적 데이터)를
   편집기에서 정의할 표면이 빈약했다. 8-a 전수 감사 분류표(계획서 (C)~(E))대로 미커버
   데이터 표면을 기존 array 에디터 재사용 + 최소 확장으로 메운다(누락 0 게이트).
@@ -14,7 +14,7 @@ description: |
    5. BarChart.labels+datasets — nodeEditor:array-group(다중 배열). datasets[].data 는
       number-list 위젯(콤마 구분 number[]).
    6. CardGrid.cardColumns — nodeEditor:array-cell-tree(컬럼 층 추가/삭제/정렬+id +
- 셀 트리 층 cellChildren 을 ChildrenListControl 재사용). "셀 트리 전체" 결정 2026-06-08.
+      셀 트리 층 cellChildren 을 ChildrenListControl 재사용). "셀 트리 전체" 결정 2026-06-08.
 
   검토군 판정(8-a (E) #6): ChipCheckbox.value 는 propControl ccValue(propValue→value)로 이미
   커버 → 데이터 편집 비대상. MultilingualTagInput/Toggle/Checkbox.value 는 런타임 scalar →

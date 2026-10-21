@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Search\KeywordSearch;
@@ -21,6 +22,11 @@ class PostScrapRepository implements PostScrapRepositoryInterface
 {
     use FiltersByDateRange;
     use PaginatesWithDeferredJoin;
+
+    /**
+     * 관리자 스크랩 목록의 스코프 기준 권한 식별자
+     */
+    private const ADMIN_VIEW_PERMISSION = 'sirsoft-board.scraps.view';
 
     /**
      * PostScrapRepository 생성자
@@ -182,6 +188,9 @@ class PostScrapRepository implements PostScrapRepositoryInterface
 
         $this->applyAdminSearch($query, (string) ($filters['search_field'] ?? 'all'), $filters['search'] ?? null);
 
+        // 스크랩 조회 권한의 스코프(본인만·소유역할)를 목록에 건다 — 라우트에 모델이 없어 미들웨어가 걸러 주지 않는다
+        PermissionHelper::applyPermissionScope($query, self::ADMIN_VIEW_PERMISSION);
+
         $direction = strtolower((string) ($filters['sort_order'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
 
         return $this->paginateWithDeferredJoin(
@@ -264,6 +273,18 @@ class PostScrapRepository implements PostScrapRepositoryInterface
     public function findById(int $id): ?PostScrap
     {
         return $this->model->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findManyByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        return $this->model->whereIn('id', $ids)->get(['id', 'user_id', 'post_id', 'board_id']);
     }
 
     /**

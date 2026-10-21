@@ -16,7 +16,7 @@
     <!-- 1층 — 검색어. 무엇을 찾을지 고르고 낱말을 넣는 자리다. -->
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select data-ref="search_field_select" name="searchField" class="select-composite w-44" value="{{_local.searchField || 'all'}}">
+        <select data-ref="search_field_select" aria-label="$t:common.search_field" name="searchField" class="select-composite w-44" value="{{_local.searchField || 'all'}}">
           <responsive on="portable" class="select-composite w-32"/>
           <options>
             <option value="all">$t:sirsoft-board.admin.reactions.search_fields.all</option>
@@ -32,7 +32,7 @@
         </select>
         <div class="relative flex-1">
           <span class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <icon name="fa-solid fa-search" class="text-sm text-gray-400 dark:text-gray-500"/>
+            <icon name="fa-solid fa-search" class="text-sm text-gray-500 dark:text-gray-400"/>
           </span>
           <input data-ref="search_input" name="search" type="text" placeholder="$t:sirsoft-board.admin.reactions.search_placeholder" class="input pl-10" value="{{_local.searchQuery || ''}}">
             <on type="change">
@@ -94,7 +94,7 @@
               <set-state target="global" dateFrom="{{$event.target.value}}" dateQuick=""/>
             </on>
           </input>
-          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <span class="text-gray-500 dark:text-gray-400">~</span>
           <input data-ref="date_to" type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-board.admin.reactions.filters.reacted_at_label')}}" class="input w-40" value="{{_global.dateTo !== undefined ? _global.dateTo : (query.reacted_at_to || '')}}">
             <on type="change">
               <!-- 종료일 직접 입력 — 빠른 기간 버튼 선택(dateQuick)은 해제한다 -->

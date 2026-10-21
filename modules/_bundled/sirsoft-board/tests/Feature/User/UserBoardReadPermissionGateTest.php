@@ -10,11 +10,11 @@ use App\Models\User;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 사용자 게시판 API 읽기 권한 회귀 테스트 (7.1.0 abilities 게이트 최종 점검 S2·S7)
+ * 사용자 게시판 API 읽기 권한 회귀 테스트 (7.1.0 abilities 게이트 최종 점검)
  *
- * - S2: 게시글 상세가 댓글 열람 권한(comments.read) 없이도 댓글 원문을 응답에 실었다(화면만 can_read_comments 로 가림).
+ * - 댓글 노출: 게시글 상세가 댓글 열람 권한(comments.read) 없이도 댓글 원문을 응답에 실었다(화면만 can_read_comments 로 가림).
  *   comment_page 페이지네이션 경로도 같다.
- * - S7: 신고·스크랩·반응 엔드포인트가 로그인만 확인해 그 게시판 글 읽기 권한이 없는 회원도 호출할 수 있었다.
+ * - 엔드포인트 읽기 권한: 신고·스크랩·반응 엔드포인트가 로그인만 확인해 그 게시판 글 읽기 권한이 없는 회원도 호출할 수 있었다.
  *
  * 시나리오 축·효과는 매니페스트 tests/scenarios/board-user-read-permission-gate.yaml 참조.
  */
@@ -128,7 +128,7 @@ class UserBoardReadPermissionGateTest extends BoardTestCase
 
     /**
      * 관리자 진입 링크(can_access_admin)는 게시판 관리 권한에 더해 관리자 게시판 화면의 진입 권한(boards.read)도
-     * 있어야 켜진다 — 관리 권한만 있으면 링크를 눌러도 관리자 화면이 403 이었다(basic-board-user #4).
+     * 있어야 켜진다 — 관리 권한만 있으면 링크를 눌러도 관리자 화면이 403 이었다.
      *
      * @scenario case=admin_link_without_boards_read
      *

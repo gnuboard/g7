@@ -8,7 +8,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
 /**
- * 게시판 한국어 문구의 조사 자리표시 검사 (7.1.0 전수 실측 O-K4-2)
+ * 게시판 한국어 문구의 조사 자리표시 검사 (7.1.0 전수 실측)
  *
  * 「{{name}}이(가) 추가되었습니다」「:status(으)로 변경했습니다」처럼 받침을 모르는 자리에
  * 조사를 괄호로 남긴 문구와, 「":keyword"가」처럼 자리표시 바로 뒤에 받침을 가정한 조사를 붙인

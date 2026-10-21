@@ -1,0 +1,824 @@
+{
+    "version": "1.0.0",
+    "layout_name": "__probe_753_markup",
+    "meta": {
+        "title": "probe 753"
+    },
+    "named_actions": {
+        "probeNamed": {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "probe.l6": "named",
+                "probe.i3": "named"
+            }
+        },
+        "probeNamedFail": {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "probe.f4": "named-fail"
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "probe.i1a": "1"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "probe.i1b": "2"
+                    }
+                }
+            ]
+        },
+        {
+            "handler": "switch",
+            "params": {
+                "value": "{{query.mode}}"
+            },
+            "cases": {
+                "quiet": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "probe.i2": "quiet"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "probe.i2": "loud"
+                    }
+                }
+            }
+        },
+        {
+            "actionRef": "probeNamed"
+        }
+    ],
+    "components": [
+        {
+            "id": "p_root",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "id": "p_state",
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "{{JSON.stringify(_local.probe ?? {})}}"
+                },
+                {
+                    "id": "p_listen_box",
+                    "type": "basic",
+                    "name": "Div",
+                    "onComponentEvent": [
+                        {
+                            "event": "probe753:l1",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l1a": "1"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l1b": "2"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l1count": "{{(_local.probe?.l1count ?? 0) + 1}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "probe753:l2",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l2": "step"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l2": "done"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "probe753:l3",
+                            "handler": "conditions",
+                            "conditions": [
+                                {
+                                    "if": "{{_eventData.kind === 'a'}}",
+                                    "then": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "probe.l3": "a-branch"
+                                        }
+                                    }
+                                },
+                                {
+                                    "then": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "probe.l3": "b-branch"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "probe753:l4",
+                            "handler": "switch",
+                            "params": {
+                                "value": "{{_eventData.kind}}"
+                            },
+                            "cases": {
+                                "a": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l4": "a-case"
+                                    }
+                                },
+                                "default": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l4": "default"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "event": "probe753:l5",
+                            "handler": "setState",
+                            "if": "{{_eventData.allow === true}}",
+                            "params": {
+                                "target": "local",
+                                "probe.l5": "allowed"
+                            }
+                        },
+                        {
+                            "event": "probe753:l6",
+                            "actionRef": "probeNamed"
+                        },
+                        {
+                            "event": "probe753:l7",
+                            "handler": "openModal",
+                            "target": "p_modal"
+                        },
+                        {
+                            "event": "probe753:l8",
+                            "handler": "apiCall",
+                            "target": "/api/__probe753_missing",
+                            "params": {
+                                "method": "GET"
+                            },
+                            "onError": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "local",
+                                    "probe.l8fail": "1"
+                                }
+                            }
+                        },
+                        {
+                            "event": "probe753:l9",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "probe.l9in": "1"
+                            }
+                        },
+                        {
+                            "event": "probe753:k2c",
+                            "handler": "conditions",
+                            "conditions": [
+                                {
+                                    "if": "{{true}}",
+                                    "then": {
+                                        "handler": "apiCall",
+                                        "target": "/api/__probe753_missing",
+                                        "params": {
+                                            "method": "GET"
+                                        },
+                                        "onError": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "probe.k2cfail": "1"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "probe753:k2s",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.k2s1": "1"
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/__probe753_missing",
+                                    "params": {
+                                        "method": "GET"
+                                    },
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "probe.k2sfail": "1"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.k2s2": "1"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "event": "probe753:lint",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.lint": "1"
+                                    },
+                                    "stopPropagation": true
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.lint2": "1"
+                                    },
+                                    "debounce": 300
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "p_l1",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l1"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L1"
+                },
+                {
+                    "id": "p_l2",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l2"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L2"
+                },
+                {
+                    "id": "p_l3",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l3",
+                                "data": {
+                                    "kind": "b"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L3"
+                },
+                {
+                    "id": "p_l4",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l4",
+                                "data": {
+                                    "kind": "a"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L4"
+                },
+                {
+                    "id": "p_l5f",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l5",
+                                "data": {
+                                    "allow": false
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L5 false"
+                },
+                {
+                    "id": "p_l5t",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l5",
+                                "data": {
+                                    "allow": true
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L5 true"
+                },
+                {
+                    "id": "p_l6",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l6"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L6"
+                },
+                {
+                    "id": "p_l7",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "emitEvent",
+                            "params": {
+                                "event": "probe753:l7"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L7"
+                },
+                {
+                    "id": "p_l8",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "emitEvent",
+                                    "params": {
+                                        "event": "probe753:l8"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l8result": "{{String(_local._eventResult?.success)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l8after": "1"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L8"
+                },
+                {
+                    "id": "p_l9",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "emitEvent",
+                                    "params": {
+                                        "event": "probe753:l9"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.l9result": "{{String(_local._eventResult?.success)}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "L9"
+                },
+                {
+                    "id": "p_k2c",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "emitEvent",
+                                    "params": {
+                                        "event": "probe753:k2c"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.k2cresult": "{{String(_local._eventResult?.success)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.k2cafter": "1"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "K2C"
+                },
+                {
+                    "id": "p_k2s",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "emitEvent",
+                                    "params": {
+                                        "event": "probe753:k2s"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.k2sresult": "{{String(_local._eventResult?.success)}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "probe.k2safter": "1"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "K2S"
+                },
+                {
+                    "id": "p_f1",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/__probe753_missing",
+                            "params": {
+                                "method": "GET"
+                            },
+                            "onError": {
+                                "handler": "conditions",
+                                "conditions": [
+                                    {
+                                        "if": "{{error.status === 404}}",
+                                        "then": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "probe.f1": "404"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "then": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "probe.f1": "other"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "F1"
+                },
+                {
+                    "id": "p_f2",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/__probe753_missing",
+                            "params": {
+                                "method": "GET"
+                            },
+                            "onError": {
+                                "handler": "switch",
+                                "params": {
+                                    "value": "{{String(error.status)}}"
+                                },
+                                "cases": {
+                                    "404": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "probe.f2": "404-case"
+                                        }
+                                    },
+                                    "default": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "probe.f2": "default"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "F2"
+                },
+                {
+                    "id": "p_f3",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/__probe753_missing",
+                            "params": {
+                                "method": "GET"
+                            },
+                            "onError": {
+                                "handler": "toast",
+                                "if": "{{error.status === 500}}",
+                                "params": {
+                                    "type": "error",
+                                    "message": "probe f3"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "F3"
+                },
+                {
+                    "id": "p_f4",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/__probe753_missing",
+                            "params": {
+                                "method": "GET"
+                            },
+                            "onError": {
+                                "actionRef": "probeNamedFail"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "F4"
+                },
+                {
+                    "id": "p_f5",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/__probe753_missing",
+                            "params": {
+                                "method": "GET"
+                            },
+                            "errorHandling": {
+                                "404": {
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{error.status === 404}}",
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "probe.f5": "404"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "F5"
+                },
+                {
+                    "id": "p_f6",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/admin/users",
+                            "params": {
+                                "method": "GET"
+                            },
+                            "onError": {
+                                "handler": "conditions",
+                                "conditions": [
+                                    {
+                                        "if": "{{error.status === 404}}",
+                                        "then": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "probe.f6": "404"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "then": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "probe.f6": "other"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button"
+                    },
+                    "text": "F6"
+                }
+            ]
+        }
+    ],
+    "modals": [
+        {
+            "id": "p_modal_body",
+            "type": "basic",
+            "name": "Span",
+            "text": "modal"
+        }
+    ]
+}

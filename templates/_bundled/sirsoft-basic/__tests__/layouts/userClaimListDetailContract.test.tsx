@@ -31,9 +31,21 @@ function flatten(node: any, out: any[] = []): any[] {
   return out;
 }
 
-/** 노드 트리에서 특정 핸들러를 쓰는 액션을 모은다. */
+/**
+ * 노드 트리에서 특정 핸들러를 쓰는 액션을 모은다.
+ * 경로 없는 navigate 는 그것을 가진 링크(A)의 href 로 간다(엔진 규칙) — 그 href 를 path 로 채워 돌려준다.
+ */
 function actionsWith(root: any, handler: string): any[] {
-  return flatten(root).filter((n) => n.handler === handler);
+  const resolved = new Map<any, any>();
+  for (const link of flatten(root).filter((n) => n.name === 'A' && typeof n.props?.href === 'string')) {
+    for (const a of flatten(link.actions ?? [])) {
+      if (a.handler === 'navigate' && !a.params?.path) {
+        resolved.set(a, { ...a, params: { ...a.params, path: link.props.href } });
+      }
+    }
+  }
+
+  return flatten(root).filter((n) => n.handler === handler).map((a) => resolved.get(a) ?? a);
 }
 
 const listShell = load('layouts/mypage/claims.json');
@@ -150,7 +162,7 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
     expect(editNavigate).toBeTruthy();
 
     // 노출 조건은 서버 판정이다 — 화면이 상태 문자열로 재현하면 상태가 늘 때마다 갈린다.
-    const buttons = flatten(listPartial).filter((n) => n.name === 'Button' && n.if);
+    const buttons = flatten(listPartial).filter((n) => ['A', 'Button'].includes(n.name) && n.if);
     expect(buttons.some((b) => String(b.if).includes('is_editable'))).toBe(true);
     expect(buttons.some((b) => String(b.if).includes('is_withdrawable'))).toBe(true);
   });
@@ -280,12 +292,16 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
 
   // @scenario claim_type=exchange, screen=detail, entry=none
   // @effects claim_edit_order_404_is_a_normal_path
-  it('작성 셸의 주문 조회 404 는 핸들러가 가른다 (수정 진입의 첫 호출은 정상 경로)', () => {
+  it('작성 셸의 주문 조회 404 는 주소(route.claim_number)로 가른다 (수정 진입의 첫 호출은 정상 경로)', () => {
     const order = applyShell.data_sources.find((s: any) => s.id === 'order');
 
     expect(String(order.endpoint)).toContain('_local.claimEditOrderNumber');
-    // errorHandling 은 조건 분기를 받지 않는다 — 그래서 판정을 핸들러가 한다.
-    expect(order.errorHandling['404'].handler).toBe('sirsoft-ecommerce.claimApplyOrderMissing');
+    // engine-v1.80.0 부터 데이터소스 오류 처리 안의 conditions 가 실행되고 route 를 읽는다(#753) — 확장 핸들러 우회를 걷어 냈다.
+    const branch = order.errorHandling['404'];
+    expect(branch.handler).toBe('conditions');
+    expect(branch.conditions[0].if).toBe('{{!!route.claim_number}}');
+    expect(branch.conditions[0].then.handler).toBe('suppress');
+    expect(branch.conditions[1].then).toMatchObject({ handler: 'showErrorPage', params: { errorCode: 404, target: 'content' } });
   });
 });
 

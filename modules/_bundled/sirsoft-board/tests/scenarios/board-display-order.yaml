@@ -1,0 +1,42 @@
+feature: board_display_order
+
+description: |
+  관리자가 게시판 표시 순서를 정한다(#142, D4·D6·D10·D13·D14). 정렬은 `display_order ASC, created_at ASC, id ASC`
+  라 순서를 한 번도 정하지 않은 사이트(모두 0)는 지금 메뉴 순서(오래된 순, 동점은 id)와 같다.
+  순서는 사용자 메뉴·게시판 목록 화면·관리자 게시판 목록 기본 정렬·통합검색 게시판 선택칸에 적용되고,
+  인기 게시판은 자체 기준(글 수)을 유지한다. 새로 만들거나 복사한 게시판은 맨 끝에 붙는다.
+  순서 저장 API(`PUT admin/boards/order`)는 전체 게시판 id 목록을 받아 1..N 으로 다시 매기며, 현재 집합과
+  다르면 422(목록이 바뀜)로 거부한다. 게시판 조회·수정 권한을 모두 범위 제한 없이 가진 사람만 바꿀 수 있다.
+
+  축은 계획서 6절 표 그대로다 — surface(적용 화면) × state(순서 상태) × actor(요청자) × request(저장 요청).
+  모든 화면이 같은 정렬 3단을 공유하므로, 화면별 정렬은 all_zero·reordered 상태에서 네 화면 모두 단언하고 새 게시판·
+  복사·재활성의 「붙는 자리」는 메뉴로 대표한다. 거부(403·422)는 순서가 바뀌지 않았음을 표시 순서 맵으로 단언한다.
+  모달·라우트·마이그레이션·활동 로그 같은 계약 케이스는 board-reorder-contract.yaml 이 맡는다.
+
+axes:
+  surface: [menu, public_list, admin_list, search_filter]
+  state: [all_zero, reordered, new_board, copied_board, reactivated]
+  actor: [full_scope, scoped, no_permission]
+  request: [ok, stale_set, duplicate, missing]
+
+exclusions:
+  - { state: [new_board, copied_board, reactivated], surface: [public_list, admin_list, search_filter], reason: "붙는 자리 계산은 화면과 무관(같은 정렬 3단) — 메뉴로 대표하고 화면별 정렬은 all_zero·reordered 에서 네 화면 모두 단언" }
+  - { request: [stale_set, duplicate, missing], surface: [public_list, admin_list, search_filter], reason: "거부된 요청은 어느 화면도 바꾸지 않는다 — 표시 순서 맵 불변으로 단언" }
+  - { request: [stale_set, duplicate, missing], state: [reordered, new_board, copied_board, reactivated], reason: "목록 검증은 현재 집합과의 비교라 순서 상태와 무관 — 순서를 정하지 않은 상태에서 대표" }
+  - { request: [stale_set, duplicate, missing], actor: [scoped, no_permission], reason: "권한 판정(403)과 목록 검증(422)은 서로 독립 — 각자 대표 조합에서 단언" }
+  - { actor: [scoped, no_permission], surface: [public_list, admin_list, search_filter], reason: "403 은 어느 화면도 바꾸지 않는다 — 표시 순서 맵 불변으로 단언" }
+  - { actor: [scoped, no_permission], state: [reordered, new_board, copied_board, reactivated], reason: "권한 판정은 순서 상태와 무관 — 순서를 정하지 않은 상태에서 대표(scoped 는 본인만·소유역할 두 범위 모두)" }
+
+effects:
+  - creation_order_when_all_zero
+  - surfaces_follow_display_order
+  - renumbered_one_to_n
+  - new_and_copied_boards_appended
+  - reactivated_board_returns_to_saved_position
+  - stale_or_invalid_set_rejected_422
+  - scoped_or_unpermitted_forbidden_403
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardReorderApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardDisplayOrderTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardListApiTest.php

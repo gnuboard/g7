@@ -1,9 +1,23 @@
 <!-- CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다
 e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제목) — 구조 Vitest(pluginSettingsSemanticClasses.test.ts) + Playwright 격리 브라우저 1440·375px 재실측 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description"/>
   <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) -->
-  <data-source id="settings" label_key="$t:sirsoft-ckeditor5.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <data-source id="settings" label_key="$t:sirsoft-ckeditor5.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
@@ -13,12 +27,12 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ckeditor5.settings.title" description="$t:sirsoft-ckeditor5.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-ckeditor5.plugin_read_only</span>
+        <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-ckeditor5.plugin_read_only</span>
       </div>
       <div data-ref="notice_banner" class="alert-info">
         <div class="flex-center gap-3">
           <icon name="circle-info" size="lg" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
-          <p class="text-info-soft">$t:sirsoft-ckeditor5.settings.notice</p>
+          <p class="text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-ckeditor5.settings.notice</p>
         </div>
       </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
@@ -92,7 +106,7 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
             <div class="lg:col-span-2">
               <select name="public_asset_disk" class="w-full" options="{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}" disabled="{{_computed.isPluginReadOnly}}"/>
               <!-- 쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다 -->
-              <p data-if="{{!!_local.form?.public_asset_disk_unavailable}}" role="status" class="text-warning-soft mt-2">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}</p>
+              <p data-if="{{!!_local.form?.public_asset_disk_unavailable}}" role="status" class="text-xs text-yellow-700 dark:text-yellow-300 mt-2">$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}</p>
             </div>
           </div>
         </div>
@@ -122,12 +136,12 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
           </div>
           <div data-ref="cleanup_manual_hint" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 space-y-3">
             <p class="text-sm text-gray-600 dark:text-gray-300 break-all">$t:sirsoft-ckeditor5.settings.cleanup.manual_hint</p>
-            <button data-ref="open_uploads_button" type="button" class="btn btn-secondary">
+            <a href="/admin/plugins/sirsoft-ckeditor5/uploads" data-ref="open_uploads_button" class="button btn btn-secondary">
               <on type="click">
-                <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads"/>
+                <navigate/>
               </on>
               <span>$t:sirsoft-ckeditor5.settings.cleanup.open_uploads</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -142,17 +156,20 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
         </ol>
       </div>
       <div data-ref="section_preview_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div data-ref="section_preview_header" class="px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-          <on type="click">
-            <!-- 미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다 -->
-            <set-state target="local" showPreview="{{!_local.showPreview}}"/>
-          </on>
-          <div>
-            <h3 class="section-heading-md">$t:sirsoft-ckeditor5.settings.section_preview</h3>
-            <p class="form-hint">$t:sirsoft-ckeditor5.settings.section_preview_hint</p>
-          </div>
-          <icon name="{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}" class="text-gray-400 dark:text-gray-500"/>
-        </div>
+        <!-- 미리보기 머리 — 다른 구역처럼 제목(h3)으로 남기고, 그 안의 펼침 단추가 머리 줄 전체를 차지한다(7.1.1 — 종전 클릭만 받는 div 라 Tab 이 닿지 않았다). 단추 안에는 블록 요소를 두지 않아 제목·안내는 span 이다 -->
+        <h3 data-ref="section_preview_heading">
+          <button type="button" data-ref="section_preview_header" class="w-full text-left px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" aria-expanded="{{!!_local.showPreview}}">
+            <on type="click">
+              <!-- 미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다 -->
+              <set-state target="local" showPreview="{{!_local.showPreview}}"/>
+            </on>
+            <span class="block">
+              <span class="block section-heading-md">$t:sirsoft-ckeditor5.settings.section_preview</span>
+              <span class="block form-hint">$t:sirsoft-ckeditor5.settings.section_preview_hint</span>
+            </span>
+            <icon name="{{_local.showPreview ? 'chevron-up' : 'chevron-down'}}" class="text-gray-500 dark:text-gray-400"/>
+          </button>
+        </h3>
         <div data-ref="section_preview_body" data-if="{{_local.showPreview}}" class="p-6 border-t border-gray-200 dark:border-gray-700">
           <!-- trackChanges:false — 미리보기는 설정을 시험해 보는 자리라 저장 대상이 아니다(위 저장 액션의 body 에서도 제외된다). 이것을 빼면 미리보기에 글자만 쳐도 _local.hasChanges 가 켜져 [저장] 버튼이 활성화되고, 운영자는 바뀐 것이 없는데 바뀐 줄 알고 누르게 된다. 어느 편집기가 저장 대상인지는 레이아웃만 알므로 핸들러가 필드명으로 알아보게 하지 않고 여기서 선언한다. -->
           <extension-point name="html_editor" data-ref="preview_editor" content="" placeholder="$t:sirsoft-ckeditor5.settings.preview_placeholder" :multilingual="true" :trackChanges="false">
@@ -164,12 +181,12 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 미리보기 편집기(preview_editor)는 props.name 이 preview_content 라 폼 자동바인딩으로 _local.form 에 쌓인다. 저장 대상이 아니므로 body 에서 제외한다 — 그대로 두면 운영자가 미리보기에 입력한 내용이 플러그인 설정으로 저장된다. 표현식 평가기는 구조분해 rest(const { a, ...rest } = obj)와 콜백 안의 멤버 대입(out[k] = v)을 지원하지 않는다 — 쓰면 식이 평가되지 않고 원문 문자열이 그대로 body 로 전송된다(오류 없이 200 이 떨어져 드러나지 않는다). Object.entries/filter/fromEntries 조합만 사용할 것(브라우저 실측으로 확인). 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 성공하면 전역 플러그인 설정까지 갱신하고 미리보기 에디터를 다시 마운트한다 — 툴바 구성은 에디터 생성 시점에 굳어 새로 만들지 않으면 바뀐 설정이 미리보기에 반영되지 않는다. -->

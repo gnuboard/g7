@@ -1,0 +1,41 @@
+feature: 큐로 돌면 즉시 반영이 깨지는 코어 훅 리스너의 동기 실행과 큐 워커 설정 다시 읽기
+
+description: |
+  훅 리스너는 sync 를 선언하지 않으면 큐로 간다. 큐 작업은 커밋 뒤에, database·redis 드라이버면 별도 워커
+  프로세스에서 돈다. 다음은 그 자리에서 돌아야 한다.
+  - 발송 로그 기록(NotificationLogListener): 같은 발송 사이클의 문맥(확장의 refkey)을 잇고, 마스킹 전 본문이
+    큐 인자로 직렬화되지 않게 한다.
+  - 코어 SEO 설정 캐시 비우기(SeoSettingsCacheListener): 본문은 DB::afterCommit.
+
+  큐 워커는 부팅 때 읽은 설정을 들고 있다. 설정 저장 공통 지점(코어·모듈·플러그인)이 공유 캐시의 설정 버전을
+  올리고, 워커는 작업 시작 직전(JobProcessing)에 비교해 바뀌었으면 코어 config(드라이버 계열 제외)·메일러·
+  설정 미러를 다시 읽는다. 첫 작업은 무조건 한 번 다시 읽는다. sync 연결 작업은 비교하지 않는다.
+
+  잠금 테스트(HookListenerSyncContractTest)는 이번에 sync 로 확정한 (리스너, 훅) 쌍과 새 큐 리스너의 비동기를
+  표로 고정한다.
+
+axis_notes:
+  case: |
+    notification_log_sync·core_seo_sync 는 구독 선언, version 은 설정 버전 값, worker_refresh 는 작업 시작 시
+    다시 읽기, contract 는 잠금 표다.
+
+axes:
+  case: [notification_log_sync, core_seo_sync, version, worker_refresh, contract]
+
+effects:
+  - log_written_in_send_cycle               # 발송 로그가 발송과 같은 자리에서 기록된다
+  - shared_cache_invalidated_without_worker # 워커 없이 저장 직후 SEO 캐시가 비워진다
+  - invalidation_deferred_until_commit      # 트랜잭션 안 발화는 커밋 뒤에 비운다
+  - version_bumped_on_save                  # 설정 저장마다 버전(저장 시각)이 바뀐다
+  - version_failure_does_not_block_save     # 버전 저장 실패가 설정 저장을 막지 않는다
+  - worker_rereads_on_version_change        # 첫 작업과 버전 변경 시에만 다시 읽는다
+  - sync_connection_ignored                 # sync 연결 작업은 비교하지 않는다
+  - refresh_failure_does_not_fail_job       # 다시 읽기 예외가 작업을 실패시키지 않는다
+  - sync_contract_locked                    # sync 확정 쌍과 큐 리스너가 표로 잠긴다
+
+test_files:
+  - tests/Unit/Listeners/NotificationLogListenerTest.php
+  - tests/Unit/Seo/Listeners/SeoSettingsCacheListenerTest.php
+  - tests/Unit/Support/SettingsVersionTest.php
+  - tests/Feature/Settings/WorkerSettingsRefreshTest.php
+  - tests/Unit/Extension/HookListenerSyncContractTest.php

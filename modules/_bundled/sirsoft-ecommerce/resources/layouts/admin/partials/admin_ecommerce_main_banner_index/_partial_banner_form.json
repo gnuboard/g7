@@ -104,7 +104,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "image",
-                                        "className": "text-5xl text-gray-400 dark:text-gray-500 mx-auto mb-2"
+                                        "className": "text-5xl text-gray-500 dark:text-gray-500 mx-auto mb-2"
                                     }
                                 },
                                 {
@@ -141,7 +141,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "globe",
-                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                "className": "text-base text-gray-500 dark:text-gray-500"
                             }
                         },
                         {
@@ -196,7 +196,7 @@
                                         "type": "text",
                                         "name": "bannerTitle",
                                         "className": "input",
-                                        "placeholder": "배너 제목 (한국어)"
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.sample.misc.banner_title_placeholder"
                                     }
                                 }
                             ]
@@ -223,7 +223,7 @@
                                         "type": "text",
                                         "name": "bannerContent",
                                         "className": "input",
-                                        "placeholder": "배너 내용 (한국어)"
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.sample.misc.banner_content_placeholder"
                                     }
                                 }
                             ]
@@ -569,6 +569,7 @@
                                     "props": {
                                         "type": "date",
                                         "name": "startDate",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.start_date",
                                         "className": "input"
                                     }
                                 }
@@ -592,6 +593,7 @@
                                     "props": {
                                         "type": "date",
                                         "name": "endDate",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.end_date",
                                         "className": "input"
                                     }
                                 }
@@ -689,7 +691,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {

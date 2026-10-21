@@ -65,7 +65,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $this->adminIds = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->pluck('id')->all();
         if ($this->adminIds === []) {
-            $this->command->warn('관리자 사용자가 없어 페이지 활동 로그 시더를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-page::messages.seeders.activity_log_sample.skip_no_admin'));
 
             return;
         }
@@ -75,13 +75,13 @@ class ActivityLogSampleSeeder extends Seeder
                 ->orWhere('properties', 'not like', '%"seeded_by":"'.self::SEEDED_BY.'"%'))
             ->count();
         if ($unmarked > 0) {
-            $this->command->warn("  ⚠ 표식 없는 페이지 활동 로그 {$unmarked}건은 운영 로그로 보고 남깁니다 (이전 버전 시더가 만든 샘플도 표식이 없어 정리되지 않습니다).");
+            $this->command->warn('  ⚠ '.__('sirsoft-page::messages.seeders.activity_log_sample.unmarked_kept', ['count' => $unmarked]));
         }
 
         // 이번 실행에서 시더가 새로 만든 페이지만 — 운영자 페이지·이미 있던 기본 페이지의 이력은 지어내지 않는다
         $pages = Page::whereIn('id', PageSampleRunRegistry::pageIds())->get();
         if ($pages->isEmpty()) {
-            $this->command->warn('이번 실행에서 새로 만든 페이지가 없어 페이지 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-page::messages.seeders.activity_log_sample.skip_no_pages'));
 
             return;
         }
@@ -96,7 +96,7 @@ class ActivityLogSampleSeeder extends Seeder
             DB::table('activity_logs')->insert($chunk);
         }
 
-        $this->command->info('페이지 활동 로그 '.count($this->rows).'건 생성 완료.');
+        $this->command->info(__('sirsoft-page::messages.seeders.activity_log_sample.done', ['count' => count($this->rows)]));
     }
 
     /**

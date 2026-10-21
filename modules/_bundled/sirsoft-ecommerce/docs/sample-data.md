@@ -83,3 +83,16 @@ php artisan module:seed sirsoft-ecommerce --sample --force
 ```bash
 php artisan module:seed sirsoft-ecommerce --sample --count=products=20 --count=orders=50
 ```
+
+## E2E 시험 데이터 (Playwright 시드 명령)
+
+샘플 데이터와 달리 **브라우저 E2E 가 스스로 부르는 시험 전용 시드**다. 모두 CLI 와 `G7_PLAYWRIGHT_BYPASS` 가드 아래에서만 돈다. 만든 데이터는 E2E 전용 표식을 달아 운영 데이터와 섞이지 않게 하고, 정리 옵션이나 `playwright:cleanup` 으로 지운다. 코어 쪽 표는 `docs/testing/e2e-testing.md` 의 시드 표다.
+
+| 명령 | 만드는 것 | 정리 |
+| --- | --- | --- |
+| `php artisan playwright:seed-ecommerce [--products=N] [--categories=N] [--orders=N] [--json]` | 상품·카테고리·주문 | `playwright:cleanup` |
+| `php artisan playwright:seed-ecommerce-member-data [--teardown] [--json]` | 회원 이커머스 데이터(실측용) | `--teardown` |
+| `php artisan playwright:seed-claim-detail --tag=<워커 꼬리표> [--teardown] [--json]` | 관리자 클레임 상세 실측용 신청서 — 옵션 변경 교환 · 상품 1건 승인 반품 · 계좌가 빈 승인 환불 | `--teardown --tag` 는 그 꼬리표만, `--tag` 없는 `--teardown` 은 심은 것 전량 |
+
+- `playwright:seed-claim-detail` 은 `tests/Playwright/fixtures/claim-detail-seed.ts` 가 워커마다 다른 `--tag` 로 부르고, 워커가 끝나면 그 꼬리표만 지운다. 손으로 돌릴 일은 잔여 확인(`--teardown --json` 의 `deleted_orders` 가 0 인지) 정도다.
+- 이 명령은 주문을 실제 계산 경로(`OrderCalculationService`)로 만들고, 신청서는 팩토리로 목표 상태에 바로 세운다 — 접수·전이 서비스를 거치면 라이브 사이트에 고객·운영자 알림과 활동 로그가 나가 되돌릴 수 없기 때문이다.

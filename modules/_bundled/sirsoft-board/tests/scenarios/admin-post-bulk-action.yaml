@@ -55,7 +55,7 @@ effects:
   - admin_post_bulk_blind_changes_status
   # 삭제된 글은 블라인드하지 않고 건너뛴다 — 블라인드하면 삭제가 풀린다 (7.1.0 실측 O-K3T-2)
   - admin_post_bulk_blind_skips_deleted
-  # 다른 게시판 글·없는 번호는 「처리 중 오류」가 아니라 「찾을 수 없는 글」 (7.1.0 실측 O-K3-2)
+  # 다른 게시판 글·없는 번호는 「처리 중 오류」가 아니라 「찾을 수 없는 글」 (7.1.0 실측)
   - admin_post_bulk_skips_missing_with_not_found_reason
   - admin_post_bulk_restore_restores_blinded_and_deleted
   - admin_post_bulk_restore_skips_already_published

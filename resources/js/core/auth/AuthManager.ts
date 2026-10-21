@@ -1,6 +1,7 @@
 import { getApiClient } from '../api/ApiClient';
 import { createLogger } from '../utils/Logger';
 import { sanitizeNavPath } from '../support/navPolicy';
+import { getAppConfig, resolveUsableLocale } from '../support/localeTag';
 
 const logger = createLogger('AuthManager');
 
@@ -755,13 +756,15 @@ export class AuthManager {
     apiClient.setToken(token);
 
     // 사용자의 language 설정 확인 및 로케일 변경 처리
+    // 회원 언어가 꺼진 언어면 사이트 기본 언어로 연다 — 회원 정보의 언어 설정은 바꾸지 않는다 (engine-v1.81.0, #148 D8)
     const userLanguage = user.language;
+    const effectiveLocale = userLanguage ? resolveUsableLocale(userLanguage, getAppConfig(), null) : undefined;
     const currentLocale = localStorage.getItem(AuthManager.LOCALE_STORAGE_KEY);
-    const localeChanged = userLanguage && userLanguage !== currentLocale;
+    const localeChanged = effectiveLocale && effectiveLocale !== currentLocale;
 
-    if (userLanguage) {
+    if (effectiveLocale) {
       try {
-        localStorage.setItem(AuthManager.LOCALE_STORAGE_KEY, userLanguage);
+        localStorage.setItem(AuthManager.LOCALE_STORAGE_KEY, effectiveLocale);
       } catch (error) {
         logger.warn('Failed to save user language to localStorage:', error);
       }
@@ -788,7 +791,12 @@ export class AuthManager {
     if (localeChanged && (window as any).__templateApp) {
       // changeLocale은 비동기이므로 await 하지 않고 실행
       // navigate가 먼저 실행되고, changeLocale이 완료되면 UI가 업데이트됨
-      (window as any).__templateApp.changeLocale(userLanguage);
+      if (effectiveLocale === userLanguage) {
+        (window as any).__templateApp.changeLocale(effectiveLocale);
+      } else {
+        // 대신 고른 사이트 기본 언어를 회원 언어로 저장하지 않는다
+        (window as any).__templateApp.changeLocale(effectiveLocale, { persist: false });
+      }
     }
 
     return user;

@@ -53,11 +53,13 @@
                                     },
                                     "children": [
                                         {
-                                            "type": "basic",
-                                            "name": "Span",
+                                            "comment": "라벨 칩 — 운영자 색은 바탕에만 쓰고 글자색은 Badge 가 바탕과 4.5 이상이 되도록 계산한다(색을 글자에 그대로 쓰면 밝은 색이 2 안팎)",
+                                            "type": "composite",
+                                            "name": "Badge",
                                             "props": {
-                                                "className": "px-2 py-0.5 rounded text-xs font-medium mr-1",
-                                                "style": "background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280'}}"
+                                                "size": "md",
+                                                "className": "mr-1",
+                                                "customColor": "{{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280'}}"
                                             },
                                             "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.name) ?? ''}}"
                                         },

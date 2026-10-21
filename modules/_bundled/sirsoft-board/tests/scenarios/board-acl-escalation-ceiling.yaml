@@ -12,7 +12,7 @@ description: |
     역할만 기본 ACL 이 붙은 뒤의 액터 권한으로 판정한다.
   - 명단: board_manager_ids·board_step_ids 가 바뀌면 회원 역할 배정 상한을 받는다. 게시판 생성
     시 최초 담당자 지정도 같다 — 단 새로 만드는 게시판에 **생성자 본인 한 명만** 관리자로 두는 것은
-    허용한다(기존 게시판에 대한 상승이 아니다, 7.1.0 실측 K4F-2·PO 결정 2026-10-08). 다른 회원을 함께
+    허용한다(기존 게시판에 대한 상승이 아니다, 7.1.0 실측, 2026-10-08 결정). 다른 회원을 함께
     넣거나 스텝을 지정하면 그대로 상한을 받는다. 그래서 게시판 생성·복사 폼은 새 게시판의 기본 ACL 을
     받지 못하는 액터에게 본인 한 명만 관리자로 채우고 스텝은 비우며 `_meta.can_assign_board_members=false`
     로 다른 담당자는 지정할 수 없음을 알린다(화면은 안내 문구를 보이고 명단 칸을 잠근다). 기본 ACL 을 받는
@@ -73,7 +73,7 @@ effects:
   - manager_other_assign_rejected
   - step_self_assign_rejected
   - create_manager_self_assign_rejected
-  # 저장할 수 없는 값을 폼이 미리 채우지 않는다 (7.1.0 전수 실측 O-K4-3) — 위임 관리자에게는 본인 한 명만 (K4F-2)
+  # 저장할 수 없는 값을 폼이 미리 채우지 않는다 (7.1.0 전수 실측) — 위임 관리자에게는 본인 한 명만
   - create_form_does_not_prefill_unassignable_manager
   - copy_form_does_not_prefill_unassignable_members
   # 거부의 원자성 — 403 만 단언하면 부분 저장(이름 변경·반쪽 게시판)을 놓친다.
@@ -88,7 +88,7 @@ effects:
   - unchanged_member_resubmission_allowed
   - existing_board_manager_can_assign_members
   - default_acl_holder_can_name_manager_on_create
-  # 새 게시판에 생성자 본인 한 명만 관리자로 두는 것은 허용 (K4F-2, 결정 2026-10-08)
+  # 새 게시판에 생성자 본인 한 명만 관리자로 두는 것은 허용 (결정 2026-10-08)
   - create_board_creator_self_manager_allowed
   - report_permission_unchanged_or_super_admin_allowed
   - default_permissions_unchanged_or_holder_allowed

@@ -45,7 +45,7 @@
                                     "props": {
                                         "className": "text-primary font-medium mt-1"
                                     },
-                                    "text": "김철수"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
                                 }
                             ]
                         },
@@ -148,7 +148,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "zap",
-                                                        "className": "text-base icon-muted"
+                                                        "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                     }
                                                 }
                                             ]
@@ -199,7 +199,7 @@
                                                     "props": {
                                                         "className": "text-secondary text-sm mt-1"
                                                     },
-                                                    "text": "주문번호 20240127-001과 자동 매칭 완료"
+                                                    "text": "$t:sirsoft-ecommerce.admin.sample.fmt.auto_matched|order=20240127-001"
                                                 }
                                             ]
                                         }
@@ -234,7 +234,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "code",
-                                                        "className": "text-base icon-muted"
+                                                        "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                     }
                                                 }
                                             ]
@@ -299,9 +299,9 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm"
+                                                        "className": "bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 rounded-lg p-3 mt-3 text-sm"
                                                     },
-                                                    "text": "주문번호가 존재하지 않습니다"
+                                                    "text": "$t:sirsoft-ecommerce.admin.sample.misc.order_not_found_msg"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -399,7 +399,7 @@
                                                                             "props": {
                                                                                 "className": "text-primary whitespace-pre-wrap"
                                                                             },
-                                                                            "text": "{\n  \"success\": false,\n  \"error\": \"주문을 찾을 수 없습니다\"\n}"
+                                                                            "text": "{\n  \"success\": false,\n  \"error\": \"$t:sirsoft-ecommerce.admin.sample.misc.order_not_found_api\"\n}"
                                                                         }
                                                                     ]
                                                                 }

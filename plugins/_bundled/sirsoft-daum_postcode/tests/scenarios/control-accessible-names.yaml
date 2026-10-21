@@ -1,0 +1,19 @@
+feature: 플러그인 sirsoft-daum_postcode 입력칸 접근 가능한 이름 (#757)
+
+description: |
+  화면 낭독기가 입력칸을 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치」로만 읽거나
+  목록형 선택칸을 고른 값으로만 읽던 결함을 막는다. 굽기 산출물(JSON) 전수를 관리자 곁 라벨
+  연결 훅 규칙을 옮긴 판정으로 검사한다(사용자 화면은 곁 라벨 불인정). 모집단은 저장소에서 파생한다.
+
+axes:
+  surface:
+    - admin_layout    # 관리자 레이아웃 본문의 칸(곁 라벨 연결 훅 인정)
+
+exclusions:
+  - { surface: admin_layout, reason: "제외 없음 — 면별 모집단을 레이아웃 JSON 전수에서 파생하는 단일 축이다" }
+
+effects:
+  - controls_have_accessible_name      # 모든 입력칸이 이름(자기 이름·감싼 Label·for 연결·관리자 곁 라벨)을 갖는다
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/layouts/control-names.test.ts

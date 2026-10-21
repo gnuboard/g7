@@ -168,7 +168,7 @@ describe('비밀번호 만료 직권 실행 확인 창', () => {
   });
 
   /**
-   * 더블클릭: `disabled` 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수됐다(2026-10-04 결정 P10 —
+   * 더블클릭: `disabled` 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수됐다(2026-10-04 결정 —
    * 이 창의 실행 버튼만 잠근다). 버튼이 첫 클릭 즉시 스스로 잠그고, 처리 중 표시는 종전대로 submitting 으로 그린다.
    *
    * @scenario surface=run_modal, stage=notice

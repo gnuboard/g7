@@ -43,7 +43,8 @@
     "1year": "1 Year"
   },
   "error": {
-    "general": "An error occurred."
+    "general": "An error occurred.",
+    "list_load_failed": "Could not load the list. Please try again in a moment."
   },
   "currency": {
     "won": "KRW"

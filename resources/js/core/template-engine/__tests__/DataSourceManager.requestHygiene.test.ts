@@ -6,7 +6,7 @@
  *    `?page=undefined` 가 나가 422 가 났다(7.1.0 실측 E-M3-1).
  * 2) 레이아웃이 suppress 로 처리한 실패와, 토큰이 없어 보내지 않고 건너뛴 인증 필요 요청은
  *    예정된 흐름이라 디버그 콘솔에 error 로 남기지 않는다 — 종전에는 비회원 화면마다
- *    「Auth required but not authenticated」 3건(O-K1-2), 연결 실패를 suppress 한 알림 템플릿
+ *    「Auth required but not authenticated」 3건, 연결 실패를 suppress 한 알림 템플릿
  *    편집 창에서 2건(E-M2-1)이 console.error 로 찍혔다. 처리기가 없거나 화면에 알리는 실패는 종전대로 error.
  */
 

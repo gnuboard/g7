@@ -1,0 +1,35 @@
+feature: 회원 쿠폰 API — 쿠폰함·사용 가능 쿠폰·받을 수 있는 쿠폰 목록·받기, 주문서 쿠폰 목록의 선택 통화 표시값
+
+description: |
+  회원 쿠폰 API(`user/coupons`·`user/coupons/available`·`user/coupons/downloadable`·`user/coupons/{id}/download`)와
+  주문서가 쓰는 쿠폰 목록(`UserCouponService::getCheckoutCoupons`·`getProductCouponsGrouped`)의 계약을 묶는다.
+  7.1.1: 주문서 쿠폰 받기 창은 받을 수 있는 쿠폰 목록(`downloadable`)을 읽는데, 이 목록은 쿠폰 모델만 직렬화해
+  통화별 환산 맵이 없었다 — 창의 다통화 분기가 죽은 분기라 USD 로 보는 회원에게도 정액 할인·최소 주문 금액이 원화로 보였다.
+  상품 상세 목록(`products/{id}/downloadable-coupons`)·관리자 `CouponResource` 와 같은 모양(`{통화: {price, formatted, is_default}}`)의
+  `multi_currency_discount_value`·`multi_currency_min_order_amount`·`multi_currency_discount_max_amount` 와 혜택 문구 맵
+  `multi_currency_benefit_formatted` 를 싣는다. 주문서 상품 쿠폰 선택칸이 읽는 `getProductCouponsGrouped` 도 혜택 문구 맵을 싣는다.
+
+# axis 의미:
+#   endpoint — 시험이 찌르는 표면(쿠폰함 index / 사용 가능 available / 받을 수 있는 목록 downloadable / 받기 download / 주문서 쿠폰 목록 checkout)
+axes:
+  endpoint: [index, available, downloadable, download, checkout]
+
+effects:
+  - coupon_box_lists_own_issues                    # 쿠폰함은 내 발급 내역만 싣는다
+  - coupon_box_filters_by_status                   # 쿠폰함 상태 필터
+  - guest_is_rejected_with_401                     # 비로그인은 401
+  - available_lists_usable_issues_only             # 사용 가능 목록은 만료·사용된 발급을 뺀다
+  - downloadable_lists_coupons_with_user_flags     # 받을 수 있는 목록은 is_downloaded·user_issued_count 를 싣는다
+  - downloadable_carries_multi_currency_amounts    # 받을 수 있는 목록이 정액 할인·최소 주문·정률 최대·혜택 문구의 통화별 맵을 싣는다(정률 할인값·0원 최소 주문은 null)
+  - downloadable_paginates                         # per_page 페이지네이션
+  - download_issues_coupon                         # 받기는 발급 내역을 만든다
+  - download_gate_blocks_ineligible                # 회원당 한도·수량·발급기간·발급 중단이면 거부
+  - checkout_coupons_carry_multi_currency_benefit  # 주문서 주문·배송비 쿠폰 목록의 혜택 문구 통화별 맵
+  - product_coupons_carry_multi_currency_benefit   # 주문서 상품 쿠폰 목록(상품별 묶음)의 혜택 문구 통화별 맵
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserCouponControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/CheckoutCouponMultiCurrencyTest.php
+
+validation:
+  browser_check: 재실측 — 로그인 회원이 마이페이지 프로필 수정에서 선호 통화를 USD 로(또는 머리글 통화 선택기) 바꾼 뒤 주문서 「쿠폰 다운로드」 창의 정액 쿠폰 할인 금액·최소 주문 금액이 $ 표기로 보이는지, 응답 `GET …/user/coupons/downloadable` 항목에 multi_currency_* 맵이 있는지

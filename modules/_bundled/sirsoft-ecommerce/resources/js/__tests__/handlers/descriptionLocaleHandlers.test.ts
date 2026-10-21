@@ -2,7 +2,7 @@
  * 상세설명 언어 탭 — 지원 언어·사이트 기본 언어 읽기
  *
  * @description
- * 7.1.0 출시 점검 D3-1: 지원 언어를 코어에 없는 `G7Core.config('app.supported_locales')` 로 읽어 늘 ko·en 이었고,
+ * 7.1.0 출시 점검: 지원 언어를 코어에 없는 `G7Core.config('app.supported_locales')` 로 읽어 늘 ko·en 이었고,
  * 기본 언어를 인자를 받지 않는 `G7Core.state.get('…')` 로 읽어 전역 상태 객체와 비교했다 — ja 탭을 추가할 수 없고
  * 사이트 기본 언어 탭 삭제 금지도 걸리지 않았다. 코어 공개 API `G7Core.locale.supported()` 와 `appConfig.siteLocale` 로 읽는다.
  *

@@ -1,0 +1,17 @@
+feature: template_dependency_console
+
+description: |
+  콘솔 부팅은 템플릿 로딩을 건너뛰어 TemplateRepository 의 모듈·플러그인 역의존성 조회가 빈 결과였고, 크론·큐 워커가 템플릿이 쓰는
+  모듈을 자동 비활성화했다(공개 #145 F4). 조회 전에 TemplateManager::ensureLoaded() 로 템플릿을 불러온다.
+
+coverage_strategy: full
+
+axes:
+  case: [module_dependency, plugin_dependency]
+
+effects:
+  - console_finds_templates_depending_on_module
+  - console_finds_templates_depending_on_plugin
+
+test_files:
+  - tests/Feature/Repositories/TemplateDependencyConsoleTest.php

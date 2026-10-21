@@ -2,7 +2,7 @@
 /**
  * 코어 환경설정 — 저장하지 않은 변경이 있을 때 탭을 옮기기 전에 묻는가
  *
- * 배경(7.1.0 브라우저 실측 조치 G2): 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아
+ * 배경(7.1.0 브라우저 실측 조치): 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아
  * 고친 값이 저장된 값으로 돌아간다(이 복귀는 의도된 동작 — 2026-10-08 결정). 다만 말없이 사라지면
  * 운영자는 저장된 줄 안다. 고친 것이 있으면 탭을 옮기기 전에 확인 창을 띄우고, 머무르면 고친 값을 그대로
  * 두고, 옮기기로 하면 평소 탭 전환과 같은 순서로 옮긴다.
@@ -152,9 +152,14 @@ describe('코어 환경설정 — 미저장 변경이 있을 때 탭 전환 확�
     expect(flatten(search.actions).some((a) => a.handler === 'setState' && 'identityPolicySearch' in (a.params ?? {}))).toBe(true);
 
     // 필터, 검색, 초기화, 쪽 넘김은 모두 이 설정 화면 경로로 옮긴다(다른 경로면 다른 레이아웃으로 넘어간다)
+    // 쪽 넘김 이전·다음은 링크(#757) — 주소는 A 의 href, navigate 는 path 없이 그 href 로 간다
     const navigates = collect(identityTab, (n) => n.handler === 'navigate');
     expect(navigates.length).toBeGreaterThan(0);
-    for (const n of navigates) expect(n.params.path).toBe('/admin/settings');
+    const pageLinks = collect(identityTab, (n) => n.name === 'A' && (n.actions ?? []).some((a: any) => a.handler === 'navigate'));
+    expect(pageLinks.length).toBe(2);
+    for (const l of pageLinks) expect(String(l.props.href).split('?')[0]).toBe('/admin/settings');
+    for (const n of navigates) expect(n.params.path ?? '/admin/settings').toBe('/admin/settings');
+    expect(navigates.filter((n) => n.params.path === undefined).length).toBe(pageLinks.length);
     // 검색 버튼도 입력 중인 검색어를 쿼리로 싣는다
     expect(navigates.some((n) => String(n.params.query?.search ?? '').includes('_local.identityPolicySearch'))).toBe(true);
   });
@@ -170,7 +175,7 @@ describe('코어 환경설정 — 미저장 변경이 있을 때 탭 전환 확�
   // @scenario case=identity_list_refetches_list_only
   // @effects identity_list_ops_keep_settings_edits
   it('본인인증 정책 목록의 필터·검색·초기화·쪽 넘김은 목록 소스(policies)만 다시 받는다(위쪽 설정 칸에서 고친 값을 덮지 않게)', () => {
-    // 목록 조작이 설정까지 다시 받으면 같은 탭 위쪽 설정 칸에서 고친 값이 서버 값으로 돌아가고 「변경 있음」이 풀렸다(7.1.0 조치 R1 ②, 2026-10-08 결정)
+    // 목록 조작이 설정까지 다시 받으면 같은 탭 위쪽 설정 칸에서 고친 값이 서버 값으로 돌아가고 「변경 있음」이 풀렸다(7.1.0 브라우저 실측 조치, 2026-10-08 결정)
     const navigates = collect(identityTab, (n) => n.handler === 'navigate');
     expect(navigates.length).toBeGreaterThan(0);
     for (const n of navigates) {

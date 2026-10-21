@@ -561,6 +561,12 @@ return [
             'in' => 'status は active または inactive である必要があります。',
         ],
     ],
+    // 会員検索(会員選択ウィンドウ)の項目表示名
+    'user_search' => [
+        'attributes' => [
+            'uuid' => '会員',
+        ],
+    ],
     'menu' => [
         // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
         'attributes' => [
@@ -983,6 +989,16 @@ return [
         'session_lifetime_max' => 'セッション有効時間は最大30日(43200分)を超えることはできません。',
         'queue_driver_required' => 'キュードライバーを選択してください。',
         'queue_driver_invalid' => '正しいキュードライバーを選択してください。',
+        'queue_connection_invalid' => '登録できないキュー接続です。',
+        'queue_connection_duplicate' => '同じキュー接続が2回あります。',
+        'queue_connection_default_required' => '現在のキュードライバー(:driver)の接続は登録解除できません。',
+        'queue_names_connection_unknown' => '不明なキュー接続(:connection)のキュー一覧です。',
+        'queue_names_required' => ':connection 接続にキューを1つ以上登録してください。',
+        'queue_names_max' => '1つの接続に登録できるキューは20個までです。',
+        'queue_name_required' => 'キュー名を入力してください。',
+        'queue_name_invalid' => 'キュー名には英数字・アンダースコア・ハイフン・ドットのみ使用でき、英字または数字で始める必要があります。',
+        'queue_name_max' => 'キュー名は64文字以下である必要があります。',
+        'queue_name_duplicate' => ':connection 接続に同じキュー名(:name)が2回あります。',
         'websocket_enabled_boolean' => 'WebSocket使用設定はtrueまたはfalse値である必要があります。',
         'websocket_app_id_required' => 'WebSocket使用時はアプリIDが必須です。',
         'websocket_app_id_max' => 'WebSocketアプリIDは255字を超えることはできません。',
@@ -1121,6 +1137,16 @@ return [
     'summary_more_error' => '(他 :count 件のエラー)',
     'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
+        'layout_source' => 'レイアウトインストールソース',
+        'layout_meta_icon' => 'メニューアイコン',
+        'layout_meta_editor_label' => 'エディター表示名',
+        'layout_meta_authoring_note' => '作成ツール注記',
+        'layout_meta_leave_guard' => '離脱確認条件',
+        'layout_meta_leave_message' => '離脱確認メッセージ',
+        'layout_seo_title' => 'SEOタイトル',
+        'layout_seo_description' => 'SEO説明',
+        'layout_seo_twitter' => 'Twitterカード',
+        'exclude_withdrawn' => '退会会員を除外',
         'layout' => 'レイアウト',
         'module' => 'モジュール',
         'token' => 'トークン',
@@ -1197,6 +1223,9 @@ return [
         'session_driver' => 'セッション ドライバー',
         'session_lifetime' => 'セッション 有効期限',
         'queue_driver' => 'キュー ドライバー',
+        'queue_connections' => 'キュー接続',
+        'queue_names' => '接続ごとのキュー',
+        'queue_name' => 'キュー名',
         'websocket_enabled' => 'WebSocket 使用',
         'websocket_app_key' => 'WebSocket アプリ キー',
         'websocket_host' => 'WebSocket ホスト',

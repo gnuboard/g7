@@ -6,6 +6,7 @@ use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Search\SearchPagePolicy;
 use App\Support\ExtensionStoragePath;
+use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValu
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 서비스
@@ -1040,7 +1042,7 @@ class ProductService
                 $parts = [];
                 foreach ($optionValues as $item) {
                     $value = $item['value'] ?? [];
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? '') : $value;
+                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale, anyAsLast: false) ?? '') : $value;
                     if ($localizedValue !== '') {
                         $parts[] = $localizedValue;
                     }
@@ -1606,21 +1608,8 @@ class ProductService
             return '';
         }
 
-        $primary = config('app.locale', 'ko');
-        $fallback = config('app.fallback_locale', 'ko');
-
-        $resolved = $value[$primary] ?? $value[$fallback] ?? null;
-        if ($resolved === null) {
-            // 첫 번째 비어있지 않은 로케일 값
-            foreach ($value as $localized) {
-                if (is_string($localized) && $localized !== '') {
-                    $resolved = $localized;
-                    break;
-                }
-            }
-        }
-
-        return is_string($resolved) ? $resolved : '';
+        // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 비어 있지 않은 값 (#148)
+        return LocalizedValue::pick($value, (string) config('app.locale', 'ko')) ?? '';
     }
 
     /**
@@ -1714,6 +1703,30 @@ class ProductService
 
         // ID로 찾지 못하면 product_code로 조회
         return $this->repository->findByProductCode($identifier);
+    }
+
+    /**
+     * 관리자 상세 조회용으로 상품을 찾고 `products.read` 스코프를 단언합니다.
+     *
+     * 관리자 상세 라우트는 `{identifier}`·`by-code/{code}` 라 권한의 `resource_route_key`(`product`)와
+     * 이름이 달라 미들웨어 스코프 검사가 돌지 않는다. 공개 상세가 함께 쓰는 `getDetail()` 에 넣으면
+     * 방문자 경로까지 관리자 스코프에 묶이므로 관리자 전용 진입점을 따로 둔다.
+     *
+     * @param  string  $identifier  상품 ID 숫자 문자열 또는 product_code
+     * @param  bool  $codeOnly  true 면 product_code 로만 찾는다 (by-code 라우트)
+     * @return Product|null 일치 상품 또는 부재 시 null
+     *
+     * @throws AccessDeniedHttpException 스코프 밖 상품인 경우
+     */
+    public function findForAdminRead(string $identifier, bool $codeOnly = false): ?Product
+    {
+        $product = $codeOnly ? $this->findByCode($identifier) : $this->findByIdOrCode($identifier);
+
+        if ($product) {
+            $this->assertWithinScope($product, 'sirsoft-ecommerce.products.read');
+        }
+
+        return $product;
     }
 
     /**

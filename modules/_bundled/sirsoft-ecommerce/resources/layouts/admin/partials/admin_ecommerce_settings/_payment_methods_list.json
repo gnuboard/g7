@@ -22,7 +22,7 @@
             "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
             "variants": {
                 "normal": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700",
-                "orphaned": "bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700"
+                "orphaned": "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
             }
         },
         "props": {
@@ -38,7 +38,7 @@
                 "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                 "props": {
                     "data-drag-handle": true,
-                    "className": "cursor-grab text-gray-400 dark:text-gray-500"
+                    "className": "cursor-grab text-gray-500 dark:text-gray-400"
                 },
                 "children": [
                     {
@@ -183,6 +183,7 @@
                         ],
                         "props": {
                             "data-testid": "{{'pg-select-' + $method.id}}",
+                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider')}}",
                             "value": "{{$method.pg_provider ?? ''}}",
                             "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
                             "disabled": "{{_computed.isReadOnly}}"
@@ -243,6 +244,7 @@
                         ],
                         "props": {
                             "value": "{{$method.stock_deduction_timing ?? 'payment_complete'}}",
+                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing')}}",
                             "disabled": "{{_computed.isReadOnly}}",
                             "options": [
                                 {
@@ -295,6 +297,7 @@
                         ],
                         "props": {
                             "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
+                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing')}}",
                             "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}",
                             "options": [
                                 {
@@ -344,6 +347,7 @@
                         "props": {
                             "type": "number",
                             "value": "{{$method.min_order_amount ?? 0}}",
+                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount')}}",
                             "min": 0,
                             "className": "input w-28",
                             "disabled": "{{_computed.isReadOnly}}"
@@ -373,6 +377,7 @@
                             }
                         ],
                         "props": {
+                            "ariaLabel": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.is_active')}}",
                             "value": "{{$method.is_active}}",
                             "disabled": "{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
                         }

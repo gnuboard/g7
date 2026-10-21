@@ -8,6 +8,7 @@ use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use App\Services\ExtensionStaticCacheService;
+use App\Support\LocalizedValue;
 use App\Support\TemplateExternals;
 use Composer\Semver\Semver;
 use Illuminate\Http\Request;
@@ -37,6 +38,8 @@ class TemplateResource extends BaseApiResource
             'version' => $this->getValue('version'),
             'type' => $this->getValue('type'),
             'status' => $this->getValue('status'),
+            // 멈춘 업데이트 — 관리자 카드가 「업데이트 멈춤」 표시와 정리(다시 업데이트)·활성화 단추를 보인다
+            'stuck_update' => (bool) $this->getValue('stuck_update', false),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getDependenciesSummary(),
             'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),
@@ -219,10 +222,7 @@ class TemplateResource extends BaseApiResource
 
         // 배열(다국어)이면 현재 로케일에 맞는 값 반환
         if (is_array($value)) {
-            $locale = App::getLocale();
-            $fallbackLocale = config('app.fallback_locale', 'ko');
-
-            return $value[$locale] ?? $value[$fallbackLocale] ?? reset($value) ?: null;
+            return LocalizedValue::pick($value, App::getLocale());
         }
 
         // Model의 getLocalizedName() 등의 메서드가 있으면 사용
@@ -426,20 +426,14 @@ class TemplateResource extends BaseApiResource
 
         // 다국어 배열인 경우
         if (is_array($name)) {
-            $locale = App::getLocale();
-            $fallbackLocale = config('app.fallback_locale', 'ko');
-
-            return $name[$locale] ?? $name[$fallbackLocale] ?? reset($name) ?: null;
+            return LocalizedValue::pick($name, App::getLocale());
         }
 
         // JSON 문자열인 경우
         if (is_string($name) && str_starts_with($name, '{')) {
             $decoded = json_decode($name, true);
             if (is_array($decoded)) {
-                $locale = App::getLocale();
-                $fallbackLocale = config('app.fallback_locale', 'ko');
-
-                return $decoded[$locale] ?? $decoded[$fallbackLocale] ?? reset($decoded) ?: null;
+                return LocalizedValue::pick($decoded, App::getLocale());
             }
         }
 

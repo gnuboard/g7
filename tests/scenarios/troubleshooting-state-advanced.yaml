@@ -1,0 +1,45 @@
+feature: 트러블슈팅 회귀 — 상태 고급(cellChildren·Debounce·부분 업데이트·computed·모달 스코프·커스텀 핸들러·비동기 setLocal·오류 콜백)
+
+description: |
+  상태 고급 트러블슈팅 사례(해결됨)를 실제 엔진 모듈로 재현해 잠그는 회귀 시험이다.
+  사례마다 원인이 달라 사례끼리 곱할 입력 축이 없다 — 축 case 는 문서의 사례 하나씩이고, 효과는 그 사례가 지키는
+  해결 성질 하나씩이다(같은 사례의 시험 여럿은 같은 칸·같은 효과를 서로 다른 각도로 잠근다).
+
+  사례 번호는 문서 절(Debounce·모달 스코프·비동기 setLocal 등)마다 따로 매겨져 겹치므로 축 값은 번호 대신 증상 이름을 쓴다.
+
+axes:
+  case: [cellchildren_local_access, debounce_submit_reload, debounce_event_access, input_event_nan, textarea_event_state_crash, form_debounce_flicker, update_item_no_render, update_item_path, computed_null, modal_parent_local_read, modal_complex_data, modal_parent_local_write, modal_custom_handler_open, modal_parent_rerender, multilingual_object_change, multilingual_spread_null, get_local_vs_state_get, async_setlocal_field_null, async_setlocal_other_field, async_setlocal_page_change, validation_stale_payload, modal_context_propagation, multi_root_setlocal_restore, delete_key_not_reflected, error_callback_name]
+
+effects:
+  - cellchildren_merges_global_state_into_context
+  - debounced_submit_skips_original_prevent_default
+  - debounced_event_data_is_extracted_only
+  - event_object_not_used_as_number
+  - react_event_not_stored_in_state
+  - pending_value_prevents_input_flicker
+  - update_item_renders_by_default
+  - update_item_path_matches_data_shape
+  - computed_waits_for_dependencies
+  - modal_reads_parent_local_via_parent_binding
+  - modal_context_passes_complex_data
+  - set_parent_local_updates_parent_state
+  - parent_context_on_stack_before_custom_open
+  - parent_set_state_triggers_rerender
+  - multilingual_change_creates_new_object
+  - spread_guards_null_before_merge
+  - get_local_prefers_action_context
+  - forced_local_fields_win_over_stale_render
+  - forced_local_fields_store_updated_keys_only
+  - page_change_resets_global_context
+  - forced_local_fields_cleared_per_render_cycle
+  - open_modal_pushes_caller_context
+  - set_local_keys_cleared_after_microtask
+  - empty_value_replaces_key_instead_of_delete
+  - error_callback_context_has_no_dollar_prefix
+
+test_files:
+  - resources/js/core/template-engine/__tests__/troubleshooting-state-advanced.test.ts
+
+notes: |
+  2026-10-15(#757) 시험 주석의 낡은 줄 번호를 위치 이름으로 바꾸면서 audit `test-scenario-reverse-mapping` 의 선행 부채(시험 45건 매핑 누락)를
+  이 매니페스트로 해소했다. 시험 동작은 바꾸지 않았다(마킹 주석만).

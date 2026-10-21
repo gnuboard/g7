@@ -15,6 +15,7 @@
 
 import type { ComponentRegistry } from './ComponentRegistry';
 import type { ErrorHandlingMap } from '../types/ErrorHandling';
+import type { ActionDefinition } from './ActionDispatcher';
 import { createLogger } from '../utils/Logger';
 import { fetchWithRetry } from './networkResilience';
 import { suffixed } from '../support/assetUrl';
@@ -42,36 +43,17 @@ export interface LayoutComponent {
 
 /**
  * 초기화 액션 정의 (레이아웃 로드 시 실행)
+ *
+ * 일반 액션 정의와 같은 키를 쓴다 — 엔진은 항목을 통째로 실행한다(sequence·switch·actionRef·
+ * errorHandling 포함, engine-v1.80.0). `type` 은 엔진이 채우고, `actionRef` 만 적은 항목은 `handler` 가 없다.
+ * 진입점 전용 키(confirm·debounce·stopPropagation·key)는 이 자리에서 의미가 없어 굽기가 거부한다.
  */
-export interface InitActionDefinition {
-  /** 액션 핸들러 이름 */
-  handler: string;
-  /** 액션 타겟 (선택적) */
-  target?: string;
-  /** 액션 파라미터 (선택적) */
-  params?: Record<string, any>;
-  /** 조건부 실행 (표현식이 truthy일 때만 실행) */
-  if?: string;
-  /** 핸들러 결과를 상태에 저장할 위치 (선택적) */
-  resultTo?: {
-    /** 저장 대상: "_local" (로컬 상태), "_global" (전역 상태), "_isolated" (격리된 상태) */
-    target: '_local' | '_global' | '_isolated';
-    /** 상태 키 */
-    key: string;
-    /** 병합 모드: "replace" | "shallow" | "deep" (기본값: "deep") */
-    merge?: 'replace' | 'shallow' | 'deep';
-  };
-  /** 액션 성공 시 실행할 후속 액션 (단일 또는 배열) */
-  onSuccess?: InitActionDefinition | InitActionDefinition[];
-  /** 액션 실패 시 실행할 후속 액션 (단일 또는 배열) */
-  onError?: InitActionDefinition | InitActionDefinition[];
-  /** conditions 핸들러용 조건 분기 배열 (선택적) */
-  conditions?: Array<{
-    if: string;
-    then?: any;
-    else?: any;
-  }>;
-}
+export type InitActionDefinition = Omit<ActionDefinition, 'type' | 'handler'> & {
+  /** 액션 핸들러 이름 (actionRef 만 적은 항목은 없음) */
+  handler?: ActionDefinition['handler'];
+  /** 형식 값 — 엔진이 `click` 으로 채운다 */
+  type?: ActionDefinition['type'];
+};
 
 /**
  * 외부 스크립트 정의 (레이아웃 로드 시 동적 로드)

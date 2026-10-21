@@ -1,0 +1,22 @@
+feature: 회원 생성·수정·삭제 때 마케팅 동의 저장의 동기 실행
+
+description: |
+  core.user.after_create·after_update·before_delete 동의 액션이 큐로 가면 저장 직후 다시 연 화면에 옛 동의값이
+  보이고, 워커에서는 요청이 없어 routeIs('api.admin.*') 가 늘 거짓이라 관리자 수정이 profile 출처로 기록된다.
+  before_delete 는 삭제 트랜잭션 밖(커밋 뒤)으로 밀린다. 세 액션을 sync 로 돌린다.
+  가입(core.auth.after_register)은 훅 인자만 읽으므로 큐에 그대로 둔다.
+
+axis_notes:
+  case: |
+    sync_contract 는 구독 선언, admin_update 는 관리자 회원 수정 API, profile_update 는 본인 마이페이지 수정 API 다.
+    수정 두 경우는 큐 드라이버를 database 로 두고 워커를 돌리지 않는다(운영의 웹 요청·워커 분리 재현).
+
+axes:
+  case: [sync_contract, admin_update, profile_update]
+
+effects:
+  - consent_saved_in_request          # 저장 직후 상세·프로필 응답에 새 동의값이 보인다
+  - source_matches_request_route      # 이력 출처가 실제 요청 경로(admin/profile)대로 남는다
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Feature/MarketingConsentAdminUpdateQueuedTest.php

@@ -1,0 +1,17 @@
+feature: sirsoft-basic 레이아웃 화면 제목(meta title)의 다국어화
+
+description: |
+  주문서 레이아웃(shop/checkout)의 meta title 만 한국어 「주문서 작성」 으로 박혀 있어, 영어·일본어 사이트의
+  레이아웃 편집기 페이지 설정 창의 편집 대상 이름에서도 한국어로 보였다(7.1.0 부터). 화면 머리말이 이미 쓰는
+  shop.checkout.title 키로 바꿨다. 레이아웃 전부의 meta title 이 번역 키(또는 식)이고, 정적 키는 ko·en·ja 에 모두 있다.
+
+axes:
+  surface: [all_layouts, checkout]
+
+effects:
+  - meta_title_uses_translation_key
+  - meta_title_key_exists_in_all_locales
+  - meta_title_baked_json_matches_source   # 굽기 산출물(짝 .json) meta.title 이 원본과 같다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/layout-meta-title-i18n.test.ts

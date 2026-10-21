@@ -41,10 +41,17 @@
                     },
                     "actions": [
                         {
-                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               앞서 연 창의 값을 먼저 null 로 지운다 — 기본(deep) 병합은 이번 객체에 없는 키(id·이름·주소·입력해 둔 칸)를 남겨,\n               「수정」 창을 닫고 열면 「배송지 수정」 으로 열리고 저장이 앞 배송지를 PUT 으로 덮어썼다(7.1.1). 닫기·Esc 는 엔진이\n               closeModal 로만 이어 정리 동작을 붙일 수 없으므로, 비우기는 여는 쪽이 맡는다.\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress": null
+                                    }
+                                },
                                 {
                                     "handler": "setState",
                                     "params": {
@@ -63,6 +70,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                     },
                     "children": [
@@ -188,7 +196,14 @@
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
-                                                            "comment": "조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙).",
+                                                            "comment": "조회 응답은 해외 주소를 city/state/postal_code 로 내려주고 폼은 intl_* 키로 제출한다. 원본 객체를 그대로 넣으면 해외 도시/주/우편번호 입력칸이 빈 값으로 보인다 (체크아웃 배송지 매핑과 동일 규칙).\n                     앞 창의 값을 먼저 null 로 지운다 — 주소 검색이 따로 쓰는 키(region 등)가 남으면 이 배송지의 저장에 실린다(7.1.1).",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "editingAddress": null
+                                                            }
+                                                        },
+                                                        {
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
@@ -220,7 +235,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                "className": "px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                             },
                                             "text": "$t:common.edit"
                                         },
@@ -250,7 +265,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 text-sm text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                "className": "px-3 py-1.5 text-sm text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                             },
                                             "text": "$t:common.delete"
                                         }
@@ -314,13 +329,13 @@
                         "portable": {
                             "props": {
                                 "name": "map-pin",
-                                "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "text-5xl mx-auto text-gray-500 dark:text-gray-500 mb-3"
                             }
                         }
                     },
                     "props": {
                         "name": "map-pin",
-                        "className": "text-6xl mx-auto text-gray-300 dark:text-gray-600 mb-4"
+                        "className": "text-6xl mx-auto text-gray-500 dark:text-gray-500 mb-4"
                     }
                 },
                 {
@@ -336,10 +351,17 @@
                     "name": "Button",
                     "actions": [
                         {
-                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
+                            "comment": "새 배송지 — 편집 대상을 «id 없는 빈 값» 으로 세워 두는 것이 곧 등록 모드다(수정이면 id 가 들어 있다).\n               앞서 연 창의 값을 먼저 null 로 지운다 — 기본(deep) 병합은 이번 객체에 없는 키(id·이름·주소·입력해 둔 칸)를 남겨,\n               「수정」 창을 닫고 열면 「배송지 수정」 으로 열리고 저장이 앞 배송지를 PUT 으로 덮어썼다(7.1.1). 닫기·Esc 는 엔진이\n               closeModal 로만 이어 정리 동작을 붙일 수 없으므로, 비우기는 여는 쪽이 맡는다.\n               배송국가는 선호 배송국가(해외배송 활성·활성 국가일 때만, 아니면 KR)로 채운다 — 선택 칸과 주소 칸이 같은 값을 보게(#703)",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "editingAddress": null
+                                    }
+                                },
                                 {
                                     "handler": "setState",
                                     "params": {
@@ -358,6 +380,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                     },
                     "children": [

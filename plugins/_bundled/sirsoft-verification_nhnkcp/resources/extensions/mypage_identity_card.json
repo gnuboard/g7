@@ -173,7 +173,7 @@
                                             "name": "Span",
                                             "if": "{{!nhnkcpRecord?.data?.is_adult_known}}",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.not_provided"
                                         }
@@ -259,7 +259,7 @@
                                             "name": "Span",
                                             "if": "{{!nhnkcpRecord?.data?.is_adult_known}}",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-verification_nhnkcp.card.is_adult.unknown"
                                         }
@@ -273,7 +273,7 @@
                     "id": "profile_view_nhnkcp_identity_pending_card",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!nhnkcpRecord?.data}}",
+                    "if": "{{nhnkcpRecord !== undefined && nhnkcpRecord !== null && (!nhnkcpRecord?.data)}}",
                     "responsive": {
                         "portable": {
                             "props": {
@@ -305,7 +305,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "circle-info",
-                                        "className": "text-xl text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5"
+                                        "className": "text-xl text-gray-500 dark:text-gray-500 flex-shrink-0 mt-0.5"
                                     }
                                 },
                                 {
@@ -334,6 +334,42 @@
                                     ]
                                 }
                             ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "본인확인 정보를 받지 못했으면(값 null) 「본인확인 내역이 없습니다」 대신 불러오기 실패를 알린다",
+                    "id": "profile_view_nhnkcp_identity_load_failed",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{nhnkcpRecord === null}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                            }
+                        }
+                    },
+                    "props": {
+                        "role": "alert",
+                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "text-base font-semibold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"
+                            },
+                            "text": "$t:sirsoft-verification_nhnkcp.card.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "$t:sirsoft-verification_nhnkcp.card.load_failed"
                         }
                     ]
                 }

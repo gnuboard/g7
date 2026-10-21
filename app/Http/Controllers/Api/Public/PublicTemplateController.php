@@ -13,6 +13,7 @@ use App\Http\Requests\Public\Template\ServeTemplateAssetRequest;
 use App\Models\TemplateLayoutAttachment;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
+use App\Support\LayoutMarkup\EmptyMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -62,7 +63,8 @@ class PublicTemplateController extends PublicBaseController
         // 해당 모듈의 모든 화면이 404 로 남는다 — 버전은 이미 올라간 뒤라 스스로 회복되지 않는다.
         // 따라서 열화 스냅샷은 그대로 응답하되 캐시에 남기지 않는다.
         $buildRoutes = function () use ($identifier) {
-            $result = $this->templateService->getRoutesDataWithModules($identifier);
+            // 응답 전용 — routes.json 의 빈 맵 `{}` 를 보존한다 (#758)
+            $result = $this->templateService->getRoutesDataWithModules($identifier, preserveEmptyMaps: true);
 
             if (! $result['success']) {
                 return ['error' => $result['error']];
@@ -194,7 +196,8 @@ class PublicTemplateController extends PublicBaseController
         }
 
         // JSON 파싱 및 반환
-        $components = json_decode(file_get_contents($result['componentsPath']), true);
+        // props 매니페스트의 빈 맵을 `{}` 로 응답하도록 보존해 읽는다 (#758)
+        $components = EmptyMap::decodePreserving((string) file_get_contents($result['componentsPath']));
 
         return $this->cachedJsonResponse($components, 3600);
     }
@@ -230,7 +233,8 @@ class PublicTemplateController extends PublicBaseController
                 }
 
                 $content = file_get_contents($configPath);
-                $data = json_decode($content, true);
+                // 빈 맵(`dependencies.modules: {}` 등)을 `{}` 로 응답하도록 보존해 읽는다 (#758)
+                $data = EmptyMap::decodePreserving((string) $content);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     return ['error' => 'invalid_json'];
@@ -310,7 +314,8 @@ class PublicTemplateController extends PublicBaseController
                 'template_not_found' => $this->notFound(
                     __('templates.errors.not_found', ['template' => $identifier])
                 ),
-                'locale_not_supported' => $this->notFound(
+                // 형식 위반(invalid_locale)도 "지원하지 않는 언어" 로 404 — 500 이 아니다 (#148)
+                'locale_not_supported', 'invalid_locale' => $this->notFound(
                     __('templates.errors.locale_not_supported', [
                         'template' => $identifier,
                         'locale' => $locale,

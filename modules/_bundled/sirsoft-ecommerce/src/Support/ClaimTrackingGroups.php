@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Support;
 
+use App\Support\LocalizedValue;
 use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimItemCollectionStateEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
@@ -362,7 +363,7 @@ final class ClaimTrackingGroups
     protected static function localize(mixed $value, string $locale): ?string
     {
         if (is_array($value)) {
-            $value = $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? (reset($value) ?: null);
+            $value = LocalizedValue::pick($value, $locale);
         }
 
         return $value === null ? null : (string) $value;

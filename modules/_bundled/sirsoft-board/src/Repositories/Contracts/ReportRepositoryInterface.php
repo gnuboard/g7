@@ -100,7 +100,7 @@ interface ReportRepositoryInterface
     /**
      * 케이스 기준으로 신고 목록을 페이지네이션하여 조회합니다.
      * boards_reports 1행 = 1케이스이므로 복잡한 그룹핑 없이 직접 페이지네이션합니다.
-     * 재신고 시 last_reported_at이 갱신되어 목록 상단으로 올라옵니다.
+     * 새 신고가 들어올 때마다(추가 신고·재접수) last_reported_at이 갱신되어 목록 상단으로 올라옵니다.
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 항목 수
@@ -286,6 +286,18 @@ interface ReportRepositoryInterface
      * @return mixed 최근 신고 시각 (없으면 null)
      */
     public function latestLogCreatedAt(int $reportId);
+
+    /**
+     * 케이스의 마지막 신고 시각을 주어진 시각으로 앞당겨 기록합니다(늦은 시각만 반영).
+     *
+     * 지금 값이 비었거나 주어진 시각보다 이를 때만 바꾼다 — 같은 케이스에 신고가 동시에 들어와
+     * 늦게 끝난 요청이 이미 기록된 더 늦은 시각을 되돌리지 않게 조건부 UPDATE 한 문장으로 처리한다.
+     *
+     * @param  int  $reportId  신고 케이스 ID
+     * @param  \DateTimeInterface  $reportedAt  이번 신고 시각
+     * @return bool 값을 바꿨으면 true
+     */
+    public function advanceLastReportedAt(int $reportId, \DateTimeInterface $reportedAt): bool;
 
     /**
      * 신고 대상의 스냅샷에서 개인정보 필드를 덮어씁니다 (개인정보 보유기간 처리, 이슈 #636).

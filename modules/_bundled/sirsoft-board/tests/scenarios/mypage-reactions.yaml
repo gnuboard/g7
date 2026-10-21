@@ -51,7 +51,7 @@ effects:
   - list_filters_target_type_reaction_type_board_and_sort
   - search_uses_like_and_excludes_deleted_targets
   - invalid_filter_returns_422
-  # 7.1.0 실측 O-K3-3 — 모르는 검색 대상은 422 대신 기본(제목+내용)
+  # 7.1.0 실측 — 모르는 검색 대상은 422 대신 기본(제목+내용)
   - unknown_search_field_falls_back_to_title_content
   - row_marks_reaction_off_board_deleted_and_target_deleted
   - response_carries_reaction_types_meta_and_query_echo

@@ -1,0 +1,33 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 잡 3종 × 사건 5종 × 배치 2종 중 대표 조합만 @scenario 로 매핑 — 같은 가드(JobSingleFlight·failed 가드·생성자 배치)를 공유해 나머지 조합은 동치.
+# audit:allow scenario-scale-axis-required reason: 큐 배치·단일 실행 가드, 처리 규모 경로 무변경
+
+feature: long_job_single_flight
+
+description: |
+  통계 재집계·익명화·개인정보 직권 실행 잡은 30분~1시간을 돈다. 기본 큐(retry_after 90초)에서 워커가 둘이면 90초 뒤
+  다른 워커가 같은 잡을 다시 집는데, 종전에는 그 사본이 handle 없이 MaxAttemptsExceeded 로 실패 처리되고 failed() 가
+  아직 도는 실행의 이력을 「실패」로 닫았다.
+
+  핵심 동작:
+    - 디스패치 때 dispatchId(uuid)를 싣고 handle 을 JobSingleFlight 잠금으로 감싼다 — 두 번째 사본은 조용히 빠진다.
+    - tries=3·maxExceptions=1·failOnTimeout=true — 재예약 사본은 handle 에 들어와 빠지고, 진짜 예외는 1회에 실패.
+    - failed() 는 MaxAttemptsExceeded 이고 잠금이 잡혀 있으면 이력을 닫지 않는다(시간 초과는 닫는다).
+    - 긴 작업 연결({기본}-long)과 long 큐가 둘 다 등록돼 있으면 그쪽으로 배치한다.
+    - 옛 payload(dispatchId 없음)는 가드 없이 종전처럼 돈다.
+
+axes:
+  job: [archive_range, anonymize_ledger, privacy_manual_run]
+  event: [rereserve, exception, max_attempts, timeout, legacy]
+  placement: [long_registered, long_not_registered]
+
+effects:
+  - rereserved_copy_exits_quietly
+  - genuine_failure_closes_run_once
+  - failed_hook_respects_single_flight
+  - timeout_closes_run
+  - long_jobs_route_to_long_queue
+  - long_jobs_stay_on_default
+  - legacy_payload_runs
+
+test_files:
+  - tests/Feature/Queue/LongJobReReservationTest.php

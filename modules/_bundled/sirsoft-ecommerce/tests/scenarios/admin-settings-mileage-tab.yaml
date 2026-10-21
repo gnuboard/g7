@@ -1,0 +1,45 @@
+feature: 관리자 환경설정 — 마일리지 탭(기본 설정·통화 규칙 표/카드·유효기간·소멸 알림)
+
+description: |
+  마일리지 설정은 별도 화면이 아니라 쇼핑몰 환경설정의 「마일리지」 탭이다. 레이아웃 구조 시험
+  (`admin_ecommerce_settings_mileage_tab.test.tsx`)이 탭 등록·저장 범위·카드 partial 형식·기본 설정
+  바인딩·통화 규칙 표/카드·인라인 통화 추가 흐름·유효기간과 소멸 알림 카드·다른 화면으로 가는 진입점을 잠근다.
+  적립 절사 기준(단위·방식) 시험은 `mileage-earn-rounding.yaml` 이 소유하고, 이 매니페스트는 탭 표면만 맡는다.
+
+  결정 사항:
+    - 통화 추가는 버튼 즉시 push 가 아니라 인라인 입력 행을 연다(환율 설정과 같은 형태). 체크 버튼으로 확정하지
+      않은 행이 남아 있으면 저장을 막고 알린다 — 입력한 통화가 조용히 사라지지 않게 한다.
+    - 기본통화 행(첫 행)은 통화코드를 고치거나 지울 수 없다.
+    - 소멸 알림 채널은 이 카드에서 고르지 않는다. 알림 정의(mileage_expiring_soon)의 템플릿별 활성 상태를
+      읽기 전용으로 보여 주고, 「알림 설정으로」 진입점이 알림 정의 탭으로 옮긴다.
+
+  이 매니페스트는 #757(WP-L 화면 이동 링크) 작업 중 「마일리지 내역 보기」 단추를 링크로 바꾸며 이 시험을
+  고칠 때, 탭 표면 시험에 시험별 @scenario/@effects 가 없던 상태(기존 부채)를 함께 정리한 것이다.
+
+axes:
+  surface:
+    - settings_tab     # 환경설정 메인 레이아웃(탭 등록·저장 분기·별도 화면 제거)
+    - mileage_tab      # 마일리지 탭 본문(_tab_mileage — 카드 partial 조립·좁은 화면 전환)
+    - basic_card       # 기본 설정 카드
+    - currency_table   # 통화 규칙 표(넓은 화면)
+    - currency_cards   # 통화 규칙 카드(좁은 화면)
+    - expiry_cards     # 유효기간·소멸 알림 카드
+
+effects:
+  - mileage_tab_registered_in_settings          # 탭 목록에 마일리지가 있고 메인이 탭 partial 을 참조하며 탭 활성 시에만 렌더
+  - mileage_save_sends_only_its_category        # 저장 body 가 마일리지 카테고리만 보낸다
+  - pending_inline_currency_blocks_save         # 확정 안 한 인라인 통화 행이 있으면 저장 차단과 경고
+  - standalone_mileage_layout_removed           # 별도 마일리지 설정 화면이 다시 생기지 않는다
+  - mileage_partials_are_well_formed            # 카드 partial 5종 참조·중첩 partial 은 파일명만
+  - currency_rules_swap_to_cards_on_portable    # 좁은 화면(responsive.portable)에서 표 대신 카드 partial
+  - inline_currency_add_flow                    # 인라인 추가 행 노출 조건·등록 통화 중 미추가분 옵션·중복 검사 후 push(표·카드)
+  - basic_card_links_to_transactions            # 기본 설정 카드 헤더의 「마일리지 내역 보기」가 내역 화면 링크
+  - basic_card_bindings_and_defaults            # 사용 스위치·적립 시점 기본값(구매확정)·적립률 음수 오류·옛 단일 차감 시점 제거
+  - currency_rule_rows_bind_by_index            # 통화 규칙 반복(표·카드)·기본통화 행 잠금·삭제가 변경 있음을 켠다
+  - max_use_type_radio_controls                 # 최대 사용 방식 라디오와 비선택 입력 비활성·라벨 클릭 전환
+  - expiry_toggles_bound                        # 유효기간·소멸 알림 스위치 바인딩
+  - expiring_notification_shows_template_status # 소멸 알림 템플릿별 활성 상태 읽기 전용 표시·템플릿 0개 안내
+  - go_to_notification_settings_switches_tab    # 「알림 설정으로」가 알림 정의 탭으로 옮긴다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_settings_mileage_tab.test.tsx

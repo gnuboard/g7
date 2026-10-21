@@ -24,25 +24,51 @@ class LanguagePackSecurityTest extends TestCase
 
     private string $tempDir;
 
+    /** 시험 전에 `lang-packs/_pending/` 에 있던 하위 디렉토리 — 이 시험이 남긴 것만 정리하기 위한 기준. */
+    private array $pendingBefore = [];
+
+    /**
+     * 서비스·임시 ZIP 폴더를 준비하고 `_pending` 기준 목록을 기록합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->service = $this->app->make(LanguagePackService::class);
         $this->tempDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.uniqid('lp_security_', true);
         File::ensureDirectoryExists($this->tempDir);
+        $this->pendingBefore = $this->pendingDirectories();
     }
 
+    /**
+     * 임시 ZIP 폴더와, 이 시험 중에 새로 생긴 `_pending` 하위 디렉토리만 지웁니다.
+     *
+     * 예전에는 `_pending` 하위를 통째로 지워, 다른 실행·개발 서버의 설치가 쓰던 사본과 2026-10-14 nicepayments-ja
+     * 재설치 실패의 증거 사본(`_pending/5d807708-…`)까지 함께 지웠다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->tempDir);
-        // _pending 루트는 보존하고 (Git 추적 .gitignore/.gitkeep 유지) 서브디렉토리만 정리
-        $pendingRoot = base_path('lang-packs/_pending');
-        if (File::isDirectory($pendingRoot)) {
-            foreach (File::directories($pendingRoot) as $sub) {
-                File::deleteDirectory($sub);
-            }
+        // _pending 루트는 보존하고 (Git 추적 .gitignore/.gitkeep 유지) 이 시험이 만든 서브디렉토리만 정리
+        foreach (array_diff($this->pendingDirectories(), $this->pendingBefore) as $created) {
+            File::deleteDirectory($created);
         }
         parent::tearDown();
+    }
+
+    /**
+     * `lang-packs/_pending/` 하위 디렉토리 경로 목록을 돌려줍니다.
+     *
+     * @return list<string> 디렉토리 경로
+     */
+    private function pendingDirectories(): array
+    {
+        $pendingRoot = base_path('lang-packs/_pending');
+
+        return File::isDirectory($pendingRoot) ? File::directories($pendingRoot) : [];
     }
 
     /**
@@ -67,7 +93,7 @@ class LanguagePackSecurityTest extends TestCase
     /**
      * 유효한 manifest JSON 문자열을 반환합니다.
      *
-     * @return string JSON
+     * @return string manifest JSON 문자열
      */
     private function validManifestJson(): string
     {
@@ -85,6 +111,15 @@ class LanguagePackSecurityTest extends TestCase
         ]);
     }
 
+    /**
+     * backend/ 밖에 놓인 PHP 파일이 든 ZIP 은 설치 단계에서 거부된다.
+     *
+     * @scenario vector=assert_security_rules, actor_permission=cli_system
+     *
+     * @effects install_rejects_php_outside_the_declared_locale_directory
+     *
+     * @return void 반환값 없음
+     */
     public function test_php_outside_backend_directory_rejected(): void
     {
         $zip = $this->makeZip([
@@ -100,6 +135,15 @@ class LanguagePackSecurityTest extends TestCase
         $this->service->installFromFile($file, false, null);
     }
 
+    /**
+     * backend/ 안의 PHP 라도 번역 배열이 아닌 코드(eval)가 있으면 설치 단계에서 거부된다.
+     *
+     * @scenario vector=assert_security_rules, actor_permission=cli_system
+     *
+     * @effects install_rejects_php_that_is_not_a_translation_array
+     *
+     * @return void 반환값 없음
+     */
     public function test_unsafe_php_pattern_in_backend_rejected(): void
     {
         $zip = $this->makeZip([
@@ -117,6 +161,15 @@ class LanguagePackSecurityTest extends TestCase
         $this->service->installFromFile($file, false, null);
     }
 
+    /**
+     * backend/ 안의 번역 배열만 담은 PHP 는 그대로 설치된다.
+     *
+     * @scenario vector=assert_security_rules, actor_permission=cli_system
+     *
+     * @effects install_accepts_real_world_translation_files
+     *
+     * @return void 반환값 없음
+     */
     public function test_safe_backend_php_accepted(): void
     {
         $zip = $this->makeZip([
@@ -146,6 +199,8 @@ class LanguagePackSecurityTest extends TestCase
      * @scenario vector=assert_security_rules, actor_permission=cli_system
      *
      * @effects install_rejects_php_that_is_not_a_translation_array
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('blocklistBypassPayloadProvider')]
     public function test_install_rejects_payloads_the_old_blocklist_missed(string $payload, string $vector): void
@@ -181,6 +236,8 @@ class LanguagePackSecurityTest extends TestCase
      * @scenario vector=assert_security_rules, actor_permission=cli_system
      *
      * @effects install_rejects_files_outside_the_extension_whitelist
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('disallowedFilePathProvider')]
     public function test_install_rejects_files_outside_the_extension_whitelist(string $path, string $reason): void
@@ -210,6 +267,8 @@ class LanguagePackSecurityTest extends TestCase
      * @scenario vector=assert_security_rules, actor_permission=cli_system
      *
      * @effects install_rejects_php_outside_the_declared_locale_directory
+     *
+     * @return void 반환값 없음
      */
     public function test_install_rejects_php_in_a_different_locale_directory(): void
     {
@@ -239,6 +298,8 @@ class LanguagePackSecurityTest extends TestCase
      * @scenario vector=assert_security_rules, actor_permission=cli_system
      *
      * @effects install_accepts_real_world_translation_files
+     *
+     * @return void 반환값 없음
      */
     public function test_install_accepts_real_world_translation_files(): void
     {
@@ -264,6 +325,8 @@ class LanguagePackSecurityTest extends TestCase
      * @scenario vector=assert_security_rules, actor_permission=cli_system
      *
      * @effects install_rejects_packages_containing_symlinks
+     *
+     * @return void 반환값 없음
      */
     public function test_install_rejects_packages_containing_symlinks(): void
     {
@@ -293,6 +356,8 @@ class LanguagePackSecurityTest extends TestCase
      * @scenario vector=assert_security_rules, actor_permission=cli_system
      *
      * @effects every_bundled_pack_passes_the_new_validator
+     *
+     * @return void 반환값 없음
      */
     public function test_all_bundled_packs_pass_the_validator(): void
     {
@@ -326,6 +391,7 @@ class LanguagePackSecurityTest extends TestCase
      *
      * @param  string  $packageRoot  패키지 루트
      * @param  array<string, mixed>  $manifest  manifest 데이터
+     * @return void 반환값 없음
      */
     private function invokeAssertSecurityRules(string $packageRoot, array $manifest): void
     {
@@ -336,7 +402,7 @@ class LanguagePackSecurityTest extends TestCase
     /**
      * 기존 정규식 블록리스트가 놓치던 페이로드 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 사례 이름 ⇒ [페이로드, 우회 수법]
      */
     public static function blocklistBypassPayloadProvider(): array
     {
@@ -354,7 +420,7 @@ class LanguagePackSecurityTest extends TestCase
     /**
      * 허용 확장자 밖이라 거부되어야 하는 파일 경로 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 사례 이름 ⇒ [ZIP 안 경로, 차단 사유]
      */
     public static function disallowedFilePathProvider(): array
     {

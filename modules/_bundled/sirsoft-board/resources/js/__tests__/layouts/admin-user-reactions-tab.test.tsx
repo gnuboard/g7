@@ -21,7 +21,7 @@ const extJson = JSON.stringify(ext);
 
 describe('회원 상세 반응 탭 — 주입 계약', () => {
     // @scenario case=member_detail_tab_links_with_uuid
-    // @effects admin_user_tab_navigates_with_user_uuid_not_href
+    // @effects admin_user_tab_link_carries_user_uuid
     it('회원 상세 화면에 스크랩 탭 뒤 차례로 끼어든다', () => {
         expect((ext as any).target_layout ?? (ext as any).targetLayout).toBe('admin_user_detail');
         // 스크랩 탭이 310 이므로 그 뒤에 선다.
@@ -29,7 +29,7 @@ describe('회원 상세 반응 탭 — 주입 계약', () => {
     });
 
     // @scenario case=member_detail_tab_links_with_uuid
-    // @effects admin_user_tab_navigates_with_user_uuid_not_href
+    // @effects admin_user_tab_link_carries_user_uuid
     it('탭 버튼과 본문이 같은 id 로 이어진다', () => {
         // 이 id 가 어긋나면 탭은 뜨는데 눌러도 빈 화면이다.
         // 등장 횟수만 세면(>= 2) 한쪽 id 를 고쳐 둘이 어긋나도 초록이 유지된다 —
@@ -51,7 +51,7 @@ describe('회원 상세 반응 탭 — 주입 계약', () => {
     });
 
     // @scenario case=member_detail_tab_links_with_uuid
-    // @effects admin_user_tab_navigates_with_user_uuid_not_href
+    // @effects admin_user_tab_link_carries_user_uuid
     it('관리자 응답에 board_reactions 가 있을 때만 노출된다', () => {
         // 프로필 응답에는 이 값이 없으므로 조각 전체가 걸러진다.
         expect(/!!user\?\.data\?\.board_reactions/.test(extJson)).toBe(true);
@@ -60,7 +60,7 @@ describe('회원 상세 반응 탭 — 주입 계약', () => {
 
 describe('회원 상세 반응 탭 — 요약 카드와 링크', () => {
     // @scenario case=member_detail_tab_links_with_uuid
-    // @effects admin_user_tab_navigates_with_user_uuid_not_href
+    // @effects admin_user_tab_link_carries_user_uuid
     it('총 반응·글댓글 구분·최근 반응 세 칸을 낸다', () => {
         expect(/board_reactions\?\.count/.test(extJson)).toBe(true);
         expect(/board_reactions\?\.post_count/.test(extJson)).toBe(true);
@@ -69,7 +69,7 @@ describe('회원 상세 반응 탭 — 요약 카드와 링크', () => {
     });
 
     // @scenario case=member_detail_tab_links_with_uuid
-    // @effects admin_user_tab_navigates_with_user_uuid_not_href
+    // @effects admin_user_tab_link_carries_user_uuid
     it('0건이면 링크 대신 안내 문구를 낸다', () => {
         // 눌러 봐야 빈 목록이고, 그 사실은 위 숫자가 이미 말한다.
         expect(/\(user\?\.data\?\.board_reactions\?\.count \?\? 0\) === 0/.test(extJson)).toBe(true);
@@ -78,16 +78,18 @@ describe('회원 상세 반응 탭 — 요약 카드와 링크', () => {
     });
 
     // @scenario case=member_detail_tab_links_with_uuid
-    // @effects admin_user_tab_navigates_with_user_uuid_not_href
-    it('목록 이동은 navigate 로 하고 회원 uuid 를 실어 보낸다', () => {
+    // @effects admin_user_tab_link_carries_user_uuid
+    it('목록 이동은 링크(href)와 navigate 로 하고 회원 uuid 를 실어 보낸다', () => {
         expect(/\/admin\/boards\/reactions/.test(extJson)).toBe(true);
         expect(/"user_uuid"/.test(extJson)).toBe(true);
-        // href 에 식을 넣으면 속성 자체가 실리지 않아 링크가 죽는다.
-        expect(/"href"/.test(extJson)).toBe(false);
+        // #757 — 「전체 보기」는 링크다(새 탭 열기). 주소는 href 한 곳이고 회원 uuid 를 쿼리로 싣는다.
+        // 2026-09-15 실측에서 이 조각의 식 href 가 DOM 에 실리지 않은 적이 있어 보통 클릭은 navigate path 로 간다(스크랩 탭과 같음)
+        expect(extJson).toContain('"href":"/admin/boards/reactions?user_uuid={{user?.data?.uuid');
+        expect(extJson).toContain('"path":"/admin/boards/reactions"');
     });
 
     // @scenario case=member_detail_tab_links_with_uuid
-    // @effects admin_user_tab_navigates_with_user_uuid_not_href
+    // @effects admin_user_tab_link_carries_user_uuid
     it('문구는 전부 언어 키로 낸다', () => {
         for (const key of ['tab_label', 'title', 'count', 'breakdown', 'latest_reacted_at', 'view_list']) {
             expect(extJson, key).toContain(`admin.users.reactions.${key}`);

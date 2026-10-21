@@ -61,13 +61,13 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit}}">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit || order?.data?.abilities?.can_update !== true}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isConfirmingDeposit || order?.data?.abilities?.can_update !== true}}">
         <on type="click">
           <!-- 입금확인 실행 — 화면 값 넷을 그대로 핸들러에 넘긴다. 잠금·오류 표시·창 닫기·목록 갱신이 모두 그 핸들러 안에서 일어나므로 여기에는 성공·실패 갈래가 없다. -->
           <action handler="sirsoft-ecommerce.confirmDeposit" orderId="{{route.orderNumber}}" amount="{{_local.depositAmount}}" depositorName="{{_local.depositorName ?? ''}}" markOrderComplete="{{_local.markOrderComplete ?? false}}"/>

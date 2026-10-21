@@ -43,16 +43,16 @@ class UpdateCloudRangesCommand extends Command
         $result = $service->refresh();
 
         if ($result['failed'] !== []) {
-            $this->warn('받지 못한 출처: '.implode(', ', $result['failed']));
+            $this->warn(__('analytics.console.update_cloud_ranges.failed_sources', ['sources' => implode(', ', $result['failed'])]));
         }
 
         if ($result['count'] === 0) {
-            $this->error('대역을 하나도 받지 못해 기존 목록을 그대로 둡니다.');
+            $this->error(__('analytics.console.update_cloud_ranges.none_received'));
 
             return self::FAILURE;
         }
 
-        $this->info(sprintf('클라우드 IP 대역 %d건을 갱신했습니다.', $result['count']));
+        $this->info(__('analytics.console.update_cloud_ranges.done', ['count' => $result['count']]));
 
         return self::SUCCESS;
     }

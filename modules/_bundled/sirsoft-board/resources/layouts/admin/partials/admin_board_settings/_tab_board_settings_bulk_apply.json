@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "comment": "========== 섹션 9: 기존 게시판에 일괄 적용 ==========",
@@ -61,7 +54,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice"
                                 }
@@ -73,7 +66,7 @@
                     "id": "no_boards_notice",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!(boards_list?.data?.data ?? []).length}}",
+                    "if": "{{boards_list !== undefined && (!(boards_list?.data?.data ?? []).length)}}",
                     "props": {
                         "className": "flex-center p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg gap-3"
                     },
@@ -266,6 +259,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.target_boards",
                                         "value": "{{_local._bulkApplyBoardIds ?? []}}",
                                         "options": "{{$computed.boardOptions ?? []}}",
                                         "placeholder": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder",
@@ -353,7 +347,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{!_computed.canBulkApply}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:bg-amber-700 dark:hover:bg-amber-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {

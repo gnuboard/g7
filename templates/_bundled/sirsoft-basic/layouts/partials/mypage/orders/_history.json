@@ -336,7 +336,7 @@
                                             "name": "Span",
                                             "if": "{{cancel.cancelled_at_formatted}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0"
+                                                "className": "text-xs text-gray-500 dark:text-gray-300 shrink-0"
                                             },
                                             "text": "{{cancel.cancelled_at_formatted ?? ''}}"
                                         }

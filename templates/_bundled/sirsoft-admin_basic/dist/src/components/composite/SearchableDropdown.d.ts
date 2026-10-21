@@ -45,6 +45,10 @@ export interface SearchableDropdownProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
+    /** 트리거 단추 이름 — 단추는 「{이름} {현재 값}」으로 읽힌다. 없으면 곁 라벨을 잇는다(#757) */
+    'aria-label'?: string;
+    /** 트리거 단추 이름이 될 요소 id — 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다 */
+    'aria-labelledby'?: string;
 }
 /**
  * 검색 가능한 드롭다운 컴포넌트

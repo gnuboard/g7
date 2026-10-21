@@ -29,7 +29,7 @@ class TrustedProxyDiagnosticTest extends TestCase
      */
     private function request(array $server = []): Request
     {
-        return Request::create('http://g7_2.dev/', 'GET', [], [], [], array_merge([
+        return Request::create('http://dev-site.kr/', 'GET', [], [], [], array_merge([
             'REMOTE_ADDR' => '10.0.0.5',
         ], $server));
     }
@@ -40,6 +40,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * @scenario proxies_setting=unset, forwarded_proto=absent, forwarded_for=absent
      *
      * @effects direct_exposure_is_not_a_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_프록시_헤더가_없으면_경고하지_않는다(): void
     {
@@ -58,6 +60,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * @scenario proxies_setting=unset, forwarded_proto=https, forwarded_for=single
      *
      * @effects forwarded_without_config_is_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_프록시_헤더를_받는데_설정이_없으면_경고한다(): void
     {
@@ -84,6 +88,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * @scenario proxies_setting=unset, forwarded_proto=http, forwarded_for=single
      *
      * @effects http_only_behind_proxy_still_warns
+     *
+     * @return void 반환값 없음
      */
     public function test_htt_p_전용_사이트가_프록시_뒤에_있어도_경고한다(): void
     {
@@ -104,6 +110,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * @scenario proxies_setting=star, forwarded_proto=https, forwarded_for=single
      *
      * @effects configured_proxy_is_ok
+     *
+     * @return void 반환값 없음
      */
     public function test_설정이_있으면_정상으로_판정한다(): void
     {
@@ -125,6 +133,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * 사라지는데, 미들웨어는 여전히 아무것도 신뢰하지 않는다.
      *
      * @effects empty_string_counts_as_unset
+     *
+     * @return void 반환값 없음
      */
     public function test_빈_문자열은_미설정과_같다(): void
     {
@@ -143,6 +153,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * 요청이 없는 맥락(콘솔)은 "값 없음" 이 아니라 "판정 불가" 입니다.
      *
      * @effects console_context_is_not_applicable
+     *
+     * @return void 반환값 없음
      */
     public function test_요청이_없으면_판정_불가로_구분한다(): void
     {
@@ -163,6 +175,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * 회색 안내로 렌더되어 경고로 보이지 않는다.
      *
      * @effects dashboard_alert_only_on_warning_with_warning_type
+     *
+     * @return void 반환값 없음
      */
     public function test_대시보드_알림은_경고_상태에서만_추가된다(): void
     {
@@ -191,6 +205,8 @@ class TrustedProxyDiagnosticTest extends TestCase
      * 진단 엔드포인트는 값 편집 경로를 제공하지 않습니다 (읽기 전용 계약).
      *
      * @effects diagnostic_endpoint_is_read_only
+     *
+     * @return void 반환값 없음
      */
     public function test_진단_엔드포인트는_읽기_전용이다(): void
     {

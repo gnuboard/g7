@@ -5,7 +5,7 @@
         "ko": "Basic",
         "en": "Basic"
     },
-    "version": "1.2.0",
+    "version": "1.2.1",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 사용자 템플릿",
@@ -21,11 +21,11 @@
         "email": "contact@sirsoft.com",
         "url": "https://sirsoft.com"
     },
-    "release_date": "2026-10-10",
-    "g7_version": ">=7.1.0",
+    "release_date": "2026-10-21",
+    "g7_version": ">=7.1.1",
     "dependencies": {
         "modules": {
-            "sirsoft-board": ">=1.2.0",
+            "sirsoft-board": ">=1.2.1",
             "sirsoft-ecommerce": ">=1.3.0",
             "sirsoft-page": ">=1.2.0"
         },

@@ -127,7 +127,7 @@
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(adminIdentityPolicies?.data?.data ?? []).length === 0}}",
+                                    "if": "{{adminIdentityPolicies !== undefined && (adminIdentityPolicies?.data?.data ?? []).length === 0}}",
                                     "props": {
                                         "className": "text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md"
                                     },

@@ -30,6 +30,7 @@ class BoardFactory extends Factory
             'slug' => $this->faker->unique()->lexify('test-board-??????'),
             'type' => 'basic',
             'is_active' => true,
+            'display_order' => 0,
             'per_page' => 20,
             'per_page_mobile' => 15,
             'order_by' => 'created_at',
@@ -47,6 +48,7 @@ class BoardFactory extends Factory
             'use_comment_reaction' => true,
             'active_reaction_types' => ['like'],
             'reply_delete_policy' => 'cascade',
+            'secret_reply_visibility' => 'thread_path',
             'use_file_upload' => false,
             'max_file_size' => 10, // 10MB
             'max_file_count' => 5,

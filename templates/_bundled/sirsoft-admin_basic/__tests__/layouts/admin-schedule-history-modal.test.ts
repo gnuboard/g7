@@ -1,6 +1,6 @@
 /**
  * @file admin-schedule-history-modal.test.ts
- * @description 예약 작업 실행 이력 창 바인딩 회귀 테스트 (7.1.0 영역 J D-J2)
+ * @description 예약 작업 실행 이력 창 바인딩 회귀 테스트 (7.1.0)
  *
  * 시나리오 SSoT: tests/scenarios/schedule-history-modal.yaml
  *
@@ -60,7 +60,7 @@ describe('실행 이력 창', () => {
   });
 
   /**
-   * 실행 시각은 응답의 ISO 원문(「2026-10-06T21:18:00+09:00」)이 아니라 날짜 파이프로 사람이 읽는 시각으로 보인다(O-J2).
+   * 실행 시각은 응답의 ISO 원문(「2026-10-06T21:18:00+09:00」)이 아니라 날짜 파이프로 사람이 읽는 시각으로 보인다.
    *
    * @scenario surface=admin_schedule_history_modal
    * @effects schedule_history_modal_shows_runs_and_output

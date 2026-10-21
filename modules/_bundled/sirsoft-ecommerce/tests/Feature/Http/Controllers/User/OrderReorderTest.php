@@ -198,17 +198,17 @@ class OrderReorderTest extends ModuleTestCase
     }
 
     /**
-     * 담지 못한 행의 상품명은 보는 언어 → 앱 폴백 언어(app.fallback_locale) 순으로 고른다 — ko·en 고정 순서가 아니다
+     * 담지 못한 행의 상품명은 보는 언어 → 사이트 기본 언어(app.site_locale) → 영어 순으로 고른다 — ko·en 고정 순서가 아니다 (#148)
      *
-     * @scenario basis_case=skip_name_uses_fallback_locale
+     * @scenario basis_case=skip_name_uses_site_locale
      *
-     * @effects reorder_skip_name_follows_app_fallback_locale
+     * @effects reorder_skip_name_follows_site_locale
      *
      * @return void 반환값 없음
      */
-    public function test_reorder_skip_name_follows_app_fallback_locale(): void
+    public function test_reorder_skip_name_follows_site_locale(): void
     {
-        config(['app.fallback_locale' => 'en']);
+        config(['app.site_locale' => 'en', 'app.fallback_locale' => 'ko']);
         app()->setLocale('fr');
 
         $product = ProductFactory::new()->create();

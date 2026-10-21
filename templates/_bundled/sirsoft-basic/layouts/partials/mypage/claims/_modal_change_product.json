@@ -34,7 +34,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "spinner",
-                                "className": "text-xl text-gray-400 dark:text-gray-500 animate-spin"
+                                "className": "text-xl text-gray-500 dark:text-gray-500 animate-spin"
                             }
                         }
                     ]
@@ -203,6 +203,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}",
                                                 "className": "w-full",
                                                 "value": "{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}",
                                                 "placeholder": "$t:shop.select",
@@ -257,7 +258,7 @@
                                             "text": "{{claimAddGroup.name}}"
                                         },
                                         {
-                                            "comment": "추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다.",
+                                            "comment": "추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다.\n                 빼는 것은 그 키를 «뺀» 객체가 아니라 그 키를 null 로 쓴 객체다 — 기본(deep) 병합은 이번 객체에 없는 키를 남겨 비운 선택이 그대로 신청서에\n                 실렸다(7.1.1). 적용 핸들러(applyClaimChangeProduct)가 null 을 거른다.",
                                             "type": "basic",
                                             "name": "Select",
                                             "actions": [
@@ -266,12 +267,13 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "_local",
-                                                        "changeProductAdditionalSelections": "{{$event.target.value === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalSelections ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalSelections ?? {}, { [claimAddGroup.id]: Number($event.target.value) })}}",
-                                                        "changeProductAdditionalTexts": "{{Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id)))}}"
+                                                        "changeProductAdditionalSelections": "{{Object.assign({}, _local.changeProductAdditionalSelections ?? {}, { [claimAddGroup.id]: $event.target.value === '' ? null : Number($event.target.value) })}}",
+                                                        "changeProductAdditionalTexts": "{{Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: null })}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "{{claimAddGroup.name}}",
                                                 "className": "w-full",
                                                 "value": "{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}",
                                                 "placeholder": "$t:shop.additional_option_placeholder",
@@ -287,7 +289,7 @@
                                             },
                                             "children": [
                                                 {
-                                                    "comment": "직접입력 글 — 공백만 남기면 그 그룹의 글을 아예 지워 빈 글이 신청서에 실리지 않게 한다. 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다.",
+                                                    "comment": "직접입력 글 — 공백만 남기면 그 그룹의 글을 null 로 지워 빈 글이 신청서에 실리지 않게 한다(키를 빼면 deep 병합이 앞 글을 남긴다 — 7.1.1). 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다.",
                                                     "type": "basic",
                                                     "name": "Input",
                                                     "actions": [
@@ -296,12 +298,13 @@
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "_local",
-                                                                "changeProductAdditionalTexts": "{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: $event.target.value })}}"
+                                                                "changeProductAdditionalTexts": "{{Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: $event.target.value.trim() === '' ? null : $event.target.value })}}"
                                                             }
                                                         }
                                                     ],
                                                     "props": {
                                                         "type": "text",
+                                                        "aria-label": "$t:common.row_cell|row={{claimAddGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}",
                                                         "maxLength": 255,
                                                         "value": "{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}",
                                                         "placeholder": "$t:shop.additional_option_custom_text_placeholder",
@@ -317,7 +320,7 @@
                     ]
                 },
                 {
-                    "comment": "고른 조합을 지금 살 수 없을 때의 안내 (T2-D10 · #599 3차 실측 L-4). 옵션 찾기(`findMatchingOption`)는 판매중지(`is_active=false`) 옵션을 건너뛰므로, 모든 그룹을 골랐는데도 찾은 옵션이 없으면 **그 조합은 지금 교환받을 수 없다**는 뜻이다. 종전에는 이 경우 가격 줄도 안내도 없이 [적용]만 조용히 잠겨, 같은 화면의 재고 0(「선택한 옵션의 재고가 없습니다.」)과 달리 왜 안 되는지 알 수 없었다. 서버도 같은 조합을 거절한다(T2-D11 — 교환 대상은 지금 살 수 있는 옵션만).",
+                    "comment": "고른 조합을 지금 살 수 없을 때의 안내 (#599 실측). 옵션 찾기(`findMatchingOption`)는 판매중지(`is_active=false`) 옵션을 건너뛰므로, 모든 그룹을 골랐는데도 찾은 옵션이 없으면 **그 조합은 지금 교환받을 수 없다**는 뜻이다. 종전에는 이 경우 가격 줄도 안내도 없이 [적용]만 조용히 잠겨, 같은 화면의 재고 0(「선택한 옵션의 재고가 없습니다.」)과 달리 왜 안 되는지 알 수 없었다. 서버도 같은 조합을 거절한다(교환 대상은 지금 살 수 있는 옵션만).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_local.changeProductMode === 'change' && !_local.changeProductMatched && (_local.changeProductProduct?.option_groups ?? []).length > 0 && (_local.changeProductProduct?.option_groups ?? []).every(g => !!_local.changeProductSelections?.[g.name_localized])}}",
@@ -329,7 +332,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-red-600 dark:text-red-400 font-medium"
+                                "className": "text-xs text-red-700 dark:text-red-400 font-medium"
                             },
                             "text": "$t:claim.change_product.unavailable"
                         }
@@ -374,7 +377,7 @@
                             "name": "P",
                             "if": "{{(_local.changeProductMatched?.stock_quantity ?? 0) <= 0}}",
                             "props": {
-                                "className": "mt-1 text-xs text-red-600 dark:text-red-400 font-medium"
+                                "className": "mt-1 text-xs text-red-700 dark:text-red-400 font-medium"
                             },
                             "text": "$t:claim.change_product.out_of_stock"
                         },
@@ -382,7 +385,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                                "className": "mt-1 text-xs text-gray-600 dark:text-gray-400"
                             },
                             "text": "$t:claim.change_product.difference_notice"
                         }

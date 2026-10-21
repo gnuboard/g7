@@ -397,6 +397,11 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 필드 정리. 시퀀스 시드가 여기 있는 이유는 `SequenceSeeder` 가 신규 설치에서만 돌기 때문입니다.
 `total_refunded_amount` 는 의도적으로 백필하지 않습니다 — 과거 취소분은 이미 `total_paid_amount`
 에 반영돼 있어, 더하면 잔여 환불 한도가 같은 금액을 두 번 뺍니다.
+
+1.3.1 의 데이터 전환은 `upgrades/data/1.3.1/migrations/` 에 있습니다 — 탈퇴 회원에게 남은 마일리지를
+탈퇴 때와 같은 계약(`UserMileageService::forfeitForWithdrawal` — 「탈퇴로 소멸」 거래 기록, 거래 행 보존)으로
+소멸 기록합니다. 1.3.0 의 관리자 수동 지급이 탈퇴 회원을 거르지 않아 생긴 잔액이며, 탈퇴 회원은 로그인할 수
+없어 쓸 길이 없습니다. 다시 돌려도 대상이 0명인 멱등 스텝입니다.
 <!-- @intent END -->
 
 ## Enum

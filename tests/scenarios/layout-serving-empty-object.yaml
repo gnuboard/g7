@@ -1,4 +1,4 @@
-feature: 레이아웃 서빙 — 원본의 빈 객체 `{}` 를 응답에서 `{}` 로 보존 (7.1.0 실측 O-K3-4)
+feature: 레이아웃 서빙 — 원본의 빈 객체 `{}` 를 응답에서 `{}` 로 보존 (7.1.0 실측)
 
 description: |
   레이아웃 content 는 연관 배열로 디코드돼 빈 객체 `{}` 가 빈 배열 `[]` 과 구별되지 않았다. 그래서 원본·DB 행이
@@ -11,12 +11,16 @@ description: |
 test_files:
   - tests/Unit/Support/LayoutEmptyObjectsTest.php
   - tests/Feature/Api/Public/LayoutServingEmptyObjectTest.php
+  - tests/Unit/Support/BundledLayoutEmptyObjectCorpusTest.php
+  - tests/Feature/Extension/EmbeddedExtensionPointEmptyObjectTest.php
 
 axes:
   position:
     - init_state_value
     - params_fallback_value
     - root_section
+    # #758 — 화면이 그대로 받는 자리까지 넓힌 보존 범위(props 값·isolatedState 값·data_sources data/headers 아래·defines·computed 값·확장 props)
+    - expanded_value
 
 effects:
   - init_state_empty_object_preserved
@@ -30,3 +34,10 @@ effects:
   # base #747 이 같은 테스트 파일에 단 결함 고정 효과 — issue759 → develop-7.1.0 리베이스로 합류(이 트랙의 코어 수정으로 통과).
   - empty_object_served_as_object
   - empty_array_served_as_array
+  # #758 — 보존 범위 확대(Q3)와 캐시 경유 응답·번들 코퍼스 잠금
+  - expanded_value_positions_preserved
+  - structural_self_empty_stays_array
+  - cached_response_keeps_empty_objects
+  - bundled_corpus_empty_objects_survive_serving
+  # #758 2차 검증 — 반복 렌더 템플릿(셀·확장 행) 안 확장점의 `default: {}`·빈 노드 `{}` 가 서빙을 500 으로 깨뜨리지 않는다
+  - embedded_extension_point_tolerates_empty_objects

@@ -18,6 +18,12 @@ use Modules\Sirsoft\Ecommerce\Services\SignupCurrencyResolver;
  */
 class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
 {
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  EcommerceUserProfileRepositoryInterface  $profileRepository  회원 이커머스 프로필 저장소 (결제 통화 저장)
+     * @param  SignupCurrencyResolver  $resolver  가입 시 부여할 결제 통화 해석기
+     */
     public function __construct(
         protected EcommerceUserProfileRepositoryInterface $profileRepository,
         protected SignupCurrencyResolver $resolver,
@@ -31,10 +37,12 @@ class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
     public static function getSubscribedHooks(): array
     {
         return [
+            // sync: 가입·관리자 생성 직후 연 회원 상세에 배정값이 보여야 한다 — 큐로 가면 워커가 돌 때까지 빈칸이다.
+            // 「이미 설정돼 있으면 유지」 가드로 멱등이다(#724).
             // 회원가입(유저 자가 가입)
-            'core.auth.after_register' => ['method' => 'handleRegister', 'priority' => 20],
+            'core.auth.after_register' => ['method' => 'handleRegister', 'priority' => 20, 'sync' => true],
             // 관리자 회원생성
-            'core.user.after_create' => ['method' => 'handleAdminCreate', 'priority' => 20],
+            'core.user.after_create' => ['method' => 'handleAdminCreate', 'priority' => 20, 'sync' => true],
             // 가입 검증 규칙: preferred_currency 를 등록 통화로 제한(무효 통화 강제 전송 차단)
             'core.auth.register_validation_rules' => [
                 'method' => 'addCurrencyRule',
@@ -71,6 +79,7 @@ class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
      * 기본 핸들러 (method 매핑 사용 — 직접 호출되지 않음)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -82,6 +91,7 @@ class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
      *
      * @param  User  $user  가입한 회원
      * @param  array  $context  가입 컨텍스트
+     * @return void 반환값 없음
      */
     public function handleRegister(User $user, array $context = []): void
     {
@@ -96,6 +106,7 @@ class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
      *
      * @param  User  $user  생성된 회원
      * @param  array  $originalData  생성 원본 데이터
+     * @return void 반환값 없음
      */
     public function handleAdminCreate(User $user, array $originalData = []): void
     {
@@ -110,6 +121,7 @@ class AssignDefaultCurrencyOnRegisterListener implements HookListenerInterface
      *
      * @param  User  $user  대상 회원
      * @param  string|null  $submittedCurrency  가입폼이 제출한 통화 코드(우선)
+     * @return void 반환값 없음
      */
     protected function assignCurrency(User $user, ?string $submittedCurrency = null): void
     {

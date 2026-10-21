@@ -13,6 +13,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayout;
 use App\Rules\SafeCustomAssetPath;
+use App\Support\LayoutEmptyObjects;
 use App\Support\LayoutMarkup\PartialReferenceNotation;
 use Illuminate\Support\Collection;
 
@@ -209,8 +210,9 @@ class LayoutFileService
         $this->assertOwnedByTemplate($layout, 'layouts.errors.rename_blocked_source_type');
         $this->assertNotReferenced($templateId, $name, 'layouts.errors.rename_blocked_by_reference');
 
-        $oldContent = $layout->content;
-        $content = is_array($oldContent) ? $oldContent : [];
+        // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만들어 이름만 바꿔도 빈 객체가 사라진다 (#758)
+        $oldContent = LayoutEmptyObjects::rawPreserving($layout);
+        $content = $oldContent;
 
         // 본문의 `layout_name` 도 함께 옮긴다 — 남겨 두면 저장할 때마다 옛 이름이 되살아나고
         // 컴파일러가 파일명과 다른 이름으로 산출물을 만든다.

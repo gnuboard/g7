@@ -7,6 +7,7 @@ use App\Extension\ModuleManager;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Services\NotificationRecipientCapability;
+use App\Support\LocalizedValue;
 use App\Support\SiteUrl;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -631,7 +632,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         // 코어 사전에 없는 언어(일본어 등)는 상점 배송국가 설정 이름으로 채운다 (S4-D17)
         $names = CountryNames::forCode($code);
 
-        return $names[app()->getLocale()] ?? $names[config('app.fallback_locale')] ?? $code;
+        return LocalizedValue::pick($names, anyAsLast: false) ?? $code;
     }
 
     /**

@@ -1,0 +1,20 @@
+feature: sirsoft-basic 클릭만 받던 영역 — 단추로 바꿔 키보드로 누르기
+
+description: |
+  게시글 첨부(펼침 머리·내려받기 카드), 장바구니·주문서 금액 줄 펼침, 상품 후기 사진, 비회원 주문 상세의 클레임 번호가
+  클릭 동작만 달린 div·span·img 라 Tab 이 닿지 않고 Enter·Space 로 눌리지 않았다(7.1.1 — 「같은 모양」 표).
+  그 자리를 type="button" 단추로 그린다 — 펼침은 aria-expanded, 사진 단추는 몇 번째 사진인지 담은 다국어 aria-label.
+  클레임 번호는 비회원 조회 토큰이 탭에 묶여 새 탭이 조회 폼으로 되돌아가므로 링크가 아니라 같은 창 이동 단추다.
+  잠금 시험의 첫 단언은 basic 레이아웃 전체에서 모집단을 파생하고, 같은 일을 하는 키보드 수단이 따로 있는 자리
+  (모바일 메뉴·통화 목록 덮개, 라디오를 품은 카드, 펼침 단추를 품은 문의 카드, aria-pressed 대리 단추를 품은 배송지 카드)만 남긴다.
+  축 surface 는 확인 대상 화면 묶음이다.
+
+axes:
+  surface: [user_page]
+
+effects:
+  - click_only_regions_are_keyboard_buttons
+  - buttons_declare_type   # 폼 안 단추 전수와 이번에 단추로 바꾼 자리의 클릭 단추는 type 을 적는다(폼 밖 단추 전수는 76건이 남아 넘김)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/click-only-keyboard.test.tsx

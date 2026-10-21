@@ -4,8 +4,8 @@
  *
  * 서버는 저장된 수신자 값에만 표시 이름(display_names)을 붙여 준다. 선택 칸의 onChange 가 값만 담으면 방금 고른
  * 역할은 식별자, 회원은 UUID 로 보이고, 검색어가 남아 있으면 그 항목이 목록에서 걸러져 선택을 풀 수 없었다.
- * 코어 편집 창(admin_basic `_modal_notification_template_form`)은 7.1.0 영역 G 에서 고쳤고(G-D5 표시 이름,
- * G-D6 칩), 쇼핑몰 사본이 그 수정에서 빠져 있었다. 선택 칸의 onChange·칩 빼기 표현식을 엔진에 그대로 넣어 확인한다.
+ * 코어 편집 창(admin_basic `_modal_notification_template_form`)은 7.1.0에서 고쳤고(표시 이름,
+ * 칩), 쇼핑몰 사본이 그 수정에서 빠져 있었다. 선택 칸의 onChange·칩 빼기 표현식을 엔진에 그대로 넣어 확인한다.
  */
 
 import { describe, it, expect } from 'vitest';

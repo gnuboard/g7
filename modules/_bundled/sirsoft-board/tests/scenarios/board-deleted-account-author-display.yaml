@@ -1,0 +1,28 @@
+feature: 계정이 남지 않은 회원 작성자의 신고·댓글 표시 (7.1.1 출시 전 점검)
+
+description: |
+  회원 계정이 하드 삭제되면 신고 케이스의 author_id 가 FK(nullOnDelete)로 비워지고, 계정 삭제 뒤 접수된 신고는
+  스냅샷 이름도 빈 값이라 신고 목록·상세가 그 작성자를 「비회원」+ 비회원 배지로 보였다. 댓글 응답도 같은 작성자를
+  is_guest:true 로 냈다. 글·댓글에 남은 회원 번호(목록 쿼리의 target_author_user_id, 상세의 대상 행)와 신고 당시
+  스냅샷의 author_is_member 로 회원이었음을 알아, 비회원 배지 없이 이름(없으면 null → 화면 「알 수 없음」)만 싣는다.
+
+axes:
+  case:
+    - deleted_member_report_list_not_guest
+    - deleted_member_report_detail_not_guest
+    - report_snapshot_marks_member_author
+    - guest_report_still_guest
+    - deleted_member_comment_not_guest
+
+effects:
+  - deleted_member_report_author_not_guest
+  - guest_report_author_kept
+  - deleted_member_comment_author_not_guest
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/DeletedAccountAuthorDisplayTest.php
+
+validation:
+  note: |
+    수정 전 코드에서 계정 없는 회원 사례(목록·상세·스냅샷 표시·댓글)가 실패(is_guest true·name 「비회원」·표시 없음)하는 것을
+    확인했다. 대조군(진짜 비회원 글 신고)은 수정 전후 모두 비회원 이름·배지다.

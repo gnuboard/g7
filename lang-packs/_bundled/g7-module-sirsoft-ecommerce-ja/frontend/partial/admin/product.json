@@ -80,7 +80,8 @@
     "shipping_policy_options": {
       "all": "すべて"
     },
-    "detail_filter_label": "詳細検索フィルター"
+    "detail_filter_label": "詳細検索フィルター",
+    "category_step": "カテゴリ{{n}}段階"
   },
   "action": {
     "edit": "編集",
@@ -578,7 +579,8 @@
       "value": "変更数量",
       "preview_increase": "在庫を{{value}}個増加させます。",
       "preview_decrease": "在庫を{{value}}個減少させます。",
-      "preview_set": "在庫を{{value}}個に変更します。"
+      "preview_set": "在庫を{{value}}個に変更します。",
+      "quantity_unit": "個"
     },
     "bulk_confirm": {
       "title": "一括変更確認",
@@ -639,7 +641,10 @@
       "related_data_notice": "次のデータが一緒に削除されます:",
       "warning_message": "削除された商品は復旧できません。",
       "permanent_warning": "この操作は取り消せません。商品に関連するすべてのデータ(画像、オプション、在庫など)が永久に削除されます。",
-      "confirm_button": "削除"
+      "confirm_button": "削除",
+      "related_images": "- 画像: {{count}}件",
+      "related_options": "- オプション: {{count}}件",
+      "related_additional_options": "- 追加オプション: {{count}}件"
     },
     "mode_change": {
       "title": "詳細説明モード変更",
@@ -890,7 +895,9 @@
     "additional_value_price_label": "追加料金",
     "additional_value_default": "デフォルト",
     "additional_value_active": "使用",
-    "additional_value_allow_custom_text": "直接入力"
+    "additional_value_allow_custom_text": "直接入力",
+    "option_group_name_n": "オプショングループ{{n}}の名前",
+    "option_group_values_n": "オプショングループ{{n}}の値"
   },
   "notice": {
     "tab_existing_template": "テンプレート選択",

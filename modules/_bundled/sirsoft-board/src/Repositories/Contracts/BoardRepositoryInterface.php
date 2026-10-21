@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 
 /**
  * 게시판 Repository 인터페이스
@@ -46,6 +47,14 @@ interface BoardRepositoryInterface
      * @return Board|null 게시판 모델 또는 null
      */
     public function findBySlug(string $slug): ?Board;
+
+    /**
+     * 슬러그의 게시판이 있는지 확인합니다(행을 읽지 않는 존재 확인).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 게시판 존재 여부
+     */
+    public function existsBySlug(string $slug): bool;
 
     /**
      * 게시판을 수정합니다.
@@ -120,27 +129,30 @@ interface BoardRepositoryInterface
      * 최근 게시글을 조회합니다. (여러 게시판 통합)
      *
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 recent — 게시판별 하위 쿼리마다)
      * @return array<int, array<string, mixed>>
      */
-    public function getRecentPosts(int $limit): array;
+    public function getRecentPosts(int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 특정 게시판의 최근 게시물을 조회합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPosts(string $slug, int $limit): array;
+    public function getBoardRecentPosts(string $slug, int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 게시판 ID로 최근 게시물을 조회합니다 (slug 재조회 없음).
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPostsById(int $boardId, int $limit): array;
+    public function getBoardRecentPostsById(int $boardId, int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 게시판의 게시글 개수를 조회합니다.
@@ -169,9 +181,10 @@ interface BoardRepositoryInterface
      *
      * @param  string  $period  기간 필터 (today, week, month, all)
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 popular — 작성자·첨부 조인이 있어 조건은 컬럼을 한정해야 한다)
      * @return array<int, array<string, mixed>>
      */
-    public function getPopularPosts(string $period, int $limit): array;
+    public function getPopularPosts(string $period, int $limit, ?PostQueryExtensions $extensions = null): array;
 
     /**
      * 활성화된 게시판 목록을 조회합니다.
@@ -193,7 +206,7 @@ interface BoardRepositoryInterface
     public function streamActiveForSitemap(int $chunkSize = 500): iterable;
 
     /**
-     * 필터용 전체 활성 게시판 목록을 반환합니다.
+     * 필터용 전체 활성 게시판 목록을 반환합니다 (표시 순서).
      *
      * @return Collection 활성 게시판 컬렉션
      */
@@ -236,11 +249,40 @@ interface BoardRepositoryInterface
     /**
      * 메뉴용 경량 게시판 목록을 조회합니다.
      *
-     * id, name, slug 컬럼만 조회하여 메뉴 렌더링에 필요한 최소 데이터만 반환합니다.
+     * 메뉴 렌더링·결과 훅 리스너에 필요한 최소 컬럼만 조회합니다. 순서는 표시 순서 → 만든 순서 → id 입니다.
      *
-     * @return Collection 활성 게시판 컬렉션 (id, name, slug만 포함)
+     * @return Collection 활성 게시판 컬렉션 (id, name, slug, display_order, created_at)
      */
     public function getActiveBoardsForMenu(): Collection;
+
+    /**
+     * 새 게시판에 매길 표시 순서를 반환합니다 (현재 최댓값 + 1 — 맨 끝).
+     *
+     * @return int 다음 표시 순서
+     */
+    public function nextDisplayOrder(): int;
+
+    /**
+     * 게시판 표시 순서를 일괄 갱신합니다.
+     *
+     * @param  array<int, int>  $idToOrder  게시판 id => 표시 순서
+     * @return void 반환값 없음
+     */
+    public function updateDisplayOrders(array $idToOrder): void;
+
+    /**
+     * 게시판 id => 표시 순서 맵을 반환합니다 (모든 게시판, 활성·비활성 포함).
+     *
+     * @return array<int, int> 게시판 id => 표시 순서
+     */
+    public function getDisplayOrderMap(): array;
+
+    /**
+     * 모든 게시판의 id 목록을 반환합니다 (활성·비활성 포함, id 오름차순).
+     *
+     * @return array<int, int> 게시판 id 목록
+     */
+    public function getAllIds(): array;
 
     /**
      * 특정 유형의 게시판 개수를 반환합니다.

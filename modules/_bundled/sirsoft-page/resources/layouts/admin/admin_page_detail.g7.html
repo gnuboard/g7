@@ -29,27 +29,27 @@
   <slot name="content">
     <div data-ref="page_detail_content" :data-blur-until-loaded="true" class="admin-page-content-responsive-fluid">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-page.admin.page.detail.page_title" description="$t:sirsoft-page.admin.page.detail.page_description" backLink="/admin/pages" backLinkText="$t:sirsoft-page.admin.page.detail.back_to_list">
-        <button data-ref="header_back_button" class="btn btn-secondary">
+        <a href="/admin/pages" :mergeQuery="true" data-ref="header_back_button" class="button btn btn-secondary">
           <on type="click">
             <!-- 목록으로 돌아간다. 보던 검색어·필터·페이지를 그대로 이고 가므로(mergeQuery) 상세를 열었다 닫아도 목록이 처음으로 되감기지 않는다 -->
-            <navigate path="/admin/pages" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="arrow-left" class="text-sm"/>
           <span class="hidden sm:inline">$t:sirsoft-page.admin.page.detail.back_to_list</span>
-        </button>
-        <button data-ref="header_edit_button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
+        </a>
+        <a href="/admin/pages/{{route?.id}}/edit" :mergeQuery="true" data-ref="header_edit_button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
           <on type="click">
             <!-- 수정 화면으로. 같은 목록 클러스터 안의 이동이라 목록 상태를 그대로 넘긴다 — 수정을 마치고 돌아올 때 보던 자리로 복귀시키기 위해서다 -->
-            <navigate path="/admin/pages/{{route?.id}}/edit" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="pencil" class="text-sm"/>
           <span class="hidden sm:inline">$t:sirsoft-page.admin.page.detail.edit</span>
-        </button>
-        <button data-ref="header_delete_button" disabled="{{page?.data?.abilities?.can_delete !== true}}" class="btn btn-danger">
+        </a>
+        <button type="button" data-ref="header_delete_button" disabled="{{page?.data?.abilities?.can_delete !== true}}" class="btn btn-danger">
           <on type="click">
             <open-modal target="deletePageModal"/>
           </on>
@@ -64,7 +64,7 @@
           <span>$t:sirsoft-page.admin.page.detail.display_language</span>
         </div>
         <div class="flex gap-1 bg-white dark:bg-gray-800 rounded-md p-0.5 border border-gray-200 dark:border-gray-600">
-          <button data-each="loc in $locales" type="button" class="{{(_local.lang ?? $locale) === loc ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 dark:bg-blue-500 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}">
+          <button data-each="loc in $locales" type="button" class="{{(_local.lang ?? $locale) === loc ? 'px-3 py-1 text-xs font-medium text-white bg-blue-600 dark:bg-blue-600 rounded' : 'px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 rounded'}}">
             <on type="click">
               <!-- 표시 언어 전환 — 화면 안에서만 쓰는 선택이라 URL 이나 서버에 남기지 않는다 -->
               <set-state target="local" lang="{{loc}}"/>
@@ -81,7 +81,7 @@
         <div data-ref="info_header" class="flex flex-col gap-3 pb-4">
           <div class="flex-center flex-wrap gap-3">
             <div data-ref="publish_segment_buttons" class="flex gap-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-0.5">
-              <button data-ref="publish_btn_active" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
+              <button data-ref="publish_btn_active" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
                 <on type="click">
                   <!-- 게시로 전환 — 응답을 믿고 화면을 고치지 않고 page 를 다시 받아 서버 상태를 정본으로 삼는다 -->
                   <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish" method="PATCH">
@@ -97,7 +97,7 @@
                 </on>
                 <span>$t:sirsoft-page.admin.page.published_status.published</span>
               </button>
-              <button data-ref="publish_btn_inactive" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{!page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-gray-300 text-gray-800 dark:bg-gray-500 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
+              <button data-ref="publish_btn_inactive" type="button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="{{!page?.data?.published ? 'px-2 py-1 text-xs font-medium rounded-md bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'}}">
                 <on type="click">
                   <!-- 게시 해제 — 같은 엔드포인트에 published=false 로 보낸다 -->
                   <api-call :auth_required="true" target="/api/modules/sirsoft-page/admin/pages/{{route.id}}/publish" method="PATCH">
@@ -117,9 +117,9 @@
           </div>
           <div class="flex flex-wrap items-baseline gap-2">
             <h2 class="text-primary text-xl font-bold">{{page?.data?.title?.[ _local.lang ?? $locale ?? 'ko'] ?? '-'}}</h2>
-            <span class="text-sm text-gray-400 dark:text-gray-500 font-mono">{{page?.data?.slug ?? ''}}</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 font-mono">{{page?.data?.slug ?? ''}}</span>
             <badge data-type="composite" text="v{{page?.data?.current_version ?? 1}}" color="blue" size="md"/>
-            <a data-if="{{page?.data?.published}}" href="/page/{{page?.data?.slug ?? ''}}" target="_blank" class="inline-flex items-center gap-1 text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+            <a data-if="{{page?.data?.published}}" href="/page/{{page?.data?.slug ?? ''}}" target="_blank" class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
               <icon name="arrow-up-right-from-square" class="text-[10px]"/>
               <span>$t:sirsoft-page.admin.page.detail.view_page</span>
             </a>
@@ -145,14 +145,14 @@
         </div>
       </div>
       <div data-ref="content_section" data-if="{{page?.data}}" class="admin-card">
-        <div data-ref="content_header" class="flex-between cursor-pointer select-none">
+        <button type="button" data-ref="content_header" class="flex-between w-full text-left cursor-pointer select-none" aria-expanded="{{!(_local.contentCollapsed ?? false)}}">
           <on type="click">
-            <!-- 본문 미리보기 접기·펴기 — 기본은 펴짐이라 값이 없을 때를 false 로 읽는다 -->
+            <!-- 본문 미리보기 접기·펴기 — 기본은 펴짐이라 값이 없을 때를 false 로 읽는다. 머리 줄이 펼침 단추라 Tab·Enter·Space 로도 접고 편다(7.1.1 — 종전 클릭만 받는 div) -->
             <set-state target="local" contentCollapsed="{{!(_local.contentCollapsed ?? false)}}"/>
           </on>
           <span class="card-title">$t:sirsoft-page.admin.page.detail.tabs.preview</span>
           <icon name="{{(_local.contentCollapsed ?? false) ? 'chevron-down' : 'chevron-up'}}" class="text-hint"/>
-        </div>
+        </button>
         <div data-ref="content_body" data-if="{{!(_local.contentCollapsed ?? false)}}" class="p-6">
           <extension-point name="html_content" data-ref="content_preview" content="{{page?.data?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}" isHtml="{{(page?.data?.content_mode ?? 'html') === 'html'}}" class="text-gray-900 dark:text-gray-100">
             <default>
@@ -162,38 +162,38 @@
         </div>
       </div>
       <div data-ref="attachments_section" data-if="{{(page?.data?.attachments ?? []).length > 0}}" class="admin-card">
-        <div data-ref="attachments_header" class="flex-between cursor-pointer">
+        <button type="button" data-ref="attachments_header" class="flex-between w-full text-left cursor-pointer" aria-expanded="{{_local.showAttachments ?? true}}">
           <on type="click">
-            <!-- 첨부 목록 접기·펴기 — 이쪽은 기본이 펴짐이라 값이 없을 때를 true 로 읽는다 -->
+            <!-- 첨부 목록 접기·펴기 — 이쪽은 기본이 펴짐이라 값이 없을 때를 true 로 읽는다. 펼침 단추라 키보드로도 접고 편다 -->
             <set-state target="local" showAttachments="{{!(_local.showAttachments ?? true)}}"/>
           </on>
           <span class="card-title">$t:sirsoft-page.admin.page.detail.attachments|count={{(page?.data?.attachments ?? []).length}}</span>
-          <icon name="{{(_local.showAttachments ?? true) ? 'chevron-up' : 'chevron-down'}}" class="text-gray-400 dark:text-gray-500"/>
-        </div>
+          <icon name="{{(_local.showAttachments ?? true) ? 'chevron-up' : 'chevron-down'}}" class="text-gray-500 dark:text-gray-500"/>
+        </button>
         <div data-ref="attachments_list_{{att_idx}}" data-if="{{_local.showAttachments ?? true}}" data-each="attachment_item, att_idx in page?.data?.attachments ?? []">
-          <div data-ref="attachment_card_{{att_idx}}" class="flex-center group gap-3 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+          <button type="button" data-ref="attachment_card_{{att_idx}}" class="flex-center justify-start w-full text-left group gap-3 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
             <on type="click">
-              <!-- 첨부 내려받기 — 원본 파일명을 넘겨 업로드 당시 이름으로 저장한다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다 -->
+              <!-- 첨부 내려받기 — 카드가 단추라 Tab·Enter·Space 로도 받는다(7.1.1). 원본 파일명을 넘겨 업로드 당시 이름으로 저장한다. 어느 관리자 템플릿으로 그려지든 같아야 하므로 템플릿이 아니라 이 모듈의 핸들러를 쓴다 -->
               <action handler="sirsoft-page.downloadAttachment" url="{{attachment_item?.download_url}}" filename="{{attachment_item?.original_filename}}">
                 <fail>
                   <toast type="error" message="$t:sirsoft-page.admin.page.errors.download_failed"/>
                 </fail>
               </action>
             </on>
-            <!-- 이미지 썸네일 (이미지 파일인 경우) -->
-            <div data-if="{{attachment_item?.is_image}}" class="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-white dark:bg-gray-700">
+            <!-- 이미지 썸네일 (이미지 파일인 경우) — 단추 안이라 블록 요소 대신 span 이다 -->
+            <span data-if="{{attachment_item?.is_image}}" class="flex-shrink-0 w-12 h-12 rounded-md overflow-hidden bg-white dark:bg-gray-700">
               <img src="{{attachment_item?.preview_url}}" alt="{{attachment_item?.original_filename}}" class="w-full h-full object-cover"/>
-            </div>
+            </span>
             <!-- 파일 아이콘 (일반 파일인 경우) -->
-            <div data-if="{{!attachment_item?.is_image}}" class="flex-center flex-shrink-0 w-12 h-12 rounded-md bg-white dark:bg-gray-700 justify-center">
-              <icon name="file" class="text-lg text-gray-400 dark:text-gray-500"/>
-            </div>
-            <div class="flex-1 min-w-0">
+            <span data-if="{{!attachment_item?.is_image}}" class="flex-center flex-shrink-0 w-12 h-12 rounded-md bg-white dark:bg-gray-700 justify-center">
+              <icon name="file" class="text-lg text-gray-500 dark:text-gray-400"/>
+            </span>
+            <span class="flex-1 min-w-0">
               <span class="block text-body truncate">{{attachment_item?.original_filename ?? ''}}</span>
               <span class="text-hint block">{{attachment_item?.size_formatted ?? ''}}</span>
-            </div>
-            <icon name="download" class="text-gray-400 dark:text-gray-500 group-hover:text-blue-500 page-attachment-icon transition-colors"/>
-          </div>
+            </span>
+            <icon name="download" class="text-gray-500 dark:text-gray-400 group-hover:text-blue-500 page-attachment-icon transition-colors"/>
+          </button>
         </div>
       </div>
       <div data-ref="seo_section" data-if="{{page?.data &amp;&amp; (page?.data?.seo_meta?.title || page?.data?.seo_meta?.description || page?.data?.seo_meta?.keywords)}}" class="admin-card">
@@ -219,11 +219,12 @@
         <div data-ref="versions_header" class="pb-4">
           <span class="card-title">$t:sirsoft-page.admin.page.detail.tabs.versions</span>
         </div>
-        <div class="mb-4 px-4 py-2.5 flex-center gap-2 rounded-md text-info-soft bg-blue-50 dark:bg-blue-900/20">
+        <div class="mb-4 px-4 py-2.5 flex-center gap-2 rounded-md text-xs page-tone-info bg-blue-50 dark:bg-blue-900/20">
           <icon name="circle-info" class="text-blue-500 dark:text-blue-400"/>
           <span>$t:sirsoft-page.admin.page.detail.versions.restore_guide</span>
         </div>
-        <data-grid data-type="composite" data-ref="versions_datagrid" data="{{versions?.data ?? []}}" idField="id" emptyMessage="$t:common.no_data" :responsiveBreakpoint="768" :pagination="true" :pageSize="10" class="pb-4">
+        <data-grid data-type="composite" data-ref="versions_datagrid" data="{{versions?.data ?? []}}" idField="id" emptyMessage="{{versions === undefined ? '' : $t('common.no_data')}}" :responsiveBreakpoint="768" :pagination="true" :pageSize="10" class="pb-4">
+          <blur-until-loaded sources="versions"/>
           <column field="version" header="$t:sirsoft-page.admin.page.detail.versions.version" width="120px">
             <cell>
               <span class="text-primary text-sm font-semibold">v{{row.version}}</span>
@@ -242,15 +243,15 @@
           </column>
           <column field="changes_summary" header="$t:sirsoft-page.admin.page.detail.versions.changes">
             <cell>
-              <span data-if="{{row.version === 1}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-page.admin.page.detail.versions.initial</span>
+              <span data-if="{{row.version === 1}}" class="text-sm text-gray-500 dark:text-gray-400 italic">$t:sirsoft-page.admin.page.detail.versions.initial</span>
               <badge data-type="composite" data-if="{{row.version !== 1 &amp;&amp; row.changes_summary?.restored_from}}" text="$t:defer:sirsoft-page.admin.page.detail.versions.restored_from|version={{row.changes_summary.restored_from}}" color="blue" class="mb-1"/>
               <span data-if="{{row.version !== 1 &amp;&amp; row.changes_summary?.changed_fields?.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400" data-testid="page-version-changed-fields">{{row.changes_summary?.changed_fields?.map(f => $t('sirsoft-page.admin.page.detail.versions.field_labels.' + f)).join(', ') ?? '-'}}</span>
-              <span data-if="{{row.version !== 1 &amp;&amp; (!row.changes_summary || !row.changes_summary?.changed_fields?.length) &amp;&amp; !row.changes_summary?.restored_from}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+              <span data-if="{{row.version !== 1 &amp;&amp; (!row.changes_summary || !row.changes_summary?.changed_fields?.length) &amp;&amp; !row.changes_summary?.restored_from}}" class="text-sm text-gray-500 dark:text-gray-400">-</span>
             </cell>
           </column>
           <column field="actions" header="$t:sirsoft-page.admin.page.detail.versions.actions" width="80px">
             <cell>
-              <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 page-soft-button transition-colors">
+              <button type="button" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded hover:bg-blue-100 page-soft-button transition-colors">
                 <on type="click">
                   <!-- 버전 미리보기 — 그리드 행 전체를 전역에 담아 두고 창을 연다(창은 별도 컨텍스트라 행 변수를 볼 수 없다) -->
                   <sequence>
@@ -273,13 +274,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="btn btn-danger" disabled="{{_global.isDeletingPage || page?.data?.abilities?.can_delete !== true}}">
+        <button type="button" class="btn btn-danger" disabled="{{_global.isDeletingPage || page?.data?.abilities?.can_delete !== true}}">
           <on type="click">
             <!-- 삭제 확정 — 처리 중 플래그로 버튼을 잠그고, 지운 뒤에는 상세에 머물 수 없으므로 목록으로 보낸다 -->
             <sequence>
@@ -314,13 +315,13 @@
         <p class="text-label-subtle mt-2">$t:sirsoft-page.admin.page.modals.restore_notice</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="btn btn-secondary" disabled="{{_global.isRestoringVersion}}">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isRestoringVersion}}">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="btn btn-primary" disabled="{{_global.isRestoringVersion || page?.data?.abilities?.can_update !== true}}">
+        <button type="button" class="btn btn-primary" disabled="{{_global.isRestoringVersion || page?.data?.abilities?.can_update !== true}}">
           <on type="click">
             <!-- 버전 복원 확정 — 대상은 미리보기에서 전역에 심어 둔 restoreVersionId 다 -->
             <sequence>

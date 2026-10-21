@@ -1,0 +1,19 @@
+feature: 게시글 검색엔진용 화면의 og:image
+
+description: |
+  이미지 첨부가 있는 게시글을 소셜 봇이 열면 검색엔진용 화면에 첨부 미리보기 주소로 og:image 메타가 실린다.
+  사용자 템플릿이 설치·활성 상태여야 SEO 라우트가 해석되므로, 템플릿 의존 모듈(게시판 포함)은 매니페스트
+  실버전으로 등록한다.
+
+axis_notes:
+  case: |
+    image_attachment 는 이미지 첨부가 있는 공개 게시글이다.
+
+axes:
+  case: [image_attachment]
+
+effects:
+  - post_seo_emits_og_image_from_attachment_preview  # og:image 가 첨부 미리보기 절대 주소로 실린다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Seo/PostSeoOgImageRenderingTest.php

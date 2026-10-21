@@ -1,10 +1,9 @@
 <!-- 브랜드 편집 중 이탈을 막는 확인 창. 저장하지 않은 입력이 있는 상태에서 다른 브랜드를 고르거나
   목록으로 돌아가려 할 때 뜬다.
   두 버튼의 무게가 반대다 — "계속 편집" 은 창만 닫아 원래 화면으로 돌려보내고, "취소하고 나가기" 는
-  패널을 보기 모드로 되돌리며 선택까지 비운다. 즉 이 창은 **입력을 버리는 유일한 경로**이고,
-  여기서 나가면 되돌릴 방법이 없다.
-  나가기 쪽은 창을 먼저 닫고 상태를 쓴다. 그 순서가 성립하는 것은 쓰는 대상이 `_global` 이기
-  때문이다 — 모달이 사라지면 `_local` 은 함께 사라지므로 그쪽이었다면 닫기를 뒤에 두어야 한다. -->
+  목록이 대기 자리(`_global.pendingBrand*`)에 잡아 둔 브랜드로 옮긴다 — 즉 이 창이 **이동을 완결하는 자리**이자
+  **입력을 버리는 유일한 경로**이고, 여기서 나가면 되돌릴 방법이 없다.
+  나가기 쪽은 폼 입력(`_local`)도 비우므로 창 닫기를 맨 뒤에 둔다(공통정보 창과 같은 순서). -->
 <partial description="Brand Editing Discard Confirmation Modal">
   <modal data-type="composite" data-ref="editing_confirm_modal" title="$t:sirsoft-ecommerce.admin.brand.modal.editing.title" size="medium">
     <div>
@@ -19,19 +18,24 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:sirsoft-ecommerce.admin.brand.modal.editing.continue</span>
       </button>
-      <button class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600">
+      <button type="button" class="px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700">
         <on type="click">
-          <!-- 입력을 버리고 나간다 — 창을 닫고 패널을 보기 모드로 되돌리며 선택을 비운다.
-            닫기가 앞에 있어도 되는 것은 쓰는 대상이 `_global` 이라서다(`_local` 이면 모달 unmount 로 사라진다). -->
+          <!-- 입력을 버리고 대기 중이던 브랜드로 이동 — 목록이 잡아 둔 대기 값(_global.pendingBrand*)을 실제 선택으로 옮기고
+            주소도 그 브랜드로 갈아끼운 뒤(대기 값을 비우기 전에), 폼 입력·오류를 비우고 창을 닫는다. 폼 입력(`_local`)을 쓰므로
+            닫기는 맨 뒤다. 대기 값이 없으면(목록 밖에서 열린 경우) 종전처럼 선택을 비운다. -->
           <sequence>
+            <replace-url if="{{!!_global.pendingBrandId}}" :mergeQuery="true">
+              <query id="{{_global.pendingBrandId}}" mode="view"/>
+            </replace-url>
+            <set-state target="global" selectedBrandId="{{_global.pendingBrandId}}" selectedBrand="{{_global.pendingBrand}}" panelMode="view" :pendingBrandId="null" :pendingBrand="null"/>
+            <set-state target="local" :form="null" :errors="null" :isSaving="false"/>
             <close-modal/>
-            <set-state target="global" panelMode="view" :selectedBrandId="null" :selectedBrand="null"/>
           </sequence>
         </on>
         <span>$t:sirsoft-ecommerce.admin.brand.modal.editing.discard</span>

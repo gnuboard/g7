@@ -164,7 +164,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 추가배송비(도서산간 등 우편번호별 할증) 템플릿 목록을 검색·필터·정렬·페이지네이션으로 조회합니다. `permission:sirsoft-ecommerce.shipping-policies.read` 권한이 필요하며, `search`·`region`·`is_active` 필터와 다양한 정렬 기준을 지원합니다. `ExtraFeeTemplateService::getList()`가 조회하고 통계(`getStatistics()`)를 함께 담아 `ExtraFeeTemplateCollection`으로 반환합니다. 각 항목은 우편번호·추가 배송비·지역명을 포함하며 배송정책의 지역별 할증 관리 화면에 사용됩니다.
+**설명** 관리자가 추가배송비(도서산간 등 우편번호별 할증) 템플릿 목록을 검색·필터·정렬·페이지네이션으로 조회합니다. `permission:sirsoft-ecommerce.shipping-policies.read` 권한이 필요하며, `search`·`region`·`is_active` 필터와 다양한 정렬 기준을 지원합니다. `ExtraFeeTemplateService::getList()`가 조회하고 통계(`getStatistics()`)를 함께 담아 `ExtraFeeTemplateCollection`으로 반환합니다. 각 항목은 우편번호·추가 배송비·지역명을 포함하며 배송정책의 지역별 할증 관리 화면에 사용됩니다. 권한 범위가 「본인만」·「소유역할」 이면 그 범위 안의 행만 돌려줍니다(범위 밖 행은 목록·건수에서 빠집니다).
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/extra-fee-templates
@@ -816,7 +816,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.read`)이 없거나, 대상 템플릿이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->

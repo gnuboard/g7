@@ -252,6 +252,17 @@ interface MileageTransactionRepositoryInterface
     public function findById(int $id): ?MileageTransaction;
 
     /**
+     * 대상 회원을 소유자로 채운 저장하지 않은 거래 모델을 만듭니다.
+     *
+     * 아직 거래 행이 없는 관리자 수동 지급·차감과 회원 지정 유효기간 연장에서 「이 회원이 액터의
+     * 마일리지 관리 범위 안인가」 를 행 단위 판정기(`PermissionHelper::checkScopeAccess`)로 묻기 위한 것이다.
+     *
+     * @param  int  $userId  대상 회원 ID
+     * @return MileageTransaction 저장되지 않은 거래 모델 (user_id 만 채움)
+     */
+    public function makeOwnedBy(int $userId): MileageTransaction;
+
+    /**
      * 적립 대상 주문옵션을 조회합니다 (스케줄러용).
      *
      * 조건: trigger 상태 도달 + {trigger}_at + delay <= now + earn ledger 부재 + 미취소 + 적립액 > 0.

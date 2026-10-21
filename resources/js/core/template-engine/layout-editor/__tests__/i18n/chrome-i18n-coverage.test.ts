@@ -170,6 +170,11 @@ describe('action.event 라벨 커버리지', () => {
     return events;
   }
 
+  /** 번들 전체 훑기는 수집 단계에서 한 번 한다(시험 한도 밖) — 동시 실행 부하에서 시험 안 훑기가 1.9s 까지 늘었다 */
+  const BUNDLED_EVENTS = collectBundledEvents();
+  /** 번들 전체 정적 검사의 시험 한도 — 전역 한도는 그대로 두고 이 시험에만 명시한다 */
+  const STATIC_SCAN_TIMEOUT_MS = 60_000;
+
   // @scenario admin_ui_locale=en
   // @effects chrome_strings_render_via_layout_editor_t_keys_no_hardcoded_text
   it('번들 editor-spec 의 모든 events 가 코어 action.event (ko/en) 에 친화 명칭으로 정의됨', () => {
@@ -178,7 +183,7 @@ describe('action.event 라벨 커버리지', () => {
     const koEvents = new Set(Object.keys(ko?.action?.event ?? {}));
     const enEvents = new Set(Object.keys(en?.action?.event ?? {}));
 
-    const used = collectBundledEvents();
+    const used = BUNDLED_EVENTS;
     expect(used.size, '번들에서 수집된 이벤트가 1개 이상이어야 함').toBeGreaterThan(0);
 
     const missing: string[] = [];
@@ -187,7 +192,7 @@ describe('action.event 라벨 커버리지', () => {
       if (!enEvents.has(ev)) missing.push(`en:${ev}`);
     }
     expect(missing, `코어 action.event 라벨 누락 → 동작 탭 raw 키 노출`).toEqual([]);
-  });
+  }, STATIC_SCAN_TIMEOUT_MS);
 });
 
 // modal.open({ ariaLabel }) 에 `layout_editor.*` 키 원문 리터럴을 넘기면

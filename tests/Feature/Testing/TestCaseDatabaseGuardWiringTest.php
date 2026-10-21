@@ -32,9 +32,9 @@ class TestCaseDatabaseGuardWiringTest extends TestCase
         $original = [];
         foreach ($keys as $key) {
             $original[$key] = [getenv($key), $_ENV[$key] ?? null, $_SERVER[$key] ?? null];
-            putenv("{$key}=g7_2_dev_probe");
-            $_ENV[$key] = 'g7_2_dev_probe';
-            $_SERVER[$key] = 'g7_2_dev_probe';
+            putenv("{$key}=g7_dev_probe");
+            $_ENV[$key] = 'g7_dev_probe';
+            $_SERVER[$key] = 'g7_dev_probe';
         }
 
         try {
@@ -44,7 +44,7 @@ class TestCaseDatabaseGuardWiringTest extends TestCase
             // DB 오류(QueryException 도 RuntimeException)로 먼저 멈췄다면 판정 전에 부팅이 DB 에 붙은 것이다
             $this->assertNotInstanceOf(QueryException::class, $e, '판정보다 부팅의 DB 접속이 먼저 일어났다: '.$e->getMessage());
             $this->assertStringContainsString('테스트 전용이 아닌 DB', $e->getMessage());
-            $this->assertStringContainsString('g7_2_dev_probe', $e->getMessage());
+            $this->assertStringContainsString('g7_dev_probe', $e->getMessage());
         } finally {
             foreach ($original as $key => [$env, $envArr, $server]) {
                 $env === false ? putenv($key) : putenv("{$key}={$env}");

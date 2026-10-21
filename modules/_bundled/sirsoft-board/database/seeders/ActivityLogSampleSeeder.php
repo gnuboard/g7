@@ -88,7 +88,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $this->adminIds = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->pluck('id')->all();
         if ($this->adminIds === []) {
-            $this->command->warn('관리자 사용자가 없어 게시판 활동 로그 시더를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-board::messages.seeders.activity_log_sample.skip_no_admin'));
 
             return;
         }
@@ -104,7 +104,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $boards = Board::whereIn('slug', BoardSampleMarker::SAMPLE_BOARD_SLUGS)->get();
         if ($boards->isEmpty()) {
-            $this->command->warn('샘플 게시판이 없어 게시판 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-board::messages.seeders.activity_log_sample.skip_no_boards'));
 
             return;
         }
@@ -118,7 +118,7 @@ class ActivityLogSampleSeeder extends Seeder
         $this->seedScrapLogs($boards);
         $this->flush();
 
-        $this->command->info("게시판 활동 로그 {$this->created}건 생성 완료.");
+        $this->command->info(__('sirsoft-board::messages.seeders.activity_log_sample.done', ['count' => $this->created]));
     }
 
     /**
@@ -136,7 +136,7 @@ class ActivityLogSampleSeeder extends Seeder
             ->delete();
 
         if ($deleted > 0) {
-            $this->command->info("이전 샘플 신고 활동 로그 {$deleted}건 정리 (표식 있는 행만).");
+            $this->command->info(__('sirsoft-board::messages.seeders.activity_log_sample.cleaned', ['count' => $deleted]));
         }
 
         $unmarked = ActivityLog::where('description_key', 'like', 'sirsoft-board::%')
@@ -144,7 +144,7 @@ class ActivityLogSampleSeeder extends Seeder
                 ->orWhere('properties', 'not like', '%"seeded_by":"'.BoardSampleMarker::BOARD_ACTIVITY_SEEDED_BY.'"%'))
             ->count();
         if ($unmarked > 0) {
-            $this->command->warn("  ⚠ 표식 없는 게시판 활동 로그 {$unmarked}건은 운영 로그로 보고 남깁니다 (이전 버전 시더가 만든 샘플도 표식이 없어 정리되지 않습니다).");
+            $this->command->warn('  ⚠ '.__('sirsoft-board::messages.seeders.activity_log_sample.unmarked_kept', ['count' => $unmarked]));
         }
     }
 

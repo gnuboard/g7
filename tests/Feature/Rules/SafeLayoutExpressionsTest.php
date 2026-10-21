@@ -30,12 +30,22 @@ class SafeLayoutExpressionsTest extends TestCase
 {
     private SafeLayoutExpressions $rule;
 
+    /**
+     * 검사 대상 규칙 인스턴스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->rule = new SafeLayoutExpressions;
     }
 
+    /**
+     * 등록한 신뢰 호스트 필터를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::clearFilter(TrustedScriptHosts::FILTER_HOOK);
@@ -46,6 +56,7 @@ class SafeLayoutExpressionsTest extends TestCase
      * 신뢰 호스트를 훅으로 등록합니다 (확장 manifest 선언을 모사).
      *
      * @param  string  $host  신뢰 호스트명
+     * @return void 반환값 없음
      */
     private function trustHost(string $host): void
     {
@@ -56,6 +67,12 @@ class SafeLayoutExpressionsTest extends TestCase
         );
     }
 
+    /**
+     * 레이아웃이 저장측 규칙에 거부되는지 판정합니다.
+     *
+     * @param  array  $layout  검사할 레이아웃 배열
+     * @return bool 거부되면 true
+     */
     private function fails(array $layout): bool
     {
         $failed = false;
@@ -70,6 +87,13 @@ class SafeLayoutExpressionsTest extends TestCase
     // 정상 표현식 통과 (회귀 방지)
     // ==========================================
 
+    /**
+     * 옵셔널 체이닝·nullish 를 쓴 정상 레이아웃은 저장측 규칙을 통과한다.
+     *
+     * @effects safe_expression_layout_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_normal_layout(): void
     {
         $layout = [
@@ -82,6 +106,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertFalse($this->fails($layout), '정상 레이아웃은 통과해야 합니다');
     }
 
+    /**
+     * 화살표 함수·필터를 쓴 정상 표현식은 저장측 규칙을 통과한다.
+     *
+     * @effects safe_expression_layout_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_arrow_function_expression(): void
     {
         // 화살표 함수/스프레드/필터는 정상 (176개 레이아웃에서 사용)
@@ -95,6 +126,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertFalse($this->fails($layout), '화살표 함수 표현식은 통과해야 합니다');
     }
 
+    /**
+     * 내비게이션 경로를 조립하는 템플릿 리터럴은 저장측 규칙을 통과한다.
+     *
+     * @effects safe_expression_layout_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_template_literal_navigation(): void
     {
         // 템플릿 리터럴은 내비게이션 경로 조립에 정상 사용
@@ -108,6 +146,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertFalse($this->fails($layout), '템플릿 리터럴은 통과해야 합니다');
     }
 
+    /**
+     * 같은 출처 경로의 데이터 소스 엔드포인트는 저장측 규칙을 통과한다.
+     *
+     * @effects same_origin_resource_url_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_same_origin_endpoint(): void
     {
         $layout = [
@@ -124,7 +169,13 @@ class SafeLayoutExpressionsTest extends TestCase
     // 위험 표현식 차단
     // ==========================================
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * constructor 체인 점 접근은 저장측 규칙이 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_constructor_chain_dot_access(): void
     {
         $layout = [
@@ -137,7 +188,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), 'constructor 체인 접근은 차단되어야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * constructor 를 문자열 계산 키로 접근하면 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_constructor_computed_string_access(): void
     {
         $layout = [
@@ -150,7 +207,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), 'computed constructor 접근은 차단되어야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * __proto__ 접근은 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_proto_access(): void
     {
         $layout = [
@@ -163,7 +226,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), '__proto__ 접근은 차단되어야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * Function 생성자 호출은 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_function_constructor_call(): void
     {
         $layout = [
@@ -176,7 +245,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), 'Function 생성자 호출은 차단되어야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * 동적 import 호출은 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_dynamic_import_call(): void
     {
         $layout = [
@@ -189,7 +264,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), '동적 import() 호출은 차단되어야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * legacy 접근자로 프로토타입에 닿는 경로는 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_legacy_accessor_prototype_reach(): void
     {
         // legacy 접근자 4종 — 프로퍼티를 문자열 인자로 지목해 프로토타입을 읽고 쓴다.
@@ -206,6 +287,13 @@ class SafeLayoutExpressionsTest extends TestCase
         }
     }
 
+    /**
+     * prototype 단어를 단순 문자열 비교에 쓰는 정상 표현식은 통과한다(과차단 회귀 방지).
+     *
+     * @effects safe_expression_layout_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_prototype_word_in_plain_comparison(): void
     {
         // 과차단 회귀 방지 — 런타임 평가기가 허용하는 정상 비교는 저장측도 통과해야 한다.
@@ -220,7 +308,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertFalse($this->fails($layout), '정상 문자열 비교는 통과해야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * 중첩 배열 계산 키로 constructor 에 닿는 형태는 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_nested_array_computed_key(): void
     {
         // 중첩 배열 키 `[['constructor']]` — 구 브래킷 한정 패턴이 놓치던 형태 (KVE-2026-1915)
@@ -234,7 +328,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), '중첩 배열 computed 키는 차단되어야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * 리플렉션 static 의 문자열 인자로 constructor 를 지목하면 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_reflection_static_string_argument(): void
     {
         // 리플렉션 static 의 문자열 인자 `..., 'constructor')` — 구 패턴이 놓치던 형태
@@ -248,7 +348,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), '리플렉션 static 문자열 인자는 차단되어야 합니다');
     }
 
-    /** @effects sandbox_escape_blocked */
+    /**
+     * Object 리플렉션 static 이름(getPrototypeOf·setPrototypeOf·defineProperty)은 거부한다.
+     *
+     * @effects sandbox_escape_blocked
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_object_reflection_static_names(): void
     {
         foreach (['Object.getPrototypeOf(x)', 'Object.setPrototypeOf(x, y)', 'Object.defineProperty(x, y, z)'] as $expr) {
@@ -263,6 +369,13 @@ class SafeLayoutExpressionsTest extends TestCase
         }
     }
 
+    /**
+     * Object.assign·create 같은 안전한 데이터 메서드는 저장측 규칙을 통과한다.
+     *
+     * @effects safe_expression_layout_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_object_safe_data_methods(): void
     {
         // 안전한 Object 데이터 메서드는 통과 (실제 레이아웃에서 사용)
@@ -276,6 +389,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertFalse($this->fails($layout), 'Object.keys/assign/create 등 데이터 메서드는 통과해야 합니다');
     }
 
+    /**
+     * 예약어를 프로퍼티 접근 없이 문자열로 비교하는 정상 표현식은 통과한다.
+     *
+     * @effects safe_expression_layout_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_string_literal_comparison_of_reserved_word(): void
     {
         // 금지 프로퍼티 이름을 프로퍼티로 접근하지 않고 단순 문자열로 비교하는 정상 표현식은
@@ -300,6 +420,10 @@ class SafeLayoutExpressionsTest extends TestCase
      * 과차단 회귀는 실제 모집단으로만 드러난다(예: `=>` 를 금지 토큰에 넣으면 이 테스트가
      * red 가 된다). 정적 룰은 audit 실행 시점에만 도는 별개 축이므로, 저장측 PHP 규칙 자신의
      * 모집단 검사를 여기에 둔다.
+     *
+     * @effects bundled_layouts_pass_strengthened_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_every_shipped_layout(): void
     {
@@ -371,6 +495,13 @@ class SafeLayoutExpressionsTest extends TestCase
     // 외부 리소스 URL 차단
     // ==========================================
 
+    /**
+     * 외부 출처 스크립트 src 는 저장측 규칙이 거부한다.
+     *
+     * @effects external_resource_url_rejected_at_storage
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_external_script_src(): void
     {
         $layout = [
@@ -382,6 +513,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), '외부 스크립트 src 는 차단되어야 합니다');
     }
 
+    /**
+     * 프로토콜 상대 스크립트 src 는 저장측 규칙이 거부한다.
+     *
+     * @effects external_resource_url_rejected_at_storage
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_protocol_relative_script_src(): void
     {
         $layout = [
@@ -393,6 +531,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), 'protocol-relative src 는 차단되어야 합니다');
     }
 
+    /**
+     * 같은 출처 스크립트 src 는 저장측 규칙을 통과한다.
+     *
+     * @effects same_origin_resource_url_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_same_origin_script_src(): void
     {
         $layout = [
@@ -404,6 +549,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertFalse($this->fails($layout), 'same-origin 스크립트 src 는 통과해야 합니다');
     }
 
+    /**
+     * 확장이 선언한 신뢰 호스트의 외부 스크립트 src 는 통과한다.
+     *
+     * @effects trusted_host_resource_url_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_trusted_host_script_src(): void
     {
         // 확장이 manifest 로 선언한 신뢰 호스트의 외부 스크립트는 통과한다
@@ -418,6 +570,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertFalse($this->fails($layout), '신뢰 호스트의 외부 스크립트 src 는 통과해야 합니다');
     }
 
+    /**
+     * 신뢰 호스트를 가리키는 프로토콜 상대 엔드포인트는 통과한다.
+     *
+     * @effects trusted_host_resource_url_saves
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_trusted_host_protocol_relative_data_source(): void
     {
         $this->trustHost('t1.daumcdn.net');
@@ -438,6 +597,10 @@ class SafeLayoutExpressionsTest extends TestCase
      * 호스트가 `cdn.ckeditor.com`(신뢰 목록)으로 보이지만, 브라우저는 백슬래시를
      * 슬래시로 접어 `evil.com` 에서 로드한다. 신뢰 호스트 판정이 same-origin 판정과
      * 다른 정규화를 쓰면 이 형태만 저장측을 통과한다.
+     *
+     * @effects external_resource_url_rejected_at_storage
+     *
+     * @return void 반환값 없음
      */
     public function test_fails_trusted_host_userinfo_disguise(): void
     {
@@ -462,6 +625,10 @@ class SafeLayoutExpressionsTest extends TestCase
      * `/\/cdn.ckeditor.com/x.js` 는 문자열상 path 지만 브라우저는 authority 로 읽어
      * 신뢰 호스트에서 로드한다. 저장측만 거부하면 "런타임은 되는데 저장이 안 되는"
      * 역방향 비대칭이 된다.
+     *
+     * @effects trusted_host_resource_url_saves
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_trusted_host_reached_through_backslash_authority(): void
     {
@@ -479,6 +646,13 @@ class SafeLayoutExpressionsTest extends TestCase
         );
     }
 
+    /**
+     * 다른 호스트를 신뢰해도 신뢰 목록 밖 외부 스크립트는 여전히 거부한다.
+     *
+     * @effects external_resource_url_rejected_at_storage
+     *
+     * @return void 반환값 없음
+     */
     public function test_still_fails_untrusted_host_when_other_host_trusted(): void
     {
         // cdn.ckeditor.com 만 신뢰해도 evil.com 은 여전히 차단된다
@@ -493,6 +667,13 @@ class SafeLayoutExpressionsTest extends TestCase
         $this->assertTrue($this->fails($layout), '신뢰 목록에 없는 외부 스크립트는 차단되어야 합니다');
     }
 
+    /**
+     * 외부 출처 데이터 소스 엔드포인트는 저장측 규칙이 거부한다.
+     *
+     * @effects external_resource_url_rejected_at_storage
+     *
+     * @return void 반환값 없음
+     */
     public function test_fails_external_data_source_endpoint(): void
     {
         $layout = [
@@ -513,10 +694,10 @@ class SafeLayoutExpressionsTest extends TestCase
      * ASCII tab·개행을 제거하므로, 실제로는 `https://evil.com/x.js` 로 해석되어
      * 원격 스크립트가 로드된다.
      *
-     * 실측(node `new URL`, base `https://g7_2.dev/`): 아래 4형태 전부 origin 이
+     * 실측(node `new URL`, base `https://dev-site.kr/`): 아래 4형태 전부 origin 이
      * `https://evil.com` 으로 해석된다.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 => [우회 후보 URL]
      */
     public static function authorityBypassProvider(): array
     {
@@ -533,7 +714,13 @@ class SafeLayoutExpressionsTest extends TestCase
     }
 
     /**
+     * authority 우회 형태의 스크립트 src 는 거부한다.
+     *
      * @param  string  $src  authority 우회 후보 URL
+     *
+     * @effects external_resource_url_rejected_at_storage
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('authorityBypassProvider')]
     public function test_fails_authority_bypass_script_src(string $src): void
@@ -551,7 +738,13 @@ class SafeLayoutExpressionsTest extends TestCase
     }
 
     /**
+     * authority 우회 형태의 데이터 소스 엔드포인트는 거부한다.
+     *
      * @param  string  $endpoint  authority 우회 후보 URL
+     *
+     * @effects external_resource_url_rejected_at_storage
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('authorityBypassProvider')]
     public function test_fails_authority_bypass_data_source_endpoint(string $endpoint): void
@@ -572,6 +765,10 @@ class SafeLayoutExpressionsTest extends TestCase
      * 백슬래시·탭이 authority 위치가 아닌 경로 안에 있으면 same-origin 이므로 통과
      *
      * 과차단 회귀 방지 — 브라우저도 이 둘을 same-origin 으로 해석한다(실측).
+     *
+     * @effects same_origin_resource_url_saves
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_same_origin_path_containing_backslash_or_tab(): void
     {
@@ -599,6 +796,9 @@ class SafeLayoutExpressionsTest extends TestCase
 
     /**
      * FormRequest 의 content 배열 규칙에서 SafeLayoutExpressions 인스턴스를 찾는다.
+     *
+     * @param  array  $rules  FormRequest 규칙 배열
+     * @return bool 부착돼 있으면 true
      */
     private function contentRuleHasSafeExpressions(array $rules): bool
     {
@@ -613,6 +813,13 @@ class SafeLayoutExpressionsTest extends TestCase
         return false;
     }
 
+    /**
+     * 레이아웃 내용 수정 요청의 content 배열 규칙에 SafeLayoutExpressions 가 부착된다.
+     *
+     * @effects rule_attached_to_every_layout_content_form_request
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_content_request_attaches_rule_to_content_array(): void
     {
         $request = UpdateLayoutContentRequest::create('/x', 'PUT', [
@@ -626,6 +833,13 @@ class SafeLayoutExpressionsTest extends TestCase
         );
     }
 
+    /**
+     * 확장 레이아웃 내용 수정 요청의 content 배열 규칙에 SafeLayoutExpressions 가 부착된다.
+     *
+     * @effects rule_attached_to_every_layout_content_form_request
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_extension_content_request_attaches_rule_to_content_array(): void
     {
         $request = UpdateLayoutExtensionContentRequest::create('/x', 'PUT', [
@@ -639,6 +853,13 @@ class SafeLayoutExpressionsTest extends TestCase
         );
     }
 
+    /**
+     * 레이아웃 생성·수정 요청의 content 배열 규칙에 SafeLayoutExpressions 가 부착된다.
+     *
+     * @effects rule_attached_to_every_layout_content_form_request
+     *
+     * @return void 반환값 없음
+     */
     public function test_store_and_update_requests_attach_rule_to_content_array(): void
     {
         $store = StoreLayoutRequest::create('/x', 'POST', [

@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { fireEvent, waitFor } from '@testing-library/react';
 import {
   loadLayout, loadLang, langValue, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects,
+  moveTargets,
 } from './analyticsLayoutTestUtils';
 import { ANALYTICS_PERIOD_PRESETS } from '../../handlers/setAnalyticsPeriodHandler';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
@@ -389,7 +390,8 @@ describe('KPI·실시간 줄·상단 경고 조각', () => {
     // (#682 S3 라운드 8 브라우저 실측). 사유가 실리면 띄우는 것이 옳은 계약이다.
     expect(nodeById(statusAlerts, 'alert_consent_fallback')?.if).toContain('anonymous_fallback_reason');
     expect(nodeById(statusAlerts, 'alert_queue_backlog')?.if).toContain('queue?.backlogged === true');
-    const navs = actionsWithHandler(statusAlerts, 'navigate').map((n) => n.params.path);
+    // 링크(#757)는 path 없는 navigate 가 A 의 href 로 간다 — 목적지는 href 쪽에서 읽는다
+    const navs = moveTargets(statusAlerts).map((t) => String(t.path).split('?')[0]);
     expect(navs).toEqual(expect.arrayContaining(['/admin/analytics/settings', '/admin/analytics/diagnostics']));
   });
 });

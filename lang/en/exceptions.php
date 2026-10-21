@@ -153,7 +153,7 @@ return [
         'duplicate_case_key' => 'The :case case was specified twice.',
         'duplicate_action_key' => ':key was specified twice. Check that an attribute and a tag are not competing for the same slot.',
         'confirm_not_at_root' => 'confirm only prompts on the action bound directly to the event. confirm on a nested action is ignored, so move it to the entry action.',
-        'init_action_key_forbidden' => ':key cannot be used on an init action — it is silently dropped during initialization. Put follow-up work inside <success> or reference a named action.',
+        'init_action_key_forbidden' => ':key cannot be used on an init action — it applies only to actions triggered directly by a user event, so it has no effect when the page first loads.',
 
         // Document structure (S4)
         'section_tag_in_node_position' => '<:tag> is a top-level document section and cannot be used in a component position. Place it directly under the document envelope.',
@@ -210,8 +210,9 @@ return [
         'component_type_mismatch' => ':component is written as :written but the :template template declares it as :declared — check data-type (omitted means basic).',
         'extension_component_not_installed' => 'No installed extension provides this component: :name — the :extension extension may have been removed or the name is mistyped. Saving is allowed, but it will not render unless that extension is present.',
         'template_component_kept' => 'This template does not list the component :name — it was already in the saved content, so saving is allowed, but it may not render with this template.',
-        'nested_action_debounce_ignored' => 'The debounce on the :handler action has no effect — actions nested inside conditions, sequences or result callbacks run immediately on every event. Put debounce on the enclosing outer action (<conditions :debounce>, <sequence :debounce>).',
+        'nested_action_debounce_ignored' => 'The debounce on the :handler action has no effect — actions nested inside conditions, sequences or result callbacks, and actions in event listeners, failure handlers or initial actions, run immediately every time. Put debounce on the action the user triggers directly (the action right under <on type>, e.g. <sequence :debounce>).',
         'mixed_debounce_flushed' => ':event on :name mixes debounced actions with immediate ones — every time an immediate action runs, the waiting debounced actions run right away, so they run on every input. To keep the delay, debounce every action on this event.',
+        'entry_only_key_ignored' => ':key applies only to actions triggered directly by a user event. It is ignored on the :handler action here (event listeners, failure handlers, init actions, nested actions).',
     ],
 
     // Settings related exceptions

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 추가배송비 템플릿 서비스
@@ -17,6 +18,11 @@ class ExtraFeeTemplateService
 {
     use ReappliesPermissionScope;
 
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  ExtraFeeTemplateRepositoryInterface  $repository  추가배송비 템플릿 저장소
+     */
     public function __construct(
         protected ExtraFeeTemplateRepositoryInterface $repository
     ) {}
@@ -45,6 +51,28 @@ class ExtraFeeTemplateService
     public function getStatistics(): array
     {
         return $this->repository->getStatisticsByRegion();
+    }
+
+    /**
+     * 관리자 상세 조회용으로 템플릿을 찾고 `shipping-policies.read` 스코프를 단언합니다.
+     *
+     * 상세 라우트가 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다. 쓰기 경로는 `getDetail()` 로 찾고
+     * 각 쓰기 메서드가 `.update`/`.delete` 범위를 단언한다.
+     *
+     * @param  int  $id  템플릿 ID
+     * @return ExtraFeeTemplate|null 조회된 템플릿 (없으면 null)
+     *
+     * @throws AccessDeniedHttpException 스코프 밖인 경우
+     */
+    public function getDetailForRead(int $id): ?ExtraFeeTemplate
+    {
+        $template = $this->getDetail($id);
+
+        if ($template) {
+            $this->assertWithinScope($template, 'sirsoft-ecommerce.shipping-policies.read');
+        }
+
+        return $template;
     }
 
     /**

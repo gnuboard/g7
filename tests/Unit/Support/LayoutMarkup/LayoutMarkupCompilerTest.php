@@ -131,6 +131,87 @@ class LayoutMarkupCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * `<on listen key>` 의 key 는 경고 없이 버려지지 않는다 — 저장 검사가 진입점 전용 키 경고를 낸다 (7.1.1 출시 전 실측).
+     *
+     * 엔진은 사용자가 직접 누르는 진입점에서만 key 를 읽는다. 종전에는 컴파일러가 구독 갈래에서 key 를 읽지 않아
+     * 산출에서 사라졌고, 그래서 lint(⑭)도 경고하지 못했다. 자기 이벤트 `<on type key>` 는 종전대로 경고가 없다.
+     *
+     * @scenario compile_unit=facade,source_health=valid
+     *
+     * @effects listen_key_is_warned_as_entry_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_listen_key_is_warned_not_dropped(): void
+    {
+        $result = $this->compiler->compile(
+            '<layout name="listen_key" version="1.0.0"><div><on listen="search:submit" key="Enter"><set-state target="local" :a="1"/></on></div></layout>',
+        );
+
+        $subscription = $result->json['components'][0]['onComponentEvent'][0];
+        $this->assertSame('search:submit', $subscription['event']);
+        $this->assertSame('Enter', $subscription['key']);
+
+        $entryOnly = array_values(array_filter(
+            $result->warnings,
+            fn ($w) => $w->getCode() === LayoutMarkupLintCode::EntryOnlyKeyIgnored,
+        ));
+        $this->assertCount(1, $entryOnly);
+        $this->assertSame(['key' => 'key', 'handler' => 'setState'], $entryOnly[0]->getParams());
+
+        // 대조군 — 자기 이벤트의 key 는 진입점이라 경고하지 않는다
+        $own = $this->compiler->compile(
+            '<layout name="own_key" version="1.0.0"><input type="text"><on type="keydown" key="Enter"><set-state target="local" :a="1"/></on></input></layout>',
+        );
+        $this->assertSame([], array_values(array_filter(
+            $own->warnings,
+            fn ($w) => $w->getCode() === LayoutMarkupLintCode::EntryOnlyKeyIgnored,
+        )));
+    }
+
+    /**
+     * 핸들러·데이터 소스 바로 아래의 자식 없는 `<field name :value>` 는 그 값으로 굽힌다 (7.1.1 출시 전 실측).
+     *
+     * 종전에는 이 자리의 `<field>` 를 늘 「자식 구조값」으로만 읽어, 자식이 없으면 `:value="null"` 을 버리고 `[]` 를
+     * 구웠다(`<field name="form.newCurrency" :value="null"/>` → `[]`). 중첩 `<field>` 와 속성 표기
+     * (`:form.newCurrency="null"`)는 정상이었다. 값도 자식도 없는 맨 `<field name/>` 은 종전대로 `[]` 다.
+     *
+     * @scenario compile_unit=facade,source_health=valid
+     *
+     * @effects childless_field_leaf_value_kept
+     *
+     * @return void 반환값 없음
+     */
+    public function test_childless_action_field_keeps_its_leaf_value(): void
+    {
+        $result = $this->compiler->compile(
+            '<layout name="field_leaf" version="1.0.0"><button><on type="click"><set-state target="local">'
+            .'<field name="form.newCurrency" :value="null"/>'
+            .'<field name="count" :value="0"/>'
+            .'<field name="label" value="x &amp; y"/>'
+            .'<field name="flags" :value="{}"/>'
+            .'<field name="bare"/>'
+            .'<field name="nested"><field name="inner" :value="null"/></field>'
+            .'</set-state></on></button>'
+            .'<data-source id="d" endpoint="/api/admin/settings"><field name="errorCondition" :value="null"/></data-source>'
+            .'</layout>',
+        );
+
+        $params = $result->json['components'][0]['actions'][0]['params'];
+        $this->assertArrayHasKey('form.newCurrency', $params);
+        $this->assertNull($params['form.newCurrency']);
+        $this->assertSame(0, $params['count']);
+        $this->assertSame('x & y', $params['label']);
+        $this->assertSame('{}', json_encode($params['flags']));
+        $this->assertSame([], $params['bare']);
+        $this->assertSame(['inner' => null], $params['nested']);
+
+        $source = $result->json['data_sources'][0];
+        $this->assertArrayHasKey('errorCondition', $source);
+        $this->assertNull($source['errorCondition']);
+    }
+
+    /**
      * 문맥의 `sourceKind` 는 소스 종류별 lint 를 태우는 축이다.
      *
      * 종전에는 이 축을 `plugin_complete_layout` 경고로 관측했으나, 그 검사는 정책 반전으로

@@ -29,4 +29,19 @@ return [
     'permissions' => [
         'credentials_delete' => 'Remove member authenticator enrollment',
     ],
+    // Console command output
+    'console' => [
+        'seed_totp' => [
+            'cli_only' => 'This command can only be run from the CLI. (Current SAPI: :sapi)',
+            'bypass_required' => 'The G7_PLAYWRIGHT_BYPASS=1 environment variable is required. (e.g. PowerShell — :example)',
+            'mode_required' => 'Specify either --enroll or --code.',
+            'account_not_found' => 'Account not found: :email',
+        ],
+        'reset' => [
+            'user_not_found' => 'User not found: :email',
+            'not_enrolled' => 'This user has no authenticator app enrolled: :email',
+            'done' => 'The authenticator app has been unenrolled: :email',
+            'next_login_notice' => 'From the next login, this user will not be asked for an authenticator app code (if email fallback is on, the code is sent by email).',
+        ],
+    ],
 ];

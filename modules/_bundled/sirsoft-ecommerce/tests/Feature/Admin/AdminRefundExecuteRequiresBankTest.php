@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 관리자 [환불하기]의 환불 계좌 게이트 (T2-D6 · #599 3차 실측 L-8)
+ * 관리자 [환불하기]의 환불 계좌 게이트 (#599 실측)
  *
  * 무통장입금처럼 **운영자가 손으로 송금해야** 끝나는 환불은 보낼 계좌가 있어야 한다. 그런데
  * 실행 경로는 계좌를 아예 보지 않았다 — 10,000원을 무통장으로 받은 주문의 환불을 계좌 세 칸이

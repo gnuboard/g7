@@ -13,6 +13,8 @@
  * 해결책: 핸들러가 결과를 반환하고, 레이아웃의 onSuccess에서 setState 실행
  */
 
+import { localizedText } from '../support/localizedText';
+
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Handler:CartOptionChange')) ?? {
   log: (...args: unknown[]) => console.log('[Handler:CartOptionChange]', ...args),
@@ -60,7 +62,7 @@ interface InitCartOptionResult {
 function getGroupKey(group: OptionGroup): string {
   if (group.name_localized) return group.name_localized;
   if (typeof group.name === 'string') return group.name;
-  return (group.name as Record<string, string>)?.ko ?? '';
+  return localizedText(group.name) ?? '';
 }
 
 /**
@@ -85,7 +87,7 @@ function getOptionValueByGroupKey(
     });
     if (item) {
       if (typeof item.value === 'string') return item.value;
-      return (item.value as Record<string, string>)?.ko ?? Object.values(item.value)[0];
+      return localizedText(item.value);
     }
     return undefined;
   }
@@ -189,7 +191,7 @@ export function initCartOptionSelectionHandler(
     // values_localized가 있으면 우선 사용, 없으면 values 사용
     const valuesArray = group.values_localized ?? (
       Array.isArray(group.values)
-        ? group.values.map((v: string | Record<string, string>) => typeof v === 'string' ? v : (v as Record<string, string>)?.ko ?? '')
+        ? group.values.map((v: string | Record<string, string>) => typeof v === 'string' ? v : localizedText(v) ?? '')
         : []
     );
     if (currentValue && valuesArray.includes(currentValue)) {

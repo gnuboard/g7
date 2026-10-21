@@ -29,7 +29,7 @@ axis_notes:
     모여 있으므로 그 함수의 단위 테스트로 잠근다.
 
 effects:
-  # 7.1.0 abilities 게이트(G26) — 읽기 전용이면 쓰기 단축키 무시
+  # 7.1.0 abilities 게이트 — 읽기 전용이면 쓰기 단축키 무시
   - code_workspace_read_only_blocks_write_shortcuts
   - code_shortcuts_have_unique_combos                  # 같은 조합이 두 액션에 걸리지 않는다
   - code_shortcuts_avoid_browser_reserved_combos       # mod+w · mod+tab 미등록

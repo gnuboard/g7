@@ -1,4 +1,4 @@
-// e2e:allow 수정 진입 핸들러 단위 테스트 — 브라우저 흐름은 Playwright MCP 라이브 재실측으로 덮었다: 승인 건 RF20260922-1155163369 /edit 진입(SPA·직접 입력) → 안내 후 상세·[저장] 0, 승인 전 건은 수정 화면 유지. (#599 3차 실측 T2-D7, 2026-09-23).
+// e2e:allow 수정 진입 핸들러 단위 테스트 — 브라우저 흐름은 Playwright MCP 라이브 재실측으로 덮었다: 승인 건 RF20260922-1155163369 /edit 진입(SPA·직접 입력) → 안내 후 상세·[저장] 0, 승인 전 건은 수정 화면 유지. (#599 실측, 2026-09-23).
 /**
  * 클레임 신청서 **수정(edit) 모드** 핸들러 테스트 (#599 S13)
  *
@@ -302,6 +302,41 @@ describe('클레임 수정 — 진입', () => {
     });
 
     /**
+     * 없는 신청서 번호의 수정 주소가 「로딩 중...」 에서 멈추지 않는다 (7.1.1 출시 전 실측)
+     *
+     * 이 핸들러는 init_actions 에서 돈다 — 엔진은 init_actions 를 **렌더 전에 끝까지 기다린다**
+     * (TemplateApp.executeInitActions). showErrorPage 는 오류 화면을 꽂을 본문 칸(#main_content)이
+     * 생길 때까지 기다리는데, 그 칸은 렌더가 끝나야 생긴다. 핸들러가 showErrorPage 를 기다리면
+     * 서로를 기다려 회원 화면은 「로딩 중...」, 비회원 화면은 빈 화면으로 최대 60초 멈췄다
+     * (2026-10-17 실측 `/mypage/claims/<없는번호>/edit`). blocking 데이터소스 오류 처리와 같은
+     * 이유로 오류 화면 요청을 띄워 두고 핸들러는 먼저 끝나야 한다.
+     *
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_missing_claim_shows_error_page_without_blocking_render
+     */
+    it('열 수 없는 신청서의 오류 화면을 기다리지 않고 끝난다 (렌더 전 단계라 기다리면 화면이 멈춘다)', async () => {
+        mockG7Core.api.get.mockRejectedValue({ response: { status: 404 } });
+        // 본문 칸이 아직 없어 끝나지 않는 오류 화면 요청을 흉내 낸다.
+        mockG7Core.dispatch.mockImplementation((action: any) =>
+            action?.handler === 'showErrorPage' ? new Promise(() => {}) : Promise.resolve()
+        );
+
+        const settled = await Promise.race([
+            initClaimEditHandler(
+                { handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } },
+                {} as any
+            ).then(() => 'done'),
+            new Promise((resolve) => setTimeout(() => resolve('blocked'), 200)),
+        ]);
+
+        mockG7Core.dispatch.mockReset();
+
+        expect(settled).toBe('done');
+        expect(mockLocalState.claimEditLoading).toBe(false);
+    });
+
+    /**
      * 승인 이후의 신청서는 구매자가 수정 화면을 열지 못한다 (#599 T2-D7 · 운영 결정 2026-09-23)
      *
      * 서버는 승인 이후 수정을 422(`claim_not_editable`)로 막는다. 그런데 주소에 `/edit` 을 붙이면
@@ -380,6 +415,151 @@ describe('클레임 수정 — 진입', () => {
         expect(config.headers['X-Guest-Order-Token']).toBe('tok-123');
 
         mockG7Core.state.get.mockReturnValue({});
+    });
+});
+
+describe('클레임 수정 — 응답이 오기 전에 다른 화면으로 옮겼을 때 (7.1.1 출시 전 확장 보완)', () => {
+    /**
+     * 엔진 showErrorPage 는 부른 시점의 경로 세대를 출처로 삼는다. 이 핸들러는 자기 API 를 기다린 **뒤**
+     * 오류 화면을 부르므로, 그사이 사용자가 SPA 로 다른 화면에 갔다면 그 「다른 화면」의 세대로 불려 막히지 않고
+     * 새 화면을 404 로 덮었다. 핸들러가 시작할 때 경로 세대를 잡아 두고, 응답 뒤 세대가 바뀌었으면 아무것도 하지 않는다
+     * (오류 화면·안내 토스트·이동·상태 쓰기 모두 — 지난 화면의 응답을 새 화면에 쓰면 안 된다).
+     */
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockG7Core.dispatch.mockReset();
+        mockLocalState = {};
+        (window as any).G7Core = mockG7Core;
+        setPath('/mypage/claims/EX20260901-0001/edit');
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('늦은 실패: 응답을 기다리는 사이 다른 화면으로 옮겼으면 오류 화면을 부르지 않는다', async () => {
+        mockG7Core.api.get.mockImplementation(async () => {
+            setPath('/mypage/orders'); // 응답을 기다리는 사이 다른 화면으로 옮겼다
+            throw { response: { status: 404 } };
+        });
+
+        await initClaimEditHandler({ handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } }, {} as any);
+
+        expect(mockG7Core.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ handler: 'showErrorPage' }));
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('늦은 실패: 같은 경로라도 쿼리가 바뀌었으면(다른 화면 상태) 부르지 않는다', async () => {
+        mockG7Core.api.get.mockImplementation(async () => {
+            Object.defineProperty(window, 'location', { value: { pathname: '/mypage/claims/EX20260901-0001/edit', search: '?from=list' }, writable: true, configurable: true });
+            throw { response: { status: 404 } };
+        });
+
+        await initClaimEditHandler({ handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } }, {} as any);
+
+        expect(mockG7Core.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ handler: 'showErrorPage' }));
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('늦은 성공: 지난 화면의 신청서를 새 화면 상태에 쓰지 않고 주문도 다시 부르지 않는다', async () => {
+        mockG7Core.api.get.mockImplementation(async () => {
+            setPath('/mypage/orders');
+            return { data: { claim: { claim_number: 'EX20260901-0001', order_number: '20260812-0000123', is_editable: true } } };
+        });
+
+        await initClaimEditHandler({ handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } }, {} as any);
+
+        expect(mockLocalState.claimEditSnapshot).toBeUndefined();
+        expect(mockG7Core.dispatch).not.toHaveBeenCalled();
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('같은 화면이면 종전대로 오류 화면을 부른다 (대조)', async () => {
+        mockG7Core.api.get.mockRejectedValue({ response: { status: 404 } });
+
+        await initClaimEditHandler({ handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } }, {} as any);
+
+        expect(mockG7Core.dispatch).toHaveBeenCalledWith(expect.objectContaining({ handler: 'showErrorPage' }));
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('엔진 경로 세대 API 가 있으면: 나갔다가 같은 주소로 돌아온 경우(경로+쿼리 같음)도 지난 응답으로 오류 화면을 부르지 않는다', async () => {
+        let generation = 7;
+        (window as any).G7Core = { ...mockG7Core, navigation: { getRouteGeneration: () => generation } };
+        mockG7Core.api.get.mockImplementation(async () => {
+            generation = 9; // 다른 화면에 갔다가(8) 같은 수정 주소로 다시 들어왔다(9) — 주소는 그대로다
+            throw { response: { status: 404 } };
+        });
+
+        await initClaimEditHandler({ handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } }, {} as any);
+
+        expect(mockG7Core.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ handler: 'showErrorPage' }));
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('엔진 경로 세대 API 가 있어도 세대가 그대로면 종전대로 오류 화면을 부른다 (대조)', async () => {
+        (window as any).G7Core = { ...mockG7Core, navigation: { getRouteGeneration: () => 7 } };
+        mockG7Core.api.get.mockRejectedValue({ response: { status: 404 } });
+
+        await initClaimEditHandler({ handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } }, {} as any);
+
+        expect(mockG7Core.dispatch).toHaveBeenCalledWith(expect.objectContaining({ handler: 'showErrorPage' }));
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=list
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('엔진 경로 세대 API 가 있어도 주소가 바뀌었으면 부르지 않는다 — 세대만 믿지 않는다', async () => {
+        (window as any).G7Core = { ...mockG7Core, navigation: { getRouteGeneration: () => 7 } };
+        mockG7Core.api.get.mockImplementation(async () => {
+            setPath('/mypage/orders');
+            throw { response: { status: 404 } };
+        });
+
+        await initClaimEditHandler({ handler: 'initClaimEdit', params: { claimApiBase: MEMBER_CLAIM_BASE } }, {} as any);
+
+        expect(mockG7Core.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ handler: 'showErrorPage' }));
+    });
+
+    /**
+     * @scenario claim_type=exchange, screen=edit, entry=detail
+     *
+     * @effects claim_edit_stale_response_after_navigation_is_ignored
+     */
+    it('주문 조회 404 처분(구 핸들러): 오류 처리 문맥(fetch 를 시작한 경로 세대)을 오류 화면 요청에 그대로 넘긴다', async () => {
+        setPath('/mypage/orders/20260812-0000123/claims/apply/exchange');
+        const context = { data: { __routeGeneration: 2 }, state: {}, setState: vi.fn() };
+
+        await claimApplyOrderMissingHandler({ handler: 'claimApplyOrderMissing' }, context as any);
+
+        // 엔진 showErrorPage 는 context.data.__routeGeneration 을 출처로 보고 이동 뒤 늦은 fetch 를 거른다.
+        expect(mockG7Core.dispatch).toHaveBeenCalledWith(
+            expect.objectContaining({ handler: 'showErrorPage' }),
+            { componentContext: context }
+        );
     });
 });
 

@@ -28,6 +28,27 @@ class HookContextCapture
     public const ORIGIN_BINDING = 'hook.context.origin';
 
     /**
+     * 실행 중인 리스너 잡의 이벤트 ID 를 담는 컨테이너 키 (#139).
+     */
+    public const EVENT_ID_BINDING = 'hook.context.event_id';
+
+    /**
+     * 지금 실행 중인 훅 리스너 잡의 이벤트 ID 를 반환합니다 (#139).
+     *
+     * `DispatchHookListenerJob` 이 디스패치 때 만든 uuid 로, 그 잡이 재시도·재예약되어도 같다. 리스너는 이 값으로
+     * 「이 사건에서 이미 한 일」을 가려낸다(예: 알림 수신자별 중복 방지 키). 리스너 잡 단위라 같은 훅의 다른
+     * 리스너 잡과는 값이 다르고, 큐를 거치지 않는 동기 실행(`'sync' => true`·직접 호출)에서는 null 이다.
+     *
+     * @return string|null 이벤트 ID (리스너 잡 밖이면 null)
+     */
+    public static function eventId(): ?string
+    {
+        $app = app();
+
+        return $app->bound(self::EVENT_ID_BINDING) ? (string) $app->make(self::EVENT_ID_BINDING) : null;
+    }
+
+    /**
      * 현재 작업의 진입점을 반환합니다 — 'cli'(Artisan 커맨드·스케줄러) 또는 'http'(웹 요청).
      *
      * 큐 워커도 콘솔 프로세스라 runningInConsole() 만으로 판정하면, 어드민 화면에서 시작돼 큐로 넘어온

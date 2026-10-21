@@ -274,12 +274,27 @@ $app = Application::configure(basePath: dirname(__DIR__))
 | 쿼리스트링을 '+' 로 쪼갠 값으로 채우므로(`GET /?x+core:update` → argv[1] === 'core:update'), 이 게이트가
 | 없으면 비인증 웹 요청이 요청마다 매니페스트를 지우고 다시 만들게 한다. env 플래그 채널은 웹 요청으로
 | 주입할 수 없어 그대로 두며, 웹 요청 안에서 시작하는 업데이트 흐름은 그 플래그를 프로세스 안에서 세운다.
+|
+| Core Update: APP_VERSION 정합 — 같은 조건 안에서 프로세스 env 의 APP_VERSION 을 디스크 `.env` 값으로 올린다
+| (bootstrap/g7-update-env.php). 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 두므로, 그 env 를
+| 물려받은 새 코드 자식과 부모 안의 config:cache 일회용 앱이 옛 버전을 config/hooks 캐시에 구워 업데이트 뒤 첫
+| 프로세스가 확장을 자동 비활성화했다(#145, #137). 옛 부모 코드는 고칠 수 없지만 config:cache 는 어느 프로세스에서
+| 돌든 이 파일을 디스크에서 새로 require 하므로, 여기가 옛 부모 안과 모든 자식을 한 번에 덮는 유일한 지점이다.
 */
 $g7UpdateFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS'] ?? getenv('G7_UPDATE_IN_PROGRESS');
 $g7UpdateArgv = in_array(PHP_SAPI, ['cli', 'phpdbg'], true) ? ($_SERVER['argv'][1] ?? '') : '';
 
 if ($g7UpdateFlag === '1' || $g7UpdateFlag === 1 || $g7UpdateFlag === true
     || in_array($g7UpdateArgv, ['core:update', 'core:execute-upgrade-steps'], true)) {
+    try {
+        if (is_file(__DIR__.'/g7-update-env.php')) {
+            require_once __DIR__.'/g7-update-env.php';
+            g7_reconcile_update_app_version(dirname(__DIR__));
+        }
+    } catch (Throwable) {
+        // 정합 실패는 부팅을 막지 않는다.
+    }
+
     try {
         foreach ([$app->getCachedPackagesPath(), $app->getCachedServicesPath()] as $g7ManifestPath) {
             if (is_file($g7ManifestPath)) {

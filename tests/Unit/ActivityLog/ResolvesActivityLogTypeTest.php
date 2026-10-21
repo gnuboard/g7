@@ -193,7 +193,7 @@ class ResolvesActivityLogTypeTest extends TestCase
 
     /**
      * 확장 관리자 API(`api/{modules|plugins}/{id}/admin/*`)는 관리자 유형이다 — IP 제한의 관리자 영역과 같은 기준
-     * (7.1.0 실측 O-B2: 인증 앱 강제 해제가 「사용자」로 남았다).
+     * (7.1.0 실측: 인증 앱 강제 해제가 「사용자」로 남았다).
      *
      * @scenario path_area=extension_admin_api
      *

@@ -243,8 +243,8 @@ guest 역할의 권한과 무관하게 `can_write_review=false` 를 냅니다 �
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 593개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 221개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 46개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 224개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 48개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 17개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 3개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -295,8 +295,13 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-ecommerce` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃에 입력칸을 새로 그리면 화면 낭독기가 읽을 이름을 단다 — 제목이 표식 없는 span·표 열 머리면 그 제목 키로 `aria-label`, 체크박스·라디오 옆 글자는 칸과 한 `<label>` 로 감싸고, 목록형 선택칸(`options`·SearchableDropdown)은 placeholder 가 아니라 `aria-label`(정렬 `common.sort_order`·쪽당 개수 `common.per_page`·검색 대상 `common.search_field`)을 단다. 표·반복 행 칸은 「{행 이름} {열 이름}」(`common.row_cell`)으로, DataGrid 셀·펼침 안에서는 `$t:defer:` 로 쓰고(행 문맥 없이 먼저 번역되면 행 이름이 빈다), 행 선택을 켠 DataGrid 는 `rowLabelField` 를 화면에 보이는 식별자로 정한다. 잠금: `resources/js/__tests__/layouts/adminControlNames.test.ts`(#757)
+- [ ] 창(모달) 안에서 반복 행을 눌러 고르게 하면(회원 검색 결과 등) 그 행은 `<button type="button">`(또는 링크)로 그린다 — 클릭만 받는 `<div>` 는 Tab 으로 닿지 않아 키보드로 고를 수 없다. 단추 안에는 `<div>` 대신 `<span class="block">` 으로 줄을 나눈다. 보이는 제목 없이 placeholder 만 있는 숫자칸은 `aria-label` 을 단다(Playwright 접근 이름 계산은 숫자칸 placeholder 를 이름으로 치지 않는다). 잠금: `resources/js/__tests__/layouts/adminModalRowKeyboard.test.ts`
+- [ ] 클릭으로 무언가를 고르거나 펼치는 영역(필터 칩·기간 빠른 선택·구획 머리·목록 카드·사진)은 `<div>`·`<img>` 에 `<on type="click">` 을 달지 않고 `<button type="button">` 으로 그린다 — 고르는 칩·카드는 `aria-pressed`, 접는 머리는 `aria-expanded`, 스위치는 `role="switch"`·`aria-checked`. 관리자 `.button` 이 `inline-flex justify-center` 를 넣으므로 폭을 채우는 자리는 `w-full justify-start text-left`(앞선 CSS 가 display 를 정하던 `card-header` 는 `flex` 도) 를 함께 둔다. 표 행처럼 단추가 될 수 없는 자리는 자기 동작 없는 대리 단추(상태 속성 + 이름)를 품는다. 잠금: `resources/js/__tests__/layouts/adminClickOnlyKeyboard.test.tsx`
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
 - [ ] 통화가 관여하는 표시·기록을 추가할 때 다국어 문구는 `:amount` 로 중립, 과거 거래 표기는 `currency_snapshot` 경유
 - [ ] 금전이 움직이는 훅(쿠폰·마일리지 차감/복원)을 구독·발행할 때 `'sync' => true` 확인
@@ -310,6 +315,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 클레임 상태 Enum(`ExchangeStatusEnum` · `ReturnStatusEnum` · `RefundStatusEnum`)의 전이를 바꾸면 `canTransitionTo()` · 알림 정의(상태별 항목) · `ClaimActivityLogListener` · 화면의 `adminAssignableValues()` 를 함께 본다 — 한 곳만 고치면 전이는 되는데 알림·로그만 조용히 빠진다
 - [ ] 클레임 추가결제 계약(`claim_payment.approve` / `.refund` 필터의 인자·반환 키)을 바꾸면 결제 플러그인 4종의 리스너와 그 플러그인들의 `dependencies.modules.sirsoft-ecommerce` 하한을 함께 올린다
 - [ ] 클레임 금액 표시를 추가할 때 보조 통화 줄(`mc_*`)은 바로 위 기준 통화 줄과 같은 필드·같은 게이트로 — 서버가 만든 맵을 나열만 하고 화면에서 더하거나 곱하지 않는다
+- [ ] 응답에 통화 코드 맵(`mc_*`)을 새로 실을 때 비면 `[]` 가 아니라 빈 객체 `{}` 로 낸다(1.3.1~, claims.md 「모든 `mc_*` 가 같다」) — `formatStoredMultiCurrency()` 를 거치거나 `ClaimResource::emptyMultiCurrencyMapsAsObjects()` 처럼 **응답 경계에서만** 바꾼다. 같은 맵을 서비스가 PHP 배열로 읽는 표시기(`CalculationSnapshotPresenter`)·서비스 반환값은 바꾸지 않는다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_ecommerce_product_form`·`admin_ecommerce_shipping_policy_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비운 뒤 기본값을 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비운다. 생성 모드에서도 폼을 채우는 `initLocal` 데이터소스(복사 `copy_source` 등)는 문자열형이 아니라 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형은 엔진이 기존 form 과 깊은 병합해 잔존을 페이로드에 섞는다(트러블슈팅 state-global 사례 7)
 ## 6. 금지 패턴
 
@@ -341,6 +347,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 마일리지 반환·지급, 쿠폰·재고 복원 실패를 `try/catch` 로 삼키기 | 예외(`OrderCancellationException`)로 환불·취소 전체 롤백 | 삼키면 카드는 취소되고 마일리지·쿠폰·재고는 돌아오지 않은 채 완료로 닫힌다(refund 274). 현금영수증만 커밋 뒤라 삼킨다 |
 | PG 호출 뒤에 같은 트랜잭션에서 장부를 쓰기 | 되돌릴 수 있는 쓰기를 모두 끝낸 뒤 PG 를 마지막에 부르고, 완료는 그 행 UPDATE 1회 | PG 성공 뒤 쓰기가 실패하면 장부만 롤백되고 돈은 나간다 — NICE·KG·KCP 는 멱등키가 없어 재실행이 이중 환불이 된다 |
 | `DB::transaction(..., attempts>1)` 로 환불 실행 감싸기 | attempts 1 | 교착 재시도가 클로저를 다시 돌려 PG 를 두 번 부른다 |
+| 레이아웃·확장 조각의 메뉴·목록 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 헤더 통화·배송 국가 목록이 이렇게 가운데로 갔다 |
 <!-- @intent END -->
 
 ### 환불 후 주문 헤더 동기화 계약 (S3-D17)
@@ -367,10 +374,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 684개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 267개 | `vitest.config.ts` |
-| Playwright | 72개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 359개 | `tests/scenarios` |
+| PHPUnit | 703개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 290개 | `vitest.config.ts` |
+| Playwright | 80개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 397개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

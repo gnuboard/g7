@@ -1,0 +1,38 @@
+feature: 쿠폰 받기 레이아웃 구조 — 창·여는 쪽(주문서 「쿠폰 다운로드」·상품 상세 「+N」)·칩 확인 창·로그인 안내 창의 계약 잠금
+
+description: |
+  쇼핑몰 쿠폰 받기 흐름을 basic 템플릿 레이아웃 JSON 으로 판독해 잠근다. 창은 로딩·빈 목록·카드 목록 세 모습으로 갈리고,
+  카드 단추는 받음·받는 중·받기 가능 세 상태이며, 받기는 두 목록 공통 번호 `coupon_id` 로 POST 한다(7.1.1).
+  창 상태는 창 고유 전역 이름 공간 `_global.couponDownloadModal = { coupons, loading, loadingMore, downloadingCouponId }` 에 두고,
+  여는 쪽이 null 로 비운 뒤 객체로 다시 쓴다 — modals 섹션 창은 영구 마운트라 페이지 `_local` 에 두면 창이 앞서 쥔 목록이
+  다시 열 때 새 목록을 가렸다(7.1.1). 렌더 동작(누른 카드만 진행 표시·다시 열면 새 목록)은 sirsoft-basic 실구조 시험
+  `coupon-download-modal-real-structure` 가 잠근다.
+
+# axis 의미:
+#   source — 판정 방식(레이아웃 JSON 정적 판독)
+axes:
+  source: [static]
+
+effects:
+  - coupon_modal_registered_as_partial          # 창이 Modal(composite)·id coupon_download_modal·partial 메타를 가진다
+  - modal_three_state_branch                    # 로딩(목록 전) / 빈 목록 / 카드 목록 세 분기가 창 이름 공간 값으로 갈린다
+  - coupon_cards_iterate_window_list            # 카드가 창 이름 공간의 목록(coupons.data)을 순회한다
+  - card_button_three_states                    # 카드 단추 받음(잠김)·받는 중(누른 카드만)·받기 가능 세 상태
+  - download_button_posts_coupon_id             # 받기 단추가 받는 중 표시 뒤 POST …/coupons/{coupon_id}/download (로그인 필수)
+  - download_success_marks_downloaded           # 받기 성공 시 그 카드만 받음 표시, 성공·실패 모두 받는 중 표시를 푼다
+  - infinite_scroll_appends_next_page           # 스크롤 하단 근접 시 다음 페이지를 이어 붙인다(debounce·마지막 페이지·더보기 중 가드, 스피너)
+  - window_state_in_global_namespace            # 창이 상태를 창 고유 전역 이름 공간에서 읽고 쓰며 _local 옛 키·target local 쓰기가 없다
+  - checkout_opener_resets_fetches_then_opens   # 주문서 「쿠폰 다운로드」 — 로그인 회원만, 이름 공간 null → 불러오는 중 → 첫 페이지 조회 성공 뒤 창 열기
+  - product_coupon_badges_render                # 상품 상세 쿠폰 배지 — 데이터소스 등록, 있을 때만, 3개까지, 혜택 문구
+  - badge_click_branches_on_login               # 배지 클릭 — 로그인 회원은 받기 확인, 비회원은 로그인 안내 창
+  - product_opener_seeds_window_namespace       # 상품 상세 「+N」 — 이름 공간 null → 이 상품 목록 객체 → 창 열기
+  - login_required_modal_navigates_to_login     # 로그인 안내 창의 로그인 단추가 /login 으로 이동
+  - confirm_modal_downloads_and_refetches       # 칩 확인 창 — 선택 쿠폰을 $parent._local 에서 읽고 받은 뒤 상품 쿠폰 목록을 다시 받는다
+  - window_state_not_in_page_local              # 주문서 initLocal·상품 상세 init 이 창 상태를 페이지 _local 에 두지 않는다
+  - coupon_modals_registered_in_pages           # 주문서·상품 상세 modals 섹션에 쿠폰 창들이 등록돼 있다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/couponDownload.test.tsx
+
+validation:
+  browser_check: 로그인 회원 › 주문서 「쿠폰 다운로드」 → 창 첫 페이지 8장 → 스크롤로 다음 페이지 → 카드 하나 「다운로드」(누른 카드만 「다운로드 중...」→「다운로드 완료」) → 닫기 → 다시 열기(첫 페이지 다시 조회). 상품 상세 「+N」 창도 같은 확인(PUT /checkout 없음)

@@ -98,7 +98,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "info-circle",
-                                "className": "text-yellow-500 text-4xl mb-4"
+                                "className": "text-yellow-700 dark:text-yellow-600 text-4xl mb-4"
                             }
                         },
                         {

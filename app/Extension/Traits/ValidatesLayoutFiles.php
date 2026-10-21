@@ -4,6 +4,8 @@ namespace App\Extension\Traits;
 
 use App\Exceptions\LayoutIncludeException;
 use App\Extension\Layout\BackupLayoutReader;
+use App\Support\Filesystem\PathGuard;
+use App\Support\LayoutDataSourceIds;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
@@ -83,6 +85,15 @@ trait ValidatesLayoutFiles
     protected bool $skipInvalidLayouts = false;
 
     /**
+     * 이 대상 템플릿 종류(`admin`·`user`)의 화면만 검증합니다 — null 이면 전부.
+     *
+     * 템플릿 활성화만 채운다. 사용자 템플릿을 켤 때 모듈의 **관리자** 화면까지 컴파일·검증하면, 무관한 관리자 화면
+     * 하나의 실패가 활성화 전체를 되돌렸다(#725 D6). 거르기는 파일 수집 단계에서 하고, 레이아웃 이름 산출 기준
+     * 경로(`$layoutsPath`)는 바꾸지 않는다({@see getLayoutTargetType()} 와 같은 판정).
+     */
+    protected ?string $onlyLayoutTargetType = null;
+
+    /**
      * {@see $skipInvalidLayouts} 가 켜진 검증에서 건너뛴 오류 목록.
      *
      * @var array<int, string>
@@ -111,7 +122,8 @@ trait ValidatesLayoutFiles
 
         // 조각 출처 표식은 이 검증 한 번 동안만 켠다 — 반환 항목의 `original` 에만 남고 `data` 에서는 걷힌다.
         $previousRoot = $this->partialOriginRoot;
-        $this->partialOriginRoot = $this->getLayoutsBaseDirectory(rtrim($layoutsPath, '/\\').DIRECTORY_SEPARATOR.'_');
+        // 조각 경로({@see assertPartialWithinLayouts()} 산출)와 같은 모양(실제 경로·구분자 `/`)이어야 출처 키가 루트를 뗀 상대 키가 된다.
+        $this->partialOriginRoot = PathGuard::resolve($this->getLayoutsBaseDirectory(rtrim($layoutsPath, '/\\').DIRECTORY_SEPARATOR.'_'));
 
         try {
             return $this->validateLayoutFilesAnnotated($layoutsPath, $identifier, $sourceType, $recursive);
@@ -143,6 +155,13 @@ trait ValidatesLayoutFiles
         // `.g7.html` 은 설치 시점에 메모리로 컴파일해 등록하고(디스크 산출 JSON 미기록), `.json` 은
         // 직접 등록한다(병존 · 선택 설치원). 두 SSoT 가 애초에 공존하지 않으므로 provenance 판별이 없다.
         $layoutSources = $this->collectLayoutSources($layoutsPath, $recursive);
+
+        if ($this->onlyLayoutTargetType !== null) {
+            $layoutSources = array_values(array_filter(
+                $layoutSources,
+                fn (array $source): bool => $this->getLayoutTargetType($layoutsPath, $source['path']) === $this->onlyLayoutTargetType
+            ));
+        }
 
         if (empty($layoutSources)) {
             return $validatedLayouts;
@@ -349,25 +368,12 @@ trait ValidatesLayoutFiles
      */
     protected function validateDataSourceIds(array $dataSources, string $filePath): ?string
     {
-        $ids = [];
-        $duplicates = [];
+        // 같은 id 를 조건(if·conditions)으로 여러 판 선언한 것은 허용한다 — 조건 없는 판이 섞인 중복만 거부(7.1.1 출시 전)
+        $duplicates = LayoutDataSourceIds::conflictingDuplicates($dataSources);
 
-        foreach ($dataSources as $dataSource) {
-            if (! isset($dataSource['id'])) {
-                continue;
-            }
-
-            $id = $dataSource['id'];
-            if (in_array($id, $ids, true)) {
-                $duplicates[] = $id;
-            } else {
-                $ids[] = $id;
-            }
-        }
-
-        if (! empty($duplicates)) {
+        if ($duplicates !== []) {
             return __('exceptions.layout.duplicate_data_source_id_in_file', [
-                'ids' => implode(', ', array_unique($duplicates)),
+                'ids' => implode(', ', $duplicates),
                 'file' => $filePath,
             ]);
         }
@@ -454,7 +460,7 @@ trait ValidatesLayoutFiles
     {
         // 실패한 참조를 담은 문서 — 조각 안이면 그 조각, 아니면 지금 검증 중인 레이아웃 파일.
         $document = end($this->partialStack) ?: ($this->currentLayoutFile ?? '');
-        $file = str_replace('\\', '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', (string) $document));
+        $file = str_replace('\\', '/', $this->withoutBasePath((string) $document));
 
         foreach ($this->layoutIncludeWarnings as $warning) {
             if ($warning['file'] === $file && $warning['partial'] === $partialPath && $warning['reason'] === $reason) {
@@ -862,7 +868,11 @@ trait ValidatesLayoutFiles
             $e = new LayoutIncludeException(
                 __('exceptions.layout.include_file_not_found', [
                     'path' => $partialPath,
-                    'resolved' => $absolutePath,
+                    // 찾아본 후보 전부 — 1순위(소스 `.g7.html`)만 적으면 `.json` 참조인데 `.g7.html` 만 보였다(7.1.1 출시 전 보강)
+                    'resolved' => implode(', ', array_map(
+                        fn (string $path): string => str_replace('\\', '/', $path),
+                        $source['tried'] ?? [$absolutePath],
+                    )),
                 ]),
                 $partialPath,
                 $this->partialStack
@@ -927,36 +937,102 @@ trait ValidatesLayoutFiles
      *
      * @param  string  $partialPath  `<include src>` 값
      * @param  string  $basePath  기준 경로
-     * @return array{path: string, markup: bool, exists: bool} 소스 디스크립터 (부재 시 1순위 후보 경로)
+     * @return array{path: string, markup: bool, exists: bool, tried?: array<int, string>} 소스 디스크립터 (부재 시 1순위 후보 경로 + 찾아본 후보 전부)
      *
      * @throws LayoutIncludeException layouts 디렉토리를 벗어나는 참조일 때
      */
     protected function resolvePartialSource(string $partialPath, string $basePath): array
     {
         $jsonForced = $this->layoutInstallSourceIsJsonForced();
+        $layoutsDir = $this->getLayoutsBaseDirectory($basePath);
         $primary = null;
+        $tried = [];
 
+        // 실재하는 첫 후보를 먼저 고르고, 보안 검증은 고른 경로 하나에만 한다 (#144).
+        // 종전에는 후보마다 보안 검증을 먼저 했는데, 없는 `.g7.html` 후보가 검증에서 "layouts 밖" 으로 오판되면
+        // (리눅스 절대경로의 선행 `/` 소실) 실재하는 `.json` 후보로 넘어가지 못해 JSON 전용 확장이 설치·업데이트되지 않았다.
         foreach ($this->layoutSourceCandidates($partialPath) as $candidate) {
-            // 보안 검증(layouts 디렉토리 내부)은 후보마다 그대로 통과시킨다.
-            $absolutePath = $this->resolvePartialPath($candidate['path'], $basePath);
+            $location = $this->locatePartialFile($candidate['path'], $basePath, $layoutsDir);
 
-            $primary ??= ['path' => $absolutePath, 'markup' => $candidate['markup'], 'exists' => false];
+            $primary ??= ['path' => $location, 'markup' => $candidate['markup']];
+            $tried[] = $location;
 
-            if (! file_exists($absolutePath)) {
+            if (! file_exists($location)) {
                 continue;
             }
+
+            $absolutePath = $this->assertPartialWithinLayouts($partialPath, $location, $layoutsDir);
 
             if ($jsonForced && $candidate['markup']) {
                 Log::warning('조각 소스 JSON 강제를 이행하지 못했습니다 (짝 .json 부재 — 마크업 컴파일로 대체)', [
                     'partial' => $partialPath,
-                    'markup' => str_replace(base_path().DIRECTORY_SEPARATOR, '', $absolutePath),
+                    'markup' => $this->withoutBasePath($absolutePath),
                 ]);
             }
 
             return ['path' => $absolutePath, 'markup' => $candidate['markup'], 'exists' => true];
         }
 
-        return $primary;
+        // 후보가 모두 없으면 1순위 후보 경로로 판정한다 — layouts 밖이면 예외, 안이면 부재(호출부가 파일 없음으로 처리).
+        return [
+            'path' => $this->assertPartialWithinLayouts($partialPath, $primary['path'], $layoutsDir),
+            'markup' => $primary['markup'],
+            'exists' => false,
+            'tried' => $tried,
+        ];
+    }
+
+    /**
+     * 조각 참조의 디스크 위치를 정합니다 — 보안 검증은 하지 않는다.
+     *
+     * 기준 경로(참조를 담은 문서의 폴더) 기준으로 먼저 보고, `partials/` 로 시작하는 참조가 거기 없으면 layouts 루트
+     * 기준으로 떨어진다.
+     *
+     * @param  string  $partialPath  partial 경로 (후보 확장자 적용 후)
+     * @param  string  $basePath  기준 경로
+     * @param  string  $layoutsDir  layouts 루트
+     * @return string 위치 (존재 여부 무관)
+     */
+    private function locatePartialFile(string $partialPath, string $basePath, string $layoutsDir): string
+    {
+        $absolutePath = $basePath.DIRECTORY_SEPARATOR.$partialPath;
+
+        if ((str_starts_with($partialPath, 'partials/') || str_starts_with($partialPath, 'partials\\')) && ! file_exists($absolutePath)) {
+            $absolutePath = $layoutsDir.DIRECTORY_SEPARATOR.$partialPath;
+        }
+
+        return $absolutePath;
+    }
+
+    /**
+     * 조각 위치가 layouts 루트 안인지 검증하고 실제 경로를 돌려줍니다.
+     *
+     * 판정은 폴더 경계를 지킨다 — 문자열 접두 비교는 `layouts-evil` 같은 이름이 비슷한 형제 폴더를 통과시켰다.
+     * 예외 문구와 include 경로에는 작성자가 쓴 참조값을 싣는다(내부 후보 확장자 `.g7.html` 를 드러내지 않는다).
+     *
+     * @param  string  $partialPath  작성자가 쓴 참조값
+     * @param  string  $location  조각 위치
+     * @param  string  $layoutsDir  layouts 루트
+     * @return string 정리된 실제 경로 (구분자 `/`)
+     *
+     * @throws LayoutIncludeException layouts 루트 밖일 때
+     */
+    private function assertPartialWithinLayouts(string $partialPath, string $location, string $layoutsDir): string
+    {
+        $resolved = PathGuard::resolve($location);
+
+        if (! PathGuard::isWithin(PathGuard::resolve($layoutsDir), $resolved)) {
+            throw new LayoutIncludeException(
+                __('exceptions.layout.include_outside_directory', [
+                    'path' => $partialPath,
+                    'allowed_dir' => $layoutsDir,
+                ]),
+                $partialPath,
+                $this->partialStack
+            );
+        }
+
+        return $resolved;
     }
 
     /**
@@ -1058,86 +1134,43 @@ trait ValidatesLayoutFiles
     /**
      * partial 경로를 절대 경로로 변환하고 보안 검증을 수행합니다.
      *
+     * 확장자 후보 없이 참조 하나를 그대로 해석한다 — 설치 해석은 {@see resolvePartialSource()} 를 쓴다.
+     *
      * @param  string  $partialPath  partial 경로
      * @param  string  $basePath  기준 경로
-     * @return string 절대 경로
+     * @return string 정리된 절대 경로 (구분자 `/`)
      *
-     * @throws LayoutIncludeException
+     * @throws LayoutIncludeException layouts 디렉토리를 벗어나는 참조일 때
      */
     protected function resolvePartialPath(string $partialPath, string $basePath): string
     {
-        // 1. 먼저 현재 basePath 기준으로 상대 경로 시도
-        $absolutePath = $basePath.DIRECTORY_SEPARATOR.$partialPath;
-
-        // 2. partials/로 시작하고 basePath 기준 파일이 없으면 layouts 루트 기준으로 fallback
-        if (str_starts_with($partialPath, 'partials/') || str_starts_with($partialPath, 'partials\\')) {
-            if (! file_exists($absolutePath)) {
-                $layoutsDir = $this->getLayoutsBaseDirectory($basePath);
-                $absolutePath = $layoutsDir.DIRECTORY_SEPARATOR.$partialPath;
-            }
-        }
-
-        // realpath로 실제 경로 확인
-        $realPath = realpath($absolutePath);
-
-        // 2. realpath 실패 시 수동 정규화
-        if ($realPath === false) {
-            $realPath = $this->normalizeFilePath($absolutePath);
-        }
-
-        // 3. 보안 검증: layouts 디렉토리 내부인지 확인
         $layoutsDir = $this->getLayoutsBaseDirectory($basePath);
 
-        // Windows/Linux 호환을 위해 경로 정규화
-        $realPathNormalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $realPath);
-        $layoutsDirNormalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $layoutsDir);
-
-        if (! str_starts_with($realPathNormalized, $layoutsDirNormalized)) {
-            throw new LayoutIncludeException(
-                __('exceptions.layout.include_outside_directory', [
-                    'path' => $partialPath,
-                    'allowed_dir' => $layoutsDir,
-                ]),
-                $partialPath,
-                $this->partialStack
-            );
-        }
-
-        return $realPath;
+        return $this->assertPartialWithinLayouts($partialPath, $this->locatePartialFile($partialPath, $basePath, $layoutsDir), $layoutsDir);
     }
 
     /**
-     * 경로를 정규화합니다 (.과 .. 처리).
+     * 경로를 정규화합니다 (.과 .. 처리, 루트 보존).
+     *
+     * 종전 수동 정규화는 빈 조각을 버리면서 리눅스 절대경로의 맨 앞 `/` 를 잃었다(#144) — {@see PathGuard} 에 위임한다.
      *
      * @param  string  $path  경로
-     * @return string 정규화된 경로
+     * @return string 정규화된 경로 (구분자 `/`)
      */
     protected function normalizeFilePath(string $path): string
     {
-        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
-        $parts = [];
-        $segments = explode(DIRECTORY_SEPARATOR, $path);
-
-        foreach ($segments as $segment) {
-            if ($segment === '..' && count($parts) > 0) {
-                array_pop($parts);
-            } elseif ($segment !== '.' && $segment !== '') {
-                $parts[] = $segment;
-            }
-        }
-
-        return implode(DIRECTORY_SEPARATOR, $parts);
+        return PathGuard::canonicalize($path);
     }
 
     /**
      * 허용된 layouts 디렉토리를 추출합니다.
      *
      * @param  string  $basePath  기준 경로
-     * @return string layouts 디렉토리 경로
+     * @return string layouts 디렉토리 경로 (구분자 `/`)
      */
     protected function getLayoutsBaseDirectory(string $basePath): string
     {
-        // 경로에서 **가장 바깥쪽 `layouts` 경계**까지를 루트로 본다.
+        // 경로에서 **가장 바깥쪽 `layouts` 경계**까지를 루트로 본다 — 단, 프로젝트 루트 위 경로는 세지 않는다.
         //
         // 종전에는 `templates/{name}/layouts` 처럼 세그먼트 수를 고정한 정규식이었는데, 실제 작성
         // 경로는 `_bundled` 가 한 단계 더 끼어 있어(`templates/_bundled/{name}/layouts`) 매칭에
@@ -1148,17 +1181,31 @@ trait ValidatesLayoutFiles
         //
         // 확장 유형·디렉토리 깊이를 가정하지 않으므로 `_bundled` 든 활성이든, 앞으로 계층이 하나 더
         // 생기든 같은 규칙으로 동작한다.
-        $normalized = str_replace('\\', '/', $basePath);
-        $segments = explode('/', $normalized);
+        //
+        // 사이트가 `/srv/layouts/g7` 처럼 이름이 `layouts` 인 폴더 아래 설치되면 경로 첫 `layouts` 가 프로젝트 바깥을
+        // 가리켜 루트·보안 경계·조각 출처 키가 모두 어긋났다(#144) — 프로젝트 안 경로면 프로젝트 루트 뒤에서만 찾는다.
+        $normalized = PathGuard::canonicalize($basePath);
+        $prefix = '';
+        $relative = $normalized;
+
+        foreach (array_unique([PathGuard::canonicalize(base_path()), PathGuard::resolve(base_path())]) as $projectRoot) {
+            if (PathGuard::isWithin($projectRoot, $normalized)) {
+                $prefix = rtrim($projectRoot, '/');
+                $relative = ltrim(substr($normalized, strlen($prefix)), '/');
+                break;
+            }
+        }
+
+        $segments = explode('/', $relative);
         $index = array_search('layouts', $segments, true);
 
         if ($index === false) {
-            return $basePath;
+            return $normalized;
         }
 
-        $rootSegments = array_slice($segments, 0, $index + 1);
+        $root = implode('/', array_slice($segments, 0, $index + 1));
 
-        return str_replace('/', DIRECTORY_SEPARATOR, implode('/', $rootSegments));
+        return $prefix === '' ? $root : $prefix.'/'.$root;
     }
 
     // 조각 로드 실패용 "에러 표시 컴포넌트"(`createPartialErrorComponent`)는 지웠다.

@@ -15,8 +15,8 @@
             <div class="flex-1 space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.marketing_consent</span>
-                <span data-if="{{user.data?.marketing_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
-                <span data-if="{{!user.data?.marketing_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                <span data-if="{{user.data?.marketing_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.marketing_consent_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
               </div>
               <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.marketing_consent_desc</span>
             </div>
@@ -26,8 +26,8 @@
             <div class="flex-1 space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium text-gray-900 dark:text-white">{{channel.label}}</span>
-                <span data-if="{{user.data?.[channel.key + '_at']}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
-                <span data-if="{{!user.data?.[channel.key + '_at']}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                <span data-if="{{user.data?.[channel.key + '_at']}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.[channel.key + '_at']}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
               </div>
             </div>
           </label>
@@ -38,8 +38,8 @@
             <div class="flex-1 space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.third_party_consent</span>
-                <span data-if="{{user.data?.third_party_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
-                <span data-if="{{!user.data?.third_party_consent_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                <span data-if="{{user.data?.third_party_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.third_party_consent_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
               </div>
               <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
             </div>
@@ -50,13 +50,13 @@
               <div class="flex-1 space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
-                  <span data-if="{{user.data?.info_disclosure_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400">{{user.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
-                  <span data-if="{{!user.data?.info_disclosure_at}}" class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+                  <span data-if="{{user.data?.info_disclosure_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user.data?.info_disclosure_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
                 </div>
                 <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
               </div>
             </label>
-            <span class="text-xs text-gray-400 dark:text-gray-500 block ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400 block ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
           </div>
         </div>
       </div>

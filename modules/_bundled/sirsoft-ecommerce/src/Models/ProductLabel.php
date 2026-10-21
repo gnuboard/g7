@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
+use App\Support\LocalizedValue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -35,7 +37,7 @@ class ProductLabel extends Model
     /**
      * 현재 로케일에 맞는 라벨명을 반환합니다.
      *
-     * @param string|null $locale 로케일
+     * @param  string|null  $locale  로케일
      * @return string 라벨명
      */
     public function getLocalizedName(?string $locale = null): string
@@ -43,7 +45,7 @@ class ProductLabel extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**
@@ -59,8 +61,8 @@ class ProductLabel extends Model
     /**
      * 활성 라벨만 조회하는 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
-     * @return \Illuminate\Database\Eloquent\Builder 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 쿼리 빌더
      */
     public function scopeActive($query)
     {
@@ -70,8 +72,8 @@ class ProductLabel extends Model
     /**
      * 정렬 순서대로 조회하는 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
-     * @return \Illuminate\Database\Eloquent\Builder 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 쿼리 빌더
      */
     public function scopeOrdered($query)
     {

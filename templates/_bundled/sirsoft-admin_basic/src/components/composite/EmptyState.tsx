@@ -9,7 +9,7 @@ import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -72,7 +72,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const illustrationAlt = illustrationAltProp ?? tOr('common.empty_illustration', 'Empty state illustration');
   // 버튼 variant별 스타일 매핑
   const variantClassMap: Record<'primary' | 'secondary' | 'danger' | 'ghost', string> = {
@@ -103,7 +103,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Div className="mb-6 w-20 h-20 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
           <Icon
             name={iconName}
-            className="text-4xl leading-none text-gray-400 dark:text-gray-500"
+            className="text-4xl leading-none text-gray-500 dark:text-gray-400"
           />
         </Div>
       ) : null}

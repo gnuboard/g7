@@ -48,9 +48,12 @@ class LinkNotificationLogListener implements HookListenerInterface
      */
     public static function getSubscribedHooks(): array
     {
+        // sync: 「드라이버 send → remember(refkey) → after_channel_send → 로그 생성 → after_log_sent → consume」 이
+        // 수신자·채널마다 한 사이클로 이어져야 한다 — 큐로 가면 refkey 표식(scoped)이 작업 경계에서 사라진다(#724).
+        // 코어 7.1.0 은 발송 로그를 큐에서 기록하므로 연결만 되지 않을 뿐 오류는 없다(#139).
         return [
-            'core.notification_log.after_log_sent' => ['method' => 'linkLog', 'priority' => 15],
-            'core.notification_log.after_log_failed' => ['method' => 'linkLog', 'priority' => 15],
+            'core.notification_log.after_log_sent' => ['method' => 'linkLog', 'priority' => 15, 'sync' => true],
+            'core.notification_log.after_log_failed' => ['method' => 'linkLog', 'priority' => 15, 'sync' => true],
         ];
     }
 
@@ -58,6 +61,7 @@ class LinkNotificationLogListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — linkLog 로 처리).
      *
      * @param  mixed  ...$args
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -68,6 +72,7 @@ class LinkNotificationLogListener implements HookListenerInterface
      * refkey 가 없으면(비-비즈뿌리오 로그) 연결하지 않는다.
      *
      * @param  NotificationLog  $log  코어가 방금 생성한 로그(id 포함)
+     * @return void 반환값 없음
      */
     public function linkLog(NotificationLog $log): void
     {

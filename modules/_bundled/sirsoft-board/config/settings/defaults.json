@@ -16,6 +16,7 @@
       "use_reply": true,
       "max_reply_depth": 5,
       "reply_delete_policy": "cascade",
+      "secret_reply_visibility": "thread_path",
       "max_comment_depth": 10,
       "comment_order": "ASC",
       "show_view_count": true,

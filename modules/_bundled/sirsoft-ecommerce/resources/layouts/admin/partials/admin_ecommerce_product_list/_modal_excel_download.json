@@ -26,7 +26,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -71,7 +71,7 @@
                                             "props": {
                                                 "className": "block text-label-subtle mt-1"
                                             },
-                                            "text": "총 12개의 상품이 다운로드됩니다."
+                                            "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search_desc|count=12"
                                         }
                                     ]
                                 }
@@ -82,7 +82,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -127,7 +127,7 @@
                                             "props": {
                                                 "className": "block text-label-subtle mt-1"
                                             },
-                                            "text": "10개의 상품만 다운로드됩니다."
+                                            "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected_desc|count=10"
                                         }
                                     ]
                                 }

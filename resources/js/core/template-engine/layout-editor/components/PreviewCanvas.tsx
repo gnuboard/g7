@@ -494,13 +494,11 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
     G7Core.t = (key: string, params?: Record<string, string | number>): string => {
       // 1) 편집 대상(격리 엔진) 우선. 미해석 시 translate 는 키를 그대로 반환(TranslationEngine:374).
       try {
-        const paramsStr = params
-          ? '|' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('|')
-          : undefined;
+        // 인자 객체를 그대로 넘긴다 — `|k=v` 로 이어 붙이면 값의 `|`·`&`·`=` 에서 잘린다(engine-v1.80.1, 호스트 G7Core.t 와 같은 경로)
         const editorResult = translationEngine.translate(
           key,
           { templateId: editorTemplateId, locale: editorLocale },
-          paramsStr,
+          params,
         );
         // 풀린 경우만 채택 — 미해석(키 그대로/`$t:` 잔존)이면 호스트로 폴백.
         // 빈 문자열은 의도된 번역으로 간주해 채택(fallback 미적용).

@@ -43,43 +43,39 @@ class TrustedProxyStatusCommand extends Command
         $diagnostic = TrustedProxyDiagnostic::forRequest(null);
 
         $this->line('');
-        $this->line('<options=bold>리버스 프록시 신뢰 설정 상태</>');
+        $this->line('<options=bold>'.__('common.console.trusted_proxy_status.title').'</>');
         $this->line('');
 
-        $this->line('  설정 파일        : config/trustedproxy.php');
-        $this->line('  환경변수         : TRUSTED_PROXIES');
+        $this->line('  '.__('common.console.trusted_proxy_status.config_file', ['path' => 'config/trustedproxy.php']));
+        $this->line('  '.__('common.console.trusted_proxy_status.env_var', ['name' => 'TRUSTED_PROXIES']));
 
         if ($diagnostic['trusted_configured']) {
-            $this->line('  현재 값          : '.$diagnostic['configured_proxies']);
+            $this->line('  '.__('common.console.trusted_proxy_status.current_value', ['value' => $diagnostic['configured_proxies']]));
         } else {
-            $this->line('  현재 값          : <comment>미설정 (아무 프록시도 신뢰하지 않음)</comment>');
+            $this->line('  '.__('common.console.trusted_proxy_status.current_value', ['value' => '<comment>'.__('common.console.trusted_proxy_status.unset').'</comment>']));
         }
 
         $this->line('');
-        $this->line('  <options=bold>요청 기반 실측</>');
-        $this->line('    수신 전달 헤더 : <comment>판정 불가 (콘솔에는 요청이 없습니다)</comment>');
-        $this->line('    HTTPS 인식     : <comment>판정 불가</comment>');
-        $this->line('    방문자 IP      : <comment>판정 불가</comment>');
+        $this->line('  <options=bold>'.__('common.console.trusted_proxy_status.measured_title').'</>');
+        $this->line('    '.__('common.console.trusted_proxy_status.forwarded_headers', ['value' => '<comment>'.__('common.console.trusted_proxy_status.undetermined_no_request').'</comment>']));
+        $this->line('    '.__('common.console.trusted_proxy_status.https_detection', ['value' => '<comment>'.__('common.console.trusted_proxy_status.undetermined').'</comment>']));
+        $this->line('    '.__('common.console.trusted_proxy_status.visitor_ip', ['value' => '<comment>'.__('common.console.trusted_proxy_status.undetermined').'</comment>']));
         $this->line('');
-        $this->comment('  실측 축은 웹 요청에서만 판정됩니다 — 관리자 대시보드 알림 또는');
-        $this->comment('  환경설정 > 고급 의 진단 블록에서 확인하세요.');
+        $this->comment('  '.__('common.console.trusted_proxy_status.web_only_hint'));
 
         $this->line('');
 
         if ($diagnostic['trusted_configured']) {
-            $this->info('신뢰 프록시가 설정되어 있습니다. X-Forwarded-* 헤더를 신뢰합니다.');
+            $this->info(__('common.console.trusted_proxy_status.configured'));
             $this->line('');
 
             return self::SUCCESS;
         }
 
-        $this->warn('• 신뢰 프록시가 설정되어 있지 않습니다.');
+        $this->warn('• '.__('common.console.trusted_proxy_status.not_configured'));
         $this->line('');
-        $this->line('  프록시(AWS ALB, CloudFront, Cloudflare, nginx, ngrok) 뒤에서 구동 중이라면');
-        $this->line('  .env 에 TRUSTED_PROXIES 를 지정하세요. 미설정 시 접속 주소·방문자 IP 가');
-        $this->line('  프록시 기준으로 인식되어 화면 표시·IP 기록·결제 통보 수신이 어긋납니다.');
-        $this->line('  프록시를 쓰지 않는 직접 노출 구성이라면 미설정이 정상입니다.');
-        $this->line('  상세: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md');
+        $this->line('  '.__('common.console.trusted_proxy_status.not_configured_help'));
+        $this->line('  '.__('common.console.trusted_proxy_status.details', ['url' => 'https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md']));
         $this->line('');
 
         return self::FAILURE;

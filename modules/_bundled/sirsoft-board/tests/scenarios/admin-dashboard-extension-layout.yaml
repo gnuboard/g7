@@ -1,0 +1,20 @@
+feature: 관리자 대시보드 게시판 주입 조각 레이아웃 계약 (#757 건드린 시험 파일 매핑)
+
+description: |
+  게시판 모듈이 관리자 대시보드의 quick_menu·community 슬롯에 주입하는 조각(굽기 산출물 JSON)의 구조·데이터소스·
+  다국어·이동 링크를 고정한다. 동작 매니페스트(admin-dashboard-board.yaml)와 별도로 레이아웃 정적 계약만 다룬다.
+
+axes:
+  case:
+    - quick_menu           # quick_menu 슬롯 버튼 2개의 주소·아이콘·다국어
+    - community            # community 슬롯 카드 4종·데이터소스·항목 링크·배지
+
+exclusions:
+  - { case: quick_menu, reason: "제외 없음 — 검증 구역 단일 축" }
+
+effects:
+  - quick_menu_injection_contract                # quick_menu 슬롯 버튼 2개의 주소·아이콘·다국어
+  - community_injection_contract                 # community 슬롯 카드 4종·데이터소스·항목 링크·배지
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin_dashboard_extension.test.tsx

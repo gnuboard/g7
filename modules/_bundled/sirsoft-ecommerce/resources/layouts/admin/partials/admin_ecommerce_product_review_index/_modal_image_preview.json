@@ -72,7 +72,7 @@
                                                             "props": {
                                                                 "name": "star",
                                                                 "size": "sm",
-                                                                "className": "{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400 dark:text-yellow-300' : 'text-gray-300 dark:text-gray-600'}}"
+                                                                "className": "{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-500 dark:text-gray-500'}}"
                                                             }
                                                         }
                                                     ]
@@ -113,9 +113,9 @@
                                             "name": "Span",
                                             "if": "{{!(opt.key?.ko === '기본' && opt.value?.ko === '기본')}}",
                                             "props": {
-                                                "className": "text-secondary inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                                "className": "text-secondary dark:text-gray-300 inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                             },
-                                            "text": "{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}"
+                                            "text": "{{$localized(opt.key)}}: {{$localized(opt.value)}}"
                                         }
                                     ]
                                 }

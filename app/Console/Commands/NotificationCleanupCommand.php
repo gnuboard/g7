@@ -23,21 +23,24 @@ class NotificationCleanupCommand extends Command
     /**
      * Execute the console command.
      *
-     * @param NotificationService $service 알림 서비스
+     * @param  NotificationService  $service  알림 서비스
      * @return int 명령 실행 결과 코드
      */
     public function handle(NotificationService $service): int
     {
-        $this->info('알림 정리 시작...');
+        $this->info(__('notification.console.cleanup.start'));
 
         $config = config('notification.database_channel', []);
-        $this->info("  읽음 보관: {$config['read_retention_days']}일, 미읽음 보관: {$config['unread_retention_days']}일");
+        $this->info('  '.__('notification.console.cleanup.retention', [
+            'read_days' => $config['read_retention_days'],
+            'unread_days' => $config['unread_retention_days'],
+        ]));
 
         $result = $service->cleanup();
 
-        $this->info("  읽음 알림 삭제: {$result['deleted_read']}건");
-        $this->info("  미읽음 알림 삭제: {$result['deleted_unread']}건");
-        $this->info('알림 정리 완료');
+        $this->info('  '.__('notification.console.cleanup.deleted_read', ['count' => $result['deleted_read']]));
+        $this->info('  '.__('notification.console.cleanup.deleted_unread', ['count' => $result['deleted_unread']]));
+        $this->info(__('notification.console.cleanup.done'));
 
         return self::SUCCESS;
     }

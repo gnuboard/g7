@@ -88,19 +88,7 @@ class ReportResource extends BaseApiResource
             'content_preview' => $exposeTargetContent && ! $isDetailRequest ? mb_substr($contentText, 0, 100) : null,
 
             // 작성자 정보 (케이스 author_id 우선, 없으면 스냅샷)
-            'author' => ($this->author_id && $this->author)
-                ? [
-                    'uuid' => $this->author->uuid,
-                    'name' => $this->author->name,
-                    'email' => $this->canExposeMemberEmail(null, $this->author->id) ? $this->author->email : null,
-                    'is_guest' => false,
-                ]
-                : [
-                    'uuid' => null,
-                    'name' => ($firstLogSnapshot['author_name'] ?? '') ?: __('sirsoft-board::messages.common.guest'),
-                    'email' => null,
-                    'is_guest' => true,
-                ],
+            'author' => $this->buildAuthorPayload($reportable, $firstLogSnapshot),
 
             // 최초 신고자 (첫 번째 로그에서 추출, 목록용)
             'reporter' => $firstLog
@@ -145,7 +133,7 @@ class ReportResource extends BaseApiResource
             // 케이스 신고 건수 (paginateGrouped에서 추가)
             'report_count' => isset($this->report_count) ? (int) $this->report_count : null,
 
-            // 마지막 신고일시 (재접수 시 갱신)
+            // 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준
             'last_reported_at' => $this->last_reported_at
                 ? $this->formatDateTimeStringForUser(Carbon::parse($this->last_reported_at))
                 : null,
@@ -197,6 +185,53 @@ class ReportResource extends BaseApiResource
     protected function ownerField(): ?string
     {
         return 'reporter_id';
+    }
+
+    /**
+     * 신고 대상 작성자 정보를 조립합니다.
+     *
+     * 세 갈래다 — 계정이 남은 회원, 계정이 남지 않은 회원(하드 삭제), 비회원. 회원 계정이 지워지면
+     * 케이스의 author_id 도 함께 비워지므로(FK nullOnDelete) 그것만으로는 비회원과 구분되지 않는다.
+     * 대상 글·댓글에 남은 회원 번호(목록 쿼리의 `target_author_user_id`)나 신고 당시 스냅샷의
+     * `author_is_member` 로 회원이었음을 안다. 계정이 남지 않은 회원은 비회원 배지 없이 이름
+     * (없으면 null — 화면이 「알 수 없음」으로 대신 보인다)만 싣는다(관리자 글 목록과 같은 표시).
+     *
+     * @param  array<string, mixed>  $reportable  신고 대상 데이터
+     * @param  array<string, mixed>  $firstLogSnapshot  첫 신고 로그 스냅샷
+     * @return array{uuid: string|null, name: string|null, email: string|null, is_guest: bool} 작성자 정보
+     */
+    private function buildAuthorPayload(array $reportable, array $firstLogSnapshot): array
+    {
+        if ($this->author_id && $this->author) {
+            return [
+                'uuid' => $this->author->uuid,
+                'name' => $this->author->name,
+                'email' => $this->canExposeMemberEmail(null, $this->author->id) ? $this->author->email : null,
+                'is_guest' => false,
+            ];
+        }
+
+        $snapshotName = ($firstLogSnapshot['author_name'] ?? '') ?: null;
+        $wasMember = $this->author_id !== null
+            || ! empty($reportable['author_is_member'])
+            || ! empty($firstLogSnapshot['author_is_member'])
+            || $this->getAttribute('target_author_user_id') !== null;
+
+        if ($wasMember) {
+            return [
+                'uuid' => null,
+                'name' => $snapshotName,
+                'email' => null,
+                'is_guest' => false,
+            ];
+        }
+
+        return [
+            'uuid' => null,
+            'name' => $snapshotName ?? __('sirsoft-board::messages.common.guest'),
+            'email' => null,
+            'is_guest' => true,
+        ];
     }
 
     /**

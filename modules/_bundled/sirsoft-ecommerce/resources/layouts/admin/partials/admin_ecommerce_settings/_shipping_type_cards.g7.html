@@ -12,7 +12,7 @@
           </div>
         </div>
         <div class="flex-center gap-2 shrink-0">
-          <toggle data-type="composite" checked="{{type.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+          <toggle data-type="composite" checked="{{type.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.is_active')}}" size="sm" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 사용 여부. 끄면 새 상품에서 고를 수 없고 이미 그 유형인 상품은 그대로 남는다. -->
               <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, is_active: !(t.is_active)} : t)}}" :hasChanges="true"/>
@@ -24,7 +24,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name</span>
           <div class="excel-card-value flex-1">
-            <multilingual-input data-type="composite" value="{{type.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{type.name ?? {}}}" ariaLabel="$t:common.row_cell|row={{type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.name')}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 유형 이름(언어별). 고객 화면에 그대로 보인다. -->
                 <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>
@@ -35,7 +35,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category</span>
           <div class="excel-card-value flex-1">
-            <select value="{{type.category ?? 'domestic'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+            <select value="{{type.category ?? 'domestic'}}" aria-label="$t:common.row_cell|row={{type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.category')}}" class="w-full" disabled="{{_computed.isReadOnly}}">
               <options>
                 <option value="domestic">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic</option>
                 <option value="international">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international</option>
@@ -51,7 +51,7 @@
       </div>
       <div class="excel-card-footer">
         <div/>
-        <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+        <button type="button" class="p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
           <on type="click">
             <!-- 유형 삭제. -->
             <set-state confirm="$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete" target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== type._idx)}}" :hasChanges="true"/>

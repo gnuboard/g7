@@ -26,7 +26,7 @@ export const Textarea: React.FC<TextareaProps> = ({
   const isComposingRef = useRef(false);
   // textarea 요소 참조
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // 곁 라벨을 이름으로 잇는다(7.1.0 J D-J7)
+  // 곁 라벨을 이름으로 잇는다(7.1.0 실측)
   useAdjacentLabel(textareaRef as React.RefObject<HTMLElement | null>);
 
   // 내부 로컬 값 (IME 조합 중에도 화면에 표시됨)

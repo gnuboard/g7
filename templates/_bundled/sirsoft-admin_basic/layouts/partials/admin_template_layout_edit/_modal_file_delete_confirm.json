@@ -88,7 +88,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 dark:text-red-400"
+                                "className": "text-red-700 dark:text-red-400"
                             },
                             "text": " · {{reference.kind_label ?? reference.kind}}"
                         }
@@ -150,7 +150,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-amber-600 dark:text-amber-400"
+                                "className": "text-amber-700 dark:text-amber-400"
                             },
                             "text": " · {{reference.kind_label ?? reference.kind}}"
                         }

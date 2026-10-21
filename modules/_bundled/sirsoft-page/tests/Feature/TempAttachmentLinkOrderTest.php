@@ -18,7 +18,7 @@ use Modules\Sirsoft\Page\Tests\FeatureTestCase;
  *
  * 수정 화면에서 새 첨부를 올려 저장하면 임시 첨부를 페이지에 연결하면서 순서를 1 부터 다시 매겼다.
  * 이미 첨부가 있는 페이지에서는 새 첨부가 기존 첨부와 같은 번호를 받아 목록 중간에 끼었다(7.1.0 전수
- * 실측 영역 L 후속, O-L1 재실측에서 발견 — 4개가 있는 페이지에 1개를 더하면 order 1 이 둘). 새 첨부는
+ * 실측 재실측에서 발견 — 4개가 있는 페이지에 1개를 더하면 order 1 이 둘). 새 첨부는
  * 기존 첨부 뒤에 고른 순서대로 붙어야 한다. 페이지를 새로 만들 때는 종전대로 1..N 이다.
  *
  * @scenario-manifest tests/scenarios/temp-attachment-link-order.yaml

@@ -8,6 +8,7 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\ExtensionStatus;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
 use App\Enums\LayoutSyncMode;
@@ -88,6 +89,17 @@ class LayoutExtensionService
      * @var array<int, array>
      */
     private array $previewContentOverrides = [];
+
+    /**
+     * 확장점 주입 한 번(applyExtensionPoints) 동안 데이터 소스·모달을 이미 병합한 확장 ID.
+     *
+     * 같은 이름의 확장점이 한 레이아웃에 여러 자리 있으면(같은 조각을 유형별 갈래 세 곳에 include 한 화면,
+     * 목록 행의 PC·모바일 두 자리) 조각 컴포넌트는 자리마다 들어가야 하지만, 조각의 데이터 소스·모달은 레이아웃에
+     * 한 번만 있어야 한다. 종전에는 자리마다 다시 병합해 응답에 같은 정의가 자리 수만큼 실렸다(#149).
+     *
+     * @var array<int, true>
+     */
+    private array $assetMergedExtensionIds = [];
 
     /**
      * 미리보기 확장 content 오버라이드를 설정합니다.
@@ -557,6 +569,7 @@ class LayoutExtensionService
             return $layout;
         }
 
+        $this->assetMergedExtensionIds = [];
         $dataSources = $layout['data_sources'] ?? [];
         $modals = $layout['modals'] ?? [];
 
@@ -608,45 +621,26 @@ class LayoutExtensionService
     private function processExtensionPointsRecursive(array $components, int $templateId, array &$dataSources, array &$scripts, array &$modals, bool $withSourceMeta = false): array
     {
         foreach ($components as $index => &$component) {
+            // 반복 렌더 템플릿(props 아래)은 값 자리라 빈 노드 `{}` 가 빈 stdClass 로 온다 — 컴포넌트가 아니므로 그대로 둔다 (#758)
+            if (! is_array($component)) {
+                continue;
+            }
+
             // Extension Point 발견
             if (($component['type'] ?? '') === 'extension_point' && isset($component['name'])) {
                 $extensionPointName = $component['name'];
 
-                // 오버라이드를 고려한 확장 조회 (템플릿 > 플러그인 > 모듈)
-                $extensions = $this->applyPreviewOverrides(
-                    $this->repository->getResolvedExtensionPoints($templateId, $extensionPointName)
-                );
+                // 실제로 적용될 행만 — 활성 출처 · 호환 오버라이드 우선 · 비호환이면 원본으로 대체 (오버레이·편집기 트리와
+                // 같은 판정 한 벌, {@see resolveApplicableExtensions()}). 종전에는 원본을 먼저 지운 뒤 비호환 오버라이드를
+                // 건너뛰어 확장점이 빈 자리로 남았다(#725).
+                $extensions = $this->resolveApplicableExtensions($this->applyPreviewOverrides(
+                    $this->repository->getByExtensionPoint($templateId, $extensionPointName)
+                ));
 
-                $injectedComponents = $component['default'] ?? [];
+                // 대체 컴포넌트 목록 — 값 자리의 `default: {}` 는 빈 stdClass 로 오므로 빈 목록으로 읽는다 (#758)
+                $injectedComponents = is_array($component['default'] ?? null) ? $component['default'] : [];
 
                 foreach ($extensions as $extension) {
-                    // 모듈/플러그인 활성화 상태 확인
-                    if (! $this->isExtensionSourceActive(
-                        $extension->source_type,
-                        $extension->source_identifier,
-                        $extension->override_target
-                    )) {
-                        Log::debug('Extension Point 확장 스킵 (비활성화된 출처)', [
-                            'extension_point' => $extensionPointName,
-                            'source_type' => $extension->source_type->value,
-                            'source_identifier' => $extension->source_identifier,
-                            'override_target' => $extension->override_target,
-                        ]);
-
-                        continue;
-                    }
-
-                    // 버전 호환성 검사 (템플릿 오버라이드인 경우)
-                    if (! $this->checkVersionCompatibility($extension)) {
-                        Log::info('버전 비호환으로 Extension Point 오버라이드 스킵', [
-                            'extension_id' => $extension->id,
-                            'source' => $extension->source_identifier,
-                            'extension_point' => $extensionPointName,
-                        ]);
-
-                        continue;
-                    }
-
                     // 주입 조각도 값 자리의 빈 객체 `{}` 를 보존한다(LayoutService 병합과 같은 기준)
                     $content = LayoutEmptyObjects::decode($extension->getAttributes()['content'] ?? null, $extension->content ?? []);
                     $mode = $content['mode'] ?? 'append';
@@ -677,6 +671,15 @@ class LayoutExtensionService
                             'prepend' => array_merge($componentsWithProps, $injectedComponents),
                             default => array_merge($injectedComponents, $componentsWithProps),
                         };
+                    }
+
+                    // 데이터 소스·스크립트·모달은 레이아웃 단위 자원이다 — 같은 확장점이 여러 자리에 있어도 확장마다
+                    // 한 번만 병합한다({@see $assetMergedExtensionIds}). 컴포넌트는 위에서 자리마다 주입했다.
+                    if ($extension->id !== null) {
+                        if (isset($this->assetMergedExtensionIds[$extension->id])) {
+                            continue;
+                        }
+                        $this->assetMergedExtensionIds[$extension->id] = true;
                     }
 
                     // 데이터 소스 병합 — 편집 모드에서는 주입한 data_source 에 확장 출처 메타
@@ -842,23 +845,8 @@ class LayoutExtensionService
 
         $dataSources = $layout['data_sources'] ?? [];
 
+        // 출처 활성 여부는 이미 판정했다({@see getVersionAwareOverlays()} → {@see resolveApplicableExtensions()}).
         foreach ($overlays as $overlay) {
-            // 모듈/플러그인 활성화 상태 확인
-            if (! $this->isExtensionSourceActive(
-                $overlay->source_type,
-                $overlay->source_identifier,
-                $overlay->override_target
-            )) {
-                Log::debug('Overlay 확장 스킵 (비활성화된 출처)', [
-                    'layout' => $layoutName,
-                    'source_type' => $overlay->source_type->value,
-                    'source_identifier' => $overlay->source_identifier,
-                    'override_target' => $overlay->override_target,
-                ]);
-
-                continue;
-            }
-
             // 주입 조각도 값 자리의 빈 객체 `{}` 를 보존한다(LayoutService 병합과 같은 기준)
             $content = LayoutEmptyObjects::decode($overlay->getAttributes()['content'] ?? null, $overlay->content ?? []);
             $injections = $content['injections'] ?? [];
@@ -1217,9 +1205,10 @@ class LayoutExtensionService
 
                     continue;
                 }
+                // 지시값이 빈 객체(stdClass — 값 자리 보존, #758)면 덧붙일 것이 없다
                 $component['props'][$propKey] = array_merge(
                     is_array($existing) ? $existing : [],
-                    $propValue['_append']
+                    is_array($propValue['_append']) ? $propValue['_append'] : []
                 );
             } elseif (isset($propValue['_prepend'])) {
                 $existing = $component['props'][$propKey] ?? [];
@@ -1233,7 +1222,7 @@ class LayoutExtensionService
                     continue;
                 }
                 $component['props'][$propKey] = array_merge(
-                    $propValue['_prepend'],
+                    is_array($propValue['_prepend']) ? $propValue['_prepend'] : [],
                     is_array($existing) ? $existing : []
                 );
             } elseif (isset($propValue['_merge'])) {
@@ -1247,10 +1236,12 @@ class LayoutExtensionService
 
                     continue;
                 }
-                $component['props'][$propKey] = array_merge(
+                $merged = array_merge(
                     is_array($existing) ? $existing : [],
-                    $propValue['_merge']
+                    is_array($propValue['_merge']) ? $propValue['_merge'] : []
                 );
+                // `_merge` 는 맵 병합이다 — 결과가 비면 빈 맵(`{}`)으로 둔다. 배열로 두면 화면이 키-값 대신 목록을 받는다 (#758)
+                $component['props'][$propKey] = $merged === [] ? new \stdClass : $merged;
             } elseif (isset($propValue['_patch'])) {
                 $existing = $component['props'][$propKey] ?? [];
 
@@ -1811,9 +1802,14 @@ class LayoutExtensionService
     {
         HookManager::doAction('core.layout_extension.before_index', $templateId);
 
-        // 템플릿 오버라이드에 가려진 확장은 화면에 적용되지 않으므로 트리에서 제외 —
-        // 렌더링 경로(getResolvedExtensionPoints/getResolvedOverlays)와 동일한 가시성 기준.
-        $extensions = $this->repository->getResolvedByTemplateId($templateId);
+        // 트리 = 화면 — 렌더와 같은 판정({@see resolveApplicableExtensions()})을 (extension_type, target_name) 범위마다
+        // 적용한다. 대상 확장이 꺼진 오버라이드·비호환 오버라이드·호환 오버라이드에 가려진 원본은 화면에 적용되지
+        // 않으므로 트리에서도 빠진다. 활성 여부는 조회 시점에 판정한다(DB 컬럼 없음 — #725 D5).
+        $this->initializeActiveExtensions();
+        $extensions = $this->repository->getByTemplateId($templateId)
+            ->groupBy(fn (LayoutExtension $extension) => $extension->extension_type->value.'|'.$extension->target_name)
+            ->flatMap(fn (Collection $group) => $this->resolveApplicableExtensions($group))
+            ->values();
 
         // 확장별 현재(최신) 저장 버전 부착 — 라우트 트리 확장 노드
         // 버전 배지 데이터. 이력이 없는(원본) 확장은 맵에 없어 null → 배지 미표시.
@@ -1981,6 +1977,7 @@ class LayoutExtensionService
         }
 
         if (is_string($raw) && $raw !== '') {
+            // layout-assoc-decode-ok: 레이아웃 본문이 아니라 다국어 name 컬럼이다
             $decoded = json_decode($raw, true);
 
             return is_array($decoded) && ! empty($decoded) ? $decoded : null;
@@ -2045,7 +2042,8 @@ class LayoutExtensionService
 
         // content 키가 있으면 추출 (UpdateLayoutExtensionContentRequest 사용 시)
         $newContent = $data['content'] ?? null;
-        $oldContent = $extension->content;
+        // 수정 전 원문 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
+        $oldContent = LayoutEmptyObjects::rawPreserving($extension);
 
         $updateData = [];
         if ($newContent !== null) {
@@ -2270,21 +2268,44 @@ class LayoutExtensionService
     }
 
     /**
-     * 출처별 확장 복원
+     * 출처별 확장 복원 — **붙을 자리가 있는 활성 템플릿의 행만** 되살립니다.
      *
-     * 재활성화가 부른다. 조각 키 집합을 넘기면 **그 키의 행만** 되살린다 — 비활성화가 지운 행과 함께, 이전에
+     * 재활성화가 부른다. 조각 키 집합을 넘기면 **그 키의 행만** 후보로 본다 — 비활성화가 지운 행과 함께, 이전에
      * 고아 정리(`removeOrphanFragments`)가 지운 행(소스에 없는 조각·백필된 옛 키 행)까지 되살리면 같은 조각이
-     * 두 행으로 살아 두 번 주입된다 (#703). 되살린 행 가운데 붙을 자리가 없는 행은 뒤따르는 등록
-     * ({@see syncSourceFragmentsToTemplate()})이 다시 정리한다.
+     * 두 행으로 살아 두 번 주입된다 (#703).
+     *
+     * 후보 가운데 **템플릿이 활성**이고 그 템플릿에 **붙을 자리**(호스트 레이아웃·확장점)가 있는 행만 되살린다(#725 D4).
+     * 종전에는 후보 전부를 되살려, 대상 부재로 일부러 숨긴 오등록 행이 재활성화마다 살아났다가 다시 숨겨졌고(이력이
+     * 흔들림), 꺼진 템플릿의 행은 살아남았다. 나머지 행은 손대지 않는다(`deleted_at` 그대로). 필요한 행은 뒤따르는 등록이
+     * `withTrashed` 조회로 되살리고, 운영자 수정본은 행과 함께 그대로 돌아온다.
      *
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
-     * @param  array<int, string>|null  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합 (null 이면 전부 복원 — 호환)
+     * @param  array<int, string>|null  $liveKeys  소스 디렉토리에 실재하는 조각 키 집합 (null 이면 키로 거르지 않음 — 호환)
      * @return int 복원된 레코드 수
      */
     public function restoreBySource(LayoutSourceType $sourceType, string $identifier, ?array $liveKeys = null): int
     {
-        return $this->repository->restoreBySource($sourceType, $identifier, $liveKeys);
+        $activeTemplates = [];
+        $restored = 0;
+
+        foreach ($this->repository->getTrashedBySource($sourceType, $identifier, $liveKeys) as $extension) {
+            $templateId = (int) $extension->template_id;
+            $activeTemplates[$templateId] ??= $this->templateRepository->findById($templateId)?->status === ExtensionStatus::Active->value;
+
+            if (! $activeTemplates[$templateId]) {
+                continue;
+            }
+
+            if (! $this->isExtensionApplicableToTemplate(is_array($extension->content) ? $extension->content : [], $templateId)) {
+                continue;
+            }
+
+            $this->repository->restoreTrashed($extension);
+            $restored++;
+        }
+
+        return $restored;
     }
 
     /**
@@ -2318,14 +2339,11 @@ class LayoutExtensionService
     {
         $stats = ['modules' => 0, 'plugins' => 0, 'skipped' => 0];
 
-        // 템플릿이 없으면 등록할 곳도 없다. 식별자는 정의를 읽는 문맥과 실패 로그에 싣는다(조각 컴파일 자체는 템플릿과 무관).
-        $template = $this->templateRepository->findById($templateId);
-
-        if ($template === null) {
+        // 템플릿이 없으면 등록할 곳도 없다. 조각 컴파일은 템플릿과 무관해 실패 로그에도 템플릿을 싣지 않는다 — 실을수록
+        // 「그 템플릿에서 깨졌다」 로 읽혔다(#725). 같은 파일의 실패는 프로세스에 한 번만 기록된다.
+        if ($this->templateRepository->findById($templateId) === null) {
             return $stats;
         }
-
-        $templateIdentifier = (string) $template->identifier;
 
         // 활성 모듈의 레이아웃 확장 등록
         $moduleManager = app(ModuleManager::class);
@@ -2334,8 +2352,7 @@ class LayoutExtensionService
                 $this->loadFragmentDefinitions(
                     $module->getExtensionsPath(),
                     $module->getLayoutExtensions(),
-                    ['source' => $module->getIdentifier(), 'template' => $templateIdentifier],
-                    $templateIdentifier
+                    ['source' => $module->getIdentifier()]
                 ),
                 $this->fragmentSourceKeys($module->getExtensionsPath(), $module->getLayoutExtensions()),
                 LayoutSourceType::Module,
@@ -2353,8 +2370,7 @@ class LayoutExtensionService
                 $this->loadFragmentDefinitions(
                     $plugin->getExtensionsPath(),
                     $plugin->getLayoutExtensions(),
-                    ['source' => $plugin->getIdentifier(), 'template' => $templateIdentifier],
-                    $templateIdentifier
+                    ['source' => $plugin->getIdentifier()]
                 ),
                 $this->fragmentSourceKeys($plugin->getExtensionsPath(), $plugin->getLayoutExtensions()),
                 LayoutSourceType::Plugin,
@@ -2449,7 +2465,9 @@ class LayoutExtensionService
             try {
                 if (! $this->isExtensionApplicableToTemplate($definition['data'], $templateId)) {
                     $stats['inapplicable']++;
-                    Log::info("레이아웃 확장 등록 건너뜀 (대상 부재): {$definition['path']}", [
+                    // debug — 활성화 1회마다 조각 수 × 템플릿 수 × 경로 수만큼 반복되는 정상 판정이다. 개수는 확장별
+                    // 요약(`skipped_no_host`)이 남긴다(#725). 오등록 행을 실제로 지울 때의 info 는 그대로 둔다.
+                    Log::debug("레이아웃 확장 등록 건너뜀 (대상 부재): {$definition['path']}", [
                         'source' => $identifier,
                         'template_id' => $templateId,
                     ]);
@@ -2746,12 +2764,7 @@ class LayoutExtensionService
     }
 
     /**
-     * 버전 호환성을 고려한 오버레이 목록을 반환합니다.
-     *
-     * 1. 모든 오버레이 조회 (모듈/플러그인 + 템플릿 오버라이드)
-     * 2. 템플릿 오버라이드가 있고 버전이 호환되면 → 원본 제외, 템플릿 오버라이드 사용
-     * 3. 템플릿 오버라이드가 있지만 버전이 비호환이면 → 템플릿 오버라이드 제외, 원본 사용
-     * 4. 템플릿 오버라이드가 없으면 → 원본 사용
+     * 버전 호환성을 고려한 오버레이 목록을 반환합니다 — 판정은 {@see resolveApplicableExtensions()} 한 벌이다.
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $layoutName  레이아웃 이름
@@ -2759,77 +2772,75 @@ class LayoutExtensionService
      */
     private function getVersionAwareOverlays(int $templateId, string $layoutName): Collection
     {
-        // 모든 오버레이 조회 (모듈 + 플러그인 + 템플릿)
-        $allOverlays = $this->applyPreviewOverrides(
+        return $this->resolveApplicableExtensions($this->applyPreviewOverrides(
             $this->repository->getOverlaysByLayout($templateId, $layoutName)
-        );
-
-        if ($allOverlays->isEmpty()) {
-            return $allOverlays;
-        }
-
-        // 템플릿 오버라이드 분리 (override_target이 있는 Template 소스)
-        $templateOverrides = $allOverlays->filter(
-            fn ($overlay) => $overlay->source_type === LayoutSourceType::Template
-                && ! empty($overlay->override_target)
-        );
-
-        // 템플릿 오버라이드가 없으면 모든 오버레이 반환
-        if ($templateOverrides->isEmpty()) {
-            return $allOverlays;
-        }
-
-        // 타겟별 상태 추적: 'compatible' | 'incompatible'
-        // 동일 타겟에 대해 여러 오버라이드가 있을 경우, 첫 번째 호환되는 것만 사용
-        $targetStatus = [];
-        $compatibleOverrideIds = [];
-
-        foreach ($templateOverrides as $override) {
-            $targetIdentifier = $override->override_target;
-
-            // 모든 오버라이드에 대해 버전 호환성 검사 수행 (경고 수집을 위해)
-            $isCompatible = $this->checkVersionCompatibility($override);
-
-            if ($isCompatible) {
-                // 이미 이 타겟에 대해 호환되는 오버라이드를 찾았으면 ID 추가 스킵
-                if (! isset($targetStatus[$targetIdentifier]) || $targetStatus[$targetIdentifier] !== 'compatible') {
-                    $targetStatus[$targetIdentifier] = 'compatible';
-                    $compatibleOverrideIds[] = $override->id;
-                }
-            } else {
-                // 아직 호환되는 오버라이드가 없는 경우에만 비호환 상태 설정
-                if (! isset($targetStatus[$targetIdentifier])) {
-                    $targetStatus[$targetIdentifier] = 'incompatible';
-                }
-
-                Log::info('버전 비호환으로 원본 모듈 UI 사용', [
-                    'template_override_id' => $override->id,
-                    'source' => $override->source_identifier,
-                    'target' => $targetIdentifier,
-                    'layout' => $layoutName,
-                ]);
-            }
-        }
-
-        // 호환되는 오버라이드의 타겟 목록 생성
-        $compatibleOverrideTargets = array_keys(array_filter(
-            $targetStatus,
-            fn ($status) => $status === 'compatible'
         ));
+    }
 
-        // 최종 오버레이 목록 필터링
-        return $allOverlays->filter(function ($overlay) use ($compatibleOverrideTargets, $compatibleOverrideIds) {
-            // 템플릿 오버라이드인 경우
-            if ($overlay->source_type === LayoutSourceType::Template && ! empty($overlay->override_target)) {
-                // 호환되는 오버라이드 ID 목록에 있는 것만 포함
-                // (동일 타겟에 여러 오버라이드가 있어도 첫 번째 호환 것만 사용)
-                return in_array($overlay->id, $compatibleOverrideIds, true);
+    /**
+     * 같은 범위(extension_type · target_name) 행 묶음에서 **실제로 화면에 적용될 행**만 남깁니다.
+     *
+     * 화면 렌더(오버레이·확장점)와 편집기 트리가 이 한 함수를 쓴다 — 트리 = 화면. 종전에는 판정이 세 벌이라
+     * 확장점은 비호환 오버라이드가 있으면 빈 자리가 됐고, 트리는 활성 여부를 보지 않았다(#725 D5·D9).
+     *
+     *  1. 출처가 꺼진 행은 뺀다 — 템플릿 오버라이드는 오버라이드 **대상** 확장의 활성 여부로 본다.
+     *  2. 대상별로 호환 오버라이드가 하나라도 있으면 첫 호환 오버라이드만 남기고 그 대상의 원본(모듈·플러그인) 행을 뺀다.
+     *  3. 비호환 오버라이드만 있으면 오버라이드를 빼고 원본을 남긴다(비호환 경고는 수집한다).
+     *
+     * 호출 측은 활성 확장 목록을 초기화(`initializeActiveExtensions()`)한 뒤 같은 범위 행만 넘긴다. 순서는 보존한다.
+     *
+     * @param  Collection<int, LayoutExtension>  $extensions  같은 범위의 확장 행
+     * @return Collection<int, LayoutExtension> 적용될 행
+     */
+    private function resolveApplicableExtensions(Collection $extensions): Collection
+    {
+        $this->initializeActiveExtensions();
+
+        $active = $extensions->filter(function (LayoutExtension $extension): bool {
+            if ($this->isExtensionSourceActive($extension->source_type, $extension->source_identifier, $extension->override_target)) {
+                return true;
             }
 
-            // 모듈/플러그인 원본인 경우
-            // 호환되는 템플릿 오버라이드가 있으면 원본 제외
-            // 비호환 오버라이드만 있으면 원본 사용
-            return ! in_array($overlay->source_identifier, $compatibleOverrideTargets, true);
+            Log::debug('레이아웃 확장 제외 (비활성화된 출처)', [
+                'target_name' => $extension->target_name,
+                'source_type' => $extension->source_type->value,
+                'source_identifier' => $extension->source_identifier,
+                'override_target' => $extension->override_target,
+            ]);
+
+            return false;
+        });
+
+        $isOverride = static fn (LayoutExtension $extension): bool => $extension->source_type === LayoutSourceType::Template
+            && ! empty($extension->override_target);
+
+        // 대상별 첫 호환 오버라이드 — 모든 오버라이드를 검사해 비호환 경고를 빠짐없이 모은다.
+        $chosenOverrideIds = [];
+        foreach ($active->filter($isOverride) as $override) {
+            $target = $override->override_target;
+
+            if ($this->checkVersionCompatibility($override)) {
+                $chosenOverrideIds[$target] ??= $override->id;
+
+                continue;
+            }
+
+            Log::info('버전 비호환으로 원본 모듈 UI 사용', [
+                'template_override_id' => $override->id,
+                'source' => $override->source_identifier,
+                'target' => $target,
+                'target_name' => $override->target_name,
+            ]);
+        }
+
+        return $active->filter(function (LayoutExtension $extension) use ($isOverride, $chosenOverrideIds): bool {
+            if ($isOverride($extension)) {
+                return ($chosenOverrideIds[$extension->override_target] ?? null) === $extension->id;
+            }
+
+            // 템플릿 자체 확장은 늘 적용된다. 원본(모듈·플러그인)은 호환 오버라이드가 있으면 가려진다.
+            return $extension->source_type === LayoutSourceType::Template
+                || ! isset($chosenOverrideIds[$extension->source_identifier]);
         })->values();
     }
 

@@ -115,4 +115,10 @@ return [
             'admin' => 'Admin',
         ],
     ],
+    // `identity:expire-challenges` command output
+    'console' => [
+        'expire_challenges' => [
+            'done' => 'Expired :count identity verification challenges.',
+        ],
+    ],
 ];

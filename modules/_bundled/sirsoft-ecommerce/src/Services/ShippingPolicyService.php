@@ -13,6 +13,7 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyClaimAddress;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 배송정책 서비스
@@ -56,6 +57,30 @@ class ShippingPolicyService
     public function getStatistics(): array
     {
         return $this->repository->getStatistics();
+    }
+
+    /**
+     * 관리자 조회(상세·클레임 설정)용으로 배송정책을 찾고 `shipping-policies.read` 스코프를 단언합니다.
+     *
+     * 상세 라우트는 `{id}` 라 권한의 `resource_route_key`(`shippingPolicy`)와 이름이 달라 미들웨어 스코프
+     * 검사가 돌지 않는다. 수정·삭제 경로는 이 메서드가 아니라 `getDetail()` 로 찾은 뒤 각 쓰기 메서드가
+     * `.update`/`.delete` 범위를 단언하므로, 읽기 범위를 `getDetail()` 에 넣지 않는다(쓰기 권한만 가진
+     * 관리자를 읽기 범위로 막지 않기 위해).
+     *
+     * @param  int  $id  배송정책 ID
+     * @return ShippingPolicy|null 조회된 배송정책 (없으면 null)
+     *
+     * @throws AccessDeniedHttpException 스코프 밖인 경우
+     */
+    public function getDetailForRead(int $id): ?ShippingPolicy
+    {
+        $shippingPolicy = $this->getDetail($id);
+
+        if ($shippingPolicy) {
+            $this->assertWithinScope($shippingPolicy, 'sirsoft-ecommerce.shipping-policies.read');
+        }
+
+        return $shippingPolicy;
     }
 
     /**

@@ -296,7 +296,8 @@
       "issue_period": "発行期間",
       "reissue": "再発行（重複ダウンロード）",
       "coupon_overlap": "他のクーポンとの重複使用",
-      "apply_target": "適用対象"
+      "apply_target": "適用対象",
+      "per_user_limit_label": "会員あたりの発行上限"
     },
     "option": {
       "target_type_product_amount": "商品金額",

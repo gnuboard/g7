@@ -6,7 +6,7 @@
   <meta title="$t:errors.503.title" :is_error_layout="true" :error_code="503"/>
   <slot name="content">
     <div data-ref="error_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
-      <icon data-ref="error_icon" name="triangle-exclamation" class="text-8xl text-orange-400 dark:text-orange-500 mb-6"/>
+      <icon data-ref="error_icon" name="triangle-exclamation" class="text-8xl text-orange-600 dark:text-orange-500 mb-6"/>
       <h1 data-ref="error_code" class="text-primary text-6xl font-bold mb-4">503</h1>
       <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.503.title</h2>
       <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-4 max-w-md">$t:errors.503.message</p>
@@ -31,13 +31,13 @@
           </div>
         </div>
       </div>
-      <p data-ref="contact_message" class="text-sm text-gray-400 dark:text-gray-500 mb-8">$t:errors.503.contact_admin</p>
-      <button data-ref="back_button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+      <p data-ref="contact_message" class="text-sm text-gray-500 dark:text-gray-400 mb-8">$t:errors.503.contact_admin</p>
+      <a data-ref="back_button" href="/admin" class="button px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white dark:text-white font-medium rounded-lg transition-colors">
         <on type="click">
-          <navigate path="/admin"/>
+          <navigate/>
         </on>
         $t:errors.back_home
-      </button>
+      </a>
     </div>
   </slot>
 </layout>

@@ -26,4 +26,12 @@ return [
     'stats_total' => '合計',
     'stats_by_module' => 'モジュール別統計',
     'stats_module_identifier' => 'モジュール',
+    // `seo:generate-sitemap` コマンド出力
+    'console' => [
+        'generate_sitemap' => [
+            'invalid_mode' => '無効なモードです。許可: :allowed',
+            'generated' => 'サイトマップを生成しました。(モード: :mode)',
+            'dispatched' => 'サイトマップ生成をキューにディスパッチしました。(モード: :mode)',
+        ],
+    ],
 ];

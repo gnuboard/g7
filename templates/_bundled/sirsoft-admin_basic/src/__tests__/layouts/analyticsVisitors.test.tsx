@@ -58,7 +58,9 @@ describe('방문자 상세', () => {
     expect(detail.computed?.csvUrl).toContain("'/api/admin/analytics/visitors/' + (route?.key ?? '') + '?format=csv'");
     const del = nodeById(detail, 'visitor_delete_button');
     const seq = actionsWithHandler(del, 'sequence')[0];
-    const [setState, open] = seq.actions;
+    // 첫 단계는 앞서 연 기준을 지우는 null 쓰기다(7.1.1 — 정보주체 화면에서 연 IP·기간이 남지 않게)
+    const [reset, setState, open] = seq.actions;
+    expect(reset).toMatchObject({ handler: 'setState', params: { target: 'global', analyticsSubject: null } });
     expect(setState.handler).toBe('setState');
     expect(setState.params.analyticsSubjectAfter).toBe('visitors');
     expect(setState.params.analyticsSubject?.visitor_key).toBe("{{route?.key ?? ''}}");

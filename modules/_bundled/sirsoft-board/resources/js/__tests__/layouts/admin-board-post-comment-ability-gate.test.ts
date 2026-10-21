@@ -1,14 +1,14 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
 /**
  * @file admin-board-post-comment-ability-gate.test.ts
- * @description 게시판 관리자 게시글·댓글 화면 abilities 게이트 (7.1.0 abilities 게이트 최종 점검 board-admin-b)
+ * @description 게시판 관리자 게시글·댓글 화면 abilities 게이트 (7.1.0 abilities 게이트 최종 점검)
  *
- * - 댓글 점 메뉴: 키 `can_write_comments`(댓글 응답에 없는 키) → `can_write`, 수정은 쓰기 AND (본인 OR 관리)(#1·#3)
- * - 글 점 메뉴 수정: 수정 API 가 글쓰기 권한을 요구하므로 쓰기 AND (본인 OR 관리)(#2)
- * - 글 수정 폼: form-meta 의 can_modify(저장과 같은 판정)로 남의 글은 읽기 전용(#4), html-editor 에 readOnly 도 전달(#5)
- * - 첨부 업로더: 업로드 권한(can_upload)으로 잠금 + 안내(#6)
- * - 첨부 내려받기: 관리자 다운로드 라우트 + can_download(#7)
- * - 신고 목록 체크박스: 관리 권한(#9)
+ * - 댓글 점 메뉴: 키 `can_write_comments`(댓글 응답에 없는 키) → `can_write`, 수정은 쓰기 AND (본인 OR 관리)
+ * - 글 점 메뉴 수정: 수정 API 가 글쓰기 권한을 요구하므로 쓰기 AND (본인 OR 관리)
+ * - 글 수정 폼: form-meta 의 can_modify(저장과 같은 판정)로 남의 글은 읽기 전용, html-editor 에 readOnly 도 전달
+ * - 첨부 업로더: 업로드 권한(can_upload)으로 잠금 + 안내
+ * - 첨부 내려받기: 관리자 다운로드 라우트 + can_download
+ * - 신고 목록 체크박스: 관리 권한
  */
 
 import { describe, it, expect } from 'vitest';
@@ -50,7 +50,7 @@ function menuDisabled(tree: unknown, scope: Record<string, unknown>): Record<str
   return Object.fromEntries(items.map((i) => [i.id, i.disabled]));
 }
 
-describe('댓글 점 메뉴 (#1·#3)', () => {
+describe('댓글 점 메뉴', () => {
   const scope = (abilities: Record<string, boolean>, isAuthor: boolean) => ({
     comment: { id: 1, status: 'published', is_author: isAuthor, abilities },
     post: { data: {} },
@@ -85,7 +85,7 @@ describe('댓글 점 메뉴 (#1·#3)', () => {
   });
 });
 
-describe('글 점 메뉴 수정 (#2)', () => {
+describe('글 점 메뉴 수정', () => {
   /**
    * 관리 권한만 있고 글쓰기 권한이 없으면 수정이 잠긴다.
    *
@@ -102,7 +102,7 @@ describe('글 점 메뉴 수정 (#2)', () => {
   });
 });
 
-describe('글 수정 폼 (#4·#5·#6)', () => {
+describe('글 수정 폼', () => {
   /**
    * 남의 글(can_modify=false)은 쓰기 권한이 있어도 읽기 전용이다.
    *
@@ -133,7 +133,7 @@ describe('글 수정 폼 (#4·#5·#6)', () => {
 
   /**
    * 공지 체크박스는 서버 공지 판정과 같은 can_write_notice 로 잠긴다 — 관리 권한(can_manage) 없이 공지 등록 권한만
-   * 가진 관리자도 열리고(B7-2), 둘 다 없으면 잠긴다. 비밀글이 꺼진 게시판에서도 옵션 구획이 보인다.
+   * 가진 관리자도 열리고, 둘 다 없으면 잠긴다. 비밀글이 꺼진 게시판에서도 옵션 구획이 보인다.
    *
    * @scenario case=form_meta_can_write_notice
    *
@@ -176,7 +176,7 @@ describe('글 수정 폼 (#4·#5·#6)', () => {
   });
 });
 
-describe('첨부 내려받기 (#7)', () => {
+describe('첨부 내려받기', () => {
   /**
    * 관리자 다운로드 라우트를 쓰고 can_download 가 없으면 실행하지 않는다.
    *
@@ -196,7 +196,7 @@ describe('첨부 내려받기 (#7)', () => {
   });
 });
 
-describe('신고 목록 체크박스 (#9)', () => {
+describe('신고 목록 체크박스', () => {
   /**
    * 관리 권한이 없으면 행 선택 체크박스를 그리지 않는다.
    *

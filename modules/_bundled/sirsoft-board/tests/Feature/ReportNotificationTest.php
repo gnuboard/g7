@@ -94,6 +94,9 @@ class ReportNotificationTest extends ModuleTestCase
             ]
         );
 
+        // 신고 라우트는 그 게시판의 게시글 열람 권한을 요구한다 — 신고자(user 역할)에게 준다.
+        $this->grantUserRoleBoardPermissions($this->board);
+
         DB::table('boards_reports')->delete();
         DB::table('board_comments')->where('board_id', $this->board->id)->delete();
         DB::table('board_posts')->where('board_id', $this->board->id)->delete();
@@ -350,7 +353,7 @@ class ReportNotificationTest extends ModuleTestCase
         $postId = $this->createTestPost(User::factory()->create()->id);
 
         // When: 신고 접수
-        $reporter = User::factory()->create();
+        $reporter = $this->createUser();
         $response = $this->actingAs($reporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'spam',
@@ -392,7 +395,7 @@ class ReportNotificationTest extends ModuleTestCase
         $postId = $this->createTestPost(User::factory()->create()->id);
 
         // When: 신고 접수
-        $reporter = User::factory()->create();
+        $reporter = $this->createUser();
         $this->actingAs($reporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'spam',
@@ -430,7 +433,7 @@ class ReportNotificationTest extends ModuleTestCase
         $postId = $this->createTestPost(User::factory()->create()->id);
 
         // When: 신고 접수
-        $reporter = User::factory()->create();
+        $reporter = $this->createUser();
         $response = $this->actingAs($reporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'abuse',
@@ -462,7 +465,7 @@ class ReportNotificationTest extends ModuleTestCase
         $postId = $this->createTestPost(User::factory()->create()->id);
 
         // 첫 번째 신고 접수 → Report 생성 (케이스 신규)
-        $firstReporter = User::factory()->create();
+        $firstReporter = $this->createUser();
         $response = $this->actingAs($firstReporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'spam',
@@ -477,7 +480,7 @@ class ReportNotificationTest extends ModuleTestCase
         Notification::fake();
 
         // 두 번째 신고 접수 (동일 케이스 재신고)
-        $secondReporter = User::factory()->create();
+        $secondReporter = $this->createUser();
         $response = $this->actingAs($secondReporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'abuse',
@@ -507,7 +510,7 @@ class ReportNotificationTest extends ModuleTestCase
         $postId = $this->createTestPost(User::factory()->create()->id);
 
         // 첫 번째 신고
-        $firstReporter = User::factory()->create();
+        $firstReporter = $this->createUser();
         $response = $this->actingAs($firstReporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'spam',
@@ -521,7 +524,7 @@ class ReportNotificationTest extends ModuleTestCase
         Notification::fake();
 
         // 두 번째 신고 (동일 케이스 재신고)
-        $secondReporter = User::factory()->create();
+        $secondReporter = $this->createUser();
         $response = $this->actingAs($secondReporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'abuse',
@@ -554,7 +557,7 @@ class ReportNotificationTest extends ModuleTestCase
         $postId = $this->createTestPost(User::factory()->create()->id);
 
         // 첫 신고 → 케이스 생성
-        $firstReporter = User::factory()->create();
+        $firstReporter = $this->createUser();
         $this->actingAs($firstReporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'spam',
@@ -563,7 +566,7 @@ class ReportNotificationTest extends ModuleTestCase
 
         // 두 번째 신고 (같은 케이스, logs count = 2)
         $this->resetListenerProcessedKeys();
-        $secondReporter = User::factory()->create();
+        $secondReporter = $this->createUser();
         $this->actingAs($secondReporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'abuse',
@@ -579,7 +582,7 @@ class ReportNotificationTest extends ModuleTestCase
         Notification::fake();
 
         // 재활성화 이후 첫 신고
-        $thirdReporter = User::factory()->create();
+        $thirdReporter = $this->createUser();
         $response = $this->actingAs($thirdReporter)
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports", [
                 'reason_type' => 'spam',

@@ -2,7 +2,7 @@ feature: 시스템 기본 401 처리와 세션 만료 이동 중 오류 처리 (
 
 description: |
   토큰이 만료된 채 화면을 열면 로그인 화면으로 옮겨지기 직전 「요청을 보내지 못했습니다. 네트워크 연결을
-  확인…」 토스트가 떴다(7.1.0 O-F1). 기본 401 처리 `navigate {{auth.loginPath}}` 의 `auth` 를 싣는 문맥이
+  확인…」 토스트가 떴다(7.1.0). 기본 401 처리 `navigate {{auth.loginPath}}` 의 `auth` 를 싣는 문맥이
   없어 빈 경로 이동이 TypeError 를 냈고, 그 TypeError 가 네트워크 실패로 분류됐다.
 
   규칙:

@@ -22,7 +22,7 @@
           <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.due_date_formatted}}</span>
         </div>
       </div>
-      <p data-if="{{!orderData?.data?.payment?.paid_at}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
+      <p data-if="{{!orderData?.data?.payment?.paid_at}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
     </div>
     <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.transaction_id &amp;&amp; !orderData?.data?.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
       <div class="flex-between">
@@ -55,7 +55,7 @@
             <icon name="file-text" class="text-sm"/>
             <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
           </a>
-          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcCashReceiptUrl}}" href="{{_local._kcpOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline">
+          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcCashReceiptUrl}}" href="{{_local._kcpOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline">
             <icon name="receipt" class="text-sm"/>
             <span>$t:sirsoft-pay_nhnkcp.user.cash_receipt_view</span>
           </a>

@@ -224,8 +224,21 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 그 체인에 들어가지 않으므로, overlay 가 겨냥한 `target_id` 노드가 partial 안에 있으면
 **그 partial 을 쓰는 다른 레이아웃에서는 주입이 일어나지 않는다.**
 
-증상이 조용하다. 카드 자체는 정상으로 뜨고 주입 블록만 빠진 채 열리며, 매칭 실패는 오류도
-경고도 콘솔 로그도 남기지 않는다. 두 화면을 나란히 놓고 보기 전에는 드러나지 않는다.
+증상이 조용하다. 카드 자체는 정상으로 뜨고 주입 블록만 빠진 채 열리며, 매칭 실패는 브라우저에
+오류도 경고도 콘솔 로그도 남기지 않는다(서버 로그에만 `Layout extension target not found` 경고가 남는다).
+두 화면을 나란히 놓고 보기 전에는 드러나지 않는다.
+
+**같은 파일을 한 화면의 여러 갈래에 include 해도 같다.** overlay 는 트리에서 `target_id` 가 일치하는 **첫 노드 하나**에만
+들어간다. `sirsoft-basic` 의 글쓰기·글 상세는 같은 조각을 게시판 유형별 갈래(basic·gallery·card) 세 곳에 include 하므로,
+그 안의 `parent_post_card`·`content_section`·`parent_post_html_content` 를 겨냥한 overlay 는 **basic 게시판에만** 들어간다.
+글쓰기에는 `board_post_form_top`·`board_post_form_bottom`, 상세에는 `board_post_header_badges` 확장점을 쓴다 — 확장점은 같은
+이름의 모든 자리를 채운다. 목록도 세 유형 파일이 한 화면에 함께 있으므로 행에는 `board_post_row_badges` 를 쓴다.
+목록 검색 줄의 `board_search_field_select` 도 세 유형 파일에 같은 이름으로 있어, 이를 겨냥한 overlay 는 basic 목록에만 들어간다.
+
+반복 행이나 여러 자리에 들어가는 조각에 **고정 `data-ref` 를 쓰지 않는다.** 자리 수(행 수 × 갈래 수)만큼 같은 DOM id 가 생긴다.
+id 가 필요하면 반복 문맥 값을 보간한다(예: `my_badge_{{extensionPointProps.context}}_{{extensionPointProps.postId}}`).
+basic 목록과 마이페이지 스크랩은 PC·모바일 두 자리라 조각이 행마다 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다.
+카드·갤러리 목록은 카드 전체를 덮는 링크(`z-10`)가 위에 있으므로, 누를 수 있어야 하는 조각은 `relative z-20` 으로 올린다.
 
 | 상황 | 방식 |
 | --- | --- |
@@ -509,12 +522,40 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `shop_checkout_cash_receipt_slot` | 주문서 결제 영역 | 이커머스 | 주문서에서 현금영수증을 신청할 수 없다 |
 | `shop_checkout_extensions` | 주문서 화면(모달 자리) | 토스페이먼츠 | 결제 실패·취소 안내 창이 뜨지 않는다 |
 | `address_search_slot` | 배송지·회원정보의 주소 입력 칸(5곳) | 다음 우편번호 | 주소 검색 단추가 없다 |
-| `html_content` | 페이지 본문·약관·개인정보 창 | 편집기 플러그인(CKEditor5) | 편집기 본문 서식(`ck-content`)이 빠진 채 기본 HTML 로 보인다 |
+| `html_content` | 페이지 본문·약관·개인정보 창, 게시글 본문·원글·답글, 글쓰기의 원글 미리보기 | 편집기 플러그인(CKEditor5) | 편집기 본문 서식(`ck-content`)이 빠진 채 기본 HTML 로 보인다 |
+| `html_editor` | 글쓰기 본문 입력 칸 | 편집기 플러그인(CKEditor5) | 본문이 서식 편집기 대신 기본 입력 칸으로 나온다 |
+| `identity_provider_ui:provider` | 본인인증 요구 창(`_user_base` 모달) | 본인인증 플러그인 2종(KG이니시스·NHN KCP) | 본인인증 창에 제공자 인증 단추가 없다 |
 | `user_global_overlay` | `_user_base` 끝 | GDPR | 쿠키 동의 배너가 뜨지 않는다 |
+| `user_global_footer` | `_user_base` 푸터 바로 뒤 | (번들 사용처 없음 — 확장 공용 자리) | 푸터 아래 정보 영역을 붙일 곳이 없다 |
+| `board_post_row_badges` (7.1.1+) | 글이 보이는 모든 목록의 제목 바로 뒤 — 게시판 목록 세 유형(basic 은 PC·모바일 두 자리), 홈 최근 글·게시판 요약, 인기글, 통합 검색(전체·글 탭), 회원 글·회원 프로필, 마이페이지 내 글·스크랩(PC·모바일) | (번들 사용처 없음 — 확장 공용 자리) | 글마다 표시(언어·상태 배지 등)를 붙일 곳이 없다 |
+| `board_post_header_badges` (7.1.1+) | 글 상세 제목 바로 뒤(게시판 유형 세 갈래 모두) | (번들 사용처 없음) | 상세 제목 옆 표시를 붙일 곳이 없다 |
+| `board_comment_row_badges` (7.1.1+) | 글 상세 댓글 머리 줄(작성자·시각 옆), 마이페이지 내 댓글의 원글 제목 뒤 | (번들 사용처 없음) | 댓글마다 표시를 붙일 곳이 없다 |
+| `board_post_form_top` (7.1.1+) | 글쓰기 폼 맨 위(검증 오류 상자 아래, 작성자 정보 앞) | (번들 사용처 없음) | 글쓰기에 입력칸을 더할 곳이 없다 |
+| `board_post_form_bottom` (7.1.1+) | 글쓰기 폼 맨 아래(취소·저장 단추 바로 위) | (번들 사용처 없음) | 동의 문구·부가 입력칸을 더할 곳이 없다 |
 
 - 슬롯형 확장점은 `<extension-point name="…"><default/></extension-point>` 로 둔다. 주입이 없으면 아무것도 그리지 않는다.
 - 모달 안의 목록(예: 탈퇴 경고)은 노드 id 를 겨냥하는 Overlay 가 닿지 않으므로 확장점으로 연다.
 - 표시 분기(결제수단·PG·발급 상태 등)는 주입하는 쪽이 조건으로 처리한다 — 템플릿은 자리만 둔다.
+
+##### 게시판 확장 자리 5종의 props
+
+게시판 자리는 화면마다 반복 변수 이름(`post`·`item`·`comment`)과 응답 모양이 다르다. 그래서 확장점이 **정규화한 props** 를
+넘기고, 조각은 화면을 몰라도 같은 이름으로 읽는다(`{{extensionPointProps.postId}}`).
+
+| 확장점 | props | `context` 값 |
+| --- | --- | --- |
+| `board_post_row_badges` | `post`(행 원본) · `postId` · `boardSlug` · `context` | `board_list`(목록 세 유형 공통) · `popular` · `home_recent` · `home_board_summary` · `user_posts` · `user_profile_recent` · `mypage_posts` · `mypage_scrap` · `search_all` · `search_posts` |
+| `board_post_header_badges` | `post`(상세 응답의 `data`) · `postId` · `boardSlug` · `context` | `board_show` |
+| `board_comment_row_badges` | `commentData`(행 원본) · `commentId` · `postId` · `boardSlug` · `context` | `board_show_comment` · `mypage_comments` |
+| `board_post_form_top` · `board_post_form_bottom` | `mode`(`create`·`reply`·`edit`) · `boardSlug` · `postId`(새 글은 `null`) · `board`(글쓰기 틀 응답의 게시판) | — |
+
+- 마이페이지 스크랩의 행 원본 `id` 는 스크랩 번호다. 글 번호는 `postId` 로 읽는다. 내 댓글 목록의 글 번호도 `postId` 로 읽는다.
+- 댓글 행 원본은 `comment` 가 아니라 `commentData` 다 — 화면 응답은 props 의 `comment` 키를 개발자 주석으로 보고 지운다.
+- 글쓰기 자리에 끼운 입력칸이 이름(`name`)으로 값을 쓰면 글쓰기 폼 상태(`_local.form`)에 들어가고, 저장 요청 본문에 함께 실린다.
+  서버에 저장하는 것은 게시판 모듈 훅의 몫이다(모르는 키는 저장하지 않고 무시한다).
+- 호스트는 `<div class="contents" data-extension-point="이름">` 로 렌더된다. 상자를 만들지 않으므로 제목 줄 흐름을 깨지 않고,
+  주입이 없을 때 행 높이도 그대로다. 자리를 CSS·테스트로 찾을 때는 `[data-extension-point="이름"]` 을 쓴다(검색 봇 화면의
+  HTML 에는 이 표지가 실리지 않는다).
 
 #### 셀 템플릿 안의 확장점
 
@@ -835,9 +876,9 @@ templates/_bundled/sirsoft-basic/
 ### 활성화 시
 
 1. `resources/extensions/` 스캔 — `.g7.html` 소스 우선(등록 시점 메모리 컴파일), 짝 마크업이 없는 `.json` 은 직접 읽음
-2. **템플릿과 무관하게 컴파일** — 이름은 태그 표기 규칙, 종류는 `data-type` 으로 정해지므로 어느 템플릿에 붙든 산출이 같다(JSON 조각과 같음). 그 템플릿에 해당 컴포넌트가 있는지는 렌더러가 판정한다(없으면 그리지 않는다)
+2. **템플릿과 무관하게 컴파일** — 이름은 태그 표기 규칙, 종류는 `data-type` 으로 정해지므로 어느 템플릿에 붙든 산출이 같다(JSON 조각과 같음). 그 템플릿에 해당 컴포넌트가 있는지는 렌더러가 판정한다(없으면 그리지 않는다). 그래서 조각은 **한 번만** 읽고 그 결과를 모든 템플릿에 쓴다. 읽지 못한 조각(마크업 오류·JSON 형식 오류)은 그 파일만 건너뛰고, 한 요청 안에서 **파일마다 ERROR 한 줄**(소유 확장·원인의 행·열)로 알린다 — 템플릿 수만큼 되풀이하지 않는다. 파일을 고치면 다음 읽기에서 다시 컴파일된다
 3. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
-4. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원) — 행의 고유 키는 대상 5축 + **`fragment_key`**
+4. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원 — 붙을 자리가 있는 활성 템플릿의 행만) — 행의 고유 키는 대상 5축 + **`fragment_key`**
 5. 활성 확장 전부의 조각을 모든 활성 템플릿에 **다시 등록**(멱등) — 이 확장이 가져온 호스트 레이아웃을 겨냥하던 다른 확장의 조각이 이제 붙는다
 6. 레이아웃 캐시 무효화
 
@@ -845,7 +886,7 @@ templates/_bundled/sirsoft-basic/
 
 `fragment_key` 는 조각 소스 파일의 기본 이름에서 `.g7.html`/`.json` 을 뗀 문자열이다(`admin-user-currency-field.g7.html` → `admin-user-currency-field`). 같은 확장이 **같은 대상에 조각을 둘** 보낼 수 있으므로(예: 회원 폼에 통화 필드와 배송 국가 필드) DB 행은 대상만으로 갈리지 않고, 이 키가 행을 가른다. 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다. 관리자 레이아웃 편집기의 확장 목록은 대상 이름 아래 이 키를 작게 표시해 같은 대상의 두 행을 구분한다.
 
-확장이 `LayoutExtensionService::registerExtension()` 을 직접 부르는 자리(업데이트 뒤 조각을 복원하는 Listener 등)는 여섯 번째 인자로 이 키를 넘긴다. 넘기지 않으면 같은 대상의 기존 행이 하나일 때 그 키를 잇고, 둘 이상이면 어느 조각인지 알 수 없어 처리하지 않는다(경고 로그).
+확장이 `LayoutExtensionService::registerExtension()` 을 직접 부르는 자리는 여섯 번째 인자로 이 키를 넘긴다. 업데이트 뒤 조각 재등록은 코어 업데이트 절차가 하므로(켜진 템플릿 가운데 붙을 자리가 있는 곳에만) 확장이 업데이트 완료 훅에서 조각을 따로 다시 등록할 필요는 없다 — 그렇게 하면 꺼 둔 템플릿에까지 행을 만들기 쉽다. 넘기지 않으면 같은 대상의 기존 행이 하나일 때 그 키를 잇고, 둘 이상이면 어느 조각인지 알 수 없어 처리하지 않는다(경고 로그).
 
 #### 7.0 에서 올라온 조각 행
 
@@ -864,7 +905,15 @@ templates/_bundled/sirsoft-basic/
 
 판정은 `LayoutExtensionService::isExtensionApplicableToTemplate()` 이 수행한다. 대상이 없는 템플릿(예: admin 레이아웃 대상 확장 ↔ user 템플릿)에는 등록하지 않으며, 과거 무차별 등록으로 잘못 생성된 행은 다음 동기화 시 `removeInapplicableExtension()` 으로 정리(soft delete)되고, 소스 디렉토리에서 사라진 조각의 행도 같은 동기화가 정리한다. 호스트 레이아웃이 나중에 설치되는 경우는 확장 활성화·업데이트가 활성 확장 전부의 조각을 전 템플릿에 다시 등록해 메운다.
 
-설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다 — 행마다 역변환→프로덕션 컴파일→왕복 대조에 더해 부적합 등록·소실·고아 조각을 보고하고, 하나라도 있으면 종료 코드 1 이다.
+**재활성화 복원**: 확장을 다시 켜면 비활성화 때 숨긴 행 가운데 **템플릿이 켜져 있고 그 템플릿에 붙을 자리가 있는 행만** 되살린다. 대상 부재로 일부러 숨긴 행(예: 관리자 화면 조각 ↔ 사용자 템플릿)과 꺼진 템플릿의 행은 숨긴 시각 그대로 둔다 — 재활성화마다 되살았다가 다시 숨겨지지 않는다. 운영자가 고친 본문은 행과 함께 그대로 돌아온다. 꺼진 템플릿에 남은 행은 그 템플릿을 켤 때의 동기화가 정리한다.
+
+**화면에 실제로 적용될 행**: 같은 대상(오버레이의 화면 · 확장점)에 붙은 행 가운데 화면에 적용될 행은 한 판정이 정한다 — ① 출처가 꺼진 행은 빠진다(템플릿 오버라이드는 오버라이드 **대상** 확장이 켜져 있어야 한다) ② 대상별로 호환 오버라이드가 있으면 첫 호환 오버라이드만 남고 그 대상의 원본 조각은 가려진다 ③ 버전이 맞지 않는 오버라이드뿐이면 오버라이드 대신 원본 조각이 그 자리를 채운다. 오버레이와 확장점이 같은 판정을 쓰므로 확장점도 비호환 오버라이드 때문에 빈 자리가 되지 않는다. 관리자 레이아웃 편집기의 확장 트리도 같은 판정으로 보여 주므로, 트리에 있는 항목이 곧 화면에 나오는 항목이다(대상 확장을 끈 오버라이드는 트리에서 빠졌다가, 켜면 다시 나타난다).
+
+설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다 — 행마다 역변환→프로덕션 컴파일→왕복 대조에 더해 부적합 등록·소실·고아·**읽기 실패** 조각을 보고하고, 하나라도 있으면 종료 코드 1 이다. 읽지 못한 조각 소스는 템플릿 수와 무관하게 출처당 1행(`unreadable`, 원인의 행·열 포함)이다. 꺼진 템플릿은 켤 때 등록되므로 소실로 세지 않는다. 플러그인 사용자 화면이 어느 사용자 템플릿 라우트에도 연결되지 않았으면 정보로 함께 보여 준다(종료 코드에는 반영하지 않는다 — [플러그인 개발](plugin-development.md#플러그인-사용자-화면과-라우트) 참조).
+
+업데이트 백업(이전 판)의 조각을 읽지 못하면 그 조각만 비교 기준 없이 진행하고, 업데이트 한 번에 WARNING 한 줄로 못 읽은 파일과 원인을 모아 알린다.
+
+조각 원본이 `{}` 인데 저장본이 `[]` 로 굳은 행(7.1.0 까지 편집기 저장·버전 복원·`.json` 단독 조각 등록이 연관 배열로 읽어 다시 쓴 결과)은 동기화로는 고쳐지지 않는다 — 동기화기는 `{}`·`[]` 를 같은 문서로 본다. `php artisan layout:repair-empty-objects` 로 레이아웃·확장 조각·두 버전 테이블을 원본 기준으로 확인하고(기본 미리보기), `--apply` 로 그 자리만 `{}` 로 되돌린다. 노드 목록은 `id` 로 짝을 맞추므로 운영자가 끼워 넣은 노드나 고친 값은 그대로 남는다.
 
 ### 비활성화 시
 
@@ -1122,7 +1171,7 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 
 이는 관리자가 "저장은 되지만 화면에 반영되지 않는" 가려진 확장 행을 편집하는 것을 막기 위함이다. 트리에는 항상 해당 템플릿에서 실제로 적용되는 확장(템플릿 오버라이드 + 오버라이드되지 않은 모듈/플러그인 확장)만 표시된다.
 
-해석 로직은 `LayoutExtensionRepository::resolveOverrides()` 단일 출처를 사용하며, 렌더링 경로(`getResolvedExtensionPoints` / `getResolvedOverlays`)와 편집 트리(`getResolvedByTemplateId`)가 동일한 가시성 기준을 공유한다.
+해석 로직은 `LayoutExtensionService::resolveApplicableExtensions()` 단일 출처를 사용하며, 렌더링 경로(확장점·오버레이)와 편집 트리가 동일한 가시성 기준을 공유한다 — 출처(오버라이드는 그 대상 확장)가 꺼진 행은 빠지고, 버전 비호환 오버라이드만 있는 대상은 원본 확장이 대신 쓰인다(「템플릿 대상 판정」 절 참조).
 
 | 메서드 | 라우트 |
 | ------ | ------ |

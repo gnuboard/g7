@@ -34,6 +34,8 @@
   "secret_post_password_title": "秘密の投稿のパスワード",
   "secret_post_password_desc": "この投稿を表示するにはパスワードを入力してください。",
   "password_verified": "パスワードが確認されました",
+  "secret_thread_password_hint": "元の投稿を非会員として作成した場合は、元の投稿のパスワードでこの返信を開くことができます。",
+  "secret_thread_password_placeholder": "元の投稿のパスワード",
   "blinded_post": "ブラインド処理された投稿です",
   "view_original": "元の投稿を表示",
   "hide_original": "元の投稿を非表示",

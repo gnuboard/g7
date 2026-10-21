@@ -1,0 +1,32 @@
+# 시나리오 매니페스트 — 사용자 목록 화면의 받는 중·빈 결과 표시
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: user_list_loading_empty_state
+
+description: >-
+  사용자 화면은 화면을 먼저 그린 뒤 목록을 받는다(progressive). 받기 전에는 데이터소스 값이 undefined 이고
+  식 안의 `a.b.c` 접근도 undefined 로 풀려, `!orders.data.data || … === 0` 같은 빈 안내 조건이 받는 동안 참이
+  되었다 — 전체 게시판·인기글·홈 목록·마이페이지(글·댓글·반응·신고·문의·마일리지·알림·주문·스크랩·찜)·
+  장바구니·상품 목록·상품 문의/후기 탭에서 「없습니다」가 먼저 보였다. 약관·개인정보 창은 본문을 받은 뒤에 열리므로(여는 시퀀스가 refetch 를 기다림) 받는 중 분기 없이 받기 실패 때 「내용이 없습니다」를 보이고, 주문 상세 「무료배송」은 받은 주문이 있을 때만 보인다. 알림 센터·헤더 알림은 `?.loading` 이 늘 거짓이라 받기 전 「알림 없음」을 보였다. 빈 안내는 받은 결과가 0건이거나 받기에 실패했을 때(엔진이 null 로 둠)만 보인다.
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/list-loading-empty-state.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   load_state — 목록 데이터소스 상태. loading 은 undefined, loaded_empty 는 0건, loaded_rows 는 1건 이상,
+#                error 는 받기 실패(엔진이 null 로 둠). 표본 전부를 각 시험이 돈다(it.each).
+axes:
+  load_state: [loading, loaded_empty, loaded_rows, error]
+
+effects:
+  - loading_hides_empty_notice   # 받는 중에는 빈 안내가 없다
+  - loaded_empty_shows_notice   # 받은 결과 0건이면 빈 안내가 보인다
+  - loaded_rows_hide_notice   # 받은 결과가 있으면 빈 안내가 없다
+  - load_failure_releases_notice   # 받기 실패(null)면 받는 중으로 남지 않고 빈 안내가 보인다
+  - every_deferred_list_notice_gated   # 화면 뒤에 받는 목록에 묶인 빈 안내는 모두 표본이거나 사유 있는 제외(전수)
+  - no_dead_loading_flag   # 화면 뒤에 받는 데이터소스 값의 loading 을 읽는 조건이 없다
+  - modal_opens_after_fetch   # 받은 뒤에 여는 창은 여는 시퀀스가 refetch 를 기다린 뒤 연다
+  - opened_modal_failure_shows_notice   # 그런 창이 열렸는데 값이 없으면(받기 실패) 안내를 보인다 — 받는 중으로 가리지 않는다
+  - editor_recipe_matches_engine   # 편집기 조건 레시피 「불러오는 중」「없을 때」가 엔진 실제 값(undefined·null)과 맞는다

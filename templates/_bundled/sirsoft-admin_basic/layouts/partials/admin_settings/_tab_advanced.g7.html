@@ -10,7 +10,7 @@
           <div>
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.advanced.cache_enabled</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.cache_enabled_desc</p>
             <span data-if="{{_local.errors?.['advanced.cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.cache_enabled']?.[0] ?? ''}}</span>
@@ -28,7 +28,7 @@
                 <div>
                   <div class="flex-center">
                     <span class="text-heading">$t:admin.settings.advanced.layout_cache</span>
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </div>
                   <p class="text-tertiary">$t:admin.settings.advanced.layout_cache_desc</p>
                   <span data-if="{{_local.errors?.['advanced.layout_cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.layout_cache_enabled']?.[0] ?? ''}}</span>
@@ -38,7 +38,7 @@
                 <div class="flex-center gap-2">
                   <div class="flex-center">
                     <span class="text-label whitespace-nowrap">$t:admin.settings.advanced.cache_ttl</span>
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </div>
                   <input type="number" name="advanced.layout_cache_ttl" placeholder="3600" min="{{_local?.form?._meta?.limits?.advanced_cache_ttl_min ?? 0}}" max="{{_local?.form?._meta?.limits?.advanced_cache_ttl_max ?? 14400}}" disabled="{{_computed.isReadOnly}}" class="input input-w-xs {{_local.errors?.['advanced.layout_cache_ttl'] ? 'input-error' : ''}}"/>
                 </div>
@@ -52,7 +52,7 @@
                 <div>
                   <div class="flex-center">
                     <span class="text-heading">$t:admin.settings.advanced.stats_cache</span>
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </div>
                   <p class="text-tertiary">$t:admin.settings.advanced.stats_cache_desc</p>
                   <span data-if="{{_local.errors?.['advanced.stats_cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.stats_cache_enabled']?.[0] ?? ''}}</span>
@@ -62,7 +62,7 @@
                 <div class="flex-center gap-2">
                   <div class="flex-center">
                     <span class="text-label whitespace-nowrap">$t:admin.settings.advanced.cache_ttl</span>
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </div>
                   <input type="number" name="advanced.stats_cache_ttl" placeholder="1800" min="{{_local?.form?._meta?.limits?.advanced_cache_ttl_min ?? 0}}" max="{{_local?.form?._meta?.limits?.advanced_cache_ttl_max ?? 14400}}" disabled="{{_computed.isReadOnly}}" class="input input-w-xs {{_local.errors?.['advanced.stats_cache_ttl'] ? 'input-error' : ''}}"/>
                 </div>
@@ -76,7 +76,7 @@
                 <div>
                   <div class="flex-center">
                     <span class="text-heading">$t:admin.settings.advanced.seo_cache</span>
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </div>
                   <p class="text-tertiary">$t:admin.settings.advanced.seo_cache_desc</p>
                   <span data-if="{{_local.errors?.['advanced.seo_cache_enabled']}}" class="form-error">{{_local.errors?.['advanced.seo_cache_enabled']?.[0] ?? ''}}</span>
@@ -86,7 +86,7 @@
                 <div class="flex-center gap-2">
                   <div class="flex-center">
                     <span class="text-label whitespace-nowrap">$t:admin.settings.advanced.cache_ttl</span>
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </div>
                   <input type="number" name="advanced.seo_cache_ttl" placeholder="7200" min="{{_local?.form?._meta?.limits?.advanced_cache_ttl_min ?? 0}}" max="{{_local?.form?._meta?.limits?.advanced_cache_ttl_max ?? 14400}}" disabled="{{_computed.isReadOnly}}" class="input input-w-xs {{_local.errors?.['advanced.seo_cache_ttl'] ? 'input-error' : ''}}"/>
                 </div>
@@ -98,7 +98,7 @@
               <div>
                 <div class="flex-center">
                   <span class="text-heading">$t:admin.settings.advanced.seo_sitemap_cache</span>
-                  <span class="text-red-500 ml-1">*</span>
+                  <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 </div>
                 <p class="text-tertiary">$t:admin.settings.advanced.seo_sitemap_cache_desc</p>
               </div>
@@ -106,7 +106,7 @@
                 <div class="flex-center gap-2">
                   <div class="flex-center">
                     <span class="text-label whitespace-nowrap">$t:admin.settings.advanced.cache_ttl</span>
-                    <span class="text-red-500 ml-1">*</span>
+                    <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                   </div>
                   <input type="number" name="advanced.seo_sitemap_cache_ttl" placeholder="86400" min="{{_local?.form?._meta?.limits?.advanced_seo_sitemap_cache_ttl_min ?? 3600}}" max="{{_local?.form?._meta?.limits?.advanced_seo_sitemap_cache_ttl_max ?? 604800}}" disabled="{{_computed.isReadOnly}}" class="input input-w-xs {{_local.errors?.['advanced.seo_sitemap_cache_ttl'] ? 'input-error' : ''}}"/>
                 </div>
@@ -115,7 +115,7 @@
             </div>
           </div>
         </div>
-        <button disabled="{{_computed.isReadOnly}}" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" disabled="{{_computed.isReadOnly}}" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <open-modal target="settings_cache_delete_modal"/>
           </on>
@@ -131,7 +131,7 @@
           <div>
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.advanced.debug_mode</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['advanced.debug_mode'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.debug_mode_desc</p>
@@ -146,7 +146,7 @@
           <div>
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.advanced.sql_query_log</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </div>
             <p class="text-label-subtle">$t:admin.settings.advanced.sql_query_log_desc</p>
             <span data-if="{{_local.errors?.['advanced.sql_query_log']}}" class="form-error">{{_local.errors?.['advanced.sql_query_log']?.[0] ?? ''}}</span>
@@ -186,7 +186,7 @@
                 </on>
                 $t:admin.settings.advanced.outbound_proxy_test
               </button>
-              <span data-ref="outbound_proxy_test_result" data-if="{{!!_local.outboundProxyTestMessage &amp;&amp; !_local.outboundProxyTesting}}" class="{{_local.outboundProxyTest?.success ? 'text-xs text-green-600 dark:text-green-400' : 'text-xs text-red-600 dark:text-red-400'}}">{{_local.outboundProxyTest?.egress_ip ? (_local.outboundProxyTestMessage + ' (' + _local.outboundProxyTest.egress_ip + ')') : _local.outboundProxyTestMessage}}</span>
+              <span data-ref="outbound_proxy_test_result" data-if="{{!!_local.outboundProxyTestMessage &amp;&amp; !_local.outboundProxyTesting}}" class="{{_local.outboundProxyTest?.success ? 'text-xs text-green-700 dark:text-green-400' : 'text-xs text-red-600 dark:text-red-400'}}">{{_local.outboundProxyTest?.egress_ip ? (_local.outboundProxyTestMessage + ' (' + _local.outboundProxyTest.egress_ip + ')') : _local.outboundProxyTestMessage}}</span>
             </div>
           </div>
           <div data-ref="input_outbound_proxy_bypass" class="row-stack">
@@ -281,7 +281,7 @@
             <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-2 md:space-y-0">
               <input type="text" :disabled="true" value="{{_local.form?.advanced?.geoip_last_updated_at ?? '-'}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
               <!-- GeoIP 데이터베이스를 내려받아 갱신한다. 파일이 커서 시간이 걸리므로 진행 중에는 버튼을 잠근다 -->
-              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+              <button type="button" disabled="{{_computed.isReadOnly || _local.geoipUpdating === true}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
                 <on type="click">
                   <set-state target="local" :geoipUpdating="true" :errors="{}">
                     <success>
@@ -343,7 +343,7 @@
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_remote_addr</span>
           <span class="text-heading">{{trustedProxy?.data?.remote_addr ?? '-'}}</span>
         </div>
-        <div data-ref="trusted_proxy_same_ip_hint" data-if="{{trustedProxy?.data?.status === 'warning' &amp;&amp; trustedProxy?.data?.client_ip &amp;&amp; trustedProxy?.data?.client_ip === trustedProxy?.data?.remote_addr}}" class="form-hint text-amber-600 dark:text-amber-400">$t:admin.settings.advanced.trusted_proxy_same_ip_hint</div>
+        <div data-ref="trusted_proxy_same_ip_hint" data-if="{{trustedProxy?.data?.status === 'warning' &amp;&amp; trustedProxy?.data?.client_ip &amp;&amp; trustedProxy?.data?.client_ip === trustedProxy?.data?.remote_addr}}" class="form-hint text-amber-700 dark:text-amber-400">$t:admin.settings.advanced.trusted_proxy_same_ip_hint</div>
         <div data-ref="trusted_proxy_doc_hint" class="form-hint">
           <span>$t:admin.settings.advanced.trusted_proxy_doc_hint</span>
           <a data-ref="trusted_proxy_doc_link" href="https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md" target="_blank" rel="noopener noreferrer" class="ml-1 underline hover:no-underline">docs/backend/reverse-proxy.md</a>

@@ -7,7 +7,7 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 194개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 193개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -17,7 +17,7 @@
 | `errors` | 6개 |
 | `mypage` | 15개 |
 | `page` | 1개 |
-| `partials` | 145개 |
+| `partials` | 144개 |
 | `search` | 1개 |
 | `shop` | 11개 |
 | `users` | 2개 |
@@ -179,7 +179,6 @@
 | `_modal_cart_option_change` | `partials` | partial | - |
 | `_modal_cart_unavailable` | `partials` | partial | - |
 | `_modal_coupon_download` | `partials` | partial | - |
-| `_modal_exclusive_coupon_confirm` | `partials` | partial | - |
 | `_modal_temp_order_not_found` | `partials` | partial | - |
 | `_admin_edit_link` | `partials` | partial | - |
 | `_header` | `partials` | partial | - |
@@ -234,6 +233,11 @@
 성공으로 기록되지만 **화면에는 아무것도 나타나지 않습니다**(호스트 컴포넌트가 마운트되지 않아서).
 새 화면은 특별한 이유가 없는 한 `_user_base` 를 상속합니다.
 
+게시판 API(`/api/modules/sirsoft-board/…`)를 부르는 데이터소스는 `auth_mode="optional"`(로그인했으면 토큰 전송)로 둡니다.
+게시판 메뉴·목록·최근/인기 글은 보는 사람의 열람 권한으로 결과를 거르므로, 토큰이 빠지면 로그인한 회원에게도
+비회원 기준 메뉴(회원용 게시판이 빠진 목록)가 나옵니다 — `_user_base` 의 `boards`(헤더·모바일 메뉴·마이페이지 게시판
+선택칸이 함께 읽는다)가 그 예입니다.
+
 `errors/` 6종(401·403·404·500·503·maintenance)은 코어가 오류 상황에서 직접 부릅니다. 401 은
 **로그인 리다이렉트를 여기서 구현하지 않습니다** — 코어 `TemplateApp.showRouteError` 가드가
 처리하므로, 이 레이아웃에서 다시 이동시키면 이중 리다이렉트가 됩니다.
@@ -271,8 +275,14 @@
 주문 배송지를 대조하는 `_computed.shippingAddressAlreadySaved` 가 참이면 숨긴다. 대조 기준은 수령인·연락처(숫자만)·국가와, 국내는
 우편번호·주소·상세주소, 해외는 주소줄·도시·주·우편번호이고 배송지명은 보지 않는다. 저장에 성공하면 주소록을 다시 받아 버튼이 사라지며,
 서버 409(같은 이름 「배송지」가 이미 있음)는 질문형 서버 문구 대신 `shop.order_complete.address_name_exists` 안내로 바꾼다.
-이 분기는 api-call 의 `<error-handling><on-code code="409">` 로 둔다 — `<fail>` 안에 `<conditions>` 를 두면 엔진이 오류 처리기로
-옮길 때 조건 목록을 버려 409·기타 오류 모두 토스트가 뜨지 않는다(실측). 409 외 실패는 `<fail>` 의 오류 토스트가 맡는다.
+이 분기는 `<fail>` 하나 안의 `<conditions>` 로 둔다 — 409 면 안내(info), 그 밖이면 서버 문구의 오류 토스트다. 코어 7.1.1(engine-v1.80.0)
+부터 단일 `<fail>` 안의 조건 분기가 그대로 실행된다(그 전 엔진은 오류 처리기로 옮기며 조건 목록을 버려 토스트가 뜨지 않아,
+한때 `<error-handling><on-code code="409">` 로 우회했다).
+
+클레임 신청서 셸(`mypage/claims/apply`)은 작성(`/mypage/orders/:order_number/claims/apply/:type`)과 수정(`/mypage/claims/:claim_number/edit`)이
+함께 쓴다. `order` 데이터소스의 404 는 `<on-code code="404">` 안 `<conditions>` 가 주소로 가른다 — `route.claim_number` 가 있으면(수정 진입의
+첫 호출은 주소에 주문번호가 없어 반드시 404) `<suppress/>`, 없으면 오류 화면(`show-error-page` 404). 데이터소스 오류 처리 문맥에서
+`route` 를 읽는 것은 코어 7.1.1 부터다(그 전에는 이커머스 핸들러 `claimApplyOrderMissing` 이 판정했고, 그 핸들러는 사용 중단).
 
 <!-- @intent END -->
 
@@ -393,6 +403,28 @@ id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 �
 지우거나 바꾸지 않는다. KG이니시스 엔화 결제수단 제한이 이미 그려진 버튼을 숨길 때 이것으로만 찾는다 — 사라지면 오류 없이
 화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md`
 「PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속」.
+
+### 게시판 확장 자리 (1.2.1+)
+
+확장이 템플릿을 고치지 않고 게시판 화면에 표시·입력칸을 붙이는 자리다. 이름은 바꾸지 않는다 — 확장은 이름으로만 찾는다.
+글쓰기·상세는 같은 조각을 게시판 유형별 갈래(basic·gallery·card) 세 곳에 include 하고, 목록은 세 유형 파일을 한 화면에 함께
+두므로 노드 id 를 겨냥하는 overlay 는 첫 갈래(basic)에만 들어간다. 그래서 이 자리들은 모두 확장점이고, 호스트에 `data-ref` 를
+달지 않는다(행·갈래마다 DOM id 가 중복된다). 호스트는 `class="contents"` + `data-extension-point="이름"` 이다.
+
+| 확장점 | 파일(`layouts/` 기준) | `context` |
+| --- | --- | --- |
+| `board_post_row_badges` | `partials/board/types/{basic(PC·모바일),card,gallery}/index` · `partials/board/popular/_popular_item` · `partials/home/{_recent_posts,_board_summary}` · `users/{posts,show}` · `partials/mypage/board/_my_posts` · `partials/mypage/scrap/_list`(PC·모바일) · `partials/search/posts/{_section,_list}` | `board_list` · `popular` · `home_recent` · `home_board_summary` · `user_posts` · `user_profile_recent` · `mypage_posts` · `mypage_scrap` · `search_all` · `search_posts` |
+| `board_post_header_badges` | `partials/board/types/basic/show`(제목 `h1` 바로 뒤) | `board_show` |
+| `board_comment_row_badges` | `partials/board/show/_comment_item` · `partials/mypage/board/_my_comments` | `board_show_comment` · `mypage_comments` |
+| `board_post_form_top` · `board_post_form_bottom` | `partials/board/form/_post_form`(오류 상자 다음 · 단추 줄 앞) | — (`mode`) |
+
+- 같은 파일의 기존 id `parent_post_card`·`content_section`·`parent_post_html_content` 는 세 갈래에 중복되므로 overlay 로 겨냥하면
+  basic 게시판에만 닿는다(구조는 유지한다). 그 자리 대신 위 확장점을 쓴다.
+- 목록 검색 줄의 `board_search_field_select` 도 세 유형 파일(`partials/board/types/{basic,card,gallery}/index`)에 같은 이름으로
+  있어 overlay 로 겨냥하면 basic 목록에만 닿는다. 검색 줄에는 확장 자리를 따로 열지 않았다.
+- 목록 행에 자리를 더 둘 때는 제목 `span`(`truncate`) **밖 뒤**에 둔다 — 안에 두면 배지가 잘린다.
+- props 계약·`context` 의미는 코어 `docs/extension/layout-extensions.md` 「게시판 확장 자리 5종의 props」 와
+  `modules/_bundled/sirsoft-board/docs/extension-points.md` 「사용자 화면 자리」 가 원문이다.
 
 ## 이관 원문 상세
 
@@ -562,8 +594,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _checkout_payment.g7.html (결제 수단)
 │   │       ├── _checkout_summary.g7.html (주문 요약)
 │   │       ├── _modal_address_manage.g7.html (배송지 관리)
-│   │       ├── _modal_coupon_download.g7.html (쿠폰 다운로드)
-│   │       └── _modal_exclusive_coupon_confirm.g7.html (전용 쿠폰 확인)
+│   │       └── _modal_coupon_download.g7.html (쿠폰 다운로드)
 │   ├── order_complete.g7.html (주문 완료)
 │   ├── guest_order_form.g7.html (비회원 주문 조회 폼)
 │   ├── guest_order_show.g7.html (비회원 주문 상세)
@@ -1197,11 +1228,24 @@ _user_base.g7.html
   - `/api/modules/sirsoft-ecommerce/*` — `X-Cart-Key`, `X-Currency`, `X-Shipping-Country`
   - `/api/modules/sirsoft-ecommerce/guest/orders/*` — `X-Guest-Order-Token` (비회원 주문 후속 액션)
   - `/api/modules/sirsoft-board/*` — `X-Board-Secret-View-Token`
-    비밀번호를 입력해 비밀글 원문을 연 사실을 다음 요청으로 넘기는 값입니다. 서버는 이
-    사실을 검증 응답 하나에만 담고 있어서, 토큰을 싣지 않으면 원문을 연 사용자도 댓글·답글·
-    신고에서 전부 거부됩니다. 토큰은 게시글에 결속되므로 다른 글에는 통하지 않고, 비밀글이
-    아닌 요청에서는 서버가 아예 평가하지 않습니다. `templates/_bundled/sirsoft-basic/layouts/partials/board/types/basic/show.g7.html` 의
-    비밀번호 검증 `onSuccess` 가 `_global.secretViewToken` 에 넣습니다.
+    비밀번호를 입력해 비밀글 원문을 연 사실을 다음 요청으로 넘기는 값입니다. 서버는 토큰
+    하나에 글별 인증(grant)을 기록하므로, 토큰을 싣지 않으면 원문을 연 사용자도 댓글·답글·
+    신고·답변 열람에서 전부 거부됩니다. 같은 탭에서 다른 글을 인증하면 같은 토큰에 그 글의
+    인증만 더해지고, 비밀번호가 다른 글끼리는 서로 열리지 않습니다. 비밀글이 아닌 요청에서는
+    서버가 아예 평가하지 않습니다.
+    - **보관**: `partials/board/types/basic/show.g7.html` 의 글 비밀번호 확인(`verify-password`)과
+      답변 화면의 원글 비밀번호 확인(`verify-thread-password`) `onSuccess` 가 `saveSecretViewToken`
+      으로 토큰·만료 시각을 탭 세션(sessionStorage `g7_board_secret_view_token`·`_expires_at`)에
+      두고 `_global.secretViewToken` 을 세웁니다.
+    - **복원**: `init` 의 `initSecretViewToken` 이 부팅마다 탭 세션에서 되살립니다 — 답변
+      링크(`<a href>` 전체 이동)·새로고침 뒤에도 헤더가 실립니다. 만료됐으면 지웁니다.
+    - **폐기**: 탭을 닫으면 사라지고, 로그인·로그아웃 경계에서 인증 경계 정리가 지웁니다.
+    - **동의 플러그인**: 저장소 동의 플러그인이 켜져 있으면 두 키는 게시판 모듈이 필수 저장 항목으로
+      제공해야 기록됩니다(비회원 주문 토큰을 이커머스 모듈이 제공하는 것과 같은 방식). 제공되지 않으면
+      저장이 막혀 현재 화면에서만 열리고 전체 이동·새로고침 뒤에는 다시 잠깁니다.
+    - 답변 화면의 원글 비밀번호 폼은 상세 응답의 `thread_password_available` 이 참일 때(조상에
+      비밀번호가 있는 비회원 글이 있고 본문이 가려짐) 잠금 안내 아래에 함께 보입니다. 답변
+      버튼은 `reply_locked_by_secret_ancestor` 가 참이면 감춥니다.
 - `transition_overlay.style: "skeleton"`: 페이지 전환 시 PageSkeleton 표시
 - `responsive`: 모바일 오버레이/네비게이션은 `portable` breakpoint에서만 표시
 - `auth_mode: "optional"`: 비회원도 장바구니 카운트 조회 가능

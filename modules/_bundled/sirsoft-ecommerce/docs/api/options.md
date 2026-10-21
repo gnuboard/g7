@@ -86,7 +86,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdatePriceB
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 옵션이 속한 상품(하나라도 — 옵션의 실제 상품 기준)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / Service 단계에서 `ValidationException` 발생 시 `옵션 가격 일괄 변경에 실패했습니다.` |
 | 500 | Internal Server Error | 그 외 예외 발생 시 (`옵션 가격 일괄 변경에 실패했습니다.`) |
 
@@ -162,7 +162,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdateStockB
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 옵션이 속한 상품(하나라도 — 옵션의 실제 상품 기준)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / Service 단계에서 `ValidationException` 발생 시 `옵션 재고 일괄 변경에 실패했습니다.` |
 | 500 | Internal Server Error | 그 외 예외 발생 시 (`옵션 재고 일괄 변경에 실패했습니다.`) |
 
@@ -252,7 +252,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdate()` �
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 옵션이 속한 상품(하나라도 — 옵션의 실제 상품 기준)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) / Service 단계에서 `ValidationException` 발생 시 `옵션 일괄 업데이트에 실패했습니다.` |
 | 500 | Internal Server Error | 그 외 예외 발생 시 (`옵션 일괄 업데이트에 실패했습니다.`) |
 

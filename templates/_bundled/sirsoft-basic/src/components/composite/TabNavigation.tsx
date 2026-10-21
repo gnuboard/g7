@@ -7,6 +7,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref } from '../../support/navigationLink';
 
 export interface Tab {
   id: string | number;
@@ -14,6 +15,11 @@ export interface Tab {
   iconName?: IconName;
   disabled?: boolean;
   badge?: string | number;
+  /**
+   * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+   * 보통 클릭은 지금처럼 탭 전환(onTabChange)이다(#757).
+   */
+  href?: string;
 }
 
 export interface TabNavigationProps {
@@ -27,6 +33,11 @@ export interface TabNavigationProps {
   hiddenTabIds?: (string | number)[];
   /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
   mobileBreakpoint?: number;
+  /**
+   * 탭 주소(`tabs[].href`)에 현재 주소의 쿼리를 합친다(탭 주소 자신의 키가 이긴다).
+   * 같은 화면 안에서 쿼리만 바꾸는 탭이 목록 문맥(쪽·정렬·검색어)을 이고 갈 때 — 보통 클릭과 새 탭이 같은 주소가 된다.
+   */
+  tabHrefMergeQuery?: boolean;
     /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */
@@ -76,6 +87,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   style,
   hiddenTabIds = [],
   mobileBreakpoint = 768,
+  tabHrefMergeQuery = false,
   id,
   editorAttrs,
 }) => {
@@ -145,8 +157,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     switch (variant) {
       case 'pills':
         return isActive
-          ? `${baseClasses} bg-blue-600 dark:bg-blue-500 text-white rounded-lg`
-          : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
+          ? `${baseClasses} bg-blue-600 dark:bg-blue-600 text-white rounded-lg`
+          : `${baseClasses} text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
 
       case 'underline':
         return isActive
@@ -166,31 +178,63 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       ? 'flex gap-0 border-b border-gray-200 dark:border-gray-700'
       : 'flex gap-2';
 
+  /** 탭 링크 주소 — `tabHrefMergeQuery` 면 현재 쿼리를 합친다 */
+  const tabLink = (tab: Tab) =>
+    resolveLinkHref(tabHrefMergeQuery && typeof tab.href === 'string' && tab.href !== '' ? mergeQueryIntoHref(tab.href) : tab.href);
+
+  // 주소를 가진 탭이 하나라도 있으면 탭 목록 역할을 단다 — 링크 탭은 `role="tab"`·`aria-selected` 로 읽힌다
+  const hasLinkTabs = visibleTabs.some((tab) => !tab.disabled && tabLink(tab)?.external === false);
+
   // 데스크톱: 탭 버튼 단일 렌더
   return (
     <Div className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
-      <Nav className={navClasses}>
-        {visibleTabs.map((tab) => (
-          <Button
-            key={tab.id}
-            type="button"
-            onClick={() => handleTabClick(tab)}
-            disabled={tab.disabled}
-            className={getTabClasses(tab)}
-          >
-            {tab.iconName && (
-              <Icon name={tab.iconName} size="sm" />
-            )}
+      <Nav className={navClasses} role={hasLinkTabs ? 'tablist' : undefined}>
+        {visibleTabs.map((tab) => {
+          const tabContent = (
+            <>
+              {tab.iconName && (
+                <Icon name={tab.iconName} size="sm" />
+              )}
 
-            <Span>{tab.label}</Span>
+              <Span>{tab.label}</Span>
 
-            {tab.badge !== undefined && (
-              <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                <Span>{tab.badge}</Span>
-              </Div>
-            )}
-          </Button>
-        ))}
+              {tab.badge !== undefined && (
+                <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
+                  <Span>{tab.badge}</Span>
+                </Div>
+              )}
+            </>
+          );
+          const link = tab.disabled ? null : tabLink(tab);
+          if (link && !link.external) {
+            return (
+              <a
+                key={tab.id}
+                href={link.href}
+                role="tab"
+                aria-selected={tab.id === activeTabId}
+                onClick={(event) => handleLinkClick(event, () => handleTabClick(tab))}
+                className={getTabClasses(tab)}
+              >
+                {tabContent}
+              </a>
+            );
+          }
+
+          return (
+            <Button
+              key={tab.id}
+              type="button"
+              onClick={() => handleTabClick(tab)}
+              disabled={tab.disabled}
+              className={getTabClasses(tab)}
+              role={hasLinkTabs ? 'tab' : undefined}
+              aria-selected={hasLinkTabs ? tab.id === activeTabId : undefined}
+            >
+              {tabContent}
+            </Button>
+          );
+        })}
       </Nav>
     </Div>
   );

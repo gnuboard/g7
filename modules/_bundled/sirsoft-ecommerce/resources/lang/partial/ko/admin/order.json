@@ -122,7 +122,8 @@
       "search_by_member": "회원으로 검색",
       "search_by_name": "주문자명으로 검색",
       "search_by_phone": "연락처로 검색",
-      "reset_guest_password": "조회 비밀번호 재설정"
+      "reset_guest_password": "조회 비밀번호 재설정",
+      "quantity_value": "{{count}}개"
     },
     "tabs": {
       "order_info": "주문정보",
@@ -880,7 +881,8 @@
     "submit": "접수",
     "success": "고객을 대신해 접수했습니다.",
     "error": "접수하지 못했습니다.",
-    "reason_required": "사유를 선택해주세요."
+    "reason_required": "사유를 선택해주세요.",
+    "exchange_option_label": "교환할 옵션"
   },
   "manual_paid": {
     "title": "결제 처리 항목",

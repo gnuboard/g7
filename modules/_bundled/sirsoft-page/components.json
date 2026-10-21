@@ -1,0 +1,10 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "sirsoft-page",
+    "version": "1.2.1",
+    "components": {
+        "basic": [],
+        "composite": [],
+        "layout": []
+    }
+}

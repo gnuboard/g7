@@ -7,11 +7,11 @@ description: |
   권한 없는 운영자에게 편집·추가·삭제가 살아 있다. 이 묶음은 컴포넌트가 `disabled`(또는 권한 prop)를
   받으면 쓰기 동작을 막는지를 잠근다.
 
-  - G09 HtmlEditor · G11 DynamicFieldList · ChipCheckbox · FileUploader ★ — disabled 를 readOnly 와 같이 다룬다
+  - HtmlEditor · DynamicFieldList · ChipCheckbox · FileUploader ★ — disabled 를 readOnly 와 같이 다룬다
   - SortableMenuItem — 끌기를 끈 읽기 전용에서도 펼침 버튼
-  - TabNavigationScroll — 탭 목록의 null 항목 무시(N8)
+  - TabNavigationScroll — 탭 목록의 null 항목 무시
   - ActionMenu — 잠긴 항목 안내(disabledReason), 해석되지 않은 disabledField 는 잠금
-  - NotificationCenter — canUpdate·canDelete(G21)
+  - NotificationCenter — canUpdate·canDelete
 
 axes:
   component: [HtmlEditor, ChipCheckbox, DynamicFieldList, SortableThumbnailItem, SortableMenuItem, TabNavigationScroll, ActionMenu, NotificationCenter]

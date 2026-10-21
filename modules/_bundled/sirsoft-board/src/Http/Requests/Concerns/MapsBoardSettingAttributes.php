@@ -23,7 +23,7 @@ trait MapsBoardSettingAttributes
         'use_scrap',
         'use_reaction', 'use_comment_reaction', 'active_reaction_types',
         'comment_order', 'show_view_count',
-        'max_reply_depth', 'max_comment_depth',
+        'max_reply_depth', 'max_comment_depth', 'secret_reply_visibility',
         'min_title_length', 'max_title_length',
         'min_content_length', 'max_content_length',
         'min_comment_length', 'max_comment_length',

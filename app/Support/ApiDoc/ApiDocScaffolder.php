@@ -63,10 +63,12 @@ class ApiDocScaffolder
     /**
      * @param  ResourceFieldDescriber  $fieldDescriber  accessor/computed 필드 설명기
      * @param  ParameterDescriber  $paramDescriber  공통 요청 파라미터 설명기
+     * @param  ApiDocExampleSanitizer  $exampleSanitizer  실측 응답 민감값·식별정보 마스킹기
      */
     public function __construct(
         private readonly ResourceFieldDescriber $fieldDescriber = new ResourceFieldDescriber,
-        private readonly ParameterDescriber $paramDescriber = new ParameterDescriber
+        private readonly ParameterDescriber $paramDescriber = new ParameterDescriber,
+        private readonly ApiDocExampleSanitizer $exampleSanitizer = new ApiDocExampleSanitizer
     ) {}
 
     /**
@@ -835,11 +837,12 @@ class ApiDocScaffolder
 
         $status = $probeMeta['status'] ?? 200;
         $truncated = $this->truncateListBody($body);
-        // 실측 응답에 섞여 나온 민감값(토큰·비밀번호·시크릿 등)을 마스킹한다.
-        $sanitized = $this->sanitizeSensitive($truncated);
         // 응답 body 내부의 절대 URL(페이지네이터 링크·콜백 URL 등)에 실측 기준 호스트가
         // 그대로 직렬화돼 들어올 수 있으므로 공개 문서용 placeholder 호스트로 마스킹한다.
-        $masked = $this->maskResponseHost($sanitized, $probeMeta['base_url'] ?? null);
+        $hostMasked = $this->maskResponseHost($truncated, $probeMeta['base_url'] ?? null);
+        // 실측 응답에 섞여 나온 민감값(토큰·비밀번호·시크릿 등)과 식별정보(메일 주소·설치 경로·
+        // APP_URL 호스트·공인 IP)를 공개 문서용 자리표시자로 바꾼다.
+        $masked = $this->exampleSanitizer->sanitize($hostMasked);
         // 목록 절단은 페이지네이션 형태(`data.data[]`)만 다룬다. 카탈로그·스펙처럼 목록이 아닌
         // 큰 응답은 그대로 두면 문서 한 파일이 수 MB 로 불어난다 — 전체 크기 상한을 별도로 건다.
         $capped = $this->capExampleSize($masked);
@@ -890,49 +893,6 @@ class ApiDocScaffolder
         }
 
         return $value;
-    }
-
-    /**
-     * 응답 body 에서 민감한 필드 값을 placeholder 로 마스킹합니다 (재귀).
-     *
-     * 실측 응답에 실제 토큰·비밀번호 해시·시크릿·API 키가 섞여 나올 수 있으므로 공개 문서에
-     * 방출하기 전에 마스킹한다. 필드명(키)에 민감 키워드가 포함되면 값을 placeholder 로 대체.
-     *
-     * @param  mixed  $value  응답 값 (배열/스칼라)
-     * @return mixed 마스킹된 값
-     */
-    private function sanitizeSensitive(mixed $value): mixed
-    {
-        if (! is_array($value)) {
-            return $value;
-        }
-
-        $sensitiveKeys = [
-            'token', 'access_token', 'refresh_token', 'plaintexttoken', 'plain_text_token',
-            'password', 'secret', 'api_key', 'apikey', 'private_key', 'client_secret',
-            'authorization', 'remember_token', 'app_key',
-        ];
-
-        $result = [];
-        foreach ($value as $k => $v) {
-            $keyLower = is_string($k) ? strtolower($k) : '';
-            $isSensitive = false;
-            foreach ($sensitiveKeys as $needle) {
-                if ($keyLower !== '' && str_contains($keyLower, $needle)) {
-                    $isSensitive = true;
-                    break;
-                }
-            }
-
-            if ($isSensitive && ! is_array($v) && $v !== null) {
-                // 타입 표기용 접미(_type/_expires 등)는 마스킹 대상이 아니므로 스칼라만 마스킹.
-                $result[$k] = ($keyLower === 'token_type') ? $v : '{MASKED}';
-            } else {
-                $result[$k] = $this->sanitizeSensitive($v);
-            }
-        }
-
-        return $result;
     }
 
     /**
@@ -2221,7 +2181,7 @@ class ApiDocScaffolder
             }
 
             // 실측이 제외된 엔드포인트(권한·404·부수효과 쓰기 등)는 새 예시가 자동 요청 예시와 「실측 제외」 마커뿐이다.
-            // 그것으로 사람이 써 둔 예시를 덮지 않는다 — 기존 요청 예시와 손으로 쓴 응답 예시를 보존한다(O-R2-4).
+            // 그것으로 사람이 써 둔 예시를 덮지 않는다 — 기존 요청 예시와 손으로 쓴 응답 예시를 보존한다.
             $skipped = ! empty($blocks['skipped']);
             $handResponse = $this->isHandWrittenExample($updatedBlock, '**응답 예시**', '**에러 응답**');
 

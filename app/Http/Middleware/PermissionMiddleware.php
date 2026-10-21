@@ -82,6 +82,10 @@ class PermissionMiddleware
         }
 
         // Step 4: scope_type 스코프 체크 (인증된 사용자 + 상세 엔드포인트만)
+        // - 비회원은 권한 범위를 가질 수 없다(7.1.1) — 비회원 역할의 범위 저장은 역할 수정 요청이 422 로 막는다.
+        // - 라우트가 resource_route_key 이름의 파라미터를 Model 로 바인딩할 때만 돈다. {slug}·{id} 처럼
+        //   바인딩하지 않는 라우트는 서비스·저장소가 다시 판정해야 하고, 그 위치를 강제 지점 원장
+        //   (ScopedPermissionEnforcement::LEDGER)에 적는다 — 감사 테스트가 빠진 라우트를 찾는다.
         if ($user) {
             foreach ($resolvedPermissions as $identifier) {
                 $resourceRouteKey = PermissionHelper::getResourceRouteKey($identifier);

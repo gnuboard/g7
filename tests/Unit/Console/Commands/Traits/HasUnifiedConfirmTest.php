@@ -15,6 +15,15 @@ use Tests\TestCase;
  */
 class HasUnifiedConfirmTest extends TestCase
 {
+    /**
+     * 비대화 실행이면 묻지 않고 기본값 false 를 돌려주는지 검증한다.
+     *
+     * @scenario answer=non_interactive
+     *
+     * @effects confirm_returns_default_without_prompt_when_non_interactive
+     *
+     * @return void 반환값 없음
+     */
     public function test_returns_default_when_non_interactive_default_false(): void
     {
         $tester = $this->makeTester(false);
@@ -24,6 +33,15 @@ class HasUnifiedConfirmTest extends TestCase
         $this->assertSame('false', trim($tester->getDisplay()));
     }
 
+    /**
+     * 비대화 실행이면 묻지 않고 기본값 true 를 돌려주는지 검증한다.
+     *
+     * @scenario answer=non_interactive
+     *
+     * @effects confirm_returns_default_without_prompt_when_non_interactive
+     *
+     * @return void 반환값 없음
+     */
     public function test_returns_default_when_non_interactive_default_true(): void
     {
         $tester = $this->makeTester(true);
@@ -33,6 +51,15 @@ class HasUnifiedConfirmTest extends TestCase
         $this->assertSame('true', trim($tester->getDisplay()));
     }
 
+    /**
+     * yes 답변이면 무효 안내 없이 바로 true 로 결정되는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolves_immediately_on_yes_input(): void
     {
         $tester = $this->makeTester(false);
@@ -45,6 +72,15 @@ class HasUnifiedConfirmTest extends TestCase
         $this->assertStringNotContainsString('yes, y, no, n', $display);
     }
 
+    /**
+     * 기본값이 true 여도 no 답변이면 바로 false 로 결정되는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolves_immediately_on_no_input(): void
     {
         $tester = $this->makeTester(true);
@@ -55,6 +91,15 @@ class HasUnifiedConfirmTest extends TestCase
         $this->assertStringEndsWith('false', trim($tester->getDisplay()));
     }
 
+    /**
+     * 짧은 답 y 가 true 로 해석되는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolves_on_y_short_input(): void
     {
         $tester = $this->makeTester(false);
@@ -65,6 +110,15 @@ class HasUnifiedConfirmTest extends TestCase
         $this->assertStringEndsWith('true', trim($tester->getDisplay()));
     }
 
+    /**
+     * 빈 답변이면 기본값을 돌려주는지 검증한다.
+     *
+     * @scenario answer=empty
+     *
+     * @effects confirm_empty_answer_uses_default
+     *
+     * @return void 반환값 없음
+     */
     public function test_returns_default_on_empty_input(): void
     {
         $tester = $this->makeTester(true);
@@ -75,6 +129,15 @@ class HasUnifiedConfirmTest extends TestCase
         $this->assertStringEndsWith('true', trim($tester->getDisplay()));
     }
 
+    /**
+     * 무효 답이면 안내 후 재질문하고 유효한 답에서 결정되는지 검증한다.
+     *
+     * @scenario answer=invalid_then_valid
+     *
+     * @effects confirm_invalid_answer_shows_notice_and_reasks
+     *
+     * @return void 반환값 없음
+     */
     public function test_loops_on_invalid_input_then_resolves(): void
     {
         $tester = $this->makeTester(false);
@@ -83,10 +146,19 @@ class HasUnifiedConfirmTest extends TestCase
         $tester->execute([]);
 
         $display = $tester->getDisplay();
-        $this->assertStringContainsString('yes, y, no, n 중 하나로 입력해 주세요.', $display);
+        $this->assertStringContainsString(__('common.console.console_confirm.invalid_answer'), $display);
         $this->assertStringEndsWith('true', trim($display));
     }
 
+    /**
+     * 무효 답이 여러 번 이어지면 그 횟수만큼 안내하고 마지막 유효한 답으로 결정되는지 검증한다.
+     *
+     * @scenario answer=invalid_then_valid
+     *
+     * @effects confirm_invalid_answer_shows_notice_and_reasks
+     *
+     * @return void 반환값 없음
+     */
     public function test_loops_multiple_times_on_invalid_input(): void
     {
         $tester = $this->makeTester(true);
@@ -95,7 +167,7 @@ class HasUnifiedConfirmTest extends TestCase
         $tester->execute([]);
 
         $display = $tester->getDisplay();
-        $this->assertSame(2, substr_count($display, 'yes, y, no, n 중 하나로 입력해 주세요.'));
+        $this->assertSame(2, substr_count($display, __('common.console.console_confirm.invalid_answer')));
         $this->assertStringEndsWith('false', trim($display));
     }
 
@@ -105,6 +177,12 @@ class HasUnifiedConfirmTest extends TestCase
      *
      * 회귀 시나리오 (이전): `진행할까요? (yes/no) [no] []:`
      * 정상: `진행할까요? (yes/no) [no]:`
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_prompt_marks_default_in_hint, confirm_prompt_has_no_duplicate_empty_default_brackets
+     *
+     * @return void 반환값 없음
      */
     public function test_prompt_does_not_show_duplicate_empty_default_brackets(): void
     {
@@ -122,6 +200,15 @@ class HasUnifiedConfirmTest extends TestCase
         $this->assertStringContainsString('진행할까요? (yes/no) [no]:', $display);
     }
 
+    /**
+     * 기본값이 yes 일 때도 질문에 빈 [] 기본값 표시가 겹쳐 나오지 않는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_prompt_marks_default_in_hint, confirm_prompt_has_no_duplicate_empty_default_brackets
+     *
+     * @return void 반환값 없음
+     */
     public function test_prompt_does_not_show_duplicate_brackets_when_default_yes(): void
     {
         $tester = $this->makeTester(true);
@@ -141,6 +228,12 @@ class HasUnifiedConfirmTest extends TestCase
      * posix 확장이 없어 그 분기가 실행되지 않는다. 그래서 `--no-interaction` 없이
      * 에이전트·CI·스케줄러에서 부르면 `isInteractive()` 가 true 로 남아 `ask()` 가
      * 응답을 기다리며 무한 대기한다. 출력도 남지 않아 "명령이 느리다" 로만 보인다.
+     *
+     * @scenario answer=unanswerable
+     *
+     * @effects confirm_returns_default_without_prompt_when_answer_unavailable
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_default_without_asking_when_prompt_cannot_be_answered(): void
     {
@@ -155,6 +248,12 @@ class HasUnifiedConfirmTest extends TestCase
 
     /**
      * 기본값이 false 인 파괴적 확인은 응답을 받을 수 없을 때 중단으로 떨어져야 한다.
+     *
+     * @scenario answer=unanswerable
+     *
+     * @effects confirm_returns_default_without_prompt_when_answer_unavailable
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_false_default_without_asking_when_prompt_cannot_be_answered(): void
     {
@@ -168,8 +267,11 @@ class HasUnifiedConfirmTest extends TestCase
     }
 
     /**
+     * 통합 확인 결과를 true 또는 false 로 출력하는 익명 커맨드의 테스터를 만든다.
+     *
      * @param  bool  $default  프롬프트 기본값
      * @param  bool|null  $canPrompt  응답 가능 여부 강제 (null 이면 실제 판정 사용)
+     * @return CommandTester 익명 커맨드를 감싼 CommandTester
      */
     private function makeTester(bool $default, ?bool $canPrompt = null): CommandTester
     {
@@ -182,16 +284,32 @@ class HasUnifiedConfirmTest extends TestCase
 
             protected $signature = 'test:unified-confirm';
 
+            /**
+             * 확인 기본값과 응답 가능 여부 강제값을 받아 커맨드를 만든다.
+             *
+             * @param  bool  $defaultValue  확인 프롬프트 기본값
+             * @param  bool|null  $canPrompt  응답 가능 여부 강제값, null 이면 실제 판정 사용
+             */
             public function __construct(private bool $defaultValue, private ?bool $canPrompt = null)
             {
                 parent::__construct();
             }
 
+            /**
+             * 강제값이 있으면 그 값을, 없으면 트레이트의 실제 판정을 돌려준다.
+             *
+             * @return bool 응답을 받을 수 있으면 true
+             */
             protected function canPromptForAnswer(): bool
             {
                 return $this->canPrompt ?? $this->traitCanPromptForAnswer();
             }
 
+            /**
+             * 통합 확인을 묻고 결과를 true 또는 false 로 출력한다.
+             *
+             * @return int 항상 성공 종료 코드
+             */
             public function handle(): int
             {
                 $result = $this->unifiedConfirm('진행할까요?', $this->defaultValue);

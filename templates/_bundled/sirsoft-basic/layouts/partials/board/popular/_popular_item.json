@@ -14,7 +14,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white {{index === 0 ? 'bg-orange-500 dark:bg-orange-500' : index === 1 ? 'bg-yellow-500 dark:bg-yellow-500' : index === 2 ? 'bg-yellow-400 dark:bg-yellow-400' : 'bg-gray-400 dark:bg-gray-500'}}"
+                "className": "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold {{index === 0 ? 'bg-orange-500 dark:bg-orange-500 text-gray-900' : index === 1 ? 'bg-yellow-500 dark:bg-yellow-500 text-gray-900' : index === 2 ? 'bg-yellow-400 dark:bg-yellow-400 text-gray-900' : 'bg-gray-500 dark:bg-gray-500 text-white'}}"
             },
             "text": "{{index + 1}}"
         },
@@ -26,62 +26,93 @@
             },
             "children": [
                 {
+                    "comment": "배지·제목 묶음과 N·시각 묶음. 배지·제목은 늘 한 줄에 두고, 제목 자리가 안 남는 좁은 폭(297~320px·긴 게시판 이름)에서만 N·시각 묶음이 다음 줄로 내려간다 — 제목이 0px 로 사라지고 긴 이름이 화면을 옆으로 밀던 것을 막는다(#143).\n           제목은 최소 3rem(min-w-12)을 지키고 모자라면 배지가 줄어든다 — 배지가 128px 를 고정으로 차지하면 360px·긴 이름에서 제목이 2px 였다.\n           묶음 기준 폭은 10rem(basis-40) — 8rem 이면 320px 에서도 시각이 같은 줄에 남아 제목이 4~5자(79px)만 보였다(7.1.1). 360px 이상은 한 줄 그대로다.",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex flex-wrap items-center gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
-                                "className": "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0"
+                                "className": "flex items-center gap-2 min-w-0 flex-1 basis-40"
                             },
-                            "text": "{{post.board_name}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
+                            "children": [
                                 {
-                                    "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/board/{{post.board_slug}}/{{post.id}}"
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs min-w-0 truncate max-w-32"
+                                    },
+                                    "text": "{{post.board_name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "A",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate"
+                                        }
+                                    ],
+                                    "props": {
+                                        "href": "/board/{{post.board_slug}}/{{post.id}}",
+                                        "className": "inline-block text-center justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
+                                    },
+                                    "text": "{{post.title}}"
+                                },
+                                {
+                                    "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                    "type": "extension_point",
+                                    "name": "board_post_row_badges",
+                                    "props": {
+                                        "className": "contents",
+                                        "data-extension-point": "board_post_row_badges",
+                                        "post": "{{post}}",
+                                        "postId": "{{post.id}}",
+                                        "boardSlug": "{{post.board_slug}}",
+                                        "context": "popular"
                                     }
                                 }
-                            ],
-                            "props": {
-                                "className": "justify-start font-medium text-gray-900 dark:text-white truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
-                            },
-                            "text": "{{post.title}}"
+                            ]
                         },
                         {
                             "type": "basic",
-                            "name": "Span",
-                            "if": "{{post.is_new}}",
+                            "name": "Div",
                             "props": {
-                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                "className": "flex items-center gap-2 shrink-0"
                             },
-                            "text": "N"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0",
-                                "title": "{{post.created_at ?? ''}}"
-                            },
-                            "text": "{{post.created_at_formatted ?? ''}}"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{post.is_new}}",
+                                    "props": {
+                                        "className": "px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                    },
+                                    "text": "N"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0",
+                                        "title": "{{post.created_at ?? ''}}"
+                                    },
+                                    "text": "{{post.created_at_formatted ?? ''}}"
+                                }
+                            ]
                         }
                     ]
                 },
                 {
+                    "comment": "작성자 줄 — 작성자 묶음은 줄어들고(min-w-0, 이름은 UserInfo 가 한 줄 … 로 자른다) 조회·댓글 수는 제 폭을 지킨다. 줄어들 수 없던 때 320px 에서 작성자·「비회원」 배지가 글자 단위로 접혔다(7.1.1).",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center justify-between"
+                        "className": "flex items-center justify-between gap-2"
                     },
                     "children": [
                         {
@@ -89,7 +120,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-2"
+                                "className": "flex items-center gap-2 min-w-0"
                             },
                             "children": [
                                 {
@@ -115,7 +146,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-2"
+                                "className": "flex items-center gap-2 shrink-0"
                             },
                             "children": [
                                 {

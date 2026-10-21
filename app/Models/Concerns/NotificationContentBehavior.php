@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -62,7 +63,7 @@ trait NotificationContentBehavior
         $locale = $locale ?? app()->getLocale();
         $subject = $this->subject ?? [];
 
-        return $subject[$locale] ?? $subject[config('app.fallback_locale', 'ko')] ?? '';
+        return LocalizedValue::pick($subject, $locale, anyAsLast: false) ?? '';
     }
 
     /**
@@ -76,7 +77,7 @@ trait NotificationContentBehavior
         $locale = $locale ?? app()->getLocale();
         $body = $this->body ?? [];
 
-        return $body[$locale] ?? $body[config('app.fallback_locale', 'ko')] ?? '';
+        return LocalizedValue::pick($body, $locale, anyAsLast: false) ?? '';
     }
 
     /**

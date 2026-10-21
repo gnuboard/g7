@@ -1,10 +1,6 @@
 <partial description="게시판 설정 > 기본 탭 (기본 설정 + 일괄 적용)" _e2e_allow="e2e:allow 반응 유형 체크박스 시각 스타일(배경 박스·들여쓰기·아이콘·정렬)만 변경, 클릭 동작(setState/hasChanges)은 기존과 동일. 렌더 분기·바인딩은 admin-board-reaction-settings.test.tsx(Vitest 레이아웃 테스트)로 커버, MCP 실브라우저로 시각 회귀 확인.">
   <!-- 「기본값」 탭의 첫 구획 — 새 게시판이 물려받을 기본값 넷(유형·비밀글 방식·조회수 표시·신고 사용). 값 옆 체크박스는 값을 끄는 것이 아니라 그 항목을 일괄 적용에 실을지를 고른다. 유형 줄에는 목록 자체를 손보는 관리 창 진입점이 하나 더 붙어 있다 -->
   <div data-ref="basic" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <!-- ========== 섹션 1: 기본 설정 ========== -->
     <section-layout data-type="layout" data-ref="section_basic" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.basic</h3>
@@ -12,7 +8,7 @@
       <!-- ========== 페이지 안내 배너 ========== -->
       <div data-ref="page_info_banner" class="alert-info">
         <icon name="circle-info" class="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" size="sm"/>
-        <p class="text-info-soft">$t:sirsoft-board.admin.settings.page_info</p>
+        <p class="text-xs board-tone-info">$t:sirsoft-board.admin.settings.page_info</p>
       </div>
       <div class="row-stack">
         <div data-ref="field_type" class="">
@@ -52,7 +48,7 @@
               </div>
               <p class="text-field-hint pl-6">$t:sirsoft-board.admin.settings.fields.descriptions.type</p>
             </div>
-            <select name="basic_defaults.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
+            <select name="basic_defaults.type" aria-label="$t:sirsoft-board.admin.settings.fields.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: ($localized(t.name) || t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_secret_mode" class="">
@@ -69,7 +65,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.secret_mode</p>
               </div>
             </label>
-            <select name="basic_defaults.secret_mode" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+            <select aria-label="$t:sirsoft-board.admin.settings.fields.secret_mode" name="basic_defaults.secret_mode" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
               <options>
                 <option value="disabled">$t:sirsoft-board.admin.settings.options.secret_mode.disabled</option>
                 <option value="enabled">$t:sirsoft-board.admin.settings.options.secret_mode.enabled</option>
@@ -92,7 +88,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.show_view_count</p>
               </div>
             </label>
-            <toggle data-type="composite" name="basic_defaults.show_view_count" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.show_view_count" data-type="composite" name="basic_defaults.show_view_count" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_use_report" class="">
@@ -109,7 +105,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_report</p>
               </div>
             </label>
-            <toggle data-type="composite" name="basic_defaults.use_report" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_report" data-type="composite" name="basic_defaults.use_report" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_use_scrap" class="">
@@ -126,7 +122,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_scrap</p>
               </div>
             </label>
-            <toggle data-type="composite" name="basic_defaults.use_scrap" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_scrap" data-type="composite" name="basic_defaults.use_scrap" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_use_reaction" class="">
@@ -143,7 +139,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.use_reaction</p>
               </div>
             </label>
-            <toggle data-type="composite" name="basic_defaults.use_reaction" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_reaction" data-type="composite" name="basic_defaults.use_reaction" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
           <!-- 사용할 반응 유형 선택 — 반응 사용 on 일 때만 노출. 순회 대상은 아래 편집기가
             편집 중인 폼 배열(`form.basic_defaults.reaction_types`)이다. 편집기에서 방금 추가한
@@ -166,7 +162,7 @@
                   </input>
                   <img data-if="{{!!reactionType.icon_url}}" src="{{reactionType.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
                   <icon data-if="{{!reactionType.icon_url}}" name="{{reactionType.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
-                  <span>{{reactionType.name?.[$locale ?? 'ko'] ?? reactionType.name?.ko ?? reactionType.code}}</span>
+                  <span>{{$localized(reactionType.name) || reactionType.code}}</span>
                   <badge data-type="composite" data-if="{{reactionType.is_active === false}}" color="gray" size="sm">$t:sirsoft-board.admin.settings.reaction_types.badges.inactive</badge>
                 </label>
               </div>
@@ -195,7 +191,7 @@
               </div>
             </label>
             <div data-testid="settings-use-comment-reaction" class="flex-shrink-0">
-              <toggle data-type="composite" name="basic_defaults.use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.basic_defaults?.use_reaction !== true}}"/>
+              <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.use_comment_reaction" data-type="composite" name="basic_defaults.use_comment_reaction" disabled="{{_computed.isReadOnly || _local.form?.basic_defaults?.use_reaction !== true}}"/>
             </div>
           </div>
         </div>

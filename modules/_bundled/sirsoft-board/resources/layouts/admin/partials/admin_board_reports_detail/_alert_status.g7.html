@@ -6,25 +6,25 @@
       <div class="{{report_detail?.data?.status === 'pending' || report_detail?.data?.status === 'review' || report_detail?.data?.status === 'rejected' || report_detail?.data?.status === 'suspended' ? 'flex items-start gap-3 flex-1' : 'flex items-start gap-3'}}">
         <div>
           <div class="flex-center gap-2 mb-1">
-            <icon data-if="{{report_detail?.data?.status === 'pending'}}" name="exclamation-circle" class="text-xl text-yellow-600 dark:text-yellow-400"/>
+            <icon data-if="{{report_detail?.data?.status === 'pending'}}" name="exclamation-circle" class="text-xl text-yellow-700 dark:text-yellow-400"/>
             <icon data-if="{{report_detail?.data?.status === 'review'}}" name="clock" class="text-xl {{report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : ''}}"/>
             <icon data-if="{{report_detail?.data?.status === 'rejected'}}" name="times-circle" class="text-xl text-purple-600 dark:text-purple-400"/>
             <icon data-if="{{report_detail?.data?.status === 'suspended'}}" name="exclamation-triangle" class="text-xl {{report_detail?.data?.status === 'suspended' ? 'text-red-600 dark:text-red-400' : ''}}"/>
             <icon data-if="{{report_detail?.data?.status === 'deleted'}}" name="ban" class="text-xl text-gray-700 dark:text-gray-300"/>
-            <h3 class="font-semibold text-base {{report_detail?.data?.status === 'pending' ? 'text-warning-soft' : report_detail?.data?.status === 'review' ? 'text-info-soft' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-danger-soft'}}">
-              <responsive on="portable" class="font-semibold text-sm {{report_detail?.data?.status === 'pending' ? 'text-warning-soft' : report_detail?.data?.status === 'review' ? 'text-info-soft' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-danger-soft'}}"/>
+            <h3 class="font-semibold text-base {{report_detail?.data?.status === 'pending' ? 'board-tone-warning' : report_detail?.data?.status === 'review' ? 'board-tone-info' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'board-tone-danger'}}">
+              <responsive on="portable" class="font-semibold text-sm {{report_detail?.data?.status === 'pending' ? 'board-tone-warning' : report_detail?.data?.status === 'review' ? 'board-tone-info' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'board-tone-danger'}}"/>
               $t:sirsoft-board.admin.reports.detail.alert_title_{{report_detail?.data?.status}}
             </h3>
           </div>
-          <p class="text-sm {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}">
-            <responsive on="portable" class="text-xs {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}"/>
+          <p class="text-sm {{report_detail?.data?.status === 'pending' ? 'text-yellow-800 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-700 dark:text-blue-300' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-300' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}">
+            <responsive on="portable" class="text-xs {{report_detail?.data?.status === 'pending' ? 'text-yellow-800 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-700 dark:text-blue-300' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-300' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}"/>
             $t:sirsoft-board.admin.reports.detail.alert_message_{{report_detail?.data?.status}}
           </p>
         </div>
       </div>
       <div data-if="{{report_detail?.data?.available_actions?.length > 0}}" class="flex flex-wrap gap-2 items-end">
-        <button data-if="{{report_detail?.data?.available_actions?.includes('pending') &amp;&amp; report_detail?.data?.status !== 'rejected' &amp;&amp; report_detail?.data?.status !== 'suspended'}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-xs font-medium transition-colors"/>
+        <button type="button" data-if="{{report_detail?.data?.available_actions?.includes('pending') &amp;&amp; report_detail?.data?.status !== 'rejected' &amp;&amp; report_detail?.data?.status !== 'suspended'}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 text-xs font-medium transition-colors"/>
           <on type="click">
             <!-- 「대기로 되돌리기」 — 서버가 허용해도 기각·정지 상태에서는 이 버튼을 감춘다(결론이 난 건을 손대지 않은 상태로 되돌리는 길은 열어 두지 않는다). 직전 사유는 비워 다음 창에 묻어오지 않게 한다 -->
             <set-state target="global" actionType="pending" actionReason=""/>
@@ -37,8 +37,8 @@
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.back_to_pending</span>
         </button>
-        <button data-if="{{report_detail?.data?.available_actions?.includes('review')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors"/>
+        <button type="button" data-if="{{report_detail?.data?.available_actions?.includes('review')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 text-xs font-medium transition-colors"/>
           <on type="click">
             <!-- 「검토 시작」 또는 「재검토」 — 같은 전환이지만 지금이 대기 상태인지에 따라 아이콘과 글자가 갈린다 -->
             <set-state target="global" actionType="review" actionReason=""/>
@@ -51,8 +51,8 @@
           </icon>
           <span>{{report_detail?.data?.status === 'pending' ? '$t:sirsoft-board.admin.reports.detail.actions.start_review' : '$t:sirsoft-board.admin.reports.detail.actions.re_review'}}</span>
         </button>
-        <button data-if="{{report_detail?.data?.available_actions?.includes('rejected')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-medium transition-colors"/>
+        <button type="button" data-if="{{report_detail?.data?.available_actions?.includes('rejected')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-purple-600 dark:bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-purple-600 dark:bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 text-xs font-medium transition-colors"/>
           <on type="click">
             <!-- 「기각」 — 신고를 받아들이지 않는다. 대상이 이미 가려져 있었다면 다시 공개되므로 확인 창이 그 사실을 따로 알린다 -->
             <set-state target="global" actionType="rejected" actionReason=""/>
@@ -65,8 +65,8 @@
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.reject</span>
         </button>
-        <button data-if="{{report_detail?.data?.available_actions?.includes('suspended')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium transition-colors"/>
+        <button type="button" data-if="{{report_detail?.data?.available_actions?.includes('suspended')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 text-xs font-medium transition-colors"/>
           <on type="click">
             <!-- 「정지」 — 신고를 받아들여 대상 글·댓글을 가린다. 글 자체는 남는다 -->
             <set-state target="global" actionType="suspended" actionReason=""/>
@@ -79,7 +79,7 @@
           </icon>
           <span>$t:sirsoft-board.admin.reports.detail.actions.suspend</span>
         </button>
-        <button data-if="{{report_detail?.data?.available_actions?.includes('deleted')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-if="{{report_detail?.data?.available_actions?.includes('deleted')}}" disabled="{{report_detail?.data?.abilities?.can_manage !== true}}" class="flex-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <responsive on="portable" class="flex-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs font-medium transition-colors"/>
           <on type="click">
             <!-- 「삭제」 — 다섯 갈래 중 유일하게 대상을 지우는 쪽이라 되돌릴 수 없다 -->

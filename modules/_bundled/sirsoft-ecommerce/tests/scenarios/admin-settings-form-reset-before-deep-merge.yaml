@@ -1,0 +1,21 @@
+feature: 환경설정 창 폼 — 새로 세우기 전에 null 로 덮기 (7.1.1 출시 전 점검)
+
+description: |
+  setState 기본(deep) 병합은 값이 객체이고 기존 값도 객체면 재귀 병합한다 — `{}` 로 비워도 기존 키가 지워지지 않고,
+  다른 객체로 덮어도 그 객체에 없는 키는 남는다. 쇼핑몰 환경설정에서
+    - 본인인증 정책 창: 조건이 있는 정책을 편집한 뒤 「정책 만들기」를 누르면 새 폼에 앞 정책의 조건·user_overrides 가 남았다.
+    - 통화 추가 줄: 앞서 연 추가 줄의 통화 이름(언어별)이 다음 추가 줄에 남았다.
+  같은 sequence 에서 그 폼을 먼저 null 로 덮고 다시 세운다. 잠금 시험은 레이아웃 JSON 의 setState 순서를 정적으로 본다.
+
+axes:
+  surface:
+    - identity_policy_modal   # _tab_identity_policies — 만들기·고치기(표·카드) 3곳의 identity_policy_form_modal.form
+    - currency_add_row        # _tab_language_currency — form.newCurrency
+
+effects:
+  - settings_form_nulled_before_rebuild   # 객체로 폼을 세우는 setState 앞에 같은 경로를 null 로 덮는 setState 가 있다
+  - currency_add_row_name_cleared_despite_autobinding_overrides   # 실물 setLocal(자동바인딩) 경로로 추가→입력→취소→다시 추가를 실행하면 이름 칸이 빈다 — 이름을 언어별 빈 문자열로 세운다(2026-10-18 재실측)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminSettingsFormResetBeforeDeepMerge.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminCurrencyAddRowResetRender.test.tsx

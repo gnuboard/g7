@@ -70,14 +70,22 @@
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `handler` | string | ✅ | 실행할 핸들러 이름 (템플릿 handlerMap에 등록된 이름) |
+| `handler` | string | ✅ (`actionRef` 만 쓰면 생략) | 실행할 핸들러 이름 (템플릿 handlerMap에 등록된 이름) |
+| `actionRef` | string | ❌ | `named_actions` 의 이름 — 그 액션을 실행 (engine-v1.80.0) |
 | `target` | string | ❌ | 핸들러에 전달할 타겟 값 |
 | `params` | object | ❌ | 핸들러에 전달할 파라미터 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |
+| `conditions` | array | ❌ | `handler: "conditions"` 의 분기 |
+| `cases` | object | ❌ | `handler: "switch"` 의 case (값이 배열이면 순서대로 실행, engine-v1.80.0) |
+| `actions` | array | ❌ | `handler: "sequence"`·`"parallel"` 의 하위 액션 (engine-v1.80.0) |
 | `onSuccess` | object/array | ❌ | 성공 시 실행할 후속 액션 |
 | `onError` | object/array | ❌ | 실패 시 실행할 후속 액션 |
+| `errorHandling` | object | ❌ | 오류 코드별 처리 (engine-v1.80.0) |
 | `resultTo` | object | ❌ | 핸들러 결과를 상태에 저장할 위치 |
 | `auth_required` | boolean | ❌ | 인증 필요 여부 |
+| `identity_target` | object | ❌ | 본인인증 대상 (engine-v1.80.0) |
+
+init 항목은 버튼 클릭과 같은 실행 경로로 통째로 실행된다(engine-v1.80.0 — 종전에는 일부 키만 골라 담아 `sequence`·`switch`·`actionRef` 등이 버려졌다). `confirm`·`debounce`·`stopPropagation`·`key` 는 화면 첫 진입에 의미가 없어 마크업 굽기가 `init_action_key_forbidden` 오류로 거부한다.
 
 ### 실행 시점
 
@@ -272,6 +280,7 @@ init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실�
 
 - ❌ `init_actions`의 핸들러는 반드시 템플릿의 `handlerMap`에 등록되어 있어야 함
 - ❌ 등록되지 않은 핸들러는 경고 로그 출력 후 무시됨
+- ✅ 확장 핸들러(`모듈식별자.핸들러`)는 등록될 때까지 기다렸다 실행한다 — 최상위뿐 아니라 `sequence`·`conditions`·`switch`·`onSuccess`·`onError`·`errorHandling` 안쪽과 `actionRef` 가 가리키는 named action 안쪽까지 본다. 단 활성 확장(`G7Config.activeModules`·`activePlugins`)도 현재 템플릿도 아닌 네임스페이스는 영원히 등록되지 않으므로 기다리지 않는다 (engine-v1.80.0)
 - ✅ 핸들러는 순차적으로 실행됨 (병렬 실행 아님)
 - ✅ 핸들러 실행 실패 시 다른 핸들러는 계속 실행됨
 
@@ -645,7 +654,8 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
 ✅ 컴포넌트 레벨에서 이벤트 구독 정의
 ✅ 마운트 시 자동 구독, 언마운트 시 자동 해제
 ✅ 이벤트 데이터는 {{_eventData}}로 접근 가능
-✅ onSuccess/onError 콜백 지원
+✅ 버튼 클릭과 같은 액션을 그대로 쓴다 — sequence·conditions·switch·if·action-ref·target·resultTo·onSuccess·onError (engine-v1.80.0)
+✅ 처리 결과(성공·실패·데이터)가 보낸 쪽 {{_local._eventResult}} 에 담긴다 (engine-v1.80.0)
 ```
 
 ### 구조
@@ -678,13 +688,73 @@ modals 배열은 레이아웃 상속 시 다음 규칙으로 병합됩니다:
 
 ### 필드 설명
 
+항목은 **`event` + 일반 액션 키 전부**다. 엔진은 `event` 만 뺀 나머지를 버튼 클릭과 똑같이 실행한다(engine-v1.80.0 — 그 전에는 `handler`·`params`·`onSuccess`·`onError` 4개만 옮겨 담아 나머지가 경고 없이 버려졌다).
+
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
 | `event` | string | ✅ | 구독할 이벤트 이름 (예: "upload:site_logo") |
-| `handler` | string | ✅ | 이벤트 발생 시 실행할 핸들러 |
+| `handler` | string | △ | 이벤트 발생 시 실행할 핸들러 (`actionRef` 만 쓰면 생략) |
 | `params` | object | ❌ | 핸들러에 전달할 파라미터 |
+| `actions` | array | ❌ | `sequence`·`parallel` 의 하위 액션 (`<on listen>` 에 자식을 여럿 쓰면 암묵 sequence) |
+| `conditions` · `cases` | array · object | ❌ | `conditions`·`switch` 분기 |
+| `if` | string | ❌ | 조건이 거짓이면 실행하지 않음 |
+| `actionRef` | string | ❌ | named_actions 참조 |
+| `target` · `resultTo` | string · object | ❌ | 대상(`openModal` 모달 id 등)·결과 저장 위치 |
 | `onSuccess` | object/array | ❌ | 핸들러 성공 시 실행할 후속 액션 |
-| `onError` | object/array | ❌ | 핸들러 실패 시 실행할 후속 액션 |
+| `onError` · `errorHandling` | object/array · object | ❌ | 핸들러 실패 시 실행할 후속 액션 |
+
+> `debounce`·`key`·`stopPropagation` 은 사용자가 직접 누르는 진입점에서만 효과가 있다 — 이벤트 받기에서는 무시된다([진입점 전용 키](actions.md#진입점-전용-키)). 마크업 굽기는 경고(`entry_only_key_ignored`·`nested_action_debounce_ignored`)로 알린다. `confirm` 은 마크업에서는 굽기 오류(`confirm_not_at_root`)로 막히지만, JSON 으로 직접 쓴 이벤트 받기 항목 루트의 `confirm` 은 실제로 확인 창을 띄운다.
+
+### 분기·연속 실행
+
+자식을 여럿 쓰면 순서대로(sequence) 실행하고, `<conditions>`·`<switch>` 로 이벤트 데이터에 따라 가를 수 있다:
+
+```html
+<div data-ref="cart_panel">
+  <on listen="cart:changed">
+    <set-state target="local" :cartDirty="true"/>
+    <refetch-data-source dataSourceId="cart"/>
+  </on>
+  <on listen="order:status">
+    <conditions>
+      <when if="{{_eventData.status === 'paid'}}"><toast type="success" message="$t:order.paid"/></when>
+      <else><toast type="info" message="$t:order.status_changed"/></else>
+    </conditions>
+  </on>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "id": "cart_panel",
+  "type": "basic",
+  "name": "Div",
+  "onComponentEvent": [
+    {
+      "event": "cart:changed",
+      "handler": "sequence",
+      "actions": [
+        { "handler": "setState", "params": { "target": "local", "cartDirty": true } },
+        { "handler": "refetchDataSource", "params": { "dataSourceId": "cart" } }
+      ]
+    },
+    {
+      "event": "order:status",
+      "handler": "conditions",
+      "conditions": [
+        { "if": "{{_eventData.status === 'paid'}}", "then": { "handler": "toast", "params": { "type": "success", "message": "$t:order.paid" } } },
+        { "then": { "handler": "toast", "params": { "type": "info", "message": "$t:order.status_changed" } } }
+      ]
+    }
+  ]
+}
+```
+
+### 처리 결과 (`_eventResult`)
+
+`emitEvent` 를 보낸 쪽은 받는 쪽의 처리 결과를 `_local._eventResult` 로 읽는다 — `{ event, success, data, listeners }`(실패면 `error` 추가). 이벤트 받기의 동작이 하나라도 실패하면(예: 받은 쪽 api-call 이 실패해 자기 `<fail>` 이 처리) `success: false` 이고 `error` 에 첫 실패의 문구가 담긴다 — `<conditions>`·`<switch>` 갈래 안이나 여러 동작 중간에서 실패해도 같다(뒤 동작은 그대로 이어서 실행된다). `data` 는 받는 쪽 마지막 동작의 결과다(자식이 여럿이면 마지막 동작의 결과, `<conditions>`·`<switch>` 면 고른 갈래 동작의 결과. `set-state` 같은 상태 쓰기 동작은 결과 데이터가 없어 `undefined`). 받는 쪽 실패는 보낸 쪽 예외로 바뀌지 않는다 — 보낸 쪽 sequence 는 멈추지 않고 이어진다(받는 쪽이 이미 알렸는데 기본 오류 토스트가 한 번 더 뜨지 않게). 컴포넌트 코드가 `G7Core.componentEvent.on` 으로 단 리스너는 종전대로 돌려준 값이 `data` 이고, throw 하면 보낸 쪽이 실패한다.
 
 ### 이벤트 데이터 접근
 

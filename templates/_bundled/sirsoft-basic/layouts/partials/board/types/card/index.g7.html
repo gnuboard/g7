@@ -2,14 +2,15 @@
 <partial description="게시판 카드형(card) 인덱스. 헤더 + 필터 + 카드형 목록 + 빈상태 + 페이지네이션 + 글쓰기 버튼">
   <div>
     <!-- 헤더 (게시판명 + 설명 + 글쓰기 버튼)
-         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12). -->
-    <div class="flex justify-between items-start gap-3 mb-6">
-      <div class="min-w-0">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{posts?.data?.board?.name ?? ''}}</h1>
-        <p data-if="{{posts?.data?.board?.description}}" class="text-gray-600 dark:text-gray-400 mt-1">{{posts?.data?.board?.description}}</p>
+         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 실측).
+         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다. -->
+    <div class="flex flex-wrap justify-between items-start gap-3 mb-6">
+      <div class="min-w-0 flex-1 basis-32">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white break-words">{{posts?.data?.board?.name ?? ''}}</h1>
+        <p data-if="{{posts?.data?.board?.description}}" class="text-gray-600 dark:text-gray-400 mt-1 break-words">{{posts?.data?.board?.description}}</p>
       </div>
       <!-- 상단 액션 (관리자 진입 링크 + 글쓰기 버튼) -->
-      <div class="flex items-center gap-2 shrink-0 whitespace-nowrap">
+      <div class="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
         <!-- 관리자 진입 크로스링크 (권한 보유 시) -->
         <include src="../../index/_admin_links.g7.html"/>
         <!-- 상단 글쓰기 버튼 -->
@@ -19,7 +20,7 @@
     <!-- 필터 바 (카테고리 필터 + 검색) -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
       <!-- 카테고리 필터 (카테고리가 있을 때만 표시) -->
-      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" value="{{query.category || 'all'}}" class="w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
+      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" aria-label="$t:board.form.category" value="{{query.category || 'all'}}" class="w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
         <on type="change">
           <navigate path="/board/{{route.slug}}" :mergeQuery="true">
             <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
@@ -27,18 +28,18 @@
         </on>
       </select>
       <!-- 삭제된 게시글 포함 토글 버튼 (manager 권한 보유 시에만 표시) -->
-      <button data-if="{{posts?.data?.abilities?.can_view_deleted}}" type="button" class="{{query.del === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+      <a href="/board/{{route.slug}}?del={{query.del === '1' ? '' : '1'}}&page=1" :mergeQuery="true" data-if="{{posts?.data?.abilities?.can_view_deleted}}" class="{{query.del === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}">
         <on type="click">
-          <navigate path="/board/{{route.slug}}" :mergeQuery="true">
+          <navigate :mergeQuery="true">
             <query del="{{query.del === '1' ? '' : '1'}}" :page="1"/>
           </navigate>
         </on>
         <icon name="eye" size="sm"/>
         <span>$t:board.filter.include_deleted</span>
-      </button>
+      </a>
       <!-- 검색 줄 (오른쪽 정렬) — 검색 대상 셀렉트 + 검색 바. 셀렉트는 담아만 두고(_local.boardSearchField) 제출 시 URL 의 search_field 로 옮긴다. URL 에 값이 있으면 그것이 초기값이라 뒤로가기·링크 공유에서 고른 대상이 그대로 살아난다 -->
       <div class="w-full sm:w-auto sm:ml-auto flex gap-2">
-        <select data-ref="board_search_field_select" value="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-ref="board_search_field_select" aria-label="$t:common.search_field" value="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:board.search_fields.title_content</option>
             <option value="title">$t:board.search_fields.title</option>
@@ -65,20 +66,23 @@
       <responsive on="tablet" :cols="2" :gap="4" class="grid-cols-2"/>
       <responsive on="desktop" :cols="3" :gap="4" class="grid-cols-3"/>
       <!-- 카드 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀) -->
-      <button data-each="post in {{posts?.data?.data ?? []}}" class="flex flex-col w-full h-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 group cursor-pointer overflow-hidden items-stretch">
-        <on type="click">
-          <navigate path="/board/{{route.slug}}/{{post.id}}" :mergeQuery="true">
-            <query/>
-          </navigate>
-        </on>
+      <div data-each="post in {{posts?.data?.data ?? []}}" class="relative justify-start flex flex-col w-full h-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 group cursor-pointer overflow-hidden items-stretch">
+        <!-- 카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다 -->
+        <a href="/board/{{route.slug}}/{{post.id}}" :mergeQuery="true" aria-label="{{post?.title ?? ''}}" class="absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400">
+          <on type="click">
+            <navigate :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+        </a>
         <!-- 썸네일 이미지 영역 -->
         <div class="w-full h-48 bg-gray-100 dark:bg-gray-900 relative overflow-hidden">
           <!-- 썸네일 이미지 (블라인드/삭제 여부와 관계없이 있으면 표시) -->
           <img data-if="{{post?.thumbnail}}" src="{{post?.thumbnail}}" alt="{{post?.title}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"/>
           <!-- 이미지가 없는 경우 플레이스홀더 -->
           <div data-if="{{!post?.thumbnail}}" class="w-full h-full flex items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700">
-            <icon name="image" class="text-gray-400 dark:text-gray-500"/>
-            <span class="text-xs text-gray-400 dark:text-gray-500">$t:userinfo.no_image</span>
+            <icon name="image" class="text-gray-500 dark:text-gray-400"/>
+            <span class="text-xs text-gray-600 dark:text-gray-300">$t:userinfo.no_image</span>
           </div>
           <!-- 블라인드/삭제됨 반투명 오버레이 -->
           <div data-if="{{post?.status === 'blinded' || post?.deleted_at}}" class="absolute inset-0 bg-gray-900/40 dark:bg-gray-900/40 z-10"/>
@@ -91,34 +95,36 @@
             <!-- 좌상단: 카테고리 + 공지 -->
             <div class="flex items-center gap-1 flex-wrap">
               <!-- 공지사항 배지 -->
-              <span data-if="{{post?.is_notice}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-medium bg-blue-600 text-white dark:bg-blue-500">
+              <span data-if="{{post?.is_notice}}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-medium bg-blue-600 text-white dark:bg-blue-600">
                 <icon name="bell" size="xs"/>
                 <span>$t:board.notice</span>
               </span>
               <!-- 카테고리 배지 -->
-              <span data-if="{{post?.category}}" class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-medium bg-black/40 text-white backdrop-blur-sm">{{post?.category}}</span>
+              <span data-if="{{post?.category}}" class="inline-block truncate max-w-32 px-2 py-0.5 rounded-md text-sm font-medium bg-black/60 text-white backdrop-blur-sm">{{post?.category}}</span>
             </div>
             <!-- 우상단: N 신규 배지 -->
-            <span data-if="{{post?.is_new}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white flex-shrink-0">N</span>
+            <span data-if="{{post?.is_new}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-600 dark:bg-red-600 text-white flex-shrink-0">N</span>
           </div>
         </div>
         <!-- 카드 본문 영역 - 제목+요약 (flex-grow로 늘어나 메타를 하단 고정) -->
         <div class="flex flex-col flex-grow px-5 pt-3 pb-3 justify-start">
           <div class="flex items-center gap-1.5 min-w-0">
             <!-- 블라인드 아이콘 (제목 앞) -->
-            <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
+            <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-600 dark:text-orange-400 flex-shrink-0"/>
             <!-- 답글 배지 (제목 앞) -->
             <span data-if="{{post?.is_reply}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 flex-shrink-0">RE</span>
             <!-- 비밀글 아이콘 (제목 앞) -->
-            <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
-            <h3 class="text-lg font-bold truncate min-w-0 transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'}}">{{post?.title ?? ''}}</h3>
+            <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-500 flex-shrink-0"/>
+            <h3 class="text-lg font-bold truncate min-w-0 transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400'}}">{{post?.title ?? ''}}</h3>
+            <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 카드 전체 링크(z-10)가 위에 덮이므로 누르는 조각은 relative z-20 으로 올린다 -->
+            <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{route?.slug}}" context="board_list"/>
             <!-- 첨부파일 아이콘 (제목 뒤) -->
-            <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-500 flex-shrink-0"/>
             <!-- 삭제됨 배지 (제목 뒤) -->
             <span data-if="{{post?.deleted_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
           </div>
           <!-- 본문 요약 (비밀글 미열람/블라인드/삭제됨 제외) -->
-          <html-content data-type="composite" data-if="{{post?.content_preview &amp;&amp; !(post?.is_secret &amp;&amp; !(post?.is_author || posts?.data?.abilities?.can_read_secret || posts?.data?.abilities?.can_manage))}}" content="{{post?.content_preview ?? ''}}" :isHtml="false" class="text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}}"/>
+          <html-content data-type="composite" data-if="{{post?.content_preview &amp;&amp; !(post?.is_secret &amp;&amp; !(post?.is_author || posts?.data?.abilities?.can_read_secret || posts?.data?.abilities?.can_manage))}}" content="{{post?.content_preview ?? ''}}" :isHtml="false" class="text-sm mt-1.5 line-clamp-2 overflow-hidden !whitespace-normal {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}"/>
         </div>
         <!-- 구분선 -->
         <div class="border-t border-gray-200 dark:border-gray-700"/>
@@ -127,30 +133,30 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 min-w-0">
               <avatar data-type="composite" author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-              <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"/>
-              <span class="text-xs text-gray-300 dark:text-gray-600">·</span>
-              <span class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
+              <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="relative z-20 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}"/>
+              <span class="text-xs text-gray-500 dark:text-gray-400">·</span>
+              <span class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
               <!-- 조회수 -->
-              <span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="inline-flex items-center gap-1 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}">
+              <span data-if="{{posts?.data?.board?.settings?.show_view_count !== false}}" class="inline-flex items-center gap-1 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400'}}">
                 <icon name="eye" size="sm"/>
                 <span>{{post?.view_count ?? 0}}</span>
               </span>
               <!-- 댓글수 -->
-              <span data-if="{{post?.comment_count > 0}}" class="inline-flex items-center gap-1 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-blue-600 dark:text-blue-400'}}">
+              <span data-if="{{post?.comment_count > 0}}" class="inline-flex items-center gap-1 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-500 dark:text-gray-400' : 'text-blue-600 dark:text-blue-400'}}">
                 <icon name="message" size="sm"/>
                 <span>{{post?.comment_count ?? 0}}</span>
               </span>
             </div>
           </div>
         </div>
-      </button>
+      </div>
     </grid>
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
     <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
-    <pagination data-type="composite" currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
+    <pagination pageHref="/board/{{route?.slug}}?page={page}" :pageHrefMergeQuery="true" data-type="composite" currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
       <on event="onPageChange">
         <navigate path="/board/{{route?.slug}}" :mergeQuery="true">
           <query page="{{$args[0]}}" category="{{query.category}}" filters[0][field]="{{query['filters[0][field]']}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>

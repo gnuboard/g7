@@ -19,7 +19,7 @@ use App\Extension\Traits\ValidatesLayoutFiles;
  * - 조각 규약 라우팅 가드: `LAYOUT_SOURCE_DELEGATIONS` 9개 (위임 표기)
  * - 오라클 독립성 가드: `TRAIT_RESOLVER_ENTRY_POINTS` 4개 (손으로 쓴 진입점 열거)
  *
- * 두 목록은 같은 것을 가리키는데 값이 달랐다. 34차 실측 — 후자에 규약의 **소유자**인
+ * 두 목록은 같은 것을 가리키는데 값이 달랐다. 실측 — 후자에 규약의 **소유자**인
  * `layoutSourceCandidates()`·`mergeLayoutSourcesByPriority()` 와 조각 축의 `resolveAllPartials()`
  * 가 빠져 있었고, 그 진입점으로 만든 항진명제는 문지기에서 걸러져 검사에 들어오지도 않았다.
  * 31차가 `resolvePartialSource` 누락으로 고친 것과 **같은 여집합이 한 층 위에** 남아 있던 것이다.
@@ -115,6 +115,12 @@ final class LayoutSourceConvention
             .'선택 결과다** — 갱신 경로는 이 집합의 여집합을 "파일에서 사라진 조각" 으로 보고 DB 행을 '
             .'지우므로, 선택이 틀리면 살아 있는 행이 지워진다. 동시에 면제로 쓰면 안 된다: 이것을 '
             .'부른다고 그 코드가 우선순위 규약을 따르는 것이 아니라 결과를 소비할 뿐이다.',
+
+        // #725: 점검 명령(layout:check-installed)이 읽지 못한 조각을 보고하려고 생긴 선택 소비 표면.
+        'unreadableFragmentSources' => '소스는 있는데 정의를 얻지 못한 조각을 원인과 함께 돌려준다. 대상 '
+            .'집합이 collectFragmentSources() 의 짝 접기(.g7.html 우선·짝 1건)에서 나오므로 **출력이 '
+            .'선택 결과다** — 선택이 틀리면 멀쩡한 조각을 「읽지 못함」 으로 보고하거나 깨진 조각을 놓친다. '
+            .'위 항목과 같은 이유로 문지기 대상이고, 결과를 소비할 뿐이라 면제로 쓰면 안 된다.',
     ];
 
     /**
@@ -175,7 +181,7 @@ final class LayoutSourceConvention
      *
      * 34차는 목록 둘을 여기 하나로 **통합**했지만 폐쇄는 한 방향뿐이었다 — {@see ownerOf()} 가
      * "등재분이 코어에 실재하는가" 만 물었고, **코어에 있는데 목록에 없는** 진입점을 잡는 단언은
-     * 없었다. 그래서 35차 실측에서 여집합 3건(`resolveFragmentSource`·`resolvePartial`·
+     * 없었다. 그래서 실측에서 여집합 3건(`resolveFragmentSource`·`resolvePartial`·
      * `resolvePartialPath`)이 그대로 살아 있었고, 그중 `resolveFragmentSource()` 는 공유 오라클
      * ({@see CompilesFragmentMarkup}) 이 실제로 부르는 선택 진입점이다. 그 진입점
      * 으로 만든 항진명제는 오라클 독립성 가드의 문지기에서 걸러져 검사에 들어오지도 않는다 —

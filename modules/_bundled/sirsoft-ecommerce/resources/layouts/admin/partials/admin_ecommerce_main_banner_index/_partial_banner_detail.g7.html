@@ -15,7 +15,7 @@
     </div>
     <div data-ref="language_tabs" class="mb-6">
       <div class="flex-center gap-2 mb-4">
-        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
+        <icon name="globe" class="text-base text-gray-500 dark:text-gray-500"/>
         <button data-each="loc in $locales" type="button" class="{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
           <on type="click">
             <!-- 언어 탭 — 아래 항목이 아직 하드코딩이라 탭을 바꿔도 내용이 바뀌지 않는다(시안). 탭 자체는 앱 지원 로케일에서 만들어진다. -->
@@ -61,7 +61,7 @@
     <div data-ref="link_url_section" class="mb-6">
       <h4 class="text-heading mb-2">$t:sirsoft-ecommerce.admin.main_banner.detail.field.link_url</h4>
       <div class="flex-center gap-2">
-        <icon name="globe" class="text-base text-gray-400 dark:text-gray-500"/>
+        <icon name="globe" class="text-base text-gray-500 dark:text-gray-500"/>
         <span class="text-sm text-blue-600 dark:text-blue-400">/promotion/winter-sale</span>
       </div>
     </div>
@@ -71,14 +71,14 @@
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.start_date</label>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
             <span class="text-sm text-primary">2025-01-01</span>
           </div>
         </div>
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.end_date</label>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
             <span class="text-sm text-primary">2025-12-31</span>
           </div>
         </div>
@@ -93,7 +93,7 @@
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.main_banner.detail.field.created_at</label>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
             <span class="text-sm text-primary">2025-01-01 10:00:00</span>
           </div>
         </div>
@@ -107,7 +107,7 @@
         </on>
         $t:sirsoft-ecommerce.admin.main_banner.detail.actions.edit
       </button>
-      <button type="button" class="btn btn-outline text-red-600 dark:text-red-400 flex-1">
+      <button type="button" class="btn btn-outline text-red-600 dark:text-red-300 flex-1">
         <on type="click">
           <open-modal target="modal_delete_confirm"/>
         </on>

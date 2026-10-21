@@ -4,7 +4,7 @@ description: |
   `DataGrid` 는 `selectable` 이 켜지고 선택된 행이 있으면 **자체 선택 건수 줄**을 그린다
   (`DataGrid.tsx` 의 카드형·표형 두 렌더 지점). 관리자 목록 화면은 대부분 그 위에 일괄 처리
   바(`bulk-actions-bar`)를 따로 두고 거기에도 「N개 선택됨」을 적는다. 둘이 겹치면 같은 문장이
-  화면에 **두 번** 뜬다 — PO 제보(2026-09-15, 1:1 문의 게시글 관리).
+  화면에 **두 번** 뜬다 — 제보(2026-09-15, 1:1 문의 게시글 관리).
 
   해소 관례는 `<data-grid selectedCountText="">` 다. 빈 문자열이면 `selectedCountText ?? t(...)`
   의 `??` 가 폴백하지 않아 `resolvedSelectedCountText` 가 falsy 가 되고, 두 렌더 지점의

@@ -1,5 +1,5 @@
 {
-    "comment": "관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다",
+    "comment": "관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 e2e:allow 최신 글 메타 줄을 이름·시각 두 칸으로 나눈 표시 배치 변경 — 데이터·동작 무변경이라 화면 확인으로 대신한다(#777).",
     "extension_point": "admin_dashboard_community",
     "mode": "append",
     "priority": 100,
@@ -114,17 +114,15 @@
                                 {
                                     "id": "today_new_posts_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/boards"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/boards",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.today_badges.new_posts|count={{board_overview?.data?.today_posts ?? 0}}"
@@ -132,17 +130,15 @@
                                 {
                                     "id": "today_new_comments_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/boards"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/boards",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.today_badges.new_comments|count={{board_overview?.data?.today_comments ?? 0}}"
@@ -221,7 +217,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                                                                "className": "text-sm text-slate-600 dark:text-slate-400"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.dashboard.community.posts"
                                                         }
@@ -248,7 +244,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                                                                "className": "text-sm text-slate-600 dark:text-slate-400"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.dashboard.community.comments"
                                                         }
@@ -276,7 +272,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                                                        "className": "text-sm text-slate-600 dark:text-slate-400 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.dashboard.community.total_posts"
                                                 },
@@ -302,7 +298,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "{{(board_post_graph?.data?.posts_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                                                                "className": "{{(board_post_graph?.data?.posts_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}"
                                                             },
                                                             "text": "{{(board_post_graph?.data?.posts_change ?? null) === null ? '—' : ((board_post_graph?.data?.posts_change >= 0 ? '+' : '') + board_post_graph?.data?.posts_change + '%')}}"
                                                         }
@@ -320,7 +316,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                                                        "className": "text-sm text-slate-600 dark:text-slate-400 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.dashboard.community.total_comments"
                                                 },
@@ -346,7 +342,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "{{(board_post_graph?.data?.comments_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                                                                "className": "{{(board_post_graph?.data?.comments_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}"
                                                             },
                                                             "text": "{{(board_post_graph?.data?.comments_change ?? null) === null ? '—' : ((board_post_graph?.data?.comments_change >= 0 ? '+' : '') + board_post_graph?.data?.comments_change + '%')}}"
                                                         }
@@ -374,7 +370,7 @@
                                     "name": "P",
                                     "if": "{{!!board_post_graph?.data?.updated_at_display}}",
                                     "props": {
-                                        "className": "text-xs text-slate-400 dark:text-slate-500 mt-2 text-right"
+                                        "className": "text-xs text-slate-600 dark:text-slate-400 mt-2 text-right"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.community.updated_at|time={{board_post_graph?.data?.updated_at_display ?? ''}}"
                                 }
@@ -415,7 +411,7 @@
                                             "name": "A",
                                             "props": {
                                                 "href": "/admin/boards",
-                                                "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                                                "className": "text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                                             },
                                             "text": "$t:sirsoft-board.admin.dashboard.community.go_to_boards"
                                         }
@@ -425,9 +421,9 @@
                                     "id": "latest_posts_empty",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(board_recent_posts?.data ?? []).length === 0}}",
+                                    "if": "{{board_recent_posts !== undefined && ((board_recent_posts?.data ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                                        "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.community.no_posts"
                                 },
@@ -443,7 +439,7 @@
                                         {
                                             "id": "latest_post_item_{{i}}",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "A",
                                             "iteration": {
                                                 "source": "board_recent_posts?.data",
                                                 "item_var": "post",
@@ -452,13 +448,11 @@
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/board/{{post?.board_slug}}/post/{{post?.id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/admin/board/{{post?.board_slug}}/post/{{post?.id}}",
                                                 "className": "py-3 min-h-12 flex flex-col justify-center cursor-pointer"
                                             },
                                             "children": [
@@ -474,11 +468,28 @@
                                                 {
                                                     "id": "latest_post_meta_{{i}}",
                                                     "type": "basic",
-                                                    "name": "P",
+                                                    "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "flex items-center min-w-0 text-xs text-slate-600 dark:text-slate-400"
                                                     },
-                                                    "text": "{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '') + ' · ' + (post?.created_at ?? '')}}"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "min-w-0 truncate"
+                                                            },
+                                                            "text": "{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "shrink-0 whitespace-nowrap"
+                                                            },
+                                                            "text": "{{' · ' + (post?.created_at ?? '')}}"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -538,7 +549,7 @@
                                             "name": "A",
                                             "props": {
                                                 "href": "/admin/boards/reports",
-                                                "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                                                "className": "text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                                             },
                                             "text": "$t:sirsoft-board.admin.dashboard.community.go_to_reports"
                                         }
@@ -548,9 +559,9 @@
                                     "id": "report_management_empty",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(board_pending_reports?.data?.items ?? []).length === 0}}",
+                                    "if": "{{board_pending_reports !== undefined && ((board_pending_reports?.data?.items ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                                        "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.community.no_reports"
                                 },
@@ -566,7 +577,7 @@
                                         {
                                             "id": "report_item_{{i}}",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "A",
                                             "iteration": {
                                                 "source": "board_pending_reports?.data?.items",
                                                 "item_var": "report",
@@ -575,13 +586,11 @@
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/boards/reports/{{report?.id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/admin/boards/reports/{{report?.id}}",
                                                 "className": "py-3 min-h-12 flex flex-col justify-center cursor-pointer"
                                             },
                                             "children": [
@@ -609,7 +618,7 @@
                                                             "props": {
                                                                 "className": "flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate"
                                                             },
-                                                            "text": "{{report?.target_title ?? '(제목 없음)'}}"
+                                                            "text": "{{report?.target_title ?? $t('sirsoft-board.admin.dashboard.community.untitled')}}"
                                                         },
                                                         {
                                                             "id": "report_status_badge_{{i}}",
@@ -628,9 +637,9 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "text-xs text-slate-600 dark:text-slate-400"
                                                     },
-                                                    "text": "{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? '익명') + ' · ' + (report?.last_reported_at ?? '')}}"
+                                                    "text": "{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? $t('sirsoft-board.admin.dashboard.community.anonymous')) + ' · ' + (report?.last_reported_at ?? '')}}"
                                                 }
                                             ]
                                         }

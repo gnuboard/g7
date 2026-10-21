@@ -49,6 +49,6 @@ class IdentityVerificationLogSeeder extends AbstractIdentityVerificationLogSampl
      */
     protected function scopeLabel(): string
     {
-        return '[코어]';
+        return '['.__('common.console.seeders.identity_verification_log.scope_label').']';
     }
 }

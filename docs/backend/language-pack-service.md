@@ -173,8 +173,19 @@ HookManager::doAction('core.language_packs.after_activate', $pack);
 | `core.modules.after_uninstall` | `cleanupForExtension('module', identifier)` — 가상 레코드 삭제 + 외부 벤더 레코드는 `error` 상태 전환 |
 | (plugin 동일 패턴) | `core.plugins.after_install` / `after_update` / `after_uninstall` |
 | 템플릿 | `core.templates.after_install` / **`after_version_update`** / `after_uninstall` — `after_update` 는 템플릿 **레코드 수정** 훅이라 버전 업데이트에 반응하지 않는다 |
-| `core.{modules,plugins}.after_deactivate` / `core.templates.after_deactivate` | `deactivateForExtension` — 켜져 있던 종속 언어팩을 끄고 「언어팩 다시 켜기」 창 후보로 보관 |
+| `core.{modules,plugins}.after_deactivate` / `core.templates.after_deactivate` | `deactivateForExtension` — 켜져 있던 종속 언어팩을 끄고 `deactivated_reason=host_deactivated` 로 표시(「언어팩 다시 켜기」 창·CLI activate 의 후보) |
 | `core.{modules,plugins}.after_activate` / `core.templates.after_activate`(정보 배열) | `activateAwaitingForExtension` — 「대상 켜짐 대기」 언어팩을 켠다 |
+
+### 호스트와 함께 꺼짐 (`deactivated_reason = host_deactivated`)
+
+대상 확장(호스트)을 끌 때 `deactivateForExtension()` 이 켜져 있던 팩을 `deactivate(cascadeFromHost: true)` 로 끄면 `status=inactive` +
+`deactivated_reason=host_deactivated` + `deactivated_at` 이 남는다. 운영자가 직접 끈 팩은 사유 없이(`null`) 시각만 남는다.
+
+- 호스트를 다시 켤 때 `getPendingForReactivation(scope, target)` 이 이 표시가 있는 inactive 팩을 돌려준다. 관리자 화면은 활성화 응답의
+  `pending_language_packs` 로 「언어팩 다시 켜기」 창을 띄우고, `module:activate`·`plugin:activate`·`template:activate` 는 기본으로 함께
+  켠다(`--without-language-packs` 면 켜지 않고 목록만 출력).
+- 표시는 DB 에 있으므로 캐시를 비워도 사라지지 않고, 팩을 켤 때(`activate()`) 사유·시각이 지워진다 — 창을 닫으면 다음 활성화 때 다시 묻는다.
+- 7.1.0 이하는 후보 목록을 캐시(`language-pack:reactivation:{scope}:{target}`)에만 두었다. 업데이트 전에 남은 목록은 같은 조회가 한 번 합쳐 읽고 지운다.
 
 ### 대상 켜짐 대기 (`deactivated_reason = awaiting_host`)
 

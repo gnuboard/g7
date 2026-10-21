@@ -42,6 +42,9 @@ import {
   saveGuestOrderTokenHandler,
   clearGuestOrderTokenHandler,
   clearGuestTokenOnEntryHandler,
+  initSecretViewTokenHandler,
+  saveSecretViewTokenHandler,
+  clearSecretViewTokenHandler,
 } from './storageHandlers';
 
 // 다중 통화 관련 핸들러
@@ -142,6 +145,10 @@ export const handlers = {
   saveGuestOrderToken: saveGuestOrderTokenHandler,
   clearGuestOrderToken: clearGuestOrderTokenHandler,
   clearGuestTokenOnEntry: clearGuestTokenOnEntryHandler,
+  // 비밀글 열람 토큰 — 탭 세션에 두어 답변 링크(전체 이동)·새로고침에서도 비밀번호 확인이 유지된다
+  initSecretViewToken: initSecretViewTokenHandler,
+  saveSecretViewToken: saveSecretViewTokenHandler,
+  clearSecretViewToken: clearSecretViewTokenHandler,
 };
 
 /**
@@ -197,4 +204,7 @@ export {
   saveGuestOrderTokenHandler,
   clearGuestOrderTokenHandler,
   clearGuestTokenOnEntryHandler,
+  initSecretViewTokenHandler,
+  saveSecretViewTokenHandler,
+  clearSecretViewTokenHandler,
 };

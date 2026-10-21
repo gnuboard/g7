@@ -4,6 +4,7 @@
     "layout_name": "admin_board_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "_e2e_allow": "e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일",
         "title": "$t:sirsoft-board.admin.settings.title",
         "description": "$t:sirsoft-board.admin.settings.description"
@@ -26,6 +27,31 @@
                     "params": {
                         "target": "content"
                     }
+                },
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다).\n       blocking 이라 설정을 다 받기 전에는 입력칸을 그리지 않는다 — 받기 전에 칸을 고치면 도착한 값(initLocal)이\n       그 입력을 말없이 덮어써 사용자가 고친 값이 사라졌다(7.1.0 실측 K3 O-K3T-5). 게시판 생성·수정 화면과 같은 방식이다"
@@ -146,7 +172,7 @@
                 }
             },
             "errorHandling": {
-                "comment": "실패의 종류를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 서버 오류(5xx)도 일괄 지정 카드에\n         「권한 없음」 이유로 보였다(7.1.0 S2 #8). 403 만 권한 없음, 그 밖의 실패는 「불러오지 못함」. 다시 성공하면 computed 가 abilities 를 먼저 본다",
+                "comment": "실패의 종류를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 서버 오류(5xx)도 일괄 지정 카드에\n         「권한 없음」 이유로 보였다(7.1.0 화면 검증). 403 만 권한 없음, 그 밖의 실패는 「불러오지 못함」. 다시 성공하면 computed 가 abilities 를 먼저 본다",
                 "403": {
                     "handler": "setState",
                     "params": {
@@ -218,6 +244,33 @@
                 "data": {
                     "data": [],
                     "pagination": []
+                }
+            },
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "이 모듈이 발행하는 알림 정의들 — 코어 알림 표에서 게시판 것만 골라 받는다. 목록이 길어 페이지를 나누고, 그 쪽수·총건수를 `_merge: deep` 으로 지역 상태에 얹어 아래 페이저가 읽는다. 「알림 정의」와 「신고 정책」 두 탭이 함께 쓴다"
@@ -435,7 +488,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-warning-soft"
+                                                    "className": "text-xs board-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-board.admin.settings.read_only_message"
                                             }
@@ -520,34 +573,42 @@
                                             "variant": "default",
                                             "tabs": [
                                                 {
+                                                    "href": "/admin/boards/settings?tab=general",
                                                     "id": "general",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.general"
                                                 },
                                                 {
+                                                    "href": "/admin/boards/settings?tab=basic_defaults",
                                                     "id": "basic_defaults",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.basic_defaults"
                                                 },
                                                 {
+                                                    "href": "/admin/boards/settings?tab=report_policy",
                                                     "id": "report_policy",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.report_policy"
                                                 },
                                                 {
+                                                    "href": "/admin/boards/settings?tab=spam_security",
                                                     "id": "spam_security",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.spam_security"
                                                 },
                                                 {
+                                                    "href": "/admin/boards/settings?tab=seo",
                                                     "id": "seo",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.seo"
                                                 },
                                                 {
+                                                    "href": "/admin/boards/settings?tab=notification_definitions",
                                                     "id": "notification_definitions",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.notification_definitions"
                                                 },
                                                 {
+                                                    "href": "/admin/boards/settings?tab=identity_policies",
                                                     "id": "identity_policies",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.identity_policies"
                                                 },
                                                 {
+                                                    "href": "/admin/boards/settings?tab=privacy_retention",
                                                     "id": "privacy_retention",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.privacy_retention"
                                                 }
@@ -760,7 +821,7 @@
                                         "name": "Div",
                                         "if": "{{_local.hasChanges}}",
                                         "props": {
-                                            "className": "flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mr-auto"
+                                            "className": "flex-center gap-1.5 text-sm text-amber-700 dark:text-amber-400 mr-auto"
                                         },
                                         "children": [
                                             {
@@ -781,19 +842,19 @@
                                     {
                                         "id": "footer_cancel_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin"
+                                                    "bypassLeaveGuard": true
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary text-sm"
+                                            "href": "/admin",
+                                            "className": "button btn btn-secondary text-sm"
                                         },
                                         "children": [
                                             {

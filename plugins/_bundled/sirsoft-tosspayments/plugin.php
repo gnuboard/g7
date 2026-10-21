@@ -248,7 +248,6 @@ class Plugin extends AbstractPlugin
             Listeners\ClaimPaymentApproveListener::class,
             Listeners\ClaimPaymentRefundListener::class,
             Listeners\ValidateTossSettingsListener::class,
-            Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
             Listeners\ProvideNecessaryStorageKeysListener::class,
         ];
     }

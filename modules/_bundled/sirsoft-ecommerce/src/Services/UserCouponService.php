@@ -2,10 +2,13 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
@@ -24,10 +27,19 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
  */
 class UserCouponService
 {
+    /**
+     * 회원 쿠폰 서비스를 생성합니다.
+     *
+     * @param  CouponIssueRepositoryInterface  $couponIssueRepository  쿠폰 발급 내역 저장소
+     * @param  CouponRepositoryInterface  $couponRepository  쿠폰 저장소
+     * @param  CurrencyConversionService  $currencyConverter  통화 환산 서비스(선택 통화 표시값)
+     * @param  UserRepositoryInterface  $userRepository  회원 저장소(직접 발급 대상 탈퇴 판정)
+     */
     public function __construct(
         protected CouponIssueRepositoryInterface $couponIssueRepository,
         protected CouponRepositoryInterface $couponRepository,
-        protected CurrencyConversionService $currencyConverter
+        protected CurrencyConversionService $currencyConverter,
+        protected UserRepositoryInterface $userRepository
     ) {}
 
     /**
@@ -190,6 +202,8 @@ class UserCouponService
                     'coupon_id' => $coupon->id,
                     'localized_name' => $coupon->getLocalizedName(),
                     'benefit_formatted' => $coupon->benefit_formatted,
+                    // 선택 통화별 혜택 문구 맵 — 주문서 상품 쿠폰 선택칸이 선택 통화로 보이게 한다(7.1.1)
+                    'multi_currency_benefit_formatted' => $coupon->buildMultiCurrencyBenefitFormatted($this->currencyConverter),
                     'target_type' => $coupon->target_type?->value,
                     'target_type_short_label' => $coupon->target_type?->shortLabel(),
                     'min_order_amount' => $coupon->min_order_amount,
@@ -290,6 +304,18 @@ class UserCouponService
             $coupon->target_type_short_label = $coupon->target_type?->shortLabel();
             $coupon->valid_period_formatted = $coupon->valid_period_formatted;
             $coupon->min_order_amount_formatted = ecommerce_format_price($coupon->min_order_amount ?? 0);
+            // 선택 통화 표시값 — 상품 상세 목록·CouponResource 와 같은 모양({통화: {price, formatted, is_default}}).
+            // 주문서 쿠폰 받기 창이 읽는다(없으면 다른 통화로 보는 회원에게도 기본 통화 숫자 + 「원」, 7.1.1).
+            $coupon->multi_currency_benefit_formatted = $coupon->buildMultiCurrencyBenefitFormatted($this->currencyConverter);
+            $coupon->multi_currency_discount_value = $coupon->discount_type === CouponDiscountType::FIXED
+                ? $this->currencyConverter->convertToMultiCurrency((int) ($coupon->discount_value ?? 0))
+                : null;
+            $coupon->multi_currency_min_order_amount = ($coupon->min_order_amount ?? 0) > 0
+                ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->min_order_amount)
+                : null;
+            $coupon->multi_currency_discount_max_amount = ($coupon->discount_max_amount ?? 0) > 0
+                ? $this->currencyConverter->convertToMultiCurrency((int) $coupon->discount_max_amount)
+                : null;
             $coupon->remaining_quantity = $coupon->total_quantity !== null
                 ? max(0, $coupon->total_quantity - $coupon->issued_count)
                 : null;
@@ -349,6 +375,7 @@ class UserCouponService
      * 없으면 자동/관리자 발급 전용 쿠폰이나 만료 쿠폰의 id 를 직접 지정해 다운로드할 수 있습니다.
      *
      * @param  Coupon  $coupon  다운로드 대상 쿠폰
+     * @return void 반환값 없음
      *
      * @throws CouponNotIssuableException 다운로드 불가(발급 방법/조건 불일치) 또는 만료 시
      */
@@ -371,6 +398,7 @@ class UserCouponService
      * 쿠폰의 발급 가능 상태(발급중/재고/기간)를 검증합니다. 위반 시 사유별 예외를 던집니다.
      *
      * @param  Coupon  $coupon  발급 대상 쿠폰
+     * @return void 반환값 없음
      *
      * @throws CouponNotIssuableException 발급 불가 시(상태/재고/유효기간 미설정/기간)
      */
@@ -397,6 +425,7 @@ class UserCouponService
      *
      * @param  Coupon  $coupon  발급 대상 쿠폰
      * @param  int  $userId  발급 대상 회원 ID
+     * @return void 반환값 없음
      *
      * @throws CouponNotIssuableException 한도 초과 시
      */
@@ -417,10 +446,17 @@ class UserCouponService
      * @param  int  $userId  발급 대상 회원 ID
      * @return CouponIssue 생성된 발급 레코드
      *
-     * @throws CouponNotIssuableException per_user_limit 초과 시
+     * @throws CouponNotIssuableException 탈퇴 회원(user_withdrawn)·per_user_limit 초과 시
      */
     public function issueDirectlyToUser(Coupon $coupon, int $userId): CouponIssue
     {
+        // 탈퇴 회원은 로그인할 수 없어 받은 쿠폰을 쓰지 못한다 — 요청 검증이 먼저 막지만, 서비스를 바로 부르는
+        // 확장·훅 경로도 같은 판정을 받게 여기서도 막는다(7.1.1).
+        $user = $this->userRepository->findById($userId);
+        if ($user !== null && $user->status === UserStatus::Withdrawn->value) {
+            throw new CouponNotIssuableException('user_withdrawn');
+        }
+
         $this->assertWithinUserLimit($coupon, $userId);
 
         return $this->createIssueRecord($coupon, $userId, 'DR');

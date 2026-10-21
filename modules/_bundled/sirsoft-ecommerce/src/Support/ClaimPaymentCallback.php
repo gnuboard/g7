@@ -87,7 +87,7 @@ final class ClaimPaymentCallback
      * 그래서 **파라미터가 코드를 들고 있으면 그쪽이 이긴다.** 키 조각만 보면
      * `OrderClaimException::paymentFailed('PG_API_ERROR')` 가 `failed` 로 뭉개진다 — 그 키의
      * 마지막 조각이 상수 `failed` 이고 진짜 코드는 치환 파라미터에 따로 실려 있기 때문이다.
-     * 그러면 서로 다른 PG 거절이 전부 같은 토큰으로 수렴한다(2026-09-22 #599 3차 실측 F-5:
+     * 그러면 서로 다른 PG 거절이 전부 같은 토큰으로 수렴한다(2026-09-22 #599 실측:
      * 결제행에는 `PG_API_ERROR` 와 한국어 사유가 남았는데 화면은 「실패 코드 failed」였다).
      *
      * 파라미터가 없는 예외는 기존대로 키의 마지막 조각을 쓴다 — `claim_payment_amount_mismatch`

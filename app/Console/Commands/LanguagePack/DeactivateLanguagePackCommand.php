@@ -45,18 +45,18 @@ class DeactivateLanguagePackCommand extends Command
 
         $pack = $this->service->findByIdentifier($identifier);
         if (! $pack) {
-            $this->error("언어팩을 찾을 수 없습니다: {$identifier}");
+            $this->error(__('language_packs.commands.deactivate.not_found', ['identifier' => $identifier]));
 
             return self::FAILURE;
         }
 
         try {
             $this->service->deactivate($pack);
-            $this->info("언어팩 비활성화 완료: {$identifier}");
+            $this->info(__('language_packs.commands.deactivate.done', ['identifier' => $identifier]));
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error('언어팩 비활성화 실패: '.$e->getMessage());
+            $this->error(__('language_packs.commands.deactivate.failed', ['error' => $e->getMessage()]));
 
             return self::FAILURE;
         }

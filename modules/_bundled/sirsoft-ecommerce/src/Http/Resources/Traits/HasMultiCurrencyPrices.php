@@ -487,13 +487,16 @@ trait HasMultiCurrencyPrices
      * 주문 시점에 저장된 mc_* 필드를 프론트엔드에서 사용할 수 있는 형태로 변환합니다.
      * buildMultiCurrencyPrices()와 달리 환율 재계산 없이 저장된 값을 그대로 포맷합니다.
      *
+     * 통화 코드를 이름표로 값을 꺼내는 맵이므로, 값이 하나도 없으면 `[]` 가 아니라 빈 맵(`{}`)을 돌려준다 —
+     * API 문서(claims.md)의 약속이고, 화면의 키 접근 기본값이 그대로 동작한다(코어 #758).
+     *
      * @param  array|null  $multiCurrencyAmounts  다중 통화 금액 배열 (예: {'KRW': 10000, 'USD': 7.5})
-     * @return array 포맷된 배열 (예: {'KRW': {'amount': 10000, 'formatted': '10,000원'}, ...})
+     * @return array|\stdClass 포맷된 맵 (예: {'KRW': {'amount': 10000, 'formatted': '10,000원'}, ...}), 비면 빈 맵
      */
-    protected function formatStoredMultiCurrency(?array $multiCurrencyAmounts): array
+    protected function formatStoredMultiCurrency(?array $multiCurrencyAmounts): array|\stdClass
     {
         if (empty($multiCurrencyAmounts)) {
-            return [];
+            return new \stdClass;
         }
 
         $result = [];
@@ -509,7 +512,7 @@ trait HasMultiCurrencyPrices
             ];
         }
 
-        return $result;
+        return $result === [] ? new \stdClass : $result;
     }
 
     /**

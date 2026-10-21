@@ -555,6 +555,22 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 - 인라인 스타일 과도한 사용 지양
 - 미디어 쿼리 직접 작성 지양 (Tailwind 사용)
 
+### 사용자가 입력한 긴 글
+
+사이트 이름·게시판 이름·글 제목·상품명처럼 관리자나 회원이 입력하는 값은 띄어쓰기 없이 길 수 있다. 좁은 화면(297~414px)에서 그 값이 옆 단추를 화면 밖으로 밀거나 문서 폭을 넓히지 않게, 자리에 따라 아래 규칙 중 하나를 붙인다.
+
+| 자리 | 클래스 | 결과 |
+| --- | --- | --- |
+| 상단 바 이름(옆에 단추 묶음) | 이름 묶음 `min-w-0 flex-1` + 이름 `truncate`, 단추 묶음 `shrink-0` | 이름이 한 줄 … 로 줄고 단추는 제자리 |
+| 블록 제목·본문 | `break-words` | 줄을 바꿔 전부 표시 |
+| 가로 줄(flex-row) 안 제목 — 배지·단추와 같은 줄 | `min-w-0 wrap-anywhere` | 줄어들면서 줄바꿈. `break-words` 만으로는 flex 항목이 최소 폭 아래로 줄지 않는다 |
+| 좁은 라벨·배지·칩 | `truncate` + 폭 상한(`max-w-32` 등) | 한 줄 … |
+| 표 셀 | 셀 `w-full max-w-0` + 안쪽 `block truncate` | 자동 표 배치가 셀을 늘리지 않음 |
+
+- `responsive.*.props.className` 은 기본 `className` 을 **대체**한다([Props 머지 규칙](#props-머지-규칙)) — 위 클래스는 반응형 문자열에도 모두 넣는다.
+- 레이아웃에만 쓰는 새 클래스는 빌드 CSS 에 없을 수 있다 — [tailwind-safelist.md](tailwind-safelist.md) 로 확인한다.
+- 이미지 로고에 `max-w-full` 을 주면 `object-contain` 을 함께 줘 비율이 찌그러지지 않게 한다.
+
 ---
 
 ## 6. 완전한 반응형 레이아웃 예시

@@ -27,11 +27,22 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
 
     private User $managerUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-tree';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -44,6 +55,11 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 댓글 읽기 권한이 있는 일반 회원과 게시판 매니저 회원을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -109,6 +125,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=regular
      *
      * @effects deleted_parent_with_live_child_shown_as_tombstone
+     *
+     * @return void 반환값 없음
      */
     public function test_deleted_parent_with_live_child_shown_as_tombstone(): void
     {
@@ -143,6 +161,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=regular
      *
      * @effects deleted_parent_without_child_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_deleted_parent_without_child_is_excluded(): void
     {
@@ -167,6 +187,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=regular
      *
      * @effects nested_grandchild_tree_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_grandchild_tree_preserved_when_parent_deleted(): void
     {
@@ -193,6 +215,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=regular
      *
      * @effects nested_grandchild_tree_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_chained_deleted_parent_and_child_kept_as_tombstone_when_grandchild_alive(): void
     {
@@ -219,6 +243,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=regular
      *
      * @effects deleted_parent_without_child_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_parent_and_only_child_both_deleted_are_excluded(): void
     {
@@ -245,6 +271,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=regular
      *
      * @effects tombstone_content_filtered_for_non_privileged
+     *
+     * @return void 반환값 없음
      */
     public function test_tombstone_content_filtered_for_non_privileged_viewer(): void
     {
@@ -268,9 +296,14 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects deleted_parent_with_live_child_shown_as_tombstone, tombstone_content_filtered_for_non_privileged
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_sees_tombstone_and_child_with_filtered_content(): void
     {
+        // 글 상세는 댓글 읽기 권한이 없으면 댓글을 싣지 않는다 — 비회원 역할에도 댓글 읽기를 준 게시판이 전제다.
+        $this->setGuestPermissions(['posts.read', 'posts.write', 'attachments.upload', 'comments.read']);
+
         $postId = $this->createTestPost(['title' => '비로그인 트리 게시글']);
         $pId = $this->createTestComment($postId, ['content' => '부모 원문 SECRET', 'depth' => 0]);
         $cId = $this->createTestComment($postId, ['content' => '자식', 'parent_id' => $pId, 'depth' => 1]);
@@ -295,6 +328,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=manager
      *
      * @effects manager_sees_tombstone_original_content
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_sees_tombstone_original_content(): void
     {
@@ -319,6 +354,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=regular
      *
      * @effects comments_count_excludes_tombstone
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_count_excludes_tombstone_parent(): void
     {
@@ -351,6 +388,8 @@ class CommentDeletedParentChildTreeTest extends BoardTestCase
      * @scenario viewer=manager
      *
      * @effects withtrashed_toggle_not_double_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_withtrashed_toggle_does_not_double_apply(): void
     {

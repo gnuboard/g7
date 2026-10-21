@@ -52,7 +52,7 @@
           </button>
         </div>
         <div class="flex items-center gap-4 mt-2 text-sm">
-          <span class="text-green-600 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines</span>
+          <span class="text-green-700 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines</span>
           <span class="text-red-600 dark:text-red-400">- {{version.changes_summary?.removed_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines</span>
           <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.extension_version_history.chars)</span>
         </div>

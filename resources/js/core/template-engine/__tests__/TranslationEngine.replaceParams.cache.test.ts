@@ -103,7 +103,9 @@ describe('TranslationEngine.replaceParams — 정규식 캐시', () => {
    * @effects replace_params_regex_reused_behavior_preserved
 
    */
-  it('치환 값의 $ 패턴 처리는 현행(String.prototype.replace 문자열 치환) 그대로', () => {
-    expect(replace('{p}', { p: '$&!' })).toBe('{p}!');
+  it('치환 값의 $ 패턴은 글자 그대로 들어간다', () => {
+    // engine-v1.74.0 캐시 도입 때는 「현행(문자열 치환) 그대로」를 잠갔다(리팩터링 중립성). engine-v1.80.1 에서
+    // 값을 글자 그대로 넣도록 바꿨다 — 행 이름 같은 운영자 입력의 `$&` 가 자리표시자로 되살아나던 결함.
+    expect(replace('{p}', { p: '$&!' })).toBe('$&!');
   });
 });

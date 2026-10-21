@@ -62,6 +62,8 @@ class ListModuleCommand extends Command
 
         // 테이블 데이터 준비
         $tableData = [];
+        // 요약 집계용 원래 상태값 — 표시 문자열로 세면 한국어 「비활성」 에도 「활성」 이 들어 있어 잘못 센다(#137)
+        $rawStatuses = [];
 
         // 설치된 모듈 추가
         foreach ($installedModules as $identifier => $module) {
@@ -86,6 +88,7 @@ class ListModuleCommand extends Command
                 }
             }
 
+            $rawStatuses[] = $module['status'];
             $tableData[] = [
                 'identifier' => $identifier,
                 'name' => $module['name'],
@@ -108,6 +111,7 @@ class ListModuleCommand extends Command
                     continue;
                 }
 
+                $rawStatuses[] = 'uninstalled';
                 $tableData[] = [
                     'identifier' => $identifier,
                     'name' => $module['name'],
@@ -139,8 +143,8 @@ class ListModuleCommand extends Command
 
         // 요약 정보
         $totalCount = count($tableData);
-        $activeCount = count(array_filter($tableData, fn ($m) => str_contains($m['status'], __('modules.commands.list.status.active'))));
-        $installedCount = count(array_filter($tableData, fn ($m) => ! str_contains($m['status'], __('modules.commands.list.status.uninstalled'))));
+        $activeCount = count(array_filter($rawStatuses, fn ($status) => $status === ExtensionStatus::Active->value));
+        $installedCount = count(array_filter($rawStatuses, fn ($status) => $status !== 'uninstalled'));
 
         $this->newLine();
         $this->info(trans_choice('modules.commands.list.summary', $totalCount, [

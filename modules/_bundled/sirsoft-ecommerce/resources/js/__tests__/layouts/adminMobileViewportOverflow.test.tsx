@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 정적 구조(폭·줄바꿈·responsive 클래스) 단언 전용 — 화면 확인은 브라우저 실측(390px·320px) 결함에 1:1 대응(시나리오 admin-mobile-viewport-overflow.yaml).
 /**
  * @file adminMobileViewportOverflow.test.tsx
  * @description 관리자 모바일 뷰포트 넘침/압착 회귀 테스트 (이커머스 소유분)
@@ -40,6 +41,10 @@ describe('B1 — 모달 좌우 여백 (max-w-full 트랩)', () => {
   // .modal-container 의 max-w-[calc(100vw-2rem)] 와 .max-w-full 은 명시도가 같고(0,1,0)
   // 빌드 CSS 에서 .max-w-full 이 뒤에 정의되므로 승리한다. 레이아웃에서 max-w-full 을
   // 주면 clamp 가 무효화되어 모달이 화면 좌우에 붙는다(여백 0).
+  /**
+   * @scenario area=order_modal
+   * @effects modal_keeps_side_margin
+   */
   it.each([
     'partials/admin_ecommerce_order_detail/_modal_cancel_order.json',
     'partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json',
@@ -50,6 +55,10 @@ describe('B1 — 모달 좌우 여백 (max-w-full 트랩)', () => {
 });
 
 describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
+  /**
+   * @scenario area=order_modal
+   * @effects order_modal_rows_stack_on_portable
+   */
   it.each([
     ['_modal_cancel_order.json', 'partials/admin_ecommerce_order_detail/_modal_cancel_order.json'],
     ['_modal_batch_change_confirm.json', 'partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json'],
@@ -71,6 +80,10 @@ describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
     expect(body.responsive?.portable?.props?.className).not.toContain('grid-cols-12');
   });
 
+  /**
+   * @scenario area=order_modal
+   * @effects order_modal_rows_stack_on_portable
+   */
   it.each([
     'partials/admin_ecommerce_order_detail/_modal_cancel_order.json',
     'partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json',
@@ -93,6 +106,10 @@ describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
   //   - 금액 순수 토큰 + whitespace-nowrap → 1줄 유지, 숫자 내부 미분리
   //   - `소계 249,000원`(한글+금액 혼합) + break-keep → `소계` / `249,000원` 2줄, 숫자 보존
   //     (이 문자열에 nowrap 을 주면 셀을 65px 넘겨 더 나쁘다 — 그래서 break-keep)
+  /**
+   * @scenario area=order_modal
+   * @effects order_modal_text_wraps_cleanly
+   */
   it('금액(순수 숫자) 노드는 whitespace-nowrap 으로 숫자 내부 줄바꿈을 막는다', () => {
     const cancel = load('partials/admin_ecommerce_order_detail/_modal_cancel_order.json');
     const batch = load('partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json');
@@ -119,6 +136,10 @@ describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
     }
   });
 
+  /**
+   * @scenario area=order_modal
+   * @effects order_modal_text_wraps_cleanly
+   */
   it('한글 라벨 노드는 break-keep 으로 음절 경계 절단을 막는다', () => {
     const cancel = load('partials/admin_ecommerce_order_detail/_modal_cancel_order.json');
     const batch = load('partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json');
@@ -149,6 +170,10 @@ describe('B2 — 주문상세 모달 상품표 카드형 전환', () => {
 describe('B3 — 은행 관리 모달', () => {
   const rel = 'partials/admin_ecommerce_settings/_bank_management_modal.json';
 
+  /**
+   * @scenario area=bank_modal
+   * @effects bank_modal_table_fits_narrow_viewport
+   */
   it('은행코드 입력칸에 min-w-[80px] 하한이 있다', () => {
     const layout = load(rel);
     // 은행코드 input 은 code 오류 키를 참조하는 className 바인딩으로 식별한다.
@@ -165,6 +190,10 @@ describe('B3 — 은행 관리 모달', () => {
     expect(cls(input)).not.toContain('min-w-16');
   });
 
+  /**
+   * @scenario area=bank_modal
+   * @effects bank_modal_table_fits_narrow_viewport
+   */
   it('표 래퍼가 overflow-x-auto 를 명시한다', () => {
     const layout = load(rel);
     const wrapper = collect(layout, (n) => cls(n).includes('max-h-96'))[0];
@@ -177,6 +206,10 @@ describe('B3 — 은행 관리 모달', () => {
 describe('C2 — 쿠폰 발급기간 입력 행', () => {
   const rel = 'partials/admin_ecommerce_promotion_coupon_form/_partial_issue_settings.json';
 
+  /**
+   * @scenario area=coupon_form
+   * @effects coupon_issue_period_wraps_on_portable
+   */
   it('portable 에서 행이 줄바꿈하고 datetime 입력이 전폭이 된다', () => {
     const layout = load(rel);
     const row = collect(layout, (n) => n.id === 'issue_period_range')[0];
@@ -194,6 +227,10 @@ describe('C2 — 쿠폰 발급기간 입력 행', () => {
 });
 
 describe('C3 — 이커머스 환경설정 넘침', () => {
+  /**
+   * @scenario area=settings
+   * @effects settings_fields_fit_narrow_viewport
+   */
   it('탭바는 sticky-tab-nav-responsive 를 쓴다 (단계적 패딩과 일치)', () => {
     const layout = load('admin_ecommerce_settings.json');
     const nav = collect(layout, (n) => n.id === 'tab_navigation')[0];
@@ -203,6 +240,10 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
     expect(nav.props.className).toBe('sticky-tab-nav-responsive');
   });
 
+  /**
+   * @scenario area=settings
+   * @effects settings_fields_fit_narrow_viewport
+   */
   it('이메일 행이 portable 에서 줄바꿈한다 (rcaExcess 71px 의 진범)', () => {
     const layout = load('partials/admin_ecommerce_settings/_tab_basic_info.json');
     const emailGroup = collect(layout, (n) => n.id === 'field_email')[0];
@@ -211,6 +252,10 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
     expect(row.responsive.portable.props.className).toContain('flex-wrap');
   });
 
+  /**
+   * @scenario area=settings
+   * @effects settings_fields_fit_narrow_viewport
+   */
   it('w-80 고정폭 입력은 mobile(0~767px) 에서만 전폭이 된다', () => {
     const layout = load('partials/admin_ecommerce_settings/_tab_basic_info.json');
     const w80 = collect(layout, (n) => n.name === 'Input' && cls(n).includes('w-80'));
@@ -221,14 +266,21 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
 
     for (const n of overridden) {
       // 태블릿(768~1023px)은 w-80 이 넘치지 않으므로 portable 로 잡으면 불필요하게 늘어난다.
-      expect(n.responsive.mobile).toBeDefined();
+      // 같은 파일이 portable 프리셋도 쓰므로 mobile 프리셋 대신 같은 범위의 커스텀 `0-767` 로 둔다
+      // (portable 과 mobile/tablet 프리셋 혼용 금지 — responsive_breakpoint_mix).
+      expect(n.responsive['0-767']).toBeDefined();
+      expect(n.responsive.mobile).toBeUndefined();
       expect(n.responsive.portable).toBeUndefined();
-      expect(n.responsive.mobile.props.className).toContain('w-full');
+      expect(n.responsive['0-767'].props.className).toContain('w-full');
     }
   });
 });
 
 describe('C5 — 엑셀 다운로드 날짜 필터 행', () => {
+  /**
+   * @scenario area=excel_download
+   * @effects excel_date_filter_wraps
+   */
   it('부모가 flex-wrap 이어도 자식 행에 flex-wrap 이 필요하다', () => {
     const layout = load('admin_ecommerce_excel_download_index.json');
     const parent = collect(layout, (n) => n.id === 'date_filter_row')[0];
@@ -243,6 +295,10 @@ describe('C5 — 엑셀 다운로드 날짜 필터 행', () => {
 });
 
 describe('C6 — 도서산간 템플릿 모달 표', () => {
+  /**
+   * @scenario area=shipping_policy_form
+   * @effects extra_fee_template_table_scrolls
+   */
   it('표 컨테이너가 overflow-x-auto 를 명시한다', () => {
     const layout = load('partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json');
     const wrapper = collect(layout, (n) => n.id === 'template_list')[0];

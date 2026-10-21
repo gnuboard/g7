@@ -4,7 +4,7 @@ description: |
   글의 수정 시각(updated_at)은 글을 고친 시각이다. 사이트맵 lastmod 와 보유기간 IP 파기의
   「수정 시각 보존」 약속이 이 값을 기준으로 삼는다.
 
-  배경 (7.1.0 브라우저 실측 O-H6, 2026-10-07): 관리자 게시글 상세를 열기만 해도 updated_at 이
+  배경 (7.1.0 브라우저 실측, 2026-10-07): 관리자 게시글 상세를 열기만 해도 updated_at 이
   바뀌었다(16:21:57 → 16:22:34). 조회수(view_count)·스크랩 수(scrap_count)는 Eloquent 빌더의
   increment/decrement 로, 반응 집계(reaction_counts)는 모델 save 로 올려 updated_at 이 함께 갱신됐다.
   사용자 상세를 처음 여는 회원도 같은 경로를 탄다.

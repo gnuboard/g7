@@ -347,6 +347,8 @@ return [
             'privacy_policy_url' => '개인정보처리방침 URL',
             'privacy_policy_link' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)',
             'notice_sections' => '확장이 기여한 처리 내역',
+            'introduction_text' => '운영자 서문 (평문 — 사이트내 알림·문자용)',
+            'notice_sections_text' => '확장이 기여한 처리 내역 (평문 — 사이트내 알림·문자용)',
         ],
     ],
     'validation' => [
@@ -363,6 +365,16 @@ return [
             'required_without' => ':values 항목이 없으면 :attribute 항목은 필수입니다.',
             'same' => ':attribute 값이 :other 값과 같아야 합니다.',
             'different' => ':attribute 값은 :other 값과 달라야 합니다.',
+        ],
+    ],
+    // 콘솔 명령 출력
+    'console' => [
+        'playwright_seed' => [
+            'cli_only' => 'CLI 전용 커맨드입니다.',
+            'bypass_required' => 'G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.',
+        ],
+        'seed_gdpr_guest_login' => [
+            'done' => 'GDPR 게스트→로그인 시나리오 시드 완료: :email',
         ],
     ],
 ];

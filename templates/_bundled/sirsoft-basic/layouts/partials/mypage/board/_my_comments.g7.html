@@ -5,7 +5,7 @@
     <!-- 필터 영역 -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <!-- 게시판 필터 -->
-      <select value="{{_global.myCommentsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myCommentsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <set-state target="global" myCommentsBoard="{{$event.target.value}}" :myCommentsPage="1"/>
           <refetch-data-source dataSourceId="myComments"/>
@@ -14,7 +14,7 @@
         <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
       </select>
       <!-- 정렬 필터 -->
-      <select value="{{_global.myCommentsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:common.sort_order" value="{{_global.myCommentsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <set-state target="global" myCommentsSort="{{$event.target.value}}" :myCommentsPage="1"/>
           <refetch-data-source dataSourceId="myComments"/>
@@ -25,7 +25,7 @@
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">
         <!-- 검색 대상 — 댓글 내용(기본)과 원글 제목 중 하나. 「어떤 글에 단 댓글인지」로 찾는 쪽이 자연스러운 경우가 많다 -->
-        <select data-ref="my_comments_search_field_select" value="{{_global.myCommentsSearchField ?? 'content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-ref="my_comments_search_field_select" aria-label="$t:common.search_field" value="{{_global.myCommentsSearchField ?? 'content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="content">$t:mypage.board_activities.comment_search_fields.content</option>
             <option value="post_title">$t:mypage.board_activities.comment_search_fields.post_title</option>
@@ -34,7 +34,7 @@
             <set-state target="global" myCommentsSearchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder_comments" value="{{_global.myCommentsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder_comments" value="{{_global.myCommentsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
           <on type="change">
             <!-- 댓글 본문 검색어 — 옆 「내 글」 탭과 조건 자리가 갈리므로 이름도 따로다 -->
             <set-state target="global" myCommentsSearch="{{$event.target.value}}"/>
@@ -47,7 +47,7 @@
             </sequence>
           </on>
         </input>
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
             <!-- 검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 -->
             <sequence>
@@ -57,7 +57,7 @@
           </on>
           $t:common.search
         </button>
-        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
             <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
             <sequence>
@@ -77,7 +77,7 @@
         <span data-if="{{myComments?.data?.query?.search}}" class="font-medium">"{{myComments?.data?.query?.search}}"</span>
         <span>({{myComments?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myComments?.data?.total ?? 0}}</span><span>)</span>
       </div>
-      <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
+      <button type="button" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
         <on type="click">
           <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
           <sequence>
@@ -92,37 +92,39 @@
     <div class="space-y-3">
       <!-- 댓글 카드 반복 -->
       <div data-if="{{myComments?.data?.data &amp;&amp; myComments.data.data.length > 0}}" data-each="comment in {{myComments?.data?.data ?? []}}">
-        <button class="w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer">
+        <a href="/board/{{comment.board_slug}}/{{comment.post_id_val}}" class="w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer">
           <on type="click">
-            <navigate path="/board/{{comment.board_slug}}/{{comment.post_id_val}}"/>
+            <navigate/>
           </on>
           <!-- 상단: [게시판명] 원글 제목 + 작성일 -->
           <div class="flex items-center justify-between gap-3">
             <div class="flex-1 min-w-0 flex items-center gap-2">
               <!-- 게시판 이름 -->
-              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0">{{comment.board_name}}</span>
+              <span class="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0 truncate max-w-32">{{comment.board_name}}</span>
               <!-- 원글 제목 -->
               <span class="text-base font-medium text-gray-900 dark:text-white truncate">{{comment.post_title}}</span>
+              <!-- 확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 이 목록의 원글 id 는 comment.post_id_val 이다 -->
+              <extension-point name="board_comment_row_badges" class="contents" data-extension-point="board_comment_row_badges" commentData="{{comment}}" commentId="{{comment.id}}" postId="{{comment.post_id_val}}" boardSlug="{{comment.board_slug}}" context="mypage_comments"/>
             </div>
             <!-- 댓글 작성일시 -->
             <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap" title="{{comment.created_at ?? ''}}">{{comment.created_at_formatted ?? ''}}</span>
           </div>
           <!-- 댓글 내용 요약 (2줄) -->
-          <p data-if="{{comment.content}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{comment.content}}</p>
-        </button>
+          <div data-if="{{comment.content}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words">{{comment.content}}</div>
+        </a>
       </div>
       <!-- 댓글 없음 -->
-      <div data-if="{{!myComments?.data?.data || myComments.data.data.length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <icon name="comment" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <div data-if="{{myComments !== undefined &amp;&amp; (!myComments?.data?.data || myComments.data.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <icon name="comment" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
         <p data-if="{{!(!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.empty_comments</p>
         <p data-if="{{!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
-        <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <a href="/boards" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
-            <navigate path="/boards"/>
+            <navigate/>
           </on>
           $t:mypage.board_activities.go_boards
-        </button>
+        </a>
       </div>
     </div>
     <!-- 페이지네이션 -->

@@ -11,26 +11,25 @@
     },
     "children": [
         {
+            "comment": "이름 단추는 줄어들며 줄을 바꾸고 글 수 배지는 제 폭을 지킨다(#143).",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex items-center justify-between mb-2 px-4"
+                "className": "flex items-center justify-between gap-2 mb-2 px-4"
             },
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{item.slug}}"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "className": "font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+                        "href": "/board/{{item.slug}}",
+                        "className": "inline-block justify-start min-w-0 wrap-anywhere text-left font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
                     },
                     "text": "{{item.name}}"
                 },
@@ -38,7 +37,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded"
+                        "className": "shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded"
                     },
                     "text": "{{item.posts_count | number}}"
                 }
@@ -83,7 +82,7 @@
                                             "name": "Span",
                                             "if": "{{post.is_notice}}",
                                             "props": {
-                                                "className": "text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded shrink-0"
+                                                "className": "text-xs font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded shrink-0"
                                             },
                                             "text": "$t:board.notice"
                                         },
@@ -92,7 +91,7 @@
                                             "name": "Span",
                                             "if": "{{post.category && !post.is_notice}}",
                                             "props": {
-                                                "className": "text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded shrink-0"
+                                                "className": "text-xs font-medium text-purple-600 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 px-1.5 py-0.5 rounded shrink-0 truncate max-w-32"
                                             },
                                             "text": "{{post.category}}"
                                         },
@@ -102,32 +101,43 @@
                                             "if": "{{post.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-sm text-gray-400 dark:text-gray-500 shrink-0"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400 shrink-0"
                                             }
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/board/{{item.slug}}/{{post.id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white text-left line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+                                                "href": "/board/{{item.slug}}/{{post.id}}",
+                                                "className": "justify-start min-w-0 wrap-anywhere text-sm text-gray-900 dark:text-white text-left line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
                                             },
                                             "text": "{{post.title}}"
+                                        },
+                                        {
+                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 게시판 묶음 안의 글이라 게시판은 item.slug 에서 온다",
+                                            "type": "extension_point",
+                                            "name": "board_post_row_badges",
+                                            "props": {
+                                                "className": "contents",
+                                                "data-extension-point": "board_post_row_badges",
+                                                "post": "{{post}}",
+                                                "postId": "{{post.id}}",
+                                                "boardSlug": "{{item.slug}}",
+                                                "context": "home_board_summary"
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{post.is_new}}",
                                             "props": {
-                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded shrink-0"
+                                                "className": "px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded shrink-0"
                                             },
                                             "text": "N"
                                         },
@@ -136,7 +146,7 @@
                                             "name": "Span",
                                             "if": "{{post.comment_count > 0}}",
                                             "props": {
-                                                "className": "text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0"
+                                                "className": "text-xs font-medium text-blue-600 dark:text-blue-400 shrink-0"
                                             },
                                             "text": "[{{post.comment_count}}]"
                                         },
@@ -145,7 +155,7 @@
                                             "name": "Span",
                                             "if": "{{(post.reaction_total ?? 0) > 0}}",
                                             "props": {
-                                                "className": "text-rose-500 dark:text-rose-400 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"
+                                                "className": "text-rose-700 dark:text-rose-300 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"
                                             },
                                             "children": [
                                                 {
@@ -184,7 +194,7 @@
                     "name": "Div",
                     "if": "{{!item.recent_posts || item.recent_posts.length === 0}}",
                     "props": {
-                        "className": "py-10 my-1 text-center text-sm text-gray-400 dark:text-gray-500"
+                        "className": "py-10 my-1 text-center text-sm text-gray-500 dark:text-gray-400"
                     },
                     "children": [
                         {
@@ -199,18 +209,16 @@
         {
             "comment": "=== 더보기 버튼 ===",
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/board/{{item.slug}}"
-                    }
+                    "handler": "navigate"
                 }
             ],
             "props": {
-                "className": "w-full px-4 py-3 text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer border-t border-gray-100 dark:border-gray-700"
+                "href": "/board/{{item.slug}}",
+                "className": "inline-block w-full px-4 py-3 text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer border-t border-gray-100 dark:border-gray-700"
             },
             "children": [
                 {

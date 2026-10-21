@@ -87,7 +87,8 @@
             "title": "아직 본인확인 내역이 없습니다.",
             "hint": "본인확인이 필요한 작업(비밀번호 재설정, 정보 변경 등)을 진행할 때 인증할 수 있습니다."
         },
-        "provider_badge": "NHN KCP"
+        "provider_badge": "NHN KCP",
+        "load_failed": "본인확인 정보를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요."
     },
     "errors": {
         "cancelled": "본인확인을 취소하셨습니다.",

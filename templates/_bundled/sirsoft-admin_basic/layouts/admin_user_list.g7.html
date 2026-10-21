@@ -217,7 +217,7 @@
         </on>
       </filter-visibility-selector>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.users.title" description="$t:admin.users.description">
-        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+        <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 검색 조건을 유지한다 (#75). -->
             <navigate path="/admin/users" :mergeQuery="true">
@@ -225,16 +225,14 @@
             </navigate>
           </on>
         </icon-button>
-        <button data-ref="add_user_button" disabled="{{users?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <a data-ref="add_user_button" href="/admin/users/create" :mergeQuery="true" disabled="{{users?.data?.abilities?.can_create !== true}}" class="button flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
           <on type="click">
             <!-- 등록 폼은 회원 목록 클러스터 안이다 — 취소하고 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75). -->
-            <navigate path="/admin/users/create" :mergeQuery="true">
-              <query/>
-            </navigate>
+            <navigate :mergeQuery="true"><query/></navigate>
           </on>
           <icon name="plus" size="md"/>
           <span>$t:admin.users.add_user</span>
-        </button>
+        </a>
       </page-header>
       <include src="partials/admin_user_list/_partial_filter_section.g7.html"/>
       <div data-ref="bulk_actions_area" data-if="{{users?.data?.abilities?.can_update === true}}" class="bulk-actions-bar">
@@ -281,25 +279,25 @@
         <span data-ref="selected_count" class="text-body font-medium">$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}</span>
         <span data-ref="status_change_label" class="text-label-subtle">$t:admin.users.bulk_status_change</span>
         <div data-ref="bulk_buttons" class="flex gap-2">
-          <button data-ref="bulk_activate" class="btn btn-sm btn-success" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+          <button type="button" data-ref="bulk_activate" class="btn btn-sm btn-success" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
             <on type="click">
               <open-modal target="bulk_activate_confirm_modal"/>
             </on>
             <span>$t:admin.users.bulk_activate</span>
           </button>
-          <button data-ref="bulk_deactivate" class="btn btn-sm btn-neutral" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+          <button type="button" data-ref="bulk_deactivate" class="btn btn-sm btn-neutral" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
             <on type="click">
               <open-modal target="bulk_deactivate_confirm_modal"/>
             </on>
             <span>$t:admin.users.bulk_deactivate</span>
           </button>
-          <button data-ref="bulk_block" class="btn btn-sm btn-danger" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+          <button type="button" data-ref="bulk_block" class="btn btn-sm btn-danger" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
             <on type="click">
               <open-modal target="bulk_block_confirm_modal"/>
             </on>
             <span>$t:admin.users.bulk_block</span>
           </button>
-          <button data-ref="bulk_withdraw" class="btn btn-sm btn-warning" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+          <button type="button" data-ref="bulk_withdraw" class="btn btn-sm btn-warning" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
             <on type="click">
               <open-modal target="bulk_withdraw_confirm_modal"/>
             </on>
@@ -332,7 +330,7 @@
         <span data-ref="total_count" data-if="{{users?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}</span>
         <span data-ref="total_count_at_least" data-if="{{users?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.users.total_at_least|count={{users?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="list_options" class="flex-center gap-3">
-          <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="sort_select" aria-label="$t:common.sort_order" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="created_at_desc">$t:admin.users.sort.created_at_desc</option>
               <option value="created_at_asc">$t:admin.users.sort.created_at_asc</option>
@@ -361,7 +359,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="per_page_select" value="{{query.per_page || '10'}}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" value="{{query.per_page || '10'}}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500">
             <options>
               <option value="10">$t:admin.users.per_page|count=10</option>
               <option value="20">$t:admin.users.per_page|count=20</option>
@@ -378,7 +376,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" selectedCountText="" data-ref="users_data_grid" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid pageHref="/admin/users?page={page}" :pageHrefMergeQuery="true" data-type="composite" selectedCountText="" data-ref="users_data_grid" rowLabelField="name" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" emptyMessage="{{users === undefined ? '' : $t('common.no_data')}}" actionsColumnHeader="$t:common.actions">
         <column field="name" header="$t:admin.users.columns.name" :sortable="true" :required="true">
           <cell>
             <div>
@@ -431,8 +429,8 @@
         <column field="created_at" header="$t:admin.users.columns.created_at" :sortable="true"/>
         <column field="last_login_at" header="$t:admin.users.columns.last_login_at" :sortable="true"/>
         <prop name="rowActions">
-          <item id="view" label="$t:admin.users.actions.view" iconName="eye"/>
-          <item id="edit" label="$t:admin.users.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item id="view" label="$t:admin.users.actions.view" iconName="eye" href="/admin/users/{{row.uuid}}" :mergeQuery="true"/>
+          <item id="edit" label="$t:admin.users.actions.edit" iconName="pencil" href="/admin/users/{{row.uuid}}/edit" :mergeQuery="true" disabledField="abilities.can_update"/>
           <item id="delete" label="$t:admin.users.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete" disabledReason="$t:admin.users.actions.delete_disabled_reason"/>
         </prop>
         <on type="change" event="onSelectionChange">
@@ -498,13 +496,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_activate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
       <div class="modal-footer-buttons">
-        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+        <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="bulk_activate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="bulk_activate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 활성 실행. 성공하면 선택을 비우고(처리된 id 가 남아 있으면 다음 일괄이 그것을
                  다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.
@@ -543,13 +541,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_deactivate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
       <div class="modal-footer-buttons">
-        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+        <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="bulk_deactivate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="bulk_deactivate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다. -->
             <sequence>
@@ -587,13 +585,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.delete_confirm</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
             <!-- 삭제 실행. 이 화면에서 **유일하게 URL 을 바꾸지 않는 갱신**이라 목록을 직접 다시 부른다
                  (일괄 처리 쪽은 같은 URL 을 다시 밟는 방식이다). 실패는 창을 연 채 토스트만 띄운다. -->
@@ -628,7 +626,7 @@
         <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>
       <div class="flex justify-end mt-6">
-        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
           <on type="click">
             <close-modal/>
           </on>
@@ -645,13 +643,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_block_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
       <div class="modal-footer-buttons">
-        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+        <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="bulk_block_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="bulk_block_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다. -->
             <sequence>
@@ -688,13 +686,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_withdraw_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
       </div>
       <div class="modal-footer-buttons">
-        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+        <button type="button" disabled="{{_global.isProcessing}}" class="btn btn-secondary">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="bulk_withdraw_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="bulk_withdraw_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다. -->
             <sequence>

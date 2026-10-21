@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Enums\LanguagePackOrigin;
 use App\Extension\Helpers\ChangelogParser;
 use App\Helpers\TimezoneHelper;
+use App\Support\LocalizedValue;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -70,7 +71,7 @@ class LanguagePackResource extends BaseApiResource
     /**
      * 매니페스트 스냅샷의 다국어 필드를 현재 로케일 기준으로 해석합니다.
      *
-     * 모듈/플러그인의 `name` 컬럼이 다국어 JSON 인 패턴과 일관 — 현재 로케일 → fallback locale → ko → 첫 값.
+     * 모듈/플러그인의 `name` 컬럼이 다국어 JSON 인 패턴과 일관 — 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값.
      * 매니페스트에 단일 문자열로 들어있으면 그대로 반환 (구버전 호환).
      *
      * @param  string  $key  매니페스트 최상위 키 (예: 'name', 'description')
@@ -93,25 +94,15 @@ class LanguagePackResource extends BaseApiResource
             return null;
         }
 
-        $locale = App::getLocale();
-        $fallback = (string) config('app.fallback_locale', 'ko');
-
-        foreach ([$locale, $fallback, 'ko', 'en'] as $candidate) {
-            if (isset($value[$candidate]) && is_string($value[$candidate]) && $value[$candidate] !== '') {
-                return $value[$candidate];
-            }
-        }
-
-        $first = reset($value);
-
-        return is_string($first) && $first !== '' ? $first : null;
+        // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($value, App::getLocale());
     }
 
     /**
      * 매니페스트 이름이 없는 내장(보호) 언어팩의 표시 이름을 만듭니다.
      *
      * 확장·코어에 동봉된 언어팩은 매니페스트 파일이 없어 이름이 없고, 관리 화면은 이름이 없으면 식별자를
-     * 그린다(#736 O-F4). 대상 확장 이름(코어는 「코어」)과 언어 이름으로 사람이 읽는 이름을 만든다.
+     * 그린다(#736). 대상 확장 이름(코어는 「코어」)과 언어 이름으로 사람이 읽는 이름을 만든다.
      * 보호 언어팩이 아니면 null 을 돌려 종전처럼 화면이 식별자로 대신한다.
      *
      * @return string|null 표시 이름 또는 null
@@ -275,7 +266,7 @@ class LanguagePackResource extends BaseApiResource
      * 대상 확장의 현재 로케일 이름을 반환합니다.
      *
      * 모듈/플러그인/템플릿의 `name` 컬럼은 다국어 JSON 텍스트입니다 — 활성 행을 조회하여
-     * 현재 로케일 키, ko, en, 첫 값 순서로 폴백합니다. 코어/타깃 없음 행은 null.
+     * 현재 로케일, 사이트 기본 언어, 영어, 첫 값 순서로 대신합니다. 코어/타깃 없음 행은 null.
      *
      * @return string|null 다국어 명칭 또는 null
      */
@@ -309,9 +300,7 @@ class LanguagePackResource extends BaseApiResource
             return is_string($row->name) ? $row->name : null;
         }
 
-        $locale = App::getLocale();
-
-        return $decoded[$locale] ?? $decoded[config('app.fallback_locale', 'ko')] ?? (reset($decoded) ?: null);
+        return LocalizedValue::pick($decoded, App::getLocale());
     }
 
     /**

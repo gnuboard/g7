@@ -46,20 +46,20 @@ class TotpResetCommand extends Command
         $user = $userRepository->findByEmail($email);
 
         if ($user === null) {
-            $this->error("회원을 찾을 수 없습니다: {$email}");
+            $this->error(__('sirsoft-totp::messages.console.reset.user_not_found', ['email' => $email]));
 
             return self::FAILURE;
         }
 
         // 관리자 화면과 같은 감사 기록을 남긴다 — 셸에는 요청 사용자·IP 가 없다
         if (! $enrollmentService->adminReset($user, null, null)) {
-            $this->warn("이 회원에게는 등록된 인증 앱이 없습니다: {$email}");
+            $this->warn(__('sirsoft-totp::messages.console.reset.not_enrolled', ['email' => $email]));
 
             return self::SUCCESS;
         }
 
-        $this->info("인증 앱 등록을 해제했습니다: {$email}");
-        $this->line('다음 로그인부터 이 회원은 인증 앱 코드를 요구받지 않습니다 (메일 폴백이 켜져 있으면 이메일로 받습니다).');
+        $this->info(__('sirsoft-totp::messages.console.reset.done', ['email' => $email]));
+        $this->line(__('sirsoft-totp::messages.console.reset.next_login_notice'));
 
         return self::SUCCESS;
     }

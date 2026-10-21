@@ -1,6 +1,6 @@
 /**
  * @file icon-only-control-names.test.ts
- * @description 아이콘만 담은 단추·링크의 접근 이름 — 템플릿 Icon 이 꾸밈으로 숨겨진 뒤에도 이름이 남는다 (7.1.0 O-C3b-3)
+ * @description 아이콘만 담은 단추·링크의 접근 이름 — 템플릿 Icon 이 꾸밈으로 숨겨진 뒤에도 이름이 남는다 (7.1.0)
  *
  * 검증 방식: 레이아웃 JSON 트리 직접 분석(DOM 비의존) + 이름 키의 언어 파일 대조.
  *

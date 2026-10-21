@@ -165,7 +165,7 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 | `license` | ✓ | SPDX 식별자 (예: `MIT`) |
 | `scope` | ✓ | `core` / `module` / `plugin` / `template` |
 | `target_identifier` | ✓ | scope=core 면 `null`, 그 외 호스트 확장 식별자 |
-| `locale` | ✓ | IETF BCP-47 (예: `ja`, `zh-CN`, `pt-BR`) |
+| `locale` | ✓ | IETF BCP-47 (예: `ja`, `fil`, `zh-CN`, `zh-Hant`, `pt-BR`, `es-419`). 20자 이하 정규형(언어 소문자·문자 표기 첫 글자 대문자·지역 대문자). 화면 언어 파일 주소·정적 게시·회원 언어·국가 추정이 모두 같은 규칙(`App\Support\LocaleTag`)을 따른다 |
 | `locale_name` | ✓ | 영문 언어명 (예: `Japanese`, `Simplified Chinese`) |
 | `locale_native_name` | ✓ | 언어 선택 UI 표시명 (예: `日本語`) |
 | `text_direction` | ✓ | `ltr` / `rtl` |
@@ -189,7 +189,7 @@ sub-key 가 통째 누락되는 결함이 발생했다.
 
 회원 정보·방문자 통계의 국가 이름은 저장값이 ISO alpha-2 코드(`KR`)이고 화면에서 이름을 붙입니다. 코어는 내장 로케일(ko·en) 이름만 `config/countries.php` 의 `localized_names` 에 두고, **그 밖의 로케일은 코어 언어팩이 채웁니다** — `backend/{locale}/countries.php` 가 `['KR' => '韓国', 'US' => 'アメリカ', …]` 처럼 코드를 키로 이름을 돌려주면 번역 키 `countries.{코드}` 로 올라옵니다.
 
-해석 순서는 하나입니다(회원 응답 `country_name`·방문자 통계 지역 라벨 공통): 그 로케일의 코어 설정 이름 → 언어팩 `countries.{코드}` → (방문자 통계만) intl 지역 표기 → 기본 폴백 로케일의 설정 이름 → 코드. 이 파일이 없는 로케일은 회원 화면 국가 이름이 기본 폴백 로케일(ko)로 보입니다. 번들 `g7-core-ja` 는 설정의 국가 전부를 일본어로 채우며, 표기는 관리자 템플릿 언어팩(`g7-template-sirsoft-admin_basic-ja`)의 국가 선택 목록(`lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/countries.json`)과 같게 둡니다(사용자 템플릿 목록은 한국을 「大韓民国」 으로 적어 한 곳이 다릅니다).
+한 로케일 안의 조회는 하나입니다(회원 응답 `country_name`·방문자 통계 지역 라벨 공통): 그 로케일의 코어 설정 이름 → 언어팩 `countries.{코드}`. 회원 응답(`App\Support\CountryName::resolve()`)은 이 조회를 요청 언어 → 사이트 기본 언어(환경설정 「기본 언어」) → 영어 순으로 되풀이하고(`LocalizedValue::fallbackChain()`), 모두 없으면 코드를 씁니다. 방문자 통계는 요청 언어 조회 뒤 intl 지역 표기 → 코드 순입니다. 이 파일이 없는 로케일은 회원 화면 국가 이름이 사이트 기본 언어로 보입니다. 번들 `g7-core-ja` 는 설정의 국가 전부를 일본어로 채우며, 표기는 관리자 템플릿 언어팩(`g7-template-sirsoft-admin_basic-ja`)의 국가 선택 목록(`lang-packs/_bundled/g7-template-sirsoft-admin_basic-ja/frontend/partial/countries.json`)과 같게 둡니다(사용자 템플릿 목록은 한국을 「大韓民国」 으로 적어 한 곳이 다릅니다).
 
 이 파일은 **코어 `lang/ko` 에 짝이 없는 언어팩 전용 파일**입니다(내장 로케일의 정본이 번역 파일이 아니라 설정이므로 lang/ko/countries.php 를 만들지 않습니다). 그래서 다른 백엔드 파일처럼 `lang/ko/{파일}` 과 키를 대조하지 않고, 키(국가 코드)가 `config/countries.php` 의 `localized_names.ko` 국가 코드를 빠짐없이 덮는지로 확인합니다. 설정에 국가를 추가하면 번들 언어팩의 이 파일에도 같은 코드를 더합니다.
 
@@ -580,7 +580,7 @@ my-lang-pack-zh/
     └── *.json
 ```
 
-매니페스트(`language-pack.json`) 필드는 번들 ja 패키지를 참고. `scope` 는 `core`/`module`/`plugin`/`template` 중 하나, `target_identifier` 는 대상 확장 식별자(코어 스코프는 null), `locale` 은 [BCP 47](https://tools.ietf.org/html/bcp47) 코드.
+매니페스트(`language-pack.json`) 필드는 번들 ja 패키지를 참고. `scope` 는 `core`/`module`/`plugin`/`template` 중 하나, `target_identifier` 는 대상 확장 식별자(코어 스코프는 null), `locale` 은 [BCP 47](https://tools.ietf.org/html/bcp47) 코드(20자 이하 — 넘으면 설치 전 형식 오류).
 
 ### 설치
 
@@ -619,7 +619,7 @@ php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --sour
 
 - 대기 표시는 **켜 달라는 요청으로 설치한 팩**에만 붙는다(설치 창 함께 설치·`language-pack:install`·`language-pack:provision`).
   언어팩 관리 화면의 개별 설치는 원래 켜지 않고 설치하므로 대기 표시가 없고, 확장을 켜도 그대로다 — 목록 스위치로 켠다.
-- 사용자가 끈 팩, 확장을 끌 때 함께 꺼진 팩(「언어팩 다시 켜기」 창이 따로 묻는다), 같은 언어 자리를 이미 다른 팩이 쓰는 경우는
+- 사용자가 끈 팩, 확장을 끌 때 함께 꺼진 팩(`deactivated_reason = host_deactivated` — 관리자 화면은 「언어팩 다시 켜기」 창이 따로 묻고, 활성화 명령은 기본으로 함께 켠다), 같은 언어 자리를 이미 다른 팩이 쓰는 경우는
   확장을 켜도 건드리지 않는다.
 - 설치되지 않은 확장의 언어팩은 종전처럼 설치할 수 없다.
 

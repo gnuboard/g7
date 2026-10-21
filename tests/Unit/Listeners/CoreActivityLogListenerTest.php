@@ -567,7 +567,7 @@ class CoreActivityLogListenerTest extends TestCase
 
     /**
      * 같은 로그인·로그아웃 훅이라도 설명은 들어온 경로를 따른다 — 사용자 로그인에 「관리자 로그인」이 찍히지 않는다
-     * (7.1.0 실측 O-B3). 관리자 로그인은 `api/auth/admin/*`, 관리자 로그아웃은 `api/admin/*` 이다.
+     * (7.1.0 실측). 관리자 로그인은 `api/auth/admin/*`, 관리자 로그아웃은 `api/admin/*` 이다.
      *
      * @scenario request_area=user
      *
@@ -2391,6 +2391,7 @@ class CoreActivityLogListenerTest extends TestCase
             ->withArgs(function (string $action, array $context) {
                 return $action === 'module.update'
                     && $context['properties']['layout_strategy'] === 'keep'
+                    && $context['properties']['layout_source'] === 'json'
                     && $context['properties']['layout_sync']['applied_count'] === 2
                     && $context['properties']['layout_sync']['modified_count'] === 1
                     && ! isset($context['properties']['layout_sync']['entries'])
@@ -2406,6 +2407,8 @@ class CoreActivityLogListenerTest extends TestCase
         $this->listener->handleModuleAfterUpdate('sirsoft-ecommerce', [
             'success' => true,
             'layout_strategy' => 'keep',
+            // 관리자 창 '고급 설정'에서 고른 설치 소스 — 매니저가 실행 당시 값을 결과에 싣는다(#144 D10).
+            'layout_source' => 'json',
             'layout_sync' => [
                 'strategy' => 'keep', 'applied_count' => 2, 'conflict_count' => 1, 'kept_no_base_count' => 0,
                 'kept_removed_count' => 0, 'kept_deleted_by_operator_count' => 0, 'kept_name_collision_count' => 0,

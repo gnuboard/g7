@@ -21,9 +21,16 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     private User $adminUser;
 
+    /**
+     * 배송 유형을 시드하고 관리자 계정·테스트 호출 주소를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
+        // 운영자 PC 의 환경설정(storage/app/settings)이 부팅 config 로 새어 들어와 내부 주소 허용이 켜질 수 있다 — 기본값으로 못박는다
+        Config::set('g7_settings.core.security.allow_internal_outbound_urls', false);
         $this->seed(ShippingTypeSeeder::class);
         $this->adminUser = $this->createAdminUser([
             'sirsoft-ecommerce.shipping-policies.update',
@@ -32,6 +39,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * 정상 테스트 호출 — 요청 미리보기 + 응답 + 추출 배송비 반환.
+     *
+     * @effects test_call_returns_preview_and_fee
+     *
+     * @return void 반환값 없음
      */
     public function test_successful_test_call_returns_preview_and_extracted_fee(): void
     {
@@ -59,6 +70,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * HTTP 오류 응답(4xx/5xx)도 요청 미리보기 + 응답 상태·본문을 반환한다 (진단).
+     *
+     * @effects test_call_reports_failure_diagnostics
+     *
+     * @return void 반환값 없음
      */
     public function test_http_error_response_still_returns_request_and_response(): void
     {
@@ -80,6 +95,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * 연결 실패·타임아웃 시에도 요청 미리보기 + 에러 메시지를 반환한다 (진단).
+     *
+     * @effects test_call_reports_failure_diagnostics
+     *
+     * @return void 반환값 없음
      */
     public function test_connection_failure_still_returns_request_preview_and_error(): void
     {
@@ -101,6 +120,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * 인증 토큰은 응답에 평문 노출되지 않는다.
+     *
+     * @effects auth_token_masked_in_response
+     *
+     * @return void 반환값 없음
      */
     public function test_auth_token_is_not_exposed_in_response(): void
     {
@@ -121,6 +144,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * update 권한 없는 계정은 차단.
+     *
+     * @effects test_call_requires_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_without_update_permission_is_forbidden(): void
     {
@@ -135,6 +162,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * endpoint 누락 시 422.
+     *
+     * @effects test_call_requires_endpoint
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_endpoint_returns_422(): void
     {
@@ -149,7 +180,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
     /**
      * 내부 네트워크 주소는 422 로 거부되고 요청이 전송되지 않는다 (SSRF 차단).
      *
+     * @effects test_call_blocks_internal_endpoint
+     *
      * @param  string  $endpoint  내부망을 가리키는 엔드포인트
+     * @return void 반환값 없음
      */
     #[DataProvider('internalEndpointProvider')]
     public function test_internal_endpoint_is_rejected_and_no_request_is_sent(string $endpoint): void
@@ -168,6 +202,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * userinfo(@) 로 목적지를 위장한 URL 도 거부한다.
+     *
+     * @effects test_call_blocks_internal_endpoint
+     *
+     * @return void 반환값 없음
      */
     public function test_userinfo_disguised_endpoint_is_rejected(): void
     {
@@ -184,6 +222,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * 내부 주소 허용 설정을 켜면 사내 주소 호출이 가능하다 (운영 옵트인).
+     *
+     * @effects test_call_allows_internal_endpoint_when_opted_in
+     *
+     * @return void 반환값 없음
      */
     public function test_internal_endpoint_is_allowed_when_setting_is_enabled(): void
     {
@@ -201,6 +243,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * 내부 주소를 허용해도 userinfo 위장은 계속 거부한다.
+     *
+     * @effects test_call_blocks_internal_endpoint
+     *
+     * @return void 반환값 없음
      */
     public function test_userinfo_disguise_is_rejected_even_when_internal_is_allowed(): void
     {
@@ -218,7 +264,7 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
     /**
      * 내부 네트워크 엔드포인트 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → [내부망 엔드포인트]
      */
     public static function internalEndpointProvider(): array
     {
@@ -246,7 +292,10 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
     /**
      * 정규화가 정상 외부 API 엔드포인트까지 막지는 않는다 (회귀 방지).
      *
+     * @effects test_call_returns_preview_and_fee
+     *
      * @param  string  $endpoint  정상 호출 가능한 엔드포인트
+     * @return void 반환값 없음
      */
     #[DataProvider('legitimateEndpointProvider')]
     public function test_public_endpoint_is_still_callable(string $endpoint): void
@@ -267,7 +316,7 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
     /**
      * 정규화 후에도 통과해야 하는 정상 엔드포인트 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름 → [정상 엔드포인트]
      */
     public static function legitimateEndpointProvider(): array
     {
@@ -281,6 +330,8 @@ class ShippingPolicyTestApiCallTest extends ModuleTestCase
 
     /**
      * 관리자 환경설정에서 내부 주소 호출 허용을 켠다.
+     *
+     * @return void 반환값 없음
      */
     private function enableInternalOutboundUrls(): void
     {

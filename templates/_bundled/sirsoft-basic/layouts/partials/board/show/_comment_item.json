@@ -21,7 +21,7 @@
             "props": {
                 "name": "turn-up",
                 "size": "sm",
-                "className": "fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0 self-start mt-4"
+                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0 self-start mt-4"
             }
         },
         {
@@ -34,10 +34,11 @@
             }
         },
         {
+            "comment": "본문 칸은 줄어들 수 있고(min-w-0) 댓글 글은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 URL 이 화면 밖으로 넘쳤다(#143).",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-1"
+                "className": "flex-1 min-w-0"
             },
             "children": [
                 {
@@ -65,6 +66,20 @@
                                         "subText": "{{comment?.created_at_formatted ?? ''}}",
                                         "subTextTitle": "{{comment?.created_at ?? ''}}",
                                         "layout": "horizontal"
+                                    }
+                                },
+                                {
+                                    "comment": "확장 자리 — 확장이 댓글마다 배지를 붙인다(#149). 조각은 extensionPointProps.commentId·postId 로 이 댓글을 읽는다",
+                                    "type": "extension_point",
+                                    "name": "board_comment_row_badges",
+                                    "props": {
+                                        "className": "contents",
+                                        "data-extension-point": "board_comment_row_badges",
+                                        "commentData": "{{comment}}",
+                                        "commentId": "{{comment?.id}}",
+                                        "postId": "{{post?.data?.id}}",
+                                        "boardSlug": "{{route?.slug}}",
+                                        "context": "board_show_comment"
                                     }
                                 }
                             ]
@@ -148,7 +163,8 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                                                "type": "button",
+                                                "className": "justify-start w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -209,13 +225,14 @@
                                                             "if": "{{comment?.is_guest_comment && !post?.data?.abilities?.can_manage}}"
                                                         },
                                                         {
-                                                            "comment": "회원 댓글이거나, 비회원 댓글이지만 manager인 경우 바로 수정 모드 진입",
+                                                            "comment": "회원 댓글이거나, 비회원 댓글이지만 manager인 경우 바로 수정 모드 진입 — 앞서 다른 비회원 댓글을 고치며 받아 둔 비밀번호는 이 수정에 쓰지 않으므로 함께 비운다(7.1.1)",
                                                             "handler": "setState",
                                                             "if": "{{!comment?.is_guest_comment || post?.data?.abilities?.can_manage}}",
                                                             "params": {
                                                                 "target": "global",
                                                                 "replyToCommentId": null,
                                                                 "replyToCommentDepth": null,
+                                                                "verifiedGuestPassword": null,
                                                                 "commentEdit": {
                                                                     "editingCommentId": "{{comment?.id}}",
                                                                     "editingCommentContent": "{{comment?.content}}"
@@ -226,7 +243,8 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                                                "type": "button",
+                                                "className": "justify-start w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -262,13 +280,14 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "manager인 경우 isGuest를 false로 설정하여 비밀번호 확인 우회",
+                                                            "comment": "manager인 경우 isGuest를 false로 설정하여 비밀번호 확인 우회. 비밀번호 칸은 빈 값으로 연다 — 기본(deep) 병합이라 안 적으면\n                     앞서 다른 글·댓글 삭제 창에 친 비밀번호가 남는다(글 삭제 열기와 같은 네 키, 7.1.1)",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
                                                                 "deleteModal": {
                                                                     "type": "comment",
                                                                     "isGuest": "{{comment?.is_guest_comment && !post?.data?.abilities?.can_manage}}",
+                                                                    "password": "",
                                                                     "apiEndpoint": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/comments/{{comment?.id}}"
                                                                 }
                                                             }
@@ -281,7 +300,8 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                                                "type": "button",
+                                                "className": "justify-start w-full px-4 py-2 text-left text-sm text-red-700 dark:text-red-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -335,6 +355,7 @@
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
+                                                                "reportErrors": null,
                                                                 "reportForm": {
                                                                     "reason_type": "",
                                                                     "reason_detail": ""
@@ -349,7 +370,8 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
+                                                "type": "button",
+                                                "className": "justify-start w-full px-4 py-2 text-left text-sm text-orange-700 dark:text-orange-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -373,8 +395,9 @@
                                             "name": "Button",
                                             "if": "{{_global.currentUser?.uuid && post?.data?.board?.use_report && !comment?.is_author && comment?.is_already_reported}}",
                                             "props": {
+                                                "type": "button",
                                                 "disabled": true,
-                                                "className": "w-full px-4 py-2 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed opacity-60"
+                                                "className": "justify-start w-full px-4 py-2 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed opacity-60"
                                             },
                                             "children": [
                                                 {
@@ -411,7 +434,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-3 text-gray-400 dark:text-gray-500"
+                                "className": "flex items-center gap-3 text-gray-500 dark:text-gray-400"
                             },
                             "children": [
                                 {
@@ -446,7 +469,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+                                        "type": "button",
+                                        "className": "text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
                                     },
                                     "text": "{{_local.showDeletedContent === comment?.id ? '$t:board.comment.hide_original' : '$t:board.comment.view_original'}}"
                                 }
@@ -465,7 +489,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 wrap-anywhere"
                                     },
                                     "text": "{{comment?.content}}"
                                 }
@@ -486,7 +510,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-2 text-gray-500 dark:text-gray-400"
+                                "className": "flex items-center gap-2 text-gray-600 dark:text-gray-400"
                             },
                             "children": [
                                 {
@@ -521,7 +545,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+                                        "type": "button",
+                                        "className": "text-xs px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
                                     },
                                     "text": "{{_local.showBlindedCommentContent?.[comment?.id] ? '$t:board.hide_original' : '$t:board.view_original'}}"
                                 }
@@ -540,7 +565,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 wrap-anywhere"
                                     },
                                     "text": "{{comment?.content}}"
                                 }
@@ -581,7 +606,7 @@
                     "name": "P",
                     "if": "{{(!comment?.deleted_at || comment?.is_cascade_deleted) && comment?.status !== 'blinded' && !(comment?.is_secret && comment?.content === null) && _global.commentEdit?.editingCommentId !== comment?.id}}",
                     "props": {
-                        "className": "text-gray-700 dark:text-gray-300"
+                        "className": "text-gray-700 dark:text-gray-300 wrap-anywhere"
                     },
                     "text": "{{comment?.content}}"
                 },
@@ -759,6 +784,19 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global?.commentEdit?.editingCommentId === comment?.id}}",
+                    "lifecycle": {
+                        "onUnmount": [
+                            {
+                                "comment": "저장·취소 없이 수정 폼이 내려가면(다른 글·화면으로 이동) 이 댓글의 수정 모드와 비회원 확인으로 받아 둔 비밀번호를 비운다 — 쓰임새(이 댓글 수정 요청)가\n               끝났는데 비밀번호가 전역에 남지 않게(7.1.1). 다른 댓글 수정으로 넘어가며 내려갈 때는 그 댓글의 값이 이미 들어와 있으므로 건드리지 않는다 —\n               액션 if 는 렌더 시점 상태라 값 식(평가 시점 최신 _global)에서 「지금 수정 대상 = 이 댓글」 을 견준다.",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "commentEdit": "{{_global.commentEdit?.editingCommentId === comment?.id ? null : (_global.commentEdit ?? null)}}",
+                                    "verifiedGuestPassword": "{{_global.commentEdit?.editingCommentId === comment?.id ? null : (_global.verifiedGuestPassword ?? null)}}"
+                                }
+                            }
+                        ]
+                    },
                     "props": {
                         "className": "mb-2"
                     },
@@ -782,6 +820,7 @@
                             ],
                             "props": {
                                 "name": "editing_comment_content",
+                                "aria-label": "$t:board.modals.edit_comment_title",
                                 "value": "{{_global?.commentEdit?.editingCommentContent ?? comment?.content}}",
                                 "rows": 3,
                                 "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
@@ -813,6 +852,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                                     },
                                     "text": "$t:common.cancel"
@@ -899,7 +939,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "type": "button",
+                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{_local.editingCommentSubmitting === true}}"
                                     },
                                     "children": [
@@ -961,7 +1002,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "text": "$t:board.replying_to|name={{comment?.author?.name}}"
+                                    "text": "$t:board.replying_to|name={{comment?.author?.name || $t('board.unknown_author')}}"
                                 }
                             ]
                         },
@@ -1091,6 +1132,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "type": "button",
                                                         "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                                                     },
                                                     "text": "$t:common.cancel"
@@ -1172,7 +1214,8 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "type": "button",
+                                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_local.commentSubmitting === true}}"
                                                     },
                                                     "children": [

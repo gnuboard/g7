@@ -380,7 +380,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 
         {/* CapsLock 경고 */}
         {capsLockOn && !showPassword && (
-          <div className="mt-2 flex items-center gap-1.5 text-sm text-yellow-600 dark:text-yellow-400">
+          <div className="mt-2 flex items-center gap-1.5 text-sm text-yellow-700 dark:text-yellow-400">
             <Icon name="triangle-exclamation" className="w-4 h-4" />
             <span>{t('auth.password_input.caps_lock_on')}</span>
           </div>
@@ -391,7 +391,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           <div
             className={`mt-2 flex items-center gap-1.5 text-sm ${
               isMatch
-                ? 'text-green-600 dark:text-green-400'
+                ? 'text-green-700 dark:text-green-400'
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
@@ -415,7 +415,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
                   key={rule.key}
                   className={`flex items-center gap-1.5 text-sm ${
                     passed
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-green-700 dark:text-green-400'
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >

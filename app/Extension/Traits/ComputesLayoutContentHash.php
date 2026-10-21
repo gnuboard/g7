@@ -66,6 +66,7 @@ trait ComputesLayoutContentHash
             ? $content
             : json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
+        // layout-assoc-decode-ok: 해시 계산 전용 — {}/[] 를 같은 표준형으로 접는다(#758 W11, 손상 복구는 layout:repair-empty-objects)
         return (string) json_encode(json_decode((string) $json, true), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 

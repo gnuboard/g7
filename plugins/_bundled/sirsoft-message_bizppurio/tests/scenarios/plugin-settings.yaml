@@ -49,6 +49,11 @@ exclusions:
   - { connection_check_result: unsaved_changes, credential_state: empty, reason: "unsaved_changes 분기는 hasChanges 게이트만 검증 — 자격증명 값 자체는 무관(가드가 API 호출 자체를 막음)" }
 
 effects:
+  # 레이아웃 메타·자동바인딩·받기 실패
+  - layout_meta_extends_admin_base_with_plugins_update_permission
+  - settings_form_auto_binds_with_track_changes
+  - settings_load_failure_shows_error_page   # 설정을 받지 못하면 본문 오류 화면 — 빈 폼 저장 차단
+  - templates_tab_readiness_gate_mutually_exclusive
   # 섹션 구조
   - info_panel_test_mode_api_sending_report_sections_present
   - test_mode_card_has_is_test_mode_toggle

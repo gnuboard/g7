@@ -20,7 +20,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 확장 설치·활성화·비활성화·제거 실패 응답이 DB 내부 정보를 싣지 않는다 (7.1.0 전수 실측 O-F7).
+ * 확장 설치·활성화·비활성화·제거 실패 응답이 DB 내부 정보를 싣지 않는다 (7.1.0 전수 실측).
  *
  * 개발 DB 에 남은 테이블 때문에 모듈 설치가 실패하자, 운영 모드(APP_DEBUG=false)인데도 관리자 화면 토스트에
  * 「SQLSTATE[42S01] … (Connection: mysql, Host: …, Port: …, Database: …, SQL: create table …)」가 그대로 나왔다.
