@@ -103,6 +103,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
+                                            "aria-pressed": "{{String(query.days || 30) === '7'}}",
                                             "className": "{{String(query.days || 30) === '7' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
                                         },
                                         "children": [
@@ -132,6 +133,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
+                                            "aria-pressed": "{{String(query.days || 30) === '30'}}",
                                             "className": "{{String(query.days || 30) === '30' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
                                         },
                                         "children": [
@@ -161,6 +163,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
+                                            "aria-pressed": "{{String(query.days || 30) === '90'}}",
                                             "className": "{{String(query.days || 30) === '90' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
                                         },
                                         "children": [

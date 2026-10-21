@@ -342,6 +342,14 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 법정 안내 상자(접속기록 1·2년, 권한·역할 변경 기록은 이 값과 관계없이 3년)입니다. 저장은 보안 탭 공용 저장 버튼이 함께 보냅니다.
 반응형 프리셋은 쓰지 않습니다.
 
+### 보안 탭 앱 키 재생성 확인 창
+
+`partials/admin_settings/_modal_password_confirm` 은 최고관리자 비밀번호로 확인한 뒤 앱 키를 다시 만듭니다. 비밀번호가 없는
+관리자(외부 인증으로만 가입, `current_user.data.has_password === false`)에게는 비밀번호 칸 대신 이메일 인증번호 칸
+(`app_key_reauth_section`, 코어 본인인증 `sensitive_action`)이 보이고, 창 제목도 「비밀번호 확인」 대신 「본인 확인」
+(`admin.settings.modals.identity_confirm_title`)입니다. 관리자 화면에는 `_global.currentUser` 가 없으므로 판정은 관리자 기반 레이아웃의
+데이터소스 `current_user` 를 읽습니다.
+
 ### 회원 등록·수정·상세 / 역할 폼의 비밀번호 칸 (#736)
 
 - 회원 수정에서 **본인** 계정의 새 비밀번호를 입력하면 「현재 비밀번호」 칸이 나타납니다(서버도 같은 확인·재사용 검사). **다른 회원**의

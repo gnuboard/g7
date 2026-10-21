@@ -3,7 +3,7 @@ feature: social_login_oauth_roundtrip
 description: |
   OAuth 왕복의 시작과 콜백을 HTTP 로 잰다. 관리자 연결 테스트는 로그인하지 않고 한 번만 보이는 결과 화면으로 끝나고,
   실패(위조 state, 재사용, 제공자 거부, 교환 실패, 제공자 오류가 아닌 예외, ID 없음)는 시도 기록과 제공자 진단 값에 남는다. 연결 없는 로그인 의도는
-  가입 흐름(가입 화면)으로 넘어간다(로그인·가입 분기의 상세는 login-policy·signup-flow 매니페스트). 제공자 레지스트리의 시딩, 확장 등록, 내장 덮어쓰기 무시, 한도도 함께 본다.
+  가입 흐름(가입 화면)으로 넘어간다(로그인·가입 분기의 상세는 login-policy·signup-flow 매니페스트). 제공자 레지스트리의 시딩(기본 언어만 들고 언어팩을 나중에 켜면 plugin:seed 재시딩이 빠진 언어를 채움), 확장 등록, 내장 덮어쓰기 무시, 한도도 함께 본다.
 axes:
   intent: [login, test]
   provider: [enabled, disabled, unknown]
@@ -12,7 +12,8 @@ axes:
   api: [test_login]
   role: [operator, member]
   registry: [builtin, extension, custom_limit, mock_gate]
-  seed: [builtin]
+  seed: [builtin, language_pack_reseed, list_column]
+  locale: [ko, en, ja]
 effects:
   - start_redirects_to_provider
   - start_refused_back_to_login
@@ -28,6 +29,9 @@ effects:
   - login_without_link_goes_to_signup
   - test_login_requires_settings_update
   - builtin_four_seeded_disabled
+  - builtin_labels_base_locales_only
+  - reseed_entrypoint_runs_install_seeders
+  - seed_merge_limited_to_translatable_columns
   - drivers_instantiated_by_driver_column
   - extension_adds_new_key_builtin_override_ignored
   - custom_providers_capped

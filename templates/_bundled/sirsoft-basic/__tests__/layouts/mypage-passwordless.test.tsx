@@ -151,6 +151,26 @@ describe('sirsoft-basic 비밀번호 없는 회원 마이페이지 (#40)', () =>
   });
 
   /**
+   * @scenario has_password=false|true, surface=profile_edit_gate
+   * @effects profile_gate_heading_follows_password_presence
+   */
+  it('정보 수정 관문 제목·부제는 비밀번호 없는 회원에게 「본인 확인」으로, 비밀번호 회원에게는 종전 「비밀번호 확인」으로 보인다', () => {
+    const nodes = flatten(verifySection);
+    const textOf = (key: string) => nodes.filter((n) => String(n.text ?? '').includes(key));
+
+    for (const key of ['verify_password_title', 'verify_password_message']) {
+      const [node] = textOf(`mypage.profile.${key}`);
+      expect(node, key).toBeTruthy();
+      expect(String(node.if), key).toContain('has_password) !== false');
+    }
+    for (const key of ['verify_identity_title', 'verify_identity_message']) {
+      const [node] = textOf(`mypage.profile.${key}`);
+      expect(node, key).toBeTruthy();
+      expect(String(node.if), key).toContain('has_password) === false');
+    }
+  });
+
+  /**
    * @scenario has_password=false, email_deliverable=false|true, surface=profile_edit_gate
    * @effects profile_gate_offers_extension_for_undeliverable_email
    */

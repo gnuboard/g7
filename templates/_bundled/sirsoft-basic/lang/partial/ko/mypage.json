@@ -144,6 +144,8 @@
         "status_withdrawn_notice": "탈퇴 처리된 계정입니다.",
         "verify_password_title": "비밀번호 확인",
         "verify_password_message": "내 정보를 수정하려면 비밀번호를 입력해주세요.",
+        "verify_identity_title": "본인 확인",
+        "verify_identity_message": "내 정보를 수정하려면 본인 확인이 필요합니다.",
         "verify_password_placeholder": "비밀번호를 입력하세요",
         "verify_password_button": "확인",
         "reauth_notice": "비밀번호가 없는 계정입니다. 가입한 이메일로 인증번호를 받아 본인임을 확인해 주세요. 비밀번호를 설정하면 비밀번호로 확인할 수 있습니다.",

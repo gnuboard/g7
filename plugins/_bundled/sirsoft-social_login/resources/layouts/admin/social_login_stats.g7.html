@@ -22,7 +22,7 @@
           <p class="text-label-subtle mt-1">$t:sirsoft-social_login.admin.stats.description</p>
         </div>
         <div data-ref="period_buttons" class="flex items-center gap-1" role="group" aria-label="$t:sirsoft-social_login.admin.stats.period">
-          <button data-ref="period_7" type="button" class="{{String(query.days || 30) === '7' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <button data-ref="period_7" type="button" aria-pressed="{{String(query.days || 30) === '7'}}" class="{{String(query.days || 30) === '7' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
             <on type="click">
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
                 <query :days="7"/>
@@ -30,7 +30,7 @@
             </on>
             <span>$t:sirsoft-social_login.admin.stats.days_7</span>
           </button>
-          <button data-ref="period_30" type="button" class="{{String(query.days || 30) === '30' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <button data-ref="period_30" type="button" aria-pressed="{{String(query.days || 30) === '30'}}" class="{{String(query.days || 30) === '30' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
             <on type="click">
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
                 <query :days="30"/>
@@ -38,7 +38,7 @@
             </on>
             <span>$t:sirsoft-social_login.admin.stats.days_30</span>
           </button>
-          <button data-ref="period_90" type="button" class="{{String(query.days || 30) === '90' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <button data-ref="period_90" type="button" aria-pressed="{{String(query.days || 30) === '90'}}" class="{{String(query.days || 30) === '90' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
             <on type="click">
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
                 <query :days="90"/>

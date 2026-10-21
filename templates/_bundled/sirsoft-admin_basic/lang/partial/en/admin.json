@@ -2766,6 +2766,7 @@
     },
     "modals": {
       "password_confirm_title": "Password Confirmation",
+      "identity_confirm_title": "Verify It's You",
       "app_key_warning": "Changing the key will invalidate all sessions and may make previously encrypted data inaccessible. Please proceed with caution.",
       "enter_password": "Administrator Password",
       "password_placeholder": "Enter your password",

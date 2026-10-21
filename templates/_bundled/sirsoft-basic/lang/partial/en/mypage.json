@@ -144,6 +144,8 @@
         "status_withdrawn_notice": "This account has been withdrawn.",
         "verify_password_title": "Verify Password",
         "verify_password_message": "Please enter your password to edit your profile.",
+        "verify_identity_title": "Verify It's You",
+        "verify_identity_message": "Please verify your identity to edit your profile.",
         "verify_password_placeholder": "Enter your password",
         "verify_password_button": "Verify",
         "reauth_notice": "This account has no password. Verify yourself with a code sent to your sign-up email. Once you set a password, you can verify with it instead.",

@@ -47,6 +47,12 @@ class NotificationVariableDescriptionLocaleTest extends TestCase
             'source' => 'plugins/_bundled/sirsoft-koreaexim/plugin.php',
             'pack' => 'lang-packs/_bundled/g7-plugin-sirsoft-koreaexim-ja/backend/ja/messages.php',
         ],
+        'sirsoft-social_login' => [
+            'lang' => 'plugins/_bundled/sirsoft-social_login/lang',
+            'class' => 'Plugins\\Sirsoft\\SocialLogin\\Plugin',
+            'source' => 'plugins/_bundled/sirsoft-social_login/plugin.php',
+            'pack' => 'lang-packs/_bundled/g7-plugin-sirsoft-social_login-ja/backend/ja/messages.php',
+        ],
         'sirsoft-message_bizppurio' => [
             'lang' => 'plugins/_bundled/sirsoft-message_bizppurio/lang',
             'class' => 'Plugins\\Sirsoft\\MessageBizppurio\\Plugin',

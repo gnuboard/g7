@@ -19,7 +19,8 @@ use Plugins\Sirsoft\SocialLogin\Exceptions\SocialFlowException;
  * 거절은 클라이언트 인증이 통과했다는 뜻이고(정상), 「클라이언트가 틀렸다」·「콜백 주소가 다르다」는 그대로 운영자 조치
  * 대상이다. 실제 로그인 왕복은 [브라우저로 로그인 테스트]가 맡는다.
  *
- * 결과 분류: `credentials_ok` · `invalid_client` · `redirect_mismatch` · `unreachable`(연결 실패·제공자 5xx) — 그 밖은
+ * 결과 분류: `credentials_ok` · `invalid_client` · `redirect_mismatch` · `unreachable`(연결 실패·제공자 5xx) ·
+ * `inconclusive`(틀린 자격증명과 없는 코드를 같은 본문으로 거절해 판별할 수 없음 — 네이버 `invalid_request`) — 그 밖은
  * `unexpected` 와 제공자 코드.
  *
  * @since 1.0.0
@@ -27,7 +28,13 @@ use Plugins\Sirsoft\SocialLogin\Exceptions\SocialFlowException;
 class ProviderTestService
 {
     /** 「코드가 틀렸다」 계열 — 클라이언트 인증은 통과 */
-    private const CODE_REJECTED = ['invalid_grant', 'KOE320', 'invalid_request', 'facebook_100'];
+    private const CODE_REJECTED = ['invalid_grant', 'KOE320', 'facebook_100'];
+
+    /**
+     * 판별할 수 없는 거절 — 제공자가 클라이언트를 확인하기 전에 같은 본문으로 거절한다.
+     * 네이버는 틀린 클라이언트 ID·비밀값과 없는 인가 코드 모두에 `invalid_request`(「no valid data in session」)를 준다.
+     */
+    private const AMBIGUOUS_REJECTED = ['invalid_request'];
 
     /** 클라이언트 인증 실패 계열 */
     private const CLIENT_REJECTED = ['invalid_client', 'unauthorized_client', 'KOE010', 'KOE101', 'facebook_101', 'facebook_1', 'invalid_client_secret'];
@@ -189,6 +196,7 @@ class ProviderTestService
             in_array($e->errorCode, self::REDIRECT_REJECTED, true) => 'redirect_mismatch',
             in_array($e->errorCode, self::CLIENT_REJECTED, true) => 'invalid_client',
             in_array($e->errorCode, self::CODE_REJECTED, true) => 'credentials_ok',
+            in_array($e->errorCode, self::AMBIGUOUS_REJECTED, true) => 'inconclusive',
             default => 'unexpected',
         };
     }

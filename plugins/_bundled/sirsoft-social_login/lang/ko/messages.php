@@ -120,4 +120,33 @@ return [
         'started' => '제공자 화면으로 이동합니다.',
         'verified' => '본인을 확인했습니다.',
     ],
+    // 알림 편집 화면 「사용 가능한 변수」 설명 — ko 는 plugin.php 선언 문자열과 글자 단위로 같게 둔다
+    'notification_variables' => [
+        'common' => [
+            'app_name' => '사이트명',
+            'name' => '회원 이름',
+            'provider_label' => '제공자 이름',
+            'site_url' => '사이트 주소',
+            'reset_url' => '비밀번호 찾기 화면 주소',
+            'failure_count' => '연속 실패 횟수',
+            'last_error_code' => '마지막 오류 코드',
+            'diagnostics_url' => '진단 화면 주소',
+            'count' => '이번 시간 가입 수',
+            'threshold' => '알림 기준',
+            'stats_url' => '통계 화면 주소',
+            'event_type' => '알림 종류',
+            'error' => '오류 요약(비밀 없음)',
+        ],
+        'by_type' => [
+            'social_login_provider_failing' => [
+                'name' => '받는 관리자 이름',
+            ],
+            'social_login_signup_surge' => [
+                'name' => '받는 관리자 이름',
+            ],
+            'social_login_webhook_failed' => [
+                'name' => '받는 관리자 이름',
+            ],
+        ],
+    ],
 ];

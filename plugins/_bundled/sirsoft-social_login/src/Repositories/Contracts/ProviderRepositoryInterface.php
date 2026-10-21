@@ -28,7 +28,7 @@ interface ProviderRepositoryInterface
     public function findByKey(string $key): ?SocialLoginProvider;
 
     /**
-     * 키가 없으면 만들고, 있으면 비어 있는 기본값만 채웁니다 — 운영자가 바꾼 값은 덮어쓰지 않습니다.
+     * 키가 없으면 만들고, 있으면 비어 있는 기본값과 다국어 칸의 빠진 언어만 채웁니다 — 운영자가 바꾼 값은 덮어쓰지 않습니다.
      *
      * @param  string  $key  제공자 키
      * @param  array<string, mixed>  $defaults  새로 만들 때의 값

@@ -124,6 +124,24 @@ describe('관리자 설정 화면', () => {
   });
 
   /**
+   * 설정 열람 권한(settings.view)만 있는 운영자도 화면에 들어와 읽기 전용으로 본다 — 화면이 쓰는 두 GET(코어 설정 core.plugins.read,
+   * 제공자 settings.view)과 같은 권한으로 연다. 변경 권한(core.plugins.update)을 요구하면 읽기 전용 배너·비활성 단추에 닿을 수 없다.
+   *
+   * @scenario surface=settings, role=settings_view_only
+   * @effects settings_opens_read_only_for_view_permission
+   */
+  it('설정 화면은 열람 권한으로 열리고, 변경 단추는 변경 권한이 없으면 잠긴다', () => {
+    expect(root.permissions).toEqual(['sirsoft-social_login.settings.view', 'core.plugins.read']);
+
+    expect(root.computed.canEditProviders).toBe('{{providers?.data?.abilities?.can_update === true}}');
+    for (const id of ['edit_provider_button_{{provider.key}}', 'test_provider_button_{{provider.key}}', 'test_login_button_{{provider.key}}']) {
+      expect(byId(nodes, id).props.disabled, id).toContain('!_computed.canEditProviders');
+    }
+    expect(byId(nodes, 'save_button').props.disabled).toContain('_computed.isPluginReadOnly');
+    expect(byId(nodes, 'providers_read_only_banner').if).toContain('!_computed.canEditProviders');
+  });
+
+  /**
    * @scenario surface=provider_card
    * @effects card_copy_test_impact_actions
    */
@@ -334,6 +352,20 @@ describe('진단·통계 화면', () => {
       expect(nav.params.query.days).toBe(days);
     }
   });
+
+  /**
+   * 고른 기간은 색만이 아니라 aria-pressed 로도 알린다 — 화면 낭독기는 버튼 색을 읽지 못한다.
+   *
+   * @scenario surface=stats, days=7|30|90
+   * @effects stats_period_pressed_state
+   */
+  it('기간 버튼은 고른 기간만 aria-pressed=true 다(기본 30)', () => {
+    const nodes = flatten(stats);
+    const pressed = (query: Record<string, unknown>) => [7, 30, 90].map((d) => evaluate(String(byId(nodes, `period_${d}`).props['aria-pressed']), { query, String }));
+    expect(pressed({})).toEqual([false, true, false]);
+    expect(pressed({ days: '7' })).toEqual([true, false, false]);
+    expect(pressed({ days: '90' })).toEqual([false, false, true]);
+  });
 });
 
 describe('관리자 회원 표면 확장', () => {
@@ -353,6 +385,33 @@ describe('관리자 회원 표면 확장', () => {
     expect(unlink.if).toBe('{{socialUserAccounts?.data?.abilities?.can_unlink === true}}');
     const call = flatten(unlink.actions).find((a) => a.handler === 'apiCall');
     expect(call.params.method).toBe('DELETE');
+  });
+
+  /**
+   * @scenario surface=user_detail_tab, viewport=mobile|desktop
+   * @effects mobile_cards_replace_table, card_unlink_same_call
+   */
+  it('휴대폰 폭에서는 연결 표 대신 세로 카드가 보이고, 카드의 강제 해제는 표 단추와 같은 조건과 요청이다', () => {
+    const nodes = flatten(read(DETAIL_TAB));
+    const tableWrap = byId(nodes, 'admin_user_social_table_wrap');
+    const cards = byId(nodes, 'admin_user_social_cards');
+    expect(cards).toBeTruthy();
+    // 데스크톱·태블릿은 표, 모바일은 카드 — 둘 중 하나만 그린다
+    expect(tableWrap.responsive?.mobile?.if).toBe('{{false}}');
+    expect(cards.if).toBe('{{false}}');
+    expect(cards.responsive?.mobile?.if).toBe(tableWrap.if);
+
+    const tableUnlink = byId(nodes, 'admin_user_social_unlink');
+    const cardUnlink = byId(nodes, 'admin_user_social_card_unlink');
+    expect(cardUnlink.if).toBe(tableUnlink.if);
+    const call = (n: any) => flatten(n.actions).find((a) => a.handler === 'apiCall');
+    expect(call(cardUnlink).params.method).toBe('DELETE');
+    expect(call(cardUnlink).target ?? call(cardUnlink).params.target).toBe(call(tableUnlink).target ?? call(tableUnlink).params.target);
+    // 카드 안 항목은 표 열과 같은 값을 보인다
+    const text = JSON.stringify(cards);
+    for (const v of ['account.provider_user_id_prefix', 'account.email', 'account.linked_at', 'account.last_login_at']) {
+      expect(text).toContain(v);
+    }
   });
 
   /**
@@ -386,6 +445,22 @@ describe('관리자 회원 표면 확장', () => {
     expect(selector.target_id).toBe('column_selector');
     expect(selector.props.columns._append[0].field).toBe('social_providers');
     expect(JSON.stringify(selector.props)).not.toContain('defaultColumns');
+  });
+
+  /**
+   * 셀의 제공자 표시는 장식(aria-hidden)이고 옆에 이름 글이 없다 — 이름을 마우스 설명(title)과 화면 낭독용 글로 함께 둔다.
+   * 모의 카카오와 카카오처럼 같은 모양의 표시도 이름으로 가려진다.
+   *
+   * @scenario surface=user_list_column
+   * @effects column_cell_names_providers
+   */
+  it('「소셜 연결」 셀은 제공자 이름을 title 과 화면 낭독용 글로 함께 둔다', () => {
+    const cell = read(LIST_COLUMN).injections[0].props.columns._append[0].cellChildren[0];
+    const row = { social_providers: [{ key: 'kakao', brand: 'kakao', label: '카카오' }, { key: 'mock_kakao', brand: 'kakao', label: '모의 kakao' }] };
+    expect(evaluate(cell.props.title, { row })).toBe('카카오, 모의 kakao');
+    const names = cell.children.find((c: any) => c.name === 'Span');
+    expect(names.props.className).toBe('sr-only');
+    expect(evaluate(names.text, { row })).toBe('카카오, 모의 kakao');
   });
 });
 

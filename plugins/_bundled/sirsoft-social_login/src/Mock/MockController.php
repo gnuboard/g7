@@ -14,10 +14,11 @@ use Plugins\Sirsoft\SocialLogin\Support\HtmlPage;
 use Plugins\Sirsoft\SocialLogin\Support\Jwt\Base64Url;
 
 /**
- * 모의 제공자 — 인가 화면, 토큰, 사용자 정보, discovery, JWKS.
+ * 모의 제공자 — 인가 화면, 토큰, 사용자 정보, discovery, JWKS, 권한 회수.
  *
  * 실제 드라이버가 주소만 바꿔 이 엔드포인트를 부른다. 그래서 드라이버의 요청 모양(PKCE, 페이스북 GET 토큰, 네이버 문자열
- * expires_in, OIDC id_token)을 그대로 밟는다. 게이트가 꺼져 있으면 모든 엔드포인트가 404 다.
+ * expires_in, OIDC id_token)을 그대로 밟는다. 게이트가 꺼져 있으면 모든 엔드포인트가 404 다 — 판정은 라우트군의 그룹 미들웨어
+ * `MockGateMiddleware` 한 곳이 맡고 핸들러는 본래 일만 한다.
  *
  * @since 1.0.0
  */
@@ -30,12 +31,10 @@ class MockController extends Controller
     private const TOKEN_TTL = 3600;
 
     /**
-     * @param  MockGate  $gate  활성 게이트
      * @param  MockKeyPair  $keys  서명 키
      * @param  CacheInterface  $cache  플러그인 캐시
      */
     public function __construct(
-        private readonly MockGate $gate,
         private readonly MockKeyPair $keys,
         private readonly CacheInterface $cache,
     ) {}
@@ -48,8 +47,6 @@ class MockController extends Controller
      */
     public function authorize(Request $request): Response|RedirectResponse
     {
-        $this->guard();
-
         $redirectUri = (string) $request->input('redirect_uri', '');
         if (! $this->isOwnCallback($redirectUri)) {
             abort(400);
@@ -90,8 +87,6 @@ class MockController extends Controller
      */
     public function token(Request $request): JsonResponse
     {
-        $this->guard();
-
         $key = 'mock_code:'.hash('sha256', (string) $request->input('code', ''));
         $grant = $this->cache->get($key);
         $this->cache->forget($key);
@@ -135,6 +130,17 @@ class MockController extends Controller
     }
 
     /**
+     * 권한 회수(연결 해제) 요청을 받습니다 — 제공자마다 다른 방식(카카오 어드민 키 POST, 네이버·구글 폼 POST, 페이스북 DELETE)을
+     * 모두 성공으로 답한다. 모의 연결 해제가 실제 드라이버의 회수 경로를 끝까지 타되 가짜 실패를 남기지 않게 한다.
+     *
+     * @return JsonResponse 회수 결과 (제공자 응답 모양을 묶은 본문)
+     */
+    public function revoke(): JsonResponse
+    {
+        return response()->json(['success' => true, 'result' => 'success']);
+    }
+
+    /**
      * 사용자 정보를 반환합니다 (Bearer 헤더 또는 access_token 쿼리).
      *
      * @param  Request  $request  요청
@@ -142,8 +148,6 @@ class MockController extends Controller
      */
     public function userinfo(Request $request): JsonResponse
     {
-        $this->guard();
-
         $token = $request->bearerToken() ?? (string) $request->query('access_token', '');
         $grant = $this->cache->get('mock_token:'.hash('sha256', $token));
 
@@ -163,8 +167,6 @@ class MockController extends Controller
      */
     public function discovery(): JsonResponse
     {
-        $this->guard();
-
         return response()->json([
             'issuer' => $this->issuer(),
             'authorization_endpoint' => $this->issuer().'/authorize?provider=oidc',
@@ -183,8 +185,6 @@ class MockController extends Controller
      */
     public function jwks(): JsonResponse
     {
-        $this->guard();
-
         return response()->json(['keys' => [$this->keys->jwk()]]);
     }
 
@@ -206,18 +206,6 @@ class MockController extends Controller
     private function issuer(): string
     {
         return self::baseUrl();
-    }
-
-    /**
-     * 게이트가 꺼져 있으면 404 로 끝냅니다.
-     *
-     * @return void
-     */
-    private function guard(): void
-    {
-        if (! $this->gate->enabled()) {
-            abort(404);
-        }
     }
 
     /**

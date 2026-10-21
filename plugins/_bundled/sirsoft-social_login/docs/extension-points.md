@@ -110,11 +110,13 @@
 ## 미들웨어
 
 <!-- @generated:middleware START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-_등록하는 미들웨어가 없습니다._
+| 미들웨어 | 부착 대상(targets) | 우선순위 |
+|---|---|---|
+| `MockGateMiddleware` | `web.plugins.sirsoft-social_login.mock.*` | - |
 <!-- @generated:middleware END -->
 
 <!-- @intent START -->
-미들웨어를 선언하지 않습니다.
+모의 제공자 라우트군(`web.plugins.sirsoft-social_login.mock.*` — authorize·token·userinfo·discovery·jwks·revoke)에만 `MockGateMiddleware` 를 붙입니다. 모의 제공자가 서버 명령(`sirsoft-social_login:mock --enable`)으로 켜져 있지 않으면 이 라우트군 전부가 404 를 돌려줍니다. 핸들러마다 따로 막지 않고 그룹 한 곳에서 막으므로, 모의 라우트를 더할 때는 같은 이름 접두(`mock.`) 아래에 두면 됩니다(`MockProviderTest` 가 모든 모의 라우트가 이 대상에 드는지 잠급니다). 그 밖의 라우트에는 미들웨어를 선언하지 않습니다.
 <!-- @intent END -->
 
 ## 브로드캐스트 채널
@@ -153,4 +155,85 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 <!-- @intent START -->
 알림 정의 5종입니다 — 회원에게 가는 「마지막 로그인 수단 해제」 「관리자가 연결 해제」(메일 템플릿은 기본 꺼짐), 관리자 역할에게 가는 「제공자 연속 실패」 「가입 급증」 「웹훅 처리 실패」. 치환 값은 `NotificationDataListener` 가 채우고, 회원 알림의 수신자는 훅이 넘긴 회원(`trigger_user`)입니다.
+<!-- @intent END -->
+
+## 제공자 드라이버 계약
+
+<!-- @intent START -->
+다른 확장은 필터 훅 `sirsoft-social_login.provider.filter_registered` 를 구독해 새 키로 `Contracts\ProviderDriverInterface` 구현을 더합니다. 내장 4종(`kakao` `naver` `google` `facebook`)과 제공자 테이블에 이미 있는 키를 다른 인스턴스로 바꾸거나 지우는 반환은 무시하고(내장 키는 경고 로그), 키는 영문 소문자로 시작하는 영문 소문자, 숫자, 밑줄 2~50자만 받습니다. `mock_` 로 시작하는 키는 모의 제공자 몫이라 쓰지 않습니다.
+
+| 메서드 | 계약 |
+|---|---|
+| `key()` `label($locale)` | 제공자 키와 버튼에 보일 이름 |
+| `supports()` | `pkce` `oidc` `refresh` `revoke` `webhook`(bool), `callback_methods`(`['GET']` 또는 `form_post` 제공자는 `['POST']`) |
+| `credentialSchema()` `redirectNotes()` | 관리자 카드의 자격증명 칸 정의와 콜백 주소 주의사항 다국어 키 |
+| `authorizeUrl($req)` | `AuthorizationRequest`(state, PKCE verifier, nonce, 콜백 주소)로 인가 주소를 만든다 |
+| `exchangeCode($code, $req)` | 인가 코드를 `TokenSet` 으로. 실패는 `ProviderException`(오류 코드는 제공자 코드 그대로) |
+| `fetchProfile($tokens, $req, $input)` | 사용자 정보 API 를 불러 `NormalizedProfile` 로 맞춘다. 제공자 사용자 ID 가 없으면 `ProviderException`. 이메일 검증 여부는 true, false, null(알 수 없음) 셋이고 마스킹 이메일은 null 로 버린다 |
+| `revoke($tokens, $account)` | 제공자 쪽 앱 권한 회수. 실패해도 연결 해제는 진행된다 |
+| `verifyWebhook($request)` | 지원하지 않으면 null. 지원하면 서명을 검증해 저장 전 이벤트 모델을 돌려준다 |
+| `clientSecret()` | 토큰 요청에 쓸 비밀값. 저장값을 풀 수 없으면 `credentials_unreadable` 로 멈춘다 |
+| `withConfig($row 또는 배열)` | 설정을 입힌 새 인스턴스(원본을 바꾸지 않는다) |
+
+OAuth 2.0 왕복이면 `Drivers\AbstractOAuth2Driver` 를 상속해 `driverName()`, `defaultEndpoints()`, `normalizeProfile()` 세 개만 채우면 됩니다. state 와 PKCE, 코드 교환, 오류 매핑, 요청 제한 시간은 부모가 맡고, 제공자가 토큰 요청에 값을 더 요구하면 `extraTokenParams()` 를, 인가 주소에 값을 더 붙이려면 `extraAuthorizeParams()` 를 덮어씁니다. OpenID Connect 제공자는 `Drivers\OidcDriver` 를 상속하면 discovery, JWKS 캐시, id_token RS256 검증까지 그대로 씁니다.
+
+확장이 등록한 드라이버는 테이블 행이 없으므로 필터가 돌려주는 동안 켜진 것으로 보고, 끄려면 필터 결과에서 빼면 됩니다. 가입 허용(`signup_allowed`), 이메일 미제공 처리(`email_missing_policy`), 이메일 신뢰(`email_trust`)는 드라이버 설정 배열에서 읽습니다. 관리자 제공자 탭에는 읽기 전용 카드로 보이고, 자격증명은 등록한 확장이 자기 설정에 보관해 `withConfig()` 로 넘깁니다. 버튼은 `custom` 모양(이름 첫 글자 원형)으로 그려집니다.
+
+```php
+// 다른 확장의 리스너 — 훅 이름은 문자열로 적는다(확장 문서 생성기가 구독 표를 정적으로 읽는다)
+public static function getSubscribedHooks(): array
+{
+    return [
+        'sirsoft-social_login.provider.filter_registered' => ['method' => 'register', 'priority' => 20, 'type' => 'filter', 'sync' => true],
+    ];
+}
+
+public function register(array $drivers): array
+{
+    $drivers['acme'] = app(AcmeDriver::class)->withConfig([
+        'key' => 'acme',
+        'label' => ['ko' => '에이크미', 'en' => 'Acme'],
+        'client_id' => plugin_setting('vendor-acme_login', 'client_id'),
+        'client_secret' => plugin_setting('vendor-acme_login', 'client_secret'),
+        'signup_allowed' => true,
+        'email_missing_policy' => 'ask',
+        'email_trust' => 'flag',
+    ]);
+
+    return $drivers;
+}
+
+// AcmeDriver extends AbstractOAuth2Driver
+public function driverName(): string { return 'acme'; }
+
+protected function defaultEndpoints(): array
+{
+    return ['authorize' => 'https://id.acme.example/authorize', 'token' => 'https://id.acme.example/token', 'userinfo' => 'https://id.acme.example/me'];
+}
+
+protected function normalizeProfile(array $body, TokenSet $tokens, AuthorizationRequest $req): NormalizedProfile
+{
+    return new NormalizedProfile(
+        providerUserId: $this->requireId($body['id'] ?? null),
+        email: NormalizedProfile::email($body['email'] ?? null),
+        emailVerified: null,
+        name: NormalizedProfile::str($body['name'] ?? null),
+        raw: $body,
+    );
+}
+```
+
+드라이버는 로그인을 직접 하지 않습니다. 회원을 정하고 코어 로그인 인계로 넘기는 일은 이 플러그인이 하므로, 드라이버 안에서 토큰 발급이나 세션 생성을 하지 마세요.
+<!-- @intent END -->
+
+## 모의 제공자
+
+<!-- @intent START -->
+실제 제공자 앱 없이 왕복 전체를 재기 위한 개발, 검수용 제공자 5종(`mock_kakao` `mock_naver` `mock_google` `mock_facebook` `mock_oidc`)입니다. 각 응답 모양은 원 제공자를 흉내 내고, 동의 화면에서 응답 변종(완비 검증, 완비 미검증, 이메일 없음, 마스킹 이메일, 별명만, 문자열 boolean, 기존 회원 이메일, 제공자 오류 본문, 거부)을 고릅니다.
+
+- 켜고 끄기는 서버 명령으로만 합니다: `php artisan sirsoft-social_login:mock --enable --minutes=30`(최대 240분), `--disable`, `--status`. 설정 화면이나 API 로 켜는 길은 없습니다. 꺼져 있으면 모의 주소(`/plugins/sirsoft-social_login/mock/*`)는 404 입니다.
+- 켜진 표지는 캐시에 만료 시각과 함께 두고, 시간이 지나면 저절로 꺼집니다. 정리 배치가 만료된 표지를 지웁니다.
+- 모의 제공자는 이 플러그인이 자기 필터 훅을 구독해 더합니다(`RegisterMockProvidersListener`). 다른 확장이 드라이버를 더하는 경로를 그대로 쓰므로, 위 계약의 실증이기도 합니다.
+- 관리자 제공자 탭에는 읽기 전용 카드로, 진단 화면에는 켜짐 배지와 끝나는 시각으로 보입니다. 모의 키는 관리자 API 로 저장할 수 없습니다.
+- 연결을 해제할 때의 권한 회수는 모의 회수 주소(`/mock/revoke`, POST·DELETE)가 늘 성공으로 답합니다. 실제 드라이버의 회수 경로를 끝까지 타고, 모의 해제가 진단과 통계에 가짜 「회수 실패」를 남기지 않습니다.
 <!-- @intent END -->

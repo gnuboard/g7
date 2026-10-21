@@ -10,5 +10,15 @@
     <sirsoft-social_login.provider-buttons data-type="composite" data-ref="social_login_provider_buttons" providers="{{socialProviders?.data ?? []}}" intent="login" redirect="{{query.redirect ?? '/'}}"/>
   </div>
   <!-- 켜진 제공자 목록 — 비로그인으로 읽는다(자격증명 없음). -->
-  <data-source id="socialProviders" label_key="$t:sirsoft-social_login.editor.data_source.providers" type="api" endpoint="/api/plugins/sirsoft-social_login/providers" method="GET" :auto_fetch="true" auth_mode="optional"/>
+  <data-source id="socialProviders" label_key="$t:sirsoft-social_login.editor.data_source.providers" type="api" endpoint="/api/plugins/sirsoft-social_login/providers" method="GET" :auto_fetch="true" auth_mode="optional">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+    <error-handling>
+      <on-code code="default">
+        <!-- 다른 확장의 화면에 붙는 덧붙임이다 — 목록을 못 받으면 버튼만 그리지 않고(fallback 빈 목록), 템플릿 기본 오류 처리(원문 토스트)로 번지지 않게 막는다 -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
 </extension>

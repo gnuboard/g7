@@ -3,11 +3,18 @@
 namespace Plugins\Sirsoft\SocialLogin\Tests\Feature\Mock;
 
 use Illuminate\Http\Client\Request as ClientRequest;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Plugins\Sirsoft\SocialLogin\DTO\TokenSet;
 use Plugins\Sirsoft\SocialLogin\Enums\AttemptIntent;
+use Plugins\Sirsoft\SocialLogin\Http\Middleware\MockGateMiddleware;
+use Plugins\Sirsoft\SocialLogin\Listeners\RegisterMockProvidersListener;
 use Plugins\Sirsoft\SocialLogin\Mock\MockGate;
 use Plugins\Sirsoft\SocialLogin\Mock\MockKeyPair;
+use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
+use Plugins\Sirsoft\SocialLogin\Plugin;
 use Plugins\Sirsoft\SocialLogin\Services\OAuthFlowService;
 use Plugins\Sirsoft\SocialLogin\Services\ProviderRegistry;
 use Plugins\Sirsoft\SocialLogin\Tests\PluginTestCase;
@@ -145,7 +152,8 @@ class MockProviderTest extends PluginTestCase
     }
 
     /**
-     * 모의 제공자가 꺼져 있으면 모의 주소 5개가 모두 404 인지 확인한다.
+     * 모의 제공자가 꺼져 있으면 모의 라우트 전부가 받는 모든 메서드에서 404 인지 확인한다. 모집단은 라우터의 모의 라우트명
+     * 서브트리라서, 모의 라우트를 하나 더해도 이 시험이 그 라우트까지 잰다.
      *
      * @scenario gate=off
      *
@@ -155,11 +163,79 @@ class MockProviderTest extends PluginTestCase
      */
     public function test_mock_endpoints_are_404_while_off(): void
     {
-        foreach (['/authorize', '/token', '/userinfo', '/.well-known/openid-configuration', '/jwks'] as $path) {
-            $this->get('/plugins/sirsoft-social_login/mock'.$path)->assertNotFound();
+        $routes = $this->mockRoutes();
+        $this->assertGreaterThanOrEqual(6, count($routes), '모의 라우트를 찾지 못했다 — 라우트명이 바뀌었는가');
+
+        foreach ($routes as $route) {
+            foreach (array_diff($route->methods(), ['HEAD']) as $method) {
+                $this->assertSame(404, $this->call($method, '/'.$route->uri())->getStatusCode(), $method.' '.$route->uri());
+            }
         }
 
         $this->assertArrayNotHasKey('mock_kakao', app(ProviderRegistry::class)->all());
+    }
+
+    /**
+     * 모의 라우트군의 게이트는 그룹 한 곳(확장 미들웨어 선언)이 맡는다 — 핸들러마다 게이트를 적으면 새 라우트에서 빠뜨린다
+     * (docs/backend/routing.md 「디버그·개발 라우트는 그룹 단위로 게이트한다」). 모든 모의 라우트가 선언의 대상 패턴에 든다.
+     *
+     * @scenario gate=registration
+     *
+     * @effects mock_gate_declared_for_route_group
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mock_route_group_gate_is_declared_once(): void
+    {
+        $declarations = array_values(array_filter(
+            (new Plugin)->getMiddleware(),
+            fn (array $entry) => $entry['class'] === MockGateMiddleware::class,
+        ));
+        $this->assertCount(1, $declarations);
+        $this->assertSame(['web'], $declarations[0]['groups']);
+
+        $routes = $this->mockRoutes();
+        $this->assertGreaterThanOrEqual(6, count($routes));
+        foreach ($routes as $route) {
+            $covered = collect($declarations[0]['targets'])->contains(fn (string $pattern) => Str::is($pattern, (string) $route->getName()));
+            $this->assertTrue($covered, (string) $route->getName());
+        }
+    }
+
+    /**
+     * 이 플러그인의 모의 라우트(이름이 `web.plugins.sirsoft-social_login.mock.` 로 시작)를 모읍니다.
+     *
+     * @return array<int, Route> 라우트
+     */
+    private function mockRoutes(): array
+    {
+        return array_values(array_filter(
+            iterator_to_array(app('router')->getRoutes()),
+            fn ($route) => str_starts_with((string) $route->getName(), 'web.plugins.sirsoft-social_login.mock.'),
+        ));
+    }
+
+    /**
+     * 모의 제공자 표시 이름이 사이트가 지원하는 모든 언어로 만들어지는지 확인한다(일본어 화면에서 한국어 이름이 보이지 않게).
+     *
+     * @scenario gate=on, locale=ko|en|ja
+     *
+     * @effects mock_label_per_supported_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mock_labels_cover_every_supported_locale(): void
+    {
+        // 번들 일본어 팩을 쓰는 사이트와 같게 — 시험 환경 기본값은 ko·en 이다
+        config(['app.supported_locales' => ['ko', 'en', 'ja']]);
+        $locales = ['ko', 'en', 'ja'];
+
+        foreach (RegisterMockProvidersListener::configs() as $key => $config) {
+            $this->assertSame($locales, array_keys($config['label']), $key);
+            foreach ($locales as $locale) {
+                $this->assertSame(__('sirsoft-social_login::messages.mock.label', ['provider' => $config['driver']], $locale), $config['label'][$locale], $key.' '.$locale);
+            }
+        }
     }
 
     /**
@@ -219,6 +295,31 @@ class MockProviderTest extends PluginTestCase
             'OIDC discovery·문자열 boolean' => ['mock_oidc', 'string_bool', 'me*********@example.test', 'MockUser01'],
             '거부' => ['mock_kakao', 'deny', 'access_denied', ''],
         ];
+    }
+
+    /**
+     * 모의 연결을 해제할 때의 권한 회수도 실제 드라이버로 성공한다 — 회수 주소가 토큰 주소를 가리키면(인가 코드 없음 400,
+     * 페이스북 DELETE 는 경로 없음) 모의 해제마다 가짜 「회수 실패」 시도가 쌓여 진단·통계의 실패 수가 부풀려진다.
+     *
+     * @scenario gate=on, provider=mock_kakao|mock_naver|mock_google|mock_facebook, action=revoke
+     *
+     * @effects mock_revoke_succeeds
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mock_revoke_succeeds_through_real_drivers(): void
+    {
+        app(MockGate::class)->enable(10);
+        $this->routeMockHttpIntoApp();
+        $registry = app(ProviderRegistry::class);
+        $registry->flush();
+
+        foreach (['mock_kakao', 'mock_naver', 'mock_google', 'mock_facebook'] as $key) {
+            $driver = $registry->get($key);
+            $this->assertTrue((bool) ($driver->supports()['revoke'] ?? false), $key);
+            $account = new SocialAccount(['provider_key' => $key, 'provider_user_id' => 'MockUser01']);
+            $this->assertTrue($driver->revoke(new TokenSet('mock-access', 'mock-refresh'), $account), $key);
+        }
     }
 
     /**

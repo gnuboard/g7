@@ -60,6 +60,18 @@
                             "text": "$t:sirsoft-social_login.mypage.unlink_confirm|provider={{_global.socialLoginUnlinkTarget?.label ?? ''}}"
                         },
                         {
+                            "comment": "사이트가 마지막 수단 해제를 허용할 때만 — 끊고 나면 비밀번호 찾기로만 다시 들어올 수 있다",
+                            "id": "social_unlink_last_warning",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.socialLoginUnlinkIsLast === true}}",
+                            "props": {
+                                "className": "p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-300",
+                                "role": "alert"
+                            },
+                            "text": "$t:sirsoft-social_login.mypage.unlink_last_warning"
+                        },
+                        {
                             "type": "basic",
                             "name": "Div",
                             "props": {
@@ -337,6 +349,7 @@
                                                             "params": {
                                                                 "target": "global",
                                                                 "socialLoginUnlinkTarget": "{{account}}",
+                                                                "socialLoginUnlinkIsLast": "{{socialAccounts?.data?.has_password === false && (socialAccounts?.data?.accounts ?? []).length === 1 && socialAccounts?.data?.can_unlink?.[account.provider_key]?.allowed === true}}",
                                                                 "socialLoginUnlinkError": null,
                                                                 "socialLoginUnlinkLastMethod": false
                                                             }

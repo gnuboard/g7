@@ -244,14 +244,14 @@ test('custom OIDC provider can be added, tested and deleted', async ({ page }) =
 
 /**
  * 플러그인 설정 조회 권한만 있는 관리자는 제공자 카드를 볼 수만 있다 — 안내 띠가 뜨고 편집·연결 테스트 단추가 꺼져 있으며, 조회인 영향
- * 보기는 쓸 수 있다. 플러그인 설정 화면 자체는 코어가 `core.plugins.update` 로 연다(코어 계약) — 그 권한은 있고 이 플러그인의
- * `settings.update` 만 없는 관리자다.
+ * 보기는 쓸 수 있다. 화면은 쓰는 두 GET 과 같은 권한(`settings.view` + 코어 `core.plugins.read`)으로 열린다 — 변경 권한
+ * (`settings.update`, 코어 `core.plugins.update`)이 하나도 없는 관리자다. 정책 탭도 안내 띠와 함께 저장이 꺼진다.
  *
  * @scenario surface=provider_settings, actor=viewer
- * @effects provider_settings_read_only_for_viewer
+ * @effects provider_settings_read_only_for_viewer, settings_opens_read_only_for_view_permission
  */
 test('settings viewer sees provider cards read only', async ({ page }) => {
-  const viewer = issueScopedToken('sirsoft-social_login.settings.view', 'core.plugins.read', 'core.plugins.update');
+  const viewer = issueScopedToken('sirsoft-social_login.settings.view', 'core.plugins.read');
   await openProviders(page, viewer);
   await expect(page.locator('#providers_read_only_banner')).toContainText('설정 변경 권한이 없어 볼 수만 있습니다.');
   await expect(page.locator('#edit_provider_button_kakao')).toBeDisabled();
@@ -259,4 +259,9 @@ test('settings viewer sees provider cards read only', async ({ page }) => {
   await expect(page.locator('#toggle_add_button')).toBeDisabled();
   await expect(page.locator('#impact_button_kakao')).toBeEnabled();
   expect(await adminCall(page, 'GET', 'providers/kakao/impact', () => page.locator('#impact_button_kakao').click())).toBe(200);
+
+  await page.goto(`${SETTINGS}?tab=policy`);
+  await expect(page.locator('#plugin_read_only_banner')).toContainText('이 설정을 바꿀 권한이 없습니다. 값만 볼 수 있습니다.');
+  await expect(page.locator('select[name="email_conflict_policy"]')).toBeDisabled();
+  await expect(page.locator('#save_button')).toBeDisabled();
 });

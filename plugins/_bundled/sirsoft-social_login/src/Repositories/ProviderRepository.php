@@ -36,7 +36,7 @@ class ProviderRepository implements ProviderRepositoryInterface
     }
 
     /**
-     * 키가 없으면 만들고, 있으면 비어 있는 기본값만 채웁니다.
+     * 키가 없으면 만들고, 있으면 비어 있는 기본값과 다국어 칸(이름)의 빠진 언어만 채웁니다.
      *
      * 재설치·업데이트 때 다시 불려도 운영자가 넣은 자격증명·순서·활성 여부를 되돌리지 않는다.
      *
@@ -54,8 +54,14 @@ class ProviderRepository implements ProviderRepositoryInterface
 
         $fill = [];
         foreach ($defaults as $column => $value) {
-            if ($row->getAttribute($column) === null && $value !== null) {
+            $current = $row->getAttribute($column);
+            if ($current === null && $value !== null) {
                 $fill[$column] = $value;
+            } elseif (is_array($current) && is_array($value) && ! array_is_list($value) && array_diff_key($value, $current) !== []) {
+                // 다국어 칸(언어 코드를 키로 둔 연관 배열)은 빠진 언어만 더한다 — 언어팩을 나중에 켰을 때(코어가 시더를 다시
+                // 돌린다) 그 언어가 채워지고, 운영자가 바꾼 언어 값은 그대로 둔다. 목록형 칸(요청 범위 등)은 인덱스 병합이
+                // 운영자가 지운 값을 되살리므로 건너뛴다.
+                $fill[$column] = $current + $value;
             }
         }
 

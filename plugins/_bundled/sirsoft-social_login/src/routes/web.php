@@ -54,6 +54,7 @@ Route::withoutMiddleware([ValidateCsrfToken::class])->group(function () {
     Route::prefix('mock')->name('mock.')->middleware('throttle:120,1,sirsoft-social_login.mock')->group(function () {
         Route::match(['get', 'post'], '/authorize', [MockController::class, 'authorize'])->name('authorize');
         Route::match(['get', 'post'], '/token', [MockController::class, 'token'])->name('token');
+        Route::match(['post', 'delete'], '/revoke', [MockController::class, 'revoke'])->name('revoke');
         Route::get('/userinfo', [MockController::class, 'userinfo'])->name('userinfo');
         Route::get('/.well-known/openid-configuration', [MockController::class, 'discovery'])->name('discovery');
         Route::get('/jwks', [MockController::class, 'jwks'])->name('jwks');

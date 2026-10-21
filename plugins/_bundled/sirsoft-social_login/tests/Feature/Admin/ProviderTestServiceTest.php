@@ -71,6 +71,30 @@ class ProviderTestServiceTest extends PluginTestCase
     }
 
     /**
+     * 네이버는 틀린 자격증명과 없는 인가 코드를 같은 본문(`invalid_request` 「no valid data in session」, HTTP 200)으로 거절한다 —
+     * 이 거절로는 자격증명을 판별할 수 없으므로 「맞다」고 하지 않고 `inconclusive`(브라우저로 로그인 테스트 안내)로 둔다.
+     *
+     * @scenario token_reply=naver_invalid_request
+     *
+     * @effects ambiguous_rejection_is_inconclusive
+     *
+     * @return void 반환값 없음
+     */
+    public function test_naver_ambiguous_rejection_is_inconclusive(): void
+    {
+        $row = SocialLoginProvider::query()->where('key', 'naver')->firstOrFail();
+        $row->forceFill(['client_id' => 'naver-client', 'client_secret' => 'naver-secret'])->save();
+        app(ProviderRegistry::class)->flush();
+        Http::fake(['nid.naver.com/oauth2.0/token*' => Http::response(['error' => 'invalid_request', 'error_description' => 'no valid data in session'], 200)]);
+
+        $response = $this->postJson(self::BASE.'/naver/test')->assertOk();
+
+        $this->assertSame('inconclusive', $response->json('data.result'));
+        $this->assertFalse($response->json('data.ok'));
+        $this->assertSame('invalid_request', $response->json('data.provider_code'));
+    }
+
+    /**
      * 필수 비밀값이 비면 토큰 주소를 부르지 않고 `credentials_missing` 과 빈 칸 이름을 준다.
      *
      * @scenario credentials=missing_secret

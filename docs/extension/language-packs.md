@@ -285,6 +285,8 @@ foreach ($config['categories'] as $cat) { ... }
 | `plugin.{id}.permissions.translations` | PluginManager::createPluginPermissions() — 플러그인 권한 트리 동기화 시 |
 | `template.language.merge` | TemplateService::getLanguageDataWithModules() |
 
+**언어팩을 켜고 끌 때의 재시딩**: 코어는 대상 확장의 시더를 다시 돌려(`module:seed` / `plugin:seed`) 위 필터가 새 언어를 기존 행에 채우게 합니다. 이 명령은 확장의 `Database\Seeders\DatabaseSeeder` 를 찾으므로, 다국어 행을 시딩하는 확장은 그 진입 시더가 설치 시더와 같은 시더를 돌려야 합니다. 시더가 기존 행을 「있으면 건너뜀」으로만 다루면 새 언어가 들어오지 않으니, 다국어 칸은 빠진 언어만 더하고 운영자가 바꾼 값은 그대로 두는 병합으로 씁니다.
+
 **확장 시드 필터 자동 결선** (`LanguagePackServiceProvider::registerExtensionSeedFilters`): 활성 모듈/플러그인 언어팩의 `seed/*.json` 마다 위 패턴의 필터에 listener 가 자동 등록됩니다. 매칭 키는 entry 의 컬럼을 우선순위(`code` > `slug` > `key` > `identifier` > `id`) 로 자동 감지합니다.
 
 엔티티별 결선 정책:

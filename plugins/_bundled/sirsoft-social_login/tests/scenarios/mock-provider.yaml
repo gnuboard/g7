@@ -5,11 +5,12 @@ description: |
   주소만 바꿔 등록되고, 동의 화면 → 토큰 → 사용자 정보(→ discovery, JWKS) 왕복이 결과 화면까지 이른다.
 axes:
   cli: [mock]
-  gate: [off, on, off_then_on]
+  gate: [off, on, off_then_on, registration]
   provider: [mock_kakao, mock_naver, mock_google, mock_facebook, mock_oidc]
   variant: [catalog]
   redirect: [foreign]
   cache_store: [redis]
+  locale: [ko, en, ja]
 effects:
   - reenabled_gate_rotates_kid
   - mock_cli_on_off_status
@@ -17,5 +18,8 @@ effects:
   - mock_routes_404_when_off
   - mock_refuses_foreign_redirect
   - mock_round_trip_reaches_result_page
+  - mock_label_per_supported_locale
+  - mock_revoke_succeeds
+  - mock_gate_declared_for_route_group
 test_files:
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Mock/MockProviderTest.php

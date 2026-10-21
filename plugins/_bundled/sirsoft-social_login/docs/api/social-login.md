@@ -369,7 +369,7 @@ discovery 문서를 캐시 없이 읽어 주소 칸 값을 돌려줍니다. 저�
   "steps": [ { "name": "credentials", "ok": true, "code": null, "fields": [] }, { "name": "token", "ok": false, "code": "KOE101" } ] } }
 ```
 
-`result`: `credentials_ok`(제공자가 클라이언트를 인정하고 코드만 거절), `invalid_client`, `redirect_mismatch`, `unreachable`(연결 실패 또는 5xx), `credentials_missing`, `credentials_unreadable`(저장된 비밀값을 풀 수 없음 — 앱 키 교체 뒤 다시 입력), `discovery_failed`, `discovery_incomplete`, `jwks_unreachable`, `unexpected`.
+`result`: `credentials_ok`(제공자가 클라이언트를 인정하고 코드만 거절), `invalid_client`, `redirect_mismatch`, `unreachable`(연결 실패 또는 5xx), `inconclusive`(제공자가 틀린 자격증명과 없는 코드를 같은 본문으로 거절해 판별할 수 없음 — 네이버. 브라우저 로그인 테스트로 확인), `credentials_missing`, `credentials_unreadable`(저장된 비밀값을 풀 수 없음 — 앱 키 교체 뒤 다시 입력), `discovery_failed`, `discovery_incomplete`, `jwks_unreachable`, `unexpected`.
 
 ### POST /api/plugins/sirsoft-social_login/admin/providers/{provider}/test-login
 

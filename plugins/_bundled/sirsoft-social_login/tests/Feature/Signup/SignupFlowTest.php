@@ -356,6 +356,29 @@ class SignupFlowTest extends PluginTestCase
     }
 
     /**
+     * 같은 제공자 계정으로 가입을 다시 시작하면 앞서 만든 가입 대기는 지워진다 — 남은 주소(방문 기록 등)로 앞 대기를 마칠 수 없다.
+     * 다른 제공자 계정의 대기는 그대로다.
+     *
+     * @scenario pending=restarted_same_identity|other_identity
+     *
+     * @effects restarted_signup_discards_previous_pending
+     *
+     * @return void 반환값 없음
+     */
+    public function test_restarting_signup_discards_previous_pending(): void
+    {
+        $first = $this->beginSignup($this->kakaoProfile('k-restart', $this->uniqueEmail('restart')));
+        $other = $this->beginSignup($this->kakaoProfile('k-other', $this->uniqueEmail('other')));
+        $second = $this->beginSignup($this->kakaoProfile('k-restart', $this->uniqueEmail('restart')));
+
+        $this->assertNotSame($first['token'], $second['token']);
+        $this->pending($first['token'])->assertStatus(404)->assertJsonPath('errors.code', 'expired');
+        $this->complete($first['token'])->assertStatus(404);
+        $this->pending($second['token'])->assertOk();
+        $this->pending($other['token'])->assertOk();
+    }
+
+    /**
      * 「연결 안 함」 정책에서 기존 회원과 같은 이메일로 들어오면 그 이메일을 쓰지 않고 다른 이메일을 받는다 — 겹친 이메일로
      * 인증번호를 받으려 하면 422 `email_taken`, 다른 이메일을 확인하면 가입된다(users.email UNIQUE 충돌 없음).
      *

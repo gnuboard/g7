@@ -502,6 +502,7 @@ Official language packs you can install alongside the initial setup, so the core
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG Inicis payment plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | NICE Payments plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP payment plugin, Japanese |
+| **g7-plugin-sirsoft-social_login-ja** | Social login plugin, Japanese |
 | **g7-plugin-sirsoft-tosspayments-ja** | Toss Payments plugin, Japanese |
 | **g7-plugin-sirsoft-totp-ja** | Authenticator app (TOTP) two-factor plugin, Japanese |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG Inicis identity verification plugin, Japanese |

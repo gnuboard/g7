@@ -120,4 +120,33 @@ return [
         'started' => 'Moving to the provider screen.',
         'verified' => 'Your identity is confirmed.',
     ],
+    // 알림 편집 화면 「사용 가능한 변수」 설명 — ko 는 plugin.php 선언 문자열과 글자 단위로 같게 둔다
+    'notification_variables' => [
+        'common' => [
+            'app_name' => 'Site name',
+            'name' => 'Member name',
+            'provider_label' => 'Provider name',
+            'site_url' => 'Site address',
+            'reset_url' => 'Forgot-password screen address',
+            'failure_count' => 'Consecutive failure count',
+            'last_error_code' => 'Last error code',
+            'diagnostics_url' => 'Diagnostics screen address',
+            'count' => 'Signups in this hour',
+            'threshold' => 'Alert threshold',
+            'stats_url' => 'Statistics screen address',
+            'event_type' => 'Notification type',
+            'error' => 'Error summary (no secrets)',
+        ],
+        'by_type' => [
+            'social_login_provider_failing' => [
+                'name' => 'Recipient (administrator) name',
+            ],
+            'social_login_signup_surge' => [
+                'name' => 'Recipient (administrator) name',
+            ],
+            'social_login_webhook_failed' => [
+                'name' => 'Recipient (administrator) name',
+            ],
+        ],
+    ],
 ];

@@ -1,0 +1,12 @@
+feature: social_login_release
+description: |
+  배포 전 잠금. 플러그인 디렉터리와 이 플러그인 언어팩에 실제 앱 비밀값, 카카오 어드민 키 모양이 0건이고(시험 픽스처와 모의 값은
+  하이픈을 넣어 실제 키 모양을 피한다), 개발자 문서의 생성 블록이 코드 실측과 맞는다(ext:docgen --check 이슈 0건).
+axes:
+  check: [secrets_plugin, secrets_lang_pack, docgen]
+effects:
+  - no_real_credentials_in_release
+  - docgen_check_clean
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Release/NoSecretsTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Docs/ExtensionDocsTest.php

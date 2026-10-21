@@ -10,15 +10,18 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\SocialLogin\Plugin;
 use Plugins\Sirsoft\SocialLogin\Tests\PluginTestCase;
+use Tests\Helpers\MocksChannelReadiness;
 
 /**
  * 알림 정의 5종 — 정의 형태(본문 자리 = 변수 목록), 수신 규칙(회원 2 · 관리자 3), 치환 값, 관리자 강제 해제 사이트 알림 실제 발송,
- * 선택 채널(관리자 해제 메일) 기본 꺼짐.
+ * 선택 채널(관리자 해제 메일) 기본 꺼짐. 사이트명 자리 시험은 트러블슈팅 `[case:backend-59]` 의 회귀 그물이다.
  *
  * @since 1.0.0
  */
 class NotificationDefinitionsTest extends PluginTestCase
 {
+    use MocksChannelReadiness;
+
     /** 알림 유형 → 수신 규칙 */
     private const AUDIENCE = [
         'social_login_last_login_method_removed' => 'trigger_user',
@@ -66,7 +69,9 @@ class NotificationDefinitionsTest extends PluginTestCase
         $this->assertSame(array_keys(self::AUDIENCE), array_column($definitions, 'type'));
 
         foreach ($definitions as $definition) {
-            $declared = array_merge(array_column($definition['variables'], 'key'), ['app_name', 'name', 'recipient_name']);
+            // 코어가 스스로 채우는 자리는 수신자 이름(`{recipient_name}`) 하나뿐이다 — 사이트명(`{app_name}`)은 정의가 변수로 선언하고
+            // 데이터 리스너가 채워야 한다(빠지면 메일 제목에 「[{app_name}]」이 그대로 나간다).
+            $declared = array_merge(array_column($definition['variables'], 'key'), ['recipient_name']);
             foreach ($definition['templates'] as $template) {
                 $text = json_encode([$template['subject'], $template['body'], $template['click_url'] ?? ''], JSON_UNESCAPED_UNICODE);
                 preg_match_all('/\{([a-z_]+)\}/', (string) $text, $m);
@@ -115,6 +120,42 @@ class NotificationDefinitionsTest extends PluginTestCase
         $this->assertNotSame('unlink', $webhook['data']['event_type']);
 
         $this->assertTrue($extract('social_login_link_removed_by_admin', [null, 'kakao'])['context']['skip'] ?? false);
+    }
+
+    /**
+     * 제목의 사이트명 자리는 5종 모두 사이트 이름으로 채워진다 — 실제 발송 메일 제목에 자리 표시가 남지 않는다.
+     *
+     * @scenario type=last_method|link_removed|provider_failing|signup_surge|webhook_failed, channel=mail
+     *
+     * @effects app_name_filled_in_every_notification
+     *
+     * @return void 반환값 없음
+     */
+    public function test_site_name_is_filled_in_every_notification(): void
+    {
+        config(['app.name' => '측정사이트']);
+        $user = User::factory()->create(['email' => $this->uniqueEmail('an')]);
+        $default = ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
+        $args = [
+            'social_login_last_login_method_removed' => [$user, 'kakao'],
+            'social_login_link_removed_by_admin' => [$user, 'kakao'],
+            'social_login_provider_failing' => ['kakao', 3, 'KOE010'],
+            'social_login_signup_surge' => ['kakao', 120, 100],
+            'social_login_webhook_failed' => [['provider_key' => 'kakao', 'event_type' => 'unlink', 'error' => 'boom']],
+        ];
+
+        foreach ($args as $type => $hookArgs) {
+            $data = HookManager::applyFilters('sirsoft-social_login.notification.extract_data', $default, $type, $hookArgs)['data'];
+            $this->assertSame('측정사이트', $data['app_name'] ?? null, $type);
+        }
+
+        // 시험 환경은 발신 주소가 없어 메일 채널이 준비 안 됨으로 건너뛴다 — 준비 상태를 고정하고 array 메일러로 보내 기록만 남긴다.
+        $this->mockAllChannelsReady();
+        config(['mail.default' => 'array']);
+        HookManager::doAction('sirsoft-social_login.account.unlinked_last_method', $user, 'kakao');
+        $subject = (string) DB::table('notification_logs')->where('recipient_user_id', $user->id)->latest('id')->value('subject');
+        $this->assertStringStartsWith('[측정사이트] ', $subject);
+        $this->assertStringNotContainsString('{', $subject);
     }
 
     /**

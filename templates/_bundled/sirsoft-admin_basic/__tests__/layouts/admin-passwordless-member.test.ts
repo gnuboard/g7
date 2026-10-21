@@ -135,6 +135,24 @@ describe('sirsoft-admin_basic 비밀번호 없는 회원 (#40)', () => {
   });
 
   /**
+   * @scenario has_password=false|true, surface=app_key_modal
+   * @effects app_key_modal_title_follows_password_presence
+   */
+  it('앱 키 재생성 창 제목은 비밀번호 없는 관리자에게 「본인 확인」, 비밀번호 관리자에게 종전 「비밀번호 확인」이다', () => {
+    const modal = flatten(passwordConfirmModal).find((n) => n.id === 'settings_password_confirm_modal');
+    const title = String(modal?.props?.title ?? '');
+    // 식 값을 그대로 계산한다(`evaluate` 는 조건식용 불린)
+    const value = (current_user: Json): unknown =>
+      // eslint-disable-next-line no-new-func
+      new Function('current_user', `return (${title.replace(/^\{\{/, '').replace(/\}\}$/, '')});`)(current_user);
+
+    expect(value({ data: { has_password: false } })).toBe('$t:admin.settings.modals.identity_confirm_title');
+    expect(value({ data: { has_password: true } })).toBe('$t:admin.settings.modals.password_confirm_title');
+    expect(typeof langAt(adminKo as Json, 'settings.modals.identity_confirm_title')).toBe('string');
+    expect(typeof langAt(adminEn as Json, 'settings.modals.identity_confirm_title')).toBe('string');
+  });
+
+  /**
    * @scenario has_password=false|true, surface=admin_self_update
    * @effects self_update_uses_email_code_for_passwordless
    */

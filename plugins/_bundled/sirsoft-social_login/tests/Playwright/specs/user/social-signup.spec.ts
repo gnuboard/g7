@@ -91,3 +91,32 @@ test('이메일 없는 카카오 계정 — 가입 모달에서 이메일 인증
   await expect(card).toContainText('비밀번호가 없는 계정입니다');
   await expect(page.locator('body')).not.toContainText('$t:');
 });
+
+/**
+ * @scenario provider=mock_kakao, variant=no_email, viewport=390
+ * @effects e2e_signup_modal_buttons_touch_size_on_phone
+ */
+test('휴대폰 폭에서 가입 모달의 [인증번호 받기]와 이메일 칸은 44px 이상이고, 넓은 화면에서는 예전 높이 그대로다', async ({ page }) => {
+  const id = runId();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/login');
+  await dismissCookieBanner(page);
+  await page.locator('[data-social-provider="mock_kakao"]').click();
+  await approveMock(page, { variant: 'no_email', subject: `e2e-signup-size-${id}` });
+
+  const dialog = page.getByRole('dialog').filter({ hasText: '계정으로 가입' });
+  await expect(dialog).toBeVisible({ timeout: 15_000 });
+  const button = dialog.getByRole('button', { name: '인증번호 받기' });
+  const input = dialog.locator('input[name="social_email"]');
+  // 모달은 대기 가입 정보를 받기 전에 먼저 열리고 이메일 칸은 그 뒤에 그려진다.
+  await expect(button).toBeVisible({ timeout: 15_000 });
+  await expect(input).toBeVisible();
+
+  const phone = { button: (await button.boundingBox())!.height, input: (await input.boundingBox())!.height };
+  expect(phone.button).toBeGreaterThanOrEqual(44);
+  expect(phone.input).toBeGreaterThanOrEqual(44);
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect.poll(async () => (await button.boundingBox())!.height).toBeLessThan(44);
+});

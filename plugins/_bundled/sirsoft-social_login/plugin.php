@@ -6,6 +6,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use Plugins\Sirsoft\SocialLogin\Database\Seeders\ProviderSeeder;
+use Plugins\Sirsoft\SocialLogin\Http\Middleware\MockGateMiddleware;
 use Plugins\Sirsoft\SocialLogin\Listeners\ActivityLogListener;
 use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserDelete;
 use Plugins\Sirsoft\SocialLogin\Listeners\CleanAccountsOnUserWithdraw;
@@ -288,6 +289,7 @@ class Plugin extends AbstractPlugin
                 'channels' => ['mail'],
                 'hooks' => ['sirsoft-social_login.account.unlinked_last_method'],
                 'variables' => [
+                    ['key' => 'app_name', 'description' => '사이트명'],
                     ['key' => 'name', 'description' => '회원 이름'],
                     ['key' => 'provider_label', 'description' => '제공자 이름'],
                     ['key' => 'site_url', 'description' => '사이트 주소'],
@@ -312,6 +314,7 @@ class Plugin extends AbstractPlugin
                 'channels' => ['database', 'mail'],
                 'hooks' => ['sirsoft-social_login.account.unlinked_by_admin'],
                 'variables' => [
+                    ['key' => 'app_name', 'description' => '사이트명'],
                     ['key' => 'name', 'description' => '회원 이름'],
                     ['key' => 'provider_label', 'description' => '제공자 이름'],
                     ['key' => 'site_url', 'description' => '사이트 주소'],
@@ -344,6 +347,8 @@ class Plugin extends AbstractPlugin
                 'channels' => ['mail', 'database'],
                 'hooks' => ['sirsoft-social_login.provider.failing'],
                 'variables' => [
+                    ['key' => 'app_name', 'description' => '사이트명'],
+                    ['key' => 'name', 'description' => '받는 관리자 이름'],
                     ['key' => 'provider_label', 'description' => '제공자 이름'],
                     ['key' => 'failure_count', 'description' => '연속 실패 횟수'],
                     ['key' => 'last_error_code', 'description' => '마지막 오류 코드'],
@@ -377,6 +382,8 @@ class Plugin extends AbstractPlugin
                 'channels' => ['mail', 'database'],
                 'hooks' => ['sirsoft-social_login.signup.surge'],
                 'variables' => [
+                    ['key' => 'app_name', 'description' => '사이트명'],
+                    ['key' => 'name', 'description' => '받는 관리자 이름'],
                     ['key' => 'provider_label', 'description' => '제공자 이름'],
                     ['key' => 'count', 'description' => '이번 시간 가입 수'],
                     ['key' => 'threshold', 'description' => '알림 기준'],
@@ -410,6 +417,8 @@ class Plugin extends AbstractPlugin
                 'channels' => ['database'],
                 'hooks' => ['sirsoft-social_login.webhook.failed'],
                 'variables' => [
+                    ['key' => 'app_name', 'description' => '사이트명'],
+                    ['key' => 'name', 'description' => '받는 관리자 이름'],
                     ['key' => 'provider_label', 'description' => '제공자 이름'],
                     ['key' => 'event_type', 'description' => '알림 종류'],
                     ['key' => 'error', 'description' => '오류 요약(비밀 없음)'],
@@ -732,6 +741,24 @@ class Plugin extends AbstractPlugin
             'social_login_attempts',
             'social_accounts',
             'social_login_providers',
+        ];
+    }
+
+    /**
+     * 확장 미들웨어 — 모의 제공자 라우트군(`web.plugins.sirsoft-social_login.mock.*`)의 게이트. 모의 라우트를 더해도 서브트리
+     * 패턴이 덮어 게이트가 빠지지 않는다.
+     *
+     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}> 미들웨어 선언
+     */
+    public function getMiddleware(): array
+    {
+        return [
+            [
+                'class' => MockGateMiddleware::class,
+                'groups' => ['web'],
+                'timing' => 'after_core',
+                'targets' => ['web.plugins.sirsoft-social_login.mock.*'],
+            ],
         ];
     }
 

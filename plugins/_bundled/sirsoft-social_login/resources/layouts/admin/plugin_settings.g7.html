@@ -34,7 +34,8 @@
     <field name="newProviderErrors" :value="null"/>
   </init-local>
   <permissions>
-    <permission>core.plugins.update</permission>
+    <permission>sirsoft-social_login.settings.view</permission>
+    <permission>core.plugins.read</permission>
   </permissions>
   <!-- 제공자 1건 저장 — 편집 칸(_local.providerForm)을 그대로 보내고 목록을 다시 받는다. 요청 범위는 한 줄 문자열(scopes_text)로 가고 서버가 나눈다(표현식은 정규식을 쓸 수 없다).
        영향 확인 칸의 [계속 저장]과 편집 칸의 [저장]이 함께 쓴다 -->

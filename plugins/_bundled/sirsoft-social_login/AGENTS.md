@@ -72,7 +72,7 @@
 
 **로그인 시작** (`OAuthController@start`, `OAuthStartRequest`) → 제공자 행이 켜져 있는지 확인 → 인가 화면으로 302.
 
-**콜백 분기** (`OAuthFlowService::callback` → `CallbackDispatcher::dispatch`, state 의 의도별) — 로그인: 연결된 회원이면 `SocialLoginService::loginLinked`(관리자 차단 확인 → 코어 `LoginHandoffService::issue`)로 `/login?login_handoff=` 인계, 없으면 `SignupFlowService::begin` 이 가입 대기 토큰을 만들어 `/register?social_pending=` 가입 모달로. 연결: `AccountLinkService::completeLink` → 마이페이지. 재확인: `SocialReauthService::complete` → 코어 본인인증 확인 후 1회용 수령 코드로 돌아갈 주소.
+**콜백 분기** (`OAuthFlowService::callback` → `CallbackDispatcher::dispatch`, state 의 의도별) — 로그인: 연결된 회원이면 `SocialLoginService::loginLinked`(관리자 차단 확인 → 코어 `LoginHandoffService::issue`)로 `/login?login_handoff=` 인계, 없으면 `SignupFlowService::begin` 이 가입 대기 토큰을 만들어 `/register?social_pending=` 가입 모달로(같은 제공자 계정으로 다시 시작하면 앞 대기 토큰은 지운다 — `PendingSignupStore`). 연결: `AccountLinkService::completeLink` → 마이페이지. 재확인: `SocialReauthService::complete` → 코어 본인인증 확인 후 1회용 수령 코드로 돌아갈 주소.
 
 **가입 모달** (`SignupController`, `LinkExistingController`) → `SignupFlowService::complete` 가 코어 `AuthService::register(…, ['issue_token' => false])` 로 비밀번호 없는 회원을 만들고 `AccountLinkService::attach` → 인계 주소. 같은 이메일의 기존 계정은 `LinkExistingService`(비밀번호 또는 메일 인증번호, 5회 한도)로 연결한다. 플러그인은 토큰을 직접 만들지 않는다.
 
@@ -94,7 +94,7 @@
 | 구독 훅 | 19개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 11개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
-| 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
+| 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 1개 | [스케줄](docs/extension-points.md#스케줄) |
 | 알림 정의 | 5개 | [알림 정의](docs/extension-points.md#알림-정의) |
@@ -129,7 +129,7 @@
 | 마스킹 이메일(`*` 포함)로 회원 찾기 | `NormalizedProfile::email()` 이 null 로 거른다 | 다른 회원과 잘못 연결 |
 | 관리자 응답·훅 인자에 비밀값 싣기 | `ProviderAdminService::present()`(마스크), 훅에는 요약과 바뀐 칸 이름만 | 화면·로그·리스너로 자격증명 유출 |
 | 웹훅 검증 실패에 4xx·5xx 로 답하기(카카오·네이버) | `ignored` 로 기록하고 정해진 성공 응답 | 제공자가 재시도를 쌓거나 웹훅을 끈다 |
-| 웹훅 요청 안에서 연결 해제·탈퇴 처리 | `ProcessWebhookEventJob`(커밋 뒤, 재시도 5회) | 제공자 응답 시간 초과와 중복 처리 |
+| 웹훅 요청 안에서 연결 해제·탈퇴 처리 | `ProcessWebhookEventJob`(커밋 뒤, 처음 시도를 포함해 5번 — 다시 시도 4번) | 제공자 응답 시간 초과와 중복 처리 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -137,10 +137,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 37개 | `plugins/_bundled/sirsoft-social_login/tests` |
+| PHPUnit | 39개 | `plugins/_bundled/sirsoft-social_login/tests` |
 | Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 6개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

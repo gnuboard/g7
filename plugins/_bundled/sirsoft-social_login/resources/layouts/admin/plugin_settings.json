@@ -61,7 +61,8 @@
         "sortableKeys": "{{(providers?.data?.providers ?? []).filter(p => !p.read_only).map(p => p.key)}}"
     },
     "permissions": [
-        "core.plugins.update"
+        "sirsoft-social_login.settings.view",
+        "core.plugins.read"
     ],
     "named_actions": {
         "saveProvider": {

@@ -13,7 +13,7 @@ use Plugins\Sirsoft\SocialLogin\Repositories\ProviderRepository;
  *
  * 설치·업데이트 때마다 돌아도 안전하다 — 없는 행만 만들고, 있는 행은 비어 있는 기본값만 채운다. 운영자가 넣은 자격증명,
  * 순서, 켜짐 여부, 표시 이름은 건드리지 않는다. 처음에는 모두 꺼진 상태로 만든다(자격증명을 넣고 테스트한 뒤 켜게).
- * 표시 이름은 ko/en/ja 를 기본으로 두고, 활성 언어팩의 `seed/providers.json` 이 있으면 trait 이 머지한다.
+ * 표시 이름은 기본 언어(ko, en)만 두고, 다른 언어는 활성 언어팩의 `seed/providers.json` 을 trait 이 머지한다(이미 있는 행에는 빠진 언어만 더한다).
  *
  * @since 1.0.0
  */
@@ -52,24 +52,24 @@ class ProviderSeeder extends Seeder implements TranslatableSeederInterface
     }
 
     /**
-     * 내장 제공자 기본값을 반환합니다.
+     * 내장 제공자 기본값을 반환합니다 — 이름은 기본 언어(ko·en)만. 다른 언어는 활성 언어팩 시드가 시딩 때 채운다.
      *
      * @return array<int, array<string, mixed>> 기본값 목록
      */
     public function getDefaults(): array
     {
         return [
-            ['key' => 'kakao', 'label' => ['ko' => '카카오', 'en' => 'Kakao', 'ja' => 'カカオ'], 'sort_order' => 10],
-            ['key' => 'naver', 'label' => ['ko' => '네이버', 'en' => 'Naver', 'ja' => 'ネイバー'], 'sort_order' => 20],
-            ['key' => 'google', 'label' => ['ko' => '구글', 'en' => 'Google', 'ja' => 'Google'], 'sort_order' => 30],
-            ['key' => 'facebook', 'label' => ['ko' => '페이스북', 'en' => 'Facebook', 'ja' => 'Facebook'], 'sort_order' => 40, 'graph_api_version' => 'v26.0'],
+            ['key' => 'kakao', 'label' => ['ko' => '카카오', 'en' => 'Kakao'], 'sort_order' => 10],
+            ['key' => 'naver', 'label' => ['ko' => '네이버', 'en' => 'Naver'], 'sort_order' => 20],
+            ['key' => 'google', 'label' => ['ko' => '구글', 'en' => 'Google'], 'sort_order' => 30],
+            ['key' => 'facebook', 'label' => ['ko' => '페이스북', 'en' => 'Facebook'], 'sort_order' => 40, 'graph_api_version' => 'v26.0'],
         ];
     }
 
     /**
      * 시더를 실행합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function run(): void
     {

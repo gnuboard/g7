@@ -117,6 +117,7 @@ class NotificationDataListener implements HookListenerInterface
 
         return array_merge($default, [
             'data' => [
+                'app_name' => (string) config('app.name'),
                 'name' => (string) ($user->name ?? ''),
                 'provider_label' => $this->label($args[1] ?? null),
             ] + $extra,
@@ -133,7 +134,7 @@ class NotificationDataListener implements HookListenerInterface
      */
     private function forAdmins(array $default, array $data): array
     {
-        return array_merge($default, ['data' => ['name' => '{recipient_name}'] + $data]);
+        return array_merge($default, ['data' => ['app_name' => (string) config('app.name'), 'name' => '{recipient_name}'] + $data]);
     }
 
     /**

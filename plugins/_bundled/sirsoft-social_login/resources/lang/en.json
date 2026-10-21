@@ -164,6 +164,7 @@
     },
     "signup": {
         "title": "Sign up with {{provider}}",
+        "provider_generic": "a social account",
         "intro": "Review the details below and agree to finish signing up. You do not need to set a password.",
         "expired": "The pending sign-up has expired or is already complete. Please start the social sign-in again.",
         "retry_login": "Sign in again",
@@ -199,6 +200,7 @@
         "unlink": "Unlink",
         "unlink_title": "Unlink social account",
         "unlink_confirm": "Unlink the {{provider}} account? You will no longer be able to sign in with it.",
+        "unlink_last_warning": "This is your last sign-in method. Once you sign out, you can only get back in by setting a password through Forgot password.",
         "unlinked_toast": "The account is unlinked.",
         "last_method": "You have no password and only one link, so it cannot be removed. Set a password or link another account first.",
         "available": "Link another account",
@@ -251,6 +253,7 @@
             "provider_code": "Provider response code",
             "test_results": {
                 "credentials_ok": "Credentials are correct (the provider accepted the client). Check a real sign-in with [Test sign-in in browser].",
+                "inconclusive": "This provider does not confirm credentials for a test request. Check them with [Test sign-in in browser].",
                 "invalid_client": "The client ID or secret is wrong.",
                 "redirect_mismatch": "The Redirect URI registered in the provider console differs from the address above.",
                 "unreachable": "Could not reach the provider (network or provider outage).",
@@ -497,6 +500,7 @@
             "empty": "No linked social accounts.",
             "unlink": "Force unlink",
             "unlink_confirm": "Force-remove this social account link? The member is notified and it is recorded in the activity log.",
+            "unlink_failed": "Could not remove the link.",
             "col": {
                 "provider": "Provider",
                 "provider_user_id": "Provider user ID",

@@ -1325,6 +1325,8 @@ php artisan plugin:build [identifier]
 php artisan plugin:seed [identifier]
 ```
 
+`plugin:seed` 는 플러그인의 `Database\Seeders\DatabaseSeeder` 를 찾아 실행합니다(`--class` 를 주지 않았을 때). 설치와 업데이트는 `getSeeders()` 목록을 쓰지만, 언어팩을 켜고 끌 때 코어(`RunSeedersOnLanguagePackLifecycle`)는 이 명령으로 시더를 다시 돌려 새 언어의 시드 번역을 기존 행에 채웁니다. 다국어 행을 시딩하는 플러그인은 `database/seeders/DatabaseSeeder.php` 를 두고 `getSeeders()` 와 같은 시더를 실행해야 합니다 — 없으면 재시딩이 「시더 클래스를 찾을 수 없습니다」로 끝나 나중에 켠 언어가 기존 행에 들어가지 않습니다(설치 시험만으로는 드러나지 않습니다). 목록은 사본으로 두지 말고 `getSeeders()` 를 그대로 읽게 합니다.
+
 **옵션**:
 
 - `--class=SeederClass`: 특정 시더 클래스만 실행

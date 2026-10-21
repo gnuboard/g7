@@ -2,7 +2,10 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Tests;
 
+use App\Contracts\Extension\CacheInterface;
+use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
 use App\Enums\PermissionType;
+use App\Extension\ExtensionMiddlewareRegistry;
 use App\Extension\HookManager;
 use App\Models\IdentityVerificationLog;
 use App\Models\Permission;
@@ -57,9 +60,34 @@ abstract class PluginTestCase extends TestCase
 
         $this->app->register(SocialLoginServiceProvider::class);
         $this->registerPluginRoutes();
+        $this->registerPluginMiddleware();
 
         $this->snapshotHookManager();
         $this->registerPluginHookListeners();
+    }
+
+    /**
+     * 확장 미들웨어 선언(`getMiddleware()`)이 시험에서도 실제 경로로 붙게 합니다 — 활성 확장 카탈로그만 이 플러그인으로
+     * 격리하고, 선언 정규화와 라우트명 매칭은 코어 레지스트리 그대로 탄다(모의 라우트군 게이트가 시험에서 빠지지 않게).
+     *
+     * @return void 반환값 없음
+     */
+    private function registerPluginMiddleware(): void
+    {
+        $registry = new class(app(CacheInterface::class)) extends ExtensionMiddlewareRegistry
+        {
+            /**
+             * 시험에 필요한 활성 확장(이 플러그인)만 반환합니다.
+             *
+             * @return iterable<int, array{0: Plugin, 1: string, 2: string}> 활성 확장
+             */
+            protected function activeExtensions(): iterable
+            {
+                yield [new Plugin, 'sirsoft-social_login', 'plugin'];
+            }
+        };
+        ExtensionMiddlewareRegistry::flush();
+        $this->app->instance(ExtensionMiddlewareRegistryInterface::class, $registry);
     }
 
     /**

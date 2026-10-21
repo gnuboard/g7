@@ -12,6 +12,15 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_mode": "optional",
+            "fallback": {
+                "data": []
+            },
+            "errorHandling": {
+                "default": {
+                    "comment": "다른 확장의 화면에 붙는 덧붙임이다 — 목록을 못 받으면 버튼만 그리지 않고(fallback 빈 목록), 템플릿 기본 오류 처리(원문 토스트)로 번지지 않게 막는다",
+                    "handler": "suppress"
+                }
+            },
             "comment": "켜진 제공자 목록 — 비로그인으로 읽는다(자격증명 없음)."
         }
     ],

@@ -112,6 +112,66 @@ describe('사용자 화면 확장 조각', () => {
   });
 
   /**
+   * @scenario surface=login|register, network=failed
+   * @effects provider_list_failure_is_silent
+   */
+  it.each(['auth_login_buttons', 'auth_register_buttons'])('%s 는 제공자 목록을 못 받아도 오류 토스트를 띄우지 않고 버튼만 그리지 않는다', (name) => {
+    const source = load(name).data_sources.find((s: any) => s.id === 'socialProviders');
+
+    // 다른 확장의 로그인·가입 화면에 붙는 덧붙임이라, 목록 실패가 템플릿 기본 오류 처리(원문 토스트)로 번지면 안 된다
+    expect(source.errorHandling?.default?.handler).toBe('suppress');
+    expect(source.fallback).toEqual({ data: [] });
+  });
+
+  /**
+   * @scenario surface=mypage_card, has_password=false, accounts=one, policy=allow_unlink_last_method
+   * @effects unlink_last_method_warns_before_confirm
+   */
+  it('비밀번호 없는 회원의 마지막 연결을 끊을 수 있는 사이트면 확인 창이 「마지막 로그인 수단」을 경고한다', () => {
+    const json = load('mypage_social_accounts_card');
+    const nodes = flatten(json);
+    const open = nodes.find((n) => n.handler === 'setState' && 'socialLoginUnlinkTarget' in (n.params ?? {}) && n.params.socialLoginUnlinkTarget !== null);
+    const flag = String(open?.params?.socialLoginUnlinkIsLast ?? '');
+
+    // 열 때 계산해 둔다 — 모달은 연 화면의 데이터소스를 열 때 값으로만 본다
+    expect(flag).toContain('has_password === false');
+    expect(flag).toContain('.length === 1');
+    expect(flag).toContain('can_unlink');
+    expect(flag).toContain('allowed === true');
+
+    const warning = flatten(json.modals).find((n) => String(n.text ?? '').includes('sirsoft-social_login.mypage.unlink_last_warning'));
+    expect(warning?.if).toBe('{{_global.socialLoginUnlinkIsLast === true}}');
+    expect(typeof dig(lang('ko'), 'mypage.unlink_last_warning')).toBe('string');
+    expect(typeof dig(lang('en'), 'mypage.unlink_last_warning')).toBe('string');
+  });
+
+  /**
+   * @scenario surface=register_modal, policy=signup_before_submit
+   * @effects signup_identity_target_is_signup_email
+   */
+  it('가입 완료 요청은 본인인증 대상(identity_target)으로 가입 이메일을 넘긴다 — 428 뒤 코어 본인인증 창이 대상 없이 422 로 멈추지 않게', () => {
+    const call = flatten(load('auth_register_social_modals')).find((n) => n.handler === 'apiCall' && String(n.target).includes('/signup/complete'));
+
+    // 코어 화면(비밀번호 찾기 등)과 같이 액션 수준 `identity_target` — 인터셉터가 여기서 대상을 읽는다
+    expect(call?.identity_target?.email).toBe(call?.params?.body?.email);
+    expect(call?.identity_target?.email).toContain('socialLoginForm?.email');
+  });
+
+  /**
+   * @scenario surface=register_modal, step=expired
+   * @effects signup_title_has_generic_provider
+   */
+  it('가입 모달 제목은 대기가 만료돼 제공자를 모를 때도 자리표({{provider}})를 남기지 않는다', () => {
+    const modal = flatten(load('auth_register_social_modals')).find((n) => n.id === 'social_signup_complete');
+    const title = String(modal?.props?.title ?? '');
+
+    // 빈 값을 넘기면 번역기가 자리표를 그대로 둔다 — 일반 이름을 기본값으로 넘긴다
+    expect(title).toContain("?? $t('sirsoft-social_login.signup.provider_generic')");
+    expect(typeof dig(lang('ko'), 'signup.provider_generic')).toBe('string');
+    expect(typeof dig(lang('en'), 'signup.provider_generic')).toBe('string');
+  });
+
+  /**
    * @scenario surface=login, query=social_error|social_notice
    * @effects login_notices_toast_with_fallback
    */
@@ -194,6 +254,24 @@ describe('사용자 화면 확장 조각', () => {
     expect(password.if).toContain('has_password !== false');
     expect(call.target).toBe('/api/plugins/sirsoft-social_login/signup/discard-existing');
     expect(flatten(call.onSuccess).find((a) => a.handler === 'openModal').target).toBe('social_signup_complete');
+  });
+
+  /**
+   * @scenario surface=signup_modal, viewport=390
+   * @effects modal_action_buttons_reach_touch_size_on_phone
+   */
+  it('가입·기존 계정 모달의 작은 동작 단추는 휴대폰 폭에서 손가락 크기(44px 이상)로 커지고 넓은 화면에서는 그대로다', () => {
+    const buttons = flatten(load('auth_register_social_modals').modals)
+      .filter((n) => n.name === 'Button' && /(^|\s)px-3(\s|$)/.test(String(n.props?.className ?? '')));
+
+    // 모집단: 인증번호 받기·확인, 비밀번호 확인, 기존 계정 인증번호 받기·확인, 새 계정으로 가입, 취소
+    expect(buttons.length).toBeGreaterThanOrEqual(7);
+    for (const b of buttons) {
+      const cls = String(b.props.className);
+      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)py-3(\s|$)/);
+      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)sm:py-2(\s|$)/);
+      expect(cls, b.props?.['data-ref'] ?? cls).not.toMatch(/(^|\s)py-2(\s|$)/);
+    }
   });
 
   /**

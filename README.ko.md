@@ -489,6 +489,7 @@ cp .env.example .env
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
+| **g7-plugin-sirsoft-social_login-ja** | 소셜 로그인 플러그인 일본어 |
 | **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |
 | **g7-plugin-sirsoft-totp-ja** | 인증 앱(TOTP) 2단계 인증 플러그인 일본어 |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG이니시스 본인인증 플러그인 일본어 |

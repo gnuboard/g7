@@ -93,7 +93,7 @@
             "type": "composite",
             "name": "Modal",
             "props": {
-                "title": "$t:sirsoft-social_login.signup.title|provider={{_global.socialLoginSignup?.provider?.label ?? ''}}",
+                "title": "$t:sirsoft-social_login.signup.title|provider={{_global.socialLoginSignup?.provider?.label ?? $t('sirsoft-social_login.signup.provider_generic')}}",
                 "size": "md",
                 "closeOnBackdropClick": false
             },
@@ -395,7 +395,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "shrink-0 px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified || !_global.socialLoginForm?.email}}"
                                                     },
                                                     "children": [
@@ -500,7 +500,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "shrink-0 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "shrink-0 px-3 py-3 sm:py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.code}}"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.verify_code"
@@ -721,6 +721,9 @@
                                                     "handler": "apiCall",
                                                     "target": "/api/plugins/sirsoft-social_login/signup/complete",
                                                     "auth_mode": "optional",
+                                                    "identity_target": {
+                                                        "email": "{{_global.socialLoginSignup?.email?.mode === 'input' ? _global.socialLoginForm?.email : _global.socialLoginSignup?.email?.value}}"
+                                                    },
                                                     "params": {
                                                         "method": "POST",
                                                         "body": {
@@ -919,7 +922,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "shrink-0 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "shrink-0 px-3 py-3 sm:py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.password}}"
                                             },
                                             "text": "$t:sirsoft-social_login.existing.confirm"
@@ -1006,7 +1009,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{_global.socialLoginBusy}}"
                                     },
                                     "children": [
@@ -1119,7 +1122,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "shrink-0 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "shrink-0 px-3 py-3 sm:py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.existing_code}}"
                                             },
                                             "text": "$t:sirsoft-social_login.existing.confirm"
@@ -1208,7 +1211,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50",
+                                        "className": "flex-1 px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50",
                                         "disabled": "{{_global.socialLoginBusy}}"
                                     },
                                     "text": "$t:sirsoft-social_login.existing.new_account"
@@ -1235,7 +1238,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
+                                        "className": "flex-1 px-3 py-3 sm:py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
                                     },
                                     "text": "$t:common.cancel"
                                 }

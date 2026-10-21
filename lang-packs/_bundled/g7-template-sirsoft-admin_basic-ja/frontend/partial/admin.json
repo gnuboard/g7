@@ -2741,7 +2741,8 @@
       "cache_delete_confirm": "すべてのキャッシュを削除しますか?",
       "cache_delete_warning": "キャッシュ削除後、一時的にサイトの応答速度が遅くなる可能性があります。",
       "delete_cache": "キャッシュ削除",
-      "deleting": "削除中..."
+      "deleting": "削除中...",
+      "identity_confirm_title": "本人確認"
     },
     "save_success": "設定が保存されました。",
     "save_error": "設定の保存に失敗しました。",

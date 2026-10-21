@@ -11,12 +11,14 @@ axes:
   redirect: [external]
   i18n: [missing]
   providers: [none]
+  network: [failed]
   disabled: ['true']
   url: [same_origin, https, http_external, javascript]
   handler: [startLink, startReauth]
   response: [ok, '409']
   provider: [invalid]
-  surface: [all, login, register, register_modal, existing_modal, mypage_card, profile_edit_gate, change_password]
+  surface: [all, login, register, register_modal, signup_modal, existing_modal, mypage_card, profile_edit_gate, change_password]
+  viewport: ['390']
   locale: [ko, en]
   query: [social_error, social_notice, social_pending]
   step: [complete, existing, expired]
@@ -25,7 +27,8 @@ axes:
   iteration: [data_each]
   client: [class_instance]
   modal: [reopen]
-  accounts: [none]
+  accounts: [none, one]
+  policy: [allow_unlink_last_method, signup_before_submit]
   code: [sent]
   theme: [light, dark]
 effects:
@@ -48,21 +51,26 @@ effects:
   - no_deferred_translation_in_data_each
   - modal_state_lives_in_global
   - login_buttons_slot_and_guard
+  - provider_list_failure_is_silent
   - login_notices_toast_with_fallback
   - register_buttons_hidden_during_social_signup
   - signup_modal_opens_by_step
   - signup_submit_requires_consent_and_email
   - signup_success_navigates_handoff
+  - signup_title_has_generic_provider
+  - signup_identity_target_is_signup_email
   - existing_modal_hides_password_for_passwordless
   - existing_discard_switches_modal
   - mypage_card_after_other_cards
   - unlink_409_shows_last_method
+  - unlink_last_method_warns_before_confirm
   - mypage_card_empty_state
   - signup_code_countdown
   - reauth_slots_replace_default
   - reauth_return_claims_and_opens_form
   - google_dark_follows_site_theme
   - mypage_row_shows_provider_symbol
+  - modal_action_buttons_reach_touch_size_on_phone
 test_files:
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/ProviderButtons.test.tsx
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/ProviderMark.test.tsx

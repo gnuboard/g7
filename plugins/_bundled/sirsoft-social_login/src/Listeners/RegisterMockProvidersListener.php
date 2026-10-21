@@ -43,7 +43,7 @@ class RegisterMockProvidersListener implements HookListenerInterface
      * 인터페이스 기본 핸들러 (개별 메서드에서 처리).
      *
      * @param  mixed  ...$args  훅 인자
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -83,7 +83,7 @@ class RegisterMockProvidersListener implements HookListenerInterface
                 'userinfo' => $base.'/userinfo',
                 'jwks' => $base.'/jwks',
                 'issuer' => $base,
-                'revoke' => $base.'/token',
+                'revoke' => $base.'/revoke',
             ];
 
             $configs[self::PREFIX.$style] = [
@@ -91,12 +91,14 @@ class RegisterMockProvidersListener implements HookListenerInterface
                 'driver' => $style,
                 'type' => 'custom',
                 'enabled' => true,
-                'label' => [
-                    'ko' => __('sirsoft-social_login::messages.mock.label', ['provider' => $style], 'ko'),
-                    'en' => __('sirsoft-social_login::messages.mock.label', ['provider' => $style], 'en'),
-                ],
+                // 사이트가 지원하는 언어마다 — ko·en 만 두면 일본어 화면에서 한국어 이름으로 떨어진다
+                'label' => collect((array) config('app.supported_locales', ['ko', 'en']))
+                    ->mapWithKeys(fn (string $locale) => [$locale => __('sirsoft-social_login::messages.mock.label', ['provider' => $style], $locale)])
+                    ->all(),
                 'client_id' => 'mock-client-'.$style,
                 'client_secret' => 'mock-secret',
+                // 카카오 회수(연결 끊기)는 어드민 키로 부른다 — 비면 드라이버가 회수를 건너뛰고 실패로 남긴다
+                'admin_key' => $style === 'kakao' ? 'mock-admin-key' : null,
                 'discovery_url' => $style === 'oidc' ? $base.'/.well-known/openid-configuration' : null,
                 'signup_allowed' => true,
                 'email_missing_policy' => 'ask',

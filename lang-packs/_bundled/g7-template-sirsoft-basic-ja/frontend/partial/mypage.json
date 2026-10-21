@@ -174,7 +174,9 @@
       "expired": "期限切れ",
       "other_devices_logged_out": "他の端末ではログアウトされました。この端末はログイン状態が維持されます。",
       "changed_toast": "パスワードが変更されました。他の端末ではログアウトされました。"
-    }
+    },
+    "verify_identity_title": "本人確認",
+    "verify_identity_message": "自分の情報を修正するには本人確認が必要です"
   },
   "orders": {
     "title": "注文履歴",

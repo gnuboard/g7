@@ -87,6 +87,31 @@ test('signup source filter narrows the list and survives reload', async ({ page 
 });
 
 /**
+ * 휴대폰 폭에서는 연결 표 대신 세로 카드가 보이고, [강제 해제]가 가로 스크롤 없이 화면 안에 있다.
+ *
+ * @scenario surface=admin_user_detail, viewport=mobile, actor=accounts_unlinker
+ * @effects mobile_cards_replace_table, card_unlink_in_viewport
+ */
+test('detail tab shows cards instead of the table on a phone-width screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  // 휴대폰 폭의 탭 목록은 드롭다운이고 탭 본문이 한 페이지에 이어 그려진다(스크롤 스파이) — 탭을 누르지 않고 본문으로 스크롤한다
+  await authenticatePage(page, admin);
+  await page.addInitScript(() => localStorage.setItem('g7_locale', 'ko'));
+  const accounts = page.waitForResponse((r) => r.url().includes(`/admin/users/${uuid}/accounts`) && r.request().method() === 'GET', { timeout: 60_000 });
+  await page.goto(`/admin/users/${uuid}`);
+  await accounts;
+  await page.locator('#admin_user_social_cards').scrollIntoViewIfNeeded();
+  await expect(page.locator('#admin_user_social_cards')).toBeVisible();
+  await expect(page.locator('#admin_user_social_table')).toHaveCount(0);
+  const button = page.locator('#admin_user_social_card_unlink_facebook');
+  await expect(button).toBeVisible();
+  const box = await button.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+/**
  * 상세 탭이 연결 행과 비밀번호 없는 회원 안내를 보이고, 강제 해제를 확인하면 마지막 연결도 끊겨 빈 안내로 바뀐다.
  *
  * @scenario surface=admin_user_detail, member=passwordless_single_link, actor=accounts_unlinker

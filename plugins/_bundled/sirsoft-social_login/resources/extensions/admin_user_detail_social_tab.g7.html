@@ -33,7 +33,9 @@
         <p data-ref="admin_user_social_forbidden" data-if="{{_local.socialAccountsForbidden === true}}" class="text-hint">$t:sirsoft-social_login.admin.users.forbidden</p>
         <p data-ref="admin_user_social_passwordless" data-if="{{socialUserAccounts?.data?.has_password === false}}" class="text-sm text-amber-700 dark:text-amber-300 mb-3">$t:sirsoft-social_login.admin.users.passwordless_notice</p>
         <p data-ref="admin_user_social_empty" data-if="{{!!socialUserAccounts?.data &amp;&amp; (socialUserAccounts?.data?.accounts ?? []).length === 0}}" class="text-hint">$t:sirsoft-social_login.admin.users.empty</p>
+        <!-- 데스크톱·태블릿은 표, 휴대폰 폭(mobile)은 아래 세로 카드 — 표를 가로로 밀어야 [강제 해제]가 보이던 것을 없앤다 -->
         <div data-ref="admin_user_social_table_wrap" data-if="{{(socialUserAccounts?.data?.accounts ?? []).length > 0}}" class="overflow-x-auto">
+          <responsive on="mobile" data-if="{{false}}"/>
           <table data-ref="admin_user_social_table" class="w-full text-sm">
             <thead>
               <tr class="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
@@ -67,7 +69,7 @@
                           <refetch-data-source dataSourceId="socialUserAccounts"/>
                         </success>
                         <fail>
-                          <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"/>
+                          <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.users.unlink_failed'}}"/>
                         </fail>
                       </api-call>
                     </on>
@@ -77,6 +79,40 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div data-ref="admin_user_social_cards" data-if="{{false}}" class="space-y-3">
+          <responsive on="mobile" data-if="{{(socialUserAccounts?.data?.accounts ?? []).length > 0}}"/>
+          <div data-each="account in socialUserAccounts?.data?.accounts ?? []" data-key="{{account.provider_key}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <sirsoft-social_login.provider-mark brand="{{account.brand}}" label="{{account.label}}"/>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{account.label}}</span>
+              </div>
+              <button data-ref="admin_user_social_card_unlink_{{account.provider_key}}" data-if="{{socialUserAccounts?.data?.abilities?.can_unlink === true}}" type="button" class="btn btn-danger text-xs">
+                <on type="click">
+                  <!-- 표의 강제 해제와 같은 요청 — 둘 중 하나만 화면에 그려진다 -->
+                  <api-call :auth_required="true" method="DELETE" confirm="$t:sirsoft-social_login.admin.users.unlink_confirm" target="/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts/{{account.provider_key}}">
+                    <success>
+                      <toast type="success" message="{{response.message}}"/>
+                      <refetch-data-source dataSourceId="socialUserAccounts"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.users.unlink_failed'}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <span>$t:sirsoft-social_login.admin.users.unlink</span>
+              </button>
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.provider_user_id</div>
+            <div class="font-mono text-xs text-gray-700 dark:text-gray-300">{{account.provider_user_id_prefix + '…'}}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.email</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300 break-all">{{account.email ?? '-'}}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.linked_at</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">{{account.linked_at ?? '-'}}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.last_login_at</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">{{account.last_login_at ?? '-'}}</div>
+          </div>
         </div>
       </div>
     </div>

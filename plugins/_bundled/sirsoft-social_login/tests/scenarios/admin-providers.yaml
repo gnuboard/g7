@@ -17,7 +17,7 @@ axes:
   custom: [reserved_key, create, limit, reorder, delete_with_links, delete]
   discovery: [ok, incomplete, failed, unreachable]
   member: [social_only, password_and_social, two_providers, passwordless_single_link]
-  token_reply: [KOE320, KOE010, KOE006, connection_failed, server_error]
+  token_reply: [KOE320, KOE010, KOE006, connection_failed, server_error, naver_invalid_request]
   credentials: [missing_secret, readable, unreadable, schema_fields]
   oidc: [discovery_down, jwks_empty]
   test_login: [disabled_provider, unknown_provider]
@@ -27,7 +27,7 @@ axes:
   intent: [login, test]
   definition: [all]
   type: [last_method, link_removed, provider_failing, signup_surge, webhook_failed, missing_member]
-  channel: [database]
+  channel: [database, mail]
   threshold: ['3', '0']
   code: [provider, access_denied]
   path: [callback]
@@ -39,6 +39,7 @@ axes:
   scopes: [text, array]
   provider: [disabled_with_links, kakao, custom_oidc]
 effects:
+  - ambiguous_rejection_is_inconclusive
   - guest_401
   - member_403
   - viewer_reads_list
@@ -106,6 +107,7 @@ effects:
   - admin_data_and_urls
   - missing_member_skips
   - admin_unlink_database_notice_delivered
+  - app_name_filled_in_every_notification
   - streak_fires_at_threshold
   - streak_cooldown_daily
   - success_resets_streak
@@ -140,6 +142,7 @@ effects:
   - impact_panel_closes_when_editor_changes
   - impact_continue_saves_own_provider
   - provider_settings_read_only_for_viewer
+  - settings_opens_read_only_for_view_permission
   - admin_routes_gated_by_single_permission
   - kakao_webhook_app_id_editable
   - editor_covers_credential_schema
