@@ -117,7 +117,7 @@ class ExecuteUpgradeStepsCommand extends Command
                 // 판정은 캐시 파일의 실존으로 한다 — 부팅에 쓰였든 위 updateComposerAutoload() 가 방금
                 // 재생성했든, 파일이 있으면 메모리 config 를 신뢰하지 않는다 (디스크 판독은 멱등).
                 if (is_file($this->laravel->getCachedConfigPath())) {
-                    Log::channel('upgrade')->warning('[spawn] 이전 버전 config 캐시로 부팅됨 — update 목록은 디스크 config/app.php 에서 읽는다');
+                    Log::channel('upgrade')->warning('[spawn] config 캐시 파일이 있어 쓰기 권한 디렉토리 목록을 디스크 config/app.php 에서 직접 읽는다 (이전 버전 캐시일 수 있어 캐시 값을 쓰지 않음 — 업데이트 오류 아님)');
                     $writablePaths = (array) $service->freshDiskUpdateConfig('restore_ownership_group_writable', []);
                 } else {
                     $writablePaths = (array) config('app.update.restore_ownership_group_writable', []);
